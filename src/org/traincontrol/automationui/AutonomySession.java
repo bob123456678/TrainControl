@@ -9418,6 +9418,19 @@ public class AutonomySession
 
             if (copy == null || copy.getCurrentLocomotive() == null) continue;
 
+            // ON ITS WAY, THE COPY IT WILL STAND ON (OB-314; Adam, 2026-10-03: "the label at bottommainb shows arrival
+            // arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed").  A train
+            // sent to a square it may turn at holds the turning copy its path ends on until it arrives, and is stood
+            // on the plain copy only then - so this read it the wrong way round for the whole journey.
+            org.traincontrol.automation.Point standing = running.copyItWillStandOn(copy.getCurrentLocomotive());
+
+            if (standing != null && standing != copy && standing.isSamePlaceAs(copy))
+            {
+                Side will = getStationIndex().facingsAt(square).get(standing.getName());
+
+                if (will != null) return will;
+            }
+
             return getStationIndex().facingsAt(square).get(name);
         }
 

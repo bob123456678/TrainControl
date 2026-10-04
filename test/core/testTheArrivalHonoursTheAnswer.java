@@ -304,6 +304,12 @@ public class testTheArrivalHonoursTheAnswer
             assertTrue(waitFor(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
                 "the train never set off, so no arrival happened and this claim tested nothing");
 
+            // AND ON ITS WAY THE RAILWAY ALREADY KNOWS WHERE IT WILL STAND (OB-314): the copy it will be stood on, not
+            // the turning copy its path ends on - so the label does not show it arriving the other way round
+            org.testng.Assert.assertSame(running.copyItWillStandOn(driver), plain, "on its way, the railway says the train will stand on "
+                + running.copyItWillStandOn(driver) + " - the copy its path ends on - though KEEP DIRECTION puts it on the"
+                + " plain copy (OB-314)");
+
             model.setFeedbackState(turning.getS88(), true);
             model.setFeedbackState(arrive.getS88(), false);
 

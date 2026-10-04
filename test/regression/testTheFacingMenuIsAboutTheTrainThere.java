@@ -246,6 +246,208 @@ public class testTheFacingMenuIsAboutTheTrainThere
         }
     }
 
+    /**
+     * On its way to a square it may turn at, without turning, a train's label already faces the way it will stand (OB-314).
+     *
+     * Adam, 2026-10-03: *"when sending et22-245 from topmainr2inter to bottommainb, the label at bottommainb shows arrival
+     * arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed."*  The path to a square
+     * trains may turn at routinely ends on its TURNING copy, which faces the other way, and the label reads the facing of
+     * the copy the train holds - so until it arrived, and was stood on the plain copy, the label showed it reversed.
+     *
+     * A train sent onto a turning copy with KEEP DIRECTION answered, the sensors played by hand so nothing arrives before
+     * the label is read.
+     *
+     * MUTATION: let the reading take the copy the path ends on again, and this fails.
+     *
+     * @throws Exception from the window or the run
+     */
+    @Test
+    public void testOnItsWayTheLabelFacesTheWayItWillStand() throws Exception
+    {
+        final org.traincontrol.automation.Layout running = model.getAutoLayout();
+
+        assertNotNull(running, "precondition: no running railway");
+
+        // A MAY-TURN SQUARE: a turning copy and a plain copy, reached by one approach, facing different ways
+        org.traincontrol.automation.Point turning = null, plain = null, approach = null;
+
+        TileKey square = null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (turning != null) break;
+
+            java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(tile);
+
+            for (String t : session.getStationIndex().pointNamesAt(tile))
+            {
+                org.traincontrol.automation.Point tp = running.getPoint(t);
+
+                if (tp == null || !(tp.isTerminus() || tp.isReversing()) || tp.getCurrentLocomotive() != null) continue;
+
+                for (String p : session.getStationIndex().pointNamesAt(tile))
+                {
+                    org.traincontrol.automation.Point pp = running.getPoint(p);
+
+                    if (pp == null || pp == tp || pp.isTerminus() || pp.isReversing() || pp.getCurrentLocomotive() != null)
+                    {
+                        continue;
+                    }
+
+                    if (facings.get(t) == null || facings.get(p) == null || facings.get(t) == facings.get(p)) continue;
+
+                    for (org.traincontrol.automation.Point a : running.getPoints())
+                    {
+                        // A station, so a train can be stood there
+                        if (a.getCurrentLocomotive() != null || a.isSamePlaceAs(tp) || !a.isDestination()) continue;
+
+                        if (running.getEdge(a.getName(), t) == null || running.getEdge(a.getName(), p) == null) continue;
+
+                        turning = tp;
+                        plain = pp;
+                        approach = a;
+                        square = tile;
+                        break;
+                    }
+
+                    if (turning != null) break;
+                }
+
+                if (turning != null) break;
+            }
+        }
+
+        if (turning == null) throw new SkipException("the snapshot has no free may-turn square with an approach to both copies");
+
+        // A TRAIN STANDING NOWHERE
+        String train = null;
+
+        for (String name : model.getLocList())
+        {
+            if (running.getLocomotiveLocation(model.getLocByName(name)) == null) train = name;
+        }
+
+        assertNotNull(train, "precondition: every locomotive is placed somewhere");
+
+        final org.traincontrol.base.Locomotive loc = model.getLocByName(train);
+
+        // SIMULATED, so the route's switches confirm without a Central Station; the label is read the moment the train
+        // sets off, long before a simulated arrival
+        final boolean simulating = running.isSimulate();
+
+        running.setSimulate(true);
+
+        model.setFeedbackState(approach.getS88(), true);
+        model.setFeedbackState(turning.getS88(), false);
+        model.setFeedbackState(plain.getS88(), false);
+
+        assertTrue(running.moveLocomotive(train, approach.getName(), false), "precondition: could not stand " + train
+            + " on " + approach.getName());
+
+        final java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
+
+        path.add(running.getEdge(approach.getName(), turning.getName()));
+
+        final org.traincontrol.automation.Point askedAbout = turning;
+
+        final org.traincontrol.automation.Point approach_ = approach;
+
+        org.traincontrol.automation.Layout.ReversalPolicy keepDirection = new org.traincontrol.automation.Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(org.traincontrol.base.Locomotive t, org.traincontrol.automation.Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(org.traincontrol.automation.Point at)
+            {
+                return at == askedAbout;
+            }
+        };
+
+        // WHAT THE RAILWAY SAYS, for a dispatch that does not go
+        final java.util.List<String> said = java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
+
+        java.util.logging.Handler listening = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                said.add(record.getMessage());
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        java.util.logging.Logger.getLogger("").addHandler(listening);
+
+        final Boolean[] went = new Boolean[1];
+
+        Thread run = new Thread(() -> went[0] = running.executePath(path, loc, 20, null, keepDirection));
+
+        run.setDaemon(true);
+
+        Side shown = null;
+
+        try
+        {
+            run.start();
+
+            long until = System.currentTimeMillis() + 15000;
+
+            while (!(running.isRunning() && loc.getSpeed() > 0) && run.isAlive() && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(5);
+            }
+
+            assertTrue(loc.getSpeed() > 0, "precondition: the train never set off - the dispatch returned " + went[0]
+                + "; the railway said " + said + "; valid " + running.isValid() + ", current "
+                + running.isCurrentLayout() + ", clear " + running.isPathClear(path, loc) + ", at the start "
+                + (approach_ == null ? "?" : String.valueOf(loc.equals(approach_.getCurrentLocomotive()))));
+
+            assertTrue(running.getActiveLocomotives().containsKey(loc), "precondition: the train arrived before the label"
+                + " could be read");
+
+            // ON ITS WAY: what the label reads
+            shown = session.facingOnTheRailway(square, running);
+        }
+        finally
+        {
+            model.setFeedbackState(turning.getS88(), true);
+            model.setFeedbackState(approach.getS88(), false);
+
+            long until = System.currentTimeMillis() + 30000;
+
+            while (run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            running.moveLocomotive(null, turning.getName(), false);
+            running.moveLocomotive(null, plain.getName(), false);
+            running.moveLocomotive(null, approach.getName(), false);
+
+            model.setFeedbackState(turning.getS88(), false);
+
+            running.setSimulate(simulating);
+
+            java.util.logging.Logger.getLogger("").removeHandler(listening);
+        }
+
+        java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(square);
+
+        assertEquals(shown, facings.get(plain.getName()), "on its way to " + square + " with KEEP DIRECTION, the label read "
+            + shown + " - the turning copy's facing - where the train will stand facing " + facings.get(plain.getName())
+            + " (OB-314)");
+    }
+
     private static JMenuItem find(javax.swing.JMenu menu, String text)
     {
         for (int i = 0; i < menu.getItemCount(); i++)

@@ -647,6 +647,13 @@ public class Layout
      * there is simply an answer attached to it now.
      */
     private final Map<Locomotive, List<Edge>> takingPath;
+
+    /**
+     * The reversal answer each train's run was dispatched with, written beside its path in `activeLocomotives` and read
+     * only while that is there (OB-314): what lets the arrival's question be asked before the arrival.  Empty for
+     * autonomy's own runs, which pass none.
+     */
+    private final Map<Locomotive, java.util.Optional<ReversalPolicy>> runPolicies = new ConcurrentHashMap<>();
     private final Map<Locomotive, List<Point>> locomotiveMilestones;
 
     /**
@@ -4032,6 +4039,44 @@ public class Layout
     }
 
     /**
+     * The plain copy of a turning copy that a train coming in by this path would have driven onto: the same square, not a
+     * turning copy, reached from where the path's last leg starts, and free - or null where there is none (a real
+     * terminus, or a square with no plain copy for this approach).  The search `standOnTheCopyItDidNotTurnOn` acts on at
+     * the arrival and `copyItWillStandOn` asks ahead of it (OB-314); see the first for why the approach decides.
+     *
+     * @param arrived the Point the path ends on
+     * @param path the path
+     * @return the plain copy, or null
+     */
+    private Point plainSiblingFor(Point arrived, List<Edge> path)
+    {
+        if (arrived == null || path == null || path.isEmpty()) return null;
+
+        if (!arrived.isTerminus() && !arrived.isReversing()) return null;
+
+        Point cameFrom = path.get(path.size() - 1).getStart();
+
+        if (cameFrom == null) return null;
+
+        for (Point sibling : this.points.values())
+        {
+            if (sibling == arrived || !arrived.isSamePlaceAs(sibling)) continue;
+
+            if (sibling.isTerminus() || sibling.isReversing()) continue;
+
+            // Reachable from the same approach, which is what makes it the copy THIS train would
+            // have driven onto rather than the one facing the other way.
+            if (this.getEdge(cameFrom.getName(), sibling.getName()) == null) continue;
+
+            if (sibling.getCurrentLocomotive() != null) continue;
+
+            return sibling;
+        }
+
+        return null;
+    }
+
+    /**
      * Moves a train off the turning copy of a square it declined to turn at (PRW-A1).
      *
      * A may-turn square is emitted as a plain copy and a turning copy per arrival side, tied by a
@@ -4070,22 +4115,11 @@ public class Layout
         // search below finds nothing and this returns having done nothing.
         if (!arrived.isTerminus() && !arrived.isReversing()) return;
 
-        Point cameFrom = path.get(path.size() - 1).getStart();
+        // The copy this train would have driven onto - asked ahead of the arrival too, by `copyItWillStandOn` (OB-314)
+        Point sibling = plainSiblingFor(arrived, path);
 
-        if (cameFrom == null) return;
-
-        for (Point sibling : this.points.values())
+        if (sibling != null)
         {
-            if (sibling == arrived || !arrived.isSamePlaceAs(sibling)) continue;
-
-            if (sibling.isTerminus() || sibling.isReversing()) continue;
-
-            // Reachable from the same approach, which is what makes it the copy THIS train would
-            // have driven onto rather than the one facing the other way.
-            if (this.getEdge(cameFrom.getName(), sibling.getName()) == null) continue;
-
-            if (sibling.getCurrentLocomotive() != null) continue;
-
             String tail = arrived.getArrivedFrom();
 
             // AND THE ROUTE, read here for the same reason as the side (TDR-B1): moving the train onto
@@ -9339,6 +9373,7 @@ public class Layout
                 this.locomotiveMilestones.get(loc).add(start);
                 this.clearedEdges.put(loc, ConcurrentHashMap.<Edge>newKeySet());
                 this.releasedEarly.put(loc, ConcurrentHashMap.<Edge>newKeySet());
+                this.runPolicies.put(loc, java.util.Optional.ofNullable(reversals));
                 this.activeLocomotives.put(loc, path);
 
                 // Counted for real now, so the claim is given up.  Kept as a union rather than a sum
@@ -10793,6 +10828,36 @@ public class Layout
                 this.control.log(e);
             }
         }
+    }
+
+    /**
+     * The copy of its destination a train on its way will stand on (OB-314), or null for a train not on its way.
+     *
+     * Adam, 2026-10-03: *"the label at bottommainb shows arrival arrive facting west, not east, as if it would be
+     * reversed. But on arrival, it gets fixed."*  A path to a square trains may turn at routinely ends on its TURNING copy,
+     * and a train that is not to turn there is stood on the plain copy only once it arrives
+     * (`standOnTheCopyItDidNotTurnOn`) - so until then everything reading the copy it holds read it the wrong way round.
+     * This asks the arrival's own question - `turnsOnArrival`, with the answer the run was dispatched with - and its own
+     * search for the plain copy, ahead of time.  Changes nothing.
+     *
+     * @param loc the train
+     * @return the Point
+     */
+    public Point copyItWillStandOn(Locomotive loc)
+    {
+        List<Edge> path = loc == null ? null : this.activeLocomotives.get(loc);
+
+        if (path == null || path.isEmpty()) return null;
+
+        Point end = path.get(path.size() - 1).getEnd();
+
+        java.util.Optional<ReversalPolicy> answer = this.runPolicies.get(loc);
+
+        if (turnsOnArrival(end, loc, answer == null ? null : answer.orElse(null))) return end;
+
+        Point plain = plainSiblingFor(end, path);
+
+        return plain != null ? plain : end;
     }
 
     /**
