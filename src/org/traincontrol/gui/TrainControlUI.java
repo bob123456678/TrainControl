@@ -5643,11 +5643,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             for (JLabel label : square.getValue()) label.setVisible(visible);
         }
 
-        // Cleared BEFORE anything can return.  This only ever walks tiles that are IN the graph, so a
-        // square that has left it - a page just excluded, track just deleted - was never visited again
-        // and kept whatever it was last told to draw.  And the early return below used to skip the
-        // clearing entirely, so switching autonomy off or deleting the setup left every badge on
-        // screen describing a setup that no longer existed.
+        // Cleared before EVERY early return.  The early returns used to skip the clearing entirely, so switching
+        // autonomy off or deleting the setup left every badge on screen describing a setup that no longer
+        // existed.  (The squares that have left the graph - a page just excluded, track just deleted - are
+        // cleared below, by clearAnnotationsExcept, since 2026-10-04.)
         if (!show || session == null || session.getGraph() == null)
         {
             getDiagramTileRegistry().clearAnnotations();
@@ -5661,7 +5660,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // that after deleting the setup, or switching autonomy off, this still had a tile for every
         // sensor and drew a plain point badge on each one.  A diagram with no autonomy on it should
         // look like a diagram.
-        if (activeDiagramConfiguration == null) return;
+        if (activeDiagramConfiguration == null)
+        {
+            getDiagramTileRegistry().clearAnnotations();
+
+            return;
+        }
 
         // EACH SQUARE SET TO ITS MARK, AND ONLY THE SQUARES THAT DROPPED OUT CLEARED (speed, 2026-10-04): clearing every
         // mark first and setting them all again - on every edit - meant the check that skips an unchanged mark never saw

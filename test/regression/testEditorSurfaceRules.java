@@ -1972,10 +1972,12 @@ public class testEditorSurfaceRules
         String grid = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutGrid.java")), StandardCharsets.UTF_8));
 
-        int asked = grid.split("LayoutEditor\\.showGrid\\(\\)", -1).length - 1;
+        // ONCE A BUILD, before the squares are made (the ruler's `coordinatesVisible` asks it too, once, for itself)
+        int asked = grid.indexOf("final Boolean gridLines = inEditor ? LayoutEditor.showGrid() : null;");
 
-        assertEquals(asked, 1, "the grid asks the grid setting " + asked + " times in its source - once a build is what it"
-            + " needs");
+        int made = grid.indexOf("new LayoutLabel(c, master, size, ui, inEditor, gridLines)");
+
+        assertTrue(asked > 0 && made > asked, "the grid does not ask the setting once, before it makes its squares");
 
         assertTrue(grid.contains("new LayoutLabel(c, master, size, ui, inEditor, gridLines)"), "the grid makes its squares"
             + " without handing them the setting, so each asks it for itself");

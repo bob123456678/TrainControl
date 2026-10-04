@@ -106,7 +106,7 @@ public class testDiagramDrawingSettings
      * Read rather than run: reaching this needs a window, a control station and a railway, and what
      * can silently break is a guard being removed, which is visible.
      *
-     * MUTATION: deleting any of the three returns, or moving the clear below them, fails this.
+     * MUTATION: deleting either return, or the clear before either, fails this.
      */
     @Test
     public void testNoArrowsWithoutASetupToDrawThemFrom() throws Exception
@@ -130,16 +130,25 @@ public class testDiagramDrawingSettings
             "nothing checks that autonomy is showing and that there is a graph, so the arrows would "
             + "be drawn for a railway with no setup on it");
 
-        int noConfiguration = layer.indexOf("if (activeDiagramConfiguration == null) return;");
+        int noConfiguration = layer.indexOf("if (activeDiagramConfiguration == null)");
 
         assertTrue(noConfiguration > 0,
             "nothing checks that a configuration is LOADED - the graph exists whenever there is "
             + "track, so without this every sensor would be described before any setup was chosen");
 
-        // The clearing comes FIRST, which is what makes turning it off take effect.
-        assertTrue(cleared < offOrNoGraph && cleared < noConfiguration,
-            "the layer is cleared after the guards return, so switching autonomy off leaves every "
-            + "arrow and badge on screen - the state this ordering was written to stop");
+        // EACH RETURN CLEARS THE LAYER FIRST, which is what makes turning it off take effect.  The clearing came before
+        // both guards; since 2026-10-04 it is inside each one, so a redraw with something to draw keeps the marks that
+        // have not changed (speed) - and a guard that returns without it leaves every arrow and badge on screen.
+        for (int guard : new int[] {offOrNoGraph, noConfiguration})
+        {
+            int returns = layer.indexOf("return;", guard);
+
+            int clears = layer.indexOf("clearAnnotations()", guard);
+
+            assertTrue(returns > guard && clears > guard && clears < returns,
+                "a guard returns before clearing the layer, so switching autonomy off leaves every arrow and badge on"
+                + " screen - the state this ordering was written to stop");
+        }
     }
 
     /**

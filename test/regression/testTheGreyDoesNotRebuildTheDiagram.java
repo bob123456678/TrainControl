@@ -524,11 +524,14 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * skips an unchanged mark never saw one, and every marked square was redrawn twice.  It sets each mark, and clears only
      * the squares that dropped out.
      *
+     * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the grey count every square redrawn
+     * - with the layer showing, the main window's own squares are among them.
+     *
      * MUTATION: clear every mark first again, and this fails.
      *
      * @throws Exception from the event thread
      */
-    @Test
+    @Test(priority = 1)
     public void testAStaticLayerThatChangesNothingRedrawsNothing() throws Exception
     {
         Counting counter = new Counting();
