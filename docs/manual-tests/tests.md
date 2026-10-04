@@ -28,12 +28,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-658](#mt-658) | 2026-10-03 | The strip's button is not skinny at lower display scaling | fixed unvalidated | Adam 2026-10-03 (OB-313) |
-| [MT-663](#mt-663) | 2026-10-03 | A train keeps its locomotive on its station as its run begins | fixed unvalidated | Adam 2026-10-03 (OB-317) |
-| [MT-664](#mt-664) | 2026-10-03 | Text Labels says Standing Locs | fixed unvalidated | Adam 2026-10-03 (MT-657's note) |
-| [MT-665](#mt-665) | 2026-10-03 | Control+M turns the pointer into a crosshair | fixed unvalidated | Adam 2026-10-03 (MT-661's note) |
 
-Everything else - 661 of 665 - needs nothing from you unless the area changes again:
-521 **fixed validated** and 140 **superseded**.
+Everything else - 664 of 665 - needs nothing from you unless the area changes again:
+524 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31812,7 +31809,7 @@ Validated on your *Works* of 2026-10-03.
 
 ### MT-663 - 2026-10-03 - A train keeps its locomotive on its station as its run begins
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (OB-317)
 
 **Written:** 2026-10-03
@@ -31837,13 +31834,17 @@ added to the starting path / kept where it is standing."*
 
 *Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
+
 ---
 
 <a id="mt-664"></a>
 
 ### MT-664 - 2026-10-03 - Text Labels says Standing Locs
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (MT-657's note)
 
 **Written:** 2026-10-03
@@ -31864,13 +31865,17 @@ Your note on MT-657: *"rename parked Locs to Standing Locs"*.
 
 *Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
+
 ---
 
 <a id="mt-665"></a>
 
 ### MT-665 - 2026-10-03 - Control+M turns the pointer into a crosshair
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (MT-661's note)
 
 **Written:** 2026-10-03
@@ -31894,5 +31899,9 @@ then *"I'd rather not have text popping up, why not just change the cursor?"*
 **Adam, 2026-10-03 (triage).** Works.
 
 *Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
 
 ---
