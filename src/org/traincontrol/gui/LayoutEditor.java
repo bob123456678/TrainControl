@@ -6505,6 +6505,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         this.resetClipboard();
         this.setSelectMode(false);
 
+        // AND THE DIAGRAM'S BORDERS PUT BACK (RSA32-C1): `resetClipboard` puts back only the palette's, so a tile picked
+        // up kept its red outline - the editor's "picked up" - and the pointer its blue one, until the pointer entered
+        // another square.  `clearSelection` puts them back only when there was a selection to let go of.
+        if (this.grid != null) this.refreshSelectionBorders();
+
         return true;
     }
 

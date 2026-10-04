@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
@@ -333,6 +334,131 @@ public class testTheEditorNamesItsShortcuts
         {
             SwingUtilities.invokeAndWait(() -> track[0].dispose());
         }
+    }
+
+    /**
+     * Escape that drops a tile picked up to move takes its red outline with it (RSA32-C1).
+     *
+     * The red outline is the track editor's "this tile is picked up".  Escape let go of the tile but put back only the
+     * palette's borders, so the outline - and the pointer's blue one - stayed on the diagram until the pointer entered
+     * another square, saying of a tile that it was picked up when it was not.
+     *
+     * A track tile clicked to pick it up, a hover so the outline is drawn, then Escape through the editor's own keys.
+     *
+     * MUTATION: let Escape put back only the palette again, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testEscapeTakesThePickedUpOutlineWithIt() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(500);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+
+            gridField.setAccessible(true);
+
+            final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+            java.lang.reflect.Field what = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
+
+            what.setAccessible(true);
+
+            // A TRACK TILE, and another square to hover over
+            org.traincontrol.gui.LayoutLabel tile = null, other = null;
+
+            for (java.awt.Component c : grid.getContainer().getComponents())
+            {
+                if (!(c instanceof org.traincontrol.gui.LayoutLabel) || ((org.traincontrol.gui.LayoutLabel) c).isSpacer()) continue;
+
+                Object component = what.get(c);
+
+                if (tile == null && component != null && !((org.traincontrol.base.LayoutDiagramComponent) component).isText())
+                {
+                    tile = (org.traincontrol.gui.LayoutLabel) c;
+                }
+                else if (tile != null && other == null && component == null)
+                {
+                    other = (org.traincontrol.gui.LayoutLabel) c;
+                }
+            }
+
+            assertTrue(tile != null && other != null, "precondition: no track tile and empty square on " + PAGE);
+
+            final org.traincontrol.gui.LayoutLabel picked = tile;
+
+            final org.traincontrol.gui.LayoutLabel hovered = other;
+
+            // PICKED UP, and the outline drawn by the next hover
+            SwingUtilities.invokeAndWait(() -> track[0].receiveClickEvent(new java.awt.event.MouseEvent(picked,
+                java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_DOWN_MASK,
+                1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1), picked));
+
+            SwingUtilities.invokeAndWait(() -> track[0].receiveMoveEvent(new java.awt.event.MouseEvent(hovered,
+                java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, 1, 1, 0, false), hovered));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(track[0].hasToolFlag() && wearsTheOutline(picked), "precondition: the tile was not picked up, or its"
+                + " outline not drawn");
+
+            // ESCAPE, through the editor's own keys
+            final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
+                java.awt.event.KeyEvent.class);
+
+            pressed.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    pressed.invoke(track[0], new java.awt.event.KeyEvent(track[0], java.awt.event.KeyEvent.KEY_PRESSED,
+                        System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ESCAPE, (char) 27));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(!track[0].hasToolFlag() && track[0].isDisplayable(), "precondition: Escape did not let go of the tile,"
+                + " or closed the editor");
+
+            for (java.awt.Component c : grid.getContainer().getComponents())
+            {
+                assertFalse(c instanceof javax.swing.JLabel && wearsTheOutline((javax.swing.JLabel) c), "after Escape let go"
+                    + " of it, a square still wears the picked-up tile's red outline (RSA32-C1)");
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /** Whether a square wears the track editor's picked-up outline (`COMPONENT_BORDER_COPIED_COLOR`, red). */
+    private static boolean wearsTheOutline(javax.swing.JLabel square)
+    {
+        javax.swing.border.Border border = square.getBorder();
+
+        return border instanceof javax.swing.border.LineBorder
+            && java.awt.Color.RED.equals(((javax.swing.border.LineBorder) border).getLineColor());
     }
 
     /**
