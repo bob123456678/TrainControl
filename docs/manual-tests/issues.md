@@ -1437,6 +1437,16 @@ can we get a spinner next to start autonomous operation on the autonomous locomo
 
 when changing topmainr1 from a station to no trains can pass, the label gets rotated from being vertical (correct) to being horizontal (wrong) and back again.
 
+### OB-311 - 2026-10-03 - show files after backup opens the Documents folder
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-03  
+
+After a backup, Show Files opened the Documents folder rather than the TC_Backup folder the backup was written to.
+
+Adam, 2026-10-03: *"show files after backup opened by documents folder, not the tc_backup folder."*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
