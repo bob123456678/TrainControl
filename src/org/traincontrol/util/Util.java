@@ -294,48 +294,51 @@ public class Util
     }
 
     /**
-     * Opens the operating system's file manager on a file, selecting it where that is possible.
+     * For tests: told what `showInFileManager` would do - "open <folder>" or "select <file>" - instead of a file manager
+     * being started on the desktop.  Null for the real one.
+     */
+    private static volatile java.util.function.Consumer<String> fileManagerForTests;
+
+    /**
+     * @param recorder what `showInFileManager` tells instead of starting a file manager, or null for the real one
+     */
+    public static void fileManagerForTests(java.util.function.Consumer<String> recorder)
+    {
+        fileManagerForTests = recorder;
+    }
+
+    /**
+     * Opens the operating system's file manager on the folder a file is in (FR-019).
      *
-     * FR-019.  Selecting the file rather than merely opening its folder matters here: the backup
-     * folder accumulates one archive per backup, so opening it plain leaves the user hunting for the
-     * one they just made.
-     *
-     * Windows gets `explorer /select,`, which is the only way to ask for that and is worth the special
-     * case because it is the platform this application is used on.  Everywhere else falls back to
-     * Desktop.open on the FOLDER - opening the archive itself would hand it to whatever is registered
-     * for .zip, which is not what "show files" means.
+     * THE FOLDER ITSELF, NOT THE FILE SELECTED IN IT (OB-311; Adam, 2026-10-03: "show files after backup opened by
+     * documents folder, not the tc_backup folder").  On Windows this asked Explorer to select the file
+     * (`explorer /select,`), and an Explorer that cannot take the path it is given - spaces, a folder it will not resolve
+     * - opens its default place instead, Documents, with nothing said.  Opened as a folder, it cannot land anywhere else;
+     * the backups are named by date, so the newest sorts last.
      *
      * Never throws.  Failing to open a file manager must not turn a successful backup into an error
      * dialog; the path is already in the log either way.
      *
-     * @param file the file to select, or null to just open the folder
+     * @param file the file whose folder to open, or null to open the folder given
      * @param folder the folder to fall back to
      */
     public static void showInFileManager(File file, String folder)
     {
         try
         {
-            if (file != null && file.isFile()
-                && System.getProperty("os.name", "").toLowerCase().contains("win"))
+            File open = file != null && file.isFile() ? file.getAbsoluteFile().getParentFile()
+                : (folder == null ? null : new File(folder).getAbsoluteFile());
+
+            if (open == null || !open.isDirectory()) return;
+
+            if (fileManagerForTests != null)
             {
-                // Not quoted, and not through a shell: this is passed as one argv element, so a path
-                // with spaces arrives intact and nothing is interpreted.  `/select,` takes the path as
-                // part of the same argument, which is why the comma has no space after it.
-                Runtime.getRuntime().exec(new String[]
-                {
-                    "explorer.exe", "/select," + file.getAbsolutePath()
-                });
+                fileManagerForTests.accept("open " + open.getAbsolutePath());
 
                 return;
             }
 
-            File open = file != null && file.isFile() ? file.getAbsoluteFile().getParentFile()
-                : (folder == null ? null : new File(folder));
-
-            if (open != null && open.isDirectory() && java.awt.Desktop.isDesktopSupported())
-            {
-                java.awt.Desktop.getDesktop().open(open);
-            }
+            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().open(open);
         }
         catch (java.io.IOException | RuntimeException e)
         {

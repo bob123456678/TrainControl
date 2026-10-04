@@ -23858,8 +23858,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Explorer is seconds - and this dialog is dismissed by then, so a frozen window with
                 // nothing on it is all the user would see.
                 //
-                // The FILE selected where the platform can, so a folder holding a year of backups
-                // opens on the one just made rather than wherever it happens to scroll to.
+                // Its FOLDER, opened as a folder (OB-311): asking Explorer to select the file opened
+                // Documents wherever Explorer could not take the path.
                 final File made0 = made[0];
 
                 new Thread(() -> Util.showInFileManager(made0, backupFolder)).start();

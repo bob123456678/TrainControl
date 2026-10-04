@@ -40,6 +40,47 @@ import org.traincontrol.util.Util;
 public class testBackupArchiveNamesTheLayout
 {
     /**
+     * Show Files, after a backup, opens the backup folder itself (OB-311).
+     *
+     * Adam, 2026-10-03: *"show files after backup opened by documents folder, not the tc_backup folder."*  On Windows it
+     * asked Explorer to select the archive (`explorer /select,`), and an Explorer that cannot take the path it is given -
+     * spaces, a folder it will not resolve - opens its default place instead, Documents, with nothing said.  The folder is
+     * opened as a folder now, which cannot land anywhere else.
+     *
+     * MUTATION: ask Explorer to select the file again, and this fails on Windows.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testShowFilesOpensTheBackupFolder() throws Exception
+    {
+        File folder = java.nio.file.Files.createTempDirectory("tc_backup OB-311 ").toFile();
+
+        File archive = new File(folder, "backup2026-10-03_12-00-00-TrainControl.zip");
+
+        java.util.List<String> asked = new java.util.ArrayList<>();
+
+        try
+        {
+            assertTrue(archive.createNewFile(), "precondition: no archive to show");
+
+            org.traincontrol.util.Util.fileManagerForTests(asked::add);
+
+            org.traincontrol.util.Util.showInFileManager(archive, folder.getAbsolutePath());
+
+            assertEquals(asked, java.util.Collections.singletonList("open " + folder.getAbsolutePath()), "Show Files did"
+                + " not open the backup folder itself (OB-311)");
+        }
+        finally
+        {
+            org.traincontrol.util.Util.fileManagerForTests(null);
+
+            archive.delete();
+            folder.delete();
+        }
+    }
+
+    /**
      * A folder handed over under a prefixed name arrives under that prefix, all the way down.
      */
     @Test
