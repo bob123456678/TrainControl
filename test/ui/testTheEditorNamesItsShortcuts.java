@@ -1003,32 +1003,41 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(over, "precondition: no square at 2,4");
 
-            SwingUtilities.invokeAndWait(() -> track[0].receiveMoveEvent(new java.awt.event.MouseEvent(over,
-                java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, 1, 1, 0, false), over));
-
-            // THE AUTONOMY EDITOR'S SQUARE, as its own hover sets it
             final java.lang.reflect.Field autonomyHover = LayoutEditor.class.getDeclaredField("autonomyHover");
 
             autonomyHover.setAccessible(true);
 
-            autonomyHover.set(track[0], over);
-
             final java.lang.reflect.Field hoveredX = LayoutEditor.class.getDeclaredField("lastHoveredX");
 
             hoveredX.setAccessible(true);
-
-            assertTrue(hoveredX.getInt(track[0]) == 2, "precondition: the hover did not set the keys' square");
 
             final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
                 boolean.class);
 
             arrive.setAccessible(true);
 
+            // THE HOVER, THE SWITCH AND THE READING IN ONE EVENT: this class shows the editor, and a real pointer resting
+            // over it moves the keys' square between events - over the palette, to -1 - which once passed this claim with
+            // the fix taken out
+            final Object[] read = new Object[4];
+
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
+                    track[0].receiveMoveEvent(new java.awt.event.MouseEvent(over, java.awt.event.MouseEvent.MOUSE_MOVED,
+                        System.currentTimeMillis(), 0, 1, 1, 0, false), over);
+
+                    // THE AUTONOMY EDITOR'S SQUARE, as its own hover sets it
+                    autonomyHover.set(track[0], over);
+
+                    read[0] = hoveredX.getInt(track[0]);
+
                     arrive.invoke(track[0], to, false);
+
+                    read[1] = hoveredX.getInt(track[0]);
+                    read[2] = autonomyHover.get(track[0]);
+                    read[3] = track[0].hoveredSquare();
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -1038,13 +1047,15 @@ public class testTheEditorNamesItsShortcuts
 
             settleTheEditor();
 
+            assertEquals(read[0], 2, "precondition: the hover did not set the keys' square");
+
             assertTrue(track[0].isDisplayable(), "precondition: the switch to " + to + " gave the window up");
 
-            assertEquals(hoveredX.getInt(track[0]), -1, "after a switch to " + to + ", the keys still act on the square"
-                + " hovered on " + PAGE + " (Adam, 2026-10-04)");
+            assertEquals(read[1], -1, "after a switch to " + to + ", the keys still act on the square hovered on " + PAGE
+                + " (Adam, 2026-10-04)");
 
-            assertTrue(autonomyHover.get(track[0]) == null && track[0].hoveredSquare() == null, "after a switch to " + to
-                + ", the autonomy editor's keys still act on the square hovered on " + PAGE + " (Adam, 2026-10-04)");
+            assertTrue(read[2] == null && read[3] == null, "after a switch to " + to + ", the autonomy editor's keys still"
+                + " act on the square hovered on " + PAGE + " (Adam, 2026-10-04)");
         }
         finally
         {
