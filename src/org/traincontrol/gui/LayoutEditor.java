@@ -2667,6 +2667,13 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         this.clearBordersFromChildren(this.grid.getContainer());
 
+        // THE SQUARE UNDER THE POINTER KEEPS ITS OUTLINE (RSA33-C1): the pass above put every square back, and nothing drew
+        // the hover again - so Escape, and every hover over a selection, left the square the pointer is over showing
+        // nothing until it entered another.  Drawn before the picked squares, so a picked square still shows picked.
+        LayoutLabel hovered = this.getLastHoveredLabel();
+
+        if (hovered != null) this.highlightLabel(hovered, COMPONENT_BORDER_HOVERED_COLOR);
+
         for (org.traincontrol.base.TileSelection.At at : this.selection.all())
         {
             LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
@@ -6496,18 +6503,31 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     {
         if (isAutonomyMode()) return autonomyPanel.putToolsDown();
 
-        boolean holding = !this.selection.isEmpty() || this.hasGroupClipboard()
+        // A BOX BEING DRAWN IS HELD TOO (RSA33-C2): left out, the release picked it - picking off - and with nothing else
+        // held Escape closed the editor with the button still down.
+        boolean boxOpen = this.boxAnchorX >= 0 && this.boxAnchorY >= 0;
+
+        boolean holding = boxOpen || !this.selection.isEmpty() || this.hasGroupClipboard()
             || this.hasToolFlag() || this.isSelectMode();
 
         if (!holding) return false;
+
+        if (boxOpen)
+        {
+            this.boxAnchorX = -1;
+            this.boxAnchorY = -1;
+            this.dragSource = null;
+            this.previewSelection.clear();
+        }
 
         this.clearSelection();
         this.resetClipboard();
         this.setSelectMode(false);
 
         // AND THE DIAGRAM'S BORDERS PUT BACK (RSA32-C1): `resetClipboard` puts back only the palette's, so a tile picked
-        // up kept its red outline - the editor's "picked up" - and the pointer its blue one, until the pointer entered
-        // another square.  `clearSelection` puts them back only when there was a selection to let go of.
+        // up kept its red outline - the editor's "picked up" - until the pointer entered another square.  `clearSelection`
+        // puts them back only when there was a selection to let go of.  The square under the pointer keeps its blue one
+        // (RSA33-C1).
         if (this.grid != null) this.refreshSelectionBorders();
 
         return true;
