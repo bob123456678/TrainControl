@@ -118,6 +118,16 @@ public class LayoutDiagramComponent
 
         this.unmodelledKeys = original.unmodelledKeys == null
             ? null : new TreeMap<>(original.unmodelledKeys);
+
+        // AND WHAT THE TILE IS TIED TO (found by RSA36, outside its rounds).  These are set when a page is read, by the
+        // address, and nothing in the editor sets them again - so a copy without them was a switch tied to no accessory:
+        // after one undo every switch and signal of the page did nothing when clicked on the main window's diagram, and
+        // the setup counted each one as unaddressed, until the page was read again.  The copy keeps the address, so it is
+        // tied to what the address was tied to.
+        this.accessory = original.accessory;
+        this.accessory2 = original.accessory2;
+        this.feedback = original.feedback;
+        this.route = original.route;
     }
     
     /**

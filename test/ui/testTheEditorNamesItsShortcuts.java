@@ -1438,6 +1438,106 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
+     * Each tile of the editor's page tied to something, by square and kind, to what it is tied to.
+     *
+     * @param editor the editor
+     * @return the ties, compared by identity
+     * @throws ReflectiveOperationException reading the editor's page
+     */
+    private static java.util.Map<String, Object> tiesOf(LayoutEditor editor) throws ReflectiveOperationException
+    {
+        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("layout");
+
+        field.setAccessible(true);
+
+        java.util.Map<String, Object> out = new java.util.TreeMap<>();
+
+        for (org.traincontrol.base.LayoutDiagramComponent c : ((LayoutDiagram) field.get(editor)).getAll())
+        {
+            String at = c.getX() + "," + c.getY();
+
+            if (c.getAccessory() != null) out.put(at + " accessory", c.getAccessory());
+            if (c.getAccessory2() != null) out.put(at + " second accessory", c.getAccessory2());
+            if (c.getFeedback() != null) out.put(at + " sensor", c.getFeedback());
+            if (c.getRoute() != null) out.put(at + " route", c.getRoute());
+        }
+
+        return out;
+    }
+
+    /** How many ties of one kind. */
+    private static long tiesOfKind(java.util.Map<String, Object> ties, String kind)
+    {
+        return ties.keySet().stream().filter(k -> k.endsWith(" " + kind)).count();
+    }
+
+    /**
+     * An undo in the track diagram editor puts the page's tiles back still tied to their switches, signals, sensors and
+     * route buttons (found by RSA36, outside its rounds).
+     *
+     * Every undo state is a copy of each tile, and the copy kept the address but not what the address was tied to when
+     * the page was read: after one Control+Z every switch and signal of the page had no accessory until the page was read
+     * again - a switch clicked on the main window's diagram did nothing, and the setup counted every one as unaddressed.
+     *
+     * A tile turned, then undone: every tie the page had before, it has after, to the same accessory, sensor or route.
+     *
+     * MUTATION: let the copy leave out the accessory, or the sensor, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testAnUndoKeepsTheTilesTiedToTheirAccessories() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final java.util.Map<String, Object> before = tiesOf(track[0]);
+
+            assertTrue(tiesOfKind(before, "accessory") > 0 && tiesOfKind(before, "sensor") > 0, "precondition: "
+                + PAGE + " has no switch or signal tied to an accessory, or no sensor tied to one: " + before.keySet());
+
+            final int[] at = new int[2];
+
+            final org.traincontrol.gui.LayoutLabel[] squares = aTrackSquareWithRoom(track[0], at);
+
+            assertNotNull(squares, "precondition: no track square on " + PAGE);
+
+            // A TILE TURNED, AND THE TURN UNDONE
+            SwingUtilities.invokeAndWait(() ->
+            {
+                track[0].rotate(squares[0]);
+                track[0].undo();
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            java.util.Map<String, Object> after = tiesOf(track[0]);
+
+            java.util.Set<String> lost = new java.util.TreeSet<>(before.keySet());
+
+            lost.removeAll(after.keySet());
+
+            assertTrue(lost.isEmpty(), "after an undo " + lost.size() + " of " + before.size() + " ties on " + PAGE
+                + " were lost - the first: " + (lost.isEmpty() ? "" : lost.iterator().next()));
+
+            assertEquals(after, before, "after an undo a tile on " + PAGE + " is tied to something else");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /**
      * A box Escape dropped and released on its own square after the pointer moved with the button down leaves that square's
      * next click alone (RSA36-C1).
      *
