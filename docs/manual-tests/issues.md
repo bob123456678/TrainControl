@@ -1556,6 +1556,16 @@ Adam, 2026-10-04: *"when there is a permanent Y tile acting as a crossing, the r
 
 Where permanent Y tiles together act as a crossing, clicking through the allowed directions does not offer the crossing's choices.  Wanted: two permanent Ys treated as one crossing - the existing crossing's choices, turned 45 degrees and spread over two squares.  Adam asks for care: a crossing decides which routes conflict.
 
+### FR-109 - 2026-10-04 - for 3.1.0: rename, delete and add pages from the layout editor
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-04 - a request for 3.1.0  
+**Filed:** 2026-10-04  
+
+Adam, 2026-10-04: *"Fr for 3.1.0- add basic layout administration, like renaming and deleting and adding pages, to the layout editor."*
+
+**For 3.1.0**, not 3.0.  Pages are managed today from the main window's Layouts menu; this brings renaming, deleting and adding pages into the layout editor itself.  Related: BCR-A2 (a page name differing from another's only in case overwrites that page's file) - the same name checks will apply to these doors.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
