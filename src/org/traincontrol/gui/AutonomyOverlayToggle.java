@@ -177,7 +177,7 @@ public class AutonomyOverlayToggle extends JPanel
         // state the rest of the window then shows - happens exactly once and in one place.
         run.setFocusable(false);
         run.setVisible(false);
-        run.setMargin(new java.awt.Insets(0, 10, 0, 10));
+        run.setMargin(BUTTON_MARGIN);
         run.addActionListener(e ->
         {
             // Fixing is not starting: this one goes to the editor, at the first thing found, exactly
@@ -428,11 +428,10 @@ public class AutonomyOverlayToggle extends JPanel
 
         java.awt.Dimension wanted = run.getPreferredSize();
 
-        // Three pixels under the checkbox's own height.  Matching it exactly still read as a large
-        // button, because a button carries a border and a checkbox does not - so the same number of
-        // pixels looks bigger on one than the other.
-        run.setPreferredSize(new java.awt.Dimension(wanted.width,
-            Math.max(show.getPreferredSize().height - 3, 14)));
+        // THE PAGE'S OWN BUTTON HEIGHT (OB-313).  It was held three pixels under the checkbox, whose font follows the
+        // display's scaling while the page's buttons are a fixed height - so on a 100% display it came out skinnier
+        // than the Edit button beside it.
+        run.setPreferredSize(new java.awt.Dimension(wanted.width, BUTTON_HEIGHT));
 
         // GREYED, NOT GONE, while the stop it already carries is being carried out (OB-143).
         //
@@ -481,8 +480,7 @@ public class AutonomyOverlayToggle extends JPanel
      *
      * So that the Load button in the banner above and the Start button that replaces it are the same
      * object as far as the eye is concerned: same font, same height, same insets, one directly above the
-     * other.  The height is the checkbox’s less three pixels, which is what stops a button looking
-     * larger than a checkbox of the same height - a button carries a border and a checkbox does not.
+     * other.  The height is the page's own buttons' (`BUTTON_HEIGHT`, OB-313).
      *
      * Re-applied whenever the text changes, since the preferred width follows the label.
      *
@@ -493,16 +491,27 @@ public class AutonomyOverlayToggle extends JPanel
         if (button == null) return;
 
         button.setFont(start != null ? start.getFont() : show.getFont());
-        button.setMargin(new java.awt.Insets(0, 10, 0, 10));
+        button.setMargin(BUTTON_MARGIN);
 
         // Cleared first: asking a component its preferred size after setting one reads back what was set
         button.setPreferredSize(null);
 
         java.awt.Dimension wanted = button.getPreferredSize();
 
-        button.setPreferredSize(new java.awt.Dimension(wanted.width,
-            Math.max(show.getPreferredSize().height - 3, 14)));
+        button.setPreferredSize(new java.awt.Dimension(wanted.width, BUTTON_HEIGHT));
     }
+
+    /**
+     * The height of the buttons on this page - the main window's Edit, Small and Large beside the strip are held to 24 by
+     * the form, at every display scaling - and so of this strip's (OB-313; Adam, 2026-10-03: "The issue was on lower
+     * display scaling monitors, where the button looked too narrow vertically").
+     */
+    static final int BUTTON_HEIGHT = 24;
+
+    /**
+     * The padding round a strip button's text: the page's buttons' two above and below, and ten at the sides (OB-313).
+     */
+    private static final java.awt.Insets BUTTON_MARGIN = new java.awt.Insets(2, 10, 2, 10);
 
     /**
      * The square the count leads to: the first thing the checks found, in their own order, which puts

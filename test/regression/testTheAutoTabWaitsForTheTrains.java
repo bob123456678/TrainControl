@@ -1045,6 +1045,102 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
+     * The strip above the track diagram holds its buttons to the page's own button height, at every display scaling
+     * (OB-313).
+     *
+     * Adam, 2026-10-03: *"The issue was on lower display scaling monitors, where the button looked too narrow
+     * vertically."*  The strip's Start (and the banner's Load) were held to its checkbox's height less three pixels, with
+     * no padding above or below.  The checkbox's font is the one that follows the display's scaling; the page's own
+     * buttons - Edit, Small, Large - are a fixed 24.  At 125% the two agreed; at 100% the checkbox is shorter and the
+     * strip's button came out a few pixels skinnier than the buttons beside it.
+     *
+     * Asked at the checkbox size a 100% display gives: the look and feel's own 12-point Segoe UI.
+     *
+     * MUTATION: hold the button to the checkbox again, and this fails.
+     *
+     * @throws Exception from the window or reflection
+     */
+    @Test
+    public void testTheStripsButtonsAreAsTallAsThePagesOwn() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final org.traincontrol.gui.AutonomyOverlayToggle strip =
+                (org.traincontrol.gui.AutonomyOverlayToggle) control(ui[0], "autonomyOverlayToggle");
+
+            assertNotNull(strip, "precondition: the track diagram has no strip");
+
+            final javax.swing.JComponent edit = control(ui[0], "editLayoutButton");
+
+            java.lang.reflect.Field showField = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("show");
+            showField.setAccessible(true);
+            final javax.swing.JCheckBox show = (javax.swing.JCheckBox) showField.get(strip);
+
+            java.lang.reflect.Field runField = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("run");
+            runField.setAccessible(true);
+            final javax.swing.JButton run = (javax.swing.JButton) runField.get(strip);
+
+            final int[] heights = new int[4];
+            final java.awt.Insets[] padding = new java.awt.Insets[2];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                // A 100% DISPLAY's checkbox
+                show.setFont(new javax.swing.plaf.FontUIResource("Segoe UI", java.awt.Font.PLAIN, 12));
+
+                strip.syncRun();
+
+                javax.swing.JButton load = new javax.swing.JButton("Load");
+                strip.styleAsRunButton(load);
+
+                heights[0] = edit.getPreferredSize().height;
+                heights[1] = run.getPreferredSize().height;
+                heights[2] = load.getPreferredSize().height;
+                heights[3] = show.getPreferredSize().height;
+
+                padding[0] = run.getMargin();
+                padding[1] = load.getMargin();
+            });
+
+            assertTrue(run.isVisible(), "precondition: the strip shows no button");
+
+            assertEquals(heights[1], heights[0], "at a 100% display's checkbox (" + heights[3] + " px) the strip's button is "
+                + heights[1] + " px tall and the page's Edit " + heights[0] + " - too narrow vertically (OB-313)");
+
+            assertEquals(heights[2], heights[0], "the banner's button, styled as the strip's, is " + heights[2] + " px tall"
+                + " and the page's Edit " + heights[0] + " (OB-313)");
+
+            assertTrue(padding[0].top >= 2 && padding[0].bottom >= 2 && padding[1].top >= 2 && padding[1].bottom >= 2,
+                "the strip's buttons have no padding above and below their text: " + padding[0] + ", " + padding[1]);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * The turning mark turns about its own centre (MT-650).
      *
      * Adam, 2026-10-02: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*
