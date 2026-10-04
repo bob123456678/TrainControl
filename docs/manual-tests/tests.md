@@ -27,9 +27,15 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-656](#mt-656) | 2026-10-03 | Show Files after a backup opens the backup folder | fixed unvalidated | Adam 2026-10-03 (OB-311) |
+| [MT-657](#mt-657) | 2026-10-03 | Parked Locs labels only parked trains; Visible Elements evenly spaced | fixed unvalidated | Adam 2026-10-03 (OB-312) |
+| [MT-658](#mt-658) | 2026-10-03 | The strip's button is not skinny at lower display scaling | fixed unvalidated | Adam 2026-10-03 (OB-313) |
+| [MT-659](#mt-659) | 2026-10-03 | On its way, a train's label faces the way it will stand | fixed unvalidated | Adam 2026-10-03 (OB-314) |
+| [MT-660](#mt-660) | 2026-10-03 | A passing train leaves a station's guard signals alone | fixed unvalidated | Adam 2026-10-03 (OB-315, OB-316) |
+| [MT-661](#mt-661) | 2026-10-03 | Control+M selects by dragging a box in the track diagram editor | fixed unvalidated | Adam 2026-10-03 (FR-107) |
+| [MT-662](#mt-662) | 2026-10-03 | Station labels are grey by default | fixed unvalidated | Adam 2026-10-03 |
 
-
-Everything else - 655 of 655 - needs nothing from you unless the area changes again:
+Everything else - 655 of 662 - needs nothing from you unless the area changes again:
 515 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31558,5 +31564,189 @@ Since your request of 2026-10-03 the locomotive database's menu also has a divid
 **Claude, 2026-10-03.**
 
 Validated on your *Works* of 2026-10-03.  The divider you asked for is in since 69c3b8f4, claimed by `regression.testARouteDrivenLocomotiveIsNotEdited.testBothDoorsRefuseWhileTheRouteRuns`.
+
+---
+
+<a id="mt-656"></a>
+
+### MT-656 - 2026-10-03 - Show Files after a backup opens the backup folder
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (OB-311)
+
+**Written:** 2026-10-03
+
+Your report of 2026-10-03: *"show files after backup opened by documents folder, not the tc_backup folder."*
+
+**Steps**
+
+1. **File > Backup TrainControl Data**, and press **Show Files** in the window that says it is done.
+
+**Expected**
+
+- The file manager opens on the **tc_backup** folder, with the backups in it - not on Documents.  The archive
+  just made is not highlighted any more (that is what sent it to Documents); the newest is the last by name.
+
+*What this is:* `regression.testBackupArchiveNamesTheLayout.testShowFilesOpensTheBackupFolder`.
+
+---
+
+<a id="mt-657"></a>
+
+### MT-657 - 2026-10-03 - Parked Locs labels only parked trains; Visible Elements evenly spaced
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (OB-312)
+
+**Written:** 2026-10-03
+
+Your report of 2026-10-03: *"When in text labels-parked locomotive, dont show labels without a locomotive. Also,
+check spacing between visible elements checkboxes"*.
+
+**Steps**
+
+1. In the autonomy editor, set **Text Labels** to **Parked Locs** and look at the stations.
+2. Look at the checkboxes under **Visible Elements**; then choose **Track Diagram** in the sidebar and look at them
+   there too.
+
+**Expected**
+
+- Step 1: only stations with a locomotive parked at them have a label; the rest show none.
+- Step 2: the checkboxes are evenly spaced in both editors.  Track Lengths and Show Unmeasured stay together, as you
+  asked on 16 September.
+
+*What this is:* `ui.testDiagramLooksRight.testParkedLocsLabelsOnlyWhereATrainIsParked`,
+`regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers.testTheCheckboxesUnderItAreEvenlySpaced`.
+
+---
+
+<a id="mt-658"></a>
+
+### MT-658 - 2026-10-03 - The strip's button is not skinny at lower display scaling
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (OB-313)
+
+**Written:** 2026-10-03
+
+Your report of 2026-10-03: *"The issue was on lower display scaling monitors, where the button looked too narrow
+vertically."*
+
+**Steps**
+
+1. On the monitor with the lower display scaling, look at **Start Autonomous Operation** on the strip above the
+   track diagram, beside the page's **Edit**, **Small** and **Large** buttons.
+
+**Expected**
+
+- It is as tall as **Edit**, with a little space above and below its text.
+
+*What this is:* `regression.testTheAutoTabWaitsForTheTrains.testTheStripsButtonsAreAsTallAsThePagesOwn`.
+
+---
+
+<a id="mt-659"></a>
+
+### MT-659 - 2026-10-03 - On its way, a train's label faces the way it will stand
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (OB-314)
+
+**Written:** 2026-10-03
+
+Your report of 2026-10-03: *"when sending et22-245 from topmainr2inter to bottommainb, the label at bottommainb
+shows arrival arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed."*
+
+**Steps**
+
+1. Send ET22-245 from TopMainR2Inter to BottomMainB (keep its direction if you are asked), and watch BottomMainB's
+   label while it runs.
+
+**Expected**
+
+- From the moment it sets off, the label shows it facing east - the way it will stand - not west.
+
+*What this is:* `regression.testTheFacingMenuIsAboutTheTrainThere.testOnItsWayTheLabelFacesTheWayItWillStand`,
+`core.testTheArrivalHonoursTheAnswer.testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy`.
+
+---
+
+<a id="mt-660"></a>
+
+### MT-660 - 2026-10-03 - A passing train leaves a station's guard signals alone
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (OB-315, OB-316)
+
+**Written:** 2026-10-03
+
+Your reports of 2026-10-03: signal 64 turned red sending ET22-245 from TopMainR2Inter to BottomMainB, and signal
+108 sending it from BottomMainB to TopMainR2 - *"the exit guard signals are applied for more than just the arrival
+station"*.  They were: every station a train passed turned its exit guard red.  The entry guard was checked too,
+as you asked - it is thrown only where a journey ends, so a passing train never touched it.
+
+**Steps**
+
+1. Send ET22-245 from TopMainR2Inter to BottomMainB and watch signal 64.
+2. Send it back from BottomMainB to TopMainR2 and watch signal 108.
+
+**Expected**
+
+- Neither turns red as the train passes.  The stations a train stops at still turn their own guards red as
+  before: in step 2, TopMainR2's signal 64 goes red while the train is on its way there.
+
+*What this is:* `regression.testBothProtectingSignalsAreThrown.testAPassingTrainLeavesAStationsGuardsAlone`.
+
+---
+
+<a id="mt-661"></a>
+
+### MT-661 - 2026-10-03 - Control+M selects by dragging a box in the track diagram editor
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (FR-107)
+
+**Written:** 2026-10-03
+
+Your request of 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram
+editor"*.
+
+**Steps**
+
+1. In the track diagram editor, right-click a square and hover over **Select by Dragging a Box**.
+2. Close the menu, press **Control+M**, and drag a box over some track.
+
+**Expected**
+
+- Step 1: its tooltip ends *(Control+M)*.
+- Step 2: the squares in the box are picked, and the editor goes back to normal afterwards.
+
+*What this is:* `ui.testTheEditorNamesItsShortcuts.testSelectByDraggingABoxHasAKey`.
+
+---
+
+<a id="mt-662"></a>
+
+### MT-662 - 2026-10-03 - Station labels are grey by default
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03
+
+**Written:** 2026-10-03
+
+Your request of 2026-10-03: *"let's make gray station labels default, but blue being the optional setting to change
+via the existing preference."*
+
+**Steps**
+
+1. Look at the station labels on the track diagram.
+2. Untick **Preferences > Autonomy > Grey Station Labels**, then tick it again.
+
+**Expected**
+
+- Step 1: they are light grey - unless you had chosen blue before, which is kept.
+- Step 2: unticked they turn blue; ticked, grey again.
+
+*What this is:* `ui.testDiagramLooksRight.testStationLabelsFollowTheColourPreference`.
 
 ---

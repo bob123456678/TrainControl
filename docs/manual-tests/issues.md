@@ -1523,6 +1523,13 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-03 | FR-107 | feature request | Control+M for Select by Dragging a Box in the track diagram editor, named on its item. | - | `MT-661` |
+| 2026-10-03 | OB-316 | bug | A train passing a station leaves its exit guard green; signal 108 was TopMainR2Inter's, passed on the way to TopMainR2. | - | `MT-660` |
+| 2026-10-03 | OB-315 | bug | A train passing a station leaves its exit guard green - only where it starts or stops counts; the entry guard was already thrown only on arrival. | - | `MT-660` |
+| 2026-10-03 | OB-314 | bug | On its way, a train's label faces the way it will stand, not the way of the turning copy its path ends on. | - | `MT-659` |
+| 2026-10-03 | OB-313 | bug | The strip's buttons are as tall as the page's own, with their padding, at every display scaling. | - | `MT-658` |
+| 2026-10-03 | OB-312 | bug | Parked Locs labels only stations a locomotive is parked at; the Visible Elements checkboxes evenly spaced. | - | `MT-657` |
+| 2026-10-03 | OB-311 | bug | Show Files after a backup opens the backup folder itself. | - | `MT-656` |
 | 2026-10-02 | OB-310 | bug | Changing what trains may do at a station leaves its label where it is, on end beside north-south track. | - | `MT-651` |
 | 2026-10-02 | OB-309 | bug | A turning mark on Start Autonomous Operation whenever anything runs. | - | `MT-650` |
 | 2026-10-02 | FR-106 | feature request | A running train's tail shows in orange over its route; the route ahead in the stations' blue, driven track in dark grey, which goes where non-atomic routes give the track back.  The colours are kept in one place, `DiagramColours`. | - | `MT-643`, `MT-644` |
