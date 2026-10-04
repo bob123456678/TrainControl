@@ -66,7 +66,40 @@
     },
     "1 - Main:20,12": {"maxTrainLength": 5},
     "1 - Main:20,13": {
+      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
+      "arrivedAlong": [
+        [
+          "TopMainR2",
+          "TopMainPost (eastbound)"
+        ],
+        [
+          "TopMainPost (eastbound)",
+          "RampDown (southbound)"
+        ],
+        [
+          "RampDown (southbound)",
+          "BottomSecondary"
+        ],
+        [
+          "BottomSecondary",
+          "TunnelPre"
+        ],
+        [
+          "TunnelPre",
+          "Tunnel (southbound)"
+        ],
+        [
+          "Tunnel (southbound)",
+          "BottomMainBCPre (eastbound)"
+        ],
+        [
+          "BottomMainBCPre (eastbound)",
+          "BottomMainB (eastbound, reverse)"
+        ]
+      ],
+      "facing": "E",
+      "arrivedFrom": "W",
       "canReverse": true
     },
     "1 - Main:21,6": {
@@ -126,41 +159,9 @@
       "autoDestination": false
     },
     "1 - Main:6,4": {
-      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "BottomMainB (eastbound)",
-          "BottomMainPost (northbound)"
-        ],
-        [
-          "BottomMainPost (northbound)",
-          "1 - Main 7,1 (westbound)"
-        ],
-        [
-          "1 - Main 7,1 (westbound)",
-          "RampUp"
-        ],
-        [
-          "RampUp",
-          "1 - Main 0,3 (southbound)"
-        ],
-        [
-          "1 - Main 0,3 (southbound)",
-          "TopMainR2Inter (southbound)"
-        ],
-        [
-          "TopMainR2Inter (southbound)",
-          "TopMainR2Pre (northbound)"
-        ],
-        [
-          "TopMainR2Pre (northbound)",
-          "TopMainR2"
-        ]
-      ],
       "homeFacing": "N",
       "facing": "N",
-      "arrivedFrom": "S",
       "priority": 1,
       "home": "2-8-4 3505 SP"
     },
