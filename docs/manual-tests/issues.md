@@ -1457,6 +1457,16 @@ With **Text Labels** set to **Parked Locs**, a label is still shown on a station
 
 Adam, 2026-10-03: *"When in text labels-parked locomotive, dont show labels without a locomotive. Also, check spacing between visible elements checkboxes"*
 
+### OB-313 - 2026-10-03 - strip above the track diagram: font size and button padding
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-03  
+
+On the strip above the track diagram, the **Start Autonomous Operation** button, the autonomy controls and the warnings use a smaller font than the rest of the window - bring them to the same size as everything else.  And check the button's padding, so it is not too skinny.
+
+Adam, 2026-10-03: *"increase font sizes for start aut9nomoud and autonomy controls, warnings above the track diagram to the same font size as everything else. Check padding of the button to not be too skinny"*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
