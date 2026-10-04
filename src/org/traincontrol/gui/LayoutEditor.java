@@ -1125,6 +1125,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         lastHoveredX = getX(label);
         lastHoveredY = getY(label);
+
+        // OVER THE GRID, or over the palette (RSA35-C1)
+        this.pointerOnGrid = lastHoveredX != -1;
      
         if (label != null)
         {
@@ -1218,9 +1221,15 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * The square of a box Escape dropped while its button was down: the click its release makes there is ignored, once,
-     * and the next press forgets it (RSA34-C2).
+     * and the next press forgets it (RSA34-C2) - as does a release off that square, which makes no click (RSA35-C2).
      */
     private LayoutLabel clickToIgnore = null;
+
+    /**
+     * Whether the pointer is over a square of this grid: set by the hover, cleared by the margin, the palette and a page
+     * switch.  What the selection's redraw asks before drawing the hover outline back (RSA35-C1).
+     */
+    private boolean pointerOnGrid = false;
 
     /**
      * The square that drags the whole selection: the top right corner of what is picked.
@@ -1528,6 +1537,10 @@ public class LayoutEditor extends PositionAwareJFrame
     public void endDrag(MouseEvent e, LayoutLabel label)
     {
         if (isAutonomyMode()) return;
+
+        // THE CLICK TO IGNORE, ONLY IF THIS RELEASE MAKES ONE (RSA35-C2): a release off the square pressed - the drag left
+        // it - ends in no click, and that square's next click, of any button, was swallowed instead
+        if (this.clickToIgnore != null && this.getLastHoveredLabel() != this.clickToIgnore) this.clickToIgnore = null;
 
         // A box closes here, and never opened a drag window - so this is checked before that branch
         // rather than inside it.
@@ -2189,7 +2202,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
     {
-        // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2)
+        // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2) - kept only by a release on its square, so this is the
+        // left click that release makes (RSA35-C2)
         if (label != null && label == this.clickToIgnore)
         {
             this.clickToIgnore = null;
@@ -2686,40 +2700,19 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The diagram square wearing the hover outline now, from the record `applyBorder` keeps (OB-157), or null.
-     *
-     * @return the square
-     */
-    private JLabel squareWearingTheHover()
-    {
-        String hover = "hl:" + COMPONENT_BORDER_HOVERED_COLOR.getRGB() + ":";
-
-        for (java.util.Map.Entry<JLabel, String> worn : this.borderState.entrySet())
-        {
-            if (worn.getValue() != null && worn.getValue().startsWith(hover)
-                && worn.getKey().getParent() == this.grid.getContainer())
-            {
-                return worn.getKey();
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Draws the outline round every picked square, and takes it off the rest.
      */
     private void refreshSelectionBorders()
     {
-        // THE SQUARE THAT WORE THE HOVER OUTLINE KEEPS IT (RSA33-C1, RSA34-C1), read before the pass puts every square
-        // back: nothing drew the hover again, so Escape, and every hover over a selection, left the square the pointer is
-        // over showing nothing until it entered another.  The square that WORE it, not the keys' square (`lastHoveredX/Y`,
-        // never forgotten): the margin, the palette and a page switch take the outline off as the pointer goes, and the
-        // keys' square drew it back where the pointer had left.  Drawn before the picked squares, so a picked square still
-        // shows picked.
-        JLabel hovered = this.squareWearingTheHover();
-
         this.clearBordersFromChildren(this.grid.getContainer());
+
+        // THE SQUARE UNDER THE POINTER KEEPS ITS OUTLINE (RSA33-C1): the pass above put every square back, and nothing
+        // drew the hover again - so Escape, and every hover over a selection, left it showing nothing until the pointer
+        // entered another.  Asked of where the pointer IS - over a square of this grid, not since gone to the margin, the
+        // palette or another page (RSA34-C1) - and not of which square last wore the blue: the square under the pointer
+        // can be wearing another outline, picked up, picked or the grip, and then none did (RSA35-C1).  Drawn before the
+        // picked squares, so a picked square still shows picked.
+        LayoutLabel hovered = this.pointerOnGrid ? this.getLastHoveredLabel() : null;
 
         if (hovered != null) this.highlightLabel(hovered, COMPONENT_BORDER_HOVERED_COLOR);
 
@@ -6294,6 +6287,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         this.lastHoveredX = -1;
         this.lastHoveredY = -1;
         this.autonomyHover = null;
+        this.pointerOnGrid = false;
 
         try
         {
@@ -6353,6 +6347,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             this.landingSelection.clear();
 
             this.toolFlag = null;
+
+            // AND THE PALETTE'S OUTLINE WITH IT (RSA35-C3), as resetClipboard puts it back: the palette showed a piece
+            // armed - the sign for what the next click does - when nothing was held
+            this.clearBordersFromChildren(this.newComponents);
 
             // The undo history goes with the page, and this one would have been a data-loss bug.
             //
@@ -7626,6 +7624,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }//GEN-LAST:event_cancelButtonActionPerformed
 
     private void ExtLayoutPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseEntered
+        // The margin: the pointer is over no square (RSA35-C1)
+        this.pointerOnGrid = false;
+
         clearBordersFromChildren(this.grid.getContainer());
     }//GEN-LAST:event_ExtLayoutPanelMouseEntered
 
