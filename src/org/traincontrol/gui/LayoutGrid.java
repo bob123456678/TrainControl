@@ -1503,19 +1503,16 @@ public class LayoutGrid
                             }
                             else
                             {
-                                // The placeholder the running diagram shows when nothing is standing
-                                // there - so the square looks like what it will look like.
-                                text.setText(LAYOUT_STATION_EMPTY);
+                                // NO LOCOMOTIVE, NO LABEL (OB-312; Adam, 2026-10-03: "When in text
+                                // labels-parked locomotive, dont show labels without a locomotive"), as
+                                // Home Locs draws nothing where there is no home.  The placeholder used
+                                // to be kept here, to show where the captions land - Station Names does
+                                // that.
+                                text.setText("");
 
-                                // Greyed HERE and nowhere else.  This placeholder says only "a caption
-                                // lands on this square", and in the editor it sits on top of the arrows
-                                // that say which way trains may arrive - which are the thing somebody
-                                // has opened the editor to look at.  Kept rather than hidden: where the
-                                // captions are is worth seeing while arranging them.
-                                //
-                                // A NAMED train is not that: it is the answer, not a placeholder, and
-                                // greying it would hide the thing the user just set.
-                                labelColour = new Color(150, 150, 150);
+                                text.setOpaque(false);
+
+                                standingTrain = false;
                             }
                             }
                         }

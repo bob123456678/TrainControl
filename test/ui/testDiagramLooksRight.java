@@ -1326,6 +1326,119 @@ public class testDiagramLooksRight
     }
 
     /**
+     * Parked Locs labels only the stations a locomotive is parked at (OB-312).
+     *
+     * Adam, 2026-10-03: *"When in text labels-parked locomotive, dont show labels without a locomotive."*  A station with
+     * none drew the empty placeholder; Home Locs already draws nothing where there is no home.
+     *
+     * MUTATION: put the placeholder back, and this fails.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testParkedLocsLabelsOnlyWhereATrainIsParked() throws Exception
+    {
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        assertNotNull(session, "precondition: no autonomy setup in the fixture layout");
+
+        // A page with a station nobody is parked at
+        String pageName = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
+        {
+            if (pageName == null && session.getLocomotiveNameAt(station) == null) pageName = station.getPage();
+        }
+
+        assertNotNull(pageName, "precondition: every captioned station has a locomotive parked at it");
+
+        final LayoutDiagram page = model.getLayout(pageName);
+
+        java.util.prefs.Preferences viewPrefs = TrainControlUI.getPrefs();
+
+        final boolean modeStored = viewPrefs.get("autonomyEditorCaptionMode", null) != null;
+
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, ui, 0);
+            editor[0].render();
+            editor[0].setAutonomyMode(session);
+        });
+
+        int was = -1;
+
+        final javax.swing.JComboBox<String>[] choice = new javax.swing.JComboBox[1];
+
+        try
+        {
+            settleTheEditor();
+
+            choice[0] = editor[0].getAutonomyPanel().getCaptionChoice();
+
+            was = choice[0].getSelectedIndex();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                choice[0].setSelectedIndex(org.traincontrol.gui.AutonomyEditorPanel.CAPTIONS_PARKED));
+
+            settleTheEditor();
+
+            final java.util.List<String> drawn = new java.util.ArrayList<>();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> collectPills(editor[0].getContentPane(), drawn));
+
+            assertFalse(drawn.isEmpty(), "precondition: the editor drew no station labels at all");
+
+            assertFalse(drawn.contains(org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY), "Parked Locs labels a station"
+                + " with no locomotive parked at it (OB-312): " + drawn);
+        }
+        finally
+        {
+            if (was >= 0)
+            {
+                final int back = was;
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> choice[0].setSelectedIndex(back));
+            }
+
+            if (!modeStored) viewPrefs.remove("autonomyEditorCaptionMode");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+        }
+    }
+
+    /** Lets an editor's posted builds and its tiles finish. */
+    private void settleTheEditor() throws Exception
+    {
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
+
+        javax.swing.SwingUtilities.invokeLater(() -> ui.whenTilesSettled(settled::countDown));
+
+        settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
+
+        Thread.sleep(500);
+
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** The text of every station label drawn as a pill under a container. */
+    private static void collectPills(java.awt.Container in, java.util.List<String> out)
+    {
+        for (java.awt.Component c : in.getComponents())
+        {
+            if (c instanceof org.traincontrol.gui.StationCaption && ((org.traincontrol.gui.StationCaption) c).isPill())
+            {
+                out.add(((org.traincontrol.gui.StationCaption) c).getText());
+            }
+
+            if (c instanceof java.awt.Container) collectPills((java.awt.Container) c, out);
+        }
+    }
+
+    /**
      * A caption may move itself. It may not move anything else.
      *
      * OB-115. Adam, after FR-028 went in: "check normal text label vertical alignment - it seems to
