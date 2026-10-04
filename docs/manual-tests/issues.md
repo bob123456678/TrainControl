@@ -1447,6 +1447,16 @@ After a backup, Show Files opened the Documents folder rather than the TC_Backup
 
 Adam, 2026-10-03: *"show files after backup opened by documents folder, not the tc_backup folder."*
 
+### OB-312 - 2026-10-03 - parked locs labels without a locomotive; visible elements checkbox spacing
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-03  
+
+With **Text Labels** set to **Parked Locs**, a label is still shown on a station with no locomotive - show only the labels that have one.  And check the spacing between the checkboxes under **Visible Elements**.
+
+Adam, 2026-10-03: *"When in text labels-parked locomotive, dont show labels without a locomotive. Also, check spacing between visible elements checkboxes"*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
