@@ -28,8 +28,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-658](#mt-658) | 2026-10-03 | The strip's button is not skinny at lower display scaling | fixed unvalidated | Adam 2026-10-03 (OB-313) |
+| [MT-663](#mt-663) | 2026-10-03 | A train keeps its locomotive on its station as its run begins | fixed unvalidated | Adam 2026-10-03 (OB-317) |
+| [MT-664](#mt-664) | 2026-10-03 | Text Labels says Standing Locs | fixed unvalidated | Adam 2026-10-03 (MT-657's note) |
+| [MT-665](#mt-665) | 2026-10-03 | Control+M turns the pointer into a crosshair | fixed unvalidated | Adam 2026-10-03 (MT-661's note) |
 
-Everything else - 661 of 662 - needs nothing from you unless the area changes again:
+Everything else - 661 of 665 - needs nothing from you unless the area changes again:
 521 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31630,6 +31633,10 @@ Works, but rename parked Locs to Standing Locs
 
 Validated on your *Works* of 2026-10-03.  Your note - rename Parked Locs to Standing Locs - is done separately, with its own test.
 
+**Claude, 2026-10-03.**
+
+Your note - rename Parked Locs to Standing Locs - is MT-664.
+
 ---
 
 <a id="mt-658"></a>
@@ -31761,6 +31768,10 @@ Works, but there is no indicator that we have entered this mode when control M i
 
 Validated on your *Works* of 2026-10-03.  Your note - nothing shows that Control+M has started picking - is done separately, with its own test.
 
+**Claude, 2026-10-03.**
+
+Your note - nothing shows that Control+M has started picking - is MT-665: the pointer turns into a crosshair, as you suggested, and no text appears.
+
 ---
 
 <a id="mt-662"></a>
@@ -31794,5 +31805,82 @@ via the existing preference."*
 **Claude, 2026-10-03.**
 
 Validated on your *Works* of 2026-10-03.
+
+---
+
+<a id="mt-663"></a>
+
+### MT-663 - 2026-10-03 - A train keeps its locomotive on its station as its run begins
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (OB-317)
+
+**Written:** 2026-10-03
+
+Your report of 2026-10-03: *"when autonomy is started and the blue path painted for a train, the locomotive
+icon disappears on the starting station.  it reappears when it reaches the next milestone ... it needs to be
+added to the starting path / kept where it is standing."*
+
+**Steps**
+
+1. Start autonomy, and watch a train's station on the track diagram as its blue path is painted and it sets off.
+
+**Expected**
+
+- The locomotive stays on its station, facing its way, with the blue path under it - while the switches are set
+  and until it moves.  Once it moves it is drawn running, as before; there is no gap before the next sensor.
+
+*What this is:* `core.testAutonomyDiagramMonitor.testAParkedTrainIsPublishedWhereItStands`,
+`core.testAutonomyDiagramMonitor.testATrainSettingItsRouteUpIsNotDrawnParked`.
+
+---
+
+<a id="mt-664"></a>
+
+### MT-664 - 2026-10-03 - Text Labels says Standing Locs
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (MT-657's note)
+
+**Written:** 2026-10-03
+
+Your note on MT-657: *"rename parked Locs to Standing Locs"*.
+
+**Steps**
+
+1. In the autonomy editor, open the **Text Labels** dropdown, and choose **Standing Locs**.
+
+**Expected**
+
+- It says **Standing Locs** where it said Parked Locs, and labels the stations a train is standing at, as before.
+
+*What this is:* `regression.testTheWordingSaysWhatIsThere.testTheTrainCaptionSaysStanding`.
+
+---
+
+<a id="mt-665"></a>
+
+### MT-665 - 2026-10-03 - Control+M turns the pointer into a crosshair
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03 (MT-661's note)
+
+**Written:** 2026-10-03
+
+Your note on MT-661: *"there is no indicator that we have entered this mode when control M is pressed"*, and
+then *"I'd rather not have text popping up, why not just change the cursor?"*
+
+**Steps**
+
+1. In the track diagram editor, point at a square and press **Control+M**.
+2. Drag a box over some track.
+
+**Expected**
+
+- Step 1: the pointer turns into a crosshair straight away - over the square you were pointing at, and across
+  the diagram.  No text appears.
+- Step 2: the squares in the box are picked, and the pointer is the usual arrow again.
+
+*What this is:* `ui.testTheEditorNamesItsShortcuts.testSelectByDraggingABoxHasAKey`.
 
 ---

@@ -1532,6 +1532,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-03 | OB-317 | bug | A train standing on the path it holds - at its start while its route is set - is drawn as its locomotive where it stands, not the dot. | - | `MT-663` |
 | 2026-10-03 | FR-107 | feature request | Control+M for Select by Dragging a Box in the track diagram editor, named on its item. | - | `MT-661` |
 | 2026-10-03 | OB-316 | bug | A train passing a station leaves its exit guard green; signal 108 was TopMainR2Inter's, passed on the way to TopMainR2. | - | `MT-660` |
 | 2026-10-03 | OB-315 | bug | A train passing a station leaves its exit guard green - only where it starts or stops counts; the entry guard was already thrown only on arrival. | - | `MT-660` |
