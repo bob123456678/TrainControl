@@ -1947,7 +1947,8 @@ of** (FR-065). Adam: *"escape closes autonomy/track editor - same as closing via
 shown as needed."* One press with nothing armed closes the window down the same path its Cancel button
 takes, unsaved-work prompt included - and that is the state an editor is in almost all the time. One
 press with something armed drops that instead: an armed tool or a half-made two-click gesture in the
-autonomy editor, and the picked squares, the copied group and the picking mode in the track editor.
+autonomy editor, and the picked squares, the copied group, a tile or palette piece picked up, the picking mode and a box
+being drawn - with the click its press would end in (RSA33-C2, RSA34-C2, RSA34-C3) - in the track editor.
 A second press then closes it.
 
 The order is what makes both requests answerable with one key. Closing outright would take a

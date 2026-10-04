@@ -1194,8 +1194,13 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     // The hover clears every border on the page, which took the picked squares and
                     // the grip with it - so moving the pointer across a selection erased the one
-                    // control that can move it.  Drawn back, after.
-                    if (!this.selection.isEmpty()) this.refreshSelectionBorders();
+                    // control that can move it.  Drawn back, after - AND A BOX BEING DRAWN, OR A LANDING,
+                    // NOT ONLY PICKED SQUARES (RSA34-C4): a box with nothing picked yet lost its outline
+                    // on each square entered.
+                    if (!this.selection.isEmpty() || this.boxAnchorX >= 0 || !this.landingSelection.isEmpty())
+                    {
+                        this.refreshSelectionBorders();
+                    }
                 });
             }
         }
@@ -1207,6 +1212,12 @@ public class LayoutEditor extends PositionAwareJFrame
      * The square a drag started on, so that a click can be told from a drag on release.
      */
     private LayoutLabel dragSource = null;
+
+    /**
+     * The square of a box Escape dropped while its button was down: the click its release makes there is ignored, once,
+     * and the next press forgets it (RSA34-C2).
+     */
+    private LayoutLabel clickToIgnore = null;
 
     /**
      * The square that drags the whole selection: the top right corner of what is picked.
@@ -1246,6 +1257,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void beginDrag(MouseEvent e, LayoutLabel label)
     {
+        // A NEW PRESS: any click Escape left to ignore was the last press's (RSA34-C2)
+        this.clickToIgnore = null;
+
         // Dragging MOVES track.  In autonomy mode the user is deciding which way trains may run, not
         // rearranging their railway, and a drag that quietly relaid the diagram would be the worst kind
         // of accident: silent, and to the thing everything else is derived from.
@@ -2171,7 +2185,15 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
-    {    
+    {
+        // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2)
+        if (label != null && label == this.clickToIgnore)
+        {
+            this.clickToIgnore = null;
+
+            return;
+        }
+
         // In autonomy mode a click configures the track rather than editing it.  Routed here rather
         // than through a second listener because LayoutLabel hard-casts its parent to this class and
         // calls this method - so this is where a click already arrives, and adding a branch is smaller
@@ -2661,16 +2683,40 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * The diagram square wearing the hover outline now, from the record `applyBorder` keeps (OB-157), or null.
+     *
+     * @return the square
+     */
+    private JLabel squareWearingTheHover()
+    {
+        String hover = "hl:" + COMPONENT_BORDER_HOVERED_COLOR.getRGB() + ":";
+
+        for (java.util.Map.Entry<JLabel, String> worn : this.borderState.entrySet())
+        {
+            if (worn.getValue() != null && worn.getValue().startsWith(hover)
+                && worn.getKey().getParent() == this.grid.getContainer())
+            {
+                return worn.getKey();
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Draws the outline round every picked square, and takes it off the rest.
      */
     private void refreshSelectionBorders()
     {
-        this.clearBordersFromChildren(this.grid.getContainer());
+        // THE SQUARE THAT WORE THE HOVER OUTLINE KEEPS IT (RSA33-C1, RSA34-C1), read before the pass puts every square
+        // back: nothing drew the hover again, so Escape, and every hover over a selection, left the square the pointer is
+        // over showing nothing until it entered another.  The square that WORE it, not the keys' square (`lastHoveredX/Y`,
+        // never forgotten): the margin, the palette and a page switch take the outline off as the pointer goes, and the
+        // keys' square drew it back where the pointer had left.  Drawn before the picked squares, so a picked square still
+        // shows picked.
+        JLabel hovered = this.squareWearingTheHover();
 
-        // THE SQUARE UNDER THE POINTER KEEPS ITS OUTLINE (RSA33-C1): the pass above put every square back, and nothing drew
-        // the hover again - so Escape, and every hover over a selection, left the square the pointer is over showing
-        // nothing until it entered another.  Drawn before the picked squares, so a picked square still shows picked.
-        LayoutLabel hovered = this.getLastHoveredLabel();
+        this.clearBordersFromChildren(this.grid.getContainer());
 
         if (hovered != null) this.highlightLabel(hovered, COMPONENT_BORDER_HOVERED_COLOR);
 
@@ -6514,6 +6560,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         if (boxOpen)
         {
+            // AND THE CLICK ITS PRESS WILL END IN, if the pointer never leaves the square (RSA34-C2): a press and release
+            // on one square are a click, which with Shift picked the square and with picking on picked the tile up
+            this.clickToIgnore = this.dragSource;
+
             this.boxAnchorX = -1;
             this.boxAnchorY = -1;
             this.dragSource = null;

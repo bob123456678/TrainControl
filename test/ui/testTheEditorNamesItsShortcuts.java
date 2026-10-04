@@ -638,6 +638,330 @@ public class testTheEditorNamesItsShortcuts
         }
     }
 
+    /**
+     * The hover outline is not drawn back on a square the pointer has left (RSA34-C1).
+     *
+     * Round 53 drew it back on the keys' square, which is never forgotten - so once the pointer had left the diagram for
+     * its margin, the next redraw of the selection put the blue back on the last square entered.  It goes back now only on
+     * the square that wore it.
+     *
+     * Three squares picked, a hover over another, the margin entered, then Escape.
+     *
+     * MUTATION: draw the hover back on the keys' square again, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheHoverIsNotDrawnBackWhereThePointerLeft() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final org.traincontrol.gui.LayoutGrid grid = gridOf(track[0]);
+
+            pick(track[0], 1, 1, 3, 1);
+
+            final org.traincontrol.gui.LayoutLabel over = grid.getValueAt(2, 4);
+
+            assertNotNull(over, "precondition: no square at 2,4");
+
+            SwingUtilities.invokeAndWait(() -> track[0].receiveMoveEvent(new java.awt.event.MouseEvent(over,
+                java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, 1, 1, 0, false), over));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(wearsTheHover(track[0], over), "precondition: the hover outline was not drawn");
+
+            // THE MARGIN, as the pointer enters it
+            java.lang.reflect.Field marginField = LayoutEditor.class.getDeclaredField("ExtLayoutPanel");
+
+            marginField.setAccessible(true);
+
+            final java.awt.Component margin = (java.awt.Component) marginField.get(track[0]);
+
+            final java.lang.reflect.Method entered = LayoutEditor.class.getDeclaredMethod("ExtLayoutPanelMouseEntered",
+                java.awt.event.MouseEvent.class);
+
+            entered.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    entered.invoke(track[0], new java.awt.event.MouseEvent(margin, java.awt.event.MouseEvent.MOUSE_ENTERED,
+                        System.currentTimeMillis(), 0, 1, 1, 0, false));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(wearsTheHover(track[0], over), "precondition: entering the margin did not take the outline off");
+
+            escape(track[0]);
+
+            for (java.awt.Component c : grid.getContainer().getComponents())
+            {
+                assertFalse(c instanceof javax.swing.JLabel && wearsTheHover(track[0], (javax.swing.JLabel) c), "after the"
+                    + " pointer left for the margin, Escape drew the hover outline back on a square it is not over (RSA34-C1)");
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /**
+     * Escape between a box's press and its release stops the click that follows too (RSA34-C2).
+     *
+     * A press that never left its square ends in a click, and Escape dropped the box but not the click: with Shift the
+     * square was picked; with Control+M's picking the tile was picked up to move.
+     *
+     * A press, Escape, the release and the click, on one square - with Shift and nothing else held, then with Control+M.
+     *
+     * MUTATION: let the click after a dropped box through again, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testEscapeStopsTheClickOfADroppedBox() throws Exception
+    {
+        for (final boolean picking : new boolean[] {false, true})
+        {
+            final LayoutEditor[] track = new LayoutEditor[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                track[0] = new LayoutEditor(page, 30, ui, 0);
+                track[0].render();
+            });
+
+            try
+            {
+                settleTheEditor();
+
+                final org.traincontrol.gui.LayoutLabel square = aTrackSquare(track[0]);
+
+                if (picking) SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(true));
+
+                final int held = picking ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK
+                    : java.awt.event.InputEvent.BUTTON1_DOWN_MASK | java.awt.event.InputEvent.SHIFT_DOWN_MASK;
+
+                SwingUtilities.invokeAndWait(() -> track[0].beginDrag(new java.awt.event.MouseEvent(square,
+                    java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), held, 1, 1, 1, false,
+                    java.awt.event.MouseEvent.BUTTON1), square));
+
+                escape(track[0]);
+
+                assertTrue(track[0].isDisplayable(), "precondition: Escape with a box pressed closed the editor");
+
+                // THE RELEASE AND THE CLICK, on the square pressed
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    track[0].endDrag(new java.awt.event.MouseEvent(square, java.awt.event.MouseEvent.MOUSE_RELEASED,
+                        System.currentTimeMillis(), held & ~java.awt.event.InputEvent.BUTTON1_DOWN_MASK, 1, 1, 1, false,
+                        java.awt.event.MouseEvent.BUTTON1), square);
+                    track[0].receiveClickEvent(new java.awt.event.MouseEvent(square, java.awt.event.MouseEvent.MOUSE_CLICKED,
+                        System.currentTimeMillis(), held & ~java.awt.event.InputEvent.BUTTON1_DOWN_MASK, 1, 1, 1, false,
+                        java.awt.event.MouseEvent.BUTTON1), square);
+                });
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+                java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
+
+                selectionField.setAccessible(true);
+
+                assertTrue(((org.traincontrol.base.TileSelection) selectionField.get(track[0])).isEmpty()
+                    && !track[0].hasToolFlag(), "the click after a box Escape dropped " + (picking ? "picked the tile up"
+                    : "picked the square") + " (" + (picking ? "Control+M" : "Shift") + ", RSA34-C2)");
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(() -> track[0].dispose());
+            }
+        }
+    }
+
+    /**
+     * A box being drawn keeps its outline when the pointer enters a square (RSA34-C4).
+     *
+     * The hover's pass put every square back and redrew the selection only when squares were picked, so the box being
+     * drawn - nothing picked yet - lost its outline on each square entered, until the next drag event.
+     *
+     * A box pressed, a square entered and one drag event, then the posted work run.
+     *
+     * MUTATION: redraw only for picked squares again, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testABoxKeepsItsOutlineAsThePointerEntersASquare() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final org.traincontrol.gui.LayoutGrid grid = gridOf(track[0]);
+
+            final org.traincontrol.gui.LayoutLabel from = grid.getValueAt(1, 4);
+            final org.traincontrol.gui.LayoutLabel to = grid.getValueAt(5, 4);
+
+            assertTrue(from != null && to != null, "precondition: no squares at 1,4 and 5,4");
+
+            SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(true));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                int held = java.awt.event.InputEvent.BUTTON1_DOWN_MASK;
+
+                track[0].beginDrag(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_PRESSED,
+                    System.currentTimeMillis(), held, 1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1), from);
+                track[0].receiveMoveEvent(new java.awt.event.MouseEvent(to, java.awt.event.MouseEvent.MOUSE_ENTERED,
+                    System.currentTimeMillis(), 0, 1, 1, 0, false), to);
+                track[0].updateDrag(new java.awt.event.MouseEvent(to, java.awt.event.MouseEvent.MOUSE_DRAGGED,
+                    System.currentTimeMillis(), held, 1, 1, 0, false), to);
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            java.lang.reflect.Field picked = LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_SELECTED_COLOR");
+
+            picked.setAccessible(true);
+
+            String outlined = "hl:" + ((java.awt.Color) picked.get(null)).getRGB() + ":";
+
+            for (int x = 1; x <= 5; x++)
+            {
+                assertTrue(keyOf(track[0], grid.getValueAt(x, 4)).startsWith(outlined), "the box being drawn lost its"
+                    + " outline at " + x + ",4 when the pointer entered a square (RSA34-C4): " + keyOf(track[0],
+                    grid.getValueAt(x, 4)));
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    private static org.traincontrol.gui.LayoutGrid gridOf(LayoutEditor editor) throws ReflectiveOperationException
+    {
+        java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+
+        gridField.setAccessible(true);
+
+        return (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
+    }
+
+    /** Picks a rectangle of squares, as a box does, and draws them picked. */
+    private static void pick(final LayoutEditor editor, final int fromX, final int fromY, final int toX, final int toY)
+        throws Exception
+    {
+        java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
+
+        selectionField.setAccessible(true);
+
+        final org.traincontrol.base.TileSelection selection = (org.traincontrol.base.TileSelection) selectionField.get(editor);
+
+        final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
+
+        redraw.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            selection.addRectangle(fromX, fromY, toX, toY);
+
+            try
+            {
+                redraw.invoke(editor);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
+    /** Escape, through the editor's own keys. */
+    private static void escape(final LayoutEditor editor) throws Exception
+    {
+        final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
+            java.awt.event.KeyEvent.class);
+
+        pressed.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                pressed.invoke(editor, new java.awt.event.KeyEvent(editor, java.awt.event.KeyEvent.KEY_PRESSED,
+                    System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ESCAPE, (char) 27));
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** A square with track on it. */
+    private static org.traincontrol.gui.LayoutLabel aTrackSquare(LayoutEditor editor) throws ReflectiveOperationException
+    {
+        java.lang.reflect.Field what = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
+
+        what.setAccessible(true);
+
+        for (java.awt.Component c : gridOf(editor).getContainer().getComponents())
+        {
+            if (c instanceof org.traincontrol.gui.LayoutLabel && !((org.traincontrol.gui.LayoutLabel) c).isSpacer())
+            {
+                Object component = what.get(c);
+
+                if (component != null && !((org.traincontrol.base.LayoutDiagramComponent) component).isText())
+                {
+                    return (org.traincontrol.gui.LayoutLabel) c;
+                }
+            }
+        }
+
+        throw new IllegalStateException("no track square on " + PAGE);
+    }
+
+    /** What the editor's own record says a square wears. */
+    private static String keyOf(LayoutEditor editor, javax.swing.JLabel square) throws ReflectiveOperationException
+    {
+        java.lang.reflect.Field stateField = LayoutEditor.class.getDeclaredField("borderState");
+
+        stateField.setAccessible(true);
+
+        Object key = ((java.util.Map<?, ?>) stateField.get(editor)).get(square);
+
+        return key == null ? "" : key.toString();
+    }
+
     /** Lets an editor just rendered finish its posted build. */
     private static void settleTheEditor() throws Exception
     {
