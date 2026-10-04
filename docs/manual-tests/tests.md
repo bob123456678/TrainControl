@@ -27,16 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-656](#mt-656) | 2026-10-03 | Show Files after a backup opens the backup folder | fixed unvalidated | Adam 2026-10-03 (OB-311) |
-| [MT-657](#mt-657) | 2026-10-03 | Parked Locs labels only parked trains; Visible Elements evenly spaced | fixed unvalidated | Adam 2026-10-03 (OB-312) |
 | [MT-658](#mt-658) | 2026-10-03 | The strip's button is not skinny at lower display scaling | fixed unvalidated | Adam 2026-10-03 (OB-313) |
-| [MT-659](#mt-659) | 2026-10-03 | On its way, a train's label faces the way it will stand | fixed unvalidated | Adam 2026-10-03 (OB-314) |
-| [MT-660](#mt-660) | 2026-10-03 | A passing train leaves a station's guard signals alone | fixed unvalidated | Adam 2026-10-03 (OB-315, OB-316) |
-| [MT-661](#mt-661) | 2026-10-03 | Control+M selects by dragging a box in the track diagram editor | fixed unvalidated | Adam 2026-10-03 (FR-107) |
-| [MT-662](#mt-662) | 2026-10-03 | Station labels are grey by default | fixed unvalidated | Adam 2026-10-03 |
 
-Everything else - 655 of 662 - needs nothing from you unless the area changes again:
-515 **fixed validated** and 140 **superseded**.
+Everything else - 661 of 662 - needs nothing from you unless the area changes again:
+521 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31571,7 +31565,7 @@ Validated on your *Works* of 2026-10-03.  The divider you asked for is in since 
 
 ### MT-656 - 2026-10-03 - Show Files after a backup opens the backup folder
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (OB-311)
 
 **Written:** 2026-10-03
@@ -31589,13 +31583,21 @@ Your report of 2026-10-03: *"show files after backup opened by documents folder,
 
 *What this is:* `regression.testBackupArchiveNamesTheLayout.testShowFilesOpensTheBackupFolder`.
 
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
+
 ---
 
 <a id="mt-657"></a>
 
 ### MT-657 - 2026-10-03 - Parked Locs labels only parked trains; Visible Elements evenly spaced
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (OB-312)
 
 **Written:** 2026-10-03
@@ -31617,6 +31619,16 @@ check spacing between visible elements checkboxes"*.
 
 *What this is:* `ui.testDiagramLooksRight.testParkedLocsLabelsOnlyWhereATrainIsParked`,
 `regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers.testTheCheckboxesUnderItAreEvenlySpaced`.
+
+**Adam, 2026-10-03 (triage).** Works, with notes.
+
+Works, but rename parked Locs to Standing Locs
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.  Your note - rename Parked Locs to Standing Locs - is done separately, with its own test.
 
 ---
 
@@ -31649,7 +31661,7 @@ vertically."*
 
 ### MT-659 - 2026-10-03 - On its way, a train's label faces the way it will stand
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (OB-314)
 
 **Written:** 2026-10-03
@@ -31669,13 +31681,21 @@ shows arrival arrive facting west, not east, as if it would be reversed. But on 
 *What this is:* `regression.testTheFacingMenuIsAboutTheTrainThere.testOnItsWayTheLabelFacesTheWayItWillStand`,
 `core.testTheArrivalHonoursTheAnswer.testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy`.
 
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
+
 ---
 
 <a id="mt-660"></a>
 
 ### MT-660 - 2026-10-03 - A passing train leaves a station's guard signals alone
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (OB-315, OB-316)
 
 **Written:** 2026-10-03
@@ -31697,13 +31717,21 @@ as you asked - it is thrown only where a journey ends, so a passing train never 
 
 *What this is:* `regression.testBothProtectingSignalsAreThrown.testAPassingTrainLeavesAStationsGuardsAlone`.
 
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
+
 ---
 
 <a id="mt-661"></a>
 
 ### MT-661 - 2026-10-03 - Control+M selects by dragging a box in the track diagram editor
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (FR-107)
 
 **Written:** 2026-10-03
@@ -31723,13 +31751,23 @@ editor"*.
 
 *What this is:* `ui.testTheEditorNamesItsShortcuts.testSelectByDraggingABoxHasAKey`.
 
+**Adam, 2026-10-03 (triage).** Works, with notes.
+
+Works, but there is no indicator that we have entered this mode when control M is pressed.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.  Your note - nothing shows that Control+M has started picking - is done separately, with its own test.
+
 ---
 
 <a id="mt-662"></a>
 
 ### MT-662 - 2026-10-03 - Station labels are grey by default
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03
 
 **Written:** 2026-10-03
@@ -31748,5 +31786,13 @@ via the existing preference."*
 - Step 2: unticked they turn blue; ticked, grey again.
 
 *What this is:* `ui.testDiagramLooksRight.testStationLabelsFollowTheColourPreference`.
+
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
 
 ---

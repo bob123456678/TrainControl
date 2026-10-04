@@ -1507,6 +1507,15 @@ Give **Select by Dragging a Box** in the track diagram editor a keyboard shortcu
 
 Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*
 
+### OB-317 - 2026-10-03 - locomotive icon disappears when autonomy is started
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-03 22:45  
+**Build:** commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when autonomy is started and the blue path painted for a train, the locomotive icon disappears on the starting station.  it reappears when it reaches the next milestone (s88/station) and appears normally thereafter until parking.  it needs to be added to the starting path / kept where it is standing.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
