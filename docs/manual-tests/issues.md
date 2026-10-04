@@ -1467,6 +1467,16 @@ On the strip above the track diagram, the **Start Autonomous Operation** button,
 
 Adam, 2026-10-03: *"increase font sizes for start aut9nomoud and autonomy controls, warnings above the track diagram to the same font size as everything else. Check padding of the button to not be too skinny"*
 
+### OB-314 - 2026-10-03 - arrival label shows the wrong facing until the train arrives
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-03  
+
+Sending ET22-245 from TopMainR2Inter to BottomMainB, the label at BottomMainB showed the train arriving facing west rather than east - as though it would arrive reversed.  Once it arrived, the label was put right.
+
+Adam, 2026-10-03: *"when sending et22-245 from topmainr2inter to bottommainb, the label at bottommainb shows arrival arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed."*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
