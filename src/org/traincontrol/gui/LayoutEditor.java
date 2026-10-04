@@ -4431,6 +4431,16 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (panel != null)
         {
+            // ASKED ONCE FOR THE PASS (speed, 2026-10-04): the grid setting is a preference, and on Windows each read is
+            // a registry round trip that nothing caches - asked twice per square, this pass made thousands of them on
+            // every square the pointer entered.  The resting border is the same for every tile of one panel, and so is
+            // its key.
+            final boolean palette = newComponents.equals(panel);
+            final boolean autonomy = isAutonomyMode();
+            final boolean grid = showGrid();
+            final Border resting = restingBorder(palette, autonomy, grid);
+            final String restingKey = "rest:" + palette + ":" + autonomy + ":" + grid;
+
             for (java.awt.Component component : panel.getComponents())
             {
                 if (component instanceof JLabel)
@@ -4451,10 +4461,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     // constructor never gives them a border; this is the door that was putting one on.
                     if (label instanceof LayoutLabel && !((LayoutLabel) label).isSpacer())
                     {
-                        boolean palette = newComponents.equals(panel);
-
-                        applyBorder(label, restingBorder(palette, isAutonomyMode()),
-                            "rest:" + palette + ":" + isAutonomyMode() + ":" + showGrid());
+                        applyBorder(label, resting, restingKey);
                     }
                 }
             }

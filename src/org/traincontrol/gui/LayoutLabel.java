@@ -1103,10 +1103,20 @@ public final class LayoutLabel extends JLabel
                 
                 if (update)
                 {
-                    this.repaint();
+                    // ITS OWN SQUARE AND THE SQUARES AROUND IT, not the whole window (speed, 2026-10-04): `parent` is the
+                    // panel the diagram sits in - the main window's tab, the editor's window - and repainting it redrew
+                    // everything on every switch, signal and sensor event of a run.  The diagram's panel draws overlapping
+                    // children together (OB-172), and the neighbourhood is redrawn as a train's icon is (MT-642).
+                    java.awt.Container around = getParent();
 
-                    // Null for a label built offscreen for an export - see isParentVisible
-                    if (this.parent != null) this.parent.repaint();
+                    if (around != null)
+                    {
+                        around.repaint(getX() - getWidth(), getY() - getHeight(), 3 * getWidth(), 3 * getHeight());
+                    }
+                    else
+                    {
+                        this.repaint();
+                    }
                     
                     if (this.component.isFeedback())
                     {

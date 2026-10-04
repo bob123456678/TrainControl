@@ -349,9 +349,193 @@ public class testTheGreyDoesNotRebuildTheDiagram
      * the subset Swing decided to act on - a component that is not on screen is exactly the case where
      * the two differ, and every component here is offscreen.
      */
+    /**
+     * A tile whose picture changes - a switch thrown, a sensor occupied - redraws its own neighbourhood, not the whole
+     * window it sits in (speed, 2026-10-04).
+     *
+     * `LayoutLabel.setImageOnEDT` repainted the tile and then its `parent` - the panel the diagram sits in, which on the
+     * main window is the whole tab and in the editor the whole window - so every switch, signal and sensor event during a
+     * run redrew everything.  The tile's own repaint already goes through the diagram's panel, which draws overlapping
+     * children together (OB-172); the squares around it are redrawn as a train's icon is (MT-642).
+     *
+     * MUTATION: repaint the parent again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testATileThatChangesRedrawsItsNeighbourhoodOnly() throws Exception
+    {
+        // A PAGE UNDER A TAB, as the main window builds one: the grid's master is what a tile calls its parent
+        final JPanel tab = new JPanel();
+
+        final JPanel host = new JPanel();
+
+        final LayoutGrid[] built = new LayoutGrid[1];
+
+        SwingUtilities.invokeAndWait(() -> built[0] = new LayoutGrid(page, TILE, host, tab, true, ui));
+
+        settle();
+
+        List<LayoutLabel> tiles = tilesOf(host);
+
+        LayoutLabel tile = null;
+
+        java.lang.reflect.Field what = LayoutLabel.class.getDeclaredField("component");
+
+        what.setAccessible(true);
+
+        // A TILE WITH A PICTURE - track, a switch, a sensor - in the diagram's own panel
+        for (LayoutLabel t : tiles)
+        {
+            Object c = what.get(t);
+
+            if (!t.isSpacer() && c != null && !((org.traincontrol.base.LayoutDiagramComponent) c).isText()
+                && t.getParent() != null && t.getParent() != host) tile = t;
+        }
+
+        assertNotNull(tile, "precondition: no tile of the page with a picture sits in a panel of its own");
+
+        java.lang.reflect.Field parentField = LayoutLabel.class.getDeclaredField("parent");
+
+        parentField.setAccessible(true);
+
+        assertSame(parentField.get(tile), tab, "precondition: the tile does not call the tab its parent, so this asks"
+            + " nothing");
+
+        final LayoutLabel changing = tile;
+
+        final java.lang.reflect.Method setImage = LayoutLabel.class.getDeclaredMethod("setImageOnEDT", boolean.class);
+
+        setImage.setAccessible(true);
+
+        Counting counter = new Counting();
+
+        RepaintManager was = RepaintManager.currentManager(HOST);
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(counter));
+
+            counter.clear();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    setImage.invoke(changing, true);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            // POSTED, so the work it posts is waited for
+            settle();
+
+            Set<JComponent> dirty = counter.seen();
+
+            assertFalse(dirty.isEmpty(), "precondition: the tile's update redrew nothing at all");
+
+            assertFalse(dirty.contains(tab), "a tile whose picture changed redrew the whole panel the diagram sits in -"
+                + " the main window's tab, or the editor's window - on every switch, signal and sensor event: " + dirty);
+        }
+        finally
+        {
+            final RepaintManager restore = was;
+
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(restore));
+
+            SwingUtilities.invokeAndWait(() -> built[0].discard());
+        }
+    }
+
+    /**
+     * A refresh of the station captions that changes nothing lays nothing out again (speed, 2026-10-04).
+     *
+     * `updateStationLabels` revalidated and repainted each caption's PARENT - the whole page - for every station, on every
+     * publish of the running diagram (up to five times a second) and at each path's start and end, changed or not.  A
+     * caption that changes revalidates and repaints itself (`JLabel.setText`, `setBackground`); one that does not needs
+     * nothing.
+     *
+     * MUTATION: revalidate the captions' parent again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testACaptionRefreshThatChangesNothingLaysNothingOut() throws Exception
+    {
+        Counting counter = new Counting();
+
+        RepaintManager was = RepaintManager.currentManager(HOST);
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(counter));
+
+            // ONCE, so the captions say what they say now; then again, with nothing changed
+            ui.updateVisiblePoints();
+
+            settle();
+
+            counter.clear();
+
+            ui.updateVisiblePoints();
+
+            settle();
+
+            Set<JComponent> captions = new LinkedHashSet<>();
+
+            for (JComponent c : counter.seen())
+            {
+                if (c instanceof org.traincontrol.gui.StationCaption) captions.add(c);
+            }
+
+            if (captions.isEmpty()) throw new SkipException("no station caption on the window's page was refreshed");
+
+            Set<java.awt.Container> pages = new LinkedHashSet<>();
+
+            for (JComponent c : captions) if (c.getParent() != null) pages.add(c.getParent());
+
+            for (java.awt.Container laidOut : counter.invalidated())
+            {
+                assertFalse(pages.contains(laidOut), "a refresh of the station captions that changed nothing laid the"
+                    + " whole page out again - on every publish of the running diagram");
+            }
+
+            for (JComponent c : counter.seen())
+            {
+                assertFalse(pages.contains(c), "a refresh of the station captions that changed nothing redrew the whole"
+                    + " page - on every publish of the running diagram");
+            }
+        }
+        finally
+        {
+            final RepaintManager restore = was;
+
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(restore));
+        }
+    }
+
     private static final class Counting extends RepaintManager
     {
         private final Set<JComponent> dirty = new LinkedHashSet<>();
+
+        /** The components asked to lay out again - for the captions' claim */
+        private final Set<java.awt.Container> invalid = new LinkedHashSet<>();
+
+        @Override
+        public synchronized void addInvalidComponent(JComponent c)
+        {
+            if (c != null) invalid.add(c);
+
+            super.addInvalidComponent(c);
+        }
+
+        synchronized Set<java.awt.Container> invalidated()
+        {
+            return new LinkedHashSet<>(invalid);
+        }
 
         @Override
         public synchronized void addDirtyRegion(JComponent c, int x, int y, int w, int h)
@@ -364,6 +548,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
         synchronized void clear()
         {
             dirty.clear();
+            invalid.clear();
         }
 
         synchronized Set<JComponent> seen()

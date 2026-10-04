@@ -1918,6 +1918,42 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * A hover's border pass asks the grid setting once, before its loop over the squares (speed, 2026-10-04).
+     *
+     * The setting is a preference, and on Windows every read of one is a registry round trip that nothing caches - 22
+     * microseconds each, measured.  The pass runs on every square the pointer enters, twice with a selection, and asked
+     * the setting twice per square: 16 ms a hover over the main page's 431 squares, nearly all of it the registry.
+     *
+     * Pinned as source: the reads cannot be counted from a test, because the preferences are a static final the JIT may
+     * fold, and a store swapped in by reflection is not seen.
+     *
+     * MUTATION: ask the setting per square again, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testAHoverAsksTheGridSettingOncePerPass() throws Exception
+    {
+        String editor = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutEditor.java")), StandardCharsets.UTF_8));
+
+        String pass = bodyOf(editor, "private void clearBordersFromChildren(JPanel panel)");
+
+        assertNotEquals(pass, "", "clearBordersFromChildren has gone, so this checked nothing");
+
+        int loop = pass.indexOf("for (java.awt.Component component : panel.getComponents())");
+
+        assertTrue(loop > 0, "the border pass no longer loops over the panel's squares, so this checked nothing");
+
+        assertFalse(pass.substring(loop).contains("showGrid()") || pass.substring(loop).contains("restingBorder("),
+            "the border pass asks the grid setting for every square - a registry read on Windows, on every square the"
+            + " pointer enters");
+
+        assertTrue(pass.substring(0, loop).contains("showGrid()"), "the border pass does not ask the grid setting before"
+            + " its loop, so the squares are not put back to it");
+    }
+
+    /**
      * What a caption says is one choice, not three switches (FR-061).
      *
      * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following

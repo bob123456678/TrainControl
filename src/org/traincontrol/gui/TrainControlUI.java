@@ -6233,9 +6233,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // to follow it or the reason goes unread: black on navy is invisible (FR-028).
                     if (pill) j.setForeground(StationCaption.onPill(j.getBackground(), j.getForeground()));
 
+                    // ITSELF ONLY (speed, 2026-10-04): a caption whose text, colour or fill changed has revalidated and
+                    // repainted itself in setText and setBackground; the page around it was laid out and redrawn here for
+                    // every station on every publish of the running diagram - up to five times a second - changed or not.
                     j.repaint();
-                    j.getParent().revalidate();
-                    j.getParent().repaint();
                 }          
             });
         }
