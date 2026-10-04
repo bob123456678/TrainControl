@@ -1394,6 +1394,287 @@ public class testTheEditorNamesItsShortcuts
         }
     }
 
+    /** A track square with a square two to its right, as {square, the one two along}, its column and row in at. */
+    private static org.traincontrol.gui.LayoutLabel[] aTrackSquareWithRoom(LayoutEditor editor, int[] at)
+        throws ReflectiveOperationException
+    {
+        final org.traincontrol.gui.LayoutGrid grid = gridOf(editor);
+
+        for (int y = 1; y < 20; y++)
+        {
+            for (int x = 1; x < 20; x++)
+            {
+                org.traincontrol.gui.LayoutLabel here = grid.getValueAt(x, y), there = grid.getValueAt(x + 2, y);
+
+                if (here != null && there != null && !here.isSpacer() && !there.isSpacer() && here.getComponent() != null
+                    && !here.getComponent().isText())
+                {
+                    at[0] = x;
+                    at[1] = y;
+
+                    return new org.traincontrol.gui.LayoutLabel[] {here, there};
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Turns the tile at a square back to an orientation with middle clicks, each on the square as it is drawn now. */
+    private static void turnBack(LayoutEditor editor, int[] at, int orientation) throws Exception
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            final org.traincontrol.gui.LayoutLabel again = gridOf(editor).getValueAt(at[0], at[1]);
+
+            if (again.getComponent() == null || again.getComponent().getOrientation() == orientation) return;
+
+            SwingUtilities.invokeAndWait(() -> editor.receiveClickEvent(new java.awt.event.MouseEvent(again,
+                java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 1, 1, 1, false,
+                java.awt.event.MouseEvent.BUTTON2), again));
+
+            for (int j = 0; j < 10; j++) SwingUtilities.invokeAndWait(() -> { });
+        }
+    }
+
+    /**
+     * A box Escape dropped and released on its own square after the pointer moved with the button down leaves that square's
+     * next click alone (RSA36-C1).
+     *
+     * AWT makes no click of a press and release with any movement between - out and back, or a pixel within the square -
+     * so the click set aside to ignore waited for that square's next click, of any button: a right-click's menu, a middle
+     * click's turn, a Shift click's pick.
+     *
+     * Control+M, a press on a track square, the pointer moved within it - and, the second time, out to a square two along
+     * and back - Escape, the release there, then a left click: the tile is picked up.  A LEFT click, because only the
+     * very next left click is ever set aside: a kept record would swallow it, as it swallowed a Shift click's pick.  Each
+     * in one event, so a real pointer resting over the shown editor cannot move the hover between the steps.
+     *
+     * MUTATION: keep the click to ignore past a release after the pointer moved, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testAPressThatMovedLeavesTheNextClickAlone() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final int[] at = new int[2];
+
+            final org.traincontrol.gui.LayoutLabel[] squares = aTrackSquareWithRoom(track[0], at);
+
+            assertNotNull(squares, "precondition: no track square with a square two to its right on " + PAGE);
+
+            // ESCAPE'S OWN ACTION: the key handler posts it, and this is all one event
+            final java.lang.reflect.Method key = LayoutEditor.class.getDeclaredMethod("escapePressed");
+
+            key.setAccessible(true);
+
+            final java.lang.reflect.Field ignoring = LayoutEditor.class.getDeclaredField("clickToIgnore");
+
+            ignoring.setAccessible(true);
+
+            for (final boolean outAndBack : new boolean[] {false, true})
+            {
+                final org.traincontrol.gui.LayoutLabel from = gridOf(track[0]).getValueAt(at[0], at[1]);
+
+                final org.traincontrol.gui.LayoutLabel to = gridOf(track[0]).getValueAt(at[0] + 2, at[1]);
+
+                final Object[] escaped = new Object[2];
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        int held = java.awt.event.InputEvent.BUTTON1_DOWN_MASK;
+
+                        track[0].setSelectMode(true);
+                        track[0].receiveMoveEvent(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_MOVED,
+                            System.currentTimeMillis(), 0, 1, 1, 0, false), from);
+                        track[0].beginDrag(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_PRESSED,
+                            System.currentTimeMillis(), held, 1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1), from);
+
+                        if (outAndBack)
+                        {
+                            track[0].receiveMoveEvent(new java.awt.event.MouseEvent(to,
+                                java.awt.event.MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 1, 1, 0, false), to);
+                            track[0].updateDrag(new java.awt.event.MouseEvent(from,
+                                java.awt.event.MouseEvent.MOUSE_DRAGGED, System.currentTimeMillis(), held, 65, 1, 0, false),
+                                from);
+                            track[0].receiveMoveEvent(new java.awt.event.MouseEvent(from,
+                                java.awt.event.MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 1, 1, 0, false),
+                                from);
+                        }
+
+                        // THE POINTER MOVED: a drag event within the square
+                        track[0].updateDrag(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_DRAGGED,
+                            System.currentTimeMillis(), held, 2, 1, 0, false), from);
+
+                        key.invoke(track[0]);
+
+                        escaped[0] = ignoring.get(track[0]);
+
+                        // THE RELEASE, on the square pressed - AWT makes no click of it
+                        track[0].endDrag(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_RELEASED,
+                            System.currentTimeMillis(), 0, 2, 1, 1, false, java.awt.event.MouseEvent.BUTTON1), from);
+
+                        // A LEFT CLICK there, which picks the tile up
+                        track[0].receiveClickEvent(new java.awt.event.MouseEvent(from,
+                            java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 2, 1, 1, false,
+                            java.awt.event.MouseEvent.BUTTON1), from);
+
+                        escaped[1] = track[0].hasToolFlag();
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+                // THE TILE LET GO OF
+                if (Boolean.TRUE.equals(escaped[1])) escape(track[0]);
+
+                assertTrue(escaped[0] == from, "precondition: Escape did not set the box's click aside" + (outAndBack
+                    ? " after the drag out and back" : ""));
+
+                assertEquals(escaped[1], Boolean.TRUE, "a left click on the square of a dropped box, released there after the"
+                    + " pointer moved" + (outAndBack ? " out and back" : " within it") + ", was swallowed - the tile was not"
+                    + " picked up (RSA36-C1)");
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /**
+     * Only the release's own left click is ignored: any other click that comes first acts, and takes the record with it
+     * (RSA36-C1).
+     *
+     * A press and release on one square with the pointer held still make a left click, and that is the click set aside.
+     * A click that is not it - another button - is not that click, so it acts, and the record goes: the left click after
+     * it acts too.
+     *
+     * Control+M, a press on a track square held still, Escape, the release there, then a middle click and a left click on
+     * that square in the same event: the tile turns, and is picked up.
+     *
+     * MUTATION: ignore a click of any button again, or keep the record past a click that was not the one set aside, and
+     * this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testOnlyTheReleasesOwnClickIsIgnored() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final int[] at = new int[2];
+
+            final org.traincontrol.gui.LayoutLabel[] squares = aTrackSquareWithRoom(track[0], at);
+
+            assertNotNull(squares, "precondition: no track square with a square two to its right on " + PAGE);
+
+            final org.traincontrol.gui.LayoutLabel from = squares[0];
+
+            final int turnedWas = from.getComponent().getOrientation();
+
+            // ESCAPE'S OWN ACTION: the key handler posts it, and this is all one event
+            final java.lang.reflect.Method key = LayoutEditor.class.getDeclaredMethod("escapePressed");
+
+            key.setAccessible(true);
+
+            final java.lang.reflect.Field ignoring = LayoutEditor.class.getDeclaredField("clickToIgnore");
+
+            ignoring.setAccessible(true);
+
+            final Object[] read = new Object[3];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    int held = java.awt.event.InputEvent.BUTTON1_DOWN_MASK;
+
+                    track[0].setSelectMode(true);
+                    track[0].receiveMoveEvent(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_MOVED,
+                        System.currentTimeMillis(), 0, 1, 1, 0, false), from);
+                    track[0].beginDrag(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_PRESSED,
+                        System.currentTimeMillis(), held, 1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1), from);
+
+                    key.invoke(track[0]);
+
+                    // THE RELEASE, on the square pressed, the pointer held still: its click is the one set aside
+                    track[0].endDrag(new java.awt.event.MouseEvent(from, java.awt.event.MouseEvent.MOUSE_RELEASED,
+                        System.currentTimeMillis(), 0, 1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1), from);
+
+                    read[0] = ignoring.get(track[0]);
+
+                    // A MIDDLE CLICK first - not that click
+                    track[0].receiveClickEvent(new java.awt.event.MouseEvent(from,
+                        java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 1, 1, 1, false,
+                        java.awt.event.MouseEvent.BUTTON2), from);
+
+                    // AND A LEFT CLICK, which picks the tile up
+                    track[0].receiveClickEvent(new java.awt.event.MouseEvent(from,
+                        java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 1, 1, 1, false,
+                        java.awt.event.MouseEvent.BUTTON1), from);
+
+                    read[2] = track[0].hasToolFlag();
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            // THE TILE LET GO OF, then read, and turned back
+            if (Boolean.TRUE.equals(read[2])) escape(track[0]);
+
+            org.traincontrol.base.LayoutDiagramComponent now = gridOf(track[0]).getValueAt(at[0], at[1]).getComponent();
+
+            boolean turned = now != null && now.getOrientation() != turnedWas;
+
+            turnBack(track[0], at, turnedWas);
+
+            assertTrue(read[0] == from, "precondition: a release held still did not keep the box's click aside");
+
+            assertTrue(turned, "a middle click after a dropped box's release was"
+                + " swallowed - only the release's own left click is set aside (RSA36-C1)");
+
+            assertEquals(read[2], Boolean.TRUE, "the left click after a middle click on a dropped box's square was swallowed"
+                + " - the record outlived the click that was not it (RSA36-C1)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
     /**
      * A palette piece held across a page switch leaves the palette's red outline behind with it (RSA35-C3).
      *

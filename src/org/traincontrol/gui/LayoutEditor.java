@@ -1221,9 +1221,17 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * The square of a box Escape dropped while its button was down: the click its release makes there is ignored, once,
-     * and the next press forgets it (RSA34-C2) - as does a release off that square, which makes no click (RSA35-C2).
+     * and the next press forgets it (RSA34-C2) - as does a release off that square, which makes no click (RSA35-C2), and a
+     * release after the pointer moved at all with the button down, which makes none either (RSA36-C1).  And only the very
+     * next click is asked: whatever it is, the record goes with it.
      */
     private LayoutLabel clickToIgnore = null;
+
+    /**
+     * Whether the pointer has moved with the button down since the last left press - after which AWT makes no click of
+     * the release (RSA36-C1).
+     */
+    private boolean pressMoved = false;
 
     /**
      * Whether the pointer is over a square of this grid: set by the hover, cleared by the margin, the palette and a page
@@ -1271,6 +1279,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         // A NEW PRESS: any click Escape left to ignore was the last press's (RSA34-C2)
         this.clickToIgnore = null;
+
+        this.pressMoved = false;
 
         // Dragging MOVES track.  In autonomy mode the user is deciding which way trains may run, not
         // rearranging their railway, and a drag that quietly relaid the diagram would be the worst kind
@@ -1487,6 +1497,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void updateDrag(MouseEvent e, LayoutLabel label)
     {
+        // A MOVE WITH THE BUTTON DOWN, after which the release makes no click (RSA36-C1)
+        this.pressMoved = true;
+
         if (isAutonomyMode()) return;
 
         // A group being dragged, shown where it would land
@@ -1539,8 +1552,12 @@ public class LayoutEditor extends PositionAwareJFrame
         if (isAutonomyMode()) return;
 
         // THE CLICK TO IGNORE, ONLY IF THIS RELEASE MAKES ONE (RSA35-C2): a release off the square pressed - the drag left
-        // it - ends in no click, and that square's next click, of any button, was swallowed instead
-        if (this.clickToIgnore != null && this.getLastHoveredLabel() != this.clickToIgnore) this.clickToIgnore = null;
+        // it - ends in no click, and that square's next click, of any button, was swallowed instead.  Nor does a release
+        // after the pointer moved at all with the button down, out and back or a pixel within the square (RSA36-C1).
+        if (this.clickToIgnore != null && (this.pressMoved || this.getLastHoveredLabel() != this.clickToIgnore))
+        {
+            this.clickToIgnore = null;
+        }
 
         // A box closes here, and never opened a drag window - so this is checked before that branch
         // rather than inside it.
@@ -2202,14 +2219,14 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
     {
-        // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2) - kept only by a release on its square, so this is the
-        // left click that release makes (RSA35-C2)
-        if (label != null && label == this.clickToIgnore)
-        {
-            this.clickToIgnore = null;
+        // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2) - kept only by a release on its square with the pointer
+        // held still, so this is the left click that release makes (RSA35-C2, RSA36-C1).  Only the very next click is
+        // asked, and only a left click is ignored: any other click finds the record gone.
+        LayoutLabel ignore = this.clickToIgnore;
 
-            return;
-        }
+        this.clickToIgnore = null;
+
+        if (ignore != null && label == ignore && e != null && e.getButton() == MouseEvent.BUTTON1) return;
 
         // In autonomy mode a click configures the track rather than editing it.  Routed here rather
         // than through a second listener because LayoutLabel hard-casts its parent to this class and
