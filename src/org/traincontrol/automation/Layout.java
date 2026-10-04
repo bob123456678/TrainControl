@@ -9477,8 +9477,8 @@ public class Layout
         {
             Point current = path.get(i).getEnd();
 
-            // Recorded before a turn there, and so not again at the end of this step (RSA30-C4)
-            boolean reachedBeforeTheTurn = false;
+            // Recorded when its sensor answers, and so not again at the end of this step (RSA30-C4)
+            boolean recordedAlready = false;
             
             if (i != path.size() - 1)
             {
@@ -9534,6 +9534,18 @@ public class Layout
                         }).start();
                     }
                 }    
+
+                // REACHED, AND RECORDED AS SOON AS ITS SENSOR ANSWERS (RSA30-C4) - before a turn here, which is where it
+                // mattered.  Recorded only at the end of the step, a train stopped to turn here was placed a square back for
+                // the length of the turn, and the track diagram drew it standing there.
+                synchronized (this.activeLocomotives)
+                {
+                    List<Point> reached = this.locomotiveMilestones.get(loc);
+
+                    if (reached != null) reached.add(current);
+                }
+
+                recordedAlready = true;
                 
                 // Reverse the locomotive if this is a reversing station - IF THE CALLER SAYS SO.
                 //
@@ -9586,18 +9598,6 @@ public class Layout
                 if (isCurrentLayout()
                     && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))
                 {
-                    // REACHED, AND SAID SO BEFORE THE TURN (RSA30-C4): its sensor has answered.  Recorded only after the
-                    // turn, the railway placed the train a square back for the length of it, and the track diagram drew it
-                    // standing there.
-                    synchronized (this.activeLocomotives)
-                    {
-                        List<Point> reached = this.locomotiveMilestones.get(loc);
-
-                        if (reached != null) reached.add(current);
-                    }
-
-                    reachedBeforeTheTurn = true;
-
                     loc.setSpeed(0).waitForSpeedBelow(1);
 
                     this.control.logf(
@@ -9877,7 +9877,7 @@ public class Layout
                 List<Point> milestones = this.locomotiveMilestones.get(loc);
 
                 // Null if the locomotive was deleted from the database while this path was running
-                if (milestones != null && !reachedBeforeTheTurn)
+                if (milestones != null && !recordedAlready)
                 {
                     milestones.add(current);
                 }
