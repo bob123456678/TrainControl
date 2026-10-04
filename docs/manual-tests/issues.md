@@ -1536,6 +1536,26 @@ Adam, 2026-10-04: *"There seems to be a bug with autonomy config management. If 
 
 An autonomy configuration whose setup cannot be used cannot be selected in the list of configurations, so it cannot then be deleted.
 
+### FR-108 - 2026-10-04 - a bulk tool to allow every path in one go, with a warning
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-04  
+
+Adam, 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove any red arrows in one go. With warning."*
+
+A Bulk Tools item in the autonomy editor that opens every restricted direction - removing every red arrow - in one step, after a warning that says what it will undo.
+
+### OB-320 - 2026-10-04 - two permanent Ys acting as a crossing: the wrong directions offered when cycling
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-04  
+
+Adam, 2026-10-04: *"when there is a permanent Y tile acting as a crossing, the right options aren't offered when you cycle through the allowed directions. Lets support two permanent Ys as a crossing, if possible, same as the current crossing by effectively rotated 45 degrees, just connecting differently and spread across 2 tiles. Be careful with this."*
+
+Where permanent Y tiles together act as a crossing, clicking through the allowed directions does not offer the crossing's choices.  Wanted: two permanent Ys treated as one crossing - the existing crossing's choices, turned 45 degrees and spread over two squares.  Adam asks for care: a crossing decides which routes conflict.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
