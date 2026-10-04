@@ -5648,9 +5648,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // and kept whatever it was last told to draw.  And the early return below used to skip the
         // clearing entirely, so switching autonomy off or deleting the setup left every badge on
         // screen describing a setup that no longer existed.
-        getDiagramTileRegistry().clearAnnotations();
+        if (!show || session == null || session.getGraph() == null)
+        {
+            getDiagramTileRegistry().clearAnnotations();
 
-        if (!show || session == null || session.getGraph() == null) return;
+            return;
+        }
 
         // Nothing to describe until a configuration is LOADED.
         //
@@ -5660,10 +5663,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // look like a diagram.
         if (activeDiagramConfiguration == null) return;
 
-        for (org.traincontrol.automationui.TileGraph.TileKey tile : session.getGraph().getTiles().keySet())
+        // EACH SQUARE SET TO ITS MARK, AND ONLY THE SQUARES THAT DROPPED OUT CLEARED (speed, 2026-10-04): clearing every
+        // mark first and setting them all again - on every edit - meant the check that skips an unchanged mark never saw
+        // one, and every marked square was redrawn twice.
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> marked = session.getGraph().getTiles().keySet();
+
+        for (org.traincontrol.automationui.TileGraph.TileKey tile : marked)
         {
             getDiagramTileRegistry().annotate(tile, session.staticAnnotationFor(tile));
         }
+
+        getDiagramTileRegistry().clearAnnotationsExcept(marked);
     }
 
     /**

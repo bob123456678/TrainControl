@@ -1170,6 +1170,11 @@ public class LayoutGrid
         maxHeight = fullHeight;
                
         grid = new LayoutLabel[width][height];
+
+        // ASKED ONCE A BUILD, AND HANDED TO EACH SQUARE (speed, 2026-10-04): the editor's grid setting is a preference, a
+        // Windows registry read of 22 microseconds that nothing caches, and every square asked it as it was made - one read
+        // per square on every redraw of the editor's diagram.
+        final Boolean gridLines = inEditor ? LayoutEditor.showGrid() : null;
                        
         for(int y = 0; y < height; y++)
         {
@@ -1213,7 +1218,7 @@ public class LayoutGrid
                     hidesCaptions ? null : (ui == null ? null : ui.autonomyCaptionAt(square));
 
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
-                grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor);
+                grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor, gridLines);
 
                 // The square it is drawing, so it can ask whether a train is lying across it.  The
                 // key is already built a few lines above for the caption lookup.

@@ -962,6 +962,215 @@ public class testTheEditorNamesItsShortcuts
         return key == null ? "" : key.toString();
     }
 
+    /**
+     * A page switch forgets the square under the pointer (Adam, 2026-10-04: *"on page switch - yes, clear the active
+     * square"*).
+     *
+     * Delete and the other keys that act on the square under the pointer asked the old page's coordinates on the new page
+     * until the pointer moved: the track editor's `lastHoveredX/Y`, and the autonomy editor's `autonomyHover`, whose
+     * square is read against the page now showing.
+     *
+     * A square hovered, the autonomy editor's square set as its hover sets it, then a switch to another page.
+     *
+     * MUTATION: let a switch keep either square, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testAPageSwitchForgetsTheSquareUnderThePointer() throws Exception
+    {
+        String other = null;
+
+        for (String name : model.getLayoutList()) if (other == null && !PAGE.equals(name)) other = name;
+
+        if (other == null) throw new SkipException("the snapshot has one page only");
+
+        final String to = other;
+
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final org.traincontrol.gui.LayoutLabel over = gridOf(track[0]).getValueAt(2, 4);
+
+            assertNotNull(over, "precondition: no square at 2,4");
+
+            SwingUtilities.invokeAndWait(() -> track[0].receiveMoveEvent(new java.awt.event.MouseEvent(over,
+                java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, 1, 1, 0, false), over));
+
+            // THE AUTONOMY EDITOR'S SQUARE, as its own hover sets it
+            final java.lang.reflect.Field autonomyHover = LayoutEditor.class.getDeclaredField("autonomyHover");
+
+            autonomyHover.setAccessible(true);
+
+            autonomyHover.set(track[0], over);
+
+            final java.lang.reflect.Field hoveredX = LayoutEditor.class.getDeclaredField("lastHoveredX");
+
+            hoveredX.setAccessible(true);
+
+            assertTrue(hoveredX.getInt(track[0]) == 2, "precondition: the hover did not set the keys' square");
+
+            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
+                boolean.class);
+
+            arrive.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    arrive.invoke(track[0], to, false);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settleTheEditor();
+
+            assertTrue(track[0].isDisplayable(), "precondition: the switch to " + to + " gave the window up");
+
+            assertEquals(hoveredX.getInt(track[0]), -1, "after a switch to " + to + ", the keys still act on the square"
+                + " hovered on " + PAGE + " (Adam, 2026-10-04)");
+
+            assertTrue(autonomyHover.get(track[0]) == null && track[0].hoveredSquare() == null, "after a switch to " + to
+                + ", the autonomy editor's keys still act on the square hovered on " + PAGE + " (Adam, 2026-10-04)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /**
+     * Two requests to redraw the diagram, made before the first is drawn, draw it once (speed, 2026-10-04).
+     *
+     * A request made while a redraw was pending queued another one after it, though the pending one had not yet read
+     * anything and so would draw the latest state anyway.  Opening autonomy mode made exactly this pair - the remembered
+     * caption mode's redraw, then the one meant to follow it - and drew the grid three times instead of twice.
+     *
+     * MUTATION: queue a second redraw for a request made before the first has started, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTwoRedrawRequestsBeforeTheFirstIsDrawnDrawOnce() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshGrid");
+
+            redraw.setAccessible(true);
+
+            int before = org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    redraw.invoke(track[0]);
+                    redraw.invoke(track[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settleTheEditor();
+
+            int built = org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get() - before;
+
+            // THE SQUARES A DRAW MAKES - the panel holds captions and overlays besides, which a draw does not count
+            int perDraw = 0;
+
+            for (java.awt.Component c : gridOf(track[0]).getContainer().getComponents())
+            {
+                if (c instanceof org.traincontrol.gui.LayoutLabel) perDraw++;
+            }
+
+            assertTrue(perDraw > 0 && built > 0, "precondition: nothing was drawn");
+
+            assertEquals(built, perDraw, "two requests made before the first redraw had started drew the diagram "
+                + ((double) built / perDraw) + " times (" + built + " squares at " + perDraw + " a draw)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /**
+     * A click that changes a switch's directions refreshes the autonomy editor once (speed, 2026-10-04).
+     *
+     * The switch's own step refreshed - a whole setup check, the list, the strip - and the click refreshed again straight
+     * after it, as it does for every click.
+     *
+     * A panel with a counting listener, and one click on a square with more than one route.
+     *
+     * MUTATION: let the switch's step refresh as well again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAClickOnASwitchRefreshesOnce() throws Exception
+    {
+        TileKey branching = null;
+
+        for (TileKey tile : session.getGraph().getTiles().keySet())
+        {
+            if (branching == null && PAGE.equals(tile.getPage()) && session.getRoutes(tile).size() > 1) branching = tile;
+        }
+
+        if (branching == null) throw new SkipException("no square with more than one route on " + PAGE);
+
+        final TileKey square = branching;
+
+        final org.traincontrol.base.LayoutDiagramComponent what = session.getGraph().getTiles().get(square);
+
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        final int[] refreshed = {0};
+
+        final AutonomyEditorPanel[] panel = new AutonomyEditorPanel[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> panel[0] = new AutonomyEditorPanel(session, PAGE, () -> refreshed[0]++));
+
+            refreshed[0] = 0;
+
+            SwingUtilities.invokeAndWait(() -> panel[0].tileClicked(square, what, false));
+
+            assertEquals(refreshed[0], 1, "one click on " + square + ", a switch, refreshed the autonomy editor "
+                + refreshed[0] + " times - each a whole setup check");
+        }
+        finally
+        {
+            session.restoreSetup(asFound);
+        }
+    }
+
     /** Lets an editor just rendered finish its posted build. */
     private static void settleTheEditor() throws Exception
     {

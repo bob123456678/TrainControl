@@ -689,6 +689,9 @@ public class LayoutEditor extends PositionAwareJFrame
     private final ReentrantLock lock = new ReentrantLock();
     private boolean isRunning = false;
     private boolean needsRerun = false;
+
+    /** Whether the pending redraw has begun reading; a request before that is part of it (speed, 2026-10-04) */
+    private boolean redrawStarted = false;
     
     // Reference to the right click menu
     LayoutEditorRightclickMenu popup;
@@ -5256,18 +5259,31 @@ public class LayoutEditor extends PositionAwareJFrame
             lock.lock();
             try
             {
-                // If the method is already running, set the rerun flag and return
+                // If the method is already running, set the rerun flag and return - ONLY ONCE IT HAS BEGUN
+                // (speed, 2026-10-04): a pending redraw that has not started reads the state as it then is, so a
+                // second request before it is part of it, and queueing another drew the same diagram twice.
                 if (isRunning)
                 {
-                    needsRerun = true;
+                    if (redrawStarted) needsRerun = true;
                     return;
                 }
 
                 isRunning = true; // Mark as running
+                redrawStarted = false;
 
                 // Execute the method logic
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
+                    lock.lock();
+                    try
+                    {
+                        redrawStarted = true;
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
+
                     try
                     {
                         drawGrid();
@@ -6271,6 +6287,13 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // at a closed window put it back together out of sight and greyed Edit and Edit Autonomy Paths for the session.
         // The close has already given them back; the switch has nowhere to arrive.
         if (!isDisplayable()) return;
+
+        // THE SQUARE UNDER THE POINTER IS FORGOTTEN (Adam, 2026-10-04: "on page switch - yes, clear the active square"):
+        // Delete and the other keys that act on it asked the old page's coordinates on the new page until the pointer
+        // moved - the track editor's, and the autonomy editor's, whose square is read against the page now showing.
+        this.lastHoveredX = -1;
+        this.lastHoveredY = -1;
+        this.autonomyHover = null;
 
         try
         {

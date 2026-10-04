@@ -7739,7 +7739,8 @@ public class AutonomyEditorPanel extends JPanel
 
         showRestrictionsIfHidden();
 
-        refresh();
+        // NOT REFRESHED HERE (speed, 2026-10-04): the click that brought this here refreshes straight after, whatever
+        // happens - and a refresh is a whole setup check, the list and the strip.
     }
 
     /**

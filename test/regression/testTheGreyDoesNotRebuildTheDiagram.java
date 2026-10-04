@@ -517,6 +517,71 @@ public class testTheGreyDoesNotRebuildTheDiagram
         }
     }
 
+    /**
+     * Refreshing the static autonomy layer with nothing changed redraws no square (speed, 2026-10-04).
+     *
+     * `showStaticAutonomyLayer` cleared every square's mark and then set them all again - on every edit - so the check that
+     * skips an unchanged mark never saw one, and every marked square was redrawn twice.  It sets each mark, and clears only
+     * the squares that dropped out.
+     *
+     * MUTATION: clear every mark first again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAStaticLayerThatChangesNothingRedrawsNothing() throws Exception
+    {
+        Counting counter = new Counting();
+
+        RepaintManager was = RepaintManager.currentManager(HOST);
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(counter));
+
+            SwingUtilities.invokeAndWait(() -> ui.showStaticAutonomyLayer(true));
+
+            settle();
+
+            // PRECONDITION: squares of the window's page wear a mark, so a clear would redraw them
+            java.lang.reflect.Field tilesField = org.traincontrol.gui.DiagramTileRegistry.class.getDeclaredField("tiles");
+
+            tilesField.setAccessible(true);
+
+            java.lang.reflect.Field markField = LayoutLabel.class.getDeclaredField("autonomyAnnotation");
+
+            markField.setAccessible(true);
+
+            int marked = 0;
+
+            for (Object labels : ((java.util.Map<?, ?>) tilesField.get(ui.getDiagramTileRegistry())).values())
+            {
+                for (Object label : (java.util.Collection<?>) labels) if (markField.get(label) != null) marked++;
+            }
+
+            if (marked == 0) throw new SkipException("no square of the window's page wears a mark of the static layer");
+
+            counter.clear();
+
+            SwingUtilities.invokeAndWait(() -> ui.showStaticAutonomyLayer(true));
+
+            settle();
+
+            List<JComponent> redrawn = new ArrayList<>();
+
+            for (JComponent c : counter.seen()) if (c instanceof LayoutLabel) redrawn.add(c);
+
+            assertTrue(redrawn.isEmpty(), "the static layer, refreshed with nothing changed, redrew " + redrawn.size()
+                + " of the " + marked + " marked squares - each cleared and set again");
+        }
+        finally
+        {
+            final RepaintManager restore = was;
+
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(restore));
+        }
+    }
+
     private static final class Counting extends RepaintManager
     {
         private final Set<JComponent> dirty = new LinkedHashSet<>();

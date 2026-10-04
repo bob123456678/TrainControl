@@ -1954,6 +1954,37 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * A redraw of the editor's diagram asks the grid setting once, not once per square (speed, 2026-10-04).
+     *
+     * Each square read the setting - a Windows registry read, 22 microseconds, nothing caching it - as it was made, so
+     * every redraw of the editor's diagram (every edit, every Undo) made one read per square.  `LayoutGrid` reads it once a
+     * build and hands it to each square.
+     *
+     * Pinned as source, as the hover's pass is (`testAHoverAsksTheGridSettingOncePerPass`).
+     *
+     * MUTATION: let the grid make its squares without the setting again, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testARedrawAsksTheGridSettingOnce() throws Exception
+    {
+        String grid = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutGrid.java")), StandardCharsets.UTF_8));
+
+        int asked = grid.split("LayoutEditor\\.showGrid\\(\\)", -1).length - 1;
+
+        assertEquals(asked, 1, "the grid asks the grid setting " + asked + " times in its source - once a build is what it"
+            + " needs");
+
+        assertTrue(grid.contains("new LayoutLabel(c, master, size, ui, inEditor, gridLines)"), "the grid makes its squares"
+            + " without handing them the setting, so each asks it for itself");
+
+        assertFalse(grid.contains("new LayoutLabel(c, master, size, ui, inEditor)"), "the grid still makes a square that"
+            + " asks the setting for itself");
+    }
+
+    /**
      * What a caption says is one choice, not three switches (FR-061).
      *
      * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following

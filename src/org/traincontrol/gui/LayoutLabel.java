@@ -162,6 +162,22 @@ public final class LayoutLabel extends JLabel
 
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
+        this(c, parent, size, tcUI, edit, null);
+    }
+
+    /**
+     * A square, given the editor's grid setting by the grid that makes it, asked once a build (speed, 2026-10-04).
+     *
+     * @param c the component on the square, or null
+     * @param parent the grid's master
+     * @param size the square's size
+     * @param tcUI the main window
+     * @param edit whether the square is in an editor
+     * @param gridLines the editor's grid setting, or null to ask it
+     */
+    public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit,
+        Boolean gridLines)
+    {
         this.component = c;
         this.size = size;
         this.parent = parent;
@@ -232,7 +248,7 @@ public final class LayoutLabel extends JLabel
             // the pointer no longer pushes the diagram along in front of it.
             this.setBorder(LayoutEditor.restingBorder(false,
                 parent instanceof LayoutEditor && ((LayoutEditor) parent).isAutonomyMode(),
-                LayoutEditor.showGrid()));
+                gridLines != null ? gridLines : LayoutEditor.showGrid()));
         }
         
         // Every square on the MAIN window reports when the pointer is over it.

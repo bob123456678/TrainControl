@@ -227,6 +227,27 @@ public class DiagramTileRegistry
     }
 
     /**
+     * Blanks every square showing an annotation that is not among those kept, and forgets it (speed, 2026-10-04).
+     *
+     * What `clearAnnotations` is for - the square that has LEFT the setup, which a redraw walking the graph cannot reach -
+     * without blanking the squares the redraw sets again: those keep their mark, so the check that skips an unchanged
+     * one sees it.
+     *
+     * @param keep the squares the redraw sets
+     */
+    public void clearAnnotationsExcept(java.util.Set<TileKey> keep)
+    {
+        for (TileKey key : new java.util.ArrayList<>(lastAnnotated.keySet()))
+        {
+            if (keep.contains(key)) continue;
+
+            annotate(key, null);
+
+            lastAnnotated.remove(key);
+        }
+    }
+
+    /**
      * Blanks every square that is currently showing an annotation, and forgets it.
      *
      * Narrower than reset: the label registry and the monitoring state are left alone, because this
