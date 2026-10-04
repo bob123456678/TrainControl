@@ -250,8 +250,10 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     }
 
     /**
-     * A change to the setup inside the event is checked: a train taken off a station in the setup itself, with nothing
-     * re-derived, and the train's warning goes.
+     * A change to the setup inside the event is checked: a caption drawn on a square that has a label of its own, by
+     * the setup's own write, which re-derives nothing - and the caption is said to be covered.
+     *
+     * The setup alone: a train taken off it would change where the trains stand as well, which is read apart from it.
      *
      * MUTATION: leave the setup out of what the check is said to read, and this fails.
      *
@@ -260,50 +262,54 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     @Test
     public void testASetupChangeInTheEventIsChecked() throws Exception
     {
+        Map<TileKey, TileKey> captions = session.getStore().getCaptions();
+
+        assertFalse(captions.isEmpty(), "precondition: the frozen railway has no captions, so no station to caption");
+
+        final TileKey station = captions.values().iterator().next();
+
+        TileKey labelled = null;
+
+        for (LayoutDiagram page : scenario.getPages())
+        {
+            for (LayoutDiagramComponent c : page.getAll())
+            {
+                TileKey at = new TileKey(page.getName(), c.getX(), c.getY());
+
+                if (labelled == null && c.getLabel() != null && !c.getLabel().trim().isEmpty() && !captions.containsKey(at))
+                {
+                    labelled = at;
+                }
+            }
+        }
+
+        assertNotNull(labelled, "precondition: no labelled square without a caption on the frozen railway");
+
+        final TileKey on = labelled;
+
         org.json.JSONObject asFound = session.snapshotSetup();
 
         try
         {
-            session.setTrainLengthSource(name -> 0);
-
             List<List<AutonomyChecks.Finding>> got = inOneEvent(() ->
             {
                 List<List<AutonomyChecks.Finding>> out = new ArrayList<>();
 
                 out.add(session.check());
 
-                // THE SETUP ITSELF, as a write that re-derives nothing does it
-                org.json.JSONObject points = session.getStore().getConfiguration(
-                    session.getStore().getActiveConfiguration()).getJSONObject("points");
-
-                for (String id : points.keySet())
-                {
-                    if (points.getJSONObject(id).has("loc"))
-                    {
-                        points.getJSONObject(id).remove("loc");
-
-                        break;
-                    }
-                }
+                session.getStore().setCaption(on, station);
 
                 out.add(session.check());
 
                 return out;
             });
 
-            List<AutonomyChecks.Finding> fresh = inOneEvent(() -> session.check());
-
-            assertNotEquals(countOf(fresh, "autosetup.ui.checkNoTrainLength"),
-                countOf(got.get(0), "autosetup.ui.checkNoTrainLength"),
-                "precondition: taking a placed train of no length off the setup changed none of its warnings");
-
-            assertEquals(said(got.get(1)), said(fresh), "a train taken off the setup in the same event was not checked: the"
-                + " findings are those from before");
+            assertEquals(countOf(got.get(1), AutonomyChecks.CAPTION_COVERED),
+                countOf(got.get(0), AutonomyChecks.CAPTION_COVERED) + 1, "a caption drawn on " + on + ", a labelled"
+                + " square, in the same event is not said to be covered");
         }
         finally
         {
-            putBackTheSources();
-
             session.restoreSetup(asFound);
         }
     }
