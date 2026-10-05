@@ -644,8 +644,10 @@ public class testTwoYsMakeACrossing
             }
         });
 
-        assertTrue(said[0] != null && said[0].contains("W-E") && said[0].contains("NW-SE"), "the click does not name the"
-            + " straight track W-E and the diagonal NW-SE: " + said[0]);
+        // WHOLE NAMES: "WW-EE" holds "W-E"
+        assertTrue(said[0] != null && java.util.regex.Pattern.compile("(?<![A-Z])W-E(?![A-Z])").matcher(said[0]).find()
+            && java.util.regex.Pattern.compile("(?<![A-Z])NW-SE(?![A-Z])").matcher(said[0]).find(), "the click does not"
+            + " name the straight track W-E and the diagonal NW-SE: " + said[0]);
     }
 
     // ---------------------------------------------------------------- the railway
