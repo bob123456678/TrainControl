@@ -1883,11 +1883,13 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * The green arrows are drawn on the track diagram when asked for, on what the restrictions are drawn on, and not
-     * otherwise (FR-110; Adam, 2026-10-04: *"we also need to add an option to view the green arrows in the viewer, not
-     * just the red, similar to the editor."*).
+     * The track diagram draws the restrictions, the directions trains may run, or both - each its own choice (FR-110; Adam,
+     * 2026-10-04: *"we also need to add an option to view the green arrows in the viewer, not just the red, similar to
+     * the editor."*, and on MT-675: *"allow the user to choose: restrictions, allowances, or both.  don't make them
+     * mutually exclusive."*).  The station ingress arrows follow the restrictions (2026-08-28).
      *
-     * MUTATION: draw the green without the option, drop it with the option, or draw it with the arrows off, and this fails.
+     * MUTATION: draw the green without its option, drop it with it, draw the red without its option, or draw nothing
+     * with the green alone, and this fails.
      *
      * @throws Exception from the session
      */
@@ -1909,8 +1911,71 @@ public class testAutonomyDiagramSession
             session.staticAnnotationFor(leader, true).withAllowedDirections(), "with the option, the run's first square"
             + " is not drawn with the green arrows (FR-110)");
 
-        assertNull(session.staticAnnotations(run, false, true).get(leader), "with the arrows off, the green ones are"
-            + " drawn anyway");
+        // THE GREEN ALONE: drawn, with no red and no ingress arrows (MT-675)
+        assertEquals(session.staticAnnotations(run, false, true).get(leader),
+            session.staticAnnotationFor(leader, true, false).withAllowedDirections().withoutRestrictions(), "with only the"
+            + " allowed directions chosen, the run's first square is not drawn in green alone (MT-675)");
+
+        assertNull(session.staticAnnotations(run, false, false).get(leader), "with neither chosen, the run's first square"
+            + " is drawn anyway");
+    }
+
+    /**
+     * The track diagram's green arrows are the signals' green (MT-675; Adam, 2026-10-04: *"green arrows are hard to see
+     * due to low contrast.  Use the same green as signals on the track diagram viewer."*) - the green a signal tile
+     * shows, 0, 255, 0; the autonomy editor keeps its darker green over its pale wash.
+     *
+     * MUTATION: paint the track diagram's green in the editor's green, and this fails.
+     */
+    @Test
+    public void testTheTrackDiagramsGreenIsTheSignalsGreen()
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        marks.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.BOTH));
+
+        // the track diagram's: restrictions-only, with the green asked for
+        assertTrue(pixelsOf(new TileAnnotation(marks, -1, false, null, false, false, false, null, true, null)
+            .withAllowedDirections(), new Color(0, 255, 0)) > 0, "the track diagram's green arrows are not the signals'"
+            + " green (MT-675)");
+
+        // the editor's Show All
+        assertTrue(pixelsOf(new TileAnnotation(marks, -1, false, null, false, false, false, null, false, null),
+            new Color(0, 140, 60)) > 0, "the autonomy editor's green arrows changed colour");
+    }
+
+    /** How many pixels of exactly this colour an annotation paints on black. */
+    private static int pixelsOf(TileAnnotation annotation, Color colour)
+    {
+        int size = 48;
+
+        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+        Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, size, size);
+
+            annotation.paint(g, size, size, false);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int count = 0;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                if ((shot.getRGB(x, y) & 0xFFFFFF) == (colour.getRGB() & 0xFFFFFF)) count++;
+            }
+        }
+
+        return count;
     }
 
     /**
@@ -2098,6 +2163,52 @@ public class testAutonomyDiagramSession
         }
 
         return new int[] {green, red};
+    }
+
+    /**
+     * A Y's arrows lie along its track (MT-676; Adam, 2026-10-04: *"the arrows on two permanent Y's are not aligned.
+     * [M]ake the arrow at the base point straight down, and the left and right aligned just like on curved tiles.  Right
+     * now, the angles are just a bit off, and they are asymmetrical."*): the toe's straight out of the square, and each
+     * leg's along the chord from the toe, as on a curve - so the two legs mirror each other.
+     *
+     * MUTATION: aim a Y's arrows from one point of the square again, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    public void testAYsArrowsLieAlongItsTrack() throws Exception
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        // toe south, legs west and east
+        marks.add(new TileAnnotation.Mark(Side.W, Side.S, Direction.BOTH));
+        marks.add(new TileAnnotation.Mark(Side.E, Side.S, Direction.BOTH));
+
+        TileAnnotation y = new TileAnnotation(marks, -1, false, null, false, false, false, null, false, null);
+
+        double[] toe = headingOf(y, Side.S);
+        double[] west = headingOf(y, Side.W);
+        double[] east = headingOf(y, Side.E);
+
+        assertTrue(Math.abs(toe[0]) < 1e-9 && toe[1] > 0, "the arrow at a Y's toe does not point straight out of the"
+            + " square (MT-676): " + Arrays.toString(toe));
+
+        assertTrue(west[0] < 0 && west[1] < 0 && Math.abs(Math.abs(west[0]) - Math.abs(west[1])) <= 2, "the arrow on a"
+            + " Y's west leg does not lie along the chord from the toe, as on a curve (MT-676): " + Arrays.toString(west));
+
+        assertTrue(Math.abs(east[0] + west[0]) <= 1 && Math.abs(east[1] - west[1]) <= 1, "the arrows on a Y's two legs do"
+            + " not mirror each other (MT-676): west " + Arrays.toString(west) + ", east " + Arrays.toString(east));
+    }
+
+    /** Which way an annotation aims its arrow at a side, on a 48-pixel square. */
+    private static double[] headingOf(TileAnnotation annotation, Side side) throws Exception
+    {
+        java.lang.reflect.Method heading = TileAnnotation.class.getDeclaredMethod("heading", Side.class, int.class,
+            int.class);
+
+        heading.setAccessible(true);
+
+        return (double[]) heading.invoke(annotation, side, 48, 48);
     }
 
     /** An annotation painted on black: how many of its pixels are green, and the colour of its corner. */

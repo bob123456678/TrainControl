@@ -96,6 +96,13 @@ public class TileAnnotation
     private static final Color ONE_WAY = new Color(0, 140, 60);
 
     /**
+     * The green a signal shows on the track diagram, for the green arrows drawn there (MT-675; Adam, 2026-10-04: *"green
+     * arrows are hard to see due to low contrast.  Use the same green as signals on the track diagram viewer."*).  The
+     * darker green above was lost on the diagram's dark rails; the autonomy editor keeps it, over its pale wash.
+     */
+    private static final Color SIGNAL_GREEN = new Color(0, 255, 0);
+
+    /**
      * Closed.  Red, and the only mark drawn as a bar rather than a path, because it is the one that means
      * a train cannot get through.
      */
@@ -1557,6 +1564,21 @@ public class TileAnnotation
      */
     private double[] heading(Side side, int width, int height)
     {
+        // A Y'S ARROWS LIE ALONG ITS TRACK (MT-676; Adam, 2026-10-04: *"make the arrow at the base point straight down,
+        // and the left and right aligned just like on curved tiles.  Right now, the angles are just a bit off, and they
+        // are asymmetrical."*).  Its legs are curves from the toe, so each leg's arrow lies along the chord from the toe,
+        // as on a curve, and the toe's runs straight out of the square.  Aimed from the middle of its first road, all
+        // three were a little off and no two alike.
+        Side toe = yToe();
+
+        if (toe != null && side != null && side != toe.opposite())
+        {
+            int[] to = midpoint(side, width, height);
+            int[] from = side == toe ? new int[] {width / 2, height / 2} : midpoint(toe, width, height);
+
+            if (to != null && from != null) return new double[] {to[0] - from[0], to[1] - from[1]};
+        }
+
         Side other = null;
         int through = 0;
 
@@ -1580,6 +1602,34 @@ public class TileAnnotation
         int[] to = midpoint(side, width, height);
 
         return new double[] {to[0] - from[0], to[1] - from[1]};
+    }
+
+    /**
+     * The toe of a Y - two roads that share one side and leave it by the two sides square to it - or null for any other
+     * square.  A Y switch and a permanent Y alike; a left or a right, whose straight road runs on through, is not one.
+     */
+    private Side yToe()
+    {
+        if (marks.size() != 2) return null;
+
+        Mark one = marks.get(0);
+        Mark two = marks.get(1);
+
+        for (Side toe : new Side[] {one.getA(), one.getB()})
+        {
+            if (toe == null || two.getA() != toe && two.getB() != toe) continue;
+
+            Side legOne = one.getA() == toe ? one.getB() : one.getA();
+            Side legTwo = two.getA() == toe ? two.getB() : two.getA();
+
+            if (legOne != null && legTwo != null && legOne == legTwo.opposite() && legOne != toe
+                && legOne != toe.opposite())
+            {
+                return toe;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -1663,7 +1713,8 @@ public class TileAnnotation
 
         if (allowed)
         {
-            g.setColor(ONE_WAY);
+            // the track diagram's arrows carry no wash, and are drawn in the signals' green (MT-675)
+            g.setColor(blockedOnly ? SIGNAL_GREEN : ONE_WAY);
             g.fillPolygon(xs, ys, 3);
         }
         else

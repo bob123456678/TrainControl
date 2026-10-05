@@ -10861,13 +10861,14 @@ public class AutonomySession
      * in the viewer, on a single straight segment with multiple straight tracks that only allows travel in one direction.
      * The editor correctly collapses then"*).  A square that lets trains through just as its run's first square does is
      * drawn without arrows (`squaresSayingNothingTheirRunDoesNot`); one that differs keeps its own.  With `allowedToo`
-     * the directions trains may run are drawn in green as well (FR-110).
+     * the directions trains may run are drawn in green as well (FR-110) - or on their own, since the two are chosen apart (MT-675; Adam,
+     * 2026-10-04: *"allow the user to choose: restrictions, allowances, or both.  don't make them mutually exclusive."*).
      *
      * The options are the caller's, read once a pass - see the overload of `staticAnnotationFor` that takes them.
      *
      * @param squares the squares to describe
-     * @param arrows whether the one-way arrows are drawn
-     * @param allowedToo whether the green arrows are drawn with them
+     * @param arrows whether the travel restrictions - the red arrows, and the station ingress arrows - are drawn
+     * @param allowedToo whether the directions trains may run - the green arrows - are drawn
      * @return each square to its annotation, null where it has nothing to say
      */
     public Map<TileKey, TileAnnotation> staticAnnotations(java.util.Collection<TileKey> squares, boolean arrows,
@@ -10875,13 +10876,22 @@ public class AutonomySession
     {
         Map<TileKey, TileAnnotation> out = new LinkedHashMap<>();
 
-        Set<TileKey> redundant = arrows ? squaresSayingNothingTheirRunDoesNot() : Collections.<TileKey>emptySet();
+        boolean either = arrows || allowedToo;
+
+        Set<TileKey> redundant = either ? squaresSayingNothingTheirRunDoesNot() : Collections.<TileKey>emptySet();
 
         for (TileKey tile : squares)
         {
-            TileAnnotation annotation = staticAnnotationFor(tile, arrows && !redundant.contains(tile));
+            boolean drawn = either && !redundant.contains(tile);
 
-            if (annotation != null && arrows && allowedToo) annotation.withAllowedDirections();
+            TileAnnotation annotation = staticAnnotationFor(tile, drawn, arrows && !redundant.contains(tile));
+
+            if (annotation != null && drawn)
+            {
+                if (allowedToo) annotation.withAllowedDirections();
+
+                if (!arrows) annotation.withoutRestrictions();
+            }
 
             out.put(tile, annotation);
         }
@@ -10920,6 +10930,20 @@ public class AutonomySession
      * @return the annotation, or null when this square has nothing to say
      */
     public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows)
+    {
+        return staticAnnotationFor(tile, arrows, arrows);
+    }
+
+    /**
+     * The same, with the station ingress arrows asked apart from the direction arrows: the green arrows can be drawn
+     * without the travel restrictions (MT-675), and the ingress arrows follow the restrictions (Adam, 2026-08-28).
+     *
+     * @param tile the square
+     * @param arrows whether the direction arrows are drawn - red, green or both, as the annotation is then told
+     * @param arrivals whether the station ingress arrows are drawn
+     * @return the annotation, or null when this square has nothing to say
+     */
+    public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows, boolean arrivals)
     {
         if (graph == null || reducer == null) return null;
 
@@ -11019,7 +11043,7 @@ public class AutonomySession
             // `false` still means what it meant: only where something is actually restricted. A
             // station that takes trains from anywhere has nothing to say, and saying it on every
             // platform would be the clutter this mark exists to avoid.
-            arrows ? arrivalMarks(tile, false)
+            arrivals ? arrivalMarks(tile, false)
                 : new ArrayList<TileAnnotation.Arrival>());
     }
 
