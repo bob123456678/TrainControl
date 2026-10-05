@@ -28,10 +28,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-690](#mt-690) | 2026-10-05 | The file chooser opens at once, with the same places to look in | fixed unvalidated | Adam 2026-10-05 (OB-323) |
-| [MT-691](#mt-691) | 2026-10-05 | The file chooser follows shortcuts and shows Windows' columns | fixed unvalidated | Claude 2026-10-05 (RSA38) |
+| [MT-692](#mt-692) | 2026-10-05 | The file chooser follows shortcuts and shows the columns Windows does | fixed unvalidated | Claude 2026-10-05 (RSA38, RSA39) |
+| [MT-693](#mt-693) | 2026-10-05 | A page brought back after a size change still follows the railway | fixed unvalidated | Claude 2026-10-05 (RSA39) |
 
-Everything else - 689 of 691 - needs nothing from you unless the area changes again:
-546 **fixed validated** and 143 **superseded**.
+Everything else - 690 of 693 - needs nothing from you unless the area changes again:
+546 **fixed validated** and 144 **superseded**.
 
 ---
 
@@ -32869,7 +32870,7 @@ second for the first chooser and a fiftieth after.
 
 ### MT-691 - 2026-10-05 - The file chooser follows shortcuts and shows Windows' columns
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Claude 2026-10-05 (RSA38)
 
 **Written:** 2026-10-05
@@ -32892,5 +32893,69 @@ longer opened the folder, and the details view's columns did not match what was 
 
 *What this is:* `regression.testSwingSpeaksOurLanguage.testAShortcutToAFolderOpensTheFolder`,
 `regression.testSwingSpeaksOurLanguage.testTheDetailsViewHasTheShellsColumns`.
+
+**Claude, 2026-10-05.**
+
+Superseded by MT-692 before it was run: its list of the details view's columns was Explorer's, not the chooser's.
+
+---
+
+<a id="mt-692"></a>
+
+### MT-692 - 2026-10-05 - The file chooser follows shortcuts and shows the columns Windows does
+
+**Disposition:** fixed unvalidated
+**From:** Claude 2026-10-05 (RSA38, RSA39)
+
+**Written:** 2026-10-05
+
+The release validators found two things the quicker chooser of OB-323 had lost, both fixed: a shortcut to a folder no
+longer opened the folder, and the details view's columns did not match what was in them.  This replaces MT-691, whose
+list of columns was wrong.
+
+**Steps**
+
+1. Choose **Layouts > Open Layout...**, and click **Recent Items** in the side panel.
+2. Double-click one of the folders listed there.
+3. Switch the chooser to its details view (the right-hand button above the list).
+4. Open the **Look In** list.
+
+**Expected**
+
+- Step 2: the chooser opens that folder.
+- Step 3: each column shows what its heading says - for an ordinary folder Name, Size, Item type and Date modified, as
+  in Windows' own file dialogs; This PC, Network and Libraries show their own columns.
+- Step 4: the list is as Windows gives it, the folder you are in shown under its drive.
+
+*What this is:* `regression.testSwingSpeaksOurLanguage.testAShortcutToAFolderOpensTheFolder`,
+`regression.testSwingSpeaksOurLanguage.testTheDetailsViewHasTheShellsColumns`.
+
+---
+
+<a id="mt-693"></a>
+
+### MT-693 - 2026-10-05 - A page brought back after a size change still follows the railway
+
+**Disposition:** fixed unvalidated
+**From:** Claude 2026-10-05 (RSA39)
+
+**Written:** 2026-10-05
+
+The release validator found that the track diagram could bring a page back frozen: look at another page, change the size,
+go back, and change the size back - the page showed, but no switch, signal, sensor, train or caption on it updated again
+until something redrew it, and during a run nothing does.  It dates from August.
+
+**Steps**
+
+1. On the track diagram, show **1 - Main**, then another page.
+2. Change the size (the size list beside the page list), go back to 1 - Main, and change the size back.
+3. Throw a switch on 1 - Main from the diagram, and, with autonomy loaded, look at the station names and trains on it.
+
+**Expected**
+
+- The switch's picture changes as you throw it, and the names, trains and arrows on the page follow the railway, as on a
+  page you had not left.
+
+*What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testACachedPageComesBackWired`.
 
 ---
