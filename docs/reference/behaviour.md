@@ -1761,6 +1761,40 @@ can't be chosen shouldn't be offered"*.  Held by
 `core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing` and
 `core.testAutonomyDiagramPorts.testOnlyThePossibleDirectionsAreOffered`.)*
 
+### 5f. Two permanent Ys drawn toe to toe are one crossing
+
+> *"Lets support two permanent Ys as a crossing, if possible, same as the current crossing by effectively rotated 45
+> degrees, just connecting differently and spread across 2 tiles."* - Adam, 2026-10-04 (OB-320)
+
+The diagram has no diagonal crossing, so one is drawn as two `CUSTOM_PERM_Y` tiles whose toes face each other: the
+two Ys' four legs are the crossing's four ends, and each track runs from a leg of one square, over the toes, to the
+**opposite** leg of the other - corner to corner, never round the reverse curve from one leg to the leg beside it.
+Read as the turnouts they are drawn with, nothing passed them: a train trailing into one toe met the other's toe head
+on, which only a facing move could take.
+
+`TileGraph.crossingPartner` finds the pairs: a permanent Y, toe to toe with another, beside it on one page.  **Only
+that.**  A permanent Y on its own, toe to a leg, side by side, back to back, or toe to toe with a Y switch that has an
+address, is the turnout of 5e (Adam: *"there won't always be two adjacent Y to form a logical crossing.  sometimes it
+could just be one perma Y"*).
+
+- **Both ways, both tracks.**  A pair's roads are not directed into the toe, it defaults to both ways as a crossing
+  does, and it is not warned about as a turnout trains may only trail.
+- **One track at a time.**  The two tracks share the side the squares meet at, so a square entered by it is told which
+  track the train came along - the square before and its road there (`TileGraph.legAcross`) - by every walk that
+  crosses it: the reduction's edge walk and the undirected walks the One-Way tool and an old file's import use.  A
+  walk is remembered by the track there as well, so a run that crosses on one track and comes back over the other is
+  not taken for going in circles.
+- **One direction per track.**  A direction set on one square's half of a track is set on the other's, the same way
+  along the track, whichever door it comes through (`AutonomySession.record`).
+- **The click** steps both tracks through both ways, the four ways they can each run one way, and closed (Adam:
+  *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible directions on both (4
+  combos)"*), counted on the north or west square so either square carries on from the same place.
+- **A crossing for the berth too**: the room walk of 5a does not stop at it, and the berth rule refuses at it only
+  where another road runs over it, as at a crossing.  Locking is unchanged - both tracks run over both squares, so
+  two trains cannot be on the crossing at once.
+
+*(Held by `core.testTwoYsMakeACrossing`.)*
+
 ### The autonomy editor's keyboard doors
 
 Five shortcuts act on **the square the pointer is over**, and they ask one question to find it -

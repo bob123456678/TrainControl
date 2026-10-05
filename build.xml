@@ -562,6 +562,7 @@
         <test-one-class class="testALockReachesTheRailBeingRunOver"/>
         <test-one-class class="testSwingSpeaksOurLanguage"/>
         <test-one-class class="testDeleteAsksWhichConfiguration"/>
+        <test-one-class class="testTwoYsMakeACrossing"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

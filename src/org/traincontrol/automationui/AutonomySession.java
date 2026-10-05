@@ -4770,6 +4770,9 @@ public class AutonomySession
 
         if (component == null) return false;
 
+        // A TWO-SQUARE CROSSING IS A CROSSING (OB-320), not the two turnouts it is drawn with
+        if (getGraph().crossingPartner(tile) != null) return anotherRoadRunsOver(tile, berth);
+
         if (component.isSwitch() || TileGraph.isPermanentTurnout(component.getType())) return true;
 
         return component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.CROSSING
@@ -7604,6 +7607,15 @@ public class AutonomySession
     private void record(TileKey tile, RouteId routeId, Direction direction)
     {
         apply(tile, routeId, direction);
+
+        // ONE TRACK, TWO SQUARES (OB-320): a two-square crossing's track runs over both of its squares, so its direction
+        // is set on both - in the other square's own terms - whichever square and whichever door it was set from.
+        RouteId across = graph == null ? null : graph.crossingRouteOnPartner(tile, routeId);
+
+        if (across != null)
+        {
+            apply(graph.crossingPartner(tile), across, graph.crossingDirectionOnPartner(tile, routeId, direction));
+        }
     }
 
     /**

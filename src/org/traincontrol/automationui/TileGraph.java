@@ -584,6 +584,9 @@ public class TileGraph
 
     private final Map<TileKey, LayoutDiagramComponent> tiles = new LinkedHashMap<>();
     private final Map<TileKey, TileKey> portals = new HashMap<>();
+
+    /** Each square of a two-square crossing, to the other (OB-320) - see crossingPartner. */
+    private final Map<TileKey, TileKey> crossingPartners = new HashMap<>();
     private final Map<TileKey, Map<RouteId, Direction>> directions = new HashMap<>();
     private final Set<String> pages = new LinkedHashSet<>();
     private final List<Problem> problems = new ArrayList<>();
@@ -660,6 +663,9 @@ public class TileGraph
 
         // AFTER every page is in, because these questions are about neighbours (OB-160).
         checkTransparentTiles();
+
+        // And so is this one (OB-320)
+        pairTheCrossings();
     }
 
     /**
@@ -738,6 +744,9 @@ public class TileGraph
         LayoutDiagramComponent component = tiles.get(tile);
 
         if (component == null) return Direction.BOTH;
+
+        // A crossing runs both ways until somebody says otherwise, and a two-square one is a crossing (OB-320)
+        if (crossingPartners.containsKey(tile)) return Direction.BOTH;
 
         Route route = routeOf(component, routeId);
 
@@ -832,7 +841,7 @@ public class TileGraph
 
         for (int state = 0; state < TilePorts.getStateCount(type); state++)
         {
-            List<Route> routes = TilePorts.ports(type, orientation, state);
+            List<Route> routes = routesOn(tile, component, state);
 
             for (int index = 0; index < routes.size(); index++)
             {
@@ -855,6 +864,199 @@ public class TileGraph
         }
 
         return out;
+    }
+
+    /**
+     * The moves out of a square on the track a train arrived along (OB-320).
+     *
+     * The same as `exits(tile, entrySide)` everywhere but one place: a square of a two-square crossing, entered by the
+     * side its two squares meet at.  Both of the crossing's tracks pass that side, so the side alone cannot say which one
+     * the train is on, and the answer offers the other track's leg as well - a reverse curve no train can run.  The square
+     * the train was on before, and its road over it, say which.
+     *
+     * @param tile the square
+     * @param entrySide the side it was entered by
+     * @param previous the square the train was on before, or null
+     * @param previousRoute its road over that square, or null
+     * @return the moves
+     */
+    public List<Exit> exits(TileKey tile, Side entrySide, TileKey previous, RouteId previousRoute)
+    {
+        List<Exit> all = exits(tile, entrySide);
+
+        Side leg = legAcross(tile, entrySide, previous, previousRoute);
+
+        if (leg == null) return all;
+
+        List<Exit> out = new ArrayList<>();
+
+        for (Exit exit : all)
+        {
+            if (exit.getSide() == leg) out.add(exit);
+        }
+
+        return out;
+    }
+
+    /**
+     * The leg a two-square crossing's track leaves a square by, for a train that came onto it from the other square
+     * (OB-320): the side opposite the leg it came onto the other square by, since each track runs corner to corner.  Null
+     * anywhere else - the square is not half of a crossing, or the train did not come from its other half.
+     *
+     * @param tile the square
+     * @param entrySide the side it was entered by
+     * @param previous the square the train was on before
+     * @param previousRoute its road over that square
+     * @return the leg, or null
+     */
+    public Side legAcross(TileKey tile, Side entrySide, TileKey previous, RouteId previousRoute)
+    {
+        TileKey partner = crossingPartners.get(tile);
+
+        if (partner == null || previousRoute == null || !partner.equals(previous)) return null;
+
+        Side toe = sideTowardNeighbour(tile, partner);
+
+        if (toe == null || entrySide != toe) return null;
+
+        Route there = getRoutes(partner).get(previousRoute);
+
+        Side legThere = there == null ? null : there.other(toe.opposite());
+
+        return legThere == null || legThere == toe.opposite() ? null : legThere.opposite();
+    }
+
+    /**
+     * The other square of a two-square crossing, or null where this square is not half of one (OB-320).
+     *
+     * Two permanent Y turnouts drawn toe to toe (Adam, 2026-10-04: *"Lets support two permanent Ys as a crossing, if
+     * possible, same as the current crossing by effectively rotated 45 degrees, just connecting differently and spread
+     * across 2 tiles."*).  The diagram has no diagonal crossing, so one is drawn as the two halves of an X: the two Ys'
+     * four legs are its four ends, and each track runs from a leg of one square, over the toes, to the opposite leg of
+     * the other.  As turnouts they could only be trailed into their toes, so nothing passed them: a train trailing into
+     * one toe met the other head on.
+     *
+     * Only a permanent Y, only toe to toe, and only beside each other on one page.  A permanent Y alone, or beside
+     * anything else, is the turnout with no address it always was (Adam: *"there won't always be two adjacent Y to form
+     * a logical crossing.  sometimes it could just be one perma Y"*).
+     *
+     * @param tile a square
+     * @return the other half, or null
+     */
+    public TileKey crossingPartner(TileKey tile)
+    {
+        return tile == null ? null : crossingPartners.get(tile);
+    }
+
+    /**
+     * The other square's road for the same track of a two-square crossing - the one from the opposite leg - or null where
+     * the square is not half of one (OB-320).
+     *
+     * @param tile a square
+     * @param routeId one of its roads
+     * @return the other square's road on that track, or null
+     */
+    public RouteId crossingRouteOnPartner(TileKey tile, RouteId routeId)
+    {
+        TileKey partner = crossingPartner(tile);
+
+        if (partner == null || routeId == null) return null;
+
+        Route here = getRoutes(tile).get(routeId);
+
+        Side toe = sideTowardNeighbour(tile, partner);
+
+        Side leg = here == null || toe == null ? null : here.other(toe);
+
+        if (leg == null || leg == toe) return null;
+
+        for (Map.Entry<RouteId, Route> there : getRoutes(partner).entrySet())
+        {
+            if (there.getValue().touches(leg.opposite())) return there.getKey();
+        }
+
+        return null;
+    }
+
+    /**
+     * A direction on one square's half of a two-square crossing's track, as the other square's half reads it (OB-320):
+     * the same way along the track, named by that square's own sides.  Both ways and closed read the same on both.
+     *
+     * @param tile a square
+     * @param routeId one of its roads
+     * @param direction its direction
+     * @return the other half's, or null where the square is not half of a crossing
+     */
+    public Direction crossingDirectionOnPartner(TileKey tile, RouteId routeId, Direction direction)
+    {
+        RouteId across = crossingRouteOnPartner(tile, routeId);
+
+        if (across == null) return null;
+
+        if (direction == null || direction == Direction.BOTH || direction == Direction.NONE) return direction;
+
+        TileKey partner = crossingPartner(tile);
+
+        Route here = getRoutes(tile).get(routeId);
+        Route there = getRoutes(partner).get(across);
+
+        Side toe = sideTowardNeighbour(tile, partner);
+
+        Side toward = direction == Direction.TOWARD_A ? here.getA() : here.getB();
+
+        // toward this square's toe is onto the other square and out by its leg; toward this square's leg is off the
+        // other square by its toe
+        Side thereToward = toward == toe ? there.other(toe.opposite()) : toe.opposite();
+
+        return thereToward == there.getA() ? Direction.TOWARD_A : Direction.TOWARD_B;
+    }
+
+    /**
+     * Finds the two-square crossings: every two permanent Ys whose toes face each other (OB-320).  A Y has one toe, so a
+     * square is half of one crossing at most.
+     */
+    private void pairTheCrossings()
+    {
+        for (Map.Entry<TileKey, LayoutDiagramComponent> entry : tiles.entrySet())
+        {
+            Side toe = permanentYToe(entry.getValue());
+
+            if (toe == null) continue;
+
+            TileKey other = neighbour(entry.getKey(), toe);
+
+            if (permanentYToe(tiles.get(other)) == toe.opposite()) crossingPartners.put(entry.getKey(), other);
+        }
+
+        // NOT A TURNOUT TO WARN ABOUT: the warning says trains may pass it only trailing, and a crossing passes them both
+        // ways
+        problems.removeIf(problem -> crossingPartners.containsKey(problem.getTile())
+            && WARN_PERMANENT_TURNOUT.equals(problem.getMessageKey()));
+    }
+
+    /** The toe of a permanent Y, or null for any other square. */
+    private static Side permanentYToe(LayoutDiagramComponent component)
+    {
+        if (component == null || component.getType() != componentType.CUSTOM_PERM_Y) return null;
+
+        return TilePorts.deriveToe(component.getType(), component.getOrientation());
+    }
+
+    /**
+     * A square's roads in one position, as the port map has them - except on a square of a two-square crossing, whose
+     * roads are a crossing's track and run both ways rather than only into the toe (OB-320).
+     */
+    private List<Route> routesOn(TileKey tile, LayoutDiagramComponent component, int state)
+    {
+        List<Route> routes = TilePorts.ports(component.getType(), component.getOrientation(), state);
+
+        if (!crossingPartners.containsKey(tile)) return routes;
+
+        List<Route> open = new ArrayList<>();
+
+        for (Route route : routes) open.add(new Route(route.getA(), route.getB(), null));
+
+        return open;
     }
 
     /**
@@ -1135,7 +1337,7 @@ public class TileGraph
 
         for (int state = 0; state < TilePorts.getStateCount(type); state++)
         {
-            List<Route> routes = TilePorts.ports(type, component.getOrientation(), state);
+            List<Route> routes = routesOn(tile, component, state);
 
             for (int index = 0; index < routes.size(); index++)
             {
@@ -1804,19 +2006,29 @@ public class TileGraph
         private final TileKey tile;
         private final Side entrySide;
 
+        /** On a square of a two-square crossing entered where its squares meet, the leg its track leaves by (OB-320) */
+        private final Side lane;
+
         Step(TileKey tile, Side entrySide)
+        {
+            this(tile, entrySide, null);
+        }
+
+        Step(TileKey tile, Side entrySide, Side lane)
         {
             this.tile = tile;
             this.entrySide = entrySide;
+            this.lane = lane;
         }
 
         /**
          * Two arrivals at one square by different sides are different places to be, because different
-         * track leads on from each.  Keyed as both, so the walk explores both.
+         * track leads on from each.  Keyed as both, so the walk explores both - and by the track as well where two
+         * share the side (OB-320).
          */
         String key()
         {
-            return tile + "@" + entrySide;
+            return tile + "@" + entrySide + (lane == null ? "" : "/" + lane);
         }
     }
 
@@ -1830,6 +2042,46 @@ public class TileGraph
         LayoutDiagramComponent component = tiles.get(here.tile);
 
         if (component == null) return out;
+
+        // A TWO-SQUARE CROSSING A TRACK AT A TIME (OB-320).  Its tracks share the side its squares meet at, so the step
+        // onto the other square carries the leg its track leaves that square by, and a step carrying one is held to it -
+        // or the walk could arrive along one track and leave along the other, a reverse curve no train can run.
+        TileKey otherHalf = crossingPartners.get(here.tile);
+
+        if (otherHalf != null)
+        {
+            Side toe = sideTowardNeighbour(here.tile, otherHalf);
+
+            for (Route route : getRoutes(here.tile).values())
+            {
+                Side leg = route.other(toe);
+
+                if (leg == null || leg == toe) continue;
+
+                if (here.entrySide != null && !route.touches(here.entrySide)) continue;
+
+                if (here.lane != null && leg != here.lane) continue;
+
+                if (here.entrySide != toe)
+                {
+                    Landing across = landing(here.tile, toe);
+
+                    if (across != null && tiles.containsKey(across.getTile()))
+                    {
+                        out.add(new Step(across.getTile(), across.getEntrySide(), leg.opposite()));
+                    }
+                }
+
+                if (here.entrySide != leg)
+                {
+                    Landing off = landing(here.tile, leg);
+
+                    if (off != null && tiles.containsKey(off.getTile())) out.add(new Step(off.getTile(), off.getEntrySide()));
+                }
+            }
+
+            return out;
+        }
 
         Set<Side> exits = new LinkedHashSet<>();
 

@@ -7668,6 +7668,13 @@ public class AutonomyEditorPanel extends JPanel
 
         if (routes.isEmpty()) return;
 
+        // A TWO-SQUARE CROSSING steps through its tracks' ways rather than its arms (OB-320)
+        if (routes.size() == 2 && session.getGraph().crossingPartner(target) != null)
+        {
+            cycleCrossing(target);
+            return;
+        }
+
         if (routes.size() > 1)
         {
             cycleBranching(target, routes);
@@ -7754,6 +7761,109 @@ public class AutonomyEditorPanel extends JPanel
 
         // NOT REFRESHED HERE (speed, 2026-10-04): the click that brought this here refreshes straight after, whatever
         // happens - and a refresh is a whole setup check, the list and the strip.
+    }
+
+    /**
+     * Left-click on a square of a two-square crossing - two permanent Y turnouts drawn toe to toe (OB-320): the next of
+     * both tracks both ways, the four ways the two can each run one way, and both closed.
+     *
+     * Adam, 2026-10-04: *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible
+     * directions on both (4 combos)"* - both ways first and closed last, as a crossing's own first answers go.  Not the
+     * arms of `cycleBranching`: the two tracks share the side the squares meet at, and one bit for it cannot say that one
+     * track runs onto the other square while the other runs off it.
+     *
+     * Counted on the crossing's north or west square whichever square is clicked, so a click on either carries on from the
+     * same place; the session sets the other square's half of each track with it.
+     */
+    private void cycleCrossing(TileKey clicked)
+    {
+        org.traincontrol.automationui.TileGraph graph = session.getGraph();
+
+        TileKey other = graph.crossingPartner(clicked);
+
+        org.traincontrol.automationui.TilePorts.Side clickedToe = graph.sideTowardNeighbour(clicked, other);
+
+        boolean clickedLeads = clickedToe == org.traincontrol.automationui.TilePorts.Side.S
+            || clickedToe == org.traincontrol.automationui.TilePorts.Side.E;
+
+        TileKey leader = clickedLeads ? clicked : other;
+        TileKey follower = clickedLeads ? other : clicked;
+
+        org.traincontrol.automationui.TilePorts.Side toe = graph.sideTowardNeighbour(leader, follower);
+
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(leader);
+
+        java.util.List<RouteId> tracks = new java.util.ArrayList<>(routes.keySet());
+
+        if (tracks.size() != 2 || toe == null) return;
+
+        // Onto the other square is toward the toe
+        Direction[] onto = new Direction[2];
+        Direction[] off = new Direction[2];
+
+        for (int i = 0; i < 2; i++)
+        {
+            onto[i] = routes.get(tracks.get(i)).getA() == toe ? Direction.TOWARD_A : Direction.TOWARD_B;
+            off[i] = onto[i] == Direction.TOWARD_A ? Direction.TOWARD_B : Direction.TOWARD_A;
+        }
+
+        Direction[][] states =
+        {
+            {Direction.BOTH, Direction.BOTH},
+            {onto[0], onto[1]}, {onto[0], off[1]}, {off[0], onto[1]}, {off[0], off[1]},
+            {Direction.NONE, Direction.NONE}
+        };
+
+        Direction[] now = {graph.getDirection(leader, tracks.get(0)), graph.getDirection(leader, tracks.get(1))};
+
+        int at = -1;
+
+        for (int i = 0; i < states.length; i++)
+        {
+            if (java.util.Arrays.equals(states[i], now)) at = i;
+        }
+
+        Direction[] next = states[(at + 1) % states.length];
+
+        Map<RouteId, Direction> wanted = new java.util.LinkedHashMap<>();
+
+        wanted.put(tracks.get(0), next[0]);
+        wanted.put(tracks.get(1), next[1]);
+
+        session.setDirections(leader, wanted);
+
+        String[] said = new String[4];
+
+        for (int i = 0; i < 2; i++)
+        {
+            org.traincontrol.automationui.TilePorts.Side leg = routes.get(tracks.get(i)).other(toe);
+
+            // Each end named by its corner of the crossing: the leader is on the side its toe faces away from
+            String near = corner(toe.opposite(), leg);
+            String far = corner(toe, leg.opposite());
+
+            said[2 * i] = near.startsWith("N") ? near + "-" + far : far + "-" + near;
+
+            said[2 * i + 1] = next[i] == Direction.BOTH ? I18n.t("autosetup.ui.dirBoth")
+                : next[i] == Direction.NONE ? I18n.t("autosetup.ui.dirNone")
+                : I18n.f("autosetup.ui.dirToward", next[i] == onto[i] ? far : near);
+        }
+
+        say(hint, I18n.f("autosetup.ui.cycledCrossing", describeTile(clicked), said[0], said[1], said[2], said[3]));
+
+        showRestrictionsIfHidden();
+
+        annotationsChanged();
+    }
+
+    /** A corner of a square, named north or south first: NW, SE. */
+    private static String corner(org.traincontrol.automationui.TilePorts.Side one,
+        org.traincontrol.automationui.TilePorts.Side two)
+    {
+        boolean oneIsNorthOrSouth = one == org.traincontrol.automationui.TilePorts.Side.N
+            || one == org.traincontrol.automationui.TilePorts.Side.S;
+
+        return oneIsNorthOrSouth ? one.toString() + two : two.toString() + one;
     }
 
     /**
