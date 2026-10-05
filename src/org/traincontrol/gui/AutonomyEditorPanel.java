@@ -198,6 +198,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         I18n.t("autosetup.ui.directionsAll"),
         I18n.t("autosetup.ui.directionsRestrictions"),
+        I18n.t("autosetup.ui.directionsAllowed"),
         I18n.t("autosetup.ui.directionsNone"),
         I18n.t("autosetup.ui.directionsArrivals")
     });
@@ -210,6 +211,19 @@ public class AutonomyEditorPanel extends JPanel
      * page, and the arrival marks are small and sit at the tile edges where the arrows already are.
      */
     private static final int VIEW_ARRIVALS = 3;
+
+    /**
+     * The view that shows only the directions trains may run - the green arrows, none of the red (Adam, 2026-10-04: *"In
+     * addition to "restrictions only", add "allowed only" to the autonomy editor."*).
+     */
+    private static final int VIEW_ALLOWED = 4;
+
+    /**
+     * What each entry of the directions box means, by its place in the box: Show All, Restrictions only, Allowed only,
+     * Hide All, Station Arrivals.  The MEANING is what is remembered, so Allowed only, put beside Restrictions only, does
+     * not turn a remembered Hide All into Allowed only or Station Arrivals into Hide All.
+     */
+    private static final int[] DIRECTIONS_BY_ENTRY = {0, 1, VIEW_ALLOWED, 2, VIEW_ARRIVALS};
 
     /**
      * What the visibility controls were last set to, remembered across openings of this window.
@@ -806,8 +820,7 @@ public class AutonomyEditorPanel extends JPanel
         // Restored FIRST, before anything is listening.  Setting a combo box fires its listeners, and
         // the one below redraws the whole panel - which during construction means redrawing a panel
         // that is still being built.
-        directions.setSelectedIndex(
-            Math.max(0, Math.min(VIEW_ARRIVALS, VIEW_PREFS.getInt(PREF_DIRECTIONS, DIRECTIONS_DEFAULT))));
+        showDirectionsView(VIEW_PREFS.getInt(PREF_DIRECTIONS, DIRECTIONS_DEFAULT));
 
         showLengths.setSelected(VIEW_PREFS.getBoolean(PREF_LENGTHS, false));
 
@@ -861,7 +874,7 @@ public class AutonomyEditorPanel extends JPanel
 
         directions.addActionListener(e ->
         {
-            VIEW_PREFS.putInt(PREF_DIRECTIONS, directions.getSelectedIndex());
+            VIEW_PREFS.putInt(PREF_DIRECTIONS, directionsView());
             refresh();
         });
 
@@ -7650,9 +7663,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void showRestrictionsIfHidden()
     {
-        if (directions.getSelectedIndex() != 2) return;
+        if (directionsView() != 2) return;
 
-        directions.setSelectedIndex(1);
+        showDirectionsView(1);
 
         say(hint, I18n.t("autosetup.ui.infoDirectionsShownAgain"));
     }
@@ -9090,7 +9103,41 @@ public class AutonomyEditorPanel extends JPanel
 
     public boolean isShowingDirections()
     {
-        return directions.getSelectedIndex() < 2;
+        int view = directionsView();
+
+        return view == 0 || view == 1 || view == VIEW_ALLOWED;
+    }
+
+    /**
+     * The view the directions box is on, by its meaning (`DIRECTIONS_BY_ENTRY`).
+     *
+     * @return 0 Show All, 1 Restrictions only, 2 Hide All, `VIEW_ARRIVALS` or `VIEW_ALLOWED`
+     */
+    private int directionsView()
+    {
+        int entry = directions.getSelectedIndex();
+
+        return entry < 0 || entry >= DIRECTIONS_BY_ENTRY.length ? DIRECTIONS_DEFAULT : DIRECTIONS_BY_ENTRY[entry];
+    }
+
+    /**
+     * Puts the directions box on a view, by its meaning - the default for one it does not have.
+     *
+     * @param view what the view means
+     */
+    private void showDirectionsView(int view)
+    {
+        int entry = -1;
+        int fallback = 0;
+
+        for (int i = 0; i < DIRECTIONS_BY_ENTRY.length; i++)
+        {
+            if (DIRECTIONS_BY_ENTRY[i] == view) entry = i;
+
+            if (DIRECTIONS_BY_ENTRY[i] == DIRECTIONS_DEFAULT) fallback = i;
+        }
+
+        directions.setSelectedIndex(entry >= 0 ? entry : fallback);
     }
 
     /**
@@ -9259,14 +9306,17 @@ public class AutonomyEditorPanel extends JPanel
         org.traincontrol.automationui.TileAnnotation annotation =
             new org.traincontrol.automationui.TileAnnotation(marks, length, outlined,
             badgeFor(tile), shaded, isCurved(tile), isPairedPortal(tile),
-            traces.get(tile), directions.getSelectedIndex() == 1,
+            traces.get(tile), directionsView() == 1,
             ignored ? null
-                : session.arrivalMarks(tile, directions.getSelectedIndex() == VIEW_ARRIVALS))
+                : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS))
             // Which moves a badge on a bend out to the corner - see TileAnnotation.inTheEditor.
             // Here and nowhere else: this is the only surface that draws direction arrows and
             // arrival chevrons on the same square, and so the only one where the badge has to give
             // way.  On a diagram it goes back onto the track it is about.
             .inTheEditor();
+
+        // ALLOWED ONLY: the green arrows, and none of the red
+        if (directionsView() == VIEW_ALLOWED) annotation.withoutRestrictions();
 
         // A train the setup puts here gets a mark of its own.  The caption says which train, and the
         // caption is on another square, is sometimes on no square, and can be switched off - so

@@ -650,6 +650,21 @@ public class TileAnnotation
     private boolean allowedToo = false;
 
     /**
+     * Draws only the directions trains may run - the green arrows - and none of the shut ones: the autonomy editor's
+     * Allowed only (Adam, 2026-10-04: *"In addition to "restrictions only", add "allowed only" to the autonomy
+     * editor."*).  The wash stays, as under Show All: the open arrows are most of the ink it lifts off the tile art.
+     *
+     * @return this
+     */
+    public TileAnnotation withoutRestrictions()
+    {
+        this.allowedOnly = true;
+        return this;
+    }
+
+    private boolean allowedOnly = false;
+
+    /**
      * Says a train is set up to be standing on this square.
      *
      * A builder rather than another constructor argument: there are five constructors already, all
@@ -1228,6 +1243,8 @@ public class TileAnnotation
             if (target == null) continue;
 
             if (blockedOnly && !allowedToo && Boolean.TRUE.equals(entry.getValue())) continue;
+
+            if (allowedOnly && !Boolean.TRUE.equals(entry.getValue())) continue;
 
             double[] outward = heading(entry.getKey(), width, height);
             int span = Math.min(width, height);
@@ -2267,7 +2284,7 @@ public class TileAnnotation
             && ignored == other.ignored && curved == other.curved && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
             && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
-            && allowedToo == other.allowedToo
+            && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
 
@@ -2278,7 +2295,7 @@ public class TileAnnotation
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
-            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0)
+            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
             + arrivals.hashCode() * 7;
     }
 

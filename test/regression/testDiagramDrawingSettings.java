@@ -241,7 +241,7 @@ public class testDiagramDrawingSettings
         String panel = new String(Files.readAllBytes(
             Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")), StandardCharsets.UTF_8);
 
-        assertTrue(panel.contains("session.arrivalMarks(tile, directions.getSelectedIndex() == VIEW_ARRIVALS)"),
+        assertTrue(panel.contains("session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS)"),
             "the editor no longer asks its own directions control about arrivals, so the mode whose "
             + "whole purpose is showing every side of every station has lost its answer");
 

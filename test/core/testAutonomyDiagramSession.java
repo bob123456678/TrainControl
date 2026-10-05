@@ -1939,6 +1939,167 @@ public class testAutonomyDiagramSession
         assertEquals(green[1], Color.BLACK.getRGB(), "the green arrows came with a wash over the square");
     }
 
+    /**
+     * Allowed only paints the directions trains may run and none of the shut ones (Adam, 2026-10-04: *"In addition to
+     * "restrictions only", add "allowed only" to the autonomy editor."*).
+     *
+     * MUTATION: draw the shut sides under Allowed only, and this fails.
+     */
+    @Test
+    public void testAllowedOnlyPaintsTheGreenAndNoneOfTheRed()
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        // ONE WAY, west to east: out by the east is open, out by the west is shut
+        marks.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.TOWARD_B));
+
+        int[] all = greenAndRed(new TileAnnotation(marks, -1, false, null, false, false, false, null, false, null));
+
+        int[] allowed = greenAndRed(new TileAnnotation(marks, -1, false, null, false, false, false, null, false, null)
+            .withoutRestrictions());
+
+        assertTrue(all[0] > 0 && all[1] > 0, "precondition: Show All does not paint a one-way square green and red");
+
+        assertTrue(allowed[0] > 0, "Allowed only paints no green arrow on a one-way square");
+
+        assertEquals(allowed[1], 0, "Allowed only paints the shut side's red arrow");
+    }
+
+    /**
+     * The autonomy editor offers Allowed only right after Restrictions only, draws a one-way square under it in green
+     * alone, and remembers it - and a view remembered before it was added opens as it did: the box is remembered by
+     * what a view means, not by its place (Adam, 2026-10-04).
+     *
+     * MUTATION: remember the box by its place, or leave Allowed only drawing the red, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTheEditorOffersAllowedOnlyAndRemembersEachViewByItsMeaning() throws Exception
+    {
+        threeStationsInARow("Allowed only");
+
+        final TileKey straight = new TileKey("main", 2, 1);
+
+        session.setDirection(straight, new RouteId(0, 0), Direction.TOWARD_B);
+        session.rebuild();
+
+        // A test may read the user's settings; it may not decide them - put back as found, unset included
+        java.util.prefs.Preferences prefs =
+            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
+
+        final String key = "autonomyEditorDirections";
+
+        boolean had = prefs.get(key, null) != null;
+        int was = prefs.getInt(key, 1);
+
+        try
+        {
+            // VIEWS REMEMBERED BEFORE ALLOWED ONLY, which open as they did
+            String[][] remembered = {{"2", "autosetup.ui.directionsNone"}, {"3", "autosetup.ui.directionsArrivals"},
+                {"1", "autosetup.ui.directionsRestrictions"}, {"0", "autosetup.ui.directionsAll"}};
+
+            for (String[] view : remembered)
+            {
+                prefs.putInt(key, Integer.parseInt(view[0]));
+
+                assertEquals(aPanel().getShowDirections().getSelectedItem(), org.traincontrol.util.I18n.t(view[1]),
+                    "a view remembered as " + view[0] + " before Allowed only was added opens as another");
+            }
+
+            // ALLOWED ONLY, right after Restrictions only
+            final org.traincontrol.gui.AutonomyEditorPanel panel = aPanel();
+
+            final javax.swing.JComboBox<String> box = panel.getShowDirections();
+
+            assertEquals(box.getItemAt(1), org.traincontrol.util.I18n.t("autosetup.ui.directionsRestrictions"),
+                "precondition: Restrictions only is not the second view");
+
+            assertEquals(box.getItemAt(2), org.traincontrol.util.I18n.t("autosetup.ui.directionsAllowed"), "the editor"
+                + " does not offer Allowed only right after Restrictions only");
+
+            final TileAnnotation[] drawn = new TileAnnotation[2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                box.setSelectedItem(org.traincontrol.util.I18n.t("autosetup.ui.directionsAll"));
+                drawn[0] = panel.annotationFor(straight);
+
+                box.setSelectedItem(org.traincontrol.util.I18n.t("autosetup.ui.directionsAllowed"));
+                drawn[1] = panel.annotationFor(straight);
+            });
+
+            assertTrue(greenAndRed(drawn[0])[1] > 0, "precondition: under Show All the one-way square has no red arrow");
+
+            int[] allowed = greenAndRed(drawn[1]);
+
+            assertTrue(allowed[0] > 0 && allowed[1] == 0, "under Allowed only the one-way square is not drawn in green"
+                + " alone: green " + allowed[0] + ", red " + allowed[1]);
+
+            assertTrue(panel.isShowingDirections(), "Allowed only is not counted as showing directions, so the editor draws no arrows under it");
+
+            assertEquals(prefs.getInt(key, -1), 4, "Allowed only is not remembered by its own value");
+
+            assertEquals(aPanel().getShowDirections().getSelectedItem(),
+                org.traincontrol.util.I18n.t("autosetup.ui.directionsAllowed"), "Allowed only does not open again");
+        }
+        finally
+        {
+            if (had) prefs.putInt(key, was);
+            else prefs.remove(key);
+        }
+    }
+
+    /** A fresh autonomy editor panel on the main page, built on the event thread. */
+    private org.traincontrol.gui.AutonomyEditorPanel aPanel() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        return panel[0];
+    }
+
+    /** An annotation painted on black: how many of its pixels are green, and how many red. */
+    private static int[] greenAndRed(TileAnnotation annotation)
+    {
+        int size = 48;
+
+        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+        Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, size, size);
+
+            annotation.paint(g, size, size, false);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int green = 0;
+        int red = 0;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                Color c = new Color(shot.getRGB(x, y));
+
+                if (c.getGreen() > 100 && c.getRed() < 60 && c.getBlue() < 110) green++;
+
+                if (c.getRed() > 150 && c.getGreen() < 80 && c.getBlue() < 80) red++;
+            }
+        }
+
+        return new int[] {green, red};
+    }
+
     /** An annotation painted on black: how many of its pixels are green, and the colour of its corner. */
     private static int[] greenAndCorner(TileAnnotation annotation)
     {
