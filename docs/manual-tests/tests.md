@@ -33,8 +33,14 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-668](#mt-668) | 2026-10-04 | Switching pages in the autonomy editor shows no pause | fixed unvalidated | Adam 2026-10-04 (speed) |
 | [MT-669](#mt-669) | 2026-10-04 | The findings list follows a rename at once | fixed unvalidated | Adam 2026-10-04 (speed) |
 | [MT-670](#mt-670) | 2026-10-04 | An arrow click in the autonomy editor shows its warning without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
+| [MT-671](#mt-671) | 2026-10-04 | Popups and the file chooser speak the window's language | fixed unvalidated | Adam 2026-10-04 (OB-318) |
+| [MT-672](#mt-672) | 2026-10-04 | Delete asks which configuration, even with none loaded | fixed unvalidated | Adam 2026-10-04 (OB-319) |
+| [MT-673](#mt-673) | 2026-10-04 | Allow Every Path opens the red arrows in one go | fixed unvalidated | Adam 2026-10-04 (FR-108) |
+| [MT-674](#mt-674) | 2026-10-04 | A one-way straight shows one arrow on the track diagram | fixed unvalidated | Adam 2026-10-04 (OB-321) |
+| [MT-675](#mt-675) | 2026-10-04 | The track diagram can show the green arrows too | fixed unvalidated | Adam 2026-10-04 (FR-110) |
+| [MT-676](#mt-676) | 2026-10-04 | Two permanent Ys toe to toe are a crossing | fixed unvalidated | Adam 2026-10-04 (OB-320) |
 
-Everything else - 664 of 670 - needs nothing from you unless the area changes again:
+Everything else - 664 of 676 - needs nothing from you unless the area changes again:
 524 **fixed validated** and 140 **superseded**.
 
 ---
@@ -32041,5 +32047,190 @@ shown in the autonomy editor as paths are the arrows are clicked?"*
 *What this is:* measured on your PC for an arrow click, 0.51 s before and 0.32 s now until the findings list is drawn;
 the setup check ran twenty times per click and now runs five times, once per event.
 `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+---
+
+<a id="mt-671"></a>
+
+### MT-671 - 2026-10-04 - Popups and the file chooser speak the window's language
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (OB-318)
+
+**Written:** 2026-10-04
+
+Your report of 2026-10-04: *"the popup titles message and input are not always translated, nor are file chooser
+buttons."*
+
+**Steps**
+
+1. Run TrainControl in Danish, the way you ran it when you saw this.
+2. Open a message box that has no title of its own, and Autonomy > Manage Configurations > Delete with two
+   configurations, which asks you to choose.
+3. Open a file chooser - Autonomy > Import... is one.
+
+**Expected**
+
+- Step 2: a message box with no title of its own is titled **Meddelelse**, the question that asks you to choose or type
+  **Indtastning**, and the buttons read **OK**, **Annuller**, **Ja** and **Nej** - the words the rest of the window uses.
+- Step 3: the file chooser's **Åbn** and **Annuller** buttons, **Søg i:**, **Filnavn:**, **Filtype:**, its tooltips and
+  its column headings are Danish.
+
+*What this is:* Swing's own words are put from TrainControl's messages when the window starts, in all eight
+languages; Java has none of its own for Danish, Dutch or Polish.  `regression.testSwingSpeaksOurLanguage`.
+
+---
+
+<a id="mt-672"></a>
+
+### MT-672 - 2026-10-04 - Delete asks which configuration, even with none loaded
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (OB-319)
+
+**Written:** 2026-10-04
+
+Your report of 2026-10-04: *"If there is a setup cant be used, it cant be selected from the list of configs, which
+prevents subsequent deletion."*
+
+**Steps**
+
+1. With two or more configurations, choose Autonomy > Manage Configurations > **Delete**.
+2. Choose one that is not the one in use, and answer Yes.
+3. Choose **Stop Using Autonomy** from the same menu, then open Manage Configurations again.
+
+**Expected**
+
+- Step 1: a question asks which configuration to delete, listing every one.
+- Step 2: the one you chose is gone from the list, and the one in use is still loaded.
+- Step 3: **Delete** is not greyed - and asks which, as in step 1.  A configuration whose setup cannot be used can be
+  deleted this way.
+
+*What this is:* `regression.testDeleteAsksWhichConfiguration`.
+
+---
+
+<a id="mt-673"></a>
+
+### MT-673 - 2026-10-04 - Allow Every Path opens the red arrows in one go
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (FR-108)
+
+**Written:** 2026-10-04
+
+Your request of 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove any red arrows in one go. With
+warning."*
+
+**Steps**
+
+1. In the autonomy editor, open **Bulk Tools** and point at **Allow Every Path (n)**.
+2. Choose it, read the warning, and answer Yes.
+3. Press **Cancel** to leave the editor.
+
+**Expected**
+
+- Step 1: n is how many squares it would open, and the tooltip is the warning's own sentence.
+- Step 2: no red arrow is left on any page, except where a turnout with no address can only be run one way - it stays
+  that way.  Switches still at their default, out from the base only, now run both ways too.  A message says how many
+  squares were opened, and the item now says there is nothing to open.
+- Step 3: every direction is back as it was.
+
+*What this is:* `core.testAutonomyDiagramSession.testAllowEveryPathOpensWhatTheSettingShuts`,
+`core.testAutonomyDiagramSession.testAllowEveryPathLeavesAPermanentTurnoutAsItsBladesRun`.
+
+---
+
+<a id="mt-674"></a>
+
+### MT-674 - 2026-10-04 - A one-way straight shows one arrow on the track diagram
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (OB-321)
+
+**Written:** 2026-10-04
+
+Your report of 2026-10-04, on TC3Sandbox_layout: *"See the many redundant arrows when "show travel restrictions" is
+ticked in the viewer."*
+
+**Steps**
+
+1. Open TC3Sandbox_layout with autonomy on and **Display Travel Restrictions** ticked, and look at a one-way straight
+   several squares long.
+2. In the autonomy editor, make one square in the middle of such a straight closed, save, and look again.
+
+**Expected**
+
+- Step 1: one arrow per straight, on its first square, as the autonomy editor draws it - not one on every square.
+- Step 2: the closed square draws its own mark; the rest of the straight still shows one arrow.
+
+*What this is:* `core.testAutonomyDiagramSession.testAOneWayRunIsDrawnOnceOnTheDiagram`,
+`core.testAutonomyDiagramSession.testARunSquareThatSaysOtherwiseKeepsItsArrows`.
+
+---
+
+<a id="mt-675"></a>
+
+### MT-675 - 2026-10-04 - The track diagram can show the green arrows too
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (FR-110)
+
+**Written:** 2026-10-04
+
+Your request of 2026-10-04: *"we also need to add an option to view the green arrows in the viewer, not just the red,
+similar to the editor."*
+
+**Steps**
+
+1. Under **Display Travel Restrictions**, tick **Display Allowed Directions**.
+2. Untick Display Travel Restrictions.
+3. Close TrainControl and start it again.
+
+**Expected**
+
+- Step 1: the track diagram draws the green arrows as well as the red - one per straight, as in MT-674 - with no
+  wash over the squares.
+- Step 2: Display Allowed Directions greys out, and no arrows are drawn.
+- Step 3: both settings are as you left them.
+
+*What this is:* `core.testAutonomyDiagramSession.testTheGreenArrowsAreDrawnWhenAskedFor`,
+`core.testAutonomyDiagramSession.testTheGreenArrowsArePaintedWithoutAWash`.
+
+---
+
+<a id="mt-676"></a>
+
+### MT-676 - 2026-10-04 - Two permanent Ys toe to toe are a crossing
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (OB-320)
+
+**Written:** 2026-10-04
+
+Your report of 2026-10-04: *"the problematic crossings are at 12,9 and 12,10, also 14,12 and 15,12. Basically, this
+should connect 11,8 with 13,10, and 13,9 with 11,10 ... Cycling them doesn't allow travel in the correct directions."*
+
+**Steps**
+
+1. Open TC3Sandbox_layout and the autonomy editor on **0 komplet**.
+2. Click the Y at **12,9** seven times, reading the message under the diagram each time; click **12,10** for some of
+   them instead.
+3. With both tracks both ways, use **Test a path** from the sensor at **9,13** to the one at **14,7**.
+
+**Expected**
+
+- No warning about a turnout with no address at 12,9, 12,10, 14,12 or 15,12.
+- Step 2: the message names the two squares as one crossing.  The first click puts both tracks both ways (your earlier
+  settings there are replaced); then, in turn: the NW-SE track one way toward SE and the NE-SW track toward SW; toward
+  SE and toward NE; toward NW and toward SW; toward NW and toward NE; both closed; both ways again.  The arrows on 12,9
+  and 12,10 agree at every click, and a click on 12,10 carries on from the same place.
+- Step 3: the path crosses corner to corner - 11,10, 12,10, 12,9, 13,9 - and never round the curve between two legs
+  side by side.
+
+*What this is:* `core.testTwoYsMakeACrossing` - the vertical pair, the horizontal pair, a lone Y, Ys that are not toe
+to toe, a run that crosses twice, a direction on both squares, the click, Allow Every Path, the One-Way tool and the
+berth's room.  On your layout the 11,8 to 13,10 track runs on through 14,12 and 15,12 to 15,13, where 15,13 and 16,13
+are two permanent right turnouts toe to toe - still turnouts, so a train cannot pass them facing (see my report).
 
 ---

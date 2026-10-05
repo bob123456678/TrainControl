@@ -1602,6 +1602,12 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-04 | FR-110 | feature request | Display Allowed Directions draws the green arrows on the track diagram too, with no wash. | - | `MT-675` |
+| 2026-10-04 | OB-321 | bug | The track diagram draws a one-way run's arrow once, at its first square; a square that differs keeps its own. | - | `MT-674` |
+| 2026-10-04 | OB-320 | bug | Two permanent Ys toe to toe are one crossing: corner to corner both ways, one direction per track, the click steps through both ways, the four one-way combinations and closed. | - | `MT-676` |
+| 2026-10-04 | FR-108 | feature request | Bulk Tools > Allow Every Path (n), with the clears' warning; a turnout with no address stays as its blades run it. | - | `MT-673` |
+| 2026-10-04 | OB-319 | bug | Delete asks which configuration, and is offered while none is loaded. | - | `MT-672` |
+| 2026-10-04 | OB-318 | bug | Swing's popup titles and buttons and the file chooser's words are put from TrainControl's messages. | - | `MT-671` |
 | 2026-10-03 | OB-317 | bug | A train standing on the path it holds - at its start while its route is set - is drawn as its locomotive where it stands, not the dot. | - | `MT-663` |
 | 2026-10-03 | FR-107 | feature request | Control+M for Select by Dragging a Box in the track diagram editor, named on its item. | - | `MT-661` |
 | 2026-10-03 | OB-316 | bug | A train passing a station leaves its exit guard green; signal 108 was TopMainR2Inter's, passed on the way to TopMainR2. | - | `MT-660` |
