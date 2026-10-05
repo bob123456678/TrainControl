@@ -1566,6 +1566,16 @@ Adam, 2026-10-04: *"Fr for 3.1.0- add basic layout administration, like renaming
 
 **For 3.1.0**, not 3.0.  Pages are managed today from the main window's Layouts menu; this brings renaming, deleting and adding pages into the layout editor itself.  Related: BCR-A2 (a page name differing from another's only in case overwrites that page's file) - the same name checks will apply to these doors.
 
+### OB-321 - 2026-10-04 - after an import, the viewer shows redundant one-way arrows along a straight run
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-04  
+
+Adam, 2026-10-04: *"after import, redundant arrows can shown in the viewer, on a single straight segment with multiple straight tracks that only allows travel in one direction. The editor correctly collapses then"*
+
+After an import, the track diagram in the main window can show an arrow on every square of a straight run of several straight tracks that trains may travel only one way; the autonomy editor shows the same run correctly, with the arrows collapsed.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
