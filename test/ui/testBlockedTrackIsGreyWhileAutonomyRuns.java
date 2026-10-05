@@ -114,6 +114,10 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     private static BufferedImage bareBlocked;
     private static BufferedImage bareFree;
 
+    /** The two arrow settings as the run found them, null where unset - put back by the teardown. */
+    private static String restrictionsWere;
+    private static String allowedWere;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -121,6 +125,17 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         {
             throw new SkipException("painting a tile needs a display");
         }
+
+        // THE DIAGRAM'S ARROWS AS THEY ARE BY DEFAULT, not as the operator last left them.  A run's preferences start as
+        // a copy of his, and since MT-675 the green arrows can be drawn on every open square, with the red or alone - on
+        // top of the fade this class measures, so a square read as partly unfaded.  Put back by the teardown.
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        restrictionsWere = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        allowedWere = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
+
+        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+        prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
         //
@@ -226,6 +241,14 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
         finally
         {
             if (sandbox != null) sandbox.close();
+
+            java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+            if (restrictionsWere == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restrictionsWere);
+
+            if (allowedWere == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
+            else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowedWere);
         }
     }
 
