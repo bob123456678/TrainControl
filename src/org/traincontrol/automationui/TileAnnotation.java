@@ -633,6 +633,23 @@ public class TileAnnotation
     private boolean editing = false;
 
     /**
+     * Draws the directions trains may run - the green arrows - as well as the shut ones, while still drawing only what a
+     * restrictions-only annotation draws otherwise: no wash (FR-110).
+     *
+     * For the ordinary track diagram's Display Allowed Directions.  Set rather than passed, as inTheEditor is: the
+     * constructor already takes ten arguments.
+     *
+     * @return this
+     */
+    public TileAnnotation withAllowedDirections()
+    {
+        this.allowedToo = true;
+        return this;
+    }
+
+    private boolean allowedToo = false;
+
+    /**
      * Says a train is set up to be standing on this square.
      *
      * A builder rather than another constructor argument: there are five constructors already, all
@@ -1210,7 +1227,7 @@ public class TileAnnotation
 
             if (target == null) continue;
 
-            if (blockedOnly && Boolean.TRUE.equals(entry.getValue())) continue;
+            if (blockedOnly && !allowedToo && Boolean.TRUE.equals(entry.getValue())) continue;
 
             double[] outward = heading(entry.getKey(), width, height);
             int span = Math.min(width, height);
@@ -2250,6 +2267,7 @@ public class TileAnnotation
             && ignored == other.ignored && curved == other.curved && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
             && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
+            && allowedToo == other.allowedToo
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
 
@@ -2260,7 +2278,8 @@ public class TileAnnotation
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
-            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + arrivals.hashCode() * 7;
+            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0)
+            + arrivals.hashCode() * 7;
     }
 
     @Override

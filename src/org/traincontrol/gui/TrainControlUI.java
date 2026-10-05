@@ -206,6 +206,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static final String DIAGRAM_RESTRICTION_ARROWS = "DiagramRestrictionArrows";
 
+    // Whether the ordinary track diagram draws the green arrows too (FR-110)
+    public static final String DIAGRAM_ALLOWED_DIRECTIONS = "DiagramAllowedDirections";
+
     /**
      * How many locomotive mapping pages this installation has - see numLocMappings.
      *
@@ -427,6 +430,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** FR-037: whether the ordinary diagram draws one-way arrows. */
     private javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
+    private javax.swing.JCheckBoxMenuItem allowedDirectionsMenuItem;
 
     private static final Color COLOR_SWITCH_RED = new Color(255, 204, 204);
     private static final Color COLOR_SWITCH_GREEN = new Color(204, 255, 204);
@@ -873,6 +877,70 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.UIManager.put("TabbedPane.tabInsets", new Insets(8, 8, 8, 8));
 
         enlargeTheMenus();
+
+        // AND SWING'S OWN WORDS IN OURS (OB-318), after setup() - installing a look and feel resets its defaults
+        swingSpeaksOurLanguage();
+    }
+
+    /**
+     * Swing's own words - the popups' titles and buttons, the file chooser's buttons, labels, tooltips and column headings -
+     * from TrainControl's bundles, so they are in the language the rest of the window is in (OB-318; Adam, 2026-10-04: *"the
+     * popup titles message and input are not always translated, nor are file chooser buttons."*).
+     *
+     * Swing takes them from its own resources, chosen by the computer's language rather than TrainControl's, and has none
+     * for Danish, Dutch or Polish - so a popup with no title of its own said "Message" or "Input", and every file chooser
+     * said Open, Save and Cancel, in English.  Put as developer defaults, which outrank the look and feel's and survive its
+     * being installed again.
+     */
+    static void swingSpeaksOurLanguage()
+    {
+        String[][] words =
+        {
+            {"OptionPane.messageDialogTitle", "swing.optionPane.messageTitle"},
+            {"OptionPane.inputDialogTitle", "swing.optionPane.inputTitle"},
+            {"OptionPane.titleText", "swing.optionPane.selectTitle"},
+            {"FileChooser.openButtonText", "swing.fileChooser.open"},
+            {"FileChooser.saveButtonText", "swing.fileChooser.save"},
+            {"FileChooser.updateButtonText", "swing.fileChooser.update"},
+            {"FileChooser.helpButtonText", "swing.fileChooser.help"},
+            {"FileChooser.openDialogTitleText", "swing.fileChooser.openTitle"},
+            {"FileChooser.saveDialogTitleText", "swing.fileChooser.saveTitle"},
+            {"FileChooser.lookInLabelText", "swing.fileChooser.lookIn"},
+            {"FileChooser.saveInLabelText", "swing.fileChooser.saveIn"},
+            {"FileChooser.fileNameLabelText", "swing.fileChooser.fileName"},
+            {"FileChooser.folderNameLabelText", "swing.fileChooser.folderName"},
+            {"FileChooser.filesOfTypeLabelText", "swing.fileChooser.filesOfType"},
+            {"FileChooser.acceptAllFileFilterText", "swing.fileChooser.allFiles"},
+            {"FileChooser.upFolderToolTipText", "swing.fileChooser.upFolder"},
+            {"FileChooser.homeFolderToolTipText", "swing.fileChooser.homeFolder"},
+            {"FileChooser.newFolderToolTipText", "swing.fileChooser.newFolderTip"},
+            {"FileChooser.listViewButtonToolTipText", "swing.fileChooser.listTip"},
+            {"FileChooser.detailsViewButtonToolTipText", "swing.fileChooser.detailsTip"},
+            {"FileChooser.openButtonToolTipText", "swing.fileChooser.openTip"},
+            {"FileChooser.saveButtonToolTipText", "swing.fileChooser.saveTip"},
+            {"FileChooser.cancelButtonToolTipText", "swing.fileChooser.cancelTip"},
+            {"FileChooser.directoryOpenButtonText", "swing.fileChooser.openFolder"},
+            {"FileChooser.directoryOpenButtonToolTipText", "swing.fileChooser.openFolderTip"},
+            {"FileChooser.fileNameHeaderText", "swing.fileChooser.nameHeader"},
+            {"FileChooser.fileSizeHeaderText", "swing.fileChooser.sizeHeader"},
+            {"FileChooser.fileTypeHeaderText", "swing.fileChooser.typeHeader"},
+            {"FileChooser.fileDateHeaderText", "swing.fileChooser.dateHeader"},
+            {"FileChooser.fileAttrHeaderText", "swing.fileChooser.attributesHeader"},
+            {"FileChooser.viewMenuLabelText", "swing.fileChooser.view"},
+            {"FileChooser.refreshActionLabelText", "swing.fileChooser.refresh"},
+            {"FileChooser.newFolderActionLabelText", "swing.fileChooser.newFolder"},
+            {"FileChooser.listViewActionLabelText", "swing.fileChooser.list"},
+            {"FileChooser.detailsViewActionLabelText", "swing.fileChooser.details"}
+        };
+
+        for (String[] word : words) javax.swing.UIManager.put(word[0], I18n.t(word[1]));
+
+        // The buttons every popup shares, from the words the window's own Yes/No and OK/Cancel already use
+        javax.swing.UIManager.put("OptionPane.okButtonText", I18n.t("ui.ok"));
+        javax.swing.UIManager.put("OptionPane.cancelButtonText", I18n.t("ui.cancel"));
+        javax.swing.UIManager.put("OptionPane.yesButtonText", I18n.t("ui.yes"));
+        javax.swing.UIManager.put("OptionPane.noButtonText", I18n.t("ui.no"));
+        javax.swing.UIManager.put("FileChooser.cancelButtonText", I18n.t("ui.cancel"));
     }
 
     /**
@@ -2039,6 +2107,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static boolean diagramShowsRestrictionArrows()
     {
         return getPrefs().getBoolean(DIAGRAM_RESTRICTION_ARROWS, true);
+    }
+
+    /**
+     * Whether the ordinary track diagram also draws the directions trains MAY run - the green arrows - with its travel
+     * restrictions, as the autonomy editor's Show All does (FR-110).  Off by default: the restrictions are what somebody
+     * watching the railway needs, and green on every open run is most of a layout.
+     *
+     * @return whether the option is on
+     */
+    public static boolean diagramShowsAllowedDirections()
+    {
+        return getPrefs().getBoolean(DIAGRAM_ALLOWED_DIRECTIONS, false);
     }
 
     /**
@@ -5676,9 +5756,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // railway made for itself, several times per click - a fifth of the click.
         boolean arrows = diagramShowsRestrictionArrows();
 
-        for (org.traincontrol.automationui.TileGraph.TileKey tile : marked)
+        // AND THE GREEN, when asked for, read once too (FR-110)
+        boolean allowedToo = arrows && diagramShowsAllowedDirections();
+
+        // ONE ARROW PER RUN WHERE THE RUN SAYS ONE THING (OB-321), and the green when asked for: decided by the session
+        // for every square at once, so what is drawn here is what its claims see.
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey,
+            org.traincontrol.automationui.TileAnnotation> mark : session.staticAnnotations(marked, arrows, allowedToo).entrySet())
         {
-            getDiagramTileRegistry().annotate(tile, session.staticAnnotationFor(tile, arrows));
+            getDiagramTileRegistry().annotate(mark.getKey(), mark.getValue());
         }
 
         getDiagramTileRegistry().clearAnnotationsExcept(marked);
@@ -6853,7 +6939,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                if (!railway.executePath(path, train, train.getPreferredSpeed(), null, answered, stopsAtClick))
+                if (!railway.executePathByHand(path, train, train.getPreferredSpeed(), answered, stopsAtClick))
                 {
                     javax.swing.SwingUtilities.invokeLater(() ->
                         JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
@@ -13482,6 +13568,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         autonomyToolbarMenu.add(this.restrictionArrowsMenuItem);
+
+        // AND THE GREEN (FR-110): only while the restrictions are drawn, which it adds to
+        this.allowedDirectionsMenuItem =
+            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.allowedDirections"));
+
+        this.allowedDirectionsMenuItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.allowedDirections"));
+
+        this.allowedDirectionsMenuItem.setSelected(diagramShowsAllowedDirections());
+
+        this.allowedDirectionsMenuItem.setEnabled(this.restrictionArrowsMenuItem.isSelected());
+
+        this.restrictionArrowsMenuItem.addActionListener(event ->
+            this.allowedDirectionsMenuItem.setEnabled(this.restrictionArrowsMenuItem.isSelected()));
+
+        this.allowedDirectionsMenuItem.addActionListener(event ->
+        {
+            prefs.putBoolean(DIAGRAM_ALLOWED_DIRECTIONS, this.allowedDirectionsMenuItem.isSelected());
+
+            // The annotation layer, handed the overlay's own state - see the item above
+            showStaticAutonomyLayer(
+                autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown());
+        });
+
+        autonomyToolbarMenu.add(this.allowedDirectionsMenuItem);
     }
 
     /**
@@ -27030,8 +27140,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         String newName = this.LayoutList.getSelectedItem().toString() + " copy";
 
-        // Check if the new name already exists in the layout list
-        while (this.model.getLayoutList().contains(newName))
+        // Check if the new name already exists in the layout list - or another page's file is its file (BCR-A2)
+        while (this.model.getLayoutList().contains(newName)
+            || org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(), newName, null)
+                != null)
         {
             newName += " " + I18n.t("layout.ui.copy");
         }
@@ -27101,6 +27213,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (name == null || name.trim().isEmpty()) return;
 
         final String combined = name.trim();
+
+        // AND NO OTHER PAGE'S FILE (BCR-A2): this name is typed freely, so a character a file name cannot hold comes to the
+        // same file as the page whose name has an underscore there
+        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(),
+            combined, null);
+
+        if (usesThatFile != null)
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
+
+            return;
+        }
 
         if (this.model.getLayoutList().contains(combined))
         {
@@ -27427,6 +27552,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     newLayoutName
                 )
             );
+            return;
+        }
+
+        // NOR ONE WHOSE FILE ANOTHER PAGE USES (BCR-A2): a name differing only in case, or in a character a file name cannot
+        // hold, is written to that page's file.  A page renamed to its own name in another case keeps its own file.
+        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(),
+            newLayoutName, rename ? this.LayoutList.getSelectedItem().toString() : null);
+
+        if (usesThatFile != null)
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
+
             return;
         }
 

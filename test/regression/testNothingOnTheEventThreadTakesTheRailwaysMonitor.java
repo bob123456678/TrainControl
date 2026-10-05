@@ -115,6 +115,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // Reached through isPathClear and configureAndLockPath, and held for a whole dispatch.
         "executePath", "executeTimetable", "runLocomotives",
 
+        // Reached through executePath: a hand send, marked as one for the cap on trains out (BCR-C1)
+        "executePathByHand",
+
         // `synchronized (this)` blocks, which the declaration scanner above cannot see.
         "configureAndLockPath", "getPathValidationFailureCount", "hasShownPathValidationAlert"
     };

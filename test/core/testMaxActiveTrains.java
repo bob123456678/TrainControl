@@ -37,7 +37,9 @@ public class testMaxActiveTrains
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        // DEBUG ON, as every class that drives a journey in simulation has it: setSimulate refuses otherwise
+        // (testAHandSendDuringARunIsNotRefusedByTheCap sends a train by hand)
+        model = init(null, true, false, false, true);
 
         for (int sensor = 190; sensor <= 193; sensor++)
         {
@@ -217,6 +219,162 @@ public class testMaxActiveTrains
         finally
         {
             layout.unlockPath(routeOne(layout), first);
+        }
+    }
+
+    /**
+     * A train sent by hand while a run is going is not refused by the cap (BCR-C1).
+     *
+     * behaviour.md 1: a hand dispatch is *"neither counted nor refused, however many trains a run already has out"* - and
+     * the exemption rested on the running flag alone, which a run sets, so a hand send made during one was refused and
+     * the operator was told the path was occupied.  A hand send is now marked as one for its journey.
+     *
+     * A run going, a cap of one reached by the first train's claim, and the second sent by hand down a route that touches
+     * nothing: it arrives.
+     *
+     * MUTATION: let the cap refuse a train on a hand send again, and this fails.
+     *
+     * @throws Exception if the fixture cannot be built
+     */
+    @Test
+    public void testAHandSendDuringARunIsNotRefusedByTheCap() throws Exception
+    {
+        Layout layout = twoSeparateRoutes();
+
+        layout.setSimulate(true);
+
+        layout.setMaxActiveTrains(1);
+
+        Locomotive first = model.getLocByName(model.getLocList().get(0));
+        Locomotive second = model.getLocByName(model.getLocList().get(1));
+
+        layout.getPoint("CAP_a").setLocomotive(first);
+        layout.getPoint("CAP_c").setLocomotive(second);
+
+        layout.runLocomotives();
+
+        try
+        {
+            assertTrue(layout.isAutoRunning(), "precondition: the run is not going, so the cap asks nothing");
+
+            assertTrue(layout.configureAndLockPath(routeOne(layout), first), "precondition: the first train's route did not"
+                + " lock, so the cap is not reached");
+
+            assertFalse(layout.isPathClear(routeTwo(layout), second, false), "precondition: the cap does not refuse the"
+                + " second train for the run, so a hand send's exemption asks nothing");
+
+            assertTrue(layout.executePathByHand(routeTwo(layout), second, 30, Layout.ALWAYS_REVERSE, -1), "a train sent by"
+                + " hand while a run is going was refused by the cap on trains out (" + Layout.getLastError() + ") - a hand"
+                + " send is neither counted nor refused (behaviour.md 1)");
+        }
+        finally
+        {
+            layout.unlockPath(routeOne(layout), first);
+
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * A train on a journey sent by hand does not count against the cap the run's own trains are held to (BCR-C1).
+     *
+     * The second train marked as on a hand send - as `executePathByHand` marks it for its journey - and holding its route:
+     * the first train's claim, autonomy's, is still under a cap of one.
+     *
+     * MUTATION: count a train sent by hand again, and this fails.
+     *
+     * @throws Exception if the fixture cannot be built
+     */
+    @Test
+    public void testAHandSentTrainDoesNotCountAgainstTheCap() throws Exception
+    {
+        Layout layout = twoSeparateRoutes();
+
+        layout.setMaxActiveTrains(1);
+
+        Locomotive first = model.getLocByName(model.getLocList().get(0));
+        Locomotive second = model.getLocByName(model.getLocList().get(1));
+
+        java.lang.reflect.Field field = Layout.class.getDeclaredField("sentByHand");
+
+        field.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Set<Locomotive> sentByHand = (java.util.Set<Locomotive>) field.get(layout);
+
+        layout.runLocomotives();
+
+        try
+        {
+            // THE HAND SEND'S OWN CLAIM, as executePathByHand makes it
+            sentByHand.add(second);
+
+            assertTrue(layout.configureAndLockPath(routeTwo(layout), second), "precondition: the hand send's route did not"
+                + " lock");
+
+            assertTrue(layout.configureAndLockPath(routeOne(layout), first), "the run's own train was refused under a cap"
+                + " of one because a train sent by hand was out - a hand send is not counted (behaviour.md 1)");
+        }
+        finally
+        {
+            sentByHand.remove(second);
+
+            layout.unlockPath(routeOne(layout), first);
+            layout.unlockPath(routeTwo(layout), second);
+
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * The reasons a train's right-click menu gives for a hand send ask as a hand send: no destination is said to be over
+     * the cap (BCR-C1).
+     *
+     * A run going, the cap reached by the first train's claim: the second train's destination down its own clear route is
+     * offered by hand, with no reason against it.
+     *
+     * MUTATION: let the hand send's reasons ask the cap again, and this fails.
+     *
+     * @throws Exception if the fixture cannot be built
+     */
+    @Test
+    public void testTheReasonsForAHandSendDoNotAskTheCap() throws Exception
+    {
+        Layout layout = twoSeparateRoutes();
+
+        layout.setMaxActiveTrains(1);
+
+        Locomotive first = model.getLocByName(model.getLocList().get(0));
+        Locomotive second = model.getLocByName(model.getLocList().get(1));
+
+        layout.getPoint("CAP_a").setLocomotive(first);
+        layout.getPoint("CAP_c").setLocomotive(second);
+
+        layout.runLocomotives();
+
+        try
+        {
+            assertTrue(layout.configureAndLockPath(routeOne(layout), first), "precondition: the first train's route did not"
+                + " lock, so the cap is not reached");
+
+            java.util.Map<String, String> forTheRun = layout.explainDestinations(second, false);
+
+            assertTrue(forTheRun.containsKey("CAP_d") && forTheRun.get("CAP_d") != null, "precondition: the run is not"
+                + " refused CAP_d for the second train, so nothing here is about the cap: " + forTheRun);
+
+            java.util.Map<String, String> byHand = layout.explainDestinations(second, true);
+
+            assertTrue(byHand.containsKey("CAP_d"), "precondition: CAP_d is not among the second train's destinations: "
+                + byHand);
+
+            assertNull(byHand.get("CAP_d"), "the right-click menu says the second train cannot be sent by hand to CAP_d -"
+                + " \"" + byHand.get("CAP_d") + "\" - but a hand send is not refused by the cap (behaviour.md 1)");
+        }
+        finally
+        {
+            layout.unlockPath(routeOne(layout), first);
+
+            layout.stopLocomotives();
         }
     }
 

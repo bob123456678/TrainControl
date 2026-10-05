@@ -114,8 +114,11 @@ locomotives underway has already reached it — counted as the UNION of the regi
 ones that have claimed a path but not yet set off, because the gap between claiming and being
 registered is a per-accessory wait seconds wide and two trains crossed it together.
 
-- **A hand dispatch is exempt.** Right-clicking a destination sets no running flag, so it is neither
-  counted nor refused, however many trains a run already has out. That is the tiering above: the cap
+- **A hand dispatch is exempt.** A train sent by hand - from the track diagram or the Auto tab - is
+  marked as a hand send for its journey (`Layout.executePathByHand`), so the cap neither counts it nor
+  refuses it, however many trains a run already has out; the reasons the right-click menu gives for a
+  hand send ask the same way.  Until 2026-10-04 the exemption rested on the running flag alone, so a
+  hand send made while a run was going was refused by the cap and counted against it (BCR-C1). That is the tiering above: the cap
   is a preference about how much railway the operator wants moving at once — what a booster will
   carry, or how much they want to watch — rather than a fact about what the track will hold. The
   anti-collision guarantees are the edge locks and the length rules of §5, which every tier obeys.
@@ -1758,6 +1761,47 @@ can't be chosen shouldn't be offered"*.  Held by
 `core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing` and
 `core.testAutonomyDiagramPorts.testOnlyThePossibleDirectionsAreOffered`.)*
 
+### 5f. Two permanent turnouts drawn toe to toe are one crossing
+
+> *"Lets support two permanent Ys as a crossing, if possible, same as the current crossing by effectively rotated 45
+> degrees, just connecting differently and spread across 2 tiles."* - Adam, 2026-10-04 (OB-320)
+
+The diagram has no diagonal crossing, so one is drawn as two `CUSTOM_PERM_Y` tiles whose toes face each other: the
+two Ys' four legs are the crossing's four ends, and each track runs from a leg of one square, over the toes, to the
+**opposite** leg of the other - corner to corner, never round the reverse curve from one leg to the leg beside it.
+Read as the turnouts they are drawn with, nothing passed them: a train trailing into one toe met the other's toe head
+on, which only a facing move could take.
+
+`TileGraph.crossingPartner` finds the pairs: two permanent turnouts toe to toe, beside each other on one page, every leg
+of one facing the opposite leg of the other - two Ys, or two lefts or two rights turned half round from each other,
+whose straight legs then make a straight track through both toes and whose diverging legs the diagonal (Adam, of the two
+permanent rights at 15,13 and 16,13 on TC3Sandbox_layout: *"Treat those two adjacent perma switches at 15,13 and 16,13
+as one logical crossing."*).  **Only that.**  A permanent turnout on its own, toe to a leg, side by side, back to back, a
+left with a right (both diverging legs on one side), a three-way, or toe to toe with a switch that has an address, is the
+turnout of 5e (Adam: *"there won't always be two adjacent Y to form a logical crossing.  sometimes it could just be one
+perma Y"*; and *"those without another adjacent to form a crossing are treated as switches only crossable in one
+direction by autonomy"*).  The leg rule is what makes the pair **look** like a crossing - every track drawn straight
+through the joint - and that is the test Adam set: *"make sure that the pairing is visually a crossing.  if not, we
+treat the tracks verbatim."*
+
+- **Both ways, both tracks.**  A pair's roads are not directed into the toe, it defaults to both ways as a crossing
+  does, and it is not warned about as a turnout trains may only trail.
+- **One track at a time.**  The two tracks share the side the squares meet at, so a square entered by it is told which
+  track the train came along - the square before and its road there (`TileGraph.legAcross`) - by every walk that
+  crosses it: the reduction's edge walk and the undirected walks the One-Way tool and an old file's import use.  A
+  walk is remembered by the track there as well, so a run that crosses on one track and comes back over the other is
+  not taken for going in circles.
+- **One direction per track.**  A direction set on one square's half of a track is set on the other's, the same way
+  along the track, whichever door it comes through (`AutonomySession.record`).
+- **The click** steps both tracks through both ways, the four ways they can each run one way, and closed (Adam:
+  *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible directions on both (4
+  combos)"*), counted on the north or west square so either square carries on from the same place.
+- **A crossing for the berth too**: the room walk of 5a does not stop at it, and the berth rule refuses at it only
+  where another road runs over it, as at a crossing.  Locking is unchanged - both tracks run over both squares, so
+  two trains cannot be on the crossing at once.
+
+*(Held by `core.testTwoYsMakeACrossing`.)*
+
 ### The autonomy editor's keyboard doors
 
 Five shortcuts act on **the square the pointer is over**, and they ask one question to find it -
@@ -2233,6 +2277,12 @@ a capture that depends on a logging setting is the same defect reachable by a pr
 A route is a list of commands - accessories, functions, locomotive speeds, the power. Any of its
 switches may sit on track a train is standing on or has reserved, and throwing one there moves metal
 under a train.
+
+**What "under a train" covers** (BCR-A1; Adam, 2026-10-04): the track a train's journey holds - claimed and not yet
+given back. A train standing at the end of its journey has given its route back, so a switch under its tail is
+neither refused nor asked about. A route reaches such a switch during a run only because somebody fired it by hand
+or armed it as a conditional route and answered Yes to Start's warning that conditional routes are active - Adam
+ruled that the operator's to control.
 
 **Only the switch under the train is refused. Everything else in the route runs.** Adam, 2026-09-08:
 *"don't run the conflicting switch commands, but do run the power off and others."* Each accessory is

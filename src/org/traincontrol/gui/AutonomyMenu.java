@@ -656,7 +656,7 @@ public class AutonomyMenu extends JMenu
             }
         }));
 
-        manage.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), new Runnable()
+        JMenuItem deleteOne = item(I18n.t("autosetup.ui.menuDeleteConfiguration"), new Runnable()
         {
             @Override
             public void run()
@@ -665,7 +665,9 @@ public class AutonomyMenu extends JMenu
 
                 ui.autonomyMenuActed();
             }
-        }));
+        });
+
+        manage.add(deleteOne);
 
         // Import and Export are NOT here any more (OB-051).
         //
@@ -685,6 +687,14 @@ public class AutonomyMenu extends JMenu
 
             if (!loaded) manage.getItem(i).setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNeedsLoaded")));
         }
+
+        // BUT DELETE ASKS WHICH (OB-319), so it needs only that there is one to delete: a configuration whose setup cannot
+        // be used is never loaded, and greying Delete until one was left it out of reach.
+        boolean anyToDelete = !session.getStore().getConfigurationNames().isEmpty();
+
+        deleteOne.setEnabled(anyToDelete);
+
+        if (anyToDelete) deleteOne.setToolTipText(null);
 
         manage.addSeparator();
 

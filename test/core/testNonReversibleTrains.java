@@ -448,7 +448,15 @@ public class testNonReversibleTrains
 
             assertTrue(at > 0, "precondition: the one hand door has gone from " + door[0]);
 
-            source = source.substring(at, Math.max(at, source.indexOf("executePath(", at)));
+            // ITS DISPATCH, by the name it has had since round 61 (BCR-C1) or the one before
+            int dispatch = source.indexOf("executePathByHand(", at);
+
+            if (dispatch < 0) dispatch = source.indexOf("executePath(", at);
+
+            assertTrue(dispatch > at, "precondition: the one hand door no longer dispatches through executePath or"
+                + " executePathByHand, so this checks nothing before it");
+
+            source = source.substring(at, dispatch);
 
             assertTrue(source.contains("ManualReversalPrompt.forJourney(")
                     || source.contains("ManualReversalPrompt.forOperator(")

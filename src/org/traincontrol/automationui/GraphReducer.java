@@ -1120,9 +1120,20 @@ public class GraphReducer
         //
         // Still terminates: a genuine circle re-enters a tile by the same side it did before, so it is
         // caught on that pass, and there are only four sides.
-        if (!visited.add(tile.toString() + "|" + landing.getEntrySide())) return;
+        //
+        // AND BY THE TRACK, on a two-square crossing (OB-320).  Its two tracks share the side its squares meet at, so a
+        // square entered by that side is told which track the walk came along - the square before and its road there -
+        // and is remembered by it: a walk that crossed on one track and came back over the other is not going in circles.
+        TileStep before = path.isEmpty() ? null : path.get(path.size() - 1);
 
-        for (Exit exit : graph.exits(tile, landing.getEntrySide()))
+        TileKey previous = before == null ? null : before.getTile();
+        RouteId previousRoute = before == null ? null : before.getRouteId();
+
+        Side lane = graph.legAcross(tile, landing.getEntrySide(), previous, previousRoute);
+
+        if (!visited.add(tile.toString() + "|" + landing.getEntrySide() + (lane == null ? "" : "|" + lane))) return;
+
+        for (Exit exit : graph.exits(tile, landing.getEntrySide(), previous, previousRoute))
         {
             Map<String, accessorySetting> branchCommands = new LinkedHashMap<>(commands);
 
@@ -1219,11 +1230,17 @@ public class GraphReducer
      * (`MarklinControlStation`, `LayoutEditorAddressPopup`); a permanent turnout has none by
      * definition, so widening it there would offer address dialogs for track nothing can throw.
      *
+     * **A TWO-SQUARE CROSSING IS A CROSSING** (OB-320): its squares are permanent Ys, but nothing merges at them, and a
+     * crossing does not end the room.
+     *
+     * @param tile the square
      * @param component the tile, or null where the diagram has none
      * @return true when the room ends here
      */
-    private static boolean boundsTheRoom(LayoutDiagramComponent component)
+    private boolean boundsTheRoom(TileKey tile, LayoutDiagramComponent component)
     {
+        if (graph.crossingPartner(tile) != null) return false;
+
         return component != null
             && (component.isSwitch() || TileGraph.isPermanentTurnout(component.getType()));
     }
@@ -1285,7 +1302,7 @@ public class GraphReducer
 
             LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-            if (boundsTheRoom(component))
+            if (boundsTheRoom(tile, component))
             {
                 return room > 0 ? room : known ? 0 : -1;
             }
@@ -1356,7 +1373,7 @@ public class GraphReducer
 
             LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-            if (boundsTheRoom(component)) break;
+            if (boundsTheRoom(tile, component)) break;
 
             int here = authored.getTileLength(tile);
 

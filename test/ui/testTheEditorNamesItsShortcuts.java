@@ -117,6 +117,70 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
+     * Nothing in the autonomy editor's window takes the keyboard from it (OB-200; Adam, 2026-09-12: *"when items in the
+     * list of issues are selected, hotkeys on the track diagram stop working, and there is no way to regain focus.  just
+     * send the commands through with the list of issues panel selected."*).
+     *
+     * The shortcuts are the window's own key handler, and its controls are kept from taking the keyboard so that the
+     * window keeps it (OB-019); the findings list and the directions box were not, so one click on either and every key
+     * went to it.  Asked of every control a click would give the keyboard to, in the whole window, so one added later is
+     * asked too.
+     *
+     * MUTATION: let the findings list or the directions box take the keyboard again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testNothingInTheAutonomyEditorTakesTheKeyboard() throws Exception
+    {
+        final java.util.List<String> taking = new java.util.ArrayList<>();
+        final java.util.List<java.awt.Component> asked = new java.util.ArrayList<>();
+        final java.awt.Component[] list = new java.awt.Component[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            controlsTakingTheKeyboard(editor, taking, asked);
+
+            list[0] = editor.getAutonomyPanel().getFindingsPanel().getViewport().getView();
+        });
+
+        assertTrue(asked.contains(list[0]), "precondition: the findings list is not among the controls asked, so this asks"
+            + " nothing about the control Adam clicked");
+
+        assertTrue(taking.isEmpty(), "a control of the autonomy editor takes the keyboard when it is clicked, and the"
+            + " editor's shortcuts stop until something gives it back (OB-200): " + taking);
+    }
+
+    /**
+     * Every visible control in a container that a click would give the keyboard to, by its class and its words; and every
+     * visible control a click could, into `asked`.  Visible, not showing, so the answer does not depend on the window
+     * being on a screen.
+     */
+    private static void controlsTakingTheKeyboard(java.awt.Container in, java.util.List<String> out,
+        java.util.List<java.awt.Component> asked)
+    {
+        for (java.awt.Component c : in.getComponents())
+        {
+            if (!c.isVisible()) continue;
+
+            boolean takesAClick = c instanceof javax.swing.JList || c instanceof javax.swing.JComboBox
+                || c instanceof javax.swing.AbstractButton || c instanceof javax.swing.JSpinner
+                || c instanceof javax.swing.JTable || c instanceof javax.swing.JTree || c instanceof javax.swing.JSlider
+                || c instanceof javax.swing.text.JTextComponent;
+
+            if (takesAClick) asked.add(c);
+
+            if (takesAClick && c.isFocusable())
+            {
+                out.add(c.getClass().getSimpleName() + (c instanceof javax.swing.AbstractButton
+                    ? " '" + ((javax.swing.AbstractButton) c).getText() + "'" : ""));
+            }
+
+            if (c instanceof java.awt.Container) controlsTakingTheKeyboard((java.awt.Container) c, out, asked);
+        }
+    }
+
+    /**
      * Select by Dragging a Box has a key, named on its item in the track diagram editor's right-click menu (FR-107).
      *
      * Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*.  The

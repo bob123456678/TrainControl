@@ -856,6 +856,9 @@ public class AutonomyEditorPanel extends JPanel
         showUnmeasured.setFocusable(false);
         showUnmeasured.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowUnmeasured")));
 
+        // NOR THE DIRECTIONS BOX, which the window mounts in its Toggle visibility box (OB-200), for the same reason
+        directions.setFocusable(false);
+
         directions.addActionListener(e ->
         {
             VIEW_PREFS.putInt(PREF_DIRECTIONS, directions.getSelectedIndex());
@@ -1114,6 +1117,13 @@ public class AutonomyEditorPanel extends JPanel
     private JScrollPane buildFindings()
     {
         findings.setVisibleRowCount(8);
+
+        // NOT FOCUSABLE, like every other control of this window (OB-200; Adam, 2026-09-12: *"when items in the list of
+        // issues are selected, hotkeys on the track diagram stop working, and there is no way to regain focus.  just send
+        // the commands through with the list of issues panel selected."*).  The shortcuts are the window's own key
+        // handler, so a click on a finding took the keyboard from it, and nothing gave it back; a row is still picked by
+        // the mouse.
+        findings.setFocusable(false);
 
         // The window's control size, not the hint size.  These are the sentences the reader is here to
         // read; set smaller than everything around them they looked like a footnote to the diagram
@@ -2467,6 +2477,19 @@ public class AutonomyEditorPanel extends JPanel
             : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
 
         bulk.add(clearMaxima);
+
+        // ALLOW EVERY PATH (FR-108; Adam, 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove any red arrows in one
+        // go. With warning."*).  Built like the clears above it, down to the tooltip being the sentence the dialog shows.
+        int oneWay = session == null ? 0 : session.routesNotOpenBothWays().size();
+
+        javax.swing.JMenuItem allowAll = item(I18n.f("autolayout.ui.menuAllowEveryPath", oneWay), () -> allowEveryPath());
+
+        allowAll.setEnabled(oneWay > 0);
+        allowAll.setToolTipText(wrapped(oneWay > 0
+            ? bulkClearWarning("autolayout.ui.confirmAllowEveryPath", oneWay)
+            : I18n.t("autosetup.ui.infoNothingOneWay")));
+
+        bulk.add(allowAll);
 
         // HOME EVERY TRAIN WHERE IT STANDS (FR-075).  Adam: *"to bulk tools in the autonomy editor,
         // add an option to mass mark current train locations as their homes."*
@@ -7655,6 +7678,13 @@ public class AutonomyEditorPanel extends JPanel
 
         if (routes.isEmpty()) return;
 
+        // A TWO-SQUARE CROSSING steps through its tracks' ways rather than its arms (OB-320)
+        if (routes.size() == 2 && session.getGraph().crossingPartner(target) != null)
+        {
+            cycleCrossing(target);
+            return;
+        }
+
         if (routes.size() > 1)
         {
             cycleBranching(target, routes);
@@ -7741,6 +7771,119 @@ public class AutonomyEditorPanel extends JPanel
 
         // NOT REFRESHED HERE (speed, 2026-10-04): the click that brought this here refreshes straight after, whatever
         // happens - and a refresh is a whole setup check, the list and the strip.
+    }
+
+    /**
+     * Left-click on a square of a two-square crossing - two permanent turnouts drawn toe to toe (OB-320): the next of
+     * both tracks both ways, the four ways the two can each run one way, and both closed.
+     *
+     * Adam, 2026-10-04: *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible
+     * directions on both (4 combos)"* - both ways first and closed last, as a crossing's own first answers go.  Not the
+     * arms of `cycleBranching`: the two tracks share the side the squares meet at, and one bit for it cannot say that one
+     * track runs onto the other square while the other runs off it.
+     *
+     * Counted on the crossing's north or west square whichever square is clicked, so a click on either carries on from the
+     * same place; the session sets the other square's half of each track with it.
+     */
+    private void cycleCrossing(TileKey clicked)
+    {
+        org.traincontrol.automationui.TileGraph graph = session.getGraph();
+
+        TileKey other = graph.crossingPartner(clicked);
+
+        org.traincontrol.automationui.TilePorts.Side clickedToe = graph.sideTowardNeighbour(clicked, other);
+
+        boolean clickedLeads = clickedToe == org.traincontrol.automationui.TilePorts.Side.S
+            || clickedToe == org.traincontrol.automationui.TilePorts.Side.E;
+
+        TileKey leader = clickedLeads ? clicked : other;
+        TileKey follower = clickedLeads ? other : clicked;
+
+        org.traincontrol.automationui.TilePorts.Side toe = graph.sideTowardNeighbour(leader, follower);
+
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(leader);
+
+        java.util.List<RouteId> tracks = new java.util.ArrayList<>(routes.keySet());
+
+        if (tracks.size() != 2 || toe == null) return;
+
+        // Onto the other square is toward the toe
+        Direction[] onto = new Direction[2];
+        Direction[] off = new Direction[2];
+
+        for (int i = 0; i < 2; i++)
+        {
+            onto[i] = routes.get(tracks.get(i)).getA() == toe ? Direction.TOWARD_A : Direction.TOWARD_B;
+            off[i] = onto[i] == Direction.TOWARD_A ? Direction.TOWARD_B : Direction.TOWARD_A;
+        }
+
+        Direction[][] states =
+        {
+            {Direction.BOTH, Direction.BOTH},
+            {onto[0], onto[1]}, {onto[0], off[1]}, {off[0], onto[1]}, {off[0], off[1]},
+            {Direction.NONE, Direction.NONE}
+        };
+
+        Direction[] now = {graph.getDirection(leader, tracks.get(0)), graph.getDirection(leader, tracks.get(1))};
+
+        int at = -1;
+
+        for (int i = 0; i < states.length; i++)
+        {
+            if (java.util.Arrays.equals(states[i], now)) at = i;
+        }
+
+        Direction[] next = states[(at + 1) % states.length];
+
+        Map<RouteId, Direction> wanted = new java.util.LinkedHashMap<>();
+
+        wanted.put(tracks.get(0), next[0]);
+        wanted.put(tracks.get(1), next[1]);
+
+        session.setDirections(leader, wanted);
+
+        String[] said = new String[4];
+
+        for (int i = 0; i < 2; i++)
+        {
+            org.traincontrol.automationui.TilePorts.Side leg = routes.get(tracks.get(i)).other(toe);
+
+            // Each end named by its corner of the crossing - or by its side, where the track runs straight on through
+            // the toes: the leader is on the side its toe faces away from
+            String near = end(toe.opposite(), leg);
+            String far = end(toe, leg.opposite());
+
+            boolean nearFirst = near.contains("N") || !far.contains("N") && near.contains("W");
+
+            said[2 * i] = nearFirst ? near + "-" + far : far + "-" + near;
+
+            said[2 * i + 1] = next[i] == Direction.BOTH ? I18n.t("autosetup.ui.dirBoth")
+                : next[i] == Direction.NONE ? I18n.t("autosetup.ui.dirNone")
+                : I18n.f("autosetup.ui.dirToward", next[i] == onto[i] ? far : near);
+        }
+
+        say(hint, I18n.f("autosetup.ui.cycledCrossing", describeTile(clicked), said[0], said[1], said[2], said[3]));
+
+        showRestrictionsIfHidden();
+
+        annotationsChanged();
+    }
+
+    /** Where a crossing's track ends: a square's side, where the track runs straight on, else its corner - NW, SE. */
+    private static String end(org.traincontrol.automationui.TilePorts.Side square,
+        org.traincontrol.automationui.TilePorts.Side leg)
+    {
+        return leg == square ? leg.toString() : corner(square, leg);
+    }
+
+    /** A corner of a square, named north or south first: NW, SE. */
+    private static String corner(org.traincontrol.automationui.TilePorts.Side one,
+        org.traincontrol.automationui.TilePorts.Side two)
+    {
+        boolean oneIsNorthOrSouth = one == org.traincontrol.automationui.TilePorts.Side.N
+            || one == org.traincontrol.automationui.TilePorts.Side.S;
+
+        return oneIsNorthOrSouth ? one.toString() + two : two.toString() + one;
     }
 
     /**
@@ -10677,6 +10820,41 @@ public class AutonomyEditorPanel extends JPanel
             // digitsOnly admits three digits and nothing else, so this is unreachable; a whole piece is at most 999.
             return -1;
         }
+    }
+
+    /**
+     * Opens every one-way and closed piece of track both ways, after a warning (FR-108).  The warning, the Cancel it
+     * offers and the message after are the clears' beside it, for the same reasons: in the editor Cancel puts the
+     * directions back; on the track diagram's own menu it is saved at once.
+     */
+    private void allowEveryPath()
+    {
+        int shut = session.routesNotOpenBothWays().size();
+
+        if (shut == 0)
+        {
+            say(hint, I18n.t("autosetup.ui.infoNothingOneWay"));
+
+            return;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            bulkClearWarning("autolayout.ui.confirmAllowEveryPath", shut),
+            I18n.f("autolayout.ui.menuAllowEveryPath", shut),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        int opened = session.allowEveryPath();
+
+        selection.clear();
+
+        say(hint, I18n.f("autosetup.ui.infoEveryPathAllowed", opened));
+
+        // Directions are what the running railway is built from, so the door a direction's own change takes
+        setupChanged();
     }
 
     /**
