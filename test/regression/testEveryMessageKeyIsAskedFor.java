@@ -88,6 +88,8 @@ public class testEveryMessageKeyIsAskedFor
         // (OP2-C2).  The first builder written since this list replaced the loose prefix rule, and the
         // list is exactly how it was meant to fail: loudly, naming the two keys, rather than silently.
         "autolayout.ui.confirmClearAll",
+        // and for Allow Every Path (FR-108), which warns as they do
+        "autolayout.ui.confirmAllowEveryPath",
     };
 
     /**
