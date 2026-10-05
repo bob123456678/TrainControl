@@ -1761,7 +1761,7 @@ can't be chosen shouldn't be offered"*.  Held by
 `core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing` and
 `core.testAutonomyDiagramPorts.testOnlyThePossibleDirectionsAreOffered`.)*
 
-### 5f. Two permanent Ys drawn toe to toe are one crossing
+### 5f. Two permanent turnouts drawn toe to toe are one crossing
 
 > *"Lets support two permanent Ys as a crossing, if possible, same as the current crossing by effectively rotated 45
 > degrees, just connecting differently and spread across 2 tiles."* - Adam, 2026-10-04 (OB-320)
@@ -1772,10 +1772,17 @@ two Ys' four legs are the crossing's four ends, and each track runs from a leg o
 Read as the turnouts they are drawn with, nothing passed them: a train trailing into one toe met the other's toe head
 on, which only a facing move could take.
 
-`TileGraph.crossingPartner` finds the pairs: a permanent Y, toe to toe with another, beside it on one page.  **Only
-that.**  A permanent Y on its own, toe to a leg, side by side, back to back, or toe to toe with a Y switch that has an
-address, is the turnout of 5e (Adam: *"there won't always be two adjacent Y to form a logical crossing.  sometimes it
-could just be one perma Y"*).
+`TileGraph.crossingPartner` finds the pairs: two permanent turnouts toe to toe, beside each other on one page, every leg
+of one facing the opposite leg of the other - two Ys, or two lefts or two rights turned half round from each other,
+whose straight legs then make a straight track through both toes and whose diverging legs the diagonal (Adam, of the two
+permanent rights at 15,13 and 16,13 on TC3Sandbox_layout: *"Treat those two adjacent perma switches at 15,13 and 16,13
+as one logical crossing."*).  **Only that.**  A permanent turnout on its own, toe to a leg, side by side, back to back, a
+left with a right (both diverging legs on one side), a three-way, or toe to toe with a switch that has an address, is the
+turnout of 5e (Adam: *"there won't always be two adjacent Y to form a logical crossing.  sometimes it could just be one
+perma Y"*; and *"those without another adjacent to form a crossing are treated as switches only crossable in one
+direction by autonomy"*).  The leg rule is what makes the pair **look** like a crossing - every track drawn straight
+through the joint - and that is the test Adam set: *"make sure that the pairing is visually a crossing.  if not, we
+treat the tracks verbatim."*
 
 - **Both ways, both tracks.**  A pair's roads are not directed into the toe, it defaults to both ways as a crossing
   does, and it is not warned about as a turnout trains may only trail.

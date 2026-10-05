@@ -856,6 +856,9 @@ public class AutonomyEditorPanel extends JPanel
         showUnmeasured.setFocusable(false);
         showUnmeasured.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowUnmeasured")));
 
+        // NOR THE DIRECTIONS BOX, which the window mounts in its Toggle visibility box (OB-200), for the same reason
+        directions.setFocusable(false);
+
         directions.addActionListener(e ->
         {
             VIEW_PREFS.putInt(PREF_DIRECTIONS, directions.getSelectedIndex());
@@ -1114,6 +1117,13 @@ public class AutonomyEditorPanel extends JPanel
     private JScrollPane buildFindings()
     {
         findings.setVisibleRowCount(8);
+
+        // NOT FOCUSABLE, like every other control of this window (OB-200; Adam, 2026-09-12: *"when items in the list of
+        // issues are selected, hotkeys on the track diagram stop working, and there is no way to regain focus.  just send
+        // the commands through with the list of issues panel selected."*).  The shortcuts are the window's own key
+        // handler, so a click on a finding took the keyboard from it, and nothing gave it back; a row is still picked by
+        // the mouse.
+        findings.setFocusable(false);
 
         // The window's control size, not the hint size.  These are the sentences the reader is here to
         // read; set smaller than everything around them they looked like a footnote to the diagram
@@ -7764,7 +7774,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Left-click on a square of a two-square crossing - two permanent Y turnouts drawn toe to toe (OB-320): the next of
+     * Left-click on a square of a two-square crossing - two permanent turnouts drawn toe to toe (OB-320): the next of
      * both tracks both ways, the four ways the two can each run one way, and both closed.
      *
      * Adam, 2026-10-04: *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible
@@ -7838,11 +7848,14 @@ public class AutonomyEditorPanel extends JPanel
         {
             org.traincontrol.automationui.TilePorts.Side leg = routes.get(tracks.get(i)).other(toe);
 
-            // Each end named by its corner of the crossing: the leader is on the side its toe faces away from
-            String near = corner(toe.opposite(), leg);
-            String far = corner(toe, leg.opposite());
+            // Each end named by its corner of the crossing - or by its side, where the track runs straight on through
+            // the toes: the leader is on the side its toe faces away from
+            String near = end(toe.opposite(), leg);
+            String far = end(toe, leg.opposite());
 
-            said[2 * i] = near.startsWith("N") ? near + "-" + far : far + "-" + near;
+            boolean nearFirst = near.contains("N") || !far.contains("N") && near.contains("W");
+
+            said[2 * i] = nearFirst ? near + "-" + far : far + "-" + near;
 
             said[2 * i + 1] = next[i] == Direction.BOTH ? I18n.t("autosetup.ui.dirBoth")
                 : next[i] == Direction.NONE ? I18n.t("autosetup.ui.dirNone")
@@ -7854,6 +7867,13 @@ public class AutonomyEditorPanel extends JPanel
         showRestrictionsIfHidden();
 
         annotationsChanged();
+    }
+
+    /** Where a crossing's track ends: a square's side, where the track runs straight on, else its corner - NW, SE. */
+    private static String end(org.traincontrol.automationui.TilePorts.Side square,
+        org.traincontrol.automationui.TilePorts.Side leg)
+    {
+        return leg == square ? leg.toString() : corner(square, leg);
     }
 
     /** A corner of a square, named north or south first: NW, SE. */

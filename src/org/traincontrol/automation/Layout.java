@@ -1168,6 +1168,9 @@ public class Layout
         // why, which is what its own comment in configureAndLockPath warns about.
         this.takingPath.remove(l);
 
+        // And its mark as sent by hand (BCR-C1), which its journey also takes away when it ends.
+        this.sentByHand.remove(l);
+
         // The sensor this locomotive was said to be heading for.  A route condition asking "has it
         // reached that sensor yet" waits on this entry, and one left behind is an entry nothing will
         // ever clear - the thread evaluating that route parks until the locomotive is dispatched again,

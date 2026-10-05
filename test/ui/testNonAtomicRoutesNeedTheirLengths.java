@@ -515,9 +515,10 @@ public class testNonAtomicRoutesNeedTheirLengths
                 "private void executeTimetableActionPerformed(", "executeTimetable();"},
             {"src/org/traincontrol/gui/TrainControlUI.java",
                 "public void requestReturnToHome()", "executeTimetable();"},
-            // THE TWO HAND DOORS ARE ONE since 2026-09-29: both send through `sendATrainByHand`
+            // THE TWO HAND DOORS ARE ONE since 2026-09-29: both send through `sendATrainByHand`, which dispatches through
+            // `executePathByHand` since round 61 (BCR-C1)
             {"src/org/traincontrol/gui/TrainControlUI.java",
-                "void sendATrainByHand(", "executePath("},
+                "void sendATrainByHand(", "executePathByHand("},
         };
 
         for (String[] door : doors)

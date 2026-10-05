@@ -827,6 +827,50 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A trapped arrival is named by the side it comes in by, and the advice offers to close arrivals from that side, as
+     * well as opening the way ahead or letting trains change direction there (OB-201; Adam, 2026-09-12: *"This error
+     * message should say either close arrivals from <direction>, open the way ahead, or let trains change direction."*).
+     *
+     * MUTATION: name the point instead of the side, or every way in rather than the trapped one, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrappedArrivalNamesTheSideItComesFrom() throws Exception
+    {
+        threeStationsInARow("OB-201");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        // EAST OF BETA, ONE WAY TOWARDS IT: a train arriving from the west cannot go on, one from the east can
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding trapped = null;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED.equals(finding.getMessageKey())
+                && beta.equals(finding.getTile()))
+            {
+                trapped = finding;
+            }
+        }
+
+        assertNotNull(trapped, "precondition: a train arriving at 3,1 from the west is not reported trapped: "
+            + session.check());
+
+        String west = org.traincontrol.util.I18n.t("autosetup.ui.sideW");
+
+        assertEquals(trapped.getSubject(), west, "the trapped arrival is not named by the side it comes in by (OB-201)");
+
+        String said = org.traincontrol.util.I18n.f(trapped.getMessageKey(), "3,1", trapped.getSubject());
+
+        assertTrue(said.split(java.util.regex.Pattern.quote(west), -1).length - 1 >= 2, "the advice does not offer to"
+            + " close arrivals from the side the train comes in by (OB-201): " + said);
+    }
+
+    /**
      * A station at the end of a line that trains may not turn at is an error - a train sent there could never leave
      * (Adam, 2026-10-01) - and marking that trains must change direction there clears it.
      *

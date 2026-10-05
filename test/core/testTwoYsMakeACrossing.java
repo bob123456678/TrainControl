@@ -42,6 +42,12 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * always be two adjacent Y to form a logical crossing.  sometimes it could just be one perma Y, so account for this.  Be
  * careful with edge cases."*).
  *
+ * Two permanent lefts or two permanent rights toe to toe, turned half round from each other, are a crossing too - the
+ * straight legs a straight track through both toes, the diverging legs the diagonal (Adam, of the two rights at 15,13
+ * and 16,13 on TC3Sandbox_layout: *"Treat those two adjacent perma switches at 15,13 and 16,13 as one logical crossing.
+ * Keep the existing rules for perma switches, i.e. those without another adjacent to form a crossing are treated as
+ * switches only crossable in one direction by autonomy."*).
+ *
  * @author Adam
  */
 public class testTwoYsMakeACrossing
@@ -464,6 +470,184 @@ public class testTwoYsMakeACrossing
             + " north-west to south-east track one-way, and only that");
     }
 
+    /**
+     * Two permanent rights toe to toe, each turned half round from the other, are one crossing: the straight legs a
+     * straight track through both toes, the diverging legs the diagonal - the shape at 15,13 and 16,13 on Adam's
+     * TC3Sandbox_layout.
+     *
+     * MUTATION: pair only Ys, or compare the legs without turning one square's round, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTwoRightTurnoutsToeToToeAreACrossing() throws Exception
+    {
+        LayoutDiagram page = page();
+
+        // toe east, straight leg west, diverging north; and toe west, straight leg east, diverging south
+        turnout(page, componentType.CUSTOM_PERM_RIGHT, 5, 5, 1);
+        turnout(page, componentType.CUSTOM_PERM_RIGHT, 6, 5, 3);
+
+        sensor(page, 4, 5, 0, 1);
+        sensor(page, 5, 4, 1, 2);
+        sensor(page, 7, 5, 0, 3);
+        sensor(page, 6, 6, 1, 4);
+
+        open(page, "OB-320 two rights");
+
+        assertEquals(session.getGraph().crossingPartner(key(5, 5)), key(6, 5), "two permanent rights toe to toe are not a"
+            + " crossing (OB-320)");
+
+        assertEquals(edges(), setOf("4,5>7,5", "7,5>4,5", "5,4>6,6", "6,6>5,4"), "two permanent rights toe to toe do not"
+            + " carry a straight track and a diagonal, both ways, and only them (OB-320)");
+    }
+
+    /**
+     * Two permanent lefts toe to toe, each turned half round from the other, are one crossing the same way.
+     *
+     * MUTATION: pair only Ys, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTwoLeftTurnoutsToeToToeAreACrossing() throws Exception
+    {
+        LayoutDiagram page = page();
+
+        // toe south, straight leg north, diverging west; and toe north, straight leg south, diverging east
+        turnout(page, componentType.CUSTOM_PERM_LEFT, 5, 5, 0);
+        turnout(page, componentType.CUSTOM_PERM_LEFT, 5, 6, 2);
+
+        sensor(page, 5, 4, 1, 1);
+        sensor(page, 4, 5, 0, 2);
+        sensor(page, 5, 7, 1, 3);
+        sensor(page, 6, 6, 0, 4);
+
+        open(page, "OB-320 two lefts");
+
+        assertEquals(session.getGraph().crossingPartner(key(5, 5)), key(5, 6), "two permanent lefts toe to toe are not a"
+            + " crossing (OB-320)");
+
+        assertEquals(edges(), setOf("5,4>5,7", "5,7>5,4", "4,5>6,6", "6,6>4,5"), "two permanent lefts toe to toe do not"
+            + " carry a straight track and a diagonal, both ways, and only them (OB-320)");
+    }
+
+    /**
+     * A permanent left and a permanent right toe to toe have both diverging legs on one side, so no track could go on from
+     * one of them: they stay two turnouts, trailed only - and with both toes facing, nothing passes them.
+     *
+     * MUTATION: pair any two permanent turnouts toe to toe, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testALeftAndARightToeToToeStayTurnouts() throws Exception
+    {
+        LayoutDiagram page = page();
+
+        // toe east, legs west and south; and toe west, legs east and south
+        turnout(page, componentType.CUSTOM_PERM_LEFT, 5, 5, 1);
+        turnout(page, componentType.CUSTOM_PERM_RIGHT, 6, 5, 3);
+
+        sensor(page, 4, 5, 0, 1);
+        sensor(page, 5, 6, 1, 2);
+        sensor(page, 7, 5, 0, 3);
+        sensor(page, 6, 6, 1, 4);
+
+        open(page, "OB-320 left and right");
+
+        assertNull(session.getGraph().crossingPartner(key(5, 5)), "a left and a right with both diverging legs on one side"
+            + " are a crossing");
+
+        for (TileKey square : Arrays.asList(key(5, 5), key(6, 5)))
+        {
+            for (Route route : session.getGraph().getRoutes(square).values())
+            {
+                assertNotNull(route.getDirectedToward(), square + " has a road its blades do not restrict: " + route);
+            }
+        }
+
+        assertEquals(edges(), setOf(), "a train passes a left and a right toe to toe, which as turnouts with no address"
+            + " can only be trailed");
+    }
+
+    /**
+     * A permanent Y toe to toe with a permanent right, and two permanent three-ways toe to toe, stay turnouts: the Y's legs
+     * do not face the right's, and a three-way is not half of a crossing.
+     *
+     * MUTATION: pair any two permanent turnouts whose legs face, three-ways too, or any toe to toe, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAYWithARightAndTwoThreeWaysStayTurnouts() throws Exception
+    {
+        LayoutDiagram page = page();
+
+        y(page, 2, 2, 0);
+        turnout(page, componentType.CUSTOM_PERM_RIGHT, 2, 3, 2);
+
+        turnout(page, componentType.CUSTOM_PERM_THREEWAY, 8, 2, 0);
+        turnout(page, componentType.CUSTOM_PERM_THREEWAY, 8, 3, 2);
+
+        open(page, "OB-320 still turnouts");
+
+        for (TileKey square : Arrays.asList(key(2, 2), key(2, 3), key(8, 2), key(8, 3)))
+        {
+            assertNull(session.getGraph().crossingPartner(square), square + " is half of a crossing");
+        }
+    }
+
+    /**
+     * The click names a straight track through the crossing by its two sides, and a diagonal by its two corners: on two
+     * rights toe to toe, "W-E" and "NW-SE" (OB-320).
+     *
+     * MUTATION: name every end by a corner, and this fails with "WW".
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTheClickNamesAStraightTrackByItsSides() throws Exception
+    {
+        LayoutDiagram page = page();
+
+        turnout(page, componentType.CUSTOM_PERM_RIGHT, 5, 5, 1);
+        turnout(page, componentType.CUSTOM_PERM_RIGHT, 6, 5, 3);
+
+        open(page, "OB-320 naming");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        final String[] said = new String[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+                java.lang.reflect.Method cycle =
+                    org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+
+                cycle.setAccessible(true);
+                cycle.invoke(panel[0], key(5, 5));
+
+                java.lang.reflect.Field hint = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("hint");
+
+                hint.setAccessible(true);
+
+                said[0] = ((javax.swing.JLabel) hint.get(panel[0])).getText();
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        assertTrue(said[0] != null && said[0].contains("W-E") && said[0].contains("NW-SE"), "the click does not name the"
+            + " straight track W-E and the diagonal NW-SE: " + said[0]);
+    }
+
     // ---------------------------------------------------------------- the railway
 
     /** The vertical pair: Ys at 5,5 (toe south) and 5,6 (toe north), and a sensor at each of the four ends. */
@@ -495,6 +679,12 @@ public class testTwoYsMakeACrossing
     private static void y(LayoutDiagram page, int x, int y, int orientation) throws IOException
     {
         page.addComponent(componentType.CUSTOM_PERM_Y, x, y, orientation, 0, 0, 0, accessoryDecoderType.MM2, null);
+    }
+
+    /** A turnout with no address, of the type given, at the orientation given. */
+    private static void turnout(LayoutDiagram page, componentType type, int x, int y, int orientation) throws IOException
+    {
+        page.addComponent(type, x, y, orientation, 0, 0, 0, accessoryDecoderType.MM2, null);
     }
 
     /** A sensor: east-west at orientation 0, north-south at 1. */

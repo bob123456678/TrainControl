@@ -1670,6 +1670,33 @@ public class AutonomyBuilder
     }
 
     /**
+     * Every emitted name of a split copy mapped to the side its trains come in by (OB-201): what a trapped arrival is
+     * named by, and what closing arrivals from that side would close.
+     *
+     * @return emitted Point name to its arrival side; only split copies appear
+     */
+    public Map<String, TilePorts.Side> arrivalByName()
+    {
+        Map<String, TilePorts.Side> out = new LinkedHashMap<>();
+
+        Map<TileKey, String> names = uniqueNames();
+
+        Set<String> taken = namesTaken(names);
+
+        for (Map.Entry<TileKey, String> entry : names.entrySet())
+        {
+            for (Node node : nodesFor(entry.getKey()))
+            {
+                if (node.arrival == null) continue;
+
+                out.put(nodeName(entry.getValue(), node, taken), node.arrival);
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * Which way a train on a square of one copy that records no facing points: toward its only way out (RSA6-B3) - or
      * null where it has none, or more than one.
      *

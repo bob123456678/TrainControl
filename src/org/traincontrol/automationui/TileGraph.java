@@ -929,16 +929,20 @@ public class TileGraph
     /**
      * The other square of a two-square crossing, or null where this square is not half of one (OB-320).
      *
-     * Two permanent Y turnouts drawn toe to toe (Adam, 2026-10-04: *"Lets support two permanent Ys as a crossing, if
+     * Two permanent turnouts drawn toe to toe (Adam, 2026-10-04: *"Lets support two permanent Ys as a crossing, if
      * possible, same as the current crossing by effectively rotated 45 degrees, just connecting differently and spread
-     * across 2 tiles."*).  The diagram has no diagonal crossing, so one is drawn as the two halves of an X: the two Ys'
-     * four legs are its four ends, and each track runs from a leg of one square, over the toes, to the opposite leg of
-     * the other.  As turnouts they could only be trailed into their toes, so nothing passed them: a train trailing into
-     * one toe met the other head on.
+     * across 2 tiles."*).  The diagram has no diagonal crossing, so one is drawn as the two halves of an X: the two
+     * turnouts' four legs are its four ends, and each track runs from a leg of one square, over the toes, to the opposite
+     * leg of the other.  As turnouts they could only be trailed into their toes, so nothing passed them: a train trailing
+     * into one toe met the other head on.
      *
-     * Only a permanent Y, only toe to toe, and only beside each other on one page.  A permanent Y alone, or beside
-     * anything else, is the turnout with no address it always was (Adam: *"there won't always be two adjacent Y to form
-     * a logical crossing.  sometimes it could just be one perma Y"*).
+     * Two Ys, or two lefts or two rights turned half round from each other - where every leg faces the opposite leg of
+     * the other, so that a left's or a right's straight legs make a straight track through both toes and its diverging
+     * legs the diagonal (Adam, of the two permanent rights at 15,13 and 16,13 on TC3Sandbox_layout: *"Treat those two
+     * adjacent perma switches at 15,13 and 16,13 as one logical crossing."*).  Only toe to toe, and only beside each other
+     * on one page.  A permanent turnout without such a partner - alone, toe to a leg, a left with a right, a three-way -
+     * is the turnout with no address it always was (Adam: *"those without another adjacent to form a crossing are
+     * treated as switches only crossable in one direction by autonomy"*).
      *
      * @param tile a square
      * @return the other half, or null
@@ -1012,20 +1016,31 @@ public class TileGraph
     }
 
     /**
-     * Finds the two-square crossings: every two permanent Ys whose toes face each other (OB-320).  A Y has one toe, so a
-     * square is half of one crossing at most.
+     * Finds the two-square crossings: every two permanent turnouts whose toes face each other and whose legs face each
+     * other's opposite legs (OB-320).  A turnout has one toe, so a square is half of one crossing at most.
      */
     private void pairTheCrossings()
     {
         for (Map.Entry<TileKey, LayoutDiagramComponent> entry : tiles.entrySet())
         {
-            Side toe = permanentYToe(entry.getValue());
+            Side toe = crossingToe(entry.getValue());
 
             if (toe == null) continue;
 
             TileKey other = neighbour(entry.getKey(), toe);
 
-            if (permanentYToe(tiles.get(other)) == toe.opposite()) crossingPartners.put(entry.getKey(), other);
+            LayoutDiagramComponent there = tiles.get(other);
+
+            if (crossingToe(there) != toe.opposite()) continue;
+
+            // EVERY LEG FACING THE OPPOSITE LEG of the other square, which is how each track runs corner to corner or
+            // straight on.  A left with a right has both diverging legs on one side: no track could go on from one of
+            // them, so the two stay turnouts.
+            Set<Side> across = new LinkedHashSet<>();
+
+            for (Side leg : legsOf(entry.getValue(), toe)) across.add(leg.opposite());
+
+            if (across.equals(legsOf(there, toe.opposite()))) crossingPartners.put(entry.getKey(), other);
         }
 
         // NOT A TURNOUT TO WARN ABOUT: the warning says trains may pass it only trailing, and a crossing passes them both
@@ -1034,12 +1049,32 @@ public class TileGraph
             && WARN_PERMANENT_TURNOUT.equals(problem.getMessageKey()));
     }
 
-    /** The toe of a permanent Y, or null for any other square. */
-    private static Side permanentYToe(LayoutDiagramComponent component)
+    /** The toe of a permanent Y, left or right - a turnout that can be half of a two-square crossing - or null. */
+    private static Side crossingToe(LayoutDiagramComponent component)
     {
-        if (component == null || component.getType() != componentType.CUSTOM_PERM_Y) return null;
+        if (component == null) return null;
 
-        return TilePorts.deriveToe(component.getType(), component.getOrientation());
+        componentType type = component.getType();
+
+        if (type != componentType.CUSTOM_PERM_Y && type != componentType.CUSTOM_PERM_LEFT
+            && type != componentType.CUSTOM_PERM_RIGHT) return null;
+
+        return TilePorts.deriveToe(type, component.getOrientation());
+    }
+
+    /** The sides a turnout's roads leave its toe by. */
+    private static Set<Side> legsOf(LayoutDiagramComponent component, Side toe)
+    {
+        Set<Side> legs = new LinkedHashSet<>();
+
+        for (Route route : TilePorts.ports(component.getType(), component.getOrientation(), 0))
+        {
+            Side leg = route.other(toe);
+
+            if (leg != null && leg != toe) legs.add(leg);
+        }
+
+        return legs;
     }
 
     /**

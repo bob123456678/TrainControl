@@ -491,7 +491,7 @@ public class AutonomyChecks
      * Locomotive in the model and the other is a point property, and neither is visible from the graph.
      */
     public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
-        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Set<TileKey> trapped,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Map<TileKey, Set<TilePorts.Side>> trapped,
         Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
@@ -1127,24 +1127,47 @@ public class AutonomyChecks
      * Usually the answer is one of two things: the square IS a terminus and wants marking as one, or a
      * branch off it is shut that should be open.
      */
-    private static List<Finding> checkTrappedArrivals(GraphReducer reducer, Set<TileKey> trapped)
+    private static List<Finding> checkTrappedArrivals(GraphReducer reducer, Map<TileKey, Set<TilePorts.Side>> trapped)
     {
         List<Finding> findings = new ArrayList<>();
 
-        for (TileKey tile : trapped)
+        for (Map.Entry<TileKey, Set<TilePorts.Side>> square : trapped.entrySet())
         {
+            TileKey tile = square.getKey();
+
             ReducedPoint point = reducer.getPoints().get(tile);
 
             // A NOTICE on a square trains only pass through.  "Could not go on" warns about a place a
             // train can be SENT and then be stuck; nothing is ever sent to a plain point, so there the
             // same sentence is a remark about the shape of the track rather than something to fix.
+            //
+            // ITS SUBJECT IS THE SIDE THE TRAIN COMES IN BY, in words (OB-201; Adam, 2026-09-12: *"This error message
+            // should say either close arrivals from <direction>, open the way ahead, or let trains change
+            // direction."*) - the square is {0} wherever a finding is shown, and the side is {1}.
             findings.add(new Finding(
                 point != null && point.isStation() ? Severity.WARNING : Severity.INFO,
-                ARRIVAL_TRAPPED,
-                point == null ? String.valueOf(tile) : point.getName(), tile));
+                ARRIVAL_TRAPPED, sidesInWords(square.getValue()), tile));
         }
 
         return findings;
+    }
+
+    /**
+     * Sides in words, as the arrivals menu names them: "west", "west and north", "west, north and east".
+     *
+     * @param sides the sides
+     * @return the words
+     */
+    static String sidesInWords(java.util.Collection<TilePorts.Side> sides)
+    {
+        List<String> words = new ArrayList<>();
+
+        for (TilePorts.Side side : sides) words.add(org.traincontrol.util.I18n.t("autosetup.ui.side" + side.name()));
+
+        if (words.size() < 2) return words.isEmpty() ? "" : words.get(0);
+
+        return String.join(", ", words.subList(0, words.size() - 1)) + " "
+            + org.traincontrol.util.I18n.t("route.ui.joinAnd") + " " + words.get(words.size() - 1);
     }
 
     /**

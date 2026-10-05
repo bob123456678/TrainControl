@@ -5022,16 +5022,21 @@ public class AutonomySession
      * somewhere and stranded is the serious case, while a plain point trains only pass through gets the
      * same finding at INFO.  `checkTrappedArrivals` makes that distinction; this only finds them.
      *
+     * Each with the sides its trapped arrivals come in by (OB-201) - the builder's own copy says, so a trapped copy no
+     * train can reach is named by its side too: closing arrivals from that side is one of the three ways out, and the
+     * finding names it.
+     *
      * Empty when the setup will not build, deliberately - see `builtForInspection`.
      *
      * @param built the inspected configuration, or null
      * @param named the builder's own name-to-tile mapping
-     * @return the squares
+     * @param arrivals the builder's own name-to-arrival-side mapping
+     * @return the squares, each to the sides its trapped arrivals come in by
      */
-    private Set<TileKey> tilesWithATrappedArrival(org.json.JSONObject built,
-        java.util.Map<String, TileKey> named)
+    private Map<TileKey, Set<Side>> tilesWithATrappedArrival(org.json.JSONObject built,
+        java.util.Map<String, TileKey> named, java.util.Map<String, Side> arrivals)
     {
-        Set<TileKey> out = new LinkedHashSet<>();
+        Map<TileKey, Set<Side>> out = new LinkedHashMap<>();
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
@@ -5076,7 +5081,18 @@ public class AutonomySession
             // redundant: my first version of this derivation left the filter out.
             if (arrivalSides(tile).isEmpty()) continue;
 
-            out.add(tile);
+            Set<Side> sides = out.computeIfAbsent(tile, k -> new LinkedHashSet<Side>());
+
+            Side side = arrivals == null ? null : arrivals.get(name);
+
+            if (side != null) sides.add(side);
+        }
+
+        // A copy the builder names no side for - none should, since only a split square is reported - is named by the
+        // square's ways in, rather than by nothing
+        for (Map.Entry<TileKey, Set<Side>> square : out.entrySet())
+        {
+            if (square.getValue().isEmpty()) square.getValue().addAll(arrivalSides(square.getKey()));
         }
 
         return out;
@@ -7259,6 +7275,10 @@ public class AutonomySession
         java.util.Map<String, TileKey> namesForInspection =
             inspected == null ? null : builder(null).tilesByName();
 
+        // and the side each copy's trains come in by, which a trapped arrival is named by (OB-201)
+        java.util.Map<String, Side> arrivalsForInspection =
+            inspected == null ? null : builder(null).arrivalByName();
+
         // Squares a train can reach and then not leave: it arrived by one side, the only way on is back
         // out of that same side, and nobody has said trains may turn round there.
         //
@@ -7270,7 +7290,7 @@ public class AutonomySession
         // Nothing is reported when the setup will not build, which is the same rule the copy checks
         // already follow: a setup that will not build has louder problems than a trapped arrival, and
         // every one of them is already on the list.
-        Set<TileKey> trapped = tilesWithATrappedArrival(inspected, namesForInspection);
+        Map<TileKey, Set<Side>> trapped = tilesWithATrappedArrival(inspected, namesForInspection, arrivalsForInspection);
 
         // Captions the user’s own writing is sitting on top of.
         //
