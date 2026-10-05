@@ -5800,6 +5800,17 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         if (x != getX() || y != getY()) setLocation(x, y);
     }
 
+    /**
+     * The window's title for the page it shows, in one mode or the other (MT-669).
+     *
+     * @param autonomy whether the window is the autonomy editor
+     * @return the title
+     */
+    private String titleFor(boolean autonomy)
+    {
+        return I18n.f(autonomy ? "autosetup.ui.windowTitle" : "app.ui.windowLayoutEditorTitle", this.layout.getName());
+    }
+
     public void render()
     {        
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -5818,9 +5829,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
             drawGrid();
 
-            setTitle(
-                I18n.f("app.ui.windowLayoutEditorTitle", this.layout.getName())
-            );
+            // The mode's own title, which setAutonomyMode has decided by now (MT-669)
+            setTitle(titleFor(isAutonomyMode()));
 
             // The index FIRST, because everything below asks what has been remembered.
             //
@@ -6398,7 +6408,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
             drawGrid();
 
-            setTitle(I18n.f("app.ui.windowLayoutEditorTitle", this.layout.getName()));
+            // THE ARRIVING MODE'S TITLE, from the start (MT-669; Adam, 2026-10-04: *"when switching pages, the autonomy
+            // editor window title briefly shows the layout editor (not autonomy editor) title for a split second, before
+            // being updated."*).  The track editor's was set here, and the autonomy editor's only by the step
+            // setAutonomyMode posts - so the wrong one showed while the new page drew.
+            setTitle(titleFor(session != null));
 
             if (session != null) setAutonomyMode(session);
 

@@ -36,6 +36,19 @@ public class testSwingSpeaksOurLanguage
         {"FileChooser.fileNameLabelText", "swing.fileChooser.fileName"},
         {"FileChooser.filesOfTypeLabelText", "swing.fileChooser.filesOfType"}};
 
+    /** And the words a file chooser shows only when it makes or renames a folder, with the name it gives a new one. */
+    private static final String[][] RARER = {
+        {"FileChooser.win32.newFolder", "swing.fileChooser.newFolderName"},
+        {"FileChooser.win32.newFolder.subsequent", "swing.fileChooser.newFolderNameNext"},
+        {"FileChooser.other.newFolder", "swing.fileChooser.newFolderName"},
+        {"FileChooser.other.newFolder.subsequent", "swing.fileChooser.newFolderNameNext"},
+        {"FileChooser.newFolderErrorText", "swing.fileChooser.newFolderError"},
+        {"FileChooser.newFolderParentDoesntExistTitleText", "swing.fileChooser.newFolderNoParentTitle"},
+        {"FileChooser.newFolderParentDoesntExistText", "swing.fileChooser.newFolderNoParent"},
+        {"FileChooser.renameErrorTitleText", "swing.fileChooser.renameErrorTitle"},
+        {"FileChooser.renameErrorText", "swing.fileChooser.renameError"},
+        {"FileChooser.renameErrorFileExistsText", "swing.fileChooser.renameErrorExists"}};
+
     /**
      * In Danish, which Swing has no words for, a popup and a file chooser say TrainControl's Danish whatever language the
      * computer's is.
@@ -98,6 +111,51 @@ public class testSwingSpeaksOurLanguage
         assertEquals(UIManager.getString("FileChooser.openButtonToolTipText", I18n.getLocale()),
             I18n.t("swing.fileChooser.openTip"), "after the look and feel is installed, the file chooser's Open tooltip is"
             + " Swing's own (OB-318)");
+    }
+
+    /**
+     * The words a file chooser shows only when it makes or renames a folder are TrainControl's too (RSA37-C3): the name a
+     * new folder is given, "New Folder" and "New Folder (2)", and the new-folder and rename errors - which Swing has in
+     * English only, in a Danish, Dutch or Polish window.  The patterns Swing fills in keep their place for the number and
+     * the name.
+     *
+     * MUTATION: leave any of these words to Swing, and this fails.
+     *
+     * @throws Exception from the look and feel
+     */
+    @Test
+    public void testTheChoosersRarerWordsAreOurs() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a look and feel needs a display");
+
+        TrainControlUI.installLookAndFeel();
+
+        Locale was = I18n.getLocale();
+
+        try
+        {
+            I18n.setLocale(new Locale("da"));
+
+            speak();
+
+            for (String[] word : RARER)
+            {
+                assertEquals(UIManager.getString(word[0], Locale.ENGLISH), I18n.t(word[1]), word[0] + " is Swing's own"
+                    + " word rather than TrainControl's Danish (RSA37-C3)");
+            }
+
+            assertEquals(java.text.MessageFormat.format(UIManager.getString("FileChooser.win32.newFolder.subsequent"), "2"),
+                "Ny mappe (2)", "a second new folder is not numbered");
+
+            assertEquals(java.text.MessageFormat.format(UIManager.getString("FileChooser.renameErrorFileExistsText"),
+                "spor.json").indexOf("spor.json"), 0, "the rename error does not name the file");
+        }
+        finally
+        {
+            I18n.setLocale(was);
+
+            speak();
+        }
     }
 
     /** TrainControlUI.swingSpeaksOurLanguage, which is the window's. */

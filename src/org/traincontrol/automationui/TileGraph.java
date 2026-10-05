@@ -983,6 +983,71 @@ public class TileGraph
     }
 
     /**
+     * Makes the two halves of each two-square crossing's tracks agree where the directions applied to them do not
+     * (RSA37-C1).
+     *
+     * Every door sets a crossing's track on both its squares (OB-320), so halves that disagree hold answers set while the
+     * squares were permanent turnouts: in a setup saved before the change, or on a turnout given its partner since.  Each
+     * was read in the crossing's terms on its own square, so the blades' own way became a one-way track, and a turnout's
+     * closure a one-way track the other way.  They are read as a turnout's instead, the same on both halves: towards the
+     * toe is the way the blades run, which restricted nothing, so the track runs both ways; towards a leg is how a
+     * permanent turnout was closed (VD18-B1), and closed is closed, so the track is closed if either half was.
+     *
+     * The graph's directions only - the setup keeps what was set, which means the same again should the squares ever be
+     * turnouts again, and the first edit of the track sets both halves anew.
+     */
+    public void settleCrossingHalves()
+    {
+        for (Map.Entry<TileKey, TileKey> pair : crossingPartners.entrySet())
+        {
+            TileKey tile = pair.getKey();
+            TileKey partner = pair.getValue();
+
+            for (RouteId routeId : new java.util.ArrayList<>(getRoutes(tile).keySet()))
+            {
+                RouteId across = crossingRouteOnPartner(tile, routeId);
+
+                if (across == null) continue;
+
+                Direction here = getDirection(tile, routeId);
+                Direction there = getDirection(partner, across);
+
+                if (there == crossingDirectionOnPartner(tile, routeId, here)) continue;
+
+                Direction settled = closedAsATurnout(tile, routeId, here) || closedAsATurnout(partner, across, there)
+                    ? Direction.NONE : Direction.BOTH;
+
+                setDirection(tile, routeId, settled);
+                setDirection(partner, across, settled);
+            }
+        }
+    }
+
+    /**
+     * Whether a direction on half of a crossing closed the road when the square was a permanent turnout: closed, or
+     * towards a leg - which, against blades that run only into the toe, let nothing through (RSA37-C1).
+     *
+     * @param tile half of a crossing
+     * @param routeId one of its roads
+     * @param direction the road's direction
+     * @return whether it closed the road
+     */
+    private boolean closedAsATurnout(TileKey tile, RouteId routeId, Direction direction)
+    {
+        if (direction == Direction.NONE) return true;
+
+        if (direction == null || direction == Direction.BOTH) return false;
+
+        Route road = getRoutes(tile).get(routeId);
+
+        Side toe = sideTowardNeighbour(tile, crossingPartner(tile));
+
+        if (road == null || toe == null) return false;
+
+        return (direction == Direction.TOWARD_A ? road.getA() : road.getB()) != toe;
+    }
+
+    /**
      * A direction on one square's half of a two-square crossing's track, as the other square's half reads it (OB-320):
      * the same way along the track, named by that square's own sides.  Both ways and closed read the same on both.
      *

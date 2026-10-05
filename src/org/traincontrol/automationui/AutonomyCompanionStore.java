@@ -4292,6 +4292,10 @@ public class AutonomyCompanionStore
                 // a direction naming a route the tile no longer has is simply not applied
             }
         }
+
+        // AND A CROSSING'S TWO HALVES AGREE (RSA37-C1): a direction stored on one square of a two-square crossing while it
+        // was a permanent turnout ran its track one way on that square alone
+        graph.settleCrossingHalves();
     }
 
     // --- internals --------------------------------------------------------------------------------

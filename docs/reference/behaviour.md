@@ -1792,7 +1792,10 @@ treat the tracks verbatim."*
   walk is remembered by the track there as well, so a run that crosses on one track and comes back over the other is
   not taken for going in circles.
 - **One direction per track.**  A direction set on one square's half of a track is set on the other's, the same way
-  along the track, whichever door it comes through (`AutonomySession.record`).
+  along the track, whichever door it comes through (`AutonomySession.record`).  Halves that disagree were set while
+  the squares were turnouts - a setup saved before the change, or a turnout given its partner since - and are read as a
+  turnout's, the same on both (`TileGraph.settleCrossingHalves`, RSA37-C1): towards the toe, the blades' own way, is
+  both ways; towards a leg, how a permanent turnout was closed, is closed.
 - **The click** steps both tracks through both ways, the four ways they can each run one way, and closed (Adam:
   *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible directions on both (4
   combos)"*), counted on the north or west square so either square carries on from the same place.

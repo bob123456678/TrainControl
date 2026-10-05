@@ -239,6 +239,13 @@ public class AutonomyChecks
     public static final String MAY_TURN_ON_DEAD_END = "autosetup.ui.checkMayTurnOnDeadEnd";
     public static final String REVERSING_LEADS_NOWHERE = "autosetup.ui.checkReversingLeadsNowhere";
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
+
+    /**
+     * A trapped arrival whose advice leaves out closing arrivals, because the editor cannot close them there: a plain
+     * point has no arrivals menu, and a station's last open way in cannot be shut (RSA37-B1).  The same finding as
+     * `ARRIVAL_TRAPPED` in every other respect - `isArrivalTrapped` answers for either.
+     */
+    public static final String ARRIVAL_TRAPPED_NO_CLOSING = "autosetup.ui.checkArrivalTrappedNoClosing";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
 
@@ -477,6 +484,7 @@ public class AutonomyChecks
     // looks load-bearing is worse than none".
 
     /**
+     * @param arrivalsClosable the trapped squares whose trapped sides the arrivals menu can close (RSA37-B1)
      * @param withoutTrainLength squares whose locomotive has no length recorded, to that locomotive (FR-046, RSA19-C1)
      * @param repeatedSensorPages included pages repeating another included page's s88 (OB-150)
      * @param withoutMaxLength station squares with no maximum train length
@@ -492,7 +500,7 @@ public class AutonomyChecks
      */
     public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
         Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Map<TileKey, Set<TilePorts.Side>> trapped,
-        Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
+        Set<TileKey> arrivalsClosable, Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
         Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
@@ -539,7 +547,7 @@ public class AutonomyChecks
 
         findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, barred, closed,
             notAutoDestinations));
-        findings.addAll(checkTrappedArrivals(reducer, trapped));
+        findings.addAll(checkTrappedArrivals(reducer, trapped, arrivalsClosable));
         findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
         findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn, barred, closed));
         findings.addAll(checkStationLabels(reducer, labelledStations));
@@ -1126,8 +1134,11 @@ public class AutonomyChecks
      *
      * Usually the answer is one of two things: the square IS a terminus and wants marking as one, or a
      * branch off it is shut that should be open.
+     *
+     * @param closable the squares whose trapped sides the arrivals menu can close, the only ones told to (RSA37-B1)
      */
-    private static List<Finding> checkTrappedArrivals(GraphReducer reducer, Map<TileKey, Set<TilePorts.Side>> trapped)
+    private static List<Finding> checkTrappedArrivals(GraphReducer reducer, Map<TileKey, Set<TilePorts.Side>> trapped,
+        Set<TileKey> closable)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -1144,12 +1155,28 @@ public class AutonomyChecks
             // ITS SUBJECT IS THE SIDE THE TRAIN COMES IN BY, in words (OB-201; Adam, 2026-09-12: *"This error message
             // should say either close arrivals from <direction>, open the way ahead, or let trains change
             // direction."*) - the square is {0} wherever a finding is shown, and the side is {1}.
+            //
+            // CLOSING ARRIVALS IS OFFERED ONLY WHERE THE EDITOR CAN DO IT (RSA37-B1): on a station, for sides that are not
+            // its last open way in.  A plain point has no arrivals menu, and a station trapped from every open side would
+            // be left with no way in, which the menu refuses; there the advice is the other two.
             findings.add(new Finding(
                 point != null && point.isStation() ? Severity.WARNING : Severity.INFO,
-                ARRIVAL_TRAPPED, sidesInWords(square.getValue()), tile));
+                closable != null && closable.contains(tile) ? ARRIVAL_TRAPPED : ARRIVAL_TRAPPED_NO_CLOSING,
+                sidesInWords(square.getValue()), tile));
         }
 
         return findings;
+    }
+
+    /**
+     * Whether a finding is a trapped arrival, whichever advice it gives (RSA37-B1).
+     *
+     * @param messageKey a finding's key
+     * @return true for `ARRIVAL_TRAPPED` and `ARRIVAL_TRAPPED_NO_CLOSING`
+     */
+    public static boolean isArrivalTrapped(String messageKey)
+    {
+        return ARRIVAL_TRAPPED.equals(messageKey) || ARRIVAL_TRAPPED_NO_CLOSING.equals(messageKey);
     }
 
     /**

@@ -616,6 +616,31 @@ public class LayoutGrid
     private TrainControlUI window;
 
     /**
+     * The captions this grid was built with: each square it drew, to the station whose caption it carries or null, and
+     * each of those stations to the name it gave (MT-670).  They are the setup's answers a grid cannot be told again once
+     * it is built - a caption is a label of its own, in a cell laid out wider - so a setup change asks them to know
+     * whether building the grid again would draw anything different.
+     */
+    private final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        org.traincontrol.automationui.TileGraph.TileKey> captionsAsBuilt = new java.util.HashMap<>();
+
+    private final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, String> captionNamesAsBuilt =
+        new java.util.HashMap<>();
+
+    /**
+     * Each tile this grid registered with the window's registry, by its square (MT-670).  The registry lets go of a tile
+     * whose panel is hidden as it annotates, and only building the grid again registered it anew; a grid kept with a
+     * tile let go would go on showing that square as it was, so a grid is kept only while all of them are registered.
+     */
+    private final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, LayoutLabel> tilesAsRegistered =
+        new java.util.HashMap<>();
+
+    /** What the grid was built of, for the same question: the page, whether in an editor, and the window it is in. */
+    private String builtPage;
+    private boolean builtInEditor;
+    private Container builtMaster;
+
+    /**
      * The caption labels THIS grid registered, so discarding it can hand back exactly those.
      *
      * Not "everything registered against the panel", which was the first attempt and was wrong in a way
@@ -924,6 +949,10 @@ public class LayoutGrid
         // this constructor asked the short version and was wrong in the viewer.
         final boolean inEditor = layout.getEdit() && master instanceof LayoutEditor;
 
+        this.builtPage = layout.getName();
+        this.builtInEditor = inEditor;
+        this.builtMaster = master;
+
         // Before anything else touches the panel: whatever was drawn here is being replaced, and a
         // replaced grid with timers still armed fires into a panel that is no longer its own.
         this.owner = parent;
@@ -1217,6 +1246,8 @@ public class LayoutGrid
                 final org.traincontrol.automationui.TileGraph.TileKey captioned =
                     hidesCaptions ? null : (ui == null ? null : ui.autonomyCaptionAt(square));
 
+                captionsAsBuilt.put(square, captioned);
+
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor, gridLines);
 
@@ -1275,6 +1306,8 @@ public class LayoutGrid
                     // The station name, for a caption to show when no train is standing on it
                     final String captionName = captioned == null
                         ? null : ui.autonomyStationNameAt(captioned);
+
+                    if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
 
                     // WHETHER THIS LABEL IS DRAWN AT ALL (OB-272).  In the autonomy editor a CAPTION follows
                     // the caption dropdown and the user's own writing follows the text switch, which only
@@ -1877,9 +1910,12 @@ public class LayoutGrid
 
                     if (ui.getDiagramTileRegistry() != null)
                     {
-                        ui.getDiagramTileRegistry().register(
-                            new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), c.getX(), c.getY()),
-                            grid[x][y]);
+                        org.traincontrol.automationui.TileGraph.TileKey tile =
+                            new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), c.getX(), c.getY());
+
+                        ui.getDiagramTileRegistry().register(tile, grid[x][y]);
+
+                        tilesAsRegistered.put(tile, grid[x][y]);
                     }
                 }
 
@@ -2064,6 +2100,70 @@ public class LayoutGrid
         grace.start();
     } 
     
+    /**
+     * Whether the setup still gives every square this grid drew the caption it was built with, and every caption its name,
+     * so building the grid again would draw the same one (MT-670).  Asked as the grid asked: the same rule for hiding
+     * captions, the same two questions of the window.
+     *
+     * @return true where nothing about the captions has changed; false for a grid built with no window to ask
+     */
+    public boolean captionsAreAsBuilt()
+    {
+        if (window == null || builtPage == null || captionsAsBuilt.isEmpty()) return false;
+
+        boolean hides = hidesStationCaptions(builtInEditor,
+            builtMaster instanceof LayoutEditor && ((LayoutEditor) builtMaster).isAutonomyMode(),
+            window.isPageExcludedFromAutonomy(builtPage));
+
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey,
+            org.traincontrol.automationui.TileGraph.TileKey> cell : captionsAsBuilt.entrySet())
+        {
+            org.traincontrol.automationui.TileGraph.TileKey now = hides ? null : window.autonomyCaptionAt(cell.getKey());
+
+            if (!java.util.Objects.equals(now, cell.getValue())) return false;
+
+            if (now != null && !java.util.Objects.equals(window.autonomyStationNameAt(now), captionNamesAsBuilt.get(now)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether every tile this grid registered is registered still, so what the window tells the registry reaches every
+     * square of it (MT-670).
+     *
+     * @return false where one has been let go, or there is no registry to ask
+     */
+    public boolean tilesAreStillRegistered()
+    {
+        DiagramTileRegistry registry = window == null ? null : window.getDiagramTileRegistry();
+
+        if (registry == null) return false;
+
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, LayoutLabel> tile
+            : tilesAsRegistered.entrySet())
+        {
+            java.util.Set<LayoutLabel> here = registry.labelsFor(tile.getKey());
+
+            if (here == null || !here.contains(tile.getValue())) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param page a page's name
+     * @param size a tile size
+     * @return whether this grid draws that page at that size
+     */
+    public boolean draws(String page, int size)
+    {
+        return page != null && page.equals(builtPage) && size == tileSize;
+    }
+
     /**
      * Return the container that was generated
      * @return 
