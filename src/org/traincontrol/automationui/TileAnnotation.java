@@ -674,6 +674,21 @@ public class TileAnnotation
     private boolean allowedOnly = false;
 
     /**
+     * Draws no arrow at one side of the square: where a two-square crossing's squares meet, whose arrows there only repeat
+     * the ones at the track's outer ends (OB-322).
+     *
+     * @param side the side, or null for none
+     * @return this
+     */
+    public TileAnnotation withoutArrowsAt(Side side)
+    {
+        this.bareSide = side;
+        return this;
+    }
+
+    private Side bareSide = null;
+
+    /**
      * Says a train is set up to be standing on this square.
      *
      * A builder rather than another constructor argument: there are five constructors already, all
@@ -1250,6 +1265,9 @@ public class TileAnnotation
             int[] target = midpoint(entry.getKey(), width, height);
 
             if (target == null) continue;
+
+            // nothing where a crossing's two squares meet (OB-322)
+            if (entry.getKey() == bareSide) continue;
 
             if (blockedOnly && !allowedToo && Boolean.TRUE.equals(entry.getValue())) continue;
 
@@ -2356,7 +2374,7 @@ public class TileAnnotation
             && ignored == other.ignored && curved == other.curved && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
             && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
-            && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly
+            && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
 
@@ -2368,6 +2386,7 @@ public class TileAnnotation
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
             + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
+            + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768)
             + arrivals.hashCode() * 7;
     }
 

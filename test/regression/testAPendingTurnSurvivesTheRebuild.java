@@ -3,6 +3,7 @@ package regression;
 import java.util.Collections;
 import java.util.Map;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
@@ -347,11 +348,14 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * While autonomy runs, the track diagram draws none of the directions trains may or may not take, and they come back
-     * when the run ends (Adam, 2026-10-04: *"when trains are running in autonomy, we hide the allowances/restrictions on
-     * the track diagram."*) - redrawn by the refresh a run's trains make as they move, and its end.
+     * While anything runs - the spinner's gate - the track diagram draws none of the directions trains may or may not take,
+     * and they come back as the spinner stops: through a run, a Graceful Stop's coast-down and a hand send (Adam,
+     * 2026-10-04: *"when trains are running in autonomy, we hide the allowances/restrictions on the track diagram."*; and on
+     * MT-686: *"Works until graceful stop is requested, at which point they get shown prematurely.  Should be the same gate
+     * as the spinner."*).
      *
-     * MUTATION: draw the arrows whatever the run, or leave the refresh unasked, and this fails.
+     * MUTATION: draw the arrows whatever runs, gate them on the run alone, or leave the spinner's refresh not asking after
+     * them, and this fails.
      *
      * @throws Exception on an event-thread failure
      */
@@ -366,6 +370,15 @@ public class testAPendingTurnSurvivesTheRebuild
         java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
 
         flag.setAccessible(true);
+
+        final javax.swing.JButton graceful = (javax.swing.JButton) windowField("gracefulStop");
+
+        final java.util.concurrent.atomic.AtomicInteger hands =
+            (java.util.concurrent.atomic.AtomicInteger) windowField("handSendsUnderWay");
+
+        final boolean gracefulWas = graceful.isEnabled();
+
+        boolean handSent = false;
 
         Layout railway = model.getAutoLayout();
 
@@ -387,31 +400,67 @@ public class testAPendingTurnSurvivesTheRebuild
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.refreshStaticAutonomyLayer());
 
-            settle();
+            theSpinnersRefresh();
+
+            assertFalse(ui.isShowingSomethingRuns(), "precondition: the spinner turns with nothing running");
 
             assertTrue(arrowPixels() > none, "precondition: the track diagram draws no arrows with the railway at rest");
 
-            // THE RUN STARTS, and its trains' refresh comes
+            // THE RUN STARTS
             flag.setBoolean(railway, true);
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
+            theSpinnersRefresh();
 
-            settle();
+            assertTrue(ui.isShowingSomethingRuns(), "precondition: the spinner does not turn with autonomy running");
 
             assertEquals(arrowPixels(), none, "the track diagram still draws arrows while autonomy runs");
 
-            // AND ENDS
+            // GRACEFUL STOP: the run is over, and the trains coast down, the spinner turning
             flag.setBoolean(railway, false);
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
+            javax.swing.SwingUtilities.invokeAndWait(() -> graceful.setEnabled(true));
 
-            settle();
+            theSpinnersRefresh();
 
-            assertTrue(arrowPixels() > none, "the arrows did not come back when the run ended");
+            assertTrue(ui.isShowingSomethingRuns(), "precondition: the spinner stops for a Graceful Stop's coast-down");
+
+            assertEquals(arrowPixels(), none, "the arrows came back as Graceful Stop was pressed, while the trains still"
+                + " coasted down and the spinner turned (MT-686)");
+
+            // AND THE LAST TRAIN STOPS
+            javax.swing.SwingUtilities.invokeAndWait(() -> graceful.setEnabled(false));
+
+            theSpinnersRefresh();
+
+            assertFalse(ui.isShowingSomethingRuns(), "precondition: the spinner turns on after the run");
+
+            assertTrue(arrowPixels() > none, "the arrows did not come back as the spinner stopped");
+
+            // A HAND SEND, which the spinner shows too
+            hands.incrementAndGet();
+            handSent = true;
+
+            theSpinnersRefresh();
+
+            assertTrue(ui.isShowingSomethingRuns(), "precondition: the spinner does not turn for a hand send");
+
+            assertEquals(arrowPixels(), none, "the track diagram draws arrows while a train sent by hand runs, the"
+                + " spinner turning");
+
+            hands.decrementAndGet();
+            handSent = false;
+
+            theSpinnersRefresh();
+
+            assertTrue(arrowPixels() > none, "the arrows did not come back after the hand send");
         }
         finally
         {
             flag.setBoolean(railway, false);
+
+            if (handSent) hands.decrementAndGet();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> graceful.setEnabled(gracefulWas));
 
             if (restrictionsWere == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
             else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restrictionsWere);
@@ -419,10 +468,34 @@ public class testAPendingTurnSurvivesTheRebuild
             if (allowedWere == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
             else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowedWere);
 
+            theSpinnersRefresh();
+
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.refreshStaticAutonomyLayer());
 
             settle();
         }
+    }
+
+    /** The refresh that turns the spinner on Start or stops it, as the window makes it where what runs changes. */
+    private static void theSpinnersRefresh() throws Exception
+    {
+        final java.lang.reflect.Method refresh = TrainControlUI.class.getDeclaredMethod("refreshWhatWaitsForTheTrains");
+
+        refresh.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                refresh.invoke(ui);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        settle();
     }
 
     /**
