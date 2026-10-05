@@ -550,6 +550,199 @@ public class testAPendingTurnSurvivesTheRebuild
         return count;
     }
 
+    /**
+     * A setup edit that keeps the track diagram on screen forgets the other pages the page cache keeps, as the rebuild it
+     * skips did (RSA38-B1): a page drawn before the edit came back from the page list as it was drawn - a page put back
+     * into autonomy with none of its captions, a station added with none, a renamed one with its old name.
+     *
+     * MUTATION: keep the other cached pages through an edit that keeps the diagram, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAnEditThatKeepsTheDiagramForgetsTheOtherPages() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        final Object first = pages.getSelectedItem();
+
+        Object other = null;
+
+        for (int i = 0; i < pages.getItemCount(); i++)
+        {
+            if (!pages.getItemAt(i).equals(first)) other = pages.getItemAt(i);
+        }
+
+        if (other == null) throw new SkipException("the frozen railway has one page, so no other page can be cached");
+
+        final Object second = other;
+
+        try
+        {
+            // THE OTHER PAGE DRAWN, AND THIS ONE BROUGHT BACK, so both are in the page cache
+            javax.swing.SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(second));
+            settle();
+            javax.swing.SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(first));
+            settle();
+
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, javax.swing.JPanel> cache = (java.util.Map<String, javax.swing.JPanel>) windowField(
+                "layoutCache");
+
+            assertTrue(cache.size() >= 2, "precondition: the page cache does not hold both pages: " + cache.keySet());
+
+            java.awt.Component before = shownDiagram();
+
+            // AN EDIT THAT KEEPS THE DIAGRAM ON SCREEN
+            setADirectionAndPutItBack(() ->
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                    new java.util.LinkedHashSet<String>()));
+
+                settle();
+
+                org.testng.Assert.assertSame(shownDiagram(), before, "precondition: the edit did not keep the diagram on screen");
+
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, javax.swing.JPanel> after = (java.util.Map<String, javax.swing.JPanel>)
+                    windowField("layoutCache");
+
+                for (javax.swing.JPanel kept : after.values())
+                {
+                    org.testng.Assert.assertSame(kept, before, "an edit that kept the diagram on screen kept another page in the page"
+                        + " cache, which comes back as it was drawn before the edit (RSA38-B1): " + after.keySet());
+                }
+            });
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(first));
+
+            settle();
+        }
+    }
+
+    /**
+     * A grid the window has replaced is let go (RSA38-C3): the map that found a panel's grid held every grid the window
+     * ever built - each grid holds its panel - about half a megabyte for every rebuild of 1 - Main.
+     *
+     * MUTATION: keep the window's grids in a map again, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAReplacedGridIsLetGo() throws Exception
+    {
+        settle();
+
+        java.lang.ref.WeakReference<org.traincontrol.gui.LayoutGrid> old =
+            new java.lang.ref.WeakReference<>(org.traincontrol.gui.LayoutGrid.of(shownDiagram()));
+
+        assertNotNull(old.get(), "precondition: the window's diagram is no grid's");
+
+        // A STATION RENAMED AND PUT BACK: two rebuilds, the grid replaced
+        org.traincontrol.automationui.TileGraph.TileKey station = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            org.traincontrol.automationui.TileGraph.TileKey captioned = ui.autonomyCaptionAt(square);
+
+            if (captioned != null && session.getStore().getPointName(captioned) != null)
+            {
+                station = captioned;
+                break;
+            }
+        }
+
+        assertNotNull(station, "precondition: the frozen railway has no named station");
+
+        String name = session.getStore().getPointName(station);
+
+        try
+        {
+            session.setPointName(station, name + " C3");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+        }
+        finally
+        {
+            session.setPointName(station, name);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+        }
+
+        assertNotSame(org.traincontrol.gui.LayoutGrid.of(shownDiagram()), old.get(), "precondition: the rename did not"
+            + " replace the grid");
+
+        for (int i = 0; i < 10 && old.get() != null; i++)
+        {
+            System.gc();
+
+            Thread.sleep(100);
+        }
+
+        org.testng.Assert.assertNull(old.get(), "a grid the window replaced is still held, as every one it builds would be (RSA38-C3)");
+    }
+
+    /** Something to run with a direction set on plain track of the page shown, put back however it ends. */
+    private interface WithADirection
+    {
+        void run() throws Exception;
+    }
+
+    /**
+     * Sets a direction on a piece of plain track on the page shown, as an arrow click does, runs this, and puts it back.
+     *
+     * @param then what to run with it set
+     * @throws Exception from it
+     */
+    private static void setADirectionAndPutItBack(WithADirection then) throws Exception
+    {
+        String page = String.valueOf(((javax.swing.JComboBox<?>) windowField("LayoutList")).getSelectedItem());
+
+        org.traincontrol.automationui.TileGraph.TileKey track = null;
+        org.traincontrol.automationui.TileGraph.RouteId road = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!page.equals(square.getPage()) || ui.autonomyCaptionAt(square) != null) continue;
+
+            java.util.Map<org.traincontrol.automationui.TileGraph.RouteId, ?> roads = session.getGraph().getRoutes(square);
+
+            if (roads.size() == 1)
+            {
+                track = square;
+                road = roads.keySet().iterator().next();
+                break;
+            }
+        }
+
+        assertNotNull(track, "precondition: page " + page + " has no plain track to set a direction on");
+
+        org.traincontrol.automationui.TileGraph.Direction was = session.getGraph().getDirection(track, road);
+
+        try
+        {
+            session.setDirection(track, road, was == org.traincontrol.automationui.TileGraph.Direction.NONE
+                ? org.traincontrol.automationui.TileGraph.Direction.BOTH : org.traincontrol.automationui.TileGraph.Direction.NONE);
+
+            then.run();
+        }
+        finally
+        {
+            session.setDirection(track, road, was);
+        }
+    }
+
     /** The panel the track diagram shows, or null. */
     private static java.awt.Component shownDiagram() throws Exception
     {

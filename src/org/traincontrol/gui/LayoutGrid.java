@@ -663,6 +663,26 @@ public class LayoutGrid
     public static final String CAPTIONS_REGISTERED = "TrainControl.captionsRegistered";
 
     /**
+     * Where a container remembers the grid that built it - for the window to ask whether the grid on screen is still the
+     * setup's (MT-670).  Hung on the container for the reason `CAPTIONS_REGISTERED` is: a map of containers to grids kept
+     * every grid the window ever built, as each grid holds its container (RSA38-C3).
+     */
+    private static final String GRID = "TrainControl.layoutGrid";
+
+    /**
+     * The grid that built a container.
+     *
+     * @param container a container on screen, or null
+     * @return its grid, or null where it is no grid's
+     */
+    public static LayoutGrid of(java.awt.Component container)
+    {
+        Object grid = container instanceof JPanel ? ((JPanel) container).getClientProperty(GRID) : null;
+
+        return grid instanceof LayoutGrid ? (LayoutGrid) grid : null;
+    }
+
+    /**
      * The grid currently drawn into each panel, so that building a new one can retire the old one.
      *
      * DD-B3: four places build a grid over an existing panel and three of them remembered to discard
@@ -1028,6 +1048,9 @@ public class LayoutGrid
 
             // The live list, so whatever this grid registers later is reachable from the container
             container.putClientProperty(CAPTIONS_REGISTERED, registeredCaptions);
+
+            // And the grid itself, for the window's question whether it is still the setup's (MT-670)
+            container.putClientProperty(GRID, this);
             
             // Things mess up without this
             //

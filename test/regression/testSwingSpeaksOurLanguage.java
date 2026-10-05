@@ -3,6 +3,7 @@ package regression;
 import java.util.Locale;
 import javax.swing.UIManager;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
@@ -249,6 +250,210 @@ public class testSwingSpeaksOurLanguage
 
         assertEquals(found.toString(), "[]", "a file chooser made as a plain JFileChooser lists Windows' shell folders"
             + " (OB-323): " + found);
+    }
+
+    /**
+     * A shortcut to a folder opens the folder, in a TrainControl file chooser as in Swing's own (RSA38-B2): its view of the
+     * files is not the shell's, so Swing does not follow shortcuts for it, and the chooser was left "in" the shortcut,
+     * still listing the folder before, with an InternalError on the event thread.
+     *
+     * MUTATION: set the folder as given, without following a shortcut, and this fails.
+     *
+     * @throws Exception from the shortcut or the chooser
+     */
+    @Test
+    public void testAShortcutToAFolderOpensTheFolder() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a look and feel needs a display");
+
+        java.nio.file.Path base = java.nio.file.Files.createTempDirectory("tc-shortcut");
+
+        try
+        {
+            java.nio.file.Path target = java.nio.file.Files.createDirectory(base.resolve("target"));
+            java.nio.file.Path link = base.resolve("to target.lnk");
+
+            // A WINDOWS SHORTCUT, made as Windows makes one
+            Process made = new ProcessBuilder("powershell", "-NoProfile", "-NonInteractive", "-Command",
+                "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('" + link.toString().replace("'", "''") + "');"
+                + " $s.TargetPath = '" + target.toString().replace("'", "''") + "'; $s.Save()")
+                .redirectErrorStream(true).start();
+
+            made.waitFor(60, java.util.concurrent.TimeUnit.SECONDS);
+
+            if (!java.nio.file.Files.isRegularFile(link)) throw new SkipException("no Windows shortcut could be made here");
+
+            TrainControlUI.installLookAndFeel();
+
+            final java.io.File[] landed = new java.io.File[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JFileChooser chooser = new org.traincontrol.gui.QuickFileChooser(base.toString());
+
+                // as a double-click on it does
+                chooser.setCurrentDirectory(link.toFile());
+
+                landed[0] = chooser.getCurrentDirectory();
+            });
+
+            assertEquals(new java.io.File(landed[0].getPath()).getCanonicalFile(), target.toFile().getCanonicalFile(), "a"
+                + " shortcut to a folder did not open the folder in TrainControl's file chooser (RSA38-B2)");
+        }
+        finally
+        {
+            try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(base))
+            {
+                walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+            }
+        }
+    }
+
+    /**
+     * The details view shows the shell's columns for the shell's values, as Swing's own chooser does (RSA38-C1): the
+     * chooser's folder was a plain one, so its details view had Swing's three headings - name, size, modified - over the
+     * shell's values, the item type under "Modified" and no dates.
+     *
+     * MUTATION: leave the chooser's folder a plain one, and this fails.
+     *
+     * @throws Exception from the chooser
+     */
+    @Test
+    public void testTheDetailsViewHasTheShellsColumns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a look and feel needs a display");
+
+        TrainControlUI.installLookAndFeel();
+
+        final String here = new java.io.File("src").getAbsolutePath();
+
+        final java.util.List<String> quick = new java.util.ArrayList<>();
+        final java.util.List<String> swing = new java.util.ArrayList<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            quick.addAll(detailsHeadings(new org.traincontrol.gui.QuickFileChooser(here)));
+            swing.addAll(detailsHeadings(new javax.swing.JFileChooser(here)));
+        });
+
+        assertFalse(swing.isEmpty(), "precondition: Swing's own chooser shows no details view here");
+
+        assertEquals(quick, swing, "TrainControl's file chooser's details view does not have the columns Swing's own has"
+            + " (RSA38-C1)");
+    }
+
+    /**
+     * The shell is asked for the Look In list once at a time and not again while the drives are the same (RSA38-C2): a
+     * chooser opened while the window's own ask was under way asked again beside it, and every chooser that closed asked
+     * again - a second each, which the next chooser waited behind.
+     *
+     * MUTATION: let a chooser ask beside an ask under way, or ask again with the drives the same, and this fails.
+     *
+     * @throws Exception from the chooser
+     */
+    @Test
+    public void testTheShellIsAskedOnceAtATime() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a look and feel needs a display");
+
+        TrainControlUI.installLookAndFeel();
+
+        java.lang.reflect.Field counted = org.traincontrol.gui.QuickFileChooser.class.getDeclaredField("asked");
+
+        counted.setAccessible(true);
+
+        // AS THE WINDOW OPENS: nothing asked yet - any ask of the choosers before this one finished first
+        java.lang.reflect.Field asking = org.traincontrol.gui.QuickFileChooser.class.getDeclaredField("asking");
+        java.lang.reflect.Field places = org.traincontrol.gui.QuickFileChooser.class.getDeclaredField("places");
+
+        asking.setAccessible(true);
+        places.setAccessible(true);
+
+        Object under = asking.get(null);
+
+        if (under != null) ((java.util.concurrent.Future<?>) under).get(60, java.util.concurrent.TimeUnit.SECONDS);
+
+        places.set(null, null);
+
+        int before = ((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get();
+
+        // THE WINDOW'S OWN ASK, and a chooser at once, while it is under way - and two more after
+        org.traincontrol.gui.QuickFileChooser.askTheShellAhead();
+
+        for (int i = 0; i < 3; i++)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+        }
+
+        int after = ((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get();
+
+        assertEquals(after - before, 1, "the shell was asked for the Look In list " + (after - before) + " times for one"
+            + " ask ahead and three choosers, with the drives the same (RSA38-C2)");
+    }
+
+    /** The headings of a chooser's details view, switched to it. */
+    private static java.util.List<String> detailsHeadings(javax.swing.JFileChooser chooser)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        java.awt.Component pane = componentOf(chooser, "sun.swing.FilePane");
+
+        if (pane == null) return out;
+
+        try
+        {
+            pane.getClass().getMethod("setViewType", int.class).invoke(pane, 1);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            return out;
+        }
+
+        javax.swing.JTable table = tableIn((java.awt.Container) pane);
+
+        if (table == null) return out;
+
+        javax.swing.table.TableColumnModel columns = table.getColumnModel();
+
+        for (int i = 0; i < columns.getColumnCount(); i++) out.add(String.valueOf(columns.getColumn(i).getHeaderValue()));
+
+        return out;
+    }
+
+    /** The first table inside a container - Swing's details view is one of its own subclasses. */
+    private static javax.swing.JTable tableIn(java.awt.Container container)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JTable) return (javax.swing.JTable) child;
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JTable deeper = tableIn((java.awt.Container) child);
+
+                if (deeper != null) return deeper;
+            }
+        }
+
+        return null;
+    }
+
+    /** The first component of a class, by its name, inside a container. */
+    private static java.awt.Component componentOf(java.awt.Container container, String className)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child.getClass().getName().equals(className)) return child;
+
+            if (child instanceof java.awt.Container)
+            {
+                java.awt.Component deeper = componentOf((java.awt.Container) child, className);
+
+                if (deeper != null) return deeper;
+            }
+        }
+
+        return null;
     }
 
     /** A chooser's Look In list: the combo box whose items are folders. */
