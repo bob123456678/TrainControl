@@ -29,11 +29,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-669](#mt-669) | 2026-10-04 | The findings list follows a rename at once | fixed unvalidated | Adam 2026-10-04 (speed) |
 | [MT-670](#mt-670) | 2026-10-04 | An arrow click in the autonomy editor shows its warning without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
-| [MT-675](#mt-675) | 2026-10-04 | The track diagram can show the green arrows too | fixed unvalidated | Adam 2026-10-04 (FR-110) |
-| [MT-676](#mt-676) | 2026-10-04 | Two permanent Ys toe to toe are a crossing | fixed unvalidated | Adam 2026-10-04 (OB-320) |
+| [MT-680](#mt-680) | 2026-10-04 | The autonomy editor shows the allowed directions on their own | fixed unvalidated | Adam 2026-10-04 (Allowed only) |
+| [MT-681](#mt-681) | 2026-10-04 | The track diagram's green arrows are bright, and can be shown on their own | fixed unvalidated | Adam 2026-10-04 (MT-675) |
+| [MT-682](#mt-682) | 2026-10-04 | A Y's arrows lie along its track | fixed unvalidated | Adam 2026-10-04 (MT-676) |
 
-Everything else - 675 of 679 - needs nothing from you unless the area changes again:
-535 **fixed validated** and 140 **superseded**.
+Everything else - 677 of 682 - needs nothing from you unless the area changes again:
+536 **fixed validated** and 141 **superseded**.
 
 ---
 
@@ -32241,7 +32242,7 @@ Validated on your *Works* of 2026-10-04.
 
 ### MT-675 - 2026-10-04 - The track diagram can show the green arrows too
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam 2026-10-04 (FR-110)
 
 **Written:** 2026-10-04
@@ -32272,13 +32273,17 @@ similar to the editor."*
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Your two notes are built, and MT-681 tests them.
+
 ---
 
 <a id="mt-676"></a>
 
 ### MT-676 - 2026-10-04 - Two permanent Ys toe to toe are a crossing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (OB-320)
 
 **Written:** 2026-10-04
@@ -32313,6 +32318,10 @@ are two permanent right turnouts toe to toe - still turnouts, so a train cannot 
 Yes, but the arrows on two permanent Y's are not aligned.  ake the arrow at the base point straight down, and the left and right aligned just like on curved tiles.  Right now, the angles are just a bit off, and they are asymmetrical.
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04; your note on the arrows is MT-682.
 
 ---
 
@@ -32431,5 +32440,92 @@ or let trains change direction."*
 **Claude, 2026-10-04.**
 
 Validated on your *Works* of 2026-10-04.
+
+---
+
+<a id="mt-680"></a>
+
+### MT-680 - 2026-10-04 - The autonomy editor shows the allowed directions on their own
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (Allowed only)
+
+**Written:** 2026-10-04
+
+Your request of 2026-10-04: *"In addition to "restrictions only", add "allowed only" to the autonomy editor."*
+
+**Steps**
+
+1. In the autonomy editor, open the directions box under Toggle visibility, and choose **Allowed only**.
+2. Close the editor and open it again.
+3. Choose **Hide All**, close and reopen; then **Station Arrivals**, close and reopen.
+
+**Expected**
+
+- Step 1: Allowed only is right after Restrictions only, and the diagram shows the green arrows - the directions trains
+  may run - and no red ones.
+- Step 2: it opens on Allowed only.
+- Step 3: each opens as you left it.
+
+*What this is:* `core.testAutonomyDiagramSession.testAllowedOnlyPaintsTheGreenAndNoneOfTheRed`,
+`core.testAutonomyDiagramSession.testTheEditorOffersAllowedOnlyAndRemembersEachViewByItsMeaning`.
+
+---
+
+<a id="mt-681"></a>
+
+### MT-681 - 2026-10-04 - The track diagram's green arrows are bright, and can be shown on their own
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (MT-675)
+
+**Written:** 2026-10-04
+
+Your notes on MT-675: *"1. green arrows are hard to see due to low contrast.  Use the same green as signals on the track
+diagram viewer.  2. allow the user to choose: restrictions, allowances, or both.  don't make them mutually exclusive."*
+
+**Steps**
+
+1. With **Display Travel Restrictions** ticked, tick **Display Allowed Directions**.
+2. Untick Display Travel Restrictions.
+3. Tick it again, and untick Display Allowed Directions.
+
+**Expected**
+
+- Step 1: red and green arrows, the green the bright green of the signals, easy to see on the rails.
+- Step 2: Display Allowed Directions stays live, and only the green arrows are drawn - no red ones, and no station
+  arrival marks.
+- Step 3: only the red arrows and the station arrival marks, as before.
+
+*What this is:* `core.testAutonomyDiagramSession.testTheGreenArrowsAreDrawnWhenAskedFor`,
+`core.testAutonomyDiagramSession.testTheTrackDiagramsGreenIsTheSignalsGreen`.  The autonomy editor keeps its darker green,
+over its pale wash.
+
+---
+
+<a id="mt-682"></a>
+
+### MT-682 - 2026-10-04 - A Y's arrows lie along its track
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (MT-676)
+
+**Written:** 2026-10-04
+
+Your note on MT-676: *"the arrows on two permanent Y's are not aligned.  [M]ake the arrow at the base point straight
+down, and the left and right aligned just like on curved tiles.  Right now, the angles are just a bit off, and they are
+asymmetrical."*
+
+**Steps**
+
+1. Open TC3Sandbox_layout's autonomy editor on **0 komplet**, on **Show All**, and look at the Ys at 12,9 and 12,10.
+2. Look at them on the track diagram too, with Display Allowed Directions ticked.
+
+**Expected**
+
+- The arrow at each toe points straight out of the square, and the arrows on the two legs lie along the curves, at the
+  same angle on each side - as on a curved square.  The same on any other Y.
+
+*What this is:* `core.testAutonomyDiagramSession.testAYsArrowsLieAlongItsTrack`.
 
 ---
