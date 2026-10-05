@@ -11196,6 +11196,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // for four hundred milliseconds, which is the window the show needs.
         setVisible(true);
 
+        // THE FILE CHOOSERS' LOOK IN LIST, asked of Windows now and off the event thread, so the first chooser opened has it
+        // (OB-323) - it took a second or more each time a chooser was built
+        QuickFileChooser.askTheShellAhead();
+
         pack();
         displayMenuBar();
         
@@ -13791,7 +13795,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int tileSize = sizes[1].equals(size)
             ? DiagramExport.SCREEN_TILE_SIZE : DiagramExport.DEFAULT_TILE_SIZE;
 
-        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+        javax.swing.JFileChooser chooser = new QuickFileChooser();
 
         chooser.setDialogTitle(I18n.t("layout.ui.menuExportDiagram"));
 
@@ -28024,7 +28028,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 try
                 {
                     // Prompt the user to choose a folder
-                    JFileChooser fc = new JFileChooser(
+                    JFileChooser fc = new QuickFileChooser(
                         prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
                     );
 
@@ -30204,7 +30208,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 );
             }
             
-            JFileChooser fc = new JFileChooser(
+            JFileChooser fc = new QuickFileChooser(
                 currentPath != null ? currentPath : prefs.get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
             );
 
@@ -30938,7 +30942,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public JFileChooser getFileChooser(int type, String extension)
     {
-        JFileChooser fc = new JFileChooser(
+        JFileChooser fc = new QuickFileChooser(
             prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
         );
         
@@ -32927,7 +32931,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (last.isEmpty()) last = prefs.get(LAST_LOCAL_LAYOUT_PREF, "");
 
-        JFileChooser fc = new JFileChooser();
+        JFileChooser fc = new QuickFileChooser();
 
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 

@@ -1061,7 +1061,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     private javax.swing.JFileChooser chooser()
     {
-        return new javax.swing.JFileChooser(TrainControlUI.getPrefs()
+        return new QuickFileChooser(TrainControlUI.getPrefs()
             .get(TrainControlUI.LAST_USED_FOLDER, new java.io.File(".").getAbsolutePath()));
     }
 

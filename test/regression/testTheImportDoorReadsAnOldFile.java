@@ -4722,6 +4722,9 @@ public class testTheImportDoorReadsAnOldFile
         finally
         {
             answerer.running = false;
+
+            // AND GONE before anything else is pressed, so it cannot answer the next import's dialogs (OB-323)
+            answering.join(5000);
         }
     }
 
@@ -4757,6 +4760,10 @@ public class testTheImportDoorReadsAnOldFile
                 {
                     return;
                 }
+
+                // TOLD TO STOP WHILE ASLEEP: the next import's dialogs are not this one's to answer (OB-323 - its chooser
+                // now shows in tens of milliseconds, inside this sleep)
+                if (!running) return;
 
                 for (Window window : Window.getWindows())
                 {

@@ -4,6 +4,7 @@ import java.util.Locale;
 import javax.swing.UIManager;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
@@ -156,6 +157,120 @@ public class testSwingSpeaksOurLanguage
 
             speak();
         }
+    }
+
+    /**
+     * Every file chooser TrainControl makes takes its Look In list from the shell's answer asked once ahead of time, not
+     * asked again as it is built and at every change of folder (OB-323; Adam, 2026-10-05: *"there is an odd (brief but
+     * noticeable) delay before the file chooser opens for Layouts -> Open Layout..."*) - 1.0 to 1.8 s each on Adam's PC,
+     * 20 ms after.  And the list is still the shell's: every place Windows gives - Recent Items, Desktop, Documents, This
+     * PC and its drives, Network - and the folder the chooser is in (*"we don't want to sacrifice UX"*).  Asked of Swing's
+     * own test, `FilePane.usesShellFolder`, of the list, and of the source, which makes every chooser a
+     * `QuickFileChooser`.
+     *
+     * MUTATION: let the chooser ask the shell itself again, leave the shell's places out of its list, or make one chooser a
+     * plain JFileChooser, and this fails.
+     *
+     * @throws Exception from the source tree
+     */
+    @Test
+    public void testEveryFileChooserSkipsTheShellsFolders() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a look and feel needs a display");
+
+        TrainControlUI.installLookAndFeel();
+
+        final javax.swing.JFileChooser[] made = new javax.swing.JFileChooser[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.QuickFileChooser());
+
+        java.lang.reflect.Method usesShellFolder = Class.forName("sun.swing.FilePane")
+            .getMethod("usesShellFolder", javax.swing.JFileChooser.class);
+
+        assertEquals(usesShellFolder.invoke(null, made[0]), Boolean.FALSE, "TrainControl's file chooser asks the shell for"
+            + " its Look In list itself, which costs a second or more each time it is built or changes folder (OB-323)");
+
+        // THE LIST IS THE SHELL'S, with the folder it is in
+        Object shell = Class.forName("sun.awt.shell.ShellFolder").getMethod("get", String.class)
+            .invoke(null, "fileChooserComboBoxFolders");
+
+        if (!(shell instanceof java.io.File[]))
+        {
+            throw new SkipException("the shell gives no Look In list here, so there is nothing to compare it with");
+        }
+
+        final java.io.File here = new java.io.File("src").getAbsoluteFile();
+
+        final java.util.List<String> listed = new java.util.ArrayList<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JFileChooser chooser = new org.traincontrol.gui.QuickFileChooser(here.getPath());
+
+            javax.swing.JComboBox<?> lookIn = lookInOf(chooser);
+
+            for (int i = 0; lookIn != null && i < lookIn.getItemCount(); i++)
+            {
+                listed.add(chooser.getFileSystemView().getSystemDisplayName((java.io.File) lookIn.getItemAt(i)));
+            }
+        });
+
+        java.util.List<String> missing = new java.util.ArrayList<>();
+
+        for (java.io.File place : (java.io.File[]) shell)
+        {
+            String name = javax.swing.filechooser.FileSystemView.getFileSystemView().getSystemDisplayName(place);
+
+            if (!listed.contains(name)) missing.add(name);
+        }
+
+        assertEquals(missing.toString(), "[]", "the chooser's Look In list leaves out places Windows gives (OB-323): "
+            + listed);
+
+        assertTrue(listed.contains(here.getName()), "the chooser's Look In list does not name the folder it is in: "
+            + listed);
+
+        // AND EVERY CHOOSER IS ONE
+        java.util.regex.Pattern plain = java.util.regex.Pattern.compile("new\\s+(?:javax\\.swing\\.)?JFileChooser\\s*\\(");
+
+        java.util.List<String> found = new java.util.ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.walk(java.nio.file.Paths.get("src")))
+        {
+            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) files::iterator)
+            {
+                if (!file.toString().endsWith(".java") || file.endsWith("QuickFileChooser.java")) continue;
+
+                String text = new String(java.nio.file.Files.readAllBytes(file), java.nio.charset.StandardCharsets.UTF_8);
+
+                if (plain.matcher(text).find()) found.add(file.getFileName().toString());
+            }
+        }
+
+        assertEquals(found.toString(), "[]", "a file chooser made as a plain JFileChooser lists Windows' shell folders"
+            + " (OB-323): " + found);
+    }
+
+    /** A chooser's Look In list: the combo box whose items are folders. */
+    private static javax.swing.JComboBox<?> lookInOf(java.awt.Container container)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JComboBox && ((javax.swing.JComboBox<?>) child).getItemCount() > 0
+                && ((javax.swing.JComboBox<?>) child).getItemAt(0) instanceof java.io.File)
+            {
+                return (javax.swing.JComboBox<?>) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JComboBox<?> deeper = lookInOf((java.awt.Container) child);
+
+                if (deeper != null) return deeper;
+            }
+        }
+
+        return null;
     }
 
     /** TrainControlUI.swingSpeaksOurLanguage, which is the window's. */
