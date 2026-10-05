@@ -1718,7 +1718,8 @@ public class AutonomyEditorPanel extends JPanel
 
                     // The LAST way in cannot be shut here either.  Unticking them one at a time is
                     // the same mistake as barring a single-sided station, arrived at more slowly.
-                    allow.setEnabled(barred.contains(side) || barred.size() < ways.size() - 1);
+                    allow.setEnabled(barred.contains(side)
+                        || session.arrivalsCanBeClosed(target, java.util.Collections.singleton(side)));
 
                     arrivals.add(allow);
                 }

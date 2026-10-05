@@ -245,6 +245,285 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
+     * A setup edit that leaves every caption as it was keeps the track diagram on screen, and one that renames a station
+     * builds it again (MT-670; Adam, 2026-10-04: *"every click I make in the autonomy editor makes the viewer diagram
+     * flicker.  Necessary?"*).  Every edit rebuilt the whole grid - every square of the page taken down and drawn again -
+     * for the one thing a grid cannot be told once built: which squares carry a caption, and the name each gives.
+     *
+     * MUTATION: rebuild the grid at every setup change again, or never, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAnEditThatLeavesTheCaptionsKeepsTheDiagram() throws Exception
+    {
+        settle();
+
+        java.awt.Component before = shownDiagram();
+
+        assertNotNull(before, "precondition: the window shows no track diagram");
+
+        String page = String.valueOf(((javax.swing.JComboBox<?>) windowField("LayoutList")).getSelectedItem());
+
+        // A DIRECTION ON A PIECE OF TRACK ON THE PAGE SHOWN, as an arrow click sets one, and put back
+        org.traincontrol.automationui.TileGraph.TileKey track = null;
+        org.traincontrol.automationui.TileGraph.RouteId road = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!page.equals(square.getPage()) || ui.autonomyCaptionAt(square) != null) continue;
+
+            java.util.Map<org.traincontrol.automationui.TileGraph.RouteId, ?> roads = session.getGraph().getRoutes(square);
+
+            if (roads.size() == 1)
+            {
+                track = square;
+                road = roads.keySet().iterator().next();
+                break;
+            }
+        }
+
+        assertNotNull(track, "precondition: page " + page + " has no plain track to set a direction on");
+
+        org.traincontrol.automationui.TileGraph.Direction was = session.getGraph().getDirection(track, road);
+
+        try
+        {
+            session.setDirection(track, road, was == org.traincontrol.automationui.TileGraph.Direction.NONE
+                ? org.traincontrol.automationui.TileGraph.Direction.BOTH : org.traincontrol.automationui.TileGraph.Direction.NONE);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+
+            org.testng.Assert.assertSame(shownDiagram(), before, "a direction set on " + track + " rebuilt the whole track diagram, though"
+                + " no caption changed (MT-670)");
+        }
+        finally
+        {
+            session.setDirection(track, road, was);
+        }
+
+        // A STATION RENAMED: its caption's name changes, which a built grid cannot be told
+        org.traincontrol.automationui.TileGraph.TileKey station = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            org.traincontrol.automationui.TileGraph.TileKey captioned = page.equals(square.getPage()) ? ui.autonomyCaptionAt(square) : null;
+
+            if (captioned != null && session.getStore().getPointName(captioned) != null)
+            {
+                station = captioned;
+                break;
+            }
+        }
+
+        assertNotNull(station, "precondition: page " + page + " has no named station");
+
+        String name = session.getStore().getPointName(station);
+
+        try
+        {
+            session.setPointName(station, name + " MT670");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+
+            assertNotSame(shownDiagram(), before, "a station renamed did not rebuild the track diagram, so its caption"
+                + " cannot carry the new name (MT-670)");
+        }
+        finally
+        {
+            session.setPointName(station, name);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+        }
+    }
+
+    /**
+     * While autonomy runs, the track diagram draws none of the directions trains may or may not take, and they come back
+     * when the run ends (Adam, 2026-10-04: *"when trains are running in autonomy, we hide the allowances/restrictions on
+     * the track diagram."*) - redrawn by the refresh a run's trains make as they move, and its end.
+     *
+     * MUTATION: draw the arrows whatever the run, or leave the refresh unasked, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testTheArrowsAreHiddenWhileAutonomyRuns() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        String restrictionsWere = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        String allowedWere = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
+
+        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+
+        flag.setAccessible(true);
+
+        Layout railway = model.getAutoLayout();
+
+        try
+        {
+            // WHAT THE DIAGRAM DRAWS WITH BOTH KINDS OF ARROW TURNED OFF, which is what hidden means
+            prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+            prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.refreshStaticAutonomyLayer());
+
+            settle();
+
+            int none = arrowPixels();
+
+            // BOTH ASKED FOR, so every square in use draws one
+            prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+            prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.refreshStaticAutonomyLayer());
+
+            settle();
+
+            assertTrue(arrowPixels() > none, "precondition: the track diagram draws no arrows with the railway at rest");
+
+            // THE RUN STARTS, and its trains' refresh comes
+            flag.setBoolean(railway, true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
+
+            settle();
+
+            assertEquals(arrowPixels(), none, "the track diagram still draws arrows while autonomy runs");
+
+            // AND ENDS
+            flag.setBoolean(railway, false);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
+
+            settle();
+
+            assertTrue(arrowPixels() > none, "the arrows did not come back when the run ended");
+        }
+        finally
+        {
+            flag.setBoolean(railway, false);
+
+            if (restrictionsWere == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restrictionsWere);
+
+            if (allowedWere == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
+            else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowedWere);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.refreshStaticAutonomyLayer());
+
+            settle();
+        }
+    }
+
+    /**
+     * How many red or green pixels the track diagram's marks paint, over every square it marks: each square's mark
+     * painted on black, as the registry last set it.
+     */
+    private static int arrowPixels() throws Exception
+    {
+        java.lang.reflect.Field last = org.traincontrol.gui.DiagramTileRegistry.class.getDeclaredField("lastAnnotated");
+
+        last.setAccessible(true);
+
+        final java.util.Map<?, ?> marks = new java.util.HashMap<>((java.util.Map<?, ?>) last.get(ui.getDiagramTileRegistry()));
+
+        int count = 0;
+
+        for (Object mark : marks.values())
+        {
+            if (!(mark instanceof org.traincontrol.automationui.TileAnnotation)) continue;
+
+            java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(30, 30,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            try
+            {
+                g.setColor(java.awt.Color.BLACK);
+                g.fillRect(0, 0, 30, 30);
+
+                ((org.traincontrol.automationui.TileAnnotation) mark).paint(g, 30, 30, false);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            for (int x = 0; x < 30; x++)
+            {
+                for (int y = 0; y < 30; y++)
+                {
+                    java.awt.Color c = new java.awt.Color(shot.getRGB(x, y));
+
+                    boolean green = c.getGreen() > 150 && c.getRed() < 120 && c.getBlue() < 140;
+                    boolean red = c.getRed() > 150 && c.getGreen() < 80 && c.getBlue() < 80;
+
+                    if (green || red) count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /** The panel the track diagram shows, or null. */
+    private static java.awt.Component shownDiagram() throws Exception
+    {
+        javax.swing.JPanel inner = (javax.swing.JPanel) windowField("InnerLayoutPanel");
+
+        final java.awt.Component[] shown = new java.awt.Component[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> shown[0] = inner.getComponentCount() == 1 ? inner.getComponent(0)
+            : null);
+
+        return shown[0];
+    }
+
+    /** One of the window's own fields. */
+    private static Object windowField(String name) throws Exception
+    {
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.get(ui);
+    }
+
+    /**
+     * Lets a setup change finish on the window: the posted refresh, the grid renderer's job behind it, and the grid it
+     * posts in turn.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    private static void settle() throws Exception
+    {
+        java.util.concurrent.ExecutorService renderer =
+            (java.util.concurrent.ExecutorService) windowField("LayoutGridRenderer");
+
+        for (int round = 0; round < 3; round++)
+        {
+            pump();
+            pump();
+
+            renderer.submit(() -> { }).get(30, java.util.concurrent.TimeUnit.SECONDS);
+
+            pump();
+            pump();
+        }
+    }
+
+    /**
      * Lets the event thread finish what it has been given.
      *
      * @throws Exception on an event-thread failure

@@ -157,6 +157,10 @@ public class testTheGreyAppearsAtIdleToo
     /** Whether the tile-length gesture actually rebuilt, so its claim cannot pass by measuring nothing. */
     private static boolean theRebuildHappened;
 
+    /** The two arrow settings as the run found them, null where unset - put back by the teardown. */
+    private static String restrictionsWere;
+    private static String allowedWere;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -164,6 +168,18 @@ public class testTheGreyAppearsAtIdleToo
         {
             throw new SkipException("painting a tile needs a display");
         }
+
+        // NO ARROWS AT ALL, whatever the operator last chose: a run's preferences start as a copy of theirs, and an arrow
+        // drawn over a square is neither the fade nor the orange line this class measures - their green arrows made the
+        // idle mark read as a stroke across part of the square, and the red ones were read as the line itself.  Put back
+        // by the teardown.
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        restrictionsWere = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        allowedWere = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
+
+        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+        prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, and `test/layouts/live-snapshot`).
         //
@@ -296,6 +312,14 @@ public class testTheGreyAppearsAtIdleToo
         finally
         {
             if (sandbox != null) sandbox.close();
+
+            java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+            if (restrictionsWere == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restrictionsWere);
+
+            if (allowedWere == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
+            else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowedWere);
         }
     }
 

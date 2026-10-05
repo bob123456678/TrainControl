@@ -5081,9 +5081,15 @@ public class AutonomySession
             // redundant: my first version of this derivation left the filter out.
             if (arrivalSides(tile).isEmpty()) continue;
 
-            Set<Side> sides = out.computeIfAbsent(tile, k -> new LinkedHashSet<Side>());
-
             Side side = arrivals == null ? null : arrivals.get(name);
+
+            // A SIDE TRAINS MAY NOT ARRIVE BY IS NO TRAP (RSA37-B1).  Its copy is no station, so no train is sent to stop
+            // there, and with no way out none passes through it.  Closing arrivals from that side is one of the three
+            // ways out the finding offers, and while its copy was still counted, taking that advice changed nothing: the
+            // same warning, still telling the operator to close them.
+            if (side != null && getBarredArrivals(tile).contains(side)) continue;
+
+            Set<Side> sides = out.computeIfAbsent(tile, k -> new LinkedHashSet<Side>());
 
             if (side != null) sides.add(side);
         }
@@ -5096,6 +5102,50 @@ public class AutonomySession
         }
 
         return out;
+    }
+
+    /**
+     * The trapped squares whose trapped sides the arrivals menu can close (RSA37-B1).
+     *
+     * @param trapped the squares, each to the sides its trapped arrivals come in by
+     * @return those `arrivalsCanBeClosed` says yes to
+     */
+    private Set<TileKey> arrivalsClosableAt(Map<TileKey, Set<Side>> trapped)
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        for (Map.Entry<TileKey, Set<Side>> square : trapped.entrySet())
+        {
+            if (arrivalsCanBeClosed(square.getKey(), square.getValue())) out.add(square.getKey());
+        }
+
+        return out;
+    }
+
+    /**
+     * Whether the arrivals menu can close these sides of a square, as well as any already closed: the square is a
+     * station with more than one way in, and one stays open (RSA37-B1).
+     *
+     * The menu's own rule, asked by the menu and by the trapped-arrival finding alike, so the advice the finding gives is
+     * advice the menu takes.  It offered "close arrivals from the east and west" at a station with no other way in, whose
+     * last open side the menu will not shut, and at a plain point, which has no arrivals menu.
+     *
+     * @param tile the square
+     * @param sides the sides to close
+     * @return whether they can be
+     */
+    public boolean arrivalsCanBeClosed(TileKey tile, java.util.Collection<Side> sides)
+    {
+        if (!store.isStation(tile)) return false;
+
+        List<Side> ways = arrivalSides(tile);
+
+        Set<Side> closed = new LinkedHashSet<>(getBarredArrivals(tile));
+
+        closed.addAll(sides);
+        closed.retainAll(ways);
+
+        return ways.size() > 1 && closed.size() < ways.size();
     }
 
     /**
@@ -7321,7 +7371,8 @@ public class AutonomySession
         java.util.Map<TileKey, int[]> runIns = runInFigures(givenNoRoom, inspected, namesForInspection);
 
         List<AutonomyChecks.Finding> found = AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
-            trapped, covered, placedLocomotives(), shutStations(),
+            // with the squares where closing their trapped sides is something the arrivals menu can do (RSA37-B1)
+            trapped, arrivalsClosableAt(trapped), covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
             stationsWithNoSignal(), facingsThatCannotBeHeld(),
             // The red arrows, so the findings walk the railway a train can actually use (OB-120).
@@ -7369,7 +7420,7 @@ public class AutonomySession
 
         // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
         // turn there said "may" where the error says "must", and "may" then drew a notice saying "must"
-        found.removeIf(finding -> AutonomyChecks.ARRIVAL_TRAPPED.equals(finding.getMessageKey())
+        found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
             && endsOfLines.contains(finding.getTile()));
 
         AutonomyChecks.bySeverity(found);

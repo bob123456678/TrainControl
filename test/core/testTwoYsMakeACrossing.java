@@ -312,6 +312,79 @@ public class testTwoYsMakeACrossing
     }
 
     /**
+     * Directions set on the squares of a crossing while they were permanent turnouts are read as a turnout's, the same on
+     * both halves of the track (RSA37-C1): towards the toe, the way the blades ran, restricted nothing, so the track runs
+     * both ways; towards a leg was how a permanent turnout was closed, so the track is closed.  Read in the crossing's
+     * terms on the one square that held them, the blades' way ran the track one way, and the closure one way the other.
+     * A track set one way through a door is set on both squares already, and stays one way.
+     *
+     * MUTATION: leave the halves as applied, read towards the toe as a closure, or settle halves that agree, and this
+     * fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testATurnoutsDirectionIsReadAsATurnoutsOnBothHalves() throws Exception
+    {
+        open(verticalPair(), "RSA37-C1");
+
+        TileKey upper = key(5, 5);
+        TileKey lower = key(5, 6);
+
+        RouteId fromTheWest = roadTouching(upper, Side.W);
+        Route road = session.getGraph().getRoutes(upper).get(fromTheWest);
+
+        Direction toTheToe = road.getA() == Side.S ? Direction.TOWARD_A : Direction.TOWARD_B;
+        Direction toTheLeg = toTheToe == Direction.TOWARD_A ? Direction.TOWARD_B : Direction.TOWARD_A;
+
+        RouteId toTheEast = roadTouching(lower, Side.E);
+
+        Set<String> bothTracksBothWays = setOf("4,5>6,6", "6,6>4,5", "6,5>4,6", "4,6>6,5");
+
+        // THROUGH A DOOR, ONE WAY: both squares, and it stays so over a rebuild
+        session.setDirection(upper, fromTheWest, toTheToe);
+        session.rebuild();
+
+        assertEquals(edges(), setOf("4,5>6,6", "6,5>4,6", "4,6>6,5"), "a track set one way through a door does not run"
+            + " one way after a rebuild");
+
+        session.setDirection(upper, fromTheWest, Direction.BOTH);
+        session.rebuild();
+
+        assertEquals(edges(), bothTracksBothWays, "precondition: the crossing does not carry both tracks both ways");
+
+        // TOWARDS THE TOE, on one square only, as a permanent turnout's setting was stored
+        session.getStore().setTileDirection(upper, fromTheWest, toTheToe);
+        session.rebuild();
+
+        assertEquals(session.getGraph().getDirection(upper, fromTheWest), Direction.BOTH, "the way a permanent turnout's"
+            + " blades ran is read as a one-way track on its own square (RSA37-C1)");
+
+        assertEquals(session.getGraph().getDirection(lower, toTheEast), Direction.BOTH, "the other square's half of the"
+            + " track does not run as the first does (RSA37-C1)");
+
+        assertEquals(edges(), bothTracksBothWays, "a permanent turnout's own way runs its track one way over the crossing"
+            + " (RSA37-C1)");
+
+        // TOWARDS A LEG: how a permanent turnout was closed
+        session.getStore().setTileDirection(upper, fromTheWest, toTheLeg);
+        session.rebuild();
+
+        assertEquals(session.getGraph().getDirection(upper, fromTheWest), Direction.NONE, "a permanent turnout's closure"
+            + " is read as a one-way track on its own square (RSA37-C1)");
+
+        assertEquals(session.getGraph().getDirection(lower, toTheEast), Direction.NONE, "a permanent turnout's closure is"
+            + " closed on its own square only (RSA37-C1)");
+
+        assertEquals(edges(), setOf("6,5>4,6", "4,6>6,5"), "a track closed on a permanent turnout runs over the crossing"
+            + " (RSA37-C1)");
+
+        // AND THE SETUP KEEPS WHAT WAS SET
+        assertEquals(session.getStore().getTileDirection(upper, fromTheWest), toTheLeg, "the setup lost the turnout's"
+            + " setting");
+    }
+
+    /**
      * A click on either square steps both tracks through both ways, the four ways they can each run one way, and closed,
      * then round again, carrying on from the same place whichever square is clicked (OB-320; Adam, 2026-10-04: *"Pretend
      * these are two curved tracks on one tile, so we need to cycle through both possible directions on both (4 combos)"*,

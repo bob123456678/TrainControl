@@ -930,7 +930,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {"FileChooser.refreshActionLabelText", "swing.fileChooser.refresh"},
             {"FileChooser.newFolderActionLabelText", "swing.fileChooser.newFolder"},
             {"FileChooser.listViewActionLabelText", "swing.fileChooser.list"},
-            {"FileChooser.detailsViewActionLabelText", "swing.fileChooser.details"}
+            {"FileChooser.detailsViewActionLabelText", "swing.fileChooser.details"},
+            // AND THE WORDS SHOWN ONLY WHEN A FOLDER IS MADE OR RENAMED (RSA37-C3): the name a new folder is given -
+            // Windows' and every other system's - and the errors.  The two names are read once, by the first chooser
+            // made, which the language being fixed for a run makes enough.
+            {"FileChooser.win32.newFolder", "swing.fileChooser.newFolderName"},
+            {"FileChooser.win32.newFolder.subsequent", "swing.fileChooser.newFolderNameNext"},
+            {"FileChooser.other.newFolder", "swing.fileChooser.newFolderName"},
+            {"FileChooser.other.newFolder.subsequent", "swing.fileChooser.newFolderNameNext"},
+            {"FileChooser.newFolderErrorText", "swing.fileChooser.newFolderError"},
+            {"FileChooser.newFolderParentDoesntExistTitleText", "swing.fileChooser.newFolderNoParentTitle"},
+            {"FileChooser.newFolderParentDoesntExistText", "swing.fileChooser.newFolderNoParent"},
+            {"FileChooser.renameErrorTitleText", "swing.fileChooser.renameErrorTitle"},
+            {"FileChooser.renameErrorText", "swing.fileChooser.renameError"},
+            {"FileChooser.renameErrorFileExistsText", "swing.fileChooser.renameErrorExists"}
         };
 
         for (String[] word : words) javax.swing.UIManager.put(word[0], I18n.t(word[1]));
@@ -4209,8 +4222,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // then brought up that one and the four that had been there all along.
         repaintAutoLocList(false);
 
-        repaintLayout();
+        // THE GRID ITSELF ONLY WHERE ITS CAPTIONS CHANGED (MT-670; Adam, 2026-10-04: *"every click I make in the autonomy
+        // editor makes the viewer diagram flicker.  Necessary?"*).  Every setup change rebuilt the whole grid - every square
+        // of the page taken down and drawn again, 1,400 of them on 1 - Main - for the one thing a grid cannot be told once
+        // built: which squares carry a caption, and the name each gives.  An arrow, a length or a direction changes neither,
+        // and the annotations above are already on the squares; there the captions are written again in place, as a
+        // rebuild ends by doing.  A station added, renamed, shut or moved still rebuilds.
+        if (javax.swing.SwingUtilities.isEventDispatchThread() && theShownDiagramHasItsCaptions())
+        {
+            updateVisiblePoints();
+
+            refreshAutonomyFindings();
+        }
+        else
+        {
+            repaintLayout();
+        }
     }
+
+    /**
+     * Whether the track diagram on screen is the grid of the page and size chosen, and the setup still gives its squares
+     * the captions it was built with (MT-670).
+     *
+     * @return false wherever it cannot tell - nothing shown, a page still loading, another page or size chosen, a tile
+     *         the registry has let go
+     */
+    private boolean theShownDiagramHasItsCaptions()
+    {
+        if (InnerLayoutPanel == null || InnerLayoutPanel.getComponentCount() != 1) return false;
+
+        LayoutGrid shown = gridOfContainer.get(InnerLayoutPanel.getComponent(0));
+
+        Object page = this.LayoutList.getSelectedItem();
+        Object size = this.SizeList.getSelectedItem();
+
+        Integer tiles = size == null ? null : this.layoutSizes.get(size.toString());
+
+        // AND EVERY TILE STILL REGISTERED: the registry lets go of a tile whose panel was hidden as it annotated, and only
+        // a rebuild registered it again - kept without it, that square would go on showing its old arrows and trains
+        return shown != null && page != null && tiles != null && shown.draws(page.toString(), tiles)
+            && shown.tilesAreStillRegistered() && shown.captionsAreAsBuilt();
+    }
+
+    /**
+     * Each track diagram grid by the panel it built, for `theShownDiagramHasItsCaptions`: the panel on screen may be a
+     * cached page's, built by a grid other than the newest.  Weak, so a grid goes with its panel.
+     */
+    private final java.util.Map<java.awt.Component, LayoutGrid> gridOfContainer = new java.util.WeakHashMap<>();
 
     public void autonomyMenuActed()
     {
@@ -4497,6 +4555,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             java.beans.PropertyChangeListener sync = evt ->
             {
                 if (autonomyOverlayToggle != null) autonomyOverlayToggle.syncRun();
+
+                // and the arrows, which a run hides
+                arrowsFollowTheRun();
             };
 
             this.startAutonomy.addPropertyChangeListener("enabled", sync);
@@ -5752,12 +5813,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // one, and every marked square was redrawn twice.
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> marked = session.getGraph().getTiles().keySet();
 
+        // NONE WHILE AUTONOMY RUNS (Adam, 2026-10-04: *"when trains are running in autonomy, we hide the
+        // allowances/restrictions on the track diagram."*): what may run where is for setting a railway up, and during a
+        // run the diagram shows what the trains are doing.  `arrowsFollowTheRun` redraws them as the run starts and ends.
+        boolean running = autonomyRunIsOn();
+        arrowsDrawnForARun = running;
         // THE ARROWS OPTION ASKED ONCE A PASS (speed, 2026-10-04): a read of the Windows settings, which every square of the
         // railway made for itself, several times per click - a fifth of the click.
-        boolean arrows = diagramShowsRestrictionArrows();
+        boolean arrows = !running && diagramShowsRestrictionArrows();
 
         // AND THE GREEN, read once too - its own choice, with the red or without it (FR-110, MT-675)
-        boolean allowedToo = diagramShowsAllowedDirections();
+        boolean allowedToo = !running && diagramShowsAllowedDirections();
 
         // ONE ARROW PER RUN WHERE THE RUN SAYS ONE THING (OB-321), and the green when asked for: decided by the session
         // for every square at once, so what is drawn here is what its claims see.
@@ -5768,6 +5834,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         getDiagramTileRegistry().clearAnnotationsExcept(marked);
+    }
+
+    /** Whether the arrows were last drawn for a running railway - see `arrowsFollowTheRun`. */
+    private volatile boolean arrowsDrawnForARun = false;
+
+    /**
+     * Whether the autonomy run is on: started, and not yet ended.  Not a train sent by hand, which `Layout.isRunning`
+     * counts too.
+     *
+     * @return the running railway's own flag, false with none loaded
+     */
+    private boolean autonomyRunIsOn()
+    {
+        Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        return railway instanceof org.traincontrol.automation.Layout
+            && ((org.traincontrol.automation.Layout) railway).isAutoRunning();
+    }
+
+    /**
+     * Redraws the track diagram's arrows once where the autonomy run has started or ended since they were drawn, so they
+     * go as a run starts and come back as it ends (Adam, 2026-10-04: *"when trains are running in autonomy, we hide the
+     * allowances/restrictions on the track diagram."*).  Asked as the run buttons change and as the diagram is refreshed
+     * for a run's trains and its end; cheap to ask often, as it compares two flags.
+     */
+    private void arrowsFollowTheRun()
+    {
+        boolean running = autonomyRunIsOn();
+
+        if (running == arrowsDrawnForARun) return;
+
+        // Noted now, so the asks between here and the redraw post nothing more
+        arrowsDrawnForARun = running;
+
+        javax.swing.SwingUtilities.invokeLater(this::refreshStaticAutonomyLayer);
     }
 
     /**
@@ -30941,6 +31042,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // THE ARROWS AS A RUN STARTS OR ENDS: this is the refresh a run's trains make as they move, and its end makes
+        arrowsFollowTheRun();
+
         // The station labels on the track diagram, which is all this does now.
         //
         // It used to style the graph's nodes and edges as well, and to write the labels only when
@@ -33163,6 +33267,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             false,
                             this
                         );
+
+                        gridOfContainer.put(this.trainGrid.getContainer(), this.trainGrid);
                         
                         if (this.model.isDebug())
                         {

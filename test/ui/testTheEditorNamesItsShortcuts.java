@@ -181,6 +181,81 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
+     * A page switch in the autonomy editor never shows the track editor's title (MT-669; Adam, 2026-10-04: *"when
+     * switching pages, the autonomy editor window title briefly shows the layout editor (not autonomy editor) title for a
+     * split second, before being updated."*).  The switch set the track editor's title and left the autonomy editor's to
+     * a posted step; it is now the arriving mode's from the start.
+     *
+     * MUTATION: set the track editor's title on the way into autonomy mode again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPageSwitchShowsOnlyTheAutonomyEditorsTitle() throws Exception
+    {
+        String to = null;
+
+        for (String name : model.getLayoutList())
+        {
+            if (!PAGE.equals(name) && session.getGraph() != null && session.getGraph().getPages().contains(name)) to = name;
+        }
+
+        if (to == null) throw new SkipException("the frozen railway has no second page in autonomy");
+
+        final String toPage = to;
+
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+            track[0].setAutonomyMode(session);
+        });
+
+        final List<String> titles = java.util.Collections.synchronizedList(new ArrayList<String>());
+
+        try
+        {
+            settleTheEditor();
+
+            assertEquals(track[0].getTitle(), I18n.f("autosetup.ui.windowTitle", PAGE), "precondition: the editor is not"
+                + " the autonomy editor on " + PAGE);
+
+            track[0].addPropertyChangeListener("title", e -> titles.add(String.valueOf(e.getNewValue())));
+
+            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
+                boolean.class);
+
+            arrive.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    arrive.invoke(track[0], toPage, true);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settleTheEditor();
+
+            assertEquals(track[0].getTitle(), I18n.f("autosetup.ui.windowTitle", toPage), "precondition: the switch did"
+                + " not arrive in the autonomy editor on " + toPage);
+
+            assertFalse(titles.contains(I18n.f("app.ui.windowLayoutEditorTitle", toPage)), "switching the autonomy"
+                + " editor's page showed the track editor's title on the way (MT-669): " + titles);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /**
      * Select by Dragging a Box has a key, named on its item in the track diagram editor's right-click menu (FR-107).
      *
      * Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*.  The

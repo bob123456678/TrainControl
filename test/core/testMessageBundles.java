@@ -1074,7 +1074,7 @@ public class testMessageBundles
             String item = values.getProperty("autosetup.ui.menuTurnMay");
 
             for (String key : new String[] {"autosetup.ui.checkMayTurnOnDeadEnd", "autosetup.ui.checkArrivalTrapped",
-                "autosetup.ui.checkTerminusTwoWaysIn"})
+                "autosetup.ui.checkArrivalTrappedNoClosing", "autosetup.ui.checkTerminusTwoWaysIn"})
             {
                 String text = values.getProperty(key);
 
@@ -1088,6 +1088,44 @@ public class testMessageBundles
 
         assertTrue(wrong.isEmpty(), "a finding names the turning setting in words its menu does not use, so the reader"
             + " looks for an item that is not there: " + wrong);
+    }
+
+    /**
+     * Allow Every Path, with nothing to open, says that track only one way can be driven stays as it is - the sentence its
+     * confirmation says it in - rather than that every piece of track already runs both ways, on a railway still showing
+     * a turnout with no address's red arrow (RSA37-C2).
+     *
+     * MUTATION: say again that everything runs both ways, in any language, and this fails.
+     *
+     * @throws Exception from the bundles
+     */
+    @Test
+    public void testNothingToOpenSaysWhatStaysOneWay() throws Exception
+    {
+        List<String> wrong = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            String confirm = values.getProperty("autolayout.ui.confirmAllowEveryPath");
+
+            String nothing = values.getProperty("autosetup.ui.infoNothingOneWay");
+
+            if (confirm == null || nothing == null || !confirm.contains("\n"))
+            {
+                wrong.add(bundle.getName() + " has no confirmation or no hint");
+
+                continue;
+            }
+
+            String stays = confirm.split("\n", 2)[1].split("  ", 2)[0];
+
+            if (!nothing.contains(stays)) wrong.add(bundle.getName() + ": " + nothing);
+        }
+
+        assertTrue(wrong.isEmpty(), "with nothing left to open, Allow Every Path does not say that track only one way can"
+            + " be driven stays as it is (RSA37-C2): " + wrong);
     }
 
     /**

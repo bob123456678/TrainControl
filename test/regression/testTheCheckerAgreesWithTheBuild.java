@@ -180,7 +180,7 @@ public class testTheCheckerAgreesWithTheBuild
 
         for (AutonomyChecks.Finding finding : findings)
         {
-            if (AutonomyChecks.ARRIVAL_TRAPPED.equals(finding.getMessageKey()))
+            if (AutonomyChecks.isArrivalTrapped(finding.getMessageKey()))
             {
                 reported.add(finding.getTile());
             }
@@ -201,6 +201,10 @@ public class testTheCheckerAgreesWithTheBuild
 
             // the turning copy is the answer to a dead end, not a report of one
             if (session.isTurnAround(square)) continue;
+
+            // a station's copy that is no station is a side trains may not arrive by: no train is sent to it, and with no
+            // way out none passes through (RSA37-B1)
+            if (session.getStore().isStation(square) && !point.isDestination()) continue;
 
             emitted.add(square);
         }

@@ -871,6 +871,134 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Closing arrivals from the side a trapped arrival comes in by clears the warning (RSA37-B1).  It is the first of the
+     * three ways out the warning offers (OB-201), and the check never asked which arrivals were closed: the operator who
+     * took that advice got the same warning back, still telling them to close arrivals from that side.
+     *
+     * MUTATION: count a closed side's copy as trapped again, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testClosingTheTrappedSideClearsTheWarning() throws Exception
+    {
+        threeStationsInARow("RSA37-B1");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        // EAST OF BETA, ONE WAY TOWARDS IT: a train arriving from the west cannot go on
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding before = trappedAt(beta);
+
+        assertNotNull(before, "precondition: a train arriving at 3,1 from the west is not reported trapped: "
+            + session.check());
+
+        assertEquals(before.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED, "precondition:"
+            + " the warning does not offer to close arrivals from the west, where the arrivals menu can");
+
+        // THE ADVICE TAKEN, as the arrivals menu takes it
+        session.setBarredArrivals(beta, new LinkedHashSet<>(Arrays.asList(Side.W)));
+        session.rebuild();
+
+        assertNull(trappedAt(beta), "closing arrivals from the side the warning names left the warning in place, still"
+            + " telling the operator to close them (RSA37-B1): " + session.check());
+    }
+
+    /**
+     * The trapped-arrival warning offers to close arrivals only where the arrivals menu can do it (RSA37-B1): not at a
+     * station trapped from every way in, whose last open side the menu will not shut, nor at a plain point, which has no
+     * arrivals menu.  There it offers the other two ways out, and names the side once.
+     *
+     * MUTATION: offer closing arrivals everywhere, or nowhere, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testClosingArrivalsIsOfferedOnlyWhereTheMenuCanDoIt() throws Exception
+    {
+        threeStationsInARow("RSA37-B1 offered");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        TileKey west = new TileKey("main", 2, 1);
+
+        TileKey east = new TileKey("main", 4, 1);
+
+        // ONE WAY TOWARDS BETA FROM BOTH SIDES: trapped from the east and the west, and closing both would leave no way in
+        session.setDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
+        session.setDirection(east, new RouteId(0, 0), Direction.TOWARD_B);
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding both = trappedAt(beta);
+
+        assertNotNull(both, "precondition: 3,1, one way towards it from both sides, is not reported trapped: "
+            + session.check());
+
+        assertTrue(both.getSubject().contains(org.traincontrol.util.I18n.t("autosetup.ui.sideE"))
+            && both.getSubject().contains(org.traincontrol.util.I18n.t("autosetup.ui.sideW")), "precondition: 3,1 is not"
+            + " trapped from both its sides: " + both.getSubject());
+
+        assertEquals(both.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING, "a"
+            + " station trapped from every way in is told to close arrivals from all of them, which the arrivals menu"
+            + " refuses (RSA37-B1)");
+
+        // ONE SIDE CLOSED: the other still trapped, and now the last way in
+        session.setBarredArrivals(beta, new LinkedHashSet<>(Arrays.asList(Side.W)));
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding last = trappedAt(beta);
+
+        assertNotNull(last, "precondition: closing the west left nothing trapped from the east: " + session.check());
+
+        assertEquals(last.getSubject(), org.traincontrol.util.I18n.t("autosetup.ui.sideE"), "the side closed is still"
+            + " named as trapped");
+
+        assertEquals(last.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING, "a"
+            + " station is told to close arrivals from its last open way in, which the arrivals menu refuses (RSA37-B1)");
+
+        // A PLAIN POINT, trapped from the west: no arrivals menu at all
+        session.setBarredArrivals(beta, new LinkedHashSet<Side>());
+        session.setDirection(west, new RouteId(0, 0), Direction.BOTH);
+        session.setStation(beta, false);
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding point = trappedAt(beta);
+
+        assertNotNull(point, "precondition: the plain point 3,1 is not reported trapped from the west: " + session.check());
+
+        assertEquals(point.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.INFO, "precondition: 3,1"
+            + " is not a plain point");
+
+        assertEquals(point.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING, "a"
+            + " plain point is told to close arrivals, and has no arrivals menu (RSA37-B1)");
+
+        // AND THE WORDS: the side named once, as where the train comes from, and no more
+        String side = org.traincontrol.util.I18n.t("autosetup.ui.sideW");
+
+        String said = org.traincontrol.util.I18n.f(point.getMessageKey(), "3,1", point.getSubject());
+
+        assertEquals(said.split(java.util.regex.Pattern.quote(side), -1).length - 1, 1, "the advice without closing"
+            + " arrivals names the side other than as where the train comes from: " + said);
+    }
+
+    /** The setup check's trapped-arrival finding at this square, whichever advice it gives, or null. */
+    private org.traincontrol.automationui.AutonomyChecks.Finding trappedAt(TileKey at)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
+                && at.equals(finding.getTile()))
+            {
+                return finding;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * A station at the end of a line that trains may not turn at is an error - a train sent there could never leave
      * (Adam, 2026-10-01) - and marking that trains must change direction there clears it.
      *
@@ -899,9 +1027,8 @@ public class testAutonomyDiagramSession
             + " was reported at the end of a line");
 
         // ONE FINDING AND ONE PIECE OF ADVICE (RSA17-C1): not the error and the warning that trains cannot turn there
-        assertFalse(findingAt(org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED,
-            org.traincontrol.automationui.AutonomyChecks.Severity.WARNING, alpha), "a station at the end of a line is"
-            + " reported twice, an error and a warning, with advice that disagrees: " + session.check());
+        assertNull(trappedAt(alpha), "a station at the end of a line is reported twice, an error and a warning, with"
+            + " advice that disagrees: " + session.check());
 
         // TRAINS MUST CHANGE DIRECTION THERE
         session.setPointProperty(alpha, "mustReverse", Boolean.TRUE);
@@ -1921,27 +2048,136 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * The track diagram's green arrows are the signals' green (MT-675; Adam, 2026-10-04: *"green arrows are hard to see
-     * due to low contrast.  Use the same green as signals on the track diagram viewer."*) - the green a signal tile
-     * shows, 0, 255, 0; the autonomy editor keeps its darker green over its pale wash.
+     * The green arrows are a light green with a dark green edge, on the track diagram and in the autonomy editor alike
+     * (Adam, 2026-10-04, after MT-675's *"green arrows are hard to see due to low contrast"* made them the signals' green:
+     * *"The green I asked for on the track diagram is too bright/green"*, and of six drawn on the real tiles: *"F looks
+     * best.  let's see about using that in the editor too."*).
      *
-     * MUTATION: paint the track diagram's green in the editor's green, and this fails.
+     * MUTATION: drop the edge, or paint either surface another green, and this fails.
      */
     @Test
-    public void testTheTrackDiagramsGreenIsTheSignalsGreen()
+    public void testTheGreenArrowsAreLightGreenWithADarkEdge()
     {
         List<TileAnnotation.Mark> marks = new ArrayList<>();
 
         marks.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.BOTH));
 
-        // the track diagram's: restrictions-only, with the green asked for
-        assertTrue(pixelsOf(new TileAnnotation(marks, -1, false, null, false, false, false, null, true, null)
-            .withAllowedDirections(), new Color(0, 255, 0)) > 0, "the track diagram's green arrows are not the signals'"
-            + " green (MT-675)");
+        TileAnnotation diagram = new TileAnnotation(marks, -1, false, null, false, false, false, null, true, null)
+            .withAllowedDirections();
 
-        // the editor's Show All
-        assertTrue(pixelsOf(new TileAnnotation(marks, -1, false, null, false, false, false, null, false, null),
-            new Color(0, 140, 60)) > 0, "the autonomy editor's green arrows changed colour");
+        TileAnnotation editor = new TileAnnotation(marks, -1, false, null, false, false, false, null, false, null);
+
+        for (TileAnnotation annotation : Arrays.asList(diagram, editor))
+        {
+            String which = annotation == diagram ? "the track diagram's" : "the autonomy editor's";
+
+            assertTrue(pixelsOf(annotation, new Color(70, 205, 90)) > 0, which + " green arrows are not the light green");
+
+            assertTrue(pixelsOf(annotation, new Color(0, 95, 40)) > 0, which + " green arrows have no dark green edge");
+
+            assertEquals(pixelsOf(annotation, new Color(0, 255, 0)), 0, which + " green arrows are the signals' green");
+        }
+    }
+
+    /**
+     * Every arrow sits on its rail, the green and the red alike: a Y's toe arrow is as wide each side of the toe, and a
+     * straight's arrows as tall above as below - the lit pixels of a 30-pixel tile from 9 to 20, about 15.0, where the
+     * permanent Y's toe and straight track are drawn.  A red arrow's outline, rounded to the pixel grid, hung half a pixel
+     * right and down, from 9 to 21; the green one's new edge would have too (Adam, 2026-10-04: *"your down arrow on the Y
+     * may still be slightly off center"*).
+     *
+     * MUTATION: stroke an arrow's outline on the pixel grid again, or anchor the arrows half a pixel over, and this fails.
+     */
+    @Test
+    public void testTheArrowsSitOnTheArtsCentreLine()
+    {
+        // ONE WAY INTO A Y'S TOE, the green alone: the toe's arrow and nothing else on the square
+        List<TileAnnotation.Mark> intoTheToe = new ArrayList<>();
+
+        intoTheToe.add(new TileAnnotation.Mark(Side.W, Side.S, Direction.TOWARD_B));
+        intoTheToe.add(new TileAnnotation.Mark(Side.E, Side.S, Direction.TOWARD_B));
+
+        assertCentred(new TileAnnotation(intoTheToe, -1, false, null, false, false, false, null, true, null)
+            .withAllowedDirections().withoutRestrictions(), true, "a Y's green toe arrow");
+
+        // ONE WAY OUT OF IT, the red alone
+        List<TileAnnotation.Mark> outOfTheToe = new ArrayList<>();
+
+        outOfTheToe.add(new TileAnnotation.Mark(Side.W, Side.S, Direction.TOWARD_A));
+        outOfTheToe.add(new TileAnnotation.Mark(Side.E, Side.S, Direction.TOWARD_A));
+
+        assertCentred(new TileAnnotation(outOfTheToe, -1, false, null, false, false, false, null, true, null), true,
+            "a Y's red toe arrow");
+
+        // A STRAIGHT ONE WAY EAST: the green arrow at the east alone, then the red at the west alone
+        List<TileAnnotation.Mark> east = new ArrayList<>();
+
+        east.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.TOWARD_B));
+
+        assertCentred(new TileAnnotation(east, -1, false, null, false, false, false, null, true, null)
+            .withAllowedDirections().withoutRestrictions(), false, "a straight's green arrow");
+
+        assertCentred(new TileAnnotation(east, -1, false, null, false, false, false, null, true, null), false,
+            "a straight's red arrow");
+    }
+
+    /** Asserts an annotation's lit pixels on a 30-pixel tile run from 9 to 20 across its rail, about 15.0. */
+    private static void assertCentred(TileAnnotation annotation, boolean columns, String which)
+    {
+        int[] lit = extentOf(paintedOnBlack(annotation, 30), 0, 30, 0, 30, columns);
+
+        assertEquals(lit[0] + "-" + lit[1], "9-20", which + " is not centred on its rail - " + (columns ? "columns" : "rows")
+            + " " + lit[0] + " to " + lit[1] + " of a 30-pixel tile, whose rail is at 15.0");
+    }
+
+    /** An annotation painted on black, on a square of this size. */
+    private static BufferedImage paintedOnBlack(TileAnnotation annotation, int size)
+    {
+        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+        Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, size, size);
+
+            annotation.paint(g, size, size, false);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return shot;
+    }
+
+    /**
+     * The first and last column (or row) holding anything but black, within a window of the image.
+     *
+     * @param columns true for columns, false for rows
+     */
+    private static int[] extentOf(BufferedImage shot, int x0, int x1, int y0, int y1, boolean columns)
+    {
+        int first = Integer.MAX_VALUE;
+        int last = -1;
+
+        for (int x = x0; x < x1; x++)
+        {
+            for (int y = y0; y < y1; y++)
+            {
+                if ((shot.getRGB(x, y) & 0xFFFFFF) == 0) continue;
+
+                int at = columns ? x : y;
+
+                first = Math.min(first, at);
+                last = Math.max(last, at);
+            }
+        }
+
+        assertTrue(last >= 0, "precondition: nothing was painted where the arrow should be");
+
+        return new int[] {first, last};
     }
 
     /** How many pixels of exactly this colour an annotation paints on black. */
@@ -2156,7 +2392,7 @@ public class testAutonomyDiagramSession
             {
                 Color c = new Color(shot.getRGB(x, y));
 
-                if (c.getGreen() > 100 && c.getRed() < 60 && c.getBlue() < 110) green++;
+                if (c.getGreen() > 150 && c.getRed() < 120 && c.getBlue() < 140) green++;
 
                 if (c.getRed() > 150 && c.getGreen() < 80 && c.getBlue() < 80) red++;
             }
@@ -2240,7 +2476,7 @@ public class testAutonomyDiagramSession
             {
                 Color c = new Color(shot.getRGB(x, y));
 
-                if (c.getGreen() > 100 && c.getRed() < 60 && c.getBlue() < 110) green++;
+                if (c.getGreen() > 150 && c.getRed() < 120 && c.getBlue() < 140) green++;
             }
         }
 
@@ -2299,8 +2535,9 @@ public class testAutonomyDiagramSession
 
     /**
      * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default, or set
-     * to run the one way its blades do, it is not counted - it refuses nothing a train could do, and no red arrow is drawn
-     * on it; closed, it is counted; opened, it runs the one way the hardware does, into its toe.
+     * to run the one way its blades do, it is not counted - it refuses nothing a train could do, though its red arrow
+     * still shows the one way its blades run (RSA37-C2); closed, it is counted; opened, it runs the one way the hardware
+     * does, into its toe.
      *
      * MUTATION: count a road only the hardware restricts, or leave a closed one out, and this fails.
      *

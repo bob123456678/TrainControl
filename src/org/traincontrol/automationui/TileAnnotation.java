@@ -93,14 +93,16 @@ public class TileAnnotation
      * it says the same.  Both ways is now simply two green arrows, one way is a green and a red, and
      * closed is two reds - one rule, read the same way everywhere.
      */
-    private static final Color ONE_WAY = new Color(0, 140, 60);
+    private static final Color ONE_WAY = new Color(70, 205, 90);
 
     /**
-     * The green a signal shows on the track diagram, for the green arrows drawn there (MT-675; Adam, 2026-10-04: *"green
-     * arrows are hard to see due to low contrast.  Use the same green as signals on the track diagram viewer."*).  The
-     * darker green above was lost on the diagram's dark rails; the autonomy editor keeps it, over its pale wash.
+     * The edge round a green arrow (Adam, 2026-10-04, choosing it from six drawn on the real tiles: *"F looks best.  let's
+     * see about using that in the editor too."*).  A dark green (0, 140, 60) was lost on the black rails it sits on, and
+     * the signals' green (0, 255, 0), which MT-675 asked for on the track diagram, was too bright; a light green with a
+     * dark green edge reads on both the rail and the white around it, on the track diagram and in the autonomy editor
+     * alike.
      */
-    private static final Color SIGNAL_GREEN = new Color(0, 255, 0);
+    private static final Color ONE_WAY_EDGE = new Color(0, 95, 40);
 
     /**
      * Closed.  Red, and the only mark drawn as a bar rather than a path, because it is the one that means
@@ -1711,22 +1713,41 @@ public class TileAnnotation
             ys[i + 1] = (int) Math.round(tipY + Math.sin(angle + barb) * size);
         }
 
-        if (allowed)
-        {
-            // the track diagram's arrows carry no wash, and are drawn in the signals' green (MT-675)
-            g.setColor(blockedOnly ? SIGNAL_GREEN : ONE_WAY);
-            g.fillPolygon(xs, ys, 3);
-        }
-        else
-        {
-            // Hollow, and outlined in the same weight the open ones are drawn at, so the pair are
-            // plainly the same mark in two states rather than two different marks
-            g.setColor(Color.WHITE);
-            g.fillPolygon(xs, ys, 3);
+        // OUTLINED ON THE SHAPE ITSELF, not nudged to the pixel grid.  The grid's rounding hangs an outline half a pixel
+        // right and down, so a red arrow sat off its rail - 15.4 across a 30-pixel tile whose rail is at 15.0 - and the
+        // green one's edge would have pulled it off too (Adam, 2026-10-04: *"your down arrow on the Y may still be
+        // slightly off center"*).  Only here: the thin lines elsewhere on a square are crisper on the grid.
+        Object control = g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
 
-            g.setColor(CLOSED);
-            g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawPolygon(xs, ys, 3);
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        try
+        {
+            if (allowed)
+            {
+                g.setColor(ONE_WAY);
+                g.fillPolygon(xs, ys, 3);
+
+                g.setColor(ONE_WAY_EDGE);
+                g.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawPolygon(xs, ys, 3);
+            }
+            else
+            {
+                // Hollow, and outlined in the same weight the open ones are drawn at, so the pair are
+                // plainly the same mark in two states rather than two different marks
+                g.setColor(Color.WHITE);
+                g.fillPolygon(xs, ys, 3);
+
+                g.setColor(CLOSED);
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawPolygon(xs, ys, 3);
+            }
+        }
+        finally
+        {
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
+                control == null ? RenderingHints.VALUE_STROKE_DEFAULT : control);
         }
     }
 
