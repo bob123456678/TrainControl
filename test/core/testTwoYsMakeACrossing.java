@@ -385,10 +385,11 @@ public class testTwoYsMakeACrossing
     }
 
     /**
-     * A click on either square steps both tracks through both ways, the four ways they can each run one way, and closed,
-     * then round again, carrying on from the same place whichever square is clicked (OB-320; Adam, 2026-10-04: *"Pretend
-     * these are two curved tracks on one tile, so we need to cycle through both possible directions on both (4 combos)"*,
-     * and both ways first).
+     * A click on either square steps both tracks through both ways, each track one way with the other both ways, the four
+     * ways they can each run one way, and closed, then round again, carrying on from the same place whichever square is
+     * clicked (OB-320; Adam, 2026-10-04: *"Pretend these are two curved tracks on one tile, so we need to cycle through
+     * both possible directions on both (4 combos)"*, and both ways first; MT-688, 2026-10-05: *"when cycling, there is no
+     * option for red in one direction and green in the other 3"*).
      *
      * MUTATION: count from the clicked square, step the arms, or leave out a combination, and this fails.
      *
@@ -410,6 +411,12 @@ public class testTwoYsMakeACrossing
         cycle.setAccessible(true);
 
         List<Set<String>> expected = Arrays.asList(
+            // ONE TRACK ONE WAY, the other both ways (MT-688)
+            setOf("4,5>6,6", "6,5>4,6", "4,6>6,5"),
+            setOf("6,6>4,5", "6,5>4,6", "4,6>6,5"),
+            setOf("4,5>6,6", "6,6>4,5", "6,5>4,6"),
+            setOf("4,5>6,6", "6,6>4,5", "4,6>6,5"),
+            // BOTH ONE WAY
             setOf("4,5>6,6", "6,5>4,6"),
             setOf("4,5>6,6", "4,6>6,5"),
             setOf("6,6>4,5", "6,5>4,6"),
@@ -435,7 +442,8 @@ public class testTwoYsMakeACrossing
             });
 
             assertEquals(edges(), expected.get(click), "click " + (click + 1) + ", on " + square + ", does not leave the"
-                + " crossing's tracks running the next of both ways, the four one-way combinations and closed (OB-320)");
+                + " crossing's tracks running the next of both ways, each one way with the other open (MT-688), the four"
+                + " one-way combinations and closed (OB-320)");
         }
     }
 

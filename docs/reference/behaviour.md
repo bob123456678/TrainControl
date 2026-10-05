@@ -1796,9 +1796,11 @@ treat the tracks verbatim."*
   the squares were turnouts - a setup saved before the change, or a turnout given its partner since - and are read as a
   turnout's, the same on both (`TileGraph.settleCrossingHalves`, RSA37-C1): towards the toe, the blades' own way, is
   both ways; towards a leg, how a permanent turnout was closed, is closed.
-- **The click** steps both tracks through both ways, the four ways they can each run one way, and closed (Adam:
-  *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible directions on both (4
-  combos)"*), counted on the north or west square so either square carries on from the same place.
+- **The click** steps both tracks through both ways, each track one way with the other both ways, the four ways
+  they can each run one way, and closed (Adam: *"Pretend these are two curved tracks on one tile, so we need to cycle
+  through both possible directions on both (4 combos)"*; and on MT-688: *"when cycling, there is no option for red in
+  one direction and green in the other 3"*), counted on the north or west square so either square carries on from the
+  same place.
 - **A crossing for the berth too**: the room walk of 5a does not stop at it, and the berth rule refuses at it only
   where another road runs over it, as at a crossing.  Locking is unchanged - both tracks run over both squares, so
   two trains cannot be on the crossing at once.
