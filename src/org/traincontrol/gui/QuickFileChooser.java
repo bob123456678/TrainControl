@@ -17,9 +17,10 @@ import javax.swing.filechooser.FileSystemView;
  *
  * The list is the same one: the shell's own answer - Recent Items, Desktop, Documents, This PC and its drives, Network,
  * Libraries and the user's folders - asked off the event thread as the window opens and again after each chooser closes,
- * so a drive plugged in since is there the next time.  Swing is told not to ask for it itself, and finds it among this
- * chooser's roots instead; everything else - the files, their names and icons, which folder is above which - is the
- * shell's as before.  A chooser opened before the first answer is in asks for it there and then, as Swing did.
+ * so a drive plugged in since is there the next time.  Swing asks the shell itself only for a chooser on the shell's
+ * own view of the files, so this one carries a view of its own, which hands Swing the answer among its roots; everything
+ * else - the files, their names and icons, which folder is above which - is the shell's as before.  A chooser opened
+ * before the first answer is in asks for it there and then, as Swing did.
  *
  * Every chooser in TrainControl is one of these - `testSwingSpeaksOurLanguage` looks.
  *
@@ -50,15 +51,6 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     public QuickFileChooser(String currentDirectoryPath)
     {
         super(currentDirectoryPath, new Places());
-    }
-
-    @Override
-    public void updateUI()
-    {
-        // NOT THE SHELL'S LIST, ASKED AGAIN AT EVERY FOLDER: Swing reads this as the UI is built, which the constructor does
-        putClientProperty("FileChooser.useShellFolder", Boolean.FALSE);
-
-        super.updateUI();
     }
 
     @Override
