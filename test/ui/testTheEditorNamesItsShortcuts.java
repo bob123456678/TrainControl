@@ -1677,6 +1677,149 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
+     * An undo's redraw keeps the selection's grip and the pointer's blue outline (RSA43-C4).
+     *
+     * The redraw a Control+Z asks for ended with a pass that took every outline down and put back only the picked squares'
+     * yellow: the grip that moves the group and the square under the pointer went grey until the pointer next moved,
+     * though both still acted - after five rounds (52 to 56) of making exactly these outlines right through every gesture,
+     * and Control+Z is pressed with the mouse still.
+     *
+     * A tile turned so there is something to undo, two squares picked, the pointer over a third, Control+Z: the grip and
+     * the blue are still drawn on the squares the grid now holds.
+     *
+     * MUTATION: end the redraw with the border pass alone again, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testAnUndoKeepsTheGripAndThePointersOutline() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            final int[] at = new int[2];
+
+            final org.traincontrol.gui.LayoutLabel[] squares = aTrackSquareWithRoom(track[0], at);
+
+            assertNotNull(squares, "precondition: no track square on " + PAGE);
+
+            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+
+            gridField.setAccessible(true);
+
+            // SOMETHING TO UNDO
+            SwingUtilities.invokeAndWait(() -> track[0].rotate(squares[0]));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            // TWO SQUARES PICKED, AND THE POINTER OVER A THIRD - on the grid as it now stands
+            final int x = at[0];
+            final int y = at[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+                    for (int dx = 0; dx < 2; dx++)
+                    {
+                        org.traincontrol.gui.LayoutLabel square = grid.getValueAt(x + dx, y);
+
+                        track[0].receiveClickEvent(new java.awt.event.MouseEvent(square,
+                            java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(),
+                            java.awt.event.InputEvent.SHIFT_DOWN_MASK | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, 1, 1, 1,
+                            false, java.awt.event.MouseEvent.BUTTON1), square);
+                    }
+
+                    org.traincontrol.gui.LayoutLabel over = grid.getValueAt(x, y + 1);
+
+                    track[0].receiveMoveEvent(new java.awt.event.MouseEvent(over, java.awt.event.MouseEvent.MOUSE_MOVED,
+                        System.currentTimeMillis(), 0, 1, 1, 0, false), over);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(gripIsDrawn(gridField, track[0]) && wearsTheHover(track[0], squareAt(gridField, track[0], x, y + 1)),
+                "precondition: before the undo the selection's grip or the pointer's outline is not drawn");
+
+            // CONTROL+Z, with the pointer where it was
+            SwingUtilities.invokeAndWait(() -> track[0].undo());
+
+            for (int i = 0; i < 20; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(gripIsDrawn(gridField, track[0]), "after an undo the picked squares lost the grip that moves them,"
+                + " though it still moves them (RSA43-C4)");
+
+            assertTrue(wearsTheHover(track[0], squareAt(gridField, track[0], x, y + 1)), "after an undo the square the pointer"
+                + " is still over lost its blue outline (RSA43-C4)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /** The label the editor's grid holds now at a square. */
+    private static javax.swing.JLabel squareAt(java.lang.reflect.Field gridField, LayoutEditor editor, int x, int y)
+        throws Exception
+    {
+        final javax.swing.JLabel[] out = new javax.swing.JLabel[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                out[0] = ((org.traincontrol.gui.LayoutGrid) gridField.get(editor)).getValueAt(x, y);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        return out[0];
+    }
+
+    /** Whether any square of the editor's grid wears the selection's grip. */
+    private static boolean gripIsDrawn(java.lang.reflect.Field gridField, LayoutEditor editor) throws Exception
+    {
+        final boolean[] out = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                for (java.awt.Component c : ((org.traincontrol.gui.LayoutGrid) gridField.get(editor)).getContainer().getComponents())
+                {
+                    if (c instanceof javax.swing.JLabel && ((javax.swing.JLabel) c).getBorder() != null
+                        && ((javax.swing.JLabel) c).getBorder().getClass().getName().endsWith("SelectionGrip")) out[0] = true;
+                }
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        return out[0];
+    }
+
+    /**
      * A box Escape dropped and released on its own square after the pointer moved with the button down leaves that square's
      * next click alone (RSA36-C1).
      *
