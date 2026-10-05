@@ -27,10 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-689](#mt-689) | 2026-10-05 | A crossing's click offers one track one way with the other open | fixed unvalidated | Adam 2026-10-05 (MT-688) |
+| [MT-690](#mt-690) | 2026-10-05 | The file chooser opens at once, with the same places to look in | fixed unvalidated | Adam 2026-10-05 (OB-323) |
 
-Everything else - 688 of 689 - needs nothing from you unless the area changes again:
-545 **fixed validated** and 143 **superseded**.
+Everything else - 689 of 690 - needs nothing from you unless the area changes again:
+546 **fixed validated** and 143 **superseded**.
 
 ---
 
@@ -32799,7 +32799,7 @@ Validated on your *Works*; your note on the click is built, and MT-689 tests it.
 
 ### MT-689 - 2026-10-05 - A crossing's click offers one track one way with the other open
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (MT-688)
 
 **Written:** 2026-10-05
@@ -32820,5 +32820,46 @@ Your note on MT-688: *"when cycling, there is no option for red in one direction
 - A click on the other square carries on from the same place.
 
 *What this is:* `core.testTwoYsMakeACrossing.testAClickStepsThroughEveryWayTheTwoTracksCanRun`.
+
+**Adam, 2026-10-05 (triage).** Works.
+
+*Run against commit 82a1312c, in English - build\classes, compiled 05 Oct 01:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.
+
+---
+
+<a id="mt-690"></a>
+
+### MT-690 - 2026-10-05 - The file chooser opens at once, with the same places to look in
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (OB-323)
+
+**Written:** 2026-10-05
+
+Your report OB-323: *"there is an odd (brief but noticeable) delay before the file chooser opens for Layouts -> Open
+Layout... (half a second to one second or so)"*; and *"we don't want to sacrifice UX"*.
+
+**Steps**
+
+1. Start TrainControl, wait a few seconds, and choose **Layouts > Open Layout...**.
+2. In the chooser, open the **Look In** list, then go up a folder and back down, and press Cancel.
+3. Open another chooser - for example a locomotive's picture, or an autonomy configuration's import.
+
+**Expected**
+
+- Step 1: the chooser appears without the pause.
+- Step 2: the Look In list offers what it did - Recent Items, Desktop, Documents, This PC and its drives, Network,
+  Libraries and your folders, with the folder you are in - and moving between folders is immediate.  The side panel is as
+  it was.
+- Step 3: the same for that chooser.
+
+*What this is:* `regression.testSwingSpeaksOurLanguage.testEveryFileChooserSkipsTheShellsFolders`.  Swing asked Windows
+for the Look In list each time a chooser was made and at every change of folder - measured on your PC, one to two seconds
+each.  It is now asked once, in the background, as the window opens and after each chooser closes: about a quarter of a
+second for the first chooser and a fiftieth after.
 
 ---
