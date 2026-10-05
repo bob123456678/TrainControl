@@ -27,24 +27,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-658](#mt-658) | 2026-10-03 | The strip's button is not skinny at lower display scaling | fixed unvalidated | Adam 2026-10-03 (OB-313) |
-| [MT-666](#mt-666) | 2026-10-04 | A click in the autonomy editor reaches the main window's diagram without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
-| [MT-667](#mt-667) | 2026-10-04 | Save in the track diagram editor reaches the main window's diagram without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
-| [MT-668](#mt-668) | 2026-10-04 | Switching pages in the autonomy editor shows no pause | fixed unvalidated | Adam 2026-10-04 (speed) |
 | [MT-669](#mt-669) | 2026-10-04 | The findings list follows a rename at once | fixed unvalidated | Adam 2026-10-04 (speed) |
 | [MT-670](#mt-670) | 2026-10-04 | An arrow click in the autonomy editor shows its warning without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
-| [MT-671](#mt-671) | 2026-10-04 | Popups and the file chooser speak the window's language | fixed unvalidated | Adam 2026-10-04 (OB-318) |
-| [MT-672](#mt-672) | 2026-10-04 | Delete asks which configuration, even with none loaded | fixed unvalidated | Adam 2026-10-04 (OB-319) |
-| [MT-673](#mt-673) | 2026-10-04 | Allow Every Path opens the red arrows in one go | fixed unvalidated | Adam 2026-10-04 (FR-108) |
-| [MT-674](#mt-674) | 2026-10-04 | A one-way straight shows one arrow on the track diagram | fixed unvalidated | Adam 2026-10-04 (OB-321) |
 | [MT-675](#mt-675) | 2026-10-04 | The track diagram can show the green arrows too | fixed unvalidated | Adam 2026-10-04 (FR-110) |
 | [MT-676](#mt-676) | 2026-10-04 | Two permanent Ys toe to toe are a crossing | fixed unvalidated | Adam 2026-10-04 (OB-320) |
-| [MT-677](#mt-677) | 2026-10-04 | Two permanent rights toe to toe are a crossing too | fixed unvalidated | Adam 2026-10-04 (OB-320) |
-| [MT-678](#mt-678) | 2026-10-04 | The autonomy editor's shortcuts work after a click on a finding | fixed unvalidated | Adam 2026-09-12 (OB-200) |
-| [MT-679](#mt-679) | 2026-10-04 | A trapped arrival says which side it comes from | fixed unvalidated | Adam 2026-09-12 (OB-201) |
 
-Everything else - 664 of 679 - needs nothing from you unless the area changes again:
-524 **fixed validated** and 140 **superseded**.
+Everything else - 675 of 679 - needs nothing from you unless the area changes again:
+535 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31654,7 +31643,7 @@ Your note - rename Parked Locs to Standing Locs - is MT-664.
 
 ### MT-658 - 2026-10-03 - The strip's button is not skinny at lower display scaling
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03 (OB-313)
 
 **Written:** 2026-10-03
@@ -31676,6 +31665,10 @@ vertically."*
 **Adam, 2026-10-04 (triage).** Works.
 
 *Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
 
 ---
 
@@ -31928,7 +31921,7 @@ Validated on your *Works* of 2026-10-03.
 
 ### MT-666 - 2026-10-04 - A click in the autonomy editor reaches the main window's diagram without a pause
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (speed)
 
 **Written:** 2026-10-04
@@ -31953,13 +31946,17 @@ per event, five times.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
 
 *Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
 ---
 
 <a id="mt-667"></a>
 
 ### MT-667 - 2026-10-04 - Save in the track diagram editor reaches the main window's diagram without a pause
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (speed)
 
 **Written:** 2026-10-04
@@ -31983,13 +31980,17 @@ seven times.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
 
 *Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
 ---
 
 <a id="mt-668"></a>
 
 ### MT-668 - 2026-10-04 - Switching pages in the autonomy editor shows no pause
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (speed)
 
 **Written:** 2026-10-04
@@ -32011,6 +32012,10 @@ twice.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
 **Adam, 2026-10-04 (triage).** Works.
 
 *Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
 
 ---
 
@@ -32085,7 +32090,7 @@ Works, but every click I make in the autonomy editor makes the viewer diagram fl
 
 ### MT-671 - 2026-10-04 - Popups and the file chooser speak the window's language
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (OB-318)
 
 **Written:** 2026-10-04
@@ -32114,13 +32119,17 @@ languages; Java has none of its own for Danish, Dutch or Polish.  `regression.te
 
 *Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
 ---
 
 <a id="mt-672"></a>
 
 ### MT-672 - 2026-10-04 - Delete asks which configuration, even with none loaded
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (OB-319)
 
 **Written:** 2026-10-04
@@ -32147,13 +32156,17 @@ prevents subsequent deletion."*
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
 ---
 
 <a id="mt-673"></a>
 
 ### MT-673 - 2026-10-04 - Allow Every Path opens the red arrows in one go
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (FR-108)
 
 **Written:** 2026-10-04
@@ -32182,13 +32195,17 @@ warning."*
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
 ---
 
 <a id="mt-674"></a>
 
 ### MT-674 - 2026-10-04 - A one-way straight shows one arrow on the track diagram
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (OB-321)
 
 **Written:** 2026-10-04
@@ -32213,6 +32230,10 @@ ticked in the viewer."*
 **Adam, 2026-10-04 (triage).** Works.
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
 
 ---
 
@@ -32299,7 +32320,7 @@ Yes, but the arrows on two permanent Y's are not aligned.  ake the arrow at the 
 
 ### MT-677 - 2026-10-04 - Two permanent rights toe to toe are a crossing too
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (OB-320)
 
 **Written:** 2026-10-04
@@ -32334,13 +32355,17 @@ stays two turnouts.  `core.testTwoYsMakeACrossing.testTwoRightTurnoutsToeToToeAr
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
 ---
 
 <a id="mt-678"></a>
 
 ### MT-678 - 2026-10-04 - The autonomy editor's shortcuts work after a click on a finding
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-09-12 (OB-200)
 
 **Written:** 2026-10-04
@@ -32367,13 +32392,17 @@ and there is no way to regain focus.  just send the commands through with the li
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
 ---
 
 <a id="mt-679"></a>
 
 ### MT-679 - 2026-10-04 - A trapped arrival says which side it comes from
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-09-12 (OB-201)
 
 **Written:** 2026-10-04
@@ -32398,5 +32427,9 @@ or let trains change direction."*
 **Adam, 2026-10-04 (triage).** Works.
 
 *Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
 
 ---
