@@ -290,17 +290,24 @@ public class AutonomyChecks
     public static final String GUARD_IS_BOTH = "autosetup.ui.checkGuardIsBoth";
 
     /**
-     * An entry guard no way into its station passes (AUT-C2, Adam 2026-09-24: *"if the guard signal is not on a path
-     * leading to the chosen station, we can add notice to the autonomy editor"*).  A NOTICE: the setup is the operator's to
-     * get right, and this is only a pointer.
+     * An entry guard no route into its station commands (AUT-C2, Adam 2026-09-24: *"if the guard signal is not on a path
+     * leading to the chosen station, we can add notice to the autonomy editor"*).  A NOTICE, as all four guard notices:
+     * the setup is the operator's to get right, and this is only a pointer.  `AutonomySession.guardNotices` reads all four
+     * off the built railway.
      */
     public static final String GUARD_OFF_THE_WAY_IN = "autosetup.ui.checkGuardOffTheWayIn";
 
-    /**
-     * An exit guard no way into or out of its station passes (RSA41-C2, -C3): every route over it sets it green, a train
-     * standing at its station or not.  A NOTICE, as the entry guard's.
-     */
+    /** An exit guard no route commands at all: it shows only whether its station is occupied. */
     public static final String EXIT_GUARD_OFF_THE_WAY = "autosetup.ui.checkExitGuardOffTheWay";
+
+    /** An exit guard routes to other stations command, so they turn it green over a train standing there (RSA41-C2). */
+    public static final String EXIT_GUARD_CROSSED = "autosetup.ui.checkExitGuardCrossed";
+
+    /**
+     * An exit guard a route into its station commands - a home signal (RSA42-C1): the arriving route turns it green, and
+     * the arrival's claim can turn it red in front of that train.  The entry guard is the signal on the way in.
+     */
+    public static final String EXIT_GUARD_ON_THE_WAY_IN = "autosetup.ui.checkExitGuardOnTheWayIn";
 
     /**
      * A square unavailable while another is occupied, station or not (Adam, 2026-09-24: *"a simple info notice on
@@ -519,7 +526,8 @@ public class AutonomyChecks
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
         Map<TileKey, String> copiesReachingNoStation,
         Map<TileKey, Map<TileKey, String>> guardsOnBothLists, Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn,
-        Map<TileKey, Map<TileKey, String>> exitGuardsOffTheWay, Map<TileKey, String> restrictions)
+        Map<TileKey, Map<TileKey, String>> exitGuardsOffTheWay, Map<TileKey, Map<TileKey, String>> exitGuardsCrossed,
+        Map<TileKey, Map<TileKey, String>> exitGuardsOnTheWayIn, Map<TileKey, String> restrictions)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -571,6 +579,8 @@ public class AutonomyChecks
         findings.addAll(checkGuards(guardsOnBothLists, GUARD_IS_BOTH, Severity.WARNING));
         findings.addAll(checkGuards(guardsOffTheWayIn, GUARD_OFF_THE_WAY_IN, Severity.NOTICE));
         findings.addAll(checkGuards(exitGuardsOffTheWay, EXIT_GUARD_OFF_THE_WAY, Severity.NOTICE));
+        findings.addAll(checkGuards(exitGuardsCrossed, EXIT_GUARD_CROSSED, Severity.NOTICE));
+        findings.addAll(checkGuards(exitGuardsOnTheWayIn, EXIT_GUARD_ON_THE_WAY_IN, Severity.NOTICE));
 
         // Every restriction, where it is: the square is `{0}`, what it watches `{1}`.
         if (restrictions != null)
