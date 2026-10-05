@@ -5338,7 +5338,14 @@ public class LayoutEditor extends PositionAwareJFrame
                     try
                     {
                         drawGrid();
-                        this.clearBordersFromChildren(this.grid.getContainer());
+
+                        // THE TRACK EDITOR'S OUTLINES DRAWN BACK, not only taken down (RSA43-C4): an undo, a redo and every
+                        // other redraw left the picked squares' yellow and lost the selection's grip, a box being drawn and
+                        // the blue under the pointer until the pointer next moved - though all of them still acted.
+                        // `refreshSelectionBorders` begins with the same border pass.  The autonomy editor draws its own
+                        // hover, and has no selection here.
+                        if (isAutonomyMode()) this.clearBordersFromChildren(this.grid.getContainer());
+                        else refreshSelectionBorders();
                     }
                     finally
                     {

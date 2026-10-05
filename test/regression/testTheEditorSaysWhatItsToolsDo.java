@@ -1353,9 +1353,10 @@ public class testTheEditorSaysWhatItsToolsDo
      * any plain sensor and stop at any station square.  On the frozen railway: Adam's own nine exit guards get exactly two
      * notices - Signals 86 and 87, which routes between the tunnel sidings and the station throats cross, for BottomMainB and
      * BottomMainA (RSA41-C2) - and his six exit signals none; Signal 39 as BottomMainA's exit guard, crossed only by routes
-     * elsewhere, is noticed, where the walk turned back at BottomMainAPre and called it on the way out; Signal 107 as
-     * TopR1ParkLong's entry guard is not, a train from TopMainR1Pre passing TopMainR1Inter by the copy that bars arrivals
-     * and meeting it on the way in; and a guard no route commands is told so, not that routes turn it green.
+     * elsewhere, is noticed, where the walk turned back at BottomMainAPre and called it on the way out; and a guard no route
+     * commands is told so, not that routes turn it green.  (Signal 107 as TopR1ParkLong's entry guard was asserted here as
+     * needing no notice; RSA43-C3 found no arriving train meets it, and how far the notices should follow the routes the
+     * runtime runs is Adam's to decide - so it is not asserted either way.)
      *
      * MUTATION: walk the built edges as the reduction was walked - every edge from a square whatever its copy - and this
      * fails on Signal 39; call every guard off its station's ways crossed, and it fails on the last.
@@ -1390,10 +1391,8 @@ public class testTheEditorSaysWhatItsToolsDo
                 + " are not the two his railway's routes give - 86 and 87, crossed by routes elsewhere");
 
             TileKey mainA = stationNamed(railway, "BottomMainA");
-            TileKey parkLong = stationNamed(railway, "TopR1ParkLong");
 
             assertNotNull(mainA, "precondition: the frozen railway has no BottomMainA");
-            assertNotNull(parkLong, "precondition: the frozen railway has no TopR1ParkLong");
 
             // CROSSED ONLY ELSEWHERE, past a sensor the reduction's walk turned back at
             railway.setProtectingSignals(mainA, Arrays.asList(signalNamed(railway, "Signal 39")));
@@ -1409,15 +1408,6 @@ public class testTheEditorSaysWhatItsToolsDo
                 "Signal 85, which no route sets, is not told it only shows whether the station is occupied: "
                 + exitGuardNotices(railway));
 
-            // ON THE WAY IN, through the copy of TopMainR1Inter that bars arrivals
-            railway.setEntrySignals(parkLong, Arrays.asList(signalNamed(railway, "Signal 107")));
-
-            for (org.traincontrol.automationui.AutonomyChecks.Finding finding : railway.check())
-            {
-                assertFalse("autosetup.ui.checkGuardOffTheWayIn".equals(finding.getMessageKey())
-                    && parkLong.equals(finding.getTile()), "Signal 107 as TopR1ParkLong's entry guard is told no arriving"
-                    + " train meets it, and a train from TopMainR1Pre passing TopMainR1Inter by its barred side does");
-            }
         }
         finally
         {
