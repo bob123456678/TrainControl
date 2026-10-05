@@ -5756,8 +5756,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // railway made for itself, several times per click - a fifth of the click.
         boolean arrows = diagramShowsRestrictionArrows();
 
-        // AND THE GREEN, when asked for, read once too (FR-110)
-        boolean allowedToo = arrows && diagramShowsAllowedDirections();
+        // AND THE GREEN, read once too - its own choice, with the red or without it (FR-110, MT-675)
+        boolean allowedToo = diagramShowsAllowedDirections();
 
         // ONE ARROW PER RUN WHERE THE RUN SAYS ONE THING (OB-321), and the green when asked for: decided by the session
         // for every square at once, so what is drawn here is what its claims see.
@@ -13569,18 +13569,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         autonomyToolbarMenu.add(this.restrictionArrowsMenuItem);
 
-        // AND THE GREEN (FR-110): only while the restrictions are drawn, which it adds to
+        // AND THE GREEN (FR-110), chosen apart from the red: either, or both (MT-675; Adam, 2026-10-04: *"allow the user to
+        // choose: restrictions, allowances, or both.  don't make them mutually exclusive."*)
         this.allowedDirectionsMenuItem =
             new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.allowedDirections"));
 
         this.allowedDirectionsMenuItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.allowedDirections"));
 
         this.allowedDirectionsMenuItem.setSelected(diagramShowsAllowedDirections());
-
-        this.allowedDirectionsMenuItem.setEnabled(this.restrictionArrowsMenuItem.isSelected());
-
-        this.restrictionArrowsMenuItem.addActionListener(event ->
-            this.allowedDirectionsMenuItem.setEnabled(this.restrictionArrowsMenuItem.isSelected()));
 
         this.allowedDirectionsMenuItem.addActionListener(event ->
         {
