@@ -98,7 +98,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             assertTrue(body.contains("sendATrainByHand("), hand[2] + " does not send through the one door both hand doors"
                 + " share, so what one asks the other can miss (RLV12-B1)");
 
-            assertFalse(body.contains("executePath("), hand[2] + " dispatches a train itself, past the one door");
+            assertFalse(body.contains("executePath(") || body.contains("executePathByHand("), hand[2] + " dispatches a train"
+                + " itself, past the one door");
         }
 
         door("src/org/traincontrol/gui/TrainControlUI.java", "void sendATrainByHand(",
@@ -835,7 +836,11 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             + " moved manually ... which should throw an error instead\"");
 
         int question = body.indexOf("ManualReversalPrompt.forJourney(");
-        int dispatch = body.indexOf("executePath(");
+        // THE DISPATCH, by either name: a hand send goes out through executePathByHand, which marks it as one for the cap
+        // on trains out (BCR-C1)
+        int plain = body.indexOf("executePath(");
+        int byHand = body.indexOf("executePathByHand(");
+        int dispatch = plain < 0 ? byHand : byHand < 0 ? plain : Math.min(plain, byHand);
 
         assertTrue(question < 0 || asked < question, what + " asks which way the train should face before it"
             + " refuses the send - a question about a journey that is going to be refused reads as answered");
