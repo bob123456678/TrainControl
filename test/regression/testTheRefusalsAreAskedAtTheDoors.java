@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
@@ -47,6 +48,93 @@ import org.testng.annotations.Test;
  */
 public class testTheRefusalsAreAskedAtTheDoors
 {
+    /**
+     * A page name cannot take another page's file (BCR-A2).
+     *
+     * A page lives in its sanitised name plus `.cs2`, so a name differing from another's only in case - which Windows does
+     * not tell apart - or only in a character a file name cannot hold is that page's file, and writing it replaced the
+     * other page.  Asked of `LayoutPageEdit.pageUsingTheFileOf`, the one question every page door asks.
+     *
+     * MUTATION: compare the names in their case again, or unsanitised, and this fails.
+     */
+    @Test
+    public void testAPageNameCannotTakeAnotherPagesFile()
+    {
+        List<String> pages = java.util.Arrays.asList("1 - Main", "A_B", "5 - Test");
+
+        assertEquals(org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(pages, "1 - main", null), "1 - Main",
+            "a page named 1 - main beside 1 - Main is written to 1 - Main's file");
+
+        assertEquals(org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(pages, "1 - main", "5 - Test"),
+            "1 - Main", "5 - Test renamed 1 - main is written to 1 - Main's file");
+
+        assertEquals(org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(pages, "A/B", null), "A_B",
+            "a page named A/B beside A_B is written to A_B's file");
+
+        assertNull(org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(pages, "1 - MAIN", "1 - Main"),
+            "1 - Main renamed in another case was refused, though it keeps its own file");
+
+        assertNull(org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(pages, "2 - Bottom", null),
+            "a name no page's file has was refused");
+    }
+
+    /**
+     * Every door that names a page asks whose file the name is (BCR-A2): Rename, Duplicate and Add Blank Page through one
+     * method, Duplicate's own choice of name, and Combine Linked Pages.
+     *
+     * MUTATION: take the question out of any of the three, and this fails, naming it.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testEveryPageDoorAsksWhoseFileTheNameIs() throws Exception
+    {
+        String window = new String(Files.readAllBytes(Paths.get(WINDOW)), StandardCharsets.UTF_8).replace("\r\n", "\n");
+
+        for (String door : new String[] {"private void duplicateOrRenameCurrentLayout(", "private void combineLinkedPages(",
+            "private void duplicateLayoutMenuItemActionPerformed("})
+        {
+            int at = window.indexOf(door);
+
+            assertTrue(at >= 0, door + " has gone, so this checked nothing");
+
+            int next = window.indexOf("\n    private ", at + door.length());
+
+            String body = window.substring(at, next < 0 ? window.length() : next);
+
+            assertTrue(body.contains("LayoutPageEdit.pageUsingTheFileOf("), door + " does not ask whose file the new page's"
+                + " name is, so a name differing only in case - or in a character a file name cannot hold - writes over"
+                + " another page (BCR-A2)");
+        }
+    }
+
+    /**
+     * The hand door sends its train as a hand send (BCR-C1): `sendATrainByHand` - the track diagram's and the Auto tab's -
+     * through `executePathByHand`, which the cap on trains out does not count or refuse.
+     *
+     * MUTATION: send through plain executePath again, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheHandDoorSendsAsAHandSend() throws Exception
+    {
+        String window = new String(Files.readAllBytes(Paths.get(WINDOW)), StandardCharsets.UTF_8).replace("\r\n", "\n");
+
+        int at = window.indexOf("void sendATrainByHand(");
+
+        assertTrue(at >= 0, "sendATrainByHand has gone, so this checked nothing");
+
+        int next = window.indexOf("\n    public ", at);
+
+        String body = window.substring(at, next < 0 ? window.length() : next);
+
+        assertTrue(body.contains(".executePathByHand("), "the hand door sends its train as an ordinary dispatch, which the"
+            + " cap on trains out refuses and counts during a run (BCR-C1)");
+
+        assertFalse(body.contains(".executePath("), "the hand door still sends a train as an ordinary dispatch somewhere");
+    }
+
     private static final String WINDOW = "src/org/traincontrol/gui/TrainControlUI.java";
 
     private static final String EDITOR = "refuseWhileEditorOpen()";

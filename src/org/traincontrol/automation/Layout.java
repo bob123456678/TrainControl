@@ -765,6 +765,11 @@ public class Layout
     private int maxLatency = 0;
     private int maxActiveTrains = 0;
 
+    // The trains on a journey sent by hand, for its length (BCR-C1): the cap on trains out neither counts nor refuses them,
+    // however many a run already has out (behaviour.md 1).  By identity, as every locomotive map here is.
+    private final Set<Locomotive> sentByHand = Collections.synchronizedSet(Collections.newSetFromMap(
+        new java.util.IdentityHashMap<Locomotive, Boolean>()));
+
     /**
      * Where each locomotive was standing when this railway last turned it round at a destination.
      *
@@ -2931,6 +2936,8 @@ public class Layout
      * A union rather than a sum, so that a locomotive which is both claiming and registered - the
      * moment between the two, however it is ordered - is one train and not two.
      *
+     * Not a train sent by hand (BCR-C1): the cap is about what a run sends, and a hand send is neither counted nor refused.
+     *
      * @return the number of distinct locomotives underway
      */
     private int trainsUnderway()
@@ -2942,6 +2949,11 @@ public class Layout
         both.addAll(this.takingPath.keySet());
         both.addAll(this.activeLocomotives.keySet());
 
+        synchronized (this.sentByHand)
+        {
+            both.removeAll(this.sentByHand);
+        }
+
         return both.size();
     }
 
@@ -2951,7 +2963,23 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures)
     {
-        if (this.maxActiveTrains > 0 && this.isAutoRunning() && trainsUnderway() >= this.maxActiveTrains)
+        return isPathClear(path, loc, logFailures, false);
+    }
+
+    /**
+     * The same, saying whether the question is about a send by hand - which the cap on trains out does not refuse (BCR-C1;
+     * behaviour.md 1).  A train already on a journey sent by hand is one too, whoever asks.
+     *
+     * @param path the route
+     * @param loc the train
+     * @param logFailures false when enumerating candidate paths; see above
+     * @param byHand true for a route a person would send by hand
+     * @return whether the route is clear for the train
+     */
+    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand)
+    {
+        if (!byHand && !this.sentByHand.contains(loc)
+            && this.maxActiveTrains > 0 && this.isAutoRunning() && trainsUnderway() >= this.maxActiveTrains)
         {
             logPathError(
                 loc,
@@ -6532,7 +6560,7 @@ public class Layout
                 // wording can be misattributed, and it is labelled as such rather than silently
                 // trusted, because a reason naming an edge nowhere near this route would send the user
                 // to look at the wrong piece of railway.
-                if (this.isPathClear(path, loc, false)) return null;
+                if (this.isPathClear(path, loc, false, byHand)) return null;
 
                 // FR-001 is asked directly rather than read out of the static (DR-B3).
                 //
@@ -8962,6 +8990,35 @@ public class Layout
         ReversalPolicy reversals)
     {
         return executePath(path, loc, speed, ttp, reversals, -1);
+    }
+
+    /**
+     * A journey sent by hand: executePath, with the train marked as a hand send for its length (BCR-C1), which the cap on
+     * trains out neither counts nor refuses however many a run already has out (behaviour.md 1).  Every hand door comes
+     * here - the track diagram's and the Auto tab's, through `TrainControlUI.sendATrainByHand`.
+     *
+     * @param path the route
+     * @param loc the train
+     * @param speed how fast
+     * @param reversals asked at each may-reverse point on the way; see ReversalPolicy
+     * @param stopsAtChoice `stopsOrdered()` as read at the click, or -1 to read it now
+     * @return whether the train arrived
+     */
+    public boolean executePathByHand(List<Edge> path, Locomotive loc, int speed, ReversalPolicy reversals,
+        int stopsAtChoice)
+    {
+        // Marked here only if not already: a second hand send of a train on one is refused inside, and must not take the
+        // first one's mark away with it
+        boolean marked = loc != null && this.sentByHand.add(loc);
+
+        try
+        {
+            return executePath(path, loc, speed, null, reversals, stopsAtChoice);
+        }
+        finally
+        {
+            if (marked) this.sentByHand.remove(loc);
+        }
     }
 
     /**

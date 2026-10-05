@@ -6853,7 +6853,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                if (!railway.executePath(path, train, train.getPreferredSpeed(), null, answered, stopsAtClick))
+                if (!railway.executePathByHand(path, train, train.getPreferredSpeed(), answered, stopsAtClick))
                 {
                     javax.swing.SwingUtilities.invokeLater(() ->
                         JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
@@ -27030,8 +27030,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         String newName = this.LayoutList.getSelectedItem().toString() + " copy";
 
-        // Check if the new name already exists in the layout list
-        while (this.model.getLayoutList().contains(newName))
+        // Check if the new name already exists in the layout list - or another page's file is its file (BCR-A2)
+        while (this.model.getLayoutList().contains(newName)
+            || org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(), newName, null)
+                != null)
         {
             newName += " " + I18n.t("layout.ui.copy");
         }
@@ -27101,6 +27103,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (name == null || name.trim().isEmpty()) return;
 
         final String combined = name.trim();
+
+        // AND NO OTHER PAGE'S FILE (BCR-A2): this name is typed freely, so a character a file name cannot hold comes to the
+        // same file as the page whose name has an underscore there
+        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(),
+            combined, null);
+
+        if (usesThatFile != null)
+        {
+            JOptionPane.showMessageDialog(this,
+                I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
+
+            return;
+        }
 
         if (this.model.getLayoutList().contains(combined))
         {
@@ -27427,6 +27442,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     newLayoutName
                 )
             );
+            return;
+        }
+
+        // NOR ONE WHOSE FILE ANOTHER PAGE USES (BCR-A2): a name differing only in case, or in a character a file name cannot
+        // hold, is written to that page's file.  A page renamed to its own name in another case keeps its own file.
+        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(),
+            newLayoutName, rename ? this.LayoutList.getSelectedItem().toString() : null);
+
+        if (usesThatFile != null)
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
+
             return;
         }
 

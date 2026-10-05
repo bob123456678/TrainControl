@@ -71,6 +71,37 @@ public class LayoutPageEdit
     }
 
     /**
+     * The page whose file a page of this name would be written to, other than the one named except - or null when no
+     * other page's file is that file (BCR-A2).
+     *
+     * A page lives in `sanitizeFilename(name) + ".cs2"`, and two names can come to one file: names that differ only in case,
+     * which Windows does not tell apart, and names that differ only in a character a file name cannot hold.  A door that
+     * asked only whether the name was in the list let such a name through, and the write replaced the other page's file:
+     * that page was gone, and both names read the new one.  So every door that names a page asks this - Rename,
+     * Duplicate, Add Blank Page and Combine Linked Pages - as the configurations ask `fileNameTaken`.
+     *
+     * @param layoutList every page
+     * @param name the name wanted
+     * @param except the page being renamed, which may keep its own file under another case, or null
+     * @return the other page already using that file, or null
+     */
+    public static String pageUsingTheFileOf(List<String> layoutList, String name, String except)
+    {
+        if (layoutList == null || name == null) return null;
+
+        String wanted = org.traincontrol.util.Util.sanitizeFilename(name);
+
+        for (String page : layoutList)
+        {
+            if (page == null || page.equals(except)) continue;
+
+            if (org.traincontrol.util.Util.sanitizeFilename(page).equalsIgnoreCase(wanted)) return page;
+        }
+
+        return null;
+    }
+
+    /**
      * Renames, duplicates or blanks a page, carrying its id and its autonomy setup with it.
      *
      * The caller has already decided that this may happen - no editor is open, no trains are running,

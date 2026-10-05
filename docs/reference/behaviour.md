@@ -114,8 +114,11 @@ locomotives underway has already reached it — counted as the UNION of the regi
 ones that have claimed a path but not yet set off, because the gap between claiming and being
 registered is a per-accessory wait seconds wide and two trains crossed it together.
 
-- **A hand dispatch is exempt.** Right-clicking a destination sets no running flag, so it is neither
-  counted nor refused, however many trains a run already has out. That is the tiering above: the cap
+- **A hand dispatch is exempt.** A train sent by hand - from the track diagram or the Auto tab - is
+  marked as a hand send for its journey (`Layout.executePathByHand`), so the cap neither counts it nor
+  refuses it, however many trains a run already has out; the reasons the right-click menu gives for a
+  hand send ask the same way.  Until 2026-10-04 the exemption rested on the running flag alone, so a
+  hand send made while a run was going was refused by the cap and counted against it (BCR-C1). That is the tiering above: the cap
   is a preference about how much railway the operator wants moving at once — what a booster will
   carry, or how much they want to watch — rather than a fact about what the track will hold. The
   anti-collision guarantees are the edge locks and the length rules of §5, which every tier obeys.
@@ -2233,6 +2236,12 @@ a capture that depends on a logging setting is the same defect reachable by a pr
 A route is a list of commands - accessories, functions, locomotive speeds, the power. Any of its
 switches may sit on track a train is standing on or has reserved, and throwing one there moves metal
 under a train.
+
+**What "under a train" covers** (BCR-A1; Adam, 2026-10-04): the track a train's journey holds - claimed and not yet
+given back. A train standing at the end of its journey has given its route back, so a switch under its tail is
+neither refused nor asked about. A route reaches such a switch during a run only because somebody fired it by hand
+or armed it as a conditional route and answered Yes to Start's warning that conditional routes are active - Adam
+ruled that the operator's to control.
 
 **Only the switch under the train is refused. Everything else in the route runs.** Adam, 2026-09-08:
 *"don't run the conflicting switch commands, but do run the power off and others."* Each accessory is
