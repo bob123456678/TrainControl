@@ -680,7 +680,7 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         this.useCustomFunctionIcon.setEnabled(false);
         this.deleteCustomIcon.setEnabled(false);
 
-        JFileChooser fc = new JFileChooser(
+        JFileChooser fc = new QuickFileChooser(
             currentPath != null ? currentPath : TrainControlUI.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
         );
 
