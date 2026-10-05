@@ -1345,4 +1345,128 @@ public class testTheEditorSaysWhatItsToolsDo
 
         return setup;
     }
+
+    /**
+     * The guard notices follow the routes the built railway sets each guard by (RSA42-C2).
+     *
+     * They walked the reduction, which knows a square and not which way a train faces on it, so a train could turn back at
+     * any plain sensor and stop at any station square.  On the frozen railway: Adam's own nine exit guards get exactly two
+     * notices - Signals 86 and 87, which routes between the tunnel sidings and the station throats cross, for BottomMainB and
+     * BottomMainA (RSA41-C2) - and his six exit signals none; Signal 39 as BottomMainA's exit guard, crossed only by routes
+     * elsewhere, is noticed, where the walk turned back at BottomMainAPre and called it on the way out; Signal 107 as
+     * TopR1ParkLong's entry guard is not, a train from TopMainR1Pre passing TopMainR1Inter by the copy that bars arrivals
+     * and meeting it on the way in; and a guard no route commands is told so, not that routes turn it green.
+     *
+     * MUTATION: walk the built edges as the reduction was walked - every edge from a square whatever its copy - and this
+     * fails on Signal 39; call every guard off its station's ways crossed, and it fails on the last.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheGuardNoticesFollowTheBuiltRailway() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+
+        try
+        {
+            // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111)
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            String path = "file:///" + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
+
+            org.traincontrol.marklin.file.CS2File parser = new org.traincontrol.marklin.file.CS2File(path, model);
+            parser.setLayoutDataLoc(path);
+
+            AutonomySession railway = new AutonomySession(sandbox.getFolder());
+            railway.open(support.LayoutSandbox.wired(model, parser));
+
+            // HIS OWN PAIRINGS, as they are
+            assertEquals(exitGuardNotices(railway), new java.util.TreeSet<>(Arrays.asList(
+                "autosetup.ui.checkExitGuardCrossed BottomMainA Signal 87",
+                "autosetup.ui.checkExitGuardCrossed BottomMainB Signal 86")), "the exit guard notices on Adam's own pairings"
+                + " are not the two his railway's routes give - 86 and 87, crossed by routes elsewhere");
+
+            TileKey mainA = stationNamed(railway, "BottomMainA");
+            TileKey parkLong = stationNamed(railway, "TopR1ParkLong");
+
+            assertNotNull(mainA, "precondition: the frozen railway has no BottomMainA");
+            assertNotNull(parkLong, "precondition: the frozen railway has no TopR1ParkLong");
+
+            // CROSSED ONLY ELSEWHERE, past a sensor the reduction's walk turned back at
+            railway.setProtectingSignals(mainA, Arrays.asList(signalNamed(railway, "Signal 39")));
+
+            assertTrue(exitGuardNotices(railway).contains("autosetup.ui.checkExitGuardCrossed BottomMainA Signal 39"), "Signal 39"
+                + " as BottomMainA's exit guard is not noticed, though only routes to other stations set it: "
+                + exitGuardNotices(railway));
+
+            // NO ROUTE COMMANDS IT: told so, not that routes turn it green
+            railway.setProtectingSignals(mainA, Arrays.asList(signalNamed(railway, "Signal 85")));
+
+            assertTrue(exitGuardNotices(railway).contains("autosetup.ui.checkExitGuardOffTheWay BottomMainA Signal 85"),
+                "Signal 85, which no route sets, is not told it only shows whether the station is occupied: "
+                + exitGuardNotices(railway));
+
+            // ON THE WAY IN, through the copy of TopMainR1Inter that bars arrivals
+            railway.setEntrySignals(parkLong, Arrays.asList(signalNamed(railway, "Signal 107")));
+
+            for (org.traincontrol.automationui.AutonomyChecks.Finding finding : railway.check())
+            {
+                assertFalse("autosetup.ui.checkGuardOffTheWayIn".equals(finding.getMessageKey())
+                    && parkLong.equals(finding.getTile()), "Signal 107 as TopR1ParkLong's entry guard is told no arriving"
+                    + " train meets it, and a train from TopMainR1Pre passing TopMainR1Inter by its barred side does");
+            }
+        }
+        finally
+        {
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The exit guard notices, as "key station signal". */
+    private static java.util.Set<String> exitGuardNotices(AutonomySession railway)
+    {
+        java.util.Set<String> out = new java.util.TreeSet<>();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : railway.check())
+        {
+            if (finding.getMessageKey().startsWith("autosetup.ui.checkExitGuard"))
+            {
+                out.add(finding.getMessageKey() + " " + railway.getStore().getPointName(finding.getTile()) + " "
+                    + finding.getSubject());
+            }
+        }
+
+        return out;
+    }
+
+    /** The square of the station with this name, or null. */
+    private static TileKey stationNamed(AutonomySession railway, String name)
+    {
+        for (TileKey tile : railway.getStore().getNamedTiles())
+        {
+            if (name.equals(railway.getStore().getPointName(tile))) return tile;
+        }
+
+        return null;
+    }
+
+    /** The square of the signal with this accessory name. */
+    private static TileKey signalNamed(AutonomySession railway, String name)
+    {
+        for (java.util.Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> tile
+            : railway.getGraph().getTiles().entrySet())
+        {
+            if (tile.getValue().getAccessory() != null && name.equals(tile.getValue().getAccessory().getName()))
+            {
+                return tile.getKey();
+            }
+        }
+
+        throw new AssertionError("precondition: the frozen railway has no " + name);
+    }
 }

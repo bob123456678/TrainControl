@@ -7325,6 +7325,9 @@ public class AutonomySession
         java.util.Map<String, TileKey> namesForInspection =
             inspected == null ? null : builder(null).tilesByName();
 
+        // which routes command each guard, off the same build (RSA42)
+        GuardNotices guards = guardNotices(inspected, namesForInspection);
+
         // and the side each copy's trains come in by, which a trapped arrival is named by (OB-201)
         java.util.Map<String, Side> arrivalsForInspection =
             inspected == null ? null : builder(null).arrivalByName();
@@ -7406,9 +7409,9 @@ public class AutonomySession
             destinationCopiesWithNoWayOut(inspected, namesForInspection),
             destinationCopiesWithNoWayIn(inspected, namesForInspection),
             destinationCopiesReachingNoStation(inspected, namesForInspection),
-            // A station's two guards as one signal, an entry guard no way into its station passes (AUT-C2), and an exit
-            // guard no way into or out of it passes (RSA41-C2, -C3).
-            guardsOnBothLists(), guardsOffTheWayIn(), exitGuardsOffTheWay(),
+            // A station's two guards as one signal, and the guards the routes that command them say are misplaced (AUT-C2;
+            // RSA41-C2, -C3; RSA42-C1, -C2).
+            guardsOnBothLists(), guards.entryOffTheWayIn, guards.exitOnNoRoute, guards.exitCrossed, guards.exitOnTheWayIn,
             // Every square unavailable while another is occupied, station or not (Adam, 2026-09-24).
             restrictionsToList());
 
@@ -7495,57 +7498,140 @@ public class AutonomySession
     }
 
     /**
-     * Entry guards that no way into their station passes, against those signals' names (AUT-C2).
-     *
-     * Adam, 2026-09-24: *"if the guard signal is not on a path leading to the chosen station, we can add notice to the
-     * autonomy editor."*  An entry guard turns red behind a train arriving, so it belongs on a way in.  A signal whose tile
-     * has gone is `signalsThatAreGone`'s, not this; and a station on a page left out of autonomy is not in play.
-     *
-     * @return station square to the names of its entry guards off every way in
+     * The guard notices, station square to the names of its guards, one map per notice (AUT-C2; RSA41-C2, -C3; RSA42-C1,
+     * -C2).
      */
-    private Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn()
+    private static final class GuardNotices
     {
-        return guardsOffTheWay(store.getEntrySignals(), false);
+        /** Entry guards no route into their station commands. */
+        final Map<TileKey, Map<TileKey, String>> entryOffTheWayIn = new LinkedHashMap<>();
+
+        /** Exit guards no route commands at all. */
+        final Map<TileKey, Map<TileKey, String>> exitOnNoRoute = new LinkedHashMap<>();
+
+        /** Exit guards routes to other stations command. */
+        final Map<TileKey, Map<TileKey, String>> exitCrossed = new LinkedHashMap<>();
+
+        /** Exit guards a route into their station commands. */
+        final Map<TileKey, Map<TileKey, String>> exitOnTheWayIn = new LinkedHashMap<>();
     }
 
     /**
-     * Exit guards that no way into or out of their station passes, against those signals' names (AUT-C2; RSA41-C2, -C3).
+     * Which routes command each guard, read off the built railway (RSA42-C1, -C2).
      *
-     * An exit guard is a station's exit signal as often as its home signal - the one a train leaving passes, which its own
-     * route sets green as it goes (Adam's signals 38, 63 and 64, and OB-315's 64 and 108) - so the way out counts as well
-     * as the way in, where the notice asked of the ways in alone and named those signals as mistakes.  One on neither is
-     * set green by every route over it, a train standing at its station or not, and the notice says so.
+     * Adam, 2026-09-24 (AUT-C2): *"if the guard signal is not on a path leading to the chosen station, we can add notice to
+     * the autonomy editor."*  The notices walked the REDUCTION, which knows a square but not which way a train faces on it:
+     * from every sensor reached they followed every edge, so a train could turn back at any plain sensor and stop at any
+     * station square - a guard only a reversal reached went unnoticed (BottomMainA's Signal 39), and one a train passing a
+     * station by its barred side does meet was told no train meets it (TopR1ParkLong's Signal 107).  The BUILT railway has
+     * each copy of a point and the accessories each edge commands, which is what turns a guard green: so the ways in are the
+     * built edges walked back from the station's stopping copies to the first stop on each, and the ways out walked on from
+     * any copy of it to the first stop.
      *
-     * @return station square to the names of its exit guards off every way in and out
+     * - An ENTRY guard turns red behind a train arriving: noticed where no route into its station commands it.
+     * - An EXIT guard is red while its station is occupied, and a route over it sets it green as it sets any signal on it.
+     *   Commanded only by routes out of its station, it is that station's exit signal and right.  A route INTO it - a
+     *   home signal - turns it green for the arriving train, and the arrival's claim can turn it red in front of that train
+     *   (RSA42-C1): the entry guard is the signal on the way in.  Routes to other stations turn it green over a train
+     *   standing there (RSA41-C2).  And no route at all, away from the station's own track, leaves it only showing whether
+     *   the station is occupied.  One notice for each, in that order.
+     *
+     * A station on a page left out of autonomy is not in play, and a signal whose tile has gone is `signalsThatAreGone`'s.
+     * With no build - the setup has an error - there is nothing to read, and no guard notice.
+     *
+     * @param built the configuration as built for the check, or null
+     * @param named the builder's own map of its names to their squares, or null
+     * @return the notices
      */
-    private Map<TileKey, Map<TileKey, String>> exitGuardsOffTheWay()
+    private GuardNotices guardNotices(org.json.JSONObject built, Map<String, TileKey> named)
     {
-        return guardsOffTheWay(store.getProtectingSignals(), true);
-    }
+        GuardNotices out = new GuardNotices();
 
-    /**
-     * Guards of one kind that no way into their station passes - nor, where asked, any way out of it.
-     *
-     * @param guards station square to its guards of that kind
-     * @param orOut whether a way out of the station counts too
-     * @return station square to the names of the guards off the way
-     */
-    private Map<TileKey, Map<TileKey, String>> guardsOffTheWay(Map<TileKey, List<TileKey>> guards, boolean orOut)
-    {
-        Map<TileKey, Map<TileKey, String>> out = new LinkedHashMap<>();
+        if (graph == null || built == null || named == null || !built.has("points") || !built.has("edges")) return out;
 
-        if (graph == null || reducer == null) return out;
+        Map<String, Boolean> stops = new java.util.HashMap<>();
 
-        for (Map.Entry<TileKey, List<TileKey>> station : guards.entrySet())
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
         {
-            if (store.getExcludedPages().contains(station.getKey().getPage())) continue;
+            org.json.JSONObject point = points.getJSONObject(i);
 
-            for (TileKey signal : station.getValue())
+            stops.put(point.getString("name"), point.optBoolean("station", false));
+        }
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        String[] from = new String[edges.length()];
+        String[] to = new String[edges.length()];
+        List<java.util.Set<String>> commands = new ArrayList<>();
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONObject edge = edges.getJSONObject(i);
+
+            from[i] = edge.getString("start");
+            to[i] = edge.getString("end");
+
+            java.util.Set<String> accessories = new java.util.HashSet<>();
+
+            org.json.JSONArray said = edge.optJSONArray("commands");
+
+            for (int j = 0; said != null && j < said.length(); j++) accessories.add(said.getJSONObject(j).getString("acc"));
+
+            commands.add(accessories);
+        }
+
+        java.util.Set<TileKey> stations = new LinkedHashSet<>(store.getEntrySignals().keySet());
+
+        stations.addAll(store.getProtectingSignals().keySet());
+
+        for (TileKey station : stations)
+        {
+            if (store.getExcludedPages().contains(station.getPage())) continue;
+
+            java.util.Set<Integer> in = waysAt(station, true, from, to, named, stops);
+            java.util.Set<Integer> outOf = waysAt(station, false, from, to, named, stops);
+
+            // A STATION NO ROUTE REACHES OR LEAVES is cut off, and the check says so in its own words (a station at the end
+            // of a line, an isolated point) - its guards are not where the trouble is
+            if (in.isEmpty() && outOf.isEmpty()) continue;
+
+            for (TileKey signal : nonNull(store.getEntrySignals().get(station)))
             {
-                if (!graph.getTiles().containsKey(signal) || onAWayInto(station.getKey(), signal)
-                    || orOut && onAWayOutOf(station.getKey(), signal)) continue;
+                if (!graph.getTiles().containsKey(signal)) continue;
 
-                out.computeIfAbsent(station.getKey(), k -> new LinkedHashMap<>()).put(signal, signalName(signal));
+                if (!commandedBy(accessoryOf(signal), in, commands))
+                {
+                    out.entryOffTheWayIn.computeIfAbsent(station, k -> new LinkedHashMap<>()).put(signal, signalName(signal));
+                }
+            }
+
+            for (TileKey signal : nonNull(store.getProtectingSignals().get(station)))
+            {
+                if (!graph.getTiles().containsKey(signal)) continue;
+
+                String accessory = accessoryOf(signal);
+
+                // ELSEWHERE: neither on a way in or out, nor through the station itself - a route over the station's own
+                // square cannot be set while a train stands there, so it never turns the guard green over one
+                java.util.Set<Integer> elsewhere = new java.util.HashSet<>();
+
+                for (int i = 0; i < commands.size(); i++)
+                {
+                    if (!in.contains(i) && !outOf.contains(i) && !station.equals(named.get(from[i]))
+                        && !station.equals(named.get(to[i]))) elsewhere.add(i);
+                }
+
+                // NO ROUTE AT ALL is noticed only away from the station's own track: a signal there - past a terminus's
+                // sensor, at its buffers (Adam's Signal 94 at BottomMainC) - shows whether the station is occupied, and that
+                // is what it is for
+                Map<TileKey, Map<TileKey, String>> notice = commandedBy(accessory, in, commands) ? out.exitOnTheWayIn
+                    : commandedBy(accessory, elsewhere, commands) ? out.exitCrossed
+                    : !commandedBy(accessory, outOf, commands) && !onItsOwnTrack(station, signal) ? out.exitOnNoRoute
+                    : null;
+
+                if (notice != null) notice.computeIfAbsent(station, k -> new LinkedHashMap<>()).put(signal, signalName(signal));
             }
         }
 
@@ -7553,77 +7639,98 @@ public class AutonomySession
     }
 
     /**
-     * Whether a signal lies on track a train reaching this station runs over since it last left a station (AUT-C2).
-     *
-     * Walked back along the reduced edges that arrive at the station, through the sensors between, and stopped at the
-     * first station on each way back - so a signal round a loop, on some other station's approach, is not "on the way
-     * in" merely because every track on a loop eventually leads everywhere.
+     * The built edges on the ways into a station or out of it: walked back from its stopping copies, or on from any copy
+     * of it, through every point a train passes - a plain sensor, or a copy of a station that bars it - to the first stop on
+     * each way (RSA42-C2).  A copy is a point and a facing, so a walk turns back only where the railway lets a train.
      *
      * @param station the station's square
-     * @param signal the signal's square
-     * @return whether some way into the station passes it
+     * @param in true for the ways in, false for the ways out
+     * @param from each built edge's start
+     * @param to each built edge's end
+     * @param named the builder's names to their squares
+     * @param stops each copy's name to whether a train stops there
+     * @return the indices of the edges on those ways
      */
-    private boolean onAWayInto(TileKey station, TileKey signal)
+    private static java.util.Set<Integer> waysAt(TileKey station, boolean in, String[] from, String[] to,
+        Map<String, TileKey> named, Map<String, Boolean> stops)
     {
-        java.util.Deque<TileKey> toVisit = new java.util.ArrayDeque<>();
-        java.util.Set<TileKey> seen = new java.util.HashSet<>();
+        java.util.Set<Integer> found = new java.util.HashSet<>();
+        java.util.Deque<String> toVisit = new java.util.ArrayDeque<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
 
-        toVisit.add(station);
-        seen.add(station);
+        for (Map.Entry<String, TileKey> copy : named.entrySet())
+        {
+            if (!station.equals(copy.getValue())) continue;
+
+            // INTO a copy a train stops at; out of any copy, a train passing included
+            if (in && !Boolean.TRUE.equals(stops.get(copy.getKey()))) continue;
+
+            if (seen.add(copy.getKey())) toVisit.add(copy.getKey());
+        }
 
         while (!toVisit.isEmpty())
         {
-            TileKey at = toVisit.poll();
+            String at = toVisit.poll();
 
-            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            for (int i = 0; i < from.length; i++)
             {
-                if (!at.equals(edge.getEnd())) continue;
+                if (!at.equals(in ? to[i] : from[i])) continue;
 
-                for (GraphReducer.TileStep step : edge.getPath()) if (signal.equals(step.getTile())) return true;
+                found.add(i);
 
-                GraphReducer.ReducedPoint before = reducer.getPoints().get(edge.getStart());
+                String next = in ? from[i] : to[i];
 
-                if (before != null && !before.isStation() && seen.add(edge.getStart())) toVisit.add(edge.getStart());
+                if (!Boolean.TRUE.equals(stops.get(next)) && seen.add(next)) toVisit.add(next);
             }
+        }
+
+        return found;
+    }
+
+    /**
+     * Whether a signal lies on the track a station's own reduced edges run over - the last stretch into it or the first out,
+     * its room past the sensor included - and no further, so nothing is walked that a train could not run.
+     *
+     * @param station the station's square
+     * @param signal the signal's square
+     * @return whether it is on the station's own track
+     */
+    private boolean onItsOwnTrack(TileKey station, TileKey signal)
+    {
+        if (reducer == null) return false;
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            if (!station.equals(edge.getStart()) && !station.equals(edge.getEnd())) continue;
+
+            for (GraphReducer.TileStep step : edge.getPath()) if (signal.equals(step.getTile())) return true;
         }
 
         return false;
     }
 
-    /**
-     * Whether a signal lies on track a train leaving this station runs over before it reaches the next station
-     * (RSA41-C3) - `onAWayInto` the other way round: walked forward along the reduced edges that leave the station,
-     * through the sensors between, and stopped at the first station on each way on.
-     *
-     * @param station the station's square
-     * @param signal the signal's square
-     * @return whether some way out of the station passes it
-     */
-    private boolean onAWayOutOf(TileKey station, TileKey signal)
+    /** Whether any of these edges commands the accessory. */
+    private static boolean commandedBy(String accessory, java.util.Set<Integer> edges, List<java.util.Set<String>> commands)
     {
-        java.util.Deque<TileKey> toVisit = new java.util.ArrayDeque<>();
-        java.util.Set<TileKey> seen = new java.util.HashSet<>();
+        if (accessory == null) return false;
 
-        toVisit.add(station);
-        seen.add(station);
-
-        while (!toVisit.isEmpty())
-        {
-            TileKey at = toVisit.poll();
-
-            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
-            {
-                if (!at.equals(edge.getStart())) continue;
-
-                for (GraphReducer.TileStep step : edge.getPath()) if (signal.equals(step.getTile())) return true;
-
-                GraphReducer.ReducedPoint after = reducer.getPoints().get(edge.getEnd());
-
-                if (after != null && !after.isStation() && seen.add(edge.getEnd())) toVisit.add(edge.getEnd());
-            }
-        }
+        for (Integer edge : edges) if (commands.get(edge).contains(accessory)) return true;
 
         return false;
+    }
+
+    /** The accessory a signal's square carries, or null - what a route commands is the accessory, by name. */
+    private String accessoryOf(TileKey signal)
+    {
+        org.traincontrol.base.LayoutDiagramComponent component = graph == null ? null : graph.getTiles().get(signal);
+
+        return component == null || component.getAccessory() == null ? null : component.getAccessory().getName();
+    }
+
+    /** The list, or an empty one. */
+    private static <T> List<T> nonNull(List<T> list)
+    {
+        return list == null ? java.util.Collections.<T>emptyList() : list;
     }
 
     /** A signal's name as the diagram knows it, or its square's */

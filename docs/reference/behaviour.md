@@ -2377,13 +2377,16 @@ platform, asked again on every change of occupancy (`Layout.refreshProtectingSig
 to two platforms stays red while either is claimed.  Only while trains are being run, so arranging the railway by hand
 moves no hardware.
 
-**A route over a guard sets it as it sets any signal on it** (RSA41-C2, -C3): GREEN, with the route's other accessories,
-after protection has had its say.  So a train leaving by its station's exit signal turns it green as it goes - which is
-what it needs, and what OB-315 asked for - and it stays green until that station next changes, though the departing
-train still holds the platform.  A guard that routes to other stations cross is turned green the same way, over a train
-standing at its station: Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal protecting a station
-are two different signals on a railway wired as he intends, and the editor's notice names an exit guard no way into or
-out of its station passes, saying that routes over it turn it green while a train stands there.
+**A route over a guard sets it as it sets any signal on it** (RSA41-C2, -C3; RSA42-C1): GREEN, with the edge's other
+accessories, as the route is claimed edge by edge - each edge's end claimed, which asks protection, and then the edge
+set.  So a train leaving by its station's exit signal turns it green as it goes - which is what it needs, and what OB-315
+asked for - and it stays green until that station next changes, though the departing train still holds the platform.  A
+guard that routes to other stations cross is turned green the same way, over a train standing at its station.  And a
+guard on a way INTO its station - a home signal - is turned green by the arriving route on its last edge, and stays green
+over the train once it stands there; one an edge further out is turned green by its edge and then red by the claim of
+the station beyond, in front of the train.  Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal
+protecting a station are two different signals on a railway wired as he intends; the signal on the way in is the entry
+guard's.  The runtime does not choose between a route and protection; the editor's notices say which case a guard is in.
 
 **The entry guard** - *Entry Guard Signal...* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
 final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are
@@ -2395,11 +2398,14 @@ command on an event rather than an aspect, and nothing is remembered or undone.
 The two lists are separate and thrown at different moments, and **one station's entry guard is never its exit
 guard** (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's
 up to the user to set it up right."*): the editor refuses the pairing and says why, both setters refuse it, and a file
-that carries it anyway is warned about.  Two stations may still share a signal.  An entry guard that no way into its
-station passes - walked back from the station to the last station on each approach - gets a notice in the editor (*"if
-the guard signal is not on a path leading to the chosen station, we can add notice"*), and so does an exit guard that no
-way into or out of it passes, walked on to the next station as well (an exit signal is on the way out); where the guards
-are is otherwise the operator's.  Both are dropped with the
+that carries it anyway is warned about.  Two stations may still share a signal.  The editor's notices read the built
+railway - which routes command each guard, walked from the station's copies to the first stop on each way, so a train
+turns back only where it may (*"if the guard signal is not on a path leading to the chosen station, we can add notice"*;
+RSA42-C2): an entry guard no route into its station commands; an exit guard a route into its station commands (the entry
+guard is the signal on the way in), one routes to other stations command (they turn it green over a train standing
+there), and one no route commands away from the station's own track (it only shows whether the station is occupied;
+on the station's own track, past a terminus's sensor, that is what such a signal is for).  An exit guard commanded only by
+routes out of its station is its exit signal, and gets none.  Where the guards are is otherwise the operator's.  Both are dropped with the
 station when it stops being one, and a pairing whose signal tile has gone is dropped when the setup is reconciled and
 reported by the editor's gone-signal notice.
 

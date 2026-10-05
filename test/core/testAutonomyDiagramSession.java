@@ -10091,11 +10091,9 @@ public class testAutonomyDiagramSession
     @Test
     public void testAGuardOffTheWayInIsNoticed() throws Exception
     {
-        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+        openTheGuardedLine(pageWithAGuardOffTheLine());
 
         TileKey station = new TileKey("main", 1, 1);
-
-        session.setStation(station, true);
 
         int errorsBefore = session.errorCount();
         boolean brokenBefore = session.hasErrors();
@@ -10138,6 +10136,46 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * An exit guard on its station's way in - a home signal - is named for the entry guard (RSA42-C1).
+     *
+     * The arriving route turns it green, and the arrival's claim of the station can turn it red in front of that train -
+     * or, on the last track in, it stays green over the train standing there.  Adam, 2026-08-23: *"The protecting signal
+     * is at the destination"*, a different signal from one a path crosses; the entry guard is the signal on the way in.
+     * As an entry guard the same signal is right, and gets nothing.
+     *
+     * MUTATION: let a route into the station count as the way out, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAnExitGuardOnTheWayInIsNamedForTheEntryGuard() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey far = new TileKey("main", 4, 1);
+        TileKey signal = new TileKey("main", 2, 1);
+
+        session.setStation(station, true);
+        session.setStation(far, true);
+
+        // ONE WAY, from the far station to this one: the signal is on its way in and on no way out
+        assertTrue(session.setOneWayRun(far, station) > 0, "precondition: the line could not be made one way");
+
+        session.rebuild();
+
+        session.setProtectingSignals(station, Arrays.asList(signal));
+
+        assertTrue(notices(session, "autosetup.ui.checkExitGuardOnTheWayIn"), "an exit guard on the station's way in is"
+            + " not named for the entry guard, where the arriving route turns it green (RSA42-C1)");
+
+        session.setProtectingSignals(station, null);
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        assertFalse(noticesAGuardOffTheWayIn(session), "an entry guard on the way in - where it belongs - is noticed");
+    }
+
+    /**
      * An exit guard on its station's way out is not noticed; an entry guard there still is (RSA41-C3).
      *
      * An exit signal - the one a train leaving the station passes, which its own route sets green as it goes - lies on
@@ -10171,7 +10209,7 @@ public class testAutonomyDiagramSession
         session.setProtectingSignals(station, Arrays.asList(signal));
 
         assertFalse(noticesAGuardOffTheWayIn(session) || noticesAnExitGuardOffTheWay(session), "an exit guard on the"
-            + " station's way out - its exit signal - is noticed as a signal no train meets (RSA41-C3)");
+            + " station's way out - its exit signal - is noticed as misplaced (RSA41-C3)");
 
         session.setProtectingSignals(station, null);
         session.setEntrySignals(station, Arrays.asList(signal));
@@ -10194,12 +10232,11 @@ public class testAutonomyDiagramSession
     @Test
     public void testClickingAGuardNoticeOutlinesItsSignal() throws Exception
     {
-        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+        openTheGuardedLine(pageWithAGuardOffTheLine());
 
         TileKey station = new TileKey("main", 1, 1);
         TileKey signal = new TileKey("main", 2, 3);
 
-        session.setStation(station, true);
         session.setEntrySignals(station, Arrays.asList(signal));
 
         final org.traincontrol.gui.AutonomyEditorPanel panel =
@@ -10250,13 +10287,12 @@ public class testAutonomyDiagramSession
     @Test
     public void testAGuardNoticeClickedSelectsNothing() throws Exception
     {
-        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+        openTheGuardedLine(pageWithAGuardOffTheLine());
 
         TileKey station = new TileKey("main", 1, 1);
         TileKey signal = new TileKey("main", 2, 3);
         TileKey elsewhere = new TileKey("main", 4, 1);
 
-        session.setStation(station, true);
         session.setEntrySignals(station, Arrays.asList(signal));
 
         final org.traincontrol.gui.AutonomyEditorPanel panel =
@@ -10293,12 +10329,11 @@ public class testAutonomyDiagramSession
     @Test
     public void testAClickOnTheDiagramTakesANoticesOutlineAway() throws Exception
     {
-        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+        openTheGuardedLine(pageWithAGuardOffTheLine());
 
         TileKey station = new TileKey("main", 1, 1);
         TileKey signal = new TileKey("main", 2, 3);
 
-        session.setStation(station, true);
         session.setEntrySignals(station, Arrays.asList(signal));
 
         final org.traincontrol.gui.AutonomyEditorPanel panel =
@@ -10327,12 +10362,11 @@ public class testAutonomyDiagramSession
     @Test
     public void testAGuardNoticeOnAnotherPageTakesItsSignalWithIt() throws Exception
     {
-        session.open(Arrays.asList(pageWithAGuardOffTheLine(), aSecondPage()));
+        openTheGuardedLine(pageWithAGuardOffTheLine(), aSecondPage());
 
         TileKey station = new TileKey("main", 1, 1);
         TileKey signal = new TileKey("main", 2, 3);
 
-        session.setStation(station, true);
         session.setEntrySignals(station, Arrays.asList(signal));
 
         final org.traincontrol.gui.AutonomyEditorPanel panel =
@@ -10384,6 +10418,31 @@ public class testAutonomyDiagramSession
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 
+    /**
+     * The guard line's pages opened as a railway: a station at each end of the two-signal line, and trains free to turn at
+     * both, so it has routes.  The guard notices read the routes the built railway has (RSA42-C2), and a station whose
+     * only approach is a sensor nothing reaches has none.
+     *
+     * @param pages the pages, the guard line's first
+     */
+    private void openTheGuardedLine(LayoutDiagram... pages) throws IOException
+    {
+        session.open(Arrays.asList(pages));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey far = new TileKey("main", 4, 1);
+
+        session.setStation(station, true);
+        session.setStation(far, true);
+        session.initialize("Guards");
+        session.setPointFlag(station, AutonomyBuilder.CAN_REVERSE, true);
+        session.setPointFlag(far, AutonomyBuilder.CAN_REVERSE, true);
+        session.rebuild();
+
+        assertFalse(session.check().stream().anyMatch(f -> "autosetup.ui.checkStationAtTheEndOfALine".equals(f.getMessageKey())),
+            "precondition: trains still may not turn at the line's ends, so the built railway has no route to read");
+    }
+
     /** A second page, "far", with one sensor on it. */
     private LayoutDiagram aSecondPage() throws IOException
     {
@@ -10421,11 +10480,19 @@ public class testAutonomyDiagramSession
         return null;
     }
 
+    /** Whether the check gives any of the exit guard's three notices. */
     private static boolean noticesAnExitGuardOffTheWay(AutonomySession session)
+    {
+        return notices(session, "autosetup.ui.checkExitGuardOffTheWay") || notices(session, "autosetup.ui.checkExitGuardCrossed")
+            || notices(session, "autosetup.ui.checkExitGuardOnTheWayIn");
+    }
+
+    /** Whether the check gives this notice. */
+    private static boolean notices(AutonomySession session, String key)
     {
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
         {
-            if ("autosetup.ui.checkExitGuardOffTheWay".equals(finding.getMessageKey())) return true;
+            if (key.equals(finding.getMessageKey())) return true;
         }
 
         return false;
