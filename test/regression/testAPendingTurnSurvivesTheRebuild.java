@@ -958,6 +958,16 @@ public class testAPendingTurnSurvivesTheRebuild
 
         final org.traincontrol.automationui.TileGraph.TileKey at = station;
 
+        // INACTIVE CAPTIONS HIDDEN, so the half of this that hides a station autonomy cannot choose is asked too - the
+        // setting is the operator's, copied into the run, and on it hides nothing; put back below
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        final String inactiveWere = prefs.get(TrainControlUI.SHOW_INACTIVE_LABELS_PREF, null);
+
+        prefs.putBoolean(TrainControlUI.SHOW_INACTIVE_LABELS_PREF, false);
+
+        captionsSettled();
+
         // WHAT IT SAYS WITH THE TRAIN STANDING THERE - the train's name, shortened as a caption shortens it, and its arrow
         final String said = captionText(at);
 
@@ -980,11 +990,16 @@ public class testAPendingTurnSurvivesTheRebuild
 
             if (model.getAutoLayout() != railway) throw new SkipException("leaving " + out + " out did not stop the build");
 
+            captionsSettled();
+
             assertEquals(captionText(at), said, "the caption at " + at + " no longer shows " + train + " standing there"
                 + " after the station was renamed while the setup could not build (RSA40-C2)");
         }
         finally
         {
+            if (inactiveWere == null) prefs.remove(TrainControlUI.SHOW_INACTIVE_LABELS_PREF);
+            else prefs.put(TrainControlUI.SHOW_INACTIVE_LABELS_PREF, inactiveWere);
+
             session.setPointName(at, name);
             session.setPageExcluded(String.valueOf(out), false);
 
@@ -993,6 +1008,41 @@ public class testAPendingTurnSurvivesTheRebuild
 
             settle();
         }
+    }
+
+    /** Asks the window which captions to hide, as a setup change does, and waits for its worker's answer to be painted. */
+    private static void captionsSettled() throws Exception
+    {
+        java.lang.reflect.Method ask = TrainControlUI.class.getDeclaredMethod("refreshCaptionVisibility");
+
+        ask.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                ask.invoke(ui);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        java.util.concurrent.atomic.AtomicBoolean busy =
+            (java.util.concurrent.atomic.AtomicBoolean) windowField("captionVisibilityInFlight");
+        java.util.concurrent.atomic.AtomicBoolean dirty =
+            (java.util.concurrent.atomic.AtomicBoolean) windowField("captionVisibilityDirty");
+
+        long until = System.currentTimeMillis() + 30000;
+
+        while ((busy.get() || dirty.get()) && System.currentTimeMillis() < until) Thread.sleep(20);
+
+        assertFalse(busy.get() || dirty.get(), "precondition: the window never finished working out which captions to"
+            + " hide");
+
+        pump();
+        pump();
     }
 
     /** What the visible captions of a station say, together. */
