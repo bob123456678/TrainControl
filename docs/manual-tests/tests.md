@@ -28,11 +28,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-694](#mt-694) | 2026-10-05 | A station renamed while the setup has an error keeps its train's caption | fixed unvalidated | Adam 2026-10-05 (RSA40-C2) |
-| [MT-695](#mt-695) | 2026-10-05 | A page brought back after a size change still follows the railway | fixed unvalidated | Adam 2026-10-05 (MT-693) |
 | [MT-696](#mt-696) | 2026-10-05 | The file chooser opens without a freeze, follows shortcuts and shows Windows' columns | fixed unvalidated | Adam 2026-10-05 (MT-690, MT-692) |
+| [MT-697](#mt-697) | 2026-10-05 | A square a click turns shows a hand and says so; the menus' tooltips are short | fixed unvalidated | Adam 2026-10-05 (FR-112) |
 
-Everything else - 693 of 696 - needs nothing from you unless the area changes again:
-546 **fixed validated** and 147 **superseded**.
+Everything else - 694 of 697 - needs nothing from you unless the area changes again:
+547 **fixed validated** and 147 **superseded**.
 
 ---
 
@@ -33024,7 +33024,7 @@ train standing there - blank, as if no train were there - until the setup built 
 
 ### MT-695 - 2026-10-05 - A page brought back after a size change still follows the railway
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (MT-693)
 
 **Written:** 2026-10-05
@@ -33048,6 +33048,16 @@ updated until something redrew it.
   railway, as on a page you had not left.
 
 *What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testACachedPageComesBackWired`.
+
+**Adam, 2026-10-05 (triage).** Works.
+
+Seems to work fine - the first page looks no different after the steps
+
+*Run against commit 1e75afb9, in English - build\classes, compiled 05 Oct 08:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.
 
 ---
 
@@ -33090,5 +33100,49 @@ at 01:05, before the quicker chooser was in - so they showed Swing's own.  This 
 Very good performance now
 
 *Run against commit 1e75afb9, in English - build\classes, compiled 05 Oct 08:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-697"></a>
+
+### MT-697 - 2026-10-05 - A square a click turns shows a hand and says so; the menus' tooltips are short
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (FR-112)
+
+**Written:** 2026-10-05
+
+Your request FR-112: *"in the autonomy editor, it is not clear to the user that tiles with arrows can be clicked.  Except
+where we already show the drag icon (station labels), show a pointer mouse icon over tiles that can have their arrows
+changed (i.e., most of them), and a brief hover tooltip "Click to change allowed directions".  Make sure that tooltip is
+very short."*  And *"look for other tooltips in the autonomy editor right click menus, and in the main JMenu right click
+menus, that are currently overly wide or long, and make them be more concise so they don't cover up other things."*
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**.
+2. Move the pointer over plain track, a switch and a station's square; then over a blank square, a link and a station's
+   caption.
+3. Press **Test a Path**, then move the pointer over the track again.  Press it again to put it down.
+4. Right-click a station; hover the items under **Station**, **Turning** and **Trains May Arrive From**, and under
+   **Bulk Tools**.
+5. On the main window, open the menus on the menu bar and hover items that have a tooltip - for example **Preferences >
+   Autonomy > Path Integrity Validation** and **Layouts > Open Layout...** - and right-click a station on the track
+   diagram.
+
+**Expected**
+
+- Step 2: over track, a switch and a station's square, the pointer is a hand and the tooltip says *Click to change
+  allowed directions* (under the station's name on a station).  Over a blank square or a link, the ordinary pointer and
+  no such line.  Over a caption, the four-way arrow as before.
+- Step 3: with Test a Path armed, no hand over the track; put down, the hand is back.
+- Step 4: each tooltip is a line or two.  A Bulk Tools item says in short what its confirmation will say in full - how
+  many, and that Cancel puts them back; the confirmation itself is unchanged.
+- Step 5: no tooltip runs across the window: a long one wraps onto two lines.
+
+*What this is:* `regression.testTheAutonomyEditorKnowsWhichSquare.testAClickableSquareShowsAHandAndSaysSo`,
+`regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree` and
+`testEveryTileMenuTooltipIsShort` (every language), and
+`regression.testTheMenusComeBackAtOneMoment.testTheMenuBarsTooltipsAreShortAndWrapped`.
 
 ---
