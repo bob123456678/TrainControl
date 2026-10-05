@@ -27,13 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-683](#mt-683) | 2026-10-04 | The green arrows are light green with a dark edge, and every arrow sits on its rail | fixed unvalidated | Adam 2026-10-04 (MT-681) |
-| [MT-684](#mt-684) | 2026-10-04 | The autonomy editor keeps its own title while it changes page | fixed unvalidated | Adam 2026-10-04 (MT-669) |
-| [MT-685](#mt-685) | 2026-10-04 | A click in the autonomy editor leaves the track diagram still | fixed unvalidated | Adam 2026-10-04 (MT-670) |
-| [MT-686](#mt-686) | 2026-10-04 | The track diagram hides the arrows while autonomy runs | fixed unvalidated | Adam 2026-10-04 (arrows) |
+| [MT-687](#mt-687) | 2026-10-05 | The track diagram's arrows wait for the trains as the spinner does | fixed unvalidated | Adam 2026-10-05 (MT-686) |
+| [MT-688](#mt-688) | 2026-10-05 | A crossing of two permanent turnouts draws no arrows in its middle | fixed unvalidated | Adam 2026-10-05 (OB-322) |
 
-Everything else - 682 of 686 - needs nothing from you unless the area changes again:
-540 **fixed validated** and 142 **superseded**.
+Everything else - 686 of 688 - needs nothing from you unless the area changes again:
+543 **fixed validated** and 143 **superseded**.
 
 ---
 
@@ -32569,7 +32567,7 @@ Validated on your *Works* of 2026-10-04.
 
 ### MT-683 - 2026-10-04 - The green arrows are light green with a dark edge, and every arrow sits on its rail
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (MT-681)
 
 **Written:** 2026-10-04
@@ -32600,13 +32598,21 @@ arrow on the Y may still be slightly off center."*
 right of and below their rail all along; the Y's green toe arrow was centred in the application, and off only in the
 picture.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b95cf69d, in English - build\classes, compiled 04 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.
+
 ---
 
 <a id="mt-684"></a>
 
 ### MT-684 - 2026-10-04 - The autonomy editor keeps its own title while it changes page
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (MT-669)
 
 **Written:** 2026-10-04
@@ -32626,13 +32632,21 @@ autonomy editor) title for a split second, before being updated."*
 
 *What this is:* `ui.testTheEditorNamesItsShortcuts.testAPageSwitchShowsOnlyTheAutonomyEditorsTitle`.
 
+**Adam, 2026-10-05 (triage).** Works.
+
+*Run against commit b95cf69d, in English - build\classes, compiled 04 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.
+
 ---
 
 <a id="mt-685"></a>
 
 ### MT-685 - 2026-10-04 - A click in the autonomy editor leaves the track diagram still
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (MT-670)
 
 **Written:** 2026-10-04
@@ -32655,13 +32669,21 @@ Your notes on MT-670: *"every click I make in the autonomy editor makes the view
 *What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testAnEditThatLeavesTheCaptionsKeepsTheDiagram`.  Every
 edit rebuilt the whole diagram - every square taken down and drawn again - though only an edit to the captions needs it.
 
+**Adam, 2026-10-05 (triage).** Works.
+
+*Run against commit b95cf69d, in English - build\classes, compiled 04 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.
+
 ---
 
 <a id="mt-686"></a>
 
 ### MT-686 - 2026-10-04 - The track diagram hides the arrows while autonomy runs
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam 2026-10-04 (arrows)
 
 **Written:** 2026-10-04
@@ -32684,5 +32706,72 @@ diagram."*
 - Step 4: the arrows stay while the train you sent runs - only a run you start hides them.
 
 *What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testTheArrowsAreHiddenWhileAutonomyRuns`.
+
+**Adam, 2026-10-04 (triage).** Does not work.
+
+Works until graceful stop is requested, at which point they get shown prematurely.  Should be the same gate as the spinner.
+
+*Run against commit b95cf69d, in English - build\classes, compiled 04 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Superseded by MT-687: your note is built - the arrows are asked beside the spinner, of its own gate, so they stay hidden through a Graceful Stop's coast-down, and for a hand send as the spinner turns for one.
+
+---
+
+<a id="mt-687"></a>
+
+### MT-687 - 2026-10-05 - The track diagram's arrows wait for the trains as the spinner does
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (MT-686)
+
+**Written:** 2026-10-05
+
+Your note on MT-686: *"Works until graceful stop is requested, at which point they get shown prematurely.  Should be the
+same gate as the spinner."*
+
+**Steps**
+
+1. Tick **Display Travel Restrictions** and **Display Allowed Directions**, and start autonomy.
+2. Press **Graceful Stop**, and watch the track diagram while the trains finish.
+3. With autonomy stopped, send one train by hand.
+
+**Expected**
+
+- Step 1: the arrows go as the spinner beside Start begins to turn.
+- Step 2: they stay hidden while the trains coast down and the spinner turns, and come back as the spinner stops.
+- Step 3: they go while the train you sent runs and the spinner turns, and come back when it stops.
+
+*What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testTheArrowsAreHiddenWhileAutonomyRuns` - it checks at
+each step that the arrows are hidden exactly while the spinner turns.
+
+---
+
+<a id="mt-688"></a>
+
+### MT-688 - 2026-10-05 - A crossing of two permanent turnouts draws no arrows in its middle
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (OB-322)
+
+**Written:** 2026-10-05
+
+Your report OB-322: *"the crossings consisting of 2 fixed Y's or 2 sets of static switches have a redundant set of
+(red/green) arrows in the middle.  let's hide them in that configuration for simplicity."*
+
+**Steps**
+
+1. Open TC3Sandbox_layout, and on the track diagram tick **Display Travel Restrictions** and **Display Allowed
+   Directions**.  Look at the Ys at 12,9 and 12,10 and the right turnouts at 15,13 and 16,13.
+2. Open the autonomy editor on the same page, choose **Show All**, and look at them there.
+3. Look at a permanent Y that has no partner beside it, if the layout has one.
+
+**Expected**
+
+- Steps 1 and 2: each crossing has arrows at its four outer ends and none where its two squares meet.
+- Step 3: a permanent Y on its own still has the arrow at its toe.
+
+*What this is:* `core.testTwoYsMakeACrossing.testACrossingDrawsNoArrowsWhereItsSquaresMeet`.
 
 ---

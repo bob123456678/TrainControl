@@ -1598,6 +1598,15 @@ Adam, 2026-10-04: *"File an FR for 3.1.0- we need point management to be via a s
 
 **Claude, 2026-10-04.**  The earlier request to keep those menus open after a choice has no entry in issues.md or tests.md that I could find, so it is folded in here and tracked from now on; a single popup would make it moot.
 
+### OB-322 - 2026-10-05 - redundant arrows in autonomy allowed directions
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-05 00:00  
+**Build:** commit b95cf69d, in English - build\classes, compiled 04 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the crossings consisting of 2 fixed Y's or 2 sets of static switches have a redundant set of (red/green) arrows in the middle.  let's hide them in that configuration for simplicity.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1615,7 +1624,8 @@ not, never both.
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
 | 2026-09-14 | FR-085 | feature request | Ask for the farthest sensor a placed train's tail crossed, and keep the road it names: built in two phases - the road kept (WK7-B1, `63ac68f4`) and the question asked, from a list, in the menu or by clicking (`53a82f7c`). **Claude, 2026-10-04.**  It never had a receipt, so it sat in the Inbox as if never picked up.  Closed on Adam's word (*"Close the two"*): its tests ran MT-435, MT-438, then MT-515, which passed. | fixed validated | - |
-| 2026-10-04 | FR-110 | feature request | Display Allowed Directions draws the green arrows on the track diagram too, with no wash. | - | `MT-675`, `MT-681`, `MT-683`, `MT-686` |
+| 2026-10-05 | OB-322 | bug | A two-square crossing draws no arrows where its squares meet, on the track diagram and in the autonomy editor; a permanent Y on its own keeps its toe's arrow. | - | `MT-688` |
+| 2026-10-04 | FR-110 | feature request | Display Allowed Directions draws the green arrows on the track diagram too, with no wash. | - | `MT-675`, `MT-681`, `MT-683`, `MT-686`, `MT-687` |
 | 2026-10-04 | OB-321 | bug | The track diagram draws a one-way run's arrow once, at its first square; a square that differs keeps its own. | - | `MT-674` |
 | 2026-10-04 | OB-320 | bug | Two permanent Ys toe to toe are one crossing: corner to corner both ways, one direction per track, the click steps through both ways, the four one-way combinations and closed.  Two permanent lefts or rights toe to toe, legs facing, too. | - | `MT-676`, `MT-677`, `MT-682` |
 | 2026-10-04 | FR-108 | feature request | Bulk Tools > Allow Every Path (n), with the clears' warning; a turnout with no address stays as its blades run it. | - | `MT-673` |
