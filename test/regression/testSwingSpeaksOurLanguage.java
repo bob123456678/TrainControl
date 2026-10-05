@@ -5,6 +5,7 @@ import javax.swing.UIManager;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
@@ -482,6 +483,37 @@ public class testSwingSpeaksOurLanguage
                 walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
             }
         }
+    }
+
+    /**
+     * The shell's icon for a file is asked for once and kept (MT-692's note: *"before the selector opens, the UI briefly
+     * freezes"*): every chooser asked the shell for each item's icon on the event thread as it first painted.
+     *
+     * MUTATION: ask the shell for the icon every time, and this fails.
+     *
+     * @throws Exception from the chooser
+     */
+    @Test
+    public void testTheShellsIconsAreKept() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a look and feel needs a display");
+
+        TrainControlUI.installLookAndFeel();
+
+        final java.io.File file = new java.io.File("build.xml").getAbsoluteFile();
+
+        final javax.swing.Icon[] icons = new javax.swing.Icon[2];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            icons[0] = new org.traincontrol.gui.QuickFileChooser().getFileSystemView().getSystemIcon(file);
+            icons[1] = new org.traincontrol.gui.QuickFileChooser().getFileSystemView().getSystemIcon(file);
+        });
+
+        assertNotNull(icons[0], "precondition: the shell gives " + file + " no icon");
+
+        assertTrue(icons[0] == icons[1], "a second chooser asked the shell again for an icon the first was given (MT-692's"
+            + " note)");
     }
 
     /** The headings of a chooser's details view, switched to it. */

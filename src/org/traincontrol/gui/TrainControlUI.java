@@ -1692,18 +1692,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         org.traincontrol.automationui.AutonomySession session,
         org.traincontrol.automationui.TileGraph.TileKey station)
     {
-        java.util.List<org.traincontrol.automation.Point> out = new java.util.ArrayList<>();
-
-        if (station == null || railway == null || session == null) return out;
-
-        for (String name : session.getStationIndex().pointNamesAt(station))
+        if (station == null || railway == null || session == null)
         {
-            org.traincontrol.automation.Point point = railway.getPoint(name);
-
-            if (point != null) out.add(point);
+            return new java.util.ArrayList<org.traincontrol.automation.Point>();
         }
 
-        return out;
+        // THE STATION INDEX'S OWN ANSWER (RSA40-C2): this was a copy of its loop by name, which found no Point at a
+        // station renamed while the setup could not build - the railway still carries the names it was built with - so
+        // the caption of the train standing there was hidden as a station autonomy cannot choose.  `pointsAt` falls back
+        // to the square each Point was built for.
+        return session.getStationIndex().pointsAt(railway, station);
     }
 
     /**
@@ -4281,6 +4279,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The folders the file choosers open in, for their icons to be fetched ahead (MT-692's note): Open Layout's - the
+     * folder above the last layout - and the last folder a file was chosen in.
+     *
+     * @return the folders, any of them missing
+     */
+    private java.io.File[] theFoldersChoosersOpenIn()
+    {
+        String layout = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        if (layout.isEmpty()) layout = prefs.get(LAST_LOCAL_LAYOUT_PREF, "");
+
+        java.io.File above = layout.isEmpty() ? null : new java.io.File(layout).getAbsoluteFile().getParentFile();
+
+        String used = prefs.get(LAST_USED_FOLDER, "");
+
+        return new java.io.File[] {above, used.isEmpty() ? null : new java.io.File(used)};
+    }
+
+    /**
      * Whether a page the page cache keeps is still wired - every tile its grid registered still registered, and every
      * caption it registered still in the station map - so putting it back on screen shows a page that follows the railway
      * (RSA39, outside its round).  Each registration is kept by its square, the same at both sizes, and one that is not on
@@ -6354,8 +6371,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the wrong ones, or none, whenever a station had been renamed.
         org.traincontrol.automationui.AutonomySession labelSession = getAutonomySession();
 
-        final org.traincontrol.automationui.TileGraph.TileKey square =
+        final org.traincontrol.automationui.TileGraph.TileKey named =
             labelSession == null ? null : labelSession.tileForPointName(point.getName());
+
+        // OR THE SQUARE THE RAILWAY BUILT IT FOR, where the setup no longer knows its name (RSA40-C2): a station renamed
+        // while the setup cannot build, the railway left as it was
+        final org.traincontrol.automationui.TileGraph.TileKey square = named != null || labelSession == null ? named
+            : org.traincontrol.automationui.AutonomyCompanionStore.parseTileKey(point.getSquare());
 
         // Whichever copy of this square is actually holding a train speaks for it.
         //
@@ -11279,7 +11301,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // THE FILE CHOOSERS' LOOK IN LIST, asked of Windows now and off the event thread, so the first chooser opened has it
         // (OB-323) - it took a second or more each time a chooser was built
-        QuickFileChooser.askTheShellAhead();
+        QuickFileChooser.askTheShellAhead(theFoldersChoosersOpenIn());
 
         pack();
         displayMenuBar();
