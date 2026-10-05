@@ -39,6 +39,21 @@ public class RightClickPageMenu extends MouseAdapter
     
     final class RightClickMenu extends JPopupMenu
     {
+        /**
+         * Its tooltips wrapped where a line will not hold them, as it is shown (FR-112) - whatever set them.
+         *
+         * @param invoker where it is shown
+         * @param x where it is shown
+         * @param y where it is shown
+         */
+        @Override
+        public void show(java.awt.Component invoker, int x, int y)
+        {
+            AutonomyEditorPanel.wrapTheTooltips(this);
+
+            super.show(invoker, x, y);
+        }
+
         JMenuItem menuItem;
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)

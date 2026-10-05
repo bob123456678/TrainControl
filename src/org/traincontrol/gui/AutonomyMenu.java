@@ -299,7 +299,10 @@ public class AutonomyMenu extends JMenu
 
                 download.setEnabled(canDownload);
 
-                if (!canDownload) download.setToolTipText(I18n.t("autosetup.ui.tooltipNoLayoutToDownload"));
+                if (!canDownload)
+                {
+                    download.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("autosetup.ui.tooltipNoLayoutToDownload")));
+                }
 
                 download.addActionListener(event -> ui.downloadCentralStationLayout());
 

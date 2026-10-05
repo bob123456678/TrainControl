@@ -1014,4 +1014,335 @@ public class testTheEditorSaysWhatItsToolsDo
 
         file.delete();
     }
+
+    /**
+     * Every tooltip on the autonomy right-click menus is short, in every language, and one too wide for a line is wrapped
+     * (FR-112).
+     *
+     * Adam, 2026-10-05: *"look for other tooltips in the autonomy editor right click menus ... that are currently overly
+     * wide or long, and make them be more concise so they don't cover up other things."*  The longest was a Bulk Tools item
+     * repeating its whole confirmation - over three hundred characters - and a dozen station and direction items ran past a
+     * hundred and fifty.
+     *
+     * Asked of the built menus over the frozen railway, every square of every page, from both doors - the editor's own menu
+     * and the track diagram's, which is this panel's menus served with no page - with the facing and arrived-from menus a
+     * standing train adds.  A hundred characters in English and a hundred and thirty in the others, which run longer for the
+     * same sentence.
+     *
+     * MUTATION: put a long sentence back in any of these tooltips, or a bulk tool's whole confirmation, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testEveryTileMenuTooltipIsShort() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        java.util.Locale was = I18n.getLocale();
+
+        try
+        {
+            // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111)
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            String path = "file:///" + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
+
+            org.traincontrol.marklin.file.CS2File parser = new org.traincontrol.marklin.file.CS2File(path, model);
+            parser.setLayoutDataLoc(path);
+
+            final java.util.List<LayoutDiagram> pages = support.LayoutSandbox.wired(model, parser);
+
+            final AutonomySession railway = new AutonomySession(sandbox.getFolder());
+            railway.open(pages);
+
+            final java.util.List<String> tooLong = new java.util.ArrayList<>();
+            final int[] seen = {0};
+
+            for (String language : new String[] {"en", "de", "fr", "nl", "it", "es", "da", "pl"})
+            {
+                I18n.setLocale(new java.util.Locale(language));
+
+                final int limit = "en".equals(language) ? 100 : 130;
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    AutonomyEditorPanel diagrams = new AutonomyEditorPanel(railway, null, () -> { });
+                    diagrams.setMenuOnly(true);
+
+                    java.util.Set<String> tips = new java.util.LinkedHashSet<>();
+
+                    for (LayoutDiagram page : pages)
+                    {
+                        AutonomyEditorPanel own = new AutonomyEditorPanel(railway, page.getName(), () -> { });
+
+                        for (int x = 0; x < page.getSx(); x++)
+                        {
+                            for (int y = 0; y < page.getSy(); y++)
+                            {
+                                TileKey tile = new TileKey(page.getName(), x, y);
+
+                                for (AutonomyEditorPanel panel : new AutonomyEditorPanel[] {own, diagrams})
+                                {
+                                    tipsIn(panel.buildTileMenu(tile, null), tips);
+                                    tipsIn(panel.buildFacingMenu(tile), tips);
+                                    tipsIn(panel.buildArrivedFromMenu(tile), tips);
+                                }
+                            }
+                        }
+                    }
+
+                    seen[0] += tips.size();
+
+                    for (String tip : tips)
+                    {
+                        String said = plain(tip);
+
+                        if (said.length() > limit) tooLong.add(language + " (" + said.length() + "): " + said);
+                        else if (!tip.contains("width") && !fitsOnALine(said)) tooLong.add(language + " (unwrapped): " + said);
+                    }
+                });
+            }
+
+            assertTrue(seen[0] > 8 * 20, "precondition: the menus over the frozen railway carried only " + seen[0]
+                + " tooltips in eight languages, so the walk did not reach them");
+
+            assertTrue(tooLong.isEmpty(), tooLong.size() + " tooltips on the autonomy right-click menus are too long or too"
+                + " wide (FR-112): " + tooLong);
+        }
+        finally
+        {
+            I18n.setLocale(was);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** Every tooltip on a menu, its items and its submenus. */
+    private static void tipsIn(java.awt.Container menu, java.util.Set<String> into)
+    {
+        if (menu == null) return;
+
+        if (menu instanceof javax.swing.JComponent && ((javax.swing.JComponent) menu).getToolTipText() != null)
+        {
+            into.add(((javax.swing.JComponent) menu).getToolTipText());
+        }
+
+        java.awt.Component[] items = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component item : items)
+        {
+            if (item instanceof javax.swing.JMenu) tipsIn((javax.swing.JMenu) item, into);
+            else if (item instanceof javax.swing.JComponent && ((javax.swing.JComponent) item).getToolTipText() != null)
+            {
+                into.add(((javax.swing.JComponent) item).getToolTipText());
+            }
+        }
+    }
+
+    /** Whether text fits on one tooltip line at the width the editor wraps at. */
+    private static boolean fitsOnALine(String text)
+    {
+        java.awt.Font font = javax.swing.UIManager.getFont("ToolTip.font");
+
+        if (font == null) font = new java.awt.Font(java.awt.Font.DIALOG, java.awt.Font.PLAIN, 12);
+
+        java.awt.Graphics2D scratch =
+            new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics();
+
+        try
+        {
+            return scratch.getFontMetrics(font).stringWidth(text) <= 320;
+        }
+        finally
+        {
+            scratch.dispose();
+        }
+    }
+
+    /**
+     * The pointer's rule and the click agree about every kind of square (FR-112).
+     *
+     * The hand over a square says a click there changes which way trains may run, and `clickChangesDirections` is what the
+     * diagram asks for it - the questions `tileClicked` and `cycle` ask before they change anything, written out a second
+     * time.  Two copies of one question part company when a condition is added to one of them, so every kind of square is
+     * clicked here, on a fresh setup each time, and what the click did to the setup is set beside what the rule said.  A
+     * page left out of autonomy and a blank square are among them.  And with the Test tool armed, where a click tests a
+     * path, the rule says no everywhere.
+     *
+     * Both answers have to occur, or the agreement is between two constants.
+     *
+     * MUTATION: drop the link, the ignored or the armed question from the rule, and this fails on that square.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheClickAndItsPointerAgree() throws Exception
+    {
+        java.util.List<String> disagreed = new java.util.ArrayList<>();
+        int turns = 0;
+        int leaves = 0;
+
+        for (String page : new String[] {"kinds", "left out"})
+        {
+            for (int x = 0; x < componentType.values().length + 1; x++)
+            {
+                for (int y = 0; y < 3; y++)
+                {
+                    if ("left out".equals(page) && (x > 2 || y != 1)) continue;
+
+                    File doors = Files.createTempDirectory("tc-two-doors").toFile();
+
+                    try
+                    {
+                        final AutonomySession setup = everyKindOfSquare(doors);
+                        final TileKey tile = new TileKey(page, x, y);
+                        final AutonomyEditorPanel panel = new AutonomyEditorPanel(setup, page, () -> { });
+
+                        String before = saved(setup, doors);
+
+                        assertEquals(saved(setup, doors), before, "precondition: the setup saves differently twice"
+                            + " running, so a change could not be told from no change");
+
+                        final boolean[] rule = new boolean[1];
+
+                        javax.swing.SwingUtilities.invokeAndWait(() ->
+                        {
+                            rule[0] = panel.clickChangesDirections(tile);
+
+                            panel.tileClicked(tile, squareOf(setup, tile), false);
+                        });
+
+                        boolean changed = !before.equals(saved(setup, doors));
+
+                        if (rule[0] != changed)
+                        {
+                            disagreed.add(tile + " (" + squareOf(setup, tile) + "): the pointer says a click "
+                                + (rule[0] ? "turns it" : "leaves it alone") + ", and the click "
+                                + (changed ? "changed the setup" : "changed nothing"));
+                        }
+
+                        if (rule[0]) turns++;
+                        else leaves++;
+                    }
+                    finally
+                    {
+                        delete(doors);
+                    }
+                }
+            }
+        }
+
+        assertTrue(disagreed.isEmpty(), disagreed.size() + " squares where the hand and the click disagree (FR-112): "
+            + disagreed);
+
+        assertTrue(turns > 0 && leaves > 0, "precondition: the rule said only " + (turns > 0 ? "yes" : "no") + ", so the"
+            + " agreement is with a constant");
+
+        // AND ARMED, NOTHING
+        File armed = Files.createTempDirectory("tc-two-doors-armed").toFile();
+
+        try
+        {
+            final AutonomySession setup = everyKindOfSquare(armed);
+            final AutonomyEditorPanel panel = new AutonomyEditorPanel(setup, "kinds", () -> { });
+
+            java.lang.reflect.Field button = AutonomyEditorPanel.class.getDeclaredField("testButton");
+            button.setAccessible(true);
+            final javax.swing.JToggleButton test = (javax.swing.JToggleButton) button.get(panel);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> test.doClick());
+
+            assertEquals(panel.getTool(), AutonomyEditorPanel.Tool.TEST, "precondition: pressing Test did not arm it");
+
+            java.util.List<TileKey> offered = new java.util.ArrayList<>();
+
+            for (int x = 0; x < componentType.values().length + 1; x++)
+            {
+                if (panel.clickChangesDirections(new TileKey("kinds", x, 1))) offered.add(new TileKey("kinds", x, 1));
+            }
+
+            assertTrue(offered.isEmpty(), "with Test armed a click tests a path, and the pointer still offers to change the"
+                + " directions on " + offered);
+        }
+        finally
+        {
+            delete(armed);
+        }
+    }
+
+    /**
+     * The setup as it saves - every file it writes, in order.  What a click changes is written there, where the running
+     * configuration built from it says nothing about track no station is on.
+     *
+     * @param setup the setup
+     * @param folder where it saves
+     * @return the files' text
+     */
+    private static String saved(AutonomySession setup, File folder) throws IOException
+    {
+        setup.getStore().save();
+
+        StringBuilder text = new StringBuilder();
+
+        try (java.util.stream.Stream<java.nio.file.Path> files = Files.walk(folder.toPath()))
+        {
+            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) files.filter(Files::isRegularFile).sorted()::iterator)
+            {
+                text.append(file.getFileName()).append(" = ").append(new String(Files.readAllBytes(file), "UTF-8"));
+            }
+        }
+
+        return text.toString();
+    }
+
+    /** What the setup's graph has on a square, or null - a page left out has none. */
+    private static org.traincontrol.base.LayoutDiagramComponent squareOf(AutonomySession setup, TileKey tile)
+    {
+        return setup.getGraph() == null ? null : setup.getGraph().getTiles().get(tile);
+    }
+
+    /**
+     * A setup with one square of every kind on a row - but the two scissors, which a diagram autonomy can use may not carry
+     * at all - a station among them, and a second page left out of autonomy.
+     *
+     * @param folder where the setup is kept
+     * @return the setup, built
+     */
+    private static AutonomySession everyKindOfSquare(File folder) throws IOException
+    {
+        componentType[] kinds = componentType.values();
+
+        LayoutDiagram row = new LayoutDiagram("kinds", kinds.length + 1, 3, null, null);
+
+        for (int i = 0; i < kinds.length; i++)
+        {
+            if (kinds[i] == componentType.CUSTOM_SCISSORS || kinds[i] == componentType.CUSTOM_PERM_SCISSORS) continue;
+
+            String text = kinds[i] == componentType.TEXT ? "words" : kinds[i] == componentType.LINK ? "A" : null;
+
+            row.addComponent(kinds[i], i + 1, 1, 0, 0, 20 + i, 20 + i, accessoryDecoderType.MM2, text);
+        }
+
+        row.setPageId("1");
+
+        LayoutDiagram out = new LayoutDiagram("left out", 4, 3, null, null);
+
+        out.addComponent(componentType.STRAIGHT, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        out.setPageId("2");
+
+        AutonomySession setup = new AutonomySession(folder);
+
+        setup.open(Arrays.asList(row, out));
+        setup.initialize("Doors");
+        setup.setStation(new TileKey("kinds", 1 + componentType.FEEDBACK.ordinal(), 1), true);
+        setup.setPageExcluded("left out", true);
+        setup.rebuild();
+
+        return setup;
+    }
 }

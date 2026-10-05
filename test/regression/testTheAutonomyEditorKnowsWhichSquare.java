@@ -436,4 +436,98 @@ public class testTheAutonomyEditorKnowsWhichSquare
             autonomy.close();
         }
     }
+
+    /**
+     * A square a click changes shows a hand and says so, and one it does not shows neither (FR-112).
+     *
+     * Adam, 2026-10-05: *"in the autonomy editor, it is not clear to the user that tiles with arrows can be clicked.  Except
+     * where we already show the drag icon (station labels), show a pointer mouse icon over tiles that can have their arrows
+     * changed (i.e., most of them), and a brief hover tooltip "Click to change allowed directions".  Make sure that tooltip
+     * is very short."*
+     *
+     * Three cases: track in the run, which a click turns; a blank square, which it does not; and that track again once the
+     * Test tool is armed, when a click tests a path instead.  The last with the pointer held still - the panel's refresh
+     * reaches the diagram, so the hand goes when the button is pressed rather than at the next move.
+     *
+     * MUTATION: leave the hand or the line off, or stop the refresh asking again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(timeOut = 300000)
+    public void testAClickableSquareShowsAHandAndSaysSo() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the editor is a window");
+        }
+
+        Editor open = open(true);
+
+        try
+        {
+            org.traincontrol.gui.LayoutLabel track = hover(open.editor, 3, 2);
+
+            assertNotNull(track, "the fixture has no square at 3,2");
+
+            assertEquals(cursorOf(track), java.awt.Cursor.HAND_CURSOR, "the pointer over track a click turns is not a"
+                + " hand, so nothing says the square can be clicked (FR-112)");
+
+            String says = org.traincontrol.util.I18n.t("autosetup.ui.tooltipClickToChangeDirections");
+
+            assertTrue(String.valueOf(track.getToolTipText()).contains(says), "track a click turns does not say so: "
+                + track.getToolTipText());
+
+            org.traincontrol.gui.LayoutLabel blank = hover(open.editor, 3, 5);
+
+            assertNotNull(blank, "the fixture has no square at 3,5");
+
+            assertNotEquals(cursorOf(blank), java.awt.Cursor.HAND_CURSOR, "a blank square shows a hand, and a click there"
+                + " does nothing");
+
+            assertFalse(String.valueOf(blank.getToolTipText()).contains(says), "a blank square says a click changes its"
+                + " directions: " + blank.getToolTipText());
+
+            // THE TEST TOOL ARMED, with the pointer back on the track and held still
+            final org.traincontrol.gui.LayoutLabel again = hover(open.editor, 3, 2);
+
+            final javax.swing.JToggleButton test = (javax.swing.JToggleButton) panelField(open.editor, "testButton");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> test.doClick());
+
+            for (int i = 0; i < 4; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(open.editor.getAutonomyPanel().getTool(), org.traincontrol.gui.AutonomyEditorPanel.Tool.TEST,
+                "precondition: pressing Test did not arm it");
+
+            assertNotEquals(cursorOf(again), java.awt.Cursor.HAND_CURSOR, "with Test armed a click tests a path, and the"
+                + " track still shows the hand for changing its directions");
+
+            assertFalse(String.valueOf(again.getToolTipText()).contains(says), "with Test armed the track still says a"
+                + " click changes its directions: " + again.getToolTipText());
+        }
+        finally
+        {
+            open.close();
+        }
+    }
+
+    /** The type of the pointer a square shows, read on the event thread. */
+    private static int cursorOf(final org.traincontrol.gui.LayoutLabel label) throws Exception
+    {
+        final int[] type = new int[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> type[0] = label.getCursor().getType());
+
+        return type[0];
+    }
+
+    /** A private field of the editor's autonomy panel, by name. */
+    private static Object panelField(org.traincontrol.gui.LayoutEditor of, String name) throws Exception
+    {
+        java.lang.reflect.Field f = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return f.get(of.getAutonomyPanel());
+    }
 }

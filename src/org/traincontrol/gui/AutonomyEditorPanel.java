@@ -2435,13 +2435,15 @@ public class AutonomyEditorPanel extends JPanel
 
         clearLocs.setEnabled(placed > 0);
 
-        // THE SAME SENTENCE THE DIALOG WILL SHOW, from the same builder (OB-194).
+        // THE DIALOG'S SENTENCE IN SHORT, chosen as it is (OB-194; FR-112).
         //
-        // A tooltip that says less than the confirmation is a tooltip that has to be kept in step with
-        // it by somebody remembering, and this pair had already drifted once - the tooltip named no
-        // count while the menu label did.
+        // It was the whole sentence the dialog shows, every locomotive named, because a shorter one had
+        // drifted once - naming no count while the menu label did.  Adam, 2026-10-05, on the menus'
+        // tooltips: *"make them be more concise so they don't cover up other things"*.  So the count and
+        // what Cancel does, through the builder that picks the dialog's sentence; the names are the
+        // dialog's, which shows them before anything is cleared.
         clearLocs.setToolTipText(wrapped(placed > 0
-            ? clearLocomotivesWarning()
+            ? clearLocomotivesTip()
             : I18n.t("autosetup.ui.infoNoLocomotivesToClear")));
 
         bulk.add(clearLocs);
@@ -2451,7 +2453,7 @@ public class AutonomyEditorPanel extends JPanel
 
         clearHomesItem.setEnabled(homed > 0);
         clearHomesItem.setToolTipText(wrapped(homed > 0
-            ? I18n.t("autolayout.ui.confirmClearAllHomeLocomotives")
+            ? I18n.t("autosetup.ui.tipClearAllHomeLocomotives")
             : I18n.t("autosetup.ui.infoNoHomesToClear")));
 
         bulk.add(clearHomesItem);
@@ -2460,9 +2462,8 @@ public class AutonomyEditorPanel extends JPanel
         // lengths' - this should clear the segment lengths across all pages, after the user confirms
         // in a popup."*
         //
-        // Built like the two above it, down to the tooltip being the same sentence the dialog shows:
-        // a tooltip that says less than the confirmation has to be kept in step with it by somebody
-        // remembering, and that pair had already drifted once.
+        // Built like the two above it, down to the tooltip being the dialog's sentence in short (FR-112),
+        // through the builder that picks the dialog's: that pair had already drifted once.
         int measured = session == null ? 0 : session.tilesWithALength().size();
 
         javax.swing.JMenuItem clearLengths = item(
@@ -2470,16 +2471,16 @@ public class AutonomyEditorPanel extends JPanel
             () -> clearAllTileLengths());
 
         clearLengths.setEnabled(measured > 0);
-        // THE SENTENCE THE DIALOG WILL SHOW, whichever of the two that is (AUS-C2).
+        // THE DIALOG'S SENTENCE IN SHORT, whichever of the two that is (AUS-C2; FR-112).
         clearLengths.setToolTipText(wrapped(measured > 0
-            ? bulkClearWarning("autolayout.ui.confirmClearAllTrackLengths", measured)
+            ? bulkClearWarning("autosetup.ui.tipClearAllTrackLengths", measured)
             : I18n.t("autosetup.ui.infoNoTrackLengthsToClear")));
 
         bulk.add(clearLengths);
 
         // CLEAR ALL MAX TRAIN LENGTHS (Adam, 2026-09-17: *"Add a right click menu open to clear all max station train
         // lengths (grouped with the other clear options)"*).  Built like the three clears above it, down to the tooltip
-        // being the sentence the dialog shows.
+        // being the dialog's sentence in short.
         int limited = session == null ? 0 : session.tilesWithAMaxTrainLength().size();
 
         javax.swing.JMenuItem clearMaxima = item(
@@ -2487,20 +2488,20 @@ public class AutonomyEditorPanel extends JPanel
 
         clearMaxima.setEnabled(limited > 0);
         clearMaxima.setToolTipText(wrapped(limited > 0
-            ? bulkClearWarning("autolayout.ui.confirmClearAllMaxTrainLengths", limited)
+            ? bulkClearWarning("autosetup.ui.tipClearAllMaxTrainLengths", limited)
             : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
 
         bulk.add(clearMaxima);
 
         // ALLOW EVERY PATH (FR-108; Adam, 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove any red arrows in one
-        // go. With warning."*).  Built like the clears above it, down to the tooltip being the sentence the dialog shows.
+        // go. With warning."*).  Built like the clears above it, down to the tooltip being the dialog's sentence in short.
         int oneWay = session == null ? 0 : session.routesNotOpenBothWays().size();
 
         javax.swing.JMenuItem allowAll = item(I18n.f("autolayout.ui.menuAllowEveryPath", oneWay), () -> allowEveryPath());
 
         allowAll.setEnabled(oneWay > 0);
         allowAll.setToolTipText(wrapped(oneWay > 0
-            ? bulkClearWarning("autolayout.ui.confirmAllowEveryPath", oneWay)
+            ? bulkClearWarning("autosetup.ui.tipAllowEveryPath", oneWay)
             : I18n.t("autosetup.ui.infoNothingOneWay")));
 
         bulk.add(allowAll);
@@ -2508,8 +2509,8 @@ public class AutonomyEditorPanel extends JPanel
         // HOME EVERY TRAIN WHERE IT STANDS (FR-075).  Adam: *"to bulk tools in the autonomy editor,
         // add an option to mass mark current train locations as their homes."*
         //
-        // Beside the three clears and built like them, down to the tooltip being the sentence the
-        // dialog shows.  It is the only one of the four that ADDS rather than removes, which is why
+        // Beside the three clears and built like them, down to the tooltip being the dialog's sentence
+        // in short.  It is the only one of the four that ADDS rather than removes, which is why
         // its confirmation says what it will overwrite rather than what it will lose: homing a train
         // here takes its home away from wherever else it had one, and a square already homed to a
         // different train is reassigned.
@@ -2526,7 +2527,7 @@ public class AutonomyEditorPanel extends JPanel
 
         homeHere.setEnabled(standing > 0);
         homeHere.setToolTipText(wrapped(standing > 0
-            ? I18n.f("autolayout.ui.confirmHomeEveryTrainWhereItStands", standing)
+            ? I18n.f("autosetup.ui.tipHomeEveryTrainWhereItStands", standing)
             : I18n.t("autosetup.ui.infoNoLocomotivesToHome")));
 
         bulk.add(homeHere);
@@ -2798,6 +2799,50 @@ public class AutonomyEditorPanel extends JPanel
         if (fitsOnOneLine(text)) return "<html>" + escaped + "</html>";
 
         return "<html><body style='width: " + TOOLTIP_WIDTH + "px'>" + escaped + "</body></html>";
+    }
+
+    /**
+     * A tooltip wrapped where it is too wide for one line, and left exactly as it was where it is not - a shortcut such as
+     * "Control+A" stays plain text (FR-112).
+     *
+     * @param text the tooltip, or null
+     * @return the tooltip, wrapped if it needs to be
+     */
+    public static String wrappedIfLong(String text)
+    {
+        if (text == null || text.trim().toLowerCase().startsWith("<html") || fitsOnOneLine(text)) return text;
+
+        return wrapped(text);
+    }
+
+    /**
+     * Every tooltip on a menu, its items and its submenus, wrapped where it is too wide for one line (FR-112; Adam,
+     * 2026-10-05: *"look for other tooltips ... in the main JMenu right click menus, that are currently overly wide or long,
+     * and make them be more concise so they don't cover up other things"*).
+     *
+     * For the menus whose tooltips are set where nobody wraps them: the main window's menu bar, set in the generated
+     * block, and the right-click menus, as they are shown.
+     *
+     * @param menu a menu bar, a menu or a popup menu
+     */
+    public static void wrapTheTooltips(java.awt.Container menu)
+    {
+        java.awt.Component[] items = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component item : items)
+        {
+            if (item instanceof javax.swing.JComponent)
+            {
+                javax.swing.JComponent each = (javax.swing.JComponent) item;
+
+                String tip = each.getToolTipText();
+
+                if (tip != null) each.setToolTipText(wrappedIfLong(tip));
+            }
+
+            if (item instanceof javax.swing.JMenu) wrapTheTooltips((javax.swing.JMenu) item);
+        }
     }
 
     /** The width a tooltip wraps at, in pixels. */
@@ -7671,6 +7716,53 @@ public class AutonomyEditorPanel extends JPanel
         say(hint, I18n.t("autosetup.ui.infoDirectionsShownAgain"));
     }
 
+    /**
+     * Whether an ordinary left click on this square changes which way trains may run through it - what the diagram's pointer
+     * and tooltip offer (FR-112; Adam, 2026-10-05: *"it is not clear to the user that tiles with arrows can be clicked"*).
+     *
+     * The questions `tileClicked` and `cycle` ask before a click changes anything, in their order: nothing armed - a tool
+     * or a gesture takes the click for itself - a square autonomy takes notice of, not a link, and track whose next state
+     * lands on something: a piece joined to nothing cannot be made one way, so its click says there is no path.  `regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree` clicks every kind of square and
+     * holds the two to one answer.
+     *
+     * @param tile a square, or null
+     * @return true where a click there changes a direction
+     */
+    public boolean clickChangesDirections(TileKey tile)
+    {
+        if (tile == null || session.getGraph() == null || anythingIsArmed() || isIgnored(tile)) return false;
+
+        TileKey target = leaderOf(tile);
+
+        if (isALink(target)) return false;
+
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
+
+        if (routes.isEmpty()) return false;
+
+        // A switch, a crossing or a double curve steps through its arms, which a click always does
+        if (routes.size() > 1) return true;
+
+        // One track: the click's next state, which goes on whole unless it is one way - and one way lands only on a run
+        // with track between its ends (`cycle`, which says there is no path where it does not)
+        Direction next = after(session.getGraph().getDirection(target, routes.keySet().iterator().next()));
+
+        return next == Direction.BOTH || next == Direction.NONE || session.canRunOneWay(target);
+    }
+
+    /**
+     * Whether a square is a link, which has no direction of its own - the track either side of it governs.
+     *
+     * @param target the square that would be set
+     * @return true for a link
+     */
+    private boolean isALink(TileKey target)
+    {
+        LayoutDiagramComponent here = session.getGraph() == null ? null : session.getGraph().getTiles().get(target);
+
+        return here != null && org.traincontrol.automationui.TilePorts.hasPortal(here.getType());
+    }
+
     private void cycle(TileKey tile)
     {
         TileKey target = leaderOf(tile);
@@ -7679,10 +7771,7 @@ public class AutonomyEditorPanel extends JPanel
         // has nothing to change.  Its route is a stub, the same side twice, and cycling that produced
         // states that meant nothing and drew as nothing.  The menu already declines to offer them; the
         // click has to decline too, or the two disagree about the same square.
-        LayoutDiagramComponent here =
-            session.getGraph() == null ? null : session.getGraph().getTiles().get(target);
-
-        if (here != null && org.traincontrol.automationui.TilePorts.hasPortal(here.getType()))
+        if (isALink(target))
         {
             say(hint, I18n.t("autosetup.ui.infoLinkHasNoDirection"));
             return;
@@ -11088,6 +11177,9 @@ public class AutonomyEditorPanel extends JPanel
      * The choice itself is the one both sentences turn on: a panel serving the track diagram has no page and
      * saves as it goes, so the clear is immediate and says so; inside the editor it is undone by Cancel.
      *
+     * **And the tooltip's short form through it too (FR-112):** a `tip` key with its own "AtOnce" sibling, so the menu
+     * item says in brief what the dialog will say in full, and cannot promise a Cancel the dialog does not.
+     *
      * @param key the message key for the editor's sentence, whose "AtOnce" sibling is the other one
      * @param count how many squares the clear will touch
      * @return the sentence, already translated
@@ -11117,8 +11209,8 @@ public class AutonomyEditorPanel extends JPanel
      * count is not something anybody can check.  The same reason `placementChanged` is given the list
      * it lifted rather than being left to work it out afterwards.
      *
-     * One builder, used by the confirmation AND by the menu item's tooltip, so the warning cannot be
-     * shown in one place and not the other.
+     * One builder, used by the confirmation, so the warning cannot be shown in one place and not the
+     * other; the menu item's tooltip is its short form, `clearLocomotivesTip`, chosen the same way (FR-112).
      *
      * **On the track diagram's own menu there is no Cancel (WKV-B1).**  That menu is this panel served with no
      * page, its changes are saved as they are made, and it is not offered at all while an editor is open
@@ -11166,6 +11258,23 @@ public class AutonomyEditorPanel extends JPanel
 
         return I18n.f("autolayout.ui.confirmClearLocomotives",
             locomotives.size(), names.toString());
+    }
+
+    /**
+     * The menu item's tooltip: `clearLocomotivesWarning` in short - how many, and what Cancel does, chosen as that sentence
+     * is (FR-112; Adam, 2026-10-05: *"make them be more concise so they don't cover up other things"*).  The names are the
+     * dialog's, which shows them before anything is cleared.
+     *
+     * Counted as the warning counts: locomotives, not the squares they stand on (VD17-C7).
+     *
+     * @return the tooltip, already translated
+     */
+    public String clearLocomotivesTip()
+    {
+        if (session == null) return I18n.t("autosetup.ui.infoNoLocomotivesToClear");
+
+        return bulkClearWarning("autosetup.ui.tipClearLocomotives",
+            new java.util.TreeSet<>(session.placementsAutonomyWillWrite().values()).size());
     }
 
     /**

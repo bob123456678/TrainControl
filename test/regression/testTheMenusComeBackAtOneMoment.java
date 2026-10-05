@@ -377,4 +377,145 @@ public class testTheMenusComeBackAtOneMoment
             }
         });
     }
+
+    /**
+     * Every tooltip on the menu bar is short, and one too wide for a line is wrapped (FR-112).
+     *
+     * Adam, 2026-10-05: *"look for other tooltips ... in the main JMenu right click menus, that are currently overly wide or
+     * long, and make them be more concise so they don't cover up other things."*  The bar's own tooltips are set in the
+     * generated block, which nobody edits by hand, and none of them was wrapped: Path Integrity Validation's ran to two
+     * hundred characters on one line.
+     *
+     * After the connect, so the Autonomy menu - mounted then - is walked with the rest.  A hundred characters in English and
+     * a hundred and thirty in the others.
+     *
+     * MUTATION: take the walk out of the constructor, or put a long sentence back on any item, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheMenuBarsTooltipsAreShortAndWrapped() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("a menu bar is on a window");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        org.traincontrol.gui.TrainControlUI ui = null;
+
+        try
+        {
+            // BEFORE the model (OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            model.stop();
+
+            final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.TrainControlUI());
+
+            ui = made[0];
+
+            final org.traincontrol.marklin.MarklinControlStation connected = model;
+            final org.traincontrol.gui.TrainControlUI window = ui;
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    window.setViewListener(connected, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            final java.util.Set<String> tips = new java.util.LinkedHashSet<>();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                for (int i = 0; i < window.getJMenuBar().getMenuCount(); i++) tipsIn(window.getJMenuBar().getMenu(i), tips);
+            });
+
+            assertTrue(tips.size() > 10, "precondition: the menu bar carries only " + tips.size() + " tooltips, so the walk"
+                + " did not reach its items");
+
+            int limit = "en".equals(org.traincontrol.util.I18n.getLocale().getLanguage()) ? 100 : 130;
+
+            java.util.List<String> wrong = new java.util.ArrayList<>();
+
+            for (String tip : tips)
+            {
+                String said = tip.replaceAll("<[^>]*>", " ").replace("&lt;", "<").replace("&gt;", ">")
+                    .replace("&amp;", "&").replaceAll("\\s+", " ").trim();
+
+                if (said.length() > limit) wrong.add("(" + said.length() + "): " + said);
+                else if (!tip.contains("width") && !fitsOnALine(said)) wrong.add("(unwrapped): " + said);
+            }
+
+            assertTrue(wrong.isEmpty(), wrong.size() + " tooltips on the menu bar are too long or too wide (FR-112): "
+                + wrong);
+        }
+        finally
+        {
+            if (ui != null)
+            {
+                final org.traincontrol.gui.TrainControlUI open = ui;
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> open.dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** Every tooltip on a menu, its items and its submenus. */
+    private static void tipsIn(java.awt.Container menu, java.util.Set<String> into)
+    {
+        if (menu == null) return;
+
+        if (menu instanceof javax.swing.JComponent && ((javax.swing.JComponent) menu).getToolTipText() != null)
+        {
+            into.add(((javax.swing.JComponent) menu).getToolTipText());
+        }
+
+        java.awt.Component[] items = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component item : items)
+        {
+            if (item instanceof javax.swing.JMenu) tipsIn((javax.swing.JMenu) item, into);
+            else if (item instanceof javax.swing.JComponent && ((javax.swing.JComponent) item).getToolTipText() != null)
+            {
+                into.add(((javax.swing.JComponent) item).getToolTipText());
+            }
+        }
+    }
+
+    /** Whether text fits on one tooltip line at the width the editor wraps at. */
+    private static boolean fitsOnALine(String text)
+    {
+        java.awt.Font font = javax.swing.UIManager.getFont("ToolTip.font");
+
+        if (font == null) font = new java.awt.Font(java.awt.Font.DIALOG, java.awt.Font.PLAIN, 12);
+
+        java.awt.Graphics2D scratch =
+            new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics();
+
+        try
+        {
+            return scratch.getFontMetrics(font).stringWidth(text) <= 320;
+        }
+        finally
+        {
+            scratch.dispose();
+        }
+    }
 }

@@ -780,7 +780,7 @@ public class testMassAssignLengths
 
     /**
      * The menu item sits with the other clears, carries the count, greys when there is nothing to clear, and its
-     * tooltip is the sentence the confirmation shows.
+     * tooltip is the short form of the sentence the confirmation shows (FR-112).
      *
      * @throws Exception from the event thread
      */
@@ -800,8 +800,8 @@ public class testMassAssignLengths
         assertTrue(item.isEnabled(), "the item is greyed with two maxima to clear");
         assertEquals(item.getText(), org.traincontrol.util.I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", 2));
         assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
-            org.traincontrol.util.I18n.f("autolayout.ui.confirmClearAllMaxTrainLengths", 2),
-            "the tooltip is not the sentence the confirmation shows");
+            org.traincontrol.util.I18n.f("autosetup.ui.tipClearAllMaxTrainLengths", 2),
+            "the tooltip is not the short form of the sentence the confirmation shows");
 
         session.clearEveryMaxTrainLength();
 

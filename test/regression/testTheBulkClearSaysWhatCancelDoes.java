@@ -41,7 +41,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * **Asserted by asking the editor, not by reading its source.**  The panel is stood up over the frozen
  * railway with trains standing on it, and the warning is the string the confirmation will show and the
- * tooltip already shows - one builder, so the two cannot say different things.
+ * tooltip shows in short - one builder choosing both, so the two cannot say different things.
  *
  * **Two claims that are not about English.**  The warning must name every locomotive it is about to
  * lift - a count is not something anybody can check - and it must name Cancel, which since OB-223 is the
@@ -213,7 +213,9 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The tooltip on the menu item says the same thing, from the same builder.
+     * The tooltip on the menu item says the same thing in short - the count and what Cancel does - through the builder that
+     * picks the confirmation's sentence (FR-112: it was the whole sentence, every locomotive named, and Adam asked for the
+     * menus' tooltips to be concise).
      *
      * A warning that appears only after the item has been clicked is a warning half the time.  Asked
      * of the built menu rather than of the source, so a tooltip set from a different string would be

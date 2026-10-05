@@ -1015,6 +1015,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // what anybody actually wants from a log.
         this.debugArea.setEditable(false);
 
+        // THE MENU BAR'S TOOLTIPS, WRAPPED WHERE A LINE WILL NOT HOLD THEM (FR-112).  Set in the generated block, which is
+        // not ours to edit, and Swing draws a tooltip on one line however long it is - so a long one ran across the
+        // window.  Before the hand-built items join the bar; they wrap their own.
+        AutonomyEditorPanel.wrapTheTooltips(this.mainMenuBar);
+
         // Set internationalized options
 
         // THE UTILITIES MENU HEADING, set here rather than in the form.
@@ -13702,7 +13707,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             I18n.t("autolayout.ui.menuShowInactiveLabels"),
             prefs.getBoolean(SHOW_INACTIVE_LABELS_PREF, SHOW_INACTIVE_LABELS_DEFAULT));
 
-        show.setToolTipText(I18n.t("autolayout.ui.tooltip.menuShowInactiveLabels"));
+        show.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("autolayout.ui.tooltip.menuShowInactiveLabels")));
 
         show.addActionListener(event ->
         {
@@ -13720,7 +13725,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
 
         this.greyStationLabelsMenuItem.setToolTipText(
-            I18n.t("ui.main.toolbar.tooltip.greyStationLabels"));
+            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.greyStationLabels")));
 
         // The drawing's own answer, so the menu and the labels cannot disagree about the default
         this.greyStationLabelsMenuItem.setSelected(stationLabelsAreGrey());
@@ -13740,7 +13745,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.restrictionArrows"));
 
         this.restrictionArrowsMenuItem.setToolTipText(
-            I18n.t("ui.main.toolbar.tooltip.restrictionArrows"));
+            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.restrictionArrows")));
 
         this.restrictionArrowsMenuItem.setSelected(
             prefs.getBoolean(DIAGRAM_RESTRICTION_ARROWS, true));
@@ -13768,7 +13773,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.allowedDirectionsMenuItem =
             new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.allowedDirections"));
 
-        this.allowedDirectionsMenuItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.allowedDirections"));
+        this.allowedDirectionsMenuItem.setToolTipText(
+            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.allowedDirections")));
 
         this.allowedDirectionsMenuItem.setSelected(diagramShowsAllowedDirections());
 
@@ -13804,7 +13810,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.JMenuItem active =
             new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportActiveDiagram"));
 
-        active.setToolTipText(I18n.t("layout.ui.tooltipExportActiveDiagram"));
+        active.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("layout.ui.tooltipExportActiveDiagram")));
 
         active.addActionListener(event -> exportDiagram(activeLayoutPage()));
 
