@@ -27,11 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-687](#mt-687) | 2026-10-05 | The track diagram's arrows wait for the trains as the spinner does | fixed unvalidated | Adam 2026-10-05 (MT-686) |
-| [MT-688](#mt-688) | 2026-10-05 | A crossing of two permanent turnouts draws no arrows in its middle | fixed unvalidated | Adam 2026-10-05 (OB-322) |
+| [MT-689](#mt-689) | 2026-10-05 | A crossing's click offers one track one way with the other open | fixed unvalidated | Adam 2026-10-05 (MT-688) |
 
-Everything else - 686 of 688 - needs nothing from you unless the area changes again:
-543 **fixed validated** and 143 **superseded**.
+Everything else - 688 of 689 - needs nothing from you unless the area changes again:
+545 **fixed validated** and 143 **superseded**.
 
 ---
 
@@ -32723,7 +32722,7 @@ Superseded by MT-687: your note is built - the arrows are asked beside the spinn
 
 ### MT-687 - 2026-10-05 - The track diagram's arrows wait for the trains as the spinner does
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (MT-686)
 
 **Written:** 2026-10-05
@@ -32746,13 +32745,23 @@ same gate as the spinner."*
 *What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testTheArrowsAreHiddenWhileAutonomyRuns` - it checks at
 each step that the arrows are hidden exactly while the spinner turns.
 
+**Adam, 2026-10-05 (triage).** Works, with notes.
+
+Works.  Make "display travel restrictions" default to on, and "display allowed directions" default to off.
+
+*Run against commit db5fc578, in English - build\classes, compiled 05 Oct 00:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.  On your note: Display Travel Restrictions already defaults to on and Display Allowed Directions to off - for anyone who has not chosen.  The two remember the last choice, and this entry's first step had you tick both, so your copy opens with both ticked until you untick Display Allowed Directions.
+
 ---
 
 <a id="mt-688"></a>
 
 ### MT-688 - 2026-10-05 - A crossing of two permanent turnouts draws no arrows in its middle
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (OB-322)
 
 **Written:** 2026-10-05
@@ -32773,5 +32782,43 @@ Your report OB-322: *"the crossings consisting of 2 fixed Y's or 2 sets of stati
 - Step 3: a permanent Y on its own still has the arrow at its toe.
 
 *What this is:* `core.testTwoYsMakeACrossing.testACrossingDrawsNoArrowsWhereItsSquaresMeet`.
+
+**Adam, 2026-10-05 (triage).** Works, with notes.
+
+Works, but when cycling, there is no option for red in one direction and green in the other 3.
+
+*Run against commit db5fc578, in English - build\classes, compiled 05 Oct 00:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*; your note on the click is built, and MT-689 tests it.
+
+---
+
+<a id="mt-689"></a>
+
+### MT-689 - 2026-10-05 - A crossing's click offers one track one way with the other open
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (MT-688)
+
+**Written:** 2026-10-05
+
+Your note on MT-688: *"when cycling, there is no option for red in one direction and green in the other 3."*
+
+**Steps**
+
+1. Open TC3Sandbox_layout's autonomy editor on the page with the Ys at 12,9 and 12,10, on **Show All**.
+2. Click either of the two squares ten times, reading the hint and the arrows after each click.
+
+**Expected**
+
+- Click 1 to 4: one track one way - a red arrow at one of its ends - and the other track both ways, green at both of
+  its ends; each of the four is a different track or way round.
+- Click 5 to 8: both tracks one way, the four combinations as before.
+- Click 9: both closed.  Click 10: both ways again.
+- A click on the other square carries on from the same place.
+
+*What this is:* `core.testTwoYsMakeACrossing.testAClickStepsThroughEveryWayTheTwoTracksCanRun`.
 
 ---

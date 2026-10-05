@@ -89,15 +89,30 @@
       "arrivedFrom": "W"
     },
     "1 - Main:20,13": {
-      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 4,
+      "facing": "E",
+      "canReverse": true
+    },
+    "1 - Main:21,6": {
+      "maxTrainLength": 4,
+      "autoDestination": false,
+      "canReverse": true
+    },
+    "3 - Top Parking:4,9": {},
+    "1 - Main:7,7": {
+      "loc": {"name": "ET22-245"},
+      "maxTrainLength": 5,
       "arrivedAlong": [
         [
-          "BottomInnerOtherside",
-          "1 - Main 19,7 (southbound)"
+          "TopMainR2",
+          "TopMainPost (eastbound)"
         ],
         [
-          "1 - Main 19,7 (southbound)",
+          "TopMainPost (eastbound)",
+          "RampDown (southbound)"
+        ],
+        [
+          "RampDown (southbound)",
           "1 - Main 17,10 (westbound)"
         ],
         [
@@ -111,29 +126,10 @@
         [
           "1 - Main 12,7",
           "Tunnel (southbound)"
-        ],
-        [
-          "Tunnel (southbound)",
-          "BottomMainBCPre (eastbound)"
-        ],
-        [
-          "BottomMainBCPre (eastbound)",
-          "BottomMainB (eastbound)"
         ]
       ],
-      "facing": "E",
-      "arrivedFrom": "W",
-      "canReverse": true
-    },
-    "1 - Main:21,6": {
-      "maxTrainLength": 4,
-      "autoDestination": false,
-      "canReverse": true
-    },
-    "3 - Top Parking:4,9": {},
-    "1 - Main:7,7": {
-      "maxTrainLength": 5,
       "facing": "S",
+      "arrivedFrom": "N",
       "priority": -2
     },
     "1 - Main:5,9": {},
@@ -176,21 +172,9 @@
       "autoDestination": false
     },
     "1 - Main:6,4": {
-      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "TopMainR2Inter (southbound)",
-          "TopMainR2Pre (northbound)"
-        ],
-        [
-          "TopMainR2Pre (northbound)",
-          "TopMainR2"
-        ]
-      ],
       "homeFacing": "N",
       "facing": "N",
-      "arrivedFrom": "S",
       "priority": 1,
       "home": "2-8-4 3505 SP"
     },
@@ -339,8 +323,41 @@
     "1 - Main:1,3": {},
     "1 - Main:10,13": {},
     "1 - Main:5,4": {
+      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 3,
+      "arrivedAlong": [
+        [
+          "BottomMainB (eastbound)",
+          "BottomMainPost (northbound)"
+        ],
+        [
+          "BottomMainPost (northbound)",
+          "1 - Main 7,1 (westbound)"
+        ],
+        [
+          "1 - Main 7,1 (westbound)",
+          "RampUp"
+        ],
+        [
+          "RampUp",
+          "1 - Main 1,3 (southbound)"
+        ],
+        [
+          "1 - Main 1,3 (southbound)",
+          "TopMainR1Inter (southbound)"
+        ],
+        [
+          "TopMainR1Inter (southbound)",
+          "TopMainR1Pre (northbound)"
+        ],
+        [
+          "TopMainR1Pre (northbound)",
+          "TopMainR1"
+        ]
+      ],
       "homeFacing": "N",
+      "facing": "N",
+      "arrivedFrom": "S",
       "priority": 2,
       "home": "BR 628 2"
     },

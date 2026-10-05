@@ -1624,7 +1624,7 @@ not, never both.
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
 | 2026-09-14 | FR-085 | feature request | Ask for the farthest sensor a placed train's tail crossed, and keep the road it names: built in two phases - the road kept (WK7-B1, `63ac68f4`) and the question asked, from a list, in the menu or by clicking (`53a82f7c`). **Claude, 2026-10-04.**  It never had a receipt, so it sat in the Inbox as if never picked up.  Closed on Adam's word (*"Close the two"*): its tests ran MT-435, MT-438, then MT-515, which passed. | fixed validated | - |
-| 2026-10-05 | OB-322 | bug | A two-square crossing draws no arrows where its squares meet, on the track diagram and in the autonomy editor; a permanent Y on its own keeps its toe's arrow. | - | `MT-688` |
+| 2026-10-05 | OB-322 | bug | A two-square crossing draws no arrows where its squares meet, on the track diagram and in the autonomy editor; a permanent Y on its own keeps its toe's arrow. | - | `MT-688`, `MT-689` |
 | 2026-10-04 | FR-110 | feature request | Display Allowed Directions draws the green arrows on the track diagram too, with no wash. | - | `MT-675`, `MT-681`, `MT-683`, `MT-686`, `MT-687` |
 | 2026-10-04 | OB-321 | bug | The track diagram draws a one-way run's arrow once, at its first square; a square that differs keeps its own. | - | `MT-674` |
 | 2026-10-04 | OB-320 | bug | Two permanent Ys toe to toe are one crossing: corner to corner both ways, one direction per track, the click steps through both ways, the four one-way combinations and closed.  Two permanent lefts or rights toe to toe, legs facing, too. | - | `MT-676`, `MT-677`, `MT-682` |
