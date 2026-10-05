@@ -1718,8 +1718,6 @@ public class AutonomyViewerPanel extends JPanel
     {
         String name = selected();
 
-        if (name == null) return;
-
         // Refused while trains are moving, exactly as deleting the whole setup already is.  Confirming
         // this mid-run went through to clearAutoLayout and stopped every locomotive - which is a
         // reasonable thing to ask for and not a reasonable thing to have happen as a side effect of
@@ -1729,6 +1727,29 @@ public class AutonomyViewerPanel extends JPanel
             JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
             return;
         }
+
+        // WHICH ONE, where there is a choice (OB-319; Adam, 2026-10-04: *"If there is a setup cant be used, it cant be
+        // selected from the list of configs, which prevents subsequent deletion."*).  Delete acted on the configuration
+        // in use, and one whose setup cannot be used is refused at its load and never becomes that - so it could not be
+        // deleted on its own.  The one in use is offered first.
+        java.util.List<String> names = new java.util.ArrayList<>(session().getStore().getConfigurationNames());
+
+        if (names.size() > 1)
+        {
+            Object chosen = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptWhichConfigurationToDelete"),
+                I18n.t("autosetup.ui.menuDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
+                names.contains(name) ? name : names.get(0));
+
+            if (chosen == null) return;
+
+            name = chosen.toString();
+        }
+        else if (names.size() == 1)
+        {
+            name = names.get(0);
+        }
+
+        if (name == null) return;
 
         // Named in the question, because the list and the running configuration can differ and deleting
         // is not undoable.

@@ -2468,6 +2468,19 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.add(clearMaxima);
 
+        // ALLOW EVERY PATH (FR-108; Adam, 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove any red arrows in one
+        // go. With warning."*).  Built like the clears above it, down to the tooltip being the sentence the dialog shows.
+        int oneWay = session == null ? 0 : session.routesNotOpenBothWays().size();
+
+        javax.swing.JMenuItem allowAll = item(I18n.f("autolayout.ui.menuAllowEveryPath", oneWay), () -> allowEveryPath());
+
+        allowAll.setEnabled(oneWay > 0);
+        allowAll.setToolTipText(wrapped(oneWay > 0
+            ? bulkClearWarning("autolayout.ui.confirmAllowEveryPath", oneWay)
+            : I18n.t("autosetup.ui.infoNothingOneWay")));
+
+        bulk.add(allowAll);
+
         // HOME EVERY TRAIN WHERE IT STANDS (FR-075).  Adam: *"to bulk tools in the autonomy editor,
         // add an option to mass mark current train locations as their homes."*
         //
@@ -10677,6 +10690,41 @@ public class AutonomyEditorPanel extends JPanel
             // digitsOnly admits three digits and nothing else, so this is unreachable; a whole piece is at most 999.
             return -1;
         }
+    }
+
+    /**
+     * Opens every one-way and closed piece of track both ways, after a warning (FR-108).  The warning, the Cancel it
+     * offers and the message after are the clears' beside it, for the same reasons: in the editor Cancel puts the
+     * directions back; on the track diagram's own menu it is saved at once.
+     */
+    private void allowEveryPath()
+    {
+        int shut = session.routesNotOpenBothWays().size();
+
+        if (shut == 0)
+        {
+            say(hint, I18n.t("autosetup.ui.infoNothingOneWay"));
+
+            return;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            bulkClearWarning("autolayout.ui.confirmAllowEveryPath", shut),
+            I18n.f("autolayout.ui.menuAllowEveryPath", shut),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        int opened = session.allowEveryPath();
+
+        selection.clear();
+
+        say(hint, I18n.f("autosetup.ui.infoEveryPathAllowed", opened));
+
+        // Directions are what the running railway is built from, so the door a direction's own change takes
+        setupChanged();
     }
 
     /**

@@ -1991,12 +1991,14 @@ public class testEditorSurfaceRules
      *
      * Each square's annotation read the option - a read of the Windows settings - for itself, and a pass describes every
      * square of the railway; a click in the autonomy editor makes several passes.  Measured at a fifth of the click, on a
-     * fast processor and a slow one alike.  The pass reads it before its loop and hands it to each square.
+     * fast processor and a slow one alike.  The pass reads it, and the green arrows' option (FR-110), before it asks the
+     * session for the marks, and hands both over.
      *
      * Pinned as source, as the grid setting is (`testARedrawAsksTheGridSettingOnce`): the preferences are a static final
      * the JIT may fold, so the reads cannot be counted from a test.
      *
-     * MUTATION: let the pass ask each square without the option, or the square ask it again, and this fails.
+     * MUTATION: let the pass ask for the marks without either option, or the session or a square ask one again, and this
+     * fails.
      *
      * @throws Exception on a failure to read the source
      */
@@ -2010,21 +2012,33 @@ public class testEditorSurfaceRules
 
         assertNotEquals(pass, "", "showStaticAutonomyLayer has gone, so this checked nothing");
 
-        int loop = pass.indexOf("for (org.traincontrol.automationui.TileGraph.TileKey tile : marked)");
+        int loop = pass.indexOf("session.staticAnnotations(marked, ");
 
-        assertTrue(loop > 0, "the marks no longer loop over the railway's squares, so this checked nothing");
+        assertTrue(loop > 0, "the marks are no longer asked of the session for the railway's squares, so this checked"
+            + " nothing");
 
-        assertTrue(pass.substring(0, loop).contains("diagramShowsRestrictionArrows()"), "the marks do not ask the arrows"
-            + " option before their loop");
+        for (String option : new String[] {"diagramShowsRestrictionArrows()", "diagramShowsAllowedDirections()"})
+        {
+            assertTrue(pass.substring(0, loop).contains(option), "the marks do not ask " + option + " before they are"
+                + " asked for");
 
-        assertFalse(pass.substring(loop).contains("diagramShowsRestrictionArrows()"), "the marks ask the arrows option for"
-            + " every square - a read of the Windows settings, several passes a click");
+            assertFalse(pass.substring(loop).contains(option), "the marks ask " + option + " for every square - a read"
+                + " of the Windows settings, several passes a click");
+        }
 
-        assertTrue(pass.substring(loop).contains("session.staticAnnotationFor(tile, arrows)"), "the marks ask each square"
-            + " without handing it the option, so each square asks it for itself");
+        assertTrue(pass.substring(loop).startsWith("session.staticAnnotations(marked, arrows, allowedToo)"), "the marks"
+            + " are asked for without the options, so they are read again for each square");
 
         String session = codeOnly(new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomySession.java")), StandardCharsets.UTF_8));
+
+        String all = bodyOf(session, "public Map<TileKey, TileAnnotation> staticAnnotations(");
+
+        assertNotEquals(all, "", "the session no longer decides the marks in one pass, so this checked nothing");
+
+        assertFalse(all.contains("diagramShowsRestrictionArrows()") || all.contains("diagramShowsAllowedDirections()")
+            || all.contains("staticAnnotationFor(tile)"), "the session's pass asks an option for itself though it was"
+            + " handed both");
 
         String square = bodyOf(session, "public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows)");
 

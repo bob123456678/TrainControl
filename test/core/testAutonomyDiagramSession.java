@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -22,6 +25,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
 
 /**
  * The whole chain, from a decision somebody made to the graph a train could run on.
@@ -1754,6 +1759,318 @@ public class testAutonomyDiagramSession
 
         assertEquals(now.getJSONObject("second124:5,1").getJSONArray("arrivedAlong").toString(), "[[\"C1 y\",\"C1 z\"]]",
             "an undo wrote another train's road onto second124 5,1 (RSA9-C1)");
+    }
+
+    /**
+     * A one-way run of plain track is drawn once on the track diagram, at its first square, as the editor draws it (OB-321;
+     * Adam, 2026-10-04: *"after import, redundant arrows can shown in the viewer, on a single straight segment with
+     * multiple straight tracks that only allows travel in one direction. The editor correctly collapses then"*).
+     *
+     * A run's direction is stored on every square of it, and the diagram drew each square's: a red arrow on every square of
+     * every one-way straight.
+     *
+     * MUTATION: draw every square's arrows again, or none of the run's, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAOneWayRunIsDrawnOnceOnTheDiagram() throws Exception
+    {
+        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-321");
+
+        TileKey leader = session.runLeaders().get(run.get(0));
+
+        assertTrue(session.setOneWayRun(new TileKey("main", 1, 1), new TileKey("main", 6, 1)) > 0,
+            "precondition: the run could not be made one-way");
+
+        session.rebuild();
+
+        java.util.Map<TileKey, TileAnnotation> drawn = session.staticAnnotations(run, true, false);
+
+        assertTrue(drawn.get(leader) != null && !drawn.get(leader).isBlank(), "the run's first square draws nothing, so a"
+            + " one-way run has no arrow on the diagram at all");
+
+        for (TileKey square : run)
+        {
+            if (square.equals(leader)) continue;
+
+            assertTrue(drawn.get(square) == null || drawn.get(square).isBlank(), square + " draws its own arrows though it"
+                + " says only what the run's first square says (OB-321)");
+        }
+    }
+
+    /**
+     * A square of a run that lets trains through otherwise than the run's first square keeps its own arrows (OB-321).  A
+     * run disagreeing with itself is the one thing a single arrow per run would hide, and the running diagram must not.
+     *
+     * MUTATION: leave out every square but the run's first, whatever it says, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testARunSquareThatSaysOtherwiseKeepsItsArrows() throws Exception
+    {
+        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-321 odd");
+
+        TileKey leader = session.runLeaders().get(run.get(0));
+
+        assertTrue(session.setOneWayRun(new TileKey("main", 1, 1), new TileKey("main", 6, 1)) > 0,
+            "precondition: the run could not be made one-way");
+
+        TileKey odd = new TileKey("main", 4, 1);
+
+        assertFalse(odd.equals(leader), "precondition: the square closed is the run's first");
+
+        session.setDirection(odd, new RouteId(0, 0), Direction.NONE);
+        session.rebuild();
+
+        java.util.Map<TileKey, TileAnnotation> drawn = session.staticAnnotations(run, true, false);
+
+        assertTrue(drawn.get(odd) != null && !drawn.get(odd).isBlank(), odd + ", closed in a run open one way, draws"
+            + " nothing, so the diagram hides that the run disagrees with itself (OB-321)");
+
+        for (TileKey square : run)
+        {
+            if (square.equals(leader) || square.equals(odd)) continue;
+
+            assertTrue(drawn.get(square) == null || drawn.get(square).isBlank(), square + " draws its own arrows though it"
+                + " says only what the run's first square says (OB-321)");
+        }
+    }
+
+    /**
+     * The green arrows are drawn on the track diagram when asked for, on what the restrictions are drawn on, and not
+     * otherwise (FR-110; Adam, 2026-10-04: *"we also need to add an option to view the green arrows in the viewer, not
+     * just the red, similar to the editor."*).
+     *
+     * MUTATION: draw the green without the option, drop it with the option, or draw it with the arrows off, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheGreenArrowsAreDrawnWhenAskedFor() throws Exception
+    {
+        List<TileKey> run = aRunOfFourBetweenTwoStations("FR-110");
+
+        TileKey leader = session.runLeaders().get(run.get(0));
+
+        TileAnnotation restrictions = session.staticAnnotationFor(leader, true);
+
+        assertNotNull(restrictions, "precondition: an open run's first square says nothing with the arrows on");
+
+        assertEquals(session.staticAnnotations(run, true, false).get(leader), restrictions, "without the option, the run's"
+            + " first square is drawn otherwise than with the restrictions alone");
+
+        assertEquals(session.staticAnnotations(run, true, true).get(leader),
+            session.staticAnnotationFor(leader, true).withAllowedDirections(), "with the option, the run's first square"
+            + " is not drawn with the green arrows (FR-110)");
+
+        assertNull(session.staticAnnotations(run, false, true).get(leader), "with the arrows off, the green ones are"
+            + " drawn anyway");
+    }
+
+    /**
+     * The green arrows are painted on an annotation that draws the restrictions, and with no wash under them, which the
+     * restrictions do not have either (FR-110).
+     *
+     * MUTATION: skip the open sides whatever the option, or wash the square with them, and this fails.
+     */
+    @Test
+    public void testTheGreenArrowsArePaintedWithoutAWash()
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        marks.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.BOTH));
+
+        int[] restrictions = greenAndCorner(new TileAnnotation(marks, -1, false, null, false, false, false, null, true,
+            null));
+
+        int[] green = greenAndCorner(new TileAnnotation(marks, -1, false, null, false, false, false, null, true, null)
+            .withAllowedDirections());
+
+        assertEquals(restrictions[0], 0, "precondition: the restrictions alone paint green on open track");
+
+        assertTrue(green[0] > 0, "asked for the green arrows, an open straight paints none (FR-110)");
+
+        assertEquals(green[1], Color.BLACK.getRGB(), "the green arrows came with a wash over the square");
+    }
+
+    /** An annotation painted on black: how many of its pixels are green, and the colour of its corner. */
+    private static int[] greenAndCorner(TileAnnotation annotation)
+    {
+        int size = 48;
+
+        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+        Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, size, size);
+
+            annotation.paint(g, size, size, false);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int green = 0;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                Color c = new Color(shot.getRGB(x, y));
+
+                if (c.getGreen() > 100 && c.getRed() < 60 && c.getBlue() < 110) green++;
+            }
+        }
+
+        return new int[] {green, shot.getRGB(1, 1)};
+    }
+
+    /**
+     * Allow Every Path opens both ways every square whose setting shuts a move - one-way track, closed track, and a switch
+     * still at its base-to-forks default - and says how many squares (FR-108; Adam, 2026-10-04: *"add a bulk tool to
+     * allow all paths, i.e. remove any red arrows in one go. With warning."*).
+     *
+     * MUTATION: leave any of the three out of the count or the opening, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAllowEveryPathOpensWhatTheSettingShuts() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 7, 5, null, null);
+
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 2, 3, 0, 0, 1, 1, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("FR-108");
+
+        TileKey oneWay = new TileKey("main", 2, 1);
+        TileKey closed = new TileKey("main", 4, 1);
+        TileKey turnout = new TileKey("main", 2, 3);
+
+        session.setDirection(oneWay, new RouteId(0, 0), Direction.TOWARD_B);
+        session.setDirection(closed, new RouteId(0, 0), Direction.NONE);
+        session.rebuild();
+
+        java.util.Map<TileKey, List<RouteId>> shut = session.routesNotOpenBothWays();
+
+        assertEquals(new java.util.HashSet<>(shut.keySet()), new java.util.HashSet<>(Arrays.asList(oneWay, closed,
+            turnout)), "Allow Every Path does not count exactly the one-way, the closed and the defaulted switch's squares");
+
+        assertEquals(session.allowEveryPath(), 3, "Allow Every Path does not say it opened the three squares");
+
+        for (TileKey square : Arrays.asList(oneWay, closed, turnout))
+        {
+            for (RouteId route : session.getGraph().getRoutes(square).keySet())
+            {
+                assertEquals(session.getGraph().getDirection(square, route), Direction.BOTH, square + "'s road " + route
+                    + " is not open both ways after Allow Every Path");
+            }
+        }
+
+        assertTrue(session.routesNotOpenBothWays().isEmpty(), "after Allow Every Path, some square still counts as shut: "
+            + session.routesNotOpenBothWays());
+    }
+
+    /**
+     * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default it is
+     * not counted - no setting opens it further, and a count that could never reach nothing would offer the tool for
+     * ever; closed, it is counted; opened, it runs the one way the hardware does, into its toe.
+     *
+     * MUTATION: count a road only the hardware restricts, or leave a closed one out, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAllowEveryPathLeavesAPermanentTurnoutAsItsBladesRun() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 5, 5, null, null);
+
+        page.addComponent(componentType.CUSTOM_PERM_LEFT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("FR-108 permanent");
+
+        TileKey turnout = new TileKey("main", 2, 2);
+
+        assertFalse(session.routesNotOpenBothWays().containsKey(turnout), "a turnout with no address, at its default, is"
+            + " counted as shut, though nothing a setting does opens it further");
+
+        RouteId road = session.getGraph().getRoutes(turnout).keySet().iterator().next();
+
+        Route route = session.getGraph().getRoutes(turnout).get(road);
+
+        assertTrue(route.getA() == Side.S || route.getB() == Side.S, "precondition: the turnout's road does not end at its"
+            + " toe, the south side");
+
+        Side fork = route.other(Side.S);
+
+        session.setDirection(turnout, road, Direction.NONE);
+        session.rebuild();
+
+        assertEquals(session.routesNotOpenBothWays().get(turnout), java.util.Collections.singletonList(road), "a turnout"
+            + " with no address, closed, is not counted as shut");
+
+        assertEquals(session.allowEveryPath(), 1, "Allow Every Path does not say it opened the closed turnout");
+
+        assertTrue(leavesBy(turnout, fork, Side.S), "opened, the turnout does not let a train run into its toe");
+
+        assertFalse(leavesBy(turnout, Side.S, fork), "opened, the turnout lets a train out through blades it cannot throw");
+    }
+
+    /** Whether a train that entered a square by one side may leave it by another. */
+    private boolean leavesBy(TileKey tile, Side entry, Side exit)
+    {
+        for (org.traincontrol.automationui.TileGraph.Exit leaving : session.getGraph().exits(tile, entry))
+        {
+            if (leaving.getSide() == exit) return true;
+        }
+
+        return false;
+    }
+
+    /** Stations at 1,1 and 6,1 with four straights between them, in a configuration of this name: the straights. */
+    private List<TileKey> aRunOfFourBetweenTwoStations(String configuration) throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+
+        for (int x = 2; x <= 5; x++)
+        {
+            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
+        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize(configuration);
+
+        for (int x : new int[] {1, 6}) session.setStation(new TileKey("main", x, 1), true);
+
+        List<TileKey> run = new ArrayList<>();
+
+        for (int x = 2; x <= 5; x++) run.add(new TileKey("main", x, 1));
+
+        TileKey leader = session.runLeaders().get(run.get(0));
+
+        assertNotNull(leader, "precondition: the straights are not a run");
+
+        assertEquals(new LinkedHashSet<>(session.runs().get(leader).getTiles()), new LinkedHashSet<>(run),
+            "precondition: the four straights are not one run");
+
+        return run;
     }
 
     /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name: its page. */

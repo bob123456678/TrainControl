@@ -7883,6 +7883,81 @@ public class AutonomySession
     }
 
     /**
+     * Every route whose setting shuts a move the hardware allows - one-way and closed track, and the switches still at their
+     * base-to-forks default - for Allow Every Path (FR-108).  A turnout with no address can only be trailed through
+     * whatever is set; it is among them only if it has been closed as well, and opening it leaves it the one way the
+     * hardware runs it.
+     *
+     * @return each such square, to its routes
+     */
+    public Map<TileKey, List<RouteId>> routesNotOpenBothWays()
+    {
+        Map<TileKey, List<RouteId>> out = new LinkedHashMap<>();
+
+        if (graph == null) return out;
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (Map.Entry<RouteId, Route> route : graph.getRoutes(tile).entrySet())
+            {
+                // a stub has no move through it to open
+                if (route.getValue().getA() == route.getValue().getB()) continue;
+
+                if (graph.getDirection(tile, route.getKey()) == Direction.BOTH) continue;
+
+                if (shutsAMoveTheHardwareAllows(tile, route.getKey(), route.getValue()))
+                {
+                    out.computeIfAbsent(tile, k -> new ArrayList<RouteId>()).add(route.getKey());
+                }
+            }
+        }
+
+        return out;
+    }
+
+    /** Whether a route's setting refuses a train a move the hardware would let it make, as `TileGraph.exits` answers. */
+    private boolean shutsAMoveTheHardwareAllows(TileKey tile, RouteId routeId, Route route)
+    {
+        for (Side entry : new Side[] {route.getA(), route.getB()})
+        {
+            if (!route.isTraversableFrom(entry)) continue;
+
+            boolean allowed = false;
+
+            for (TileGraph.Exit exit : graph.exits(tile, entry))
+            {
+                if (routeId.equals(exit.getRouteId())) allowed = true;
+            }
+
+            if (!allowed) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Opens both ways every route that can be (FR-108; Adam, 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove
+     * any red arrows in one go. With warning."*), recorded at once and re-derived once, as the bulk setter below does.
+     *
+     * @return how many squares were opened
+     */
+    public int allowEveryPath()
+    {
+        Map<TileKey, List<RouteId>> shut = routesNotOpenBothWays();
+
+        if (shut.isEmpty()) return 0;
+
+        for (Map.Entry<TileKey, List<RouteId>> square : shut.entrySet())
+        {
+            for (RouteId routeId : square.getValue()) record(square.getKey(), routeId, Direction.BOTH);
+        }
+
+        directionsTouched();
+
+        return shut.size();
+    }
+
+    /**
      * Applies one direction to many tiles at once.
      *
      * The reason bulk editing matters rather than being a convenience: switches default to base-to-forks,
@@ -10616,6 +10691,79 @@ public class AutonomySession
     }
 
     /**
+     * The squares of a run whose arrows say only what the run's first square says (OB-321).
+     *
+     * A run of plain track is one decision - the editor sets it and draws it at its first square - but its direction is
+     * stored on every square of it, so the ordinary track diagram drew an arrow on each one: after an import, a red arrow
+     * on every square of every one-way straight.  A square that lets trains through exactly as the run's first square
+     * does says nothing new, and is left out.  One that differs keeps its arrows: a run that disagrees with itself is the
+     * one thing the editor's single arrow would hide, and on the running diagram it must not be hidden.
+     *
+     * @return the squares whose arrows are redundant
+     */
+    public Set<TileKey> squaresSayingNothingTheirRunDoesNot()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        if (graph == null) return out;
+
+        for (Run run : runs().values())
+        {
+            List<TileKey> tiles = run.getTiles();
+
+            if (tiles.size() < 2) continue;
+
+            String first = waysThrough(tiles, 0);
+
+            if (first == null) continue;
+
+            for (int at = 1; at < tiles.size(); at++)
+            {
+                if (first.equals(waysThrough(tiles, at))) out.add(tiles.get(at));
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Which ways a train may pass a square of a run, along the run: forward, back, both or neither - or null when the
+     * square's way along the run cannot be read.  The hardware's restriction and the user's direction both count, as they
+     * do for a train (`TileGraph.exits`).
+     */
+    private String waysThrough(List<TileKey> run, int at)
+    {
+        TileKey tile = run.get(at);
+
+        Route route = firstRoute(tile);
+
+        if (route == null) return null;
+
+        Side back = at > 0 ? graph.sideTowardNeighbour(tile, run.get(at - 1)) : null;
+        Side ahead = at + 1 < run.size() ? graph.sideTowardNeighbour(tile, run.get(at + 1)) : null;
+
+        if (back == null && ahead == null) return null;
+
+        if (back == null) back = route.other(ahead);
+        if (ahead == null) ahead = route.other(back);
+
+        if (back == null || ahead == null) return null;
+
+        return (leavesBy(tile, back, ahead) ? "forward" : "") + (leavesBy(tile, ahead, back) ? "back" : "");
+    }
+
+    /** Whether a train that entered a square by one side may leave it by another. */
+    private boolean leavesBy(TileKey tile, Side entry, Side exit)
+    {
+        for (TileGraph.Exit leaving : graph.exits(tile, entry))
+        {
+            if (leaving.getSide() == exit) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Which way each route across a square runs, as marks to draw (FR-037).
      *
      * Lifted out of the autonomy editor so that the editor and the ordinary track diagram cannot come
@@ -10671,6 +10819,42 @@ public class AutonomySession
         }
 
         return marks;
+    }
+
+    /**
+     * What the ordinary track diagram draws on each of these squares, decided in one pass (OB-321, FR-110).
+     *
+     * A run of plain track is one decision, stored on every square of it, so drawing each square's arrows put a red
+     * arrow on every square of a one-way straight (OB-321; Adam, 2026-10-04: *"after import, redundant arrows can shown
+     * in the viewer, on a single straight segment with multiple straight tracks that only allows travel in one direction.
+     * The editor correctly collapses then"*).  A square that lets trains through just as its run's first square does is
+     * drawn without arrows (`squaresSayingNothingTheirRunDoesNot`); one that differs keeps its own.  With `allowedToo`
+     * the directions trains may run are drawn in green as well (FR-110).
+     *
+     * The options are the caller's, read once a pass - see the overload of `staticAnnotationFor` that takes them.
+     *
+     * @param squares the squares to describe
+     * @param arrows whether the one-way arrows are drawn
+     * @param allowedToo whether the green arrows are drawn with them
+     * @return each square to its annotation, null where it has nothing to say
+     */
+    public Map<TileKey, TileAnnotation> staticAnnotations(java.util.Collection<TileKey> squares, boolean arrows,
+        boolean allowedToo)
+    {
+        Map<TileKey, TileAnnotation> out = new LinkedHashMap<>();
+
+        Set<TileKey> redundant = arrows ? squaresSayingNothingTheirRunDoesNot() : Collections.<TileKey>emptySet();
+
+        for (TileKey tile : squares)
+        {
+            TileAnnotation annotation = staticAnnotationFor(tile, arrows && !redundant.contains(tile));
+
+            if (annotation != null && arrows && allowedToo) annotation.withAllowedDirections();
+
+            out.put(tile, annotation);
+        }
+
+        return out;
     }
 
     /**
