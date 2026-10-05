@@ -31673,6 +31673,10 @@ vertically."*
 
 *What this is:* `regression.testTheAutoTabWaitsForTheTrains.testTheStripsButtonsAreAsTallAsThePagesOwn`.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-659"></a>
@@ -31945,6 +31949,10 @@ pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2,
 *What this is:* measured on your PC, 0.47 s before and 0.20 s now; the setup check ran twenty times per click and now runs once
 per event, five times.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-667"></a>
@@ -31971,6 +31979,10 @@ pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2,
 *What this is:* measured on your PC, 0.47 s before and 0.20 s now; the setup check ran twenty-four times per Save and now runs
 seven times.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-668"></a>
@@ -31995,6 +32007,10 @@ pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2,
 
 *What this is:* measured on your PC, 0.18 s before and 0.11 s now; the setup check ran seven times per switch and now runs
 twice.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -32021,6 +32037,12 @@ pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2,
 
 *What this is:* the findings are now worked out once per event and kept for the rest of it, so this checks that an edit is
 still seen at once; each kind of change has its own claim in `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+**Adam, 2026-10-04 (triage).** Works, with notes.
+
+Works, but when switching pages, the autonomy editor window title briefly shows the layout editor (not autonomy editor) title for a split second, before being updated.
+
+*Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -32050,6 +32072,12 @@ shown in the autonomy editor as paths are the arrows are clicked?"*
 *What this is:* measured on your PC for an arrow click, 0.51 s before and 0.32 s now until the findings list is drawn;
 the setup check ran twenty times per click and now runs five times, once per event.
 `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+**Adam, 2026-10-04 (triage).** Works, with notes.
+
+Works, but every click I make in the autonomy editor makes the viewer diagram flicker.  Necessary?
+
+*Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -32082,6 +32110,10 @@ buttons."*
 *What this is:* Swing's own words are put from TrainControl's messages when the window starts, in all eight
 languages; Java has none of its own for Danish, Dutch or Polish.  `regression.testSwingSpeaksOurLanguage`.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-672"></a>
@@ -32110,6 +32142,10 @@ prevents subsequent deletion."*
   deleted this way.
 
 *What this is:* `regression.testDeleteAsksWhichConfiguration`.
+
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -32142,6 +32178,10 @@ warning."*
 *What this is:* `core.testAutonomyDiagramSession.testAllowEveryPathOpensWhatTheSettingShuts`,
 `core.testAutonomyDiagramSession.testAllowEveryPathLeavesAPermanentTurnoutAsItsBladesRun`.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-674"></a>
@@ -32169,6 +32209,10 @@ ticked in the viewer."*
 
 *What this is:* `core.testAutonomyDiagramSession.testAOneWayRunIsDrawnOnceOnTheDiagram`,
 `core.testAutonomyDiagramSession.testARunSquareThatSaysOtherwiseKeepsItsArrows`.
+
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -32199,6 +32243,13 @@ similar to the editor."*
 
 *What this is:* `core.testAutonomyDiagramSession.testTheGreenArrowsAreDrawnWhenAskedFor`,
 `core.testAutonomyDiagramSession.testTheGreenArrowsArePaintedWithoutAWash`.
+
+**Adam, 2026-10-04 (triage).** Does not work.
+
+1. green arrows are hard to see due to low contrast.  Use the same green as signals on the track diagram viewer.
+2. allow the user to choose: restrictions, allowances, or both.  don't make them mutually exclusive.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -32235,6 +32286,12 @@ should connect 11,8 with 13,10, and 13,9 with 11,10 ... Cycling them doesn't all
 to toe, a run that crosses twice, a direction on both squares, the click, Allow Every Path, the One-Way tool and the
 berth's room.  On your layout the 11,8 to 13,10 track runs on through 14,12 and 15,12 to 15,13, where 15,13 and 16,13
 are two permanent right turnouts toe to toe - still turnouts, so a train cannot pass them facing (see my report).
+
+**Adam, 2026-10-04 (triage).** Works, with notes.
+
+Yes, but the arrows on two permanent Y's are not aligned.  ake the arrow at the base point straight down, and the left and right aligned just like on curved tiles.  Right now, the angles are just a bit off, and they are asymmetrical.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -32273,6 +32330,10 @@ stays two turnouts.  `core.testTwoYsMakeACrossing.testTwoRightTurnoutsToeToToeAr
 `testTwoLeftTurnoutsToeToToeAreACrossing`, `testALeftAndARightToeToToeStayTurnouts`,
 `testAYWithARightAndTwoThreeWaysStayTurnouts`, `testTheClickNamesAStraightTrackByItsSides`.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-678"></a>
@@ -32302,6 +32363,10 @@ and there is no way to regain focus.  just send the commands through with the li
 *What this is:* the findings list and the directions box no longer take the keyboard from the window.
 `ui.testTheEditorNamesItsShortcuts.testNothingInTheAutonomyEditorTakesTheKeyboard` asks every control of the window.
 
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-679"></a>
@@ -32329,5 +32394,9 @@ or let trains change direction."*
   here"."* - with the side the stuck train comes in by, here west.
 
 *What this is:* `core.testAutonomyDiagramSession.testATrappedArrivalNamesTheSideItComesFrom`; eight languages.
+
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit b731a9ba, in English - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
