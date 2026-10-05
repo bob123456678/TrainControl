@@ -90,6 +90,12 @@ public class testEveryMessageKeyIsAskedFor
         "autolayout.ui.confirmClearAll",
         // and for Allow Every Path (FR-108), which warns as they do
         "autolayout.ui.confirmAllowEveryPath",
+
+        // ... and their tooltips' short forms through the same builder (FR-112): every bulk tool's, and Clear All
+        // Locomotives' through clearLocomotivesTip
+        "autosetup.ui.tipClearAll",
+        "autosetup.ui.tipAllowEveryPath",
+        "autosetup.ui.tipClearLocomotives",
     };
 
     /**

@@ -3251,7 +3251,11 @@ public class testEditorSurfaceRules
 
         assertFalse(hover.isEmpty(), "cannot find receiveMoveEvent - has it been renamed?");
 
-        assertTrue(hover.contains("setToolTipText(stationNameOn(label))"),
+        // Through what the square says, which since FR-112 is the name and the click's line together
+        String says = withoutComments(bodyOf(editor, "private void showWhatAClickDoes("));
+
+        assertTrue(hover.contains("showWhatAClickDoes(label)") && says.contains("stationNameOn(label)")
+            && says.contains("setToolTipText("),
             "the autonomy editor no longer names the square under the pointer, so a station with no "
             + "label on the diagram is anonymous in the one window whose job is arranging stations");
 

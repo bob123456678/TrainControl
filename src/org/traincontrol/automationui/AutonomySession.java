@@ -10708,6 +10708,26 @@ public class AutonomySession
     }
 
     /**
+     * Whether a run can be made one way at all: a lone square, or a run with track between its two ends - the squares a
+     * one-way run restricts, as `applyOneWay` walks them.  A piece of track joined to nothing has no between, so setting
+     * it one way changes nothing and its click says there is no path (FR-112: the diagram's pointer asks this before it
+     * offers the click).
+     *
+     * @param leader the square a click sets
+     * @return true where a one-way direction would land on something
+     */
+    public boolean canRunOneWay(TileKey leader)
+    {
+        Run run = runs().get(leader);
+
+        if (run == null) return true;
+
+        int path = run.getTiles().size() + (run.getStart() != null ? 1 : 0) + (run.getEnd() != null ? 1 : 0);
+
+        return path >= 3;
+    }
+
+    /**
      * Sets a direction on every tile of the run a leader speaks for, in the sense the leader means.
      *
      * @param leader the tile the user set

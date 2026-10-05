@@ -1039,6 +1039,42 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * What the square under the pointer says in autonomy mode: its station's name, as it did, and - where a click there
+     * changes which way trains may run - a hand and one short line saying so (FR-112; Adam, 2026-10-05: *"show a pointer
+     * mouse icon over tiles that can have their arrows changed (i.e., most of them), and a brief hover tooltip "Click to
+     * change allowed directions".  Make sure that tooltip is very short."*).
+     *
+     * Asked of the panel's own rule, which is the click's, so the hand is never over a square a click leaves alone - a
+     * blank one, a link, a page left out, or any square while a tool is armed.  A station caption keeps its own four-way
+     * arrow: it is a component of its own over the square, with its own pointer.
+     *
+     * @param label the square under the pointer
+     */
+    private void showWhatAClickDoes(LayoutLabel label)
+    {
+        String name = stationNameOn(label);
+
+        int x = getX(label);
+        int y = getY(label);
+
+        boolean turns = autonomyPanel != null && x >= 0 && y >= 0 && autonomyPanel.clickChangesDirections(
+            new org.traincontrol.automationui.TileGraph.TileKey(this.layout.getName(), x, y));
+
+        label.setCursor(turns ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
+
+        String says = turns ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
+
+        label.setToolTipText(name == null ? says : says == null ? name
+            : "<html>" + escaped(name) + "<br>" + escaped(says) + "</html>");
+    }
+
+    /** Text as HTML shows it literally. */
+    private static String escaped(String text)
+    {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /**
      * The square the pointer is over in autonomy mode, or null when it is over none (OB-198).
      *
      * **One question, asked by all three shortcuts that need it** - Control+H, Control+S and
@@ -1109,8 +1145,9 @@ public class LayoutEditor extends PositionAwareJFrame
             // does not already show (Adam, 2026-08-27).
             //
             // Set outside the invokeLater: a tooltip is read when the pointer settles, not when the
-            // outline is painted, and putting it in the queue behind a repaint only delays it.
-            label.setToolTipText(stationNameOn(label));
+            // outline is painted, and putting it in the queue behind a repaint only delays it.  With the
+            // hand and the line a square a click turns carries (FR-112).
+            showWhatAClickDoes(label);
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
@@ -2207,6 +2244,10 @@ public class LayoutEditor extends PositionAwareJFrame
                         new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y)));
             }
         }
+
+        // AND THE SQUARE UNDER THE POINTER ASKED AGAIN (FR-112): a tool armed or put down changes what a click there
+        // does, and the pointer has not moved to ask.  Every refresh of the panel comes through here.
+        if (active && hoveredSquare() != null) showWhatAClickDoes(autonomyHover);
     }
 
     /**

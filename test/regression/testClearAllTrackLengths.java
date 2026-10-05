@@ -190,8 +190,9 @@ public class testClearAllTrackLengths
     }
 
     /**
-     * And with squares measured, the tooltip says how many it will forget - which is the sentence the
-     * dialog will show.
+     * And with squares measured, the tooltip says how many it will forget - the short form of the sentence the
+     * dialog will show, through the builder that picks that sentence (FR-112: it was the whole sentence, and Adam asked
+     * for the menus' tooltips to be concise).
      *
      * @throws Exception from the event thread
      */
@@ -214,8 +215,8 @@ public class testClearAllTrackLengths
             + " It says: " + said);
 
         assertEquals(said.replaceAll("<[^>]*>", ""),
-            I18n.f("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
-            "the tooltip is not the sentence the confirmation shows. They come from one builder so"
+            I18n.f("autosetup.ui.tipClearAllTrackLengths", measured.size()),
+            "the tooltip is not the short form of the sentence the confirmation shows. They come from one builder so"
             + " that they cannot drift, which is what OB-194 put there. It says: " + said);
 
         assertTrue(item.getText().contains(String.valueOf(measured.size())),
