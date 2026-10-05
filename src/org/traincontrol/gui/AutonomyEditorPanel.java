@@ -9316,6 +9316,9 @@ public class AutonomyEditorPanel extends JPanel
             // way.  On a diagram it goes back onto the track it is about.
             .inTheEditor();
 
+        // NONE WHERE A CROSSING'S SQUARES MEET, as on the track diagram (OB-322)
+        session.withoutTheCrossingsMiddle(tile, annotation);
+
         // ALLOWED ONLY: the green arrows, and none of the red
         if (directionsView() == VIEW_ALLOWED) annotation.withoutRestrictions();
 

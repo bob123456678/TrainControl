@@ -723,6 +723,158 @@ public class testTwoYsMakeACrossing
             + " name the straight track W-E and the diagonal NW-SE: " + said[0]);
     }
 
+    /**
+     * A crossing draws no arrows where its two squares meet, on the track diagram or in the autonomy editor: the arrows at
+     * each track's outer ends say which way it runs (OB-322; Adam, 2026-10-05: *"the crossings consisting of 2 fixed Y's or
+     * 2 sets of static switches have a redundant set of (red/green) arrows in the middle.  let's hide them in that
+     * configuration for simplicity."*).  A permanent Y on its own keeps the arrow at its toe.
+     *
+     * MUTATION: draw the arrows at the toes again, on either surface, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testACrossingDrawsNoArrowsWhereItsSquaresMeet() throws Exception
+    {
+        open(verticalPair(), "OB-322");
+
+        TileKey upper = key(5, 5);
+        TileKey lower = key(5, 6);
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        // ON SHOW ALL, which draws the open track's arrows too; the view it opened on is put back
+        final java.lang.reflect.Method view =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("directionsView");
+        final java.lang.reflect.Method show =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("showDirectionsView", int.class);
+
+        view.setAccessible(true);
+        show.setAccessible(true);
+
+        final int[] was = new int[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                was[0] = (Integer) view.invoke(panel[0]);
+
+                show.invoke(panel[0], 0);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        try
+        {
+            for (TileKey square : Arrays.asList(upper, lower))
+            {
+                // the toe is the side facing the other square: the upper's south, the lower's north
+                boolean toeSouth = square.equals(upper);
+
+                org.traincontrol.automationui.TileAnnotation diagram = session.staticAnnotationFor(square, true, true)
+                    .withAllowedDirections();
+
+                org.traincontrol.automationui.TileAnnotation[] editor = new org.traincontrol.automationui.TileAnnotation[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0] = panel[0].annotationFor(square));
+
+                for (org.traincontrol.automationui.TileAnnotation annotation : Arrays.asList(diagram, editor[0]))
+                {
+                    String which = (annotation == diagram ? "the track diagram" : "the autonomy editor") + " at " + at(square);
+
+                    java.awt.image.BufferedImage shot = paintedOnBlack(annotation);
+
+                    assertTrue(colouredIn(shot, 0, 8, 6, 24) > 0 && colouredIn(shot, 22, 30, 6, 24) > 0, "precondition: "
+                        + which + " draws no arrows at the crossing's outer ends");
+
+                    assertEquals(colouredIn(shot, 10, 20, toeSouth ? 22 : 0, toeSouth ? 30 : 8), 0, which + " draws arrows"
+                        + " where the crossing's two squares meet (OB-322)");
+                }
+            }
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    show.invoke(panel[0], was[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+        }
+
+        // A PERMANENT Y ON ITS OWN keeps its toe's arrow: the pair taken apart
+        LayoutDiagram alone = page();
+
+        y(alone, 5, 5, 0);
+
+        sensor(alone, 4, 5, 0, 1);
+        sensor(alone, 6, 5, 0, 2);
+        sensor(alone, 5, 6, 1, 3);
+
+        open(alone, "OB-322 alone");
+
+        java.awt.image.BufferedImage single = paintedOnBlack(session.staticAnnotationFor(upper, true, true)
+            .withAllowedDirections());
+
+        assertTrue(colouredIn(single, 10, 20, 22, 30) > 0, "a permanent Y on its own lost the arrow at its toe");
+    }
+
+    /** An annotation painted on a black 30-pixel square. */
+    private static java.awt.image.BufferedImage paintedOnBlack(org.traincontrol.automationui.TileAnnotation annotation)
+    {
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(30, 30,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.BLACK);
+            g.fillRect(0, 0, 30, 30);
+
+            annotation.paint(g, 30, 30, false);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return shot;
+    }
+
+    /** The red or green pixels in a window of a painted square: x from x0 to x1, y from y0 to y1, ends excluded. */
+    private static int colouredIn(java.awt.image.BufferedImage shot, int x0, int x1, int y0, int y1)
+    {
+        int count = 0;
+
+        for (int x = x0; x < x1; x++)
+        {
+            for (int y = y0; y < y1; y++)
+            {
+                java.awt.Color c = new java.awt.Color(shot.getRGB(x, y));
+
+                boolean green = c.getGreen() > 150 && c.getRed() < 120 && c.getBlue() < 140;
+                boolean red = c.getRed() > 150 && c.getGreen() < 80 && c.getBlue() < 80;
+
+                if (green || red) count++;
+            }
+        }
+
+        return count;
+    }
+
     // ---------------------------------------------------------------- the railway
 
     /** The vertical pair: Ys at 5,5 (toe south) and 5,6 (toe north), and a sensor at each of the four ends. */

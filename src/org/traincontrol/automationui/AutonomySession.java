@@ -10996,6 +10996,40 @@ public class AutonomySession
      */
     public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows, boolean arrivals)
     {
+        // AND NONE WHERE A CROSSING'S SQUARES MEET (OB-322)
+        return withoutTheCrossingsMiddle(tile, staticAnnotationOf(tile, arrows, arrivals));
+    }
+
+    /**
+     * Leaves out the arrows where a two-square crossing's squares meet (OB-322; Adam, 2026-10-05: *"the crossings
+     * consisting of 2 fixed Y's or 2 sets of static switches have a redundant set of (red/green) arrows in the middle.
+     * let's hide them in that configuration for simplicity."*).  A track over the crossing runs the same way on both of
+     * its squares (`record`), so the arrows at its two outer ends say it all; the two pairs where the toes meet only
+     * repeat them, facing each other in the middle.  For the track diagram and the autonomy editor alike.
+     *
+     * @param tile a square
+     * @param annotation what is drawn on it, or null
+     * @return the same annotation
+     */
+    public TileAnnotation withoutTheCrossingsMiddle(TileKey tile, TileAnnotation annotation)
+    {
+        TileKey partner = graph == null || annotation == null ? null : graph.crossingPartner(tile);
+
+        if (partner != null) annotation.withoutArrowsAt(graph.sideTowardNeighbour(tile, partner));
+
+        return annotation;
+    }
+
+    /**
+     * What `staticAnnotationFor` answers, before a crossing's middle is left out.
+     *
+     * @param tile the square
+     * @param arrows whether the direction arrows are drawn
+     * @param arrivals whether the station ingress arrows are drawn
+     * @return the annotation, or null when this square has nothing to say
+     */
+    private TileAnnotation staticAnnotationOf(TileKey tile, boolean arrows, boolean arrivals)
+    {
         if (graph == null || reducer == null) return null;
 
         // A link switched off is greyed here as well as in the editor.

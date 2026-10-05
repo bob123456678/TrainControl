@@ -4555,9 +4555,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             java.beans.PropertyChangeListener sync = evt ->
             {
                 if (autonomyOverlayToggle != null) autonomyOverlayToggle.syncRun();
-
-                // and the arrows, which a run hides
-                arrowsFollowTheRun();
             };
 
             this.startAutonomy.addPropertyChangeListener("enabled", sync);
@@ -5813,10 +5810,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // one, and every marked square was redrawn twice.
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> marked = session.getGraph().getTiles().keySet();
 
-        // NONE WHILE AUTONOMY RUNS (Adam, 2026-10-04: *"when trains are running in autonomy, we hide the
+        // NONE WHILE ANYTHING RUNS (Adam, 2026-10-04: *"when trains are running in autonomy, we hide the
         // allowances/restrictions on the track diagram."*): what may run where is for setting a railway up, and during a
-        // run the diagram shows what the trains are doing.  `arrowsFollowTheRun` redraws them as the run starts and ends.
-        boolean running = autonomyRunIsOn();
+        // run the diagram shows what the trains are doing.  THE SPINNER'S GATE (MT-686: *"Works until graceful stop is
+        // requested, at which point they get shown prematurely.  Should be the same gate as the spinner."*) - asked with
+        // it, by `arrowsFollowTheRun`.
+        boolean running = theAutoTabWaits();
         arrowsDrawnForARun = running;
         // THE ARROWS OPTION ASKED ONCE A PASS (speed, 2026-10-04): a read of the Windows settings, which every square of the
         // railway made for itself, several times per click - a fifth of the click.
@@ -5840,28 +5839,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private volatile boolean arrowsDrawnForARun = false;
 
     /**
-     * Whether the autonomy run is on: started, and not yet ended.  Not a train sent by hand, which `Layout.isRunning`
-     * counts too.
-     *
-     * @return the running railway's own flag, false with none loaded
-     */
-    private boolean autonomyRunIsOn()
-    {
-        Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
-
-        return railway instanceof org.traincontrol.automation.Layout
-            && ((org.traincontrol.automation.Layout) railway).isAutoRunning();
-    }
-
-    /**
-     * Redraws the track diagram's arrows once where the autonomy run has started or ended since they were drawn, so they
-     * go as a run starts and come back as it ends (Adam, 2026-10-04: *"when trains are running in autonomy, we hide the
-     * allowances/restrictions on the track diagram."*).  Asked as the run buttons change and as the diagram is refreshed
-     * for a run's trains and its end; cheap to ask often, as it compares two flags.
+     * Redraws the track diagram's arrows once where the trains have started or stopped running since they were drawn, so
+     * they go as the spinner starts and come back as it stops (Adam, 2026-10-04: *"when trains are running in autonomy, we
+     * hide the allowances/restrictions on the track diagram."*; MT-686: *"Should be the same gate as the spinner."*).
+     * Asked beside the spinner, of its gate - `theAutoTabWaits`, which holds through a Graceful Stop's coast-down - in
+     * `refreshWhatWaitsForTheTrains`.  Event thread: the gate reads a button.
      */
     private void arrowsFollowTheRun()
     {
-        boolean running = autonomyRunIsOn();
+        boolean running = theAutoTabWaits();
 
         if (running == arrowsDrawnForARun) return;
 
@@ -25353,6 +25339,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // AND START SAYS SO, turning (OB-309)
         showSomethingRuns(busy);
 
+        // AND THE TRACK DIAGRAM'S ARROWS GO WITH IT (MT-686: *"Should be the same gate as the spinner."*)
+        arrowsFollowTheRun();
+
         String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
 
         for (javax.swing.JComponent waits : new javax.swing.JComponent[] {
@@ -31041,9 +31030,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             return;
         }
-
-        // THE ARROWS AS A RUN STARTS OR ENDS: this is the refresh a run's trains make as they move, and its end makes
-        arrowsFollowTheRun();
 
         // The station labels on the track diagram, which is all this does now.
         //
