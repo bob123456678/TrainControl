@@ -7789,10 +7789,13 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Left-click on a square of a two-square crossing - two permanent turnouts drawn toe to toe (OB-320): the next of
-     * both tracks both ways, the four ways the two can each run one way, and both closed.
+     * both tracks both ways, each track one way with the other both ways, the four ways the two can each run one way, and
+     * both closed.
      *
      * Adam, 2026-10-04: *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible
-     * directions on both (4 combos)"* - both ways first and closed last, as a crossing's own first answers go.  Not the
+     * directions on both (4 combos)"* - both ways first and closed last, as a crossing's own first answers go; and on
+     * MT-688, 2026-10-05: *"when cycling, there is no option for red in one direction and green in the other 3"* - one
+     * track one way and the other open, the more often wanted, so straight after both ways.  Not the
      * arms of `cycleBranching`: the two tracks share the side the squares meet at, and one bit for it cannot say that one
      * track runs onto the other square while the other runs off it.
      *
@@ -7834,6 +7837,8 @@ public class AutonomyEditorPanel extends JPanel
         Direction[][] states =
         {
             {Direction.BOTH, Direction.BOTH},
+            // ONE TRACK ONE WAY, the other both ways (MT-688)
+            {onto[0], Direction.BOTH}, {off[0], Direction.BOTH}, {Direction.BOTH, onto[1]}, {Direction.BOTH, off[1]},
             {onto[0], onto[1]}, {onto[0], off[1]}, {off[0], onto[1]}, {off[0], off[1]},
             {Direction.NONE, Direction.NONE}
         };
