@@ -39,8 +39,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-674](#mt-674) | 2026-10-04 | A one-way straight shows one arrow on the track diagram | fixed unvalidated | Adam 2026-10-04 (OB-321) |
 | [MT-675](#mt-675) | 2026-10-04 | The track diagram can show the green arrows too | fixed unvalidated | Adam 2026-10-04 (FR-110) |
 | [MT-676](#mt-676) | 2026-10-04 | Two permanent Ys toe to toe are a crossing | fixed unvalidated | Adam 2026-10-04 (OB-320) |
+| [MT-677](#mt-677) | 2026-10-04 | Two permanent rights toe to toe are a crossing too | fixed unvalidated | Adam 2026-10-04 (OB-320) |
+| [MT-678](#mt-678) | 2026-10-04 | The autonomy editor's shortcuts work after a click on a finding | fixed unvalidated | Adam 2026-09-12 (OB-200) |
+| [MT-679](#mt-679) | 2026-10-04 | A trapped arrival says which side it comes from | fixed unvalidated | Adam 2026-09-12 (OB-201) |
 
-Everything else - 664 of 676 - needs nothing from you unless the area changes again:
+Everything else - 664 of 679 - needs nothing from you unless the area changes again:
 524 **fixed validated** and 140 **superseded**.
 
 ---
@@ -32232,5 +32235,99 @@ should connect 11,8 with 13,10, and 13,9 with 11,10 ... Cycling them doesn't all
 to toe, a run that crosses twice, a direction on both squares, the click, Allow Every Path, the One-Way tool and the
 berth's room.  On your layout the 11,8 to 13,10 track runs on through 14,12 and 15,12 to 15,13, where 15,13 and 16,13
 are two permanent right turnouts toe to toe - still turnouts, so a train cannot pass them facing (see my report).
+
+---
+
+<a id="mt-677"></a>
+
+### MT-677 - 2026-10-04 - Two permanent rights toe to toe are a crossing too
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (OB-320)
+
+**Written:** 2026-10-04
+
+Your rulings of 2026-10-04: *"Treat those two adjacent perma switches at 15,13 and 16,13 as one logical crossing.  Keep
+the existing rules for perma switches, i.e. those without another adjacent to form a crossing are treated as switches
+only crossable in one direction by autonomy."*, and *"make sure that the pairing is visually a crossing.  if not, we
+treat the tracks verbatim."*
+
+**Steps**
+
+1. Open TC3Sandbox_layout and the autonomy editor on **0 komplet**.
+2. Click the turnout at **15,13** until the message says both tracks run both ways, reading the message.  Do the same at
+   **12,9** and at **14,12**.
+3. Use **Test a path** from the sensor at **11,7** to the one at **20,14**.
+
+**Expected**
+
+- No warning about a turnout with no address at 15,13 or 16,13.
+- Step 2: at 15,13 the message names the **W-E** track and the **NW-SE** track, as one crossing with 16,13.
+- Step 3: the path runs 11,8, 11,9, 12,9, 12,10, 13,10, 13,11, 14,11, 14,12, 15,12, 15,13, 16,13, 16,14 and on to 20,14 -
+  over all three crossings, corner to corner.
+- A permanent turnout with no such partner is still warned about, and still trailed only.
+
+*What this is:* two permanent lefts or two permanent rights toe to toe, turned half round, pair when every leg faces the
+other's opposite leg - which is when the drawing is a crossing; a left with a right, a three-way, or a Y with either,
+stays two turnouts.  `core.testTwoYsMakeACrossing.testTwoRightTurnoutsToeToToeAreACrossing`,
+`testTwoLeftTurnoutsToeToToeAreACrossing`, `testALeftAndARightToeToToeStayTurnouts`,
+`testAYWithARightAndTwoThreeWaysStayTurnouts`, `testTheClickNamesAStraightTrackByItsSides`.
+
+---
+
+<a id="mt-678"></a>
+
+### MT-678 - 2026-10-04 - The autonomy editor's shortcuts work after a click on a finding
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-12 (OB-200)
+
+**Written:** 2026-10-04
+
+Your report of 2026-09-12: *"when items in the list of issues are selected, hotkeys on the track diagram stop working,
+and there is no way to regain focus.  just send the commands through with the list of issues panel selected."*
+
+**Steps**
+
+1. In the autonomy editor, click a finding in the list across the bottom of the window.
+2. Press **Control+L**, then **Control+G**.
+3. Choose another entry in the directions box (under Toggle visibility), then press **Control+L** again.
+
+**Expected**
+
+- Step 1: the diagram goes to the finding's square, as before.
+- Steps 2 and 3: each shortcut works at once - Control+L steps the text labels, Control+G shows or hides the lengths -
+  without clicking the diagram first.
+
+*What this is:* the findings list and the directions box no longer take the keyboard from the window.
+`ui.testTheEditorNamesItsShortcuts.testNothingInTheAutonomyEditorTakesTheKeyboard` asks every control of the window.
+
+---
+
+<a id="mt-679"></a>
+
+### MT-679 - 2026-10-04 - A trapped arrival says which side it comes from
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-12 (OB-201)
+
+**Written:** 2026-10-04
+
+Your report of 2026-09-12: *"This error message should say either close arrivals from <direction>, open the way ahead,
+or let trains change direction."*
+
+**Steps**
+
+1. In the autonomy editor, take a station with track on both sides, and make the track on one side one-way towards the
+   station - so a train arriving from the other side could not go on.
+2. Read the warning about it in the findings list, then put the direction back.
+
+**Expected**
+
+- Step 2: *"A train reaching ... from the west could not go on: the only way ahead is back the way it came, and trains
+  cannot turn round here.  Close arrivals from the west, open the way ahead, or set "trains may change direction
+  here"."* - with the side the stuck train comes in by, here west.
+
+*What this is:* `core.testAutonomyDiagramSession.testATrappedArrivalNamesTheSideItComesFrom`; eight languages.
 
 ---
