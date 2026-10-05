@@ -20,8 +20,8 @@ import javax.swing.filechooser.FileSystemView;
  * each, so Open Layout's chooser cost two of them before it showed, and every step up a folder inside it another.
  *
  * The list is the same one: the shell's own answer - Recent Items, Desktop, Documents, This PC and its drives, Network,
- * Libraries and the user's folders - asked off the event thread as the window opens, and kept until a drive comes or goes,
- * when the next chooser asks again.  Swing asks the shell itself only for a chooser on the shell's own view of the files,
+ * Libraries and the user's folders - asked off the event thread as the window opens, and kept until a drive comes or goes
+ * or a Desktop folder changes, when the next chooser asks again.  Swing asks the shell itself only for a chooser on the shell's own view of the files,
  * so this one carries a view of its own, which hands Swing the answer among its roots; everything else - the files, their
  * names and icons, which folder is above which - is the shell's as before.
  *
@@ -37,8 +37,11 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     /** The Look In list's folders, as the shell last gave them, or null before it has. */
     private static volatile File[] places = null;
 
-    /** The drives there were when the shell was asked for `places`. */
-    private static volatile Set<File> drivesThen = null;
+    /** What said the shell's answer could change - `landmarks` - when the shell was asked for `places`. */
+    private static volatile java.util.List<Object> landmarksThen = null;
+
+    /** The Desktop folders, whose own children are most of the list - found by the first ask. */
+    private static volatile java.util.List<File> desktops = java.util.Collections.emptyList();
 
     /** The ask under way, or the last one; asked at most once at a time. */
     private static FutureTask<File[]> asking = null;
@@ -99,14 +102,16 @@ public class QuickFileChooser extends javax.swing.JFileChooser
 
             final FutureTask<File[]> ask = new FutureTask<>(() ->
             {
-                Set<File> drives = drives();
+                if (desktops.isEmpty()) desktops = theDesktops();
+
+                java.util.List<Object> now = landmarks();
 
                 File[] found = theShellsPlaces();
 
                 if (found != null)
                 {
                     places = found;
-                    drivesThen = drives;
+                    landmarksThen = now;
                 }
 
                 return found;
@@ -124,8 +129,8 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     }
 
     /**
-     * The Look In list's folders: the shell's last answer while the drives are the ones there were then, and otherwise the
-     * ask under way or one asked now, waited for - once, and never two at a time.
+     * The Look In list's folders: the shell's last answer while its landmarks are as they were then, and otherwise the ask
+     * under way or one asked now, waited for - once, and never two at a time.
      *
      * @return the folders, or null where the shell gives none
      */
@@ -133,7 +138,7 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     {
         File[] known = places;
 
-        if (known != null && drives().equals(drivesThen)) return known;
+        if (known != null && landmarks().equals(landmarksThen)) return known;
 
         try
         {
@@ -151,6 +156,51 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         {
             return known;
         }
+    }
+
+    /**
+     * What says the shell's answer may have changed, each read without asking the shell: the drives, and when each Desktop
+     * folder last changed (RSA39-C1) - most of the list is the Desktop's own folders, and a folder made on it, removed or
+     * renamed was not followed while the drives stayed the same.
+     *
+     * @return the drives, then each Desktop folder's last change
+     */
+    private static java.util.List<Object> landmarks()
+    {
+        java.util.List<Object> out = new java.util.ArrayList<>();
+
+        out.add(drives());
+
+        for (File desktop : desktops) out.add(desktop.lastModified());
+
+        return out;
+    }
+
+    /**
+     * The Desktop folders: the user's, as the shell names it, and the one every user shares.
+     *
+     * @return those there are
+     */
+    private static java.util.List<File> theDesktops()
+    {
+        java.util.List<File> out = new java.util.ArrayList<>();
+
+        try
+        {
+            File home = SHELL.getHomeDirectory();
+
+            if (home != null && new File(home.getPath()).isDirectory()) out.add(new File(home.getPath()));
+        }
+        catch (RuntimeException e)
+        {
+            // none named
+        }
+
+        String shared = System.getenv("PUBLIC");
+
+        if (shared != null && new File(shared, "Desktop").isDirectory()) out.add(new File(shared, "Desktop"));
+
+        return out;
     }
 
     /** The drives there are now - a list of letters, which asks the shell nothing. */

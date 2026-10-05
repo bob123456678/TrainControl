@@ -4268,6 +4268,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether a page the page cache keeps is still wired - every tile its grid registered still registered, and every
+     * caption it registered still in the station map - so putting it back on screen shows a page that follows the railway
+     * (RSA39, outside its round).  Each registration is kept by its square, the same at both sizes, and one that is not on
+     * screen gives way to another for the square: drawing the same page at the other size while this one was put away took
+     * them all, and the page came back with no switch, signal, sensor, train's line, arrow or caption on it told anything.
+     *
+     * @param cached the page's panel
+     * @return false for a panel that is no grid's, or one with anything let go
+     */
+    private boolean theCachedPageIsStillWired(JPanel cached)
+    {
+        LayoutGrid grid = LayoutGrid.of(cached);
+
+        if (grid == null || !grid.tilesAreStillRegistered()) return false;
+
+        Object registered = cached.getClientProperty(LayoutGrid.CAPTIONS_REGISTERED);
+
+        if (!(registered instanceof java.util.Collection) || ((java.util.Collection<?>) registered).isEmpty()) return true;
+
+        java.util.Set<JLabel> held = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+        for (Set<JLabel> labels : this.layoutStations.values()) held.addAll(labels);
+
+        for (Object label : (java.util.Collection<?>) registered)
+        {
+            if (!held.contains(label)) return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Forgets every page the page cache keeps but the one on screen (RSA38-B1) - as the rebuild a setup change now skips
      * did, emptying the cache: a page drawn before the change and kept for the page list came back as it was drawn, a page
      * put back into autonomy with none of its captions, a station added with none, a station renamed with its old name.
@@ -7924,6 +7956,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // fold of the railway built before the edit - opening or closing the editor, Export, New
                     // Configuration, the exit - wrote its homes, priorities, lengths and placements back over the edit
                     setupNewerThanTheRailway(true);
+
+                    // AND THE DIAGRAM TOLD OF THE EDIT ALL THE SAME (RSA39-C3), as the Autonomy menu's door tells it: a load
+                    // that replaces the railway does so through autonomyLoadedFromDiagram, and one the build refuses did
+                    // not, so a page left out, say, came back from the page list with the captions it had before
+                    autonomySetupChanged();
                 }
 
                 // AND A DECLINED EDIT HAS NOW BEEN CARRIED (AMS-B1).
@@ -33253,7 +33290,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     //InnerLayoutPanel.setVisible(false);
                     String cacheKey = selectedLayout.toString() + " " + this.SizeList.getSelectedItem().toString();
 
-                    if (useCache && this.layoutCache.containsKey(cacheKey))
+                    // ONLY A PAGE STILL WIRED (RSA39, outside its round): the same page drawn at the other size while this
+                    // one was put away takes its squares' registrations, each kept by its square, and the panel came back
+                    // with no tile, switch, sensor or caption of it told anything - drawn afresh instead
+                    if (useCache && this.layoutCache.containsKey(cacheKey)
+                        && theCachedPageIsStillWired(this.layoutCache.get(cacheKey)))
                     {
                         InnerLayoutPanel.removeAll();
                         

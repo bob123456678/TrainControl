@@ -596,6 +596,10 @@ public class testAPendingTurnSurvivesTheRebuild
 
             java.awt.Component before = shownDiagram();
 
+            final int captionsBefore = captionsOf(before);
+
+            assertTrue(captionsBefore > 0, "precondition: the page shown has no captions in the station map");
+
             // AN EDIT THAT KEEPS THE DIAGRAM ON SCREEN
             setADirectionAndPutItBack(() ->
             {
@@ -615,6 +619,10 @@ public class testAPendingTurnSurvivesTheRebuild
                     org.testng.Assert.assertSame(kept, before, "an edit that kept the diagram on screen kept another page in the page"
                         + " cache, which comes back as it was drawn before the edit (RSA38-B1): " + after.keySet());
                 }
+
+                // AND THE PAGE SHOWN KEEPS ITS CAPTIONS: forgotten with the rest, no update would reach them (RSA39-C2)
+                assertEquals(captionsOf(before), captionsBefore, "an edit that kept the diagram on screen let go of its"
+                    + " captions, which nothing then writes (RSA39-C2)");
             });
         }
         finally
@@ -691,6 +699,179 @@ public class testAPendingTurnSurvivesTheRebuild
         }
 
         org.testng.Assert.assertNull(old.get(), "a grid the window replaced is still held, as every one it builds would be (RSA38-C3)");
+    }
+
+    /**
+     * A page the page cache brings back is wired - every tile and caption of it registered - after the same page was drawn
+     * at the other size while it was put away (RSA39, outside its round): the registrations are kept by square, the same at
+     * both sizes, and the panel came back with no switch, sensor, train's line, arrow or caption on it told anything.
+     *
+     * MUTATION: put a cached page back without asking whether it is still wired, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testACachedPageComesBackWired() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> sizes = (javax.swing.JComboBox<Object>) windowField("SizeList");
+
+        final Object page = pages.getSelectedItem();
+        final Object size = sizes.getSelectedItem();
+
+        Object otherPage = null;
+        Object otherSize = null;
+
+        for (int i = 0; i < pages.getItemCount(); i++) if (!pages.getItemAt(i).equals(page)) otherPage = pages.getItemAt(i);
+        for (int i = 0; i < sizes.getItemCount(); i++) if (!sizes.getItemAt(i).equals(size)) otherSize = sizes.getItemAt(i);
+
+        if (otherPage == null || otherSize == null) throw new SkipException("the window has one page or one size");
+
+        final Object away = otherPage;
+        final Object bigger = otherSize;
+
+        try
+        {
+            // ANOTHER PAGE, THE OTHER SIZE, THIS PAGE AT IT, AND THIS SIZE AGAIN - this page's panel from the cache
+            for (Runnable step : java.util.Arrays.<Runnable>asList(() -> pages.setSelectedItem(away),
+                () -> sizes.setSelectedItem(bigger), () -> pages.setSelectedItem(page), () -> sizes.setSelectedItem(size)))
+            {
+                javax.swing.SwingUtilities.invokeAndWait(step);
+
+                settle();
+            }
+
+            java.awt.Component shown = shownDiagram();
+
+            org.traincontrol.gui.LayoutGrid grid = org.traincontrol.gui.LayoutGrid.of(shown);
+
+            assertNotNull(grid, "precondition: the page shown is no grid's");
+
+            assertTrue(grid.tilesAreStillRegistered(), "a page brought back from the page cache has tiles nobody tells"
+                + " anything - its switches, sensors, trains' lines and arrows frozen (RSA39)");
+
+            assertTrue(captionsOf(shown) > 0, "a page brought back from the page cache has no captions in the station map -"
+                + " frozen (RSA39)");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                sizes.setSelectedItem(size);
+                pages.setSelectedItem(page);
+            });
+
+            settle();
+        }
+    }
+
+    /**
+     * A setup edit the build refuses still tells the track diagram, as the Autonomy menu's door does (RSA39-C3): through
+     * the editor's door the railway was left as it was and nothing else followed, so a page left out came back from the
+     * page list with the captions it had before.
+     *
+     * MUTATION: leave the diagram untold where the build refuses, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testARefusedRebuildStillTellsTheDiagram() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        final Object page = pages.getSelectedItem();
+
+        Object out = null;
+
+        for (int i = 0; i < pages.getItemCount(); i++)
+        {
+            if (String.valueOf(pages.getItemAt(i)).startsWith("2 - ")) out = pages.getItemAt(i);
+        }
+
+        if (out == null || out.equals(page)) throw new SkipException("the frozen railway has no page 2 to leave out");
+
+        final Object leftOut = out;
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(leftOut));
+            settle();
+            javax.swing.SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(page));
+            settle();
+
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, javax.swing.JPanel> cache = (java.util.Map<String, javax.swing.JPanel>) windowField(
+                "layoutCache");
+
+            assertTrue(cache.keySet().stream().anyMatch(k -> k.startsWith(leftOut + " ")), "precondition: page "
+                + leftOut + " is not in the page cache: " + cache.keySet());
+
+            Layout railway = model.getAutoLayout();
+
+            session.setPageExcluded(String.valueOf(leftOut), true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+
+            if (model.getAutoLayout() != railway)
+            {
+                throw new SkipException("leaving " + leftOut + " out did not stop the build here, so the door the build"
+                    + " refuses is not reached");
+            }
+
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, javax.swing.JPanel> after = (java.util.Map<String, javax.swing.JPanel>) windowField(
+                "layoutCache");
+
+            assertFalse(after.keySet().stream().anyMatch(k -> k.startsWith(leftOut + " ")), "a page left out in an edit the"
+                + " build refused is still in the page cache, and comes back with the captions it had (RSA39-C3): "
+                + after.keySet());
+        }
+        finally
+        {
+            session.setPageExcluded(String.valueOf(leftOut), false);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(page));
+
+            settle();
+        }
+    }
+
+    /** How many caption labels in the station map are on this panel. */
+    @SuppressWarnings("unchecked")
+    private static int captionsOf(java.awt.Component panel) throws Exception
+    {
+        java.util.Map<Object, java.util.Set<javax.swing.JLabel>> stations =
+            (java.util.Map<Object, java.util.Set<javax.swing.JLabel>>) windowField("layoutStations");
+
+        final int[] count = new int[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.util.Set<javax.swing.JLabel> labels : stations.values())
+            {
+                for (javax.swing.JLabel label : labels)
+                {
+                    if (panel instanceof java.awt.Container
+                        && javax.swing.SwingUtilities.isDescendingFrom(label, (java.awt.Container) panel)) count[0]++;
+                }
+            }
+        });
+
+        return count[0];
     }
 
     /** Something to run with a direction set on plain track of the page shown, put back however it ends. */
