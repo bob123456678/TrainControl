@@ -1754,6 +1754,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JLabel existing = i.next();
 
+                // NOT ONE OF THIS BUILD'S OWN (RSA40-C1): a station captioned on two squares - a long platform labelled
+                // at both ends - registers two labels in one build, neither on screen yet, and the second evicted the
+                // first, which was then never written
+                Object build = value.getClientProperty(LAYOUT_STATION_BUILD);
+
+                if (build != null && build == existing.getClientProperty(LAYOUT_STATION_BUILD)) continue;
+
                 if (existing != value && !existing.isDisplayable()
                     && owner == existing.getClientProperty(LAYOUT_STATION_OWNER))
                 {
@@ -1772,6 +1779,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * outlive the label it describes.
      */
     private static final String LAYOUT_STATION_OWNER = "tcLayoutStationOwner";
+
+    /**
+     * Which build of a grid a caption label came from, so a build does not evict its own (RSA40-C1).  Set by the grid as it
+     * registers each caption; a client property for the reason `LAYOUT_STATION_OWNER` is one.
+     */
+    public static final String LAYOUT_STATION_BUILD = "tcLayoutStationBuild";
     
     /**
      * How many locomotive mapping pages there are.
