@@ -27,14 +27,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-669](#mt-669) | 2026-10-04 | The findings list follows a rename at once | fixed unvalidated | Adam 2026-10-04 (speed) |
-| [MT-670](#mt-670) | 2026-10-04 | An arrow click in the autonomy editor shows its warning without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
-| [MT-680](#mt-680) | 2026-10-04 | The autonomy editor shows the allowed directions on their own | fixed unvalidated | Adam 2026-10-04 (Allowed only) |
-| [MT-681](#mt-681) | 2026-10-04 | The track diagram's green arrows are bright, and can be shown on their own | fixed unvalidated | Adam 2026-10-04 (MT-675) |
-| [MT-682](#mt-682) | 2026-10-04 | A Y's arrows lie along its track | fixed unvalidated | Adam 2026-10-04 (MT-676) |
+| [MT-683](#mt-683) | 2026-10-04 | The green arrows are light green with a dark edge, and every arrow sits on its rail | fixed unvalidated | Adam 2026-10-04 (MT-681) |
+| [MT-684](#mt-684) | 2026-10-04 | The autonomy editor keeps its own title while it changes page | fixed unvalidated | Adam 2026-10-04 (MT-669) |
+| [MT-685](#mt-685) | 2026-10-04 | A click in the autonomy editor leaves the track diagram still | fixed unvalidated | Adam 2026-10-04 (MT-670) |
+| [MT-686](#mt-686) | 2026-10-04 | The track diagram hides the arrows while autonomy runs | fixed unvalidated | Adam 2026-10-04 (arrows) |
 
-Everything else - 677 of 682 - needs nothing from you unless the area changes again:
-536 **fixed validated** and 141 **superseded**.
+Everything else - 682 of 686 - needs nothing from you unless the area changes again:
+540 **fixed validated** and 142 **superseded**.
 
 ---
 
@@ -32024,7 +32023,7 @@ Validated on your *Works* of 2026-10-04.
 
 ### MT-669 - 2026-10-04 - The findings list follows a rename at once
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (speed)
 
 **Written:** 2026-10-04
@@ -32050,13 +32049,17 @@ Works, but when switching pages, the autonomy editor window title briefly shows 
 
 *Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-04.**
+
+Validated on your *Works, with notes* of 2026-10-04; your note on the title is MT-684.
+
 ---
 
 <a id="mt-670"></a>
 
 ### MT-670 - 2026-10-04 - An arrow click in the autonomy editor shows its warning without a pause
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (speed)
 
 **Written:** 2026-10-04
@@ -32084,6 +32087,16 @@ the setup check ran twenty times per click and now runs five times, once per eve
 Works, but every click I make in the autonomy editor makes the viewer diagram flicker.  Necessary?
 
 *Run against commit b731a9ba, in Dansk - build\classes, compiled 04 Oct 21:21 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-10-04 (triage).** Works, with notes.
+
+Still works, still see a light flicker in the viewer.
+
+*Run against commit 82e25089, in English - build\classes, compiled 04 Oct 22:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works, with notes* of 2026-10-04; your note on the flicker is MT-685.
 
 ---
 
@@ -32447,7 +32460,7 @@ Validated on your *Works* of 2026-10-04.
 
 ### MT-680 - 2026-10-04 - The autonomy editor shows the allowed directions on their own
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (Allowed only)
 
 **Written:** 2026-10-04
@@ -32470,13 +32483,23 @@ Your request of 2026-10-04: *"In addition to "restrictions only", add "allowed o
 *What this is:* `core.testAutonomyDiagramSession.testAllowedOnlyPaintsTheGreenAndNoneOfTheRed`,
 `core.testAutonomyDiagramSession.testTheEditorOffersAllowedOnlyAndRemembersEachViewByItsMeaning`.
 
+**Adam, 2026-10-04 (triage).** Works, with notes.
+
+Works.  Default this to off.  Default restrictions to on.
+
+*Run against commit 82e25089, in English - build\classes, compiled 04 Oct 22:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.  On your note: the editor already opens on Restrictions only until another view is chosen, and then remembers the last one chosen; you asked for no change to that.
+
 ---
 
 <a id="mt-681"></a>
 
 ### MT-681 - 2026-10-04 - The track diagram's green arrows are bright, and can be shown on their own
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam 2026-10-04 (MT-675)
 
 **Written:** 2026-10-04
@@ -32501,13 +32524,17 @@ diagram viewer.  2. allow the user to choose: restrictions, allowances, or both.
 `core.testAutonomyDiagramSession.testTheTrackDiagramsGreenIsTheSignalsGreen`.  The autonomy editor keeps its darker green,
 over its pale wash.
 
+**Claude, 2026-10-04.**
+
+Superseded by MT-683: you found the signals' green too bright, and chose F - light green with a dark edge - which MT-683 tests, with this entry's other steps.
+
 ---
 
 <a id="mt-682"></a>
 
 ### MT-682 - 2026-10-04 - A Y's arrows lie along its track
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-04 (MT-676)
 
 **Written:** 2026-10-04
@@ -32527,5 +32554,135 @@ asymmetrical."*
   same angle on each side - as on a curved square.  The same on any other Y.
 
 *What this is:* `core.testAutonomyDiagramSession.testAYsArrowsLieAlongItsTrack`.
+
+**Adam, 2026-10-04 (triage).** Works.
+
+*Run against commit 82e25089, in English - build\classes, compiled 04 Oct 22:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-04.**
+
+Validated on your *Works* of 2026-10-04.
+
+---
+
+<a id="mt-683"></a>
+
+### MT-683 - 2026-10-04 - The green arrows are light green with a dark edge, and every arrow sits on its rail
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (MT-681)
+
+**Written:** 2026-10-04
+
+Your notes of 2026-10-04: *"The green I asked for on the track diagram is too bright/green"*, then, of six drawn on the
+real tiles: *"F looks best.  let's see about using that in the editor too.  Also, from this, it looks like your down
+arrow on the Y may still be slightly off center."*
+
+**Steps**
+
+1. On the track diagram, tick **Display Travel Restrictions** and **Display Allowed Directions**, and look at track that
+   runs both ways, track that runs one way, a curve, and a permanent Y.
+2. Untick Display Travel Restrictions; then tick it again and untick Display Allowed Directions.
+3. In the autonomy editor, choose **Show All** in the directions box and look at the same kinds of track.
+
+**Expected**
+
+- Step 1: the green arrows are a light green with a dark green edge, easy to see on the rails and on the white around
+  them; the red arrows are as before.  Every arrow, green or red, sits centred on its rail - at a Y's toe, straight down
+  the middle.
+- Step 2: Display Allowed Directions stays live, and only the green arrows are drawn - no red ones, and no station
+  arrival marks; then only the red arrows and the station arrival marks.
+- Step 3: the editor's green arrows are the same light green with a dark edge.
+
+*What this is:* `core.testAutonomyDiagramSession.testTheGreenArrowsAreLightGreenWithADarkEdge`,
+`core.testAutonomyDiagramSession.testTheArrowsSitOnTheArtsCentreLine`,
+`core.testAutonomyDiagramSession.testTheGreenArrowsAreDrawnWhenAskedFor`.  The red arrows had hung about half a pixel
+right of and below their rail all along; the Y's green toe arrow was centred in the application, and off only in the
+picture.
+
+---
+
+<a id="mt-684"></a>
+
+### MT-684 - 2026-10-04 - The autonomy editor keeps its own title while it changes page
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (MT-669)
+
+**Written:** 2026-10-04
+
+Your note on MT-669: *"when switching pages, the autonomy editor window title briefly shows the layout editor (not
+autonomy editor) title for a split second, before being updated."*
+
+**Steps**
+
+1. Open the autonomy editor and watch its title bar.
+2. Change page with the page list a few times, and with the keyboard's page shortcut if you use one.
+
+**Expected**
+
+- The title names the autonomy editor and the page all the time - never the track diagram editor's title, even for a
+  moment.
+
+*What this is:* `ui.testTheEditorNamesItsShortcuts.testAPageSwitchShowsOnlyTheAutonomyEditorsTitle`.
+
+---
+
+<a id="mt-685"></a>
+
+### MT-685 - 2026-10-04 - A click in the autonomy editor leaves the track diagram still
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (MT-670)
+
+**Written:** 2026-10-04
+
+Your notes on MT-670: *"every click I make in the autonomy editor makes the viewer diagram flicker.  Necessary?"*, and
+*"Still works, still see a light flicker in the viewer."*
+
+**Steps**
+
+1. With the main window's track diagram showing **1 - Main** beside the autonomy editor, click a piece of track in the
+   editor a few times, stepping its arrows round.
+2. Then rename a station in the editor.
+
+**Expected**
+
+- Step 1: the track diagram's arrows follow each click, and nothing else on it moves or blinks.
+- Step 2: the station's caption on the track diagram takes the new name.  The diagram may redraw once here, as it did
+  before.
+
+*What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testAnEditThatLeavesTheCaptionsKeepsTheDiagram`.  Every
+edit rebuilt the whole diagram - every square taken down and drawn again - though only an edit to the captions needs it.
+
+---
+
+<a id="mt-686"></a>
+
+### MT-686 - 2026-10-04 - The track diagram hides the arrows while autonomy runs
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (arrows)
+
+**Written:** 2026-10-04
+
+Your note of 2026-10-04: *"when trains are running in autonomy, we hide the allowances/restrictions on the track
+diagram."*
+
+**Steps**
+
+1. Tick **Display Travel Restrictions** and **Display Allowed Directions**, and look at the track diagram.
+2. Start autonomy.
+3. Stop it, and let the last train finish.
+4. With autonomy stopped, send one train by hand.
+
+**Expected**
+
+- Step 1: red and green arrows.
+- Step 2: the arrows go as the run starts; the trains, their lines and the station names stay.
+- Step 3: the arrows come back once the run has ended.
+- Step 4: the arrows stay while the train you sent runs - only a run you start hides them.
+
+*What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testTheArrowsAreHiddenWhileAutonomyRuns`.
 
 ---
