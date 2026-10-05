@@ -7406,8 +7406,9 @@ public class AutonomySession
             destinationCopiesWithNoWayOut(inspected, namesForInspection),
             destinationCopiesWithNoWayIn(inspected, namesForInspection),
             destinationCopiesReachingNoStation(inspected, namesForInspection),
-            // A station's two guards as one signal, and a guard no way into its station passes (AUT-C2).
-            guardsOnBothLists(), guardsOffTheWayIn(),
+            // A station's two guards as one signal, an entry guard no way into its station passes (AUT-C2), and an exit
+            // guard no way into or out of it passes (RSA41-C2, -C3).
+            guardsOnBothLists(), guardsOffTheWayIn(), exitGuardsOffTheWay(),
             // Every square unavailable while another is occupied, station or not (Adam, 2026-09-24).
             restrictionsToList());
 
@@ -7494,37 +7495,55 @@ public class AutonomySession
     }
 
     /**
-     * Guards - entry or exit - that no way into their station passes, against those signals' names (AUT-C2).
+     * Entry guards that no way into their station passes, against those signals' names (AUT-C2).
      *
      * Adam, 2026-09-24: *"if the guard signal is not on a path leading to the chosen station, we can add notice to the
-     * autonomy editor."*  A signal whose tile has gone is `signalsThatAreGone`'s, not this; and a station on a page left
-     * out of autonomy is not in play.
+     * autonomy editor."*  An entry guard turns red behind a train arriving, so it belongs on a way in.  A signal whose tile
+     * has gone is `signalsThatAreGone`'s, not this; and a station on a page left out of autonomy is not in play.
      *
-     * @return station square to the names of its guards off every way in
+     * @return station square to the names of its entry guards off every way in
      */
     private Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn()
+    {
+        return guardsOffTheWay(store.getEntrySignals(), false);
+    }
+
+    /**
+     * Exit guards that no way into or out of their station passes, against those signals' names (AUT-C2; RSA41-C2, -C3).
+     *
+     * An exit guard is a station's exit signal as often as its home signal - the one a train leaving passes, which its own
+     * route sets green as it goes (Adam's signals 38, 63 and 64, and OB-315's 64 and 108) - so the way out counts as well
+     * as the way in, where the notice asked of the ways in alone and named those signals as mistakes.  One on neither is
+     * set green by every route over it, a train standing at its station or not, and the notice says so.
+     *
+     * @return station square to the names of its exit guards off every way in and out
+     */
+    private Map<TileKey, Map<TileKey, String>> exitGuardsOffTheWay()
+    {
+        return guardsOffTheWay(store.getProtectingSignals(), true);
+    }
+
+    /**
+     * Guards of one kind that no way into their station passes - nor, where asked, any way out of it.
+     *
+     * @param guards station square to its guards of that kind
+     * @param orOut whether a way out of the station counts too
+     * @return station square to the names of the guards off the way
+     */
+    private Map<TileKey, Map<TileKey, String>> guardsOffTheWay(Map<TileKey, List<TileKey>> guards, boolean orOut)
     {
         Map<TileKey, Map<TileKey, String>> out = new LinkedHashMap<>();
 
         if (graph == null || reducer == null) return out;
 
-        Map<TileKey, java.util.Set<TileKey>> guards = new LinkedHashMap<>();
-
-        for (Map<TileKey, List<TileKey>> list : Arrays.asList(store.getProtectingSignals(), store.getEntrySignals()))
-        {
-            for (Map.Entry<TileKey, List<TileKey>> entry : list.entrySet())
-            {
-                guards.computeIfAbsent(entry.getKey(), k -> new LinkedHashSet<>()).addAll(entry.getValue());
-            }
-        }
-
-        for (Map.Entry<TileKey, java.util.Set<TileKey>> station : guards.entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> station : guards.entrySet())
         {
             if (store.getExcludedPages().contains(station.getKey().getPage())) continue;
 
             for (TileKey signal : station.getValue())
             {
-                if (!graph.getTiles().containsKey(signal) || onAWayInto(station.getKey(), signal)) continue;
+                if (!graph.getTiles().containsKey(signal) || onAWayInto(station.getKey(), signal)
+                    || orOut && onAWayOutOf(station.getKey(), signal)) continue;
 
                 out.computeIfAbsent(station.getKey(), k -> new LinkedHashMap<>()).put(signal, signalName(signal));
             }
@@ -7565,6 +7584,42 @@ public class AutonomySession
                 GraphReducer.ReducedPoint before = reducer.getPoints().get(edge.getStart());
 
                 if (before != null && !before.isStation() && seen.add(edge.getStart())) toVisit.add(edge.getStart());
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a signal lies on track a train leaving this station runs over before it reaches the next station
+     * (RSA41-C3) - `onAWayInto` the other way round: walked forward along the reduced edges that leave the station,
+     * through the sensors between, and stopped at the first station on each way on.
+     *
+     * @param station the station's square
+     * @param signal the signal's square
+     * @return whether some way out of the station passes it
+     */
+    private boolean onAWayOutOf(TileKey station, TileKey signal)
+    {
+        java.util.Deque<TileKey> toVisit = new java.util.ArrayDeque<>();
+        java.util.Set<TileKey> seen = new java.util.HashSet<>();
+
+        toVisit.add(station);
+        seen.add(station);
+
+        while (!toVisit.isEmpty())
+        {
+            TileKey at = toVisit.poll();
+
+            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            {
+                if (!at.equals(edge.getStart())) continue;
+
+                for (GraphReducer.TileStep step : edge.getPath()) if (signal.equals(step.getTile())) return true;
+
+                GraphReducer.ReducedPoint after = reducer.getPoints().get(edge.getEnd());
+
+                if (after != null && !after.isStation() && seen.add(edge.getEnd())) toVisit.add(edge.getEnd());
             }
         }
 
