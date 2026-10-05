@@ -2,7 +2,11 @@ package org.traincontrol.gui;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.Icon;
 import javax.swing.filechooser.FileSystemView;
 
@@ -16,11 +20,10 @@ import javax.swing.filechooser.FileSystemView;
  * each, so Open Layout's chooser cost two of them before it showed, and every step up a folder inside it another.
  *
  * The list is the same one: the shell's own answer - Recent Items, Desktop, Documents, This PC and its drives, Network,
- * Libraries and the user's folders - asked off the event thread as the window opens and again after each chooser closes,
- * so a drive plugged in since is there the next time.  Swing asks the shell itself only for a chooser on the shell's
- * own view of the files, so this one carries a view of its own, which hands Swing the answer among its roots; everything
- * else - the files, their names and icons, which folder is above which - is the shell's as before.  A chooser opened
- * before the first answer is in asks for it there and then, as Swing did.
+ * Libraries and the user's folders - asked off the event thread as the window opens, and kept until a drive comes or goes,
+ * when the next chooser asks again.  Swing asks the shell itself only for a chooser on the shell's own view of the files,
+ * so this one carries a view of its own, which hands Swing the answer among its roots; everything else - the files, their
+ * names and icons, which folder is above which - is the shell's as before.
  *
  * Every chooser in TrainControl is one of these - `testSwingSpeaksOurLanguage` looks.
  *
@@ -34,8 +37,14 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     /** The Look In list's folders, as the shell last gave them, or null before it has. */
     private static volatile File[] places = null;
 
-    /** Whether the shell is being asked now, so it is asked once at a time. */
-    private static final AtomicBoolean asking = new AtomicBoolean();
+    /** The drives there were when the shell was asked for `places`. */
+    private static volatile Set<File> drivesThen = null;
+
+    /** The ask under way, or the last one; asked at most once at a time. */
+    private static FutureTask<File[]> asking = null;
+
+    /** How many times the shell has been asked, for the claims. */
+    private static final AtomicInteger asked = new AtomicInteger();
 
     /** A chooser at the user's default folder. */
     public QuickFileChooser()
@@ -53,52 +62,113 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         super(currentDirectoryPath, new Places());
     }
 
+    /**
+     * The folder as the shell's own, and a shortcut's target in place of the shortcut (RSA38-B2, RSA38-C1): what Swing does
+     * itself for a chooser on the shell's view, and this one is not on it.  Followed, a shortcut to a folder - in Recent
+     * Items, or the user's own - opens the folder, where it threw on the event thread and left the chooser listing the
+     * folder before; and the shell's folder is what gives the details view the shell's columns - name, date, type and
+     * size - for the shell's values, which came under Swing's three headings out of step with them.
+     *
+     * @param dir the folder
+     */
     @Override
-    public int showDialog(java.awt.Component parent, String approveButtonText)
+    public void setCurrentDirectory(File dir)
     {
-        try
+        super.setCurrentDirectory(theShellsFolder(dir));
+    }
+
+    /**
+     * Asks the shell for the Look In list off the event thread, unless it is being asked already - as the window opens, so
+     * the first chooser has it.
+     */
+    public static void askTheShellAhead()
+    {
+        theAsk();
+    }
+
+    /**
+     * The ask under way, or one started now.
+     *
+     * @return what it will answer
+     */
+    private static FutureTask<File[]> theAsk()
+    {
+        synchronized (QuickFileChooser.class)
         {
-            return super.showDialog(parent, approveButtonText);
-        }
-        finally
-        {
-            // and asked again for the next one, now nobody is waiting on the shell
-            askTheShellAhead();
+            if (asking != null && !asking.isDone()) return asking;
+
+            final FutureTask<File[]> ask = new FutureTask<>(() ->
+            {
+                Set<File> drives = drives();
+
+                File[] found = theShellsPlaces();
+
+                if (found != null)
+                {
+                    places = found;
+                    drivesThen = drives;
+                }
+
+                return found;
+            });
+
+            asking = ask;
+
+            Thread thread = new Thread(ask, "file chooser places");
+
+            thread.setDaemon(true);
+            thread.start();
+
+            return ask;
         }
     }
 
     /**
-     * Asks the shell for the Look In list off the event thread, unless it is being asked already: as the window opens, so
-     * the first chooser has it, and after each chooser closes.
+     * The Look In list's folders: the shell's last answer while the drives are the ones there were then, and otherwise the
+     * ask under way or one asked now, waited for - once, and never two at a time.
+     *
+     * @return the folders, or null where the shell gives none
      */
-    public static void askTheShellAhead()
+    private static File[] thePlaces()
     {
-        if (!asking.compareAndSet(false, true)) return;
+        File[] known = places;
 
-        Thread ask = new Thread(() ->
+        if (known != null && drives().equals(drivesThen)) return known;
+
+        try
         {
-            try
-            {
-                File[] found = theShellsPlaces();
+            File[] got = theAsk().get();
 
-                if (found != null) places = found;
-            }
-            finally
-            {
-                asking.set(false);
-            }
-        }, "file chooser places");
+            return got != null ? got : known;
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
 
-        ask.setDaemon(true);
-        ask.start();
+            return known;
+        }
+        catch (java.util.concurrent.ExecutionException e)
+        {
+            return known;
+        }
+    }
+
+    /** The drives there are now - a list of letters, which asks the shell nothing. */
+    private static Set<File> drives()
+    {
+        File[] roots = File.listRoots();
+
+        return roots == null ? new HashSet<File>() : new HashSet<>(Arrays.asList(roots));
     }
 
     /**
      * The Look In list's folders as the shell gives them - what Swing asked for itself - or null where it gives none.
-     * Through reflection: `sun.awt.shell` is not on the compiler's public list.
+     * Through reflection, as everything of `sun.awt.shell` here: it is not on the compiler's public list.
      */
     private static File[] theShellsPlaces()
     {
+        asked.incrementAndGet();
+
         try
         {
             Object got = Class.forName("sun.awt.shell.ShellFolder").getMethod("get", String.class)
@@ -113,6 +183,38 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     }
 
     /**
+     * A folder as the shell's own, following a shortcut to where it leads - or the folder as it was, where the shell
+     * cannot say.
+     *
+     * @param dir a folder, or null
+     * @return the shell's folder, or a shortcut's target
+     */
+    private static File theShellsFolder(File dir)
+    {
+        if (dir == null) return null;
+
+        try
+        {
+            Class<?> shell = Class.forName("sun.awt.shell.ShellFolder");
+
+            Object folder = shell.getMethod("getShellFolder", File.class).invoke(null, dir);
+
+            if (Boolean.TRUE.equals(shell.getMethod("isLink").invoke(folder)))
+            {
+                Object to = shell.getMethod("getLinkLocation").invoke(folder);
+
+                if (to instanceof File) folder = shell.getMethod("getShellFolder", File.class).invoke(null, to);
+            }
+
+            return folder instanceof File ? (File) folder : dir;
+        }
+        catch (ReflectiveOperationException | RuntimeException | LinkageError e)
+        {
+            return dir;
+        }
+    }
+
+    /**
      * The shell's view of the files, with the Look In list's folders among its roots - where Swing looks for them when it
      * is not to ask the shell itself.  Which folder is a root for going up is still the shell's answer.
      */
@@ -121,15 +223,7 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         @Override
         public File[] getRoots()
         {
-            File[] known = places;
-
-            if (known == null)
-            {
-                // NOT ASKED YET: asked here, as Swing would have, and kept
-                known = theShellsPlaces();
-
-                if (known != null) places = known;
-            }
+            File[] known = thePlaces();
 
             return known != null ? known.clone() : SHELL.getRoots();
         }

@@ -4230,6 +4230,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // rebuild ends by doing.  A station added, renamed, shut or moved still rebuilds.
         if (javax.swing.SwingUtilities.isEventDispatchThread() && theShownDiagramHasItsCaptions())
         {
+            // AND THE OTHER PAGES KEPT FOR THE PAGE LIST FORGOTTEN, as the rebuild emptied the cache (RSA38-B1)
+            forgetTheCachedPagesButTheShownOne(InnerLayoutPanel.getComponent(0));
+
             updateVisiblePoints();
 
             refreshAutonomyFindings();
@@ -4251,7 +4254,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (InnerLayoutPanel == null || InnerLayoutPanel.getComponentCount() != 1) return false;
 
-        LayoutGrid shown = gridOfContainer.get(InnerLayoutPanel.getComponent(0));
+        LayoutGrid shown = LayoutGrid.of(InnerLayoutPanel.getComponent(0));
 
         Object page = this.LayoutList.getSelectedItem();
         Object size = this.SizeList.getSelectedItem();
@@ -4265,10 +4268,38 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Each track diagram grid by the panel it built, for `theShownDiagramHasItsCaptions`: the panel on screen may be a
-     * cached page's, built by a grid other than the newest.  Weak, so a grid goes with its panel.
+     * Forgets every page the page cache keeps but the one on screen (RSA38-B1) - as the rebuild a setup change now skips
+     * did, emptying the cache: a page drawn before the change and kept for the page list came back as it was drawn, a page
+     * put back into autonomy with none of its captions, a station added with none, a station renamed with its old name.
+     * The page on screen keeps its grid; the others are drawn afresh when chosen, as after any setup change before.
+     *
+     * @param shown the container on screen
      */
-    private final java.util.Map<java.awt.Component, LayoutGrid> gridOfContainer = new java.util.WeakHashMap<>();
+    private void forgetTheCachedPagesButTheShownOne(java.awt.Component shown)
+    {
+        HashMap<String, JPanel> kept = new HashMap<>();
+
+        for (Map.Entry<String, JPanel> page : this.layoutCache.entrySet())
+        {
+            if (page.getValue() == shown)
+            {
+                kept.put(page.getKey(), page.getValue());
+
+                continue;
+            }
+
+            Object registered = page.getValue() == null ? null
+                : page.getValue().getClientProperty(LayoutGrid.CAPTIONS_REGISTERED);
+
+            // Null container, as the rebuild's own emptying passes it: the page is on its way out of the cache
+            if (registered instanceof java.util.Collection)
+            {
+                forgetLayoutStations((java.util.Collection<JLabel>) registered, null);
+            }
+        }
+
+        this.layoutCache = kept;
+    }
 
     public void autonomyMenuActed()
     {
@@ -33257,8 +33288,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             false,
                             this
                         );
-
-                        gridOfContainer.put(this.trainGrid.getContainer(), this.trainGrid);
                         
                         if (this.model.isDebug())
                         {
