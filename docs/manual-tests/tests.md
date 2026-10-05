@@ -27,12 +27,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-690](#mt-690) | 2026-10-05 | The file chooser opens at once, with the same places to look in | fixed unvalidated | Adam 2026-10-05 (OB-323) |
-| [MT-692](#mt-692) | 2026-10-05 | The file chooser follows shortcuts and shows the columns Windows does | fixed unvalidated | Claude 2026-10-05 (RSA38, RSA39) |
-| [MT-693](#mt-693) | 2026-10-05 | A page brought back after a size change still follows the railway | fixed unvalidated | Claude 2026-10-05 (RSA39) |
+| [MT-694](#mt-694) | 2026-10-05 | A station renamed while the setup has an error keeps its train's caption | fixed unvalidated | Adam 2026-10-05 (RSA40-C2) |
+| [MT-695](#mt-695) | 2026-10-05 | A page brought back after a size change still follows the railway | fixed unvalidated | Adam 2026-10-05 (MT-693) |
+| [MT-696](#mt-696) | 2026-10-05 | The file chooser opens without a freeze, follows shortcuts and shows Windows' columns | fixed unvalidated | Adam 2026-10-05 (MT-690, MT-692) |
 
-Everything else - 690 of 693 - needs nothing from you unless the area changes again:
-546 **fixed validated** and 144 **superseded**.
+Everything else - 693 of 696 - needs nothing from you unless the area changes again:
+546 **fixed validated** and 147 **superseded**.
 
 ---
 
@@ -32837,7 +32837,7 @@ Validated on your *Works*.
 
 ### MT-690 - 2026-10-05 - The file chooser opens at once, with the same places to look in
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam 2026-10-05 (OB-323)
 
 **Written:** 2026-10-05
@@ -32863,6 +32863,16 @@ Layout... (half a second to one second or so)"*; and *"we don't want to sacrific
 for the Look In list each time a chooser was made and at every change of folder - measured on your PC, one to two seconds
 each.  It is now asked once, in the background, as the window opens and after each chooser closes: about a quarter of a
 second for the first chooser and a fiftieth after.
+
+**Adam, 2026-10-05 (triage).** Does not work.
+
+It is still slow, actually slightly slower than before.  Would https://www.formdev.com/flatlaf/system-file-chooser/ be a solution?
+
+*Run against commit cc774ac1, in English - build\classes, compiled 05 Oct 01:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Superseded by MT-696: this run was of a build compiled at 01:05, before the quicker chooser was in (round 66), so it showed Swing's own chooser - the same speed as before.  The chooser has since been made quicker still (icons kept and fetched ahead).
 
 ---
 
@@ -32904,7 +32914,7 @@ Superseded by MT-692 before it was run: its list of the details view's columns w
 
 ### MT-692 - 2026-10-05 - The file chooser follows shortcuts and shows the columns Windows does
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Claude 2026-10-05 (RSA38, RSA39)
 
 **Written:** 2026-10-05
@@ -32930,13 +32940,23 @@ list of columns was wrong.
 *What this is:* `regression.testSwingSpeaksOurLanguage.testAShortcutToAFolderOpensTheFolder`,
 `regression.testSwingSpeaksOurLanguage.testTheDetailsViewHasTheShellsColumns`.
 
+**Adam, 2026-10-05 (triage).** Works, with notes.
+
+Features work.  But when the "Open layout" option is selected and before the selector opens, the UI briefly freezes.
+
+*Run against commit cc774ac1, in English - build\classes, compiled 05 Oct 01:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Superseded by MT-696: this run was of a build compiled at 01:05, before the quicker chooser was in, so the features you saw were Swing's own chooser's.  Your note on the freeze is built - measured, half of it was Windows' icons fetched as the dialog first painted.
+
 ---
 
 <a id="mt-693"></a>
 
 ### MT-693 - 2026-10-05 - A page brought back after a size change still follows the railway
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Claude 2026-10-05 (RSA39)
 
 **Written:** 2026-10-05
@@ -32957,5 +32977,118 @@ until something redrew it, and during a run nothing does.  It dates from August.
   page you had not left.
 
 *What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testACachedPageComesBackWired`.
+
+**Adam, 2026-10-05 (triage).** Could not run this.
+
+Unclear how to change the size and where
+
+*Run against commit cc774ac1, in English - build\classes, compiled 05 Oct 01:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Superseded by MT-695, which names the Size list on the Track Diagram tab.
+
+---
+
+<a id="mt-694"></a>
+
+### MT-694 - 2026-10-05 - A station renamed while the setup has an error keeps its train's caption
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (RSA40-C2)
+
+**Written:** 2026-10-05
+
+Your word on RSA40-C2: *"Yes, do it."*  A station renamed while the setup could not be built lost the caption of the
+train standing there - blank, as if no train were there - until the setup built again.
+
+**Steps**
+
+1. Load an autonomy configuration with a train standing at a station, its caption on the track diagram showing the
+   train.
+2. In the autonomy editor, make an edit that leaves the setup with an error, so it cannot be built - for example, leave
+   **2 - Bottom** out of autonomy.
+3. While the error stands, rename the station where the train stands (right-click, Rename...).
+4. Fix the error, for example by putting 2 - Bottom back.
+
+**Expected**
+
+- Step 3: the caption on the track diagram still shows the train standing there.
+- Step 4: the setup builds, and the caption shows the train as before.
+
+*What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testARenameTheBuildRefusesKeepsTheTrainOnItsCaption`.
+
+---
+
+<a id="mt-695"></a>
+
+### MT-695 - 2026-10-05 - A page brought back after a size change still follows the railway
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (MT-693)
+
+**Written:** 2026-10-05
+
+Your note on MT-693: *"Unclear how to change the size and where"* - this replaces it, with the control named.  The
+track diagram could bring a page back frozen after a size change: no switch, signal, sensor, train or caption on it
+updated until something redrew it.
+
+**Steps**
+
+1. On the main window's **Track Diagram** tab, the two lists above the diagram are the page and **Size** (Small or
+   Large).  Show **1 - Main** at Small.
+2. Choose another page in the page list.
+3. Choose **Large** in the Size list.
+4. Choose **1 - Main** in the page list, then **Small** in the Size list.
+5. Throw a switch on 1 - Main from the diagram, and, with autonomy loaded, look at the station names and trains on it.
+
+**Expected**
+
+- Step 5: the switch's picture changes as you throw it, and the names, trains and arrows on the page follow the
+  railway, as on a page you had not left.
+
+*What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testACachedPageComesBackWired`.
+
+---
+
+<a id="mt-696"></a>
+
+### MT-696 - 2026-10-05 - The file chooser opens without a freeze, follows shortcuts and shows Windows' columns
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (MT-690, MT-692)
+
+**Written:** 2026-10-05
+
+Your notes: on MT-690, *"It is still slow, actually slightly slower than before"*, and on MT-692, *"when the "Open
+layout" option is selected and before the selector opens, the UI briefly freezes"*.  Both runs were of a build compiled
+at 01:05, before the quicker chooser was in - so they showed Swing's own.  This replaces both, to be run on a fresh build
+(Clean and Build in NetBeans first).
+
+**Steps**
+
+1. Clean and Build, start TrainControl, wait a few seconds, and choose **Layouts > Open Layout...** - three times,
+   cancelling each.
+2. In the chooser, open the **Look In** list; go up a folder and back down.
+3. Click **Recent Items** in the side panel and double-click one of the folders listed there.
+4. Switch the chooser to its details view (the right-hand button above the list).
+
+**Expected**
+
+- Step 1: the chooser appears with no noticeable pause or freeze - measured on your PC, a little under half a second the
+  first time and about a tenth of a second after (Swing's own took two seconds and more every time).
+- Step 2: the Look In list is as Windows gives it, the folder you are in under its drive; moving between folders is
+  immediate.
+- Step 3: the chooser opens that folder.
+- Step 4: each column shows what its heading says - for an ordinary folder Name, Size, Item type and Date modified.
+
+*What this is:* `regression.testSwingSpeaksOurLanguage` - `testEveryFileChooserSkipsTheShellsFolders`,
+`testTheShellsIconsAreKept`, `testAShortcutToAFolderOpensTheFolder`, `testTheDetailsViewHasTheShellsColumns`.
+
+**Adam, 2026-10-05 (triage).** Works.
+
+Very good performance now
+
+*Run against commit 1e75afb9, in English - build\classes, compiled 05 Oct 08:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
