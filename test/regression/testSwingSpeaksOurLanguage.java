@@ -391,6 +391,77 @@ public class testSwingSpeaksOurLanguage
             + " ask ahead and three choosers, with the drives the same (RSA38-C2)");
     }
 
+    /**
+     * The Look In list is asked of the shell again when a Desktop folder has changed, as well as when a drive has (RSA39-C1):
+     * most of it is the Desktop's own folders, and a folder made on it was not followed while the drives stayed the same.
+     * A folder of the test's own stands in for the Desktop, so the real one is never touched.
+     *
+     * MUTATION: ask again only when a drive comes or goes, and this fails.
+     *
+     * @throws Exception from the chooser
+     */
+    @Test
+    public void testTheLookInListFollowsTheDesktop() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a look and feel needs a display");
+
+        TrainControlUI.installLookAndFeel();
+
+        Class<?> quick = org.traincontrol.gui.QuickFileChooser.class;
+
+        java.lang.reflect.Field desktops = quick.getDeclaredField("desktops");
+        java.lang.reflect.Field asking = quick.getDeclaredField("asking");
+        java.lang.reflect.Field counted = quick.getDeclaredField("asked");
+
+        desktops.setAccessible(true);
+        asking.setAccessible(true);
+        counted.setAccessible(true);
+
+        Object were = desktops.get(null);
+
+        java.nio.file.Path standIn = java.nio.file.Files.createTempDirectory("tc-desktop");
+
+        try
+        {
+            Object under = asking.get(null);
+
+            if (under != null) ((java.util.concurrent.Future<?>) under).get(60, java.util.concurrent.TimeUnit.SECONDS);
+
+            desktops.set(null, java.util.Collections.singletonList(standIn.toFile()));
+
+            // ASKED WITH THE STAND-IN AS THE DESKTOP
+            org.traincontrol.gui.QuickFileChooser.askTheShellAhead();
+
+            ((java.util.concurrent.Future<?>) asking.get(null)).get(60, java.util.concurrent.TimeUnit.SECONDS);
+
+            int before = ((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+
+            assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "precondition:"
+                + " the shell was asked again with nothing changed");
+
+            // A FOLDER MADE ON IT
+            java.nio.file.Files.createDirectory(standIn.resolve("made"));
+
+            standIn.toFile().setLastModified(standIn.toFile().lastModified() + 10000);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+
+            assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 1, "a folder made on"
+                + " the Desktop did not have the shell asked again for the Look In list (RSA39-C1)");
+        }
+        finally
+        {
+            desktops.set(null, were);
+
+            try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(standIn))
+            {
+                walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+            }
+        }
+    }
+
     /** The headings of a chooser's details view, switched to it. */
     private static java.util.List<String> detailsHeadings(javax.swing.JFileChooser chooser)
     {
