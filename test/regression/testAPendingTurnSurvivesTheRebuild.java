@@ -713,6 +713,10 @@ public class testAPendingTurnSurvivesTheRebuild
     @Test
     public void testACachedPageComesBackWired() throws Exception
     {
+        // AN EMPTY PAGE CACHE FIRST: a page already kept at the other size would come back from it below, and take nothing
+        // (RSA40's note)
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLayout());
+
         settle();
 
         @SuppressWarnings("unchecked")
@@ -847,6 +851,60 @@ public class testAPendingTurnSurvivesTheRebuild
             javax.swing.SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(page));
 
             settle();
+        }
+    }
+
+    /**
+     * A build keeps both of its captions of a station captioned on two squares - a long platform labelled at both ends -
+     * and a later build's caption still takes an earlier build's place (RSA40-C1).  The station map keeps captions by
+     * station, and registering one let go of every other of the same window not on screen, its own build's included: the
+     * first of the two was never written, and its page was never served from the page cache again.
+     *
+     * MUTATION: let a build evict its own caption again, or no caption evict another, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testABuildKeepsBothCaptionsOfAStation() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey station =
+            new org.traincontrol.automationui.TileGraph.TileKey("RSA40-C1", 1, 1);
+
+        final javax.swing.JPanel owner = new javax.swing.JPanel();
+
+        final javax.swing.JLabel first = new javax.swing.JLabel();
+        final javax.swing.JLabel second = new javax.swing.JLabel();
+        final javax.swing.JLabel later = new javax.swing.JLabel();
+
+        Object build = new Object();
+
+        first.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, build);
+        second.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, build);
+        later.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
+
+        try
+        {
+            // ONE BUILD'S TWO CAPTIONS OF THE STATION, neither on screen yet
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                ui.addLayoutStation(station, first, owner);
+                ui.addLayoutStation(station, second, owner);
+            });
+
+            assertEquals(new java.util.HashSet<>(ui.getLayoutStations(station)), new java.util.HashSet<>(
+                java.util.Arrays.asList(first, second)), "a build let go of its own caption of a station captioned twice,"
+                + " which is then never written (RSA40-C1)");
+
+            // AND THE NEXT BUILD'S, which takes their place
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.addLayoutStation(station, later, owner));
+
+            assertEquals(new java.util.HashSet<>(ui.getLayoutStations(station)), new java.util.HashSet<>(
+                java.util.Arrays.asList(later)), "a later build's caption did not take the earlier build's place");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.forgetLayoutStations(
+                java.util.Arrays.asList(first, second, later), null));
         }
     }
 

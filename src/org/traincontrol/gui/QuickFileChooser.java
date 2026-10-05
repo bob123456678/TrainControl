@@ -159,11 +159,12 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     }
 
     /**
-     * What says the shell's answer may have changed, each read without asking the shell: the drives, and when each Desktop
-     * folder last changed (RSA39-C1) - most of the list is the Desktop's own folders, and a folder made on it, removed or
-     * renamed was not followed while the drives stayed the same.
+     * What says the shell's answer may have changed, each read without asking the shell: the drives, and the folders on
+     * each Desktop (RSA39-C1) - most of the list is the Desktop's own folders, and a folder made on it, removed or renamed
+     * was not followed while the drives stayed the same.  Its folders, not when it last changed (RSA40-C3): a file saved
+     * to the Desktop changes that, and the list holds no files, so the next chooser waited on the shell for nothing.
      *
-     * @return the drives, then each Desktop folder's last change
+     * @return the drives, then the names of each Desktop's folders
      */
     private static java.util.List<Object> landmarks()
     {
@@ -171,7 +172,16 @@ public class QuickFileChooser extends javax.swing.JFileChooser
 
         out.add(drives());
 
-        for (File desktop : desktops) out.add(desktop.lastModified());
+        for (File desktop : desktops)
+        {
+            File[] folders = desktop.listFiles(File::isDirectory);
+
+            java.util.Set<String> names = new java.util.TreeSet<>();
+
+            if (folders != null) for (File folder : folders) names.add(folder.getName());
+
+            out.add(names);
+        }
 
         return out;
     }

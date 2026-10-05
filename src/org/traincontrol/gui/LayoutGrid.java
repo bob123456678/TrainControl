@@ -1367,6 +1367,9 @@ public class LayoutGrid
                         // the placeholder state this comment exists to stop somebody restoring.
                         text.setText("");
 
+                        // Of this build, so registering its other caption of the same station spares it (RSA40-C1)
+                        text.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, registeredCaptions);
+
                         // This callback will populate the label
                         ui.addLayoutStation(captioned, text, parent);
 

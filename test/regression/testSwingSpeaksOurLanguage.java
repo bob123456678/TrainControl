@@ -419,6 +419,20 @@ public class testSwingSpeaksOurLanguage
 
         Object were = desktops.get(null);
 
+        // AND THE REAL DESKTOP IS FOUND, which the stand-in below takes the place of (RSA40-C4)
+        java.lang.reflect.Method found = quick.getDeclaredMethod("theDesktops");
+
+        found.setAccessible(true);
+
+        java.util.List<?> real = (java.util.List<?>) found.invoke(null);
+
+        assertFalse(real.isEmpty(), "TrainControl's file chooser finds no Desktop folder to follow (RSA40-C4)");
+
+        for (Object desktop : real)
+        {
+            assertTrue(((java.io.File) desktop).isDirectory(), "a Desktop found is no folder: " + desktop);
+        }
+
         java.nio.file.Path standIn = java.nio.file.Files.createTempDirectory("tc-desktop");
 
         try
@@ -441,10 +455,18 @@ public class testSwingSpeaksOurLanguage
             assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "precondition:"
                 + " the shell was asked again with nothing changed");
 
-            // A FOLDER MADE ON IT
-            java.nio.file.Files.createDirectory(standIn.resolve("made"));
+            // A FILE SAVED ON IT, which the list holds none of (RSA40-C3)
+            java.nio.file.Files.write(standIn.resolve("saved.txt"), new byte[] {1});
 
             standIn.toFile().setLastModified(standIn.toFile().lastModified() + 10000);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
+
+            assertEquals(((java.util.concurrent.atomic.AtomicInteger) counted.get(null)).get() - before, 0, "a file saved on"
+                + " the Desktop had the shell asked again for a list that holds only folders (RSA40-C3)");
+
+            // A FOLDER MADE ON IT
+            java.nio.file.Files.createDirectory(standIn.resolve("made"));
 
             javax.swing.SwingUtilities.invokeAndWait(() -> lookInOf(new org.traincontrol.gui.QuickFileChooser()));
 
