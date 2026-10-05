@@ -1743,14 +1743,15 @@ public class testATrainIsDispatchedOnce
             assertTrue(waitFor(() -> x.getSpeed() > 0 && fresh.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the next railway did not send the train");
 
-            final int driven = x.getSpeed();
-
             model.setFeedbackState(s[1].getName(), true);
 
             Thread.sleep(1500);
 
-            assertEquals(x.getSpeed(), driven, "a sensor the retired railway's journey had waited on stopped a train the"
-                + " next railway is driving (RSA-B1)");
+            // NOT STOPPED, which is what the old journey's sensor would do to it.  Not "the speed it was read at": the next
+            // railway's one-edge journey drops to its own pre-arrival speed a fraction of a millisecond after it sets off,
+            // and a read landing between the two failed one run in eighty for nothing (RSA41-C1).
+            assertTrue(x.getSpeed() > 0, "a sensor the retired railway's journey had waited on stopped a train the next"
+                + " railway is driving (RSA-B1)");
         }
         finally
         {

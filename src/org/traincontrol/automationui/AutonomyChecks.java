@@ -290,11 +290,17 @@ public class AutonomyChecks
     public static final String GUARD_IS_BOTH = "autosetup.ui.checkGuardIsBoth";
 
     /**
-     * A guard no way into its station passes (AUT-C2, Adam 2026-09-24: *"if the guard signal is not on a path leading
-     * to the chosen station, we can add notice to the autonomy editor"*).  A NOTICE: the setup is the operator's to get
-     * right, and this is only a pointer.
+     * An entry guard no way into its station passes (AUT-C2, Adam 2026-09-24: *"if the guard signal is not on a path
+     * leading to the chosen station, we can add notice to the autonomy editor"*).  A NOTICE: the setup is the operator's to
+     * get right, and this is only a pointer.
      */
     public static final String GUARD_OFF_THE_WAY_IN = "autosetup.ui.checkGuardOffTheWayIn";
+
+    /**
+     * An exit guard no way into or out of its station passes (RSA41-C2, -C3): every route over it sets it green, a train
+     * standing at its station or not.  A NOTICE, as the entry guard's.
+     */
+    public static final String EXIT_GUARD_OFF_THE_WAY = "autosetup.ui.checkExitGuardOffTheWay";
 
     /**
      * A square unavailable while another is occupied, station or not (Adam, 2026-09-24: *"a simple info notice on
@@ -513,7 +519,7 @@ public class AutonomyChecks
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
         Map<TileKey, String> copiesReachingNoStation,
         Map<TileKey, Map<TileKey, String>> guardsOnBothLists, Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn,
-        Map<TileKey, String> restrictions)
+        Map<TileKey, Map<TileKey, String>> exitGuardsOffTheWay, Map<TileKey, String> restrictions)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -564,6 +570,7 @@ public class AutonomyChecks
 
         findings.addAll(checkGuards(guardsOnBothLists, GUARD_IS_BOTH, Severity.WARNING));
         findings.addAll(checkGuards(guardsOffTheWayIn, GUARD_OFF_THE_WAY_IN, Severity.NOTICE));
+        findings.addAll(checkGuards(exitGuardsOffTheWay, EXIT_GUARD_OFF_THE_WAY, Severity.NOTICE));
 
         // Every restriction, where it is: the square is `{0}`, what it watches `{1}`.
         if (restrictions != null)

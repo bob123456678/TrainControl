@@ -2377,6 +2377,14 @@ platform, asked again on every change of occupancy (`Layout.refreshProtectingSig
 to two platforms stays red while either is claimed.  Only while trains are being run, so arranging the railway by hand
 moves no hardware.
 
+**A route over a guard sets it as it sets any signal on it** (RSA41-C2, -C3): GREEN, with the route's other accessories,
+after protection has had its say.  So a train leaving by its station's exit signal turns it green as it goes - which is
+what it needs, and what OB-315 asked for - and it stays green until that station next changes, though the departing
+train still holds the platform.  A guard that routes to other stations cross is turned green the same way, over a train
+standing at its station: Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal protecting a station
+are two different signals on a railway wired as he intends, and the editor's notice names an exit guard no way into or
+out of its station passes, saying that routes over it turn it green while a train stands there.
+
 **The entry guard** - *Entry Guard Signal...* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
 final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are
 possible"*).  Its signals are thrown RED when a train ARRIVES at the station as the end of its journey - in every tier,
@@ -2387,10 +2395,11 @@ command on an event rather than an aspect, and nothing is remembered or undone.
 The two lists are separate and thrown at different moments, and **one station's entry guard is never its exit
 guard** (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's
 up to the user to set it up right."*): the editor refuses the pairing and says why, both setters refuse it, and a file
-that carries it anyway is warned about.  Two stations may still share a signal.  A guard that no way into its station
-passes - walked back from the station to the last station on each approach - gets a notice in the editor (*"if the
-guard signal is not on a path leading to the chosen station, we can add notice"*); where the guards are is otherwise
-the operator's.  Both are dropped with the
+that carries it anyway is warned about.  Two stations may still share a signal.  An entry guard that no way into its
+station passes - walked back from the station to the last station on each approach - gets a notice in the editor (*"if
+the guard signal is not on a path leading to the chosen station, we can add notice"*), and so does an exit guard that no
+way into or out of it passes, walked on to the next station as well (an exit signal is on the way out); where the guards
+are is otherwise the operator's.  Both are dropped with the
 station when it stops being one, and a pairing whose signal tile has gone is dropped when the setup is reconciled and
 reported by the editor's gone-signal notice.
 

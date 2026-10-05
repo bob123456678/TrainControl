@@ -10133,8 +10133,51 @@ public class testAutonomyDiagramSession
         session.setEntrySignals(station, null);
         session.setProtectingSignals(station, Arrays.asList(new TileKey("main", 2, 3)));
 
-        assertTrue(noticesAGuardOffTheWayIn(session), "an exit guard on track no train reaching the station runs over"
-            + " is not noticed (AUT-C2)");
+        assertTrue(noticesAnExitGuardOffTheWay(session), "an exit guard on track no train reaching or leaving the station"
+            + " runs over is not noticed (AUT-C2, RSA41-C2)");
+    }
+
+    /**
+     * An exit guard on its station's way out is not noticed; an entry guard there still is (RSA41-C3).
+     *
+     * An exit signal - the one a train leaving the station passes, which its own route sets green as it goes - lies on
+     * the station's way out, and the notice asked only of the ways in: on Adam's railway it named his exit signals 38, 63
+     * and 64 as signals no arriving train meets, *"Check it is the signal you meant"*.  An exit guard is noticed only where
+     * no way into or out of its station passes it; an entry guard, which turns red behind a train arriving, still where no
+     * way in does.
+     *
+     * MUTATION: ask an exit guard of the ways in only, and the first half fails; count a way out for an entry guard too,
+     * and the second does.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAnExitGuardOnTheWayOutIsNotNoticed() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey far = new TileKey("main", 4, 1);
+        TileKey signal = new TileKey("main", 2, 1);
+
+        session.setStation(station, true);
+        session.setStation(far, true);
+
+        // ONE WAY, from the station to the far one: the signal is on its way out and on no way in
+        assertTrue(session.setOneWayRun(station, far) > 0, "precondition: the line could not be made one way");
+
+        session.rebuild();
+
+        session.setProtectingSignals(station, Arrays.asList(signal));
+
+        assertFalse(noticesAGuardOffTheWayIn(session) || noticesAnExitGuardOffTheWay(session), "an exit guard on the"
+            + " station's way out - its exit signal - is noticed as a signal no train meets (RSA41-C3)");
+
+        session.setProtectingSignals(station, null);
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        assertTrue(noticesAGuardOffTheWayIn(session), "an entry guard on the way out alone, which no train arriving"
+            + " passes, is no longer noticed");
     }
 
     /**
@@ -10376,6 +10419,16 @@ public class testAutonomyDiagramSession
         }
 
         return null;
+    }
+
+    private static boolean noticesAnExitGuardOffTheWay(AutonomySession session)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkExitGuardOffTheWay".equals(finding.getMessageKey())) return true;
+        }
+
+        return false;
     }
 
     private static boolean noticesAGuardOffTheWayIn(AutonomySession session)
