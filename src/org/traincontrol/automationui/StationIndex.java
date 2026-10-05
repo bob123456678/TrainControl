@@ -374,6 +374,21 @@ public final class StationIndex
             if (point != null) out.add(point);
         }
 
+        // OR BY THE SQUARE EACH POINT WAS BUILT FOR, where the railway knows none of the setup's names for it (RSA40-C2;
+        // Adam, 2026-10-05: *"Yes, do it."*).  A station renamed while the setup cannot build leaves the railway as it
+        // was, with the names it was built with: asked by the new name it had no Point there, and the caption of the
+        // train standing at it went blank until the setup built.  Names first, so a page renamed - its squares new, its
+        // names the same - is still found by them.
+        if (out.isEmpty() && square != null)
+        {
+            String built = square.toString();
+
+            for (Point point : layout.getPoints())
+            {
+                if (built.equals(point.getSquare())) out.add(point);
+            }
+        }
+
         return out;
     }
 

@@ -908,6 +908,109 @@ public class testAPendingTurnSurvivesTheRebuild
         }
     }
 
+    /**
+     * A station renamed while the setup cannot build keeps the train standing at it on its caption (RSA40-C2; Adam,
+     * 2026-10-05: *"Yes, do it."*): the railway, left as it was, still carries the names it was built with, and the
+     * caption, asked by the new name, found no Point there and went blank until the setup built.
+     *
+     * MUTATION: find the railway's Points by the setup's names alone, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testARenameTheBuildRefusesKeepsTheTrainOnItsCaption() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        Object out = null;
+
+        for (int i = 0; i < pages.getItemCount(); i++)
+        {
+            if (String.valueOf(pages.getItemAt(i)).startsWith("2 - ")) out = pages.getItemAt(i);
+        }
+
+        if (out == null || String.valueOf(out).equals(shownPage)) throw new SkipException("no page 2 to leave out");
+
+        // A STATION ON THE PAGE SHOWN WITH A TRAIN STANDING AT IT
+        org.traincontrol.automationui.TileGraph.TileKey station = null;
+        String train = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!shownPage.equals(square.getPage()) || ui.getLayoutStations(square).isEmpty()) continue;
+
+            java.util.List<org.traincontrol.automation.Point> standing = ui.getAutonomyOccupantsForTile(square);
+
+            if (!standing.isEmpty() && session.getStore().getPointName(square) != null)
+            {
+                station = square;
+                train = standing.get(0).getCurrentLocomotive().getName();
+                break;
+            }
+        }
+
+        if (station == null) throw new SkipException("no train stands at a captioned station on page " + shownPage);
+
+        final org.traincontrol.automationui.TileGraph.TileKey at = station;
+
+        // WHAT IT SAYS WITH THE TRAIN STANDING THERE - the train's name, shortened as a caption shortens it, and its arrow
+        final String said = captionText(at);
+
+        assertFalse(said.trim().isEmpty(), "precondition: the caption at " + at + " says nothing of " + train);
+
+        String name = session.getStore().getPointName(at);
+
+        Layout railway = model.getAutoLayout();
+
+        try
+        {
+            // THE SETUP UNABLE TO BUILD, and the station renamed through the editor's door
+            session.setPageExcluded(String.valueOf(out), true);
+            session.setPointName(at, name + " C2");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+
+            if (model.getAutoLayout() != railway) throw new SkipException("leaving " + out + " out did not stop the build");
+
+            assertEquals(captionText(at), said, "the caption at " + at + " no longer shows " + train + " standing there"
+                + " after the station was renamed while the setup could not build (RSA40-C2)");
+        }
+        finally
+        {
+            session.setPointName(at, name);
+            session.setPageExcluded(String.valueOf(out), false);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
+                new java.util.LinkedHashSet<String>()));
+
+            settle();
+        }
+    }
+
+    /** What the visible captions of a station say, together. */
+    private static String captionText(org.traincontrol.automationui.TileGraph.TileKey station) throws Exception
+    {
+        final StringBuilder said = new StringBuilder();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (javax.swing.JLabel label : ui.getLayoutStations(station))
+            {
+                if (label.isVisible()) said.append(label.getText()).append(' ');
+            }
+        });
+
+        return said.toString();
+    }
+
     /** How many caption labels in the station map are on this panel. */
     @SuppressWarnings("unchecked")
     private static int captionsOf(java.awt.Component panel) throws Exception

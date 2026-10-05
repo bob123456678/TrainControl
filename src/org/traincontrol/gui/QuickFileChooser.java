@@ -90,6 +90,48 @@ public class QuickFileChooser extends javax.swing.JFileChooser
     }
 
     /**
+     * The same, and the icons of what is in these folders too, so a chooser opening in one paints from the kept icons
+     * rather than asking the shell for each on the event thread (MT-692's note: *"before the selector opens, the UI
+     * briefly freezes"* - measured, half of a third of a second, each icon fetched as the dialog first painted).
+     *
+     * @param folders the folders the choosers open in; any that is no folder is passed over
+     */
+    public static void askTheShellAhead(File... folders)
+    {
+        theAsk();
+
+        if (folders == null || folders.length == 0) return;
+
+        Thread icons = new Thread(() ->
+        {
+            for (File folder : folders)
+            {
+                if (folder == null || !folder.isDirectory()) continue;
+
+                try
+                {
+                    File[] inside = SHELL.getFiles(folder, true);
+
+                    for (int i = 0; inside != null && i < inside.length && i < ICONS_AHEAD; i++)
+                    {
+                        Places.iconOf(inside[i]);
+                    }
+                }
+                catch (RuntimeException e)
+                {
+                    // a folder the shell will not list is simply not fetched ahead
+                }
+            }
+        }, "file chooser icons");
+
+        icons.setDaemon(true);
+        icons.start();
+    }
+
+    /** How many items of a folder have their icons fetched ahead - a long folder's first screenful and more. */
+    private static final int ICONS_AHEAD = 400;
+
+    /**
      * The ask under way, or one started now.
      *
      * @return what it will answer
@@ -321,8 +363,43 @@ public class QuickFileChooser extends javax.swing.JFileChooser
         @Override
         public Icon getSystemIcon(File f)
         {
-            return SHELL.getSystemIcon(f);
+            return iconOf(f);
         }
+
+        /**
+         * The icon the shell gives a file, kept once given (MT-692's note): a chooser asked the shell for each item's icon
+         * on the event thread as it first painted, and every chooser asked again.
+         *
+         * @param f a file or folder, or null
+         * @return its icon, or null
+         */
+        static Icon iconOf(File f)
+        {
+            if (f == null) return null;
+
+            String key = f.getPath();
+
+            Icon known = ICONS.get(key);
+
+            if (known != null) return known;
+
+            Icon given = SHELL.getSystemIcon(f);
+
+            if (given != null) ICONS.put(key, given);
+
+            return given;
+        }
+
+        /** The icons the shell has given, by path - the most recently used few thousand. */
+        private static final java.util.Map<String, Icon> ICONS = java.util.Collections.synchronizedMap(
+            new java.util.LinkedHashMap<String, Icon>(512, 0.75f, true)
+            {
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, Icon> eldest)
+                {
+                    return size() > 4000;
+                }
+            });
 
         @Override
         public boolean isParent(File folder, File file)
