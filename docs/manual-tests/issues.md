@@ -1576,6 +1576,16 @@ Adam, 2026-10-04: *"after import, redundant arrows can shown in the viewer, on a
 
 After an import, the track diagram in the main window can show an arrow on every square of a straight run of several straight tracks that trains may travel only one way; the autonomy editor shows the same run correctly, with the arrows collapsed.
 
+### FR-110 - 2026-10-04 - the viewer can show the green arrows too, not only the red
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-04 - with OB-321  
+**Filed:** 2026-10-04  
+
+Adam, 2026-10-04, on OB-321: *"For this, we also need to add an option to view the green arrows in the viewer, not just the red, similar to the editor. File this as another FR and then work it."*
+
+The track diagram in the main window shows travel restrictions only as red arrows; the autonomy editor can also show the green ones (the directions trains may run).  An option in the viewer to show them as well.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
