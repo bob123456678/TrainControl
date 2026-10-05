@@ -1982,9 +1982,9 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default it is
-     * not counted - no setting opens it further, and a count that could never reach nothing would offer the tool for
-     * ever; closed, it is counted; opened, it runs the one way the hardware does, into its toe.
+     * A turnout with no address is opened only as far as its blades let a train through (FR-108).  At its default, or set
+     * to run the one way its blades do, it is not counted - it refuses nothing a train could do, and no red arrow is drawn
+     * on it; closed, it is counted; opened, it runs the one way the hardware does, into its toe.
      *
      * MUTATION: count a road only the hardware restricts, or leave a closed one out, and this fails.
      *
@@ -2014,6 +2014,13 @@ public class testAutonomyDiagramSession
             + " toe, the south side");
 
         Side fork = route.other(Side.S);
+
+        // SET TO RUN THE WAY ITS BLADES DO, which is not "both ways" and shuts nothing
+        session.setDirection(turnout, road, route.getA() == Side.S ? Direction.TOWARD_A : Direction.TOWARD_B);
+        session.rebuild();
+
+        assertFalse(session.routesNotOpenBothWays().containsKey(turnout), "a turnout with no address, set to run into its"
+            + " toe as its blades do, is counted as shut, though it refuses nothing a train could do");
 
         session.setDirection(turnout, road, Direction.NONE);
         session.rebuild();
