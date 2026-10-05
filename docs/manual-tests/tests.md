@@ -28,8 +28,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-690](#mt-690) | 2026-10-05 | The file chooser opens at once, with the same places to look in | fixed unvalidated | Adam 2026-10-05 (OB-323) |
+| [MT-691](#mt-691) | 2026-10-05 | The file chooser follows shortcuts and shows Windows' columns | fixed unvalidated | Claude 2026-10-05 (RSA38) |
 
-Everything else - 689 of 690 - needs nothing from you unless the area changes again:
+Everything else - 689 of 691 - needs nothing from you unless the area changes again:
 546 **fixed validated** and 143 **superseded**.
 
 ---
@@ -32861,5 +32862,35 @@ Layout... (half a second to one second or so)"*; and *"we don't want to sacrific
 for the Look In list each time a chooser was made and at every change of folder - measured on your PC, one to two seconds
 each.  It is now asked once, in the background, as the window opens and after each chooser closes: about a quarter of a
 second for the first chooser and a fiftieth after.
+
+---
+
+<a id="mt-691"></a>
+
+### MT-691 - 2026-10-05 - The file chooser follows shortcuts and shows Windows' columns
+
+**Disposition:** fixed unvalidated
+**From:** Claude 2026-10-05 (RSA38)
+
+**Written:** 2026-10-05
+
+The release validator found two things the quicker chooser of OB-323 had lost, both fixed: a shortcut to a folder no
+longer opened the folder, and the details view's columns did not match what was in them.
+
+**Steps**
+
+1. Choose **Layouts > Open Layout...**, and click **Recent Items** in the side panel.
+2. Double-click one of the folders listed there.
+3. Switch the chooser to its details view (the right-hand button above the list).
+4. Open the **Look In** list.
+
+**Expected**
+
+- Step 2: the chooser opens that folder.
+- Step 3: the columns are Windows' own - Name, Date modified, Type, Size - each showing what its heading says.
+- Step 4: the list is as Windows gives it, the folder you are in shown under its drive.
+
+*What this is:* `regression.testSwingSpeaksOurLanguage.testAShortcutToAFolderOpensTheFolder`,
+`regression.testSwingSpeaksOurLanguage.testTheDetailsViewHasTheShellsColumns`.
 
 ---
