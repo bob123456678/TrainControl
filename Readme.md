@@ -96,7 +96,7 @@ If you have an older CS3 or don't want to use the CS3 Track Board layouts, you c
     - The layout will be saved to a folder of your choosing, and TrainControl will switch to it as the local data source.  It will now be shown in the Layout tab and can be edited if desired.
     - If you already have layout files on your computer, use "Open Layout" in the Layouts menu to select the folder containing them.
 - Otherwise, to create a new layout:
-    - Start TrainControl, then from the Layout menu, click on "Create New Layout"
+    - Start TrainControl, then from the Layouts menu, click on "Create New Layout"
     - If no Central Station layout is detected and no static layout is manually selected, TrainControl will automatically create an editable demo layout at startup.
 
 Complete editing support is accessible via the "Edit" button within the Layout tab. Pages can be managed from the Layouts menu item.  This will let you fully customize your layout.
@@ -365,7 +365,7 @@ Requires JDK 1.8+ and the following libraries:
 
 TrainControl was created and is maintained by Adam Oest.
 
-Feedback and suggestions are welcome at [traincontrol@adamoest.com](traincontrol@adamoest.com).
+Feedback and suggestions are welcome at [traincontrol@adamoest.com](mailto:traincontrol@adamoest.com).
 
 This is free software released under the GNU General Public License v3.
 
@@ -392,17 +392,17 @@ Tab icons provided by Freepik.
             - Stations can say which directions trains are allowed to arrive from, and one-way travel restrictions are now drawn on the ordinary track diagram as well as in the editor.
             - A running train draws its route along the track, following the rails through curves and switches: the stations' blue for the track ahead of it, dark grey for the track it has driven and still holds, white arrows showing which way it is going, and the train itself in orange along the length of track it covers.  Where routes are not atomic, the grey goes as the train gives the track behind it back.
             - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused - occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why not Moving?" tool that draws every route the train could take on the diagram and lists the reasons for the rest underneath.
-            - The setup is checked before it can run, and every finding can be clicked to jump to the square it is about.  Among the things now checked for: two squares sharing one s88 address, a page link that track runs into but which is not paired, a place where trains turn round that leads nowhere, and a train or a station with no length set.  A train left facing a way its station no longer has, and a station at the end of a line where trains may not change direction, are errors; track made one way towards a standing train is a warning.  No setup change is refused because a train is standing in the way.
+            - The setup is checked before it can run, and every finding can be clicked to jump to the square it is about.  Among the things now checked for: two pages sharing one s88 address, a page link that track runs into but which is not paired, a place where trains turn round that leads nowhere, and a train or a station with no length set.  A train left facing a way its station no longer has, and a station at the end of a line where trains may not change direction, are errors; track made one way towards a standing train is a warning.  No setup change is refused because a train is standing in the way.
             - The autonomy button on the track diagram offers to Fix a setup that has errors, opening the editor at the first thing to deal with, rather than staying green and refusing every time it is pressed.
-            - Station names can be hidden for stations autonomy will never choose - ones switched off, ones set to reverse, and ones not marked as automatic destinations - under Autonomy - Show Inactive Labels.
+            - Station names can be hidden for stations autonomy will never choose - ones switched off, and ones not marked as automatic destinations - under Preferences → Autonomy → Show Inactive Labels.
             - Station labels can be dragged onto another square in the autonomy editor, and the station chooser opens on the nearest station on that page.
-            - Station names you had typed onto the track diagram in an earlier version (the ones written as "Point:name") are taken over by the new setup the first time it opens, and removed from the page file so they are not shown twice.  Each page that is changed gets a .bak file beside it holding the page as it stood the first time this version rewrote it, and the log says which pages were changed.  A name that no longer matches any station is left exactly where it is
+            - Station names you had typed onto the track diagram in an earlier version (the ones written as "Point:name") are taken over by the new setup the first time it opens, and removed from the page file so they are not shown twice.  Each page that is changed gets a .bak file beside it holding the page as it stood the first time this version rewrote it, and the log says which pages were changed.  A name that no longer matches any station is left exactly where it is.
             - "Unavailable while occupied" can be answered by clicking the square on the diagram instead of finding it in a list, in the same way a station's signal is paired.
             - The track diagram's Autonomy Setup menu opens the full editor on the page and square you right-clicked, and every item on it names the square it is about.
             - Right-clicking a train on the track diagram puts the stations autonomy chooses from at the top.  Everything else it can still be sent to by hand - parking tracks, reversing points, stations you have marked as not automatic - is under "More Destinations", which is not shortened.
             - **If you ever go back to v2.8.2 or earlier after using this version, keep a copy of your settings first.**  This version allows up to fifty locomotive keyboard pages and those versions read only the first ten - so opening your settings in the older version and closing it again discards pages 11 and up for good.
-            - The autonomy menu's "Autonomy needs a layout on this computer" is now something you can press: it downloads one.
-            - Which function autonomy fires on departure and on arrival is ticked on the function itself, from the locomotive's right-click menu, and a train's length is set from a dropdown in the same place.
+            - The autonomy menu's "Autonomy needs a layout stored on this computer" is now something you can press: it offers to download one, or to create a new one.
+            - Which function autonomy fires on departure and on arrival is ticked on the function itself, from its own right-click menu, and a train's length is set from a dropdown on the locomotive's right-click menu.
             - In autonomy mode, a link switched off in autonomy is greyed out on the track diagram, not only while editing.
             - Nothing that changes the setup can be used while trains are running.  The Autonomy and Layouts menus grey whatever would change the setup or the track diagram, saying why - Open CS3 Web App, the pop-up pages and the picture export stay - and the Auto tab's settings, Execute Timetable and Capture Locomotive Commands are greyed until the trains have stopped.
             - When the setup has changes the railway has not taken yet - a link left unpaired while you edit, say - the strip above the track diagram says "Setup changes not applied yet", and the last setup that worked stays loaded until the setup builds again.
@@ -423,12 +423,12 @@ Tab icons provided by Freepik.
             - The + and - keys step through the pages in both the track diagram editor and the autonomy editor.
             - Station labels are now light grey ovals rather than names in square brackets - blue with white lettering if you prefer (untick Grey Station Labels) - and the direction a train is facing is drawn as an arrow instead of a chevron.  They sit just below an east-west track and read upwards beside a north-south one, so they no longer cover the square they name.
             - A small locomotive marks each train on the track diagram, facing the way it is going: on the sensor a running train is passing, and on the station where a train is standing, laid along the rail on a curve.  A train passing through a station shows an arrow for its direction of travel, and a train standing still on a route it holds is drawn where it stands.  The picture is a file - src/org/traincontrol/gui/resources/running_train.png - and can be replaced with any other.
-            - A track diagram page can now be saved as a picture.  The Layout menu offers the page you are looking at in one click, and writes the whole of it at whatever size you choose - not just the part scrolled into view, and without the window around it.
+            - A track diagram page can now be saved as a picture.  The Layouts menu offers the page you are looking at in one click, and writes the whole of it at whatever size you choose - not just the part scrolled into view, and without the window around it.
             - Track diagrams now show a spinner while they are being drawn, instead of the text labels appearing about a second before the track did, and loading a layout from disk shows what it is doing rather than appearing to do nothing until the finished diagram arrives.
         - Central Station
             - Backing up TrainControl now writes a single archive holding everything - the locomotive database, the window layout, the autonomy setups and the routes - and offers to download the track diagram first if it lives on the Central Station rather than on this computer.  The dialog offers to show you the file when it is done, and says so if anything could not be copied.
             - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, from every place a sync can start, and a second sync started while one is running is turned away rather than run alongside it.
-            - The Layout menu now says where the track diagram is coming from: a folder on this computer, the Central Station, or nowhere yet.
+            - The Layouts menu now says where the track diagram is coming from: a folder on this computer, the Central Station, or nowhere yet.
         - Interface
             - The seven sidebar icons have been redrawn as plain, flat marks in dark grey.  The autonomy tab is now a play symbol rather than a diagram of the old autonomy graph, and the routes tab shows a path with an arrow on it rather than a set of points.  The locomotive is drawn larger so that the keyboard page number sitting on top of it can be read.
             - Local locomotive icons can be cropped and panned when you pick them.  There is a tick box in the file chooser - off until you turn it on - the crop is written as a new file beside the locomotive database rather than over your own picture, and re-cropping an icon reopens at the framing and zoom it was taken with.
@@ -453,7 +453,7 @@ Tab icons provided by Freepik.
         - Interface
             - Confirmations that delete or overwrite something no longer open with Yes already selected: deleting a route, a locomotive or a track diagram page; clearing or replacing a page's key mappings; clearing the timetable; resetting a locomotive's functions to the Central Station's; and leaving the track diagram editor without saving.
     - Code
-        - Updated JSON library to json-20260814.jar and FlatLaf to 3.7.2, and dropped the GraphStream libraries that the old autonomy graph needed
+        - Updated JSON library to json-20260814.jar and FlatLaf to 3.7.2, and dropped the GraphStream libraries that the old autonomy graph needed.
 
 * v2.8.2 [9/25/2026]
     - Autonomy Bug Fixes
@@ -640,9 +640,9 @@ Tab icons provided by Freepik.
     - Improved translations
 
 * v2.6.0 [11/24/2025]
-    - Added internationalizaiton support
+    - Added internationalization support
         - Available languages: English, Danish, German (contributions welcome - see [resources](https://github.com/bob123456678/TrainControl/tree/master/src/org/traincontrol/resources))
-        - Language is automatically set based on system settings, or can be manually overriden via command line
+        - Language is automatically set based on system settings, or can be manually overridden via command line
     - Autonomy
         - Toggling signals and switches along an active route now requires confirmation
         - Added button to reopen graph UI to the Autonomy Settings tab
@@ -702,7 +702,7 @@ Tab icons provided by Freepik.
     - Added UI tabs that can be used to more quickly view / cycle through the locomotive mappings
     - Added a preference to the menu bar to enable the new tabbed view
     - Improved scrolling on the semi-autonomous control page
-    - Simplfied / modernized the design of various UI pages
+    - Simplified / modernized the design of various UI pages
 
 * v2.5.11 [7/26/2025]
     - Route conditional logic now has an explicit AND operator for improved readability
@@ -716,7 +716,7 @@ Tab icons provided by Freepik.
         - Route conditions can now specify the location of a locomotive in autonomous operation (e.g., to trigger functions)
     - Track Diagrams
         - In autonomy mode, added a right-click option to remove the current locomotive from the selected station
-    - Improved the performance (reduced latency) of S88 events and othre autonomy events
+    - Improved the performance (reduced latency) of S88 events and other autonomy events
     - Fixed bug where commands that referenced other routes (from 2.5.3) would fail for routes containing the word "Route"
     - Fixed bug where locomotives being run in autonomy mode might start yielding to inactive locomotives that were paused by the user
 
@@ -964,8 +964,8 @@ Tab icons provided by Freepik.
 * v2.3.2 [12/10/2024]
     - Code portability enhancements (custom code using TrainControl APIs will need to be updated to use the new package names)
         - Moved all TrainControl code to the `org.traincontrol` package and updated documentation to reflect this 
-        - Implemented checks to maintain compability with state files from prior versions (`LocDB.data`, `UIState.data`)
-        - Added several new API methods for covenience, improved code comments
+        - Implemented checks to maintain compatibility with state files from prior versions (`LocDB.data`, `UIState.data`)
+        - Added several new API methods for convenience, improved code comments
         - Expanded [API example code](src/org/traincontrol/examples/ProgrammaticControlExample.java)
         - Added [Java docs](assets/javadoc/index.html)
     - Minor UI and tooltip tweaks
@@ -1108,17 +1108,17 @@ Tab icons provided by Freepik.
 
 * v2.1.1 [5/12/24]
     - Fixed bug where the speed would not be reset in the UI after changing a locomotive's direction via the Central Station
-    - Performance improvemens aimed at improving the reliability of autonomous operation when using slower PCs
+    - Performance improvements aimed at improving the reliability of autonomous operation when using slower PCs
         - UI performance optimizations
         - Improved logging performance
 
 * v2.1.0 [4/24/24]
     - Added a Timetable feature as a new type of autonomous operation mode
         - Locomotive commands in semi-autonomous or fully-autonomous mode can be captured on demand to create a timetable
-        - Paths in the timetable can be replayed sequentally, with progress saved between runs
+        - Paths in the timetable can be replayed sequentially, with progress saved between runs
         - Timetables are saved in the autonomy JSON files so presets can be loaded as needed
         - The Locomotive Commands window will now mark timetable starting stations with a * to simplify the creation of timetables that finish where they started
-        - [Java API](AutomationAPI.md#timetables) for programmatically creating timetables
+        - [Java API](AutomationAPI.md#timetables--v210) for programmatically creating timetables
     - Locomotive function icon improvements
         - Expanded support to 296 function icons when connected to a CS3. Icons will now match what is shown in the CS3.
         - Improved icon contrast and resolution
@@ -1422,7 +1422,7 @@ Tab icons provided by Freepik.
     - Fixed bug from v1.8.0 where clearing a mapped keyboard button would fail
 
 * v1.8.8 [6/10/23]
-    - Fields in exported JSON now have a predicatable order
+    - Fields in exported JSON now have a predictable order
     - Added `preArrivalSpeedReduction` JSON key to control speed reduction prior to arriving to station (default 0.5, or 50% reduction)
     - Added timestamps to standard output log
 

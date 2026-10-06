@@ -73,7 +73,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 
 **2. Open the editor.** `Autonomy` → `Edit Autonomy on Page`, and pick your page. Other ways in:
 
-- **The strip above the track diagram.** When the setup has something to fix it shows a count - "2 errors, 1 warnings - 1 on this page" - and a `Fix it` button in place of Start. Either opens the editor on the first thing to deal with.
+- **The strip above the track diagram.** When the setup has something to fix it shows a count - "2 errors, 1 warning - 1 on this page" - and a `Fix it` button in place of Start. Either opens the editor on the first thing to deal with.
 - **Right-click a square on the track diagram** → `Autonomy Setup` → `Open the Full Editor...` opens the editor on that square.
 - **Inside the editor**, the sidebar on the left switches between `Track Diagram` and `Autonomy Setup`, and between pages.
 - The Auto tab's Settings has `Edit Autonomy Paths in Track Diagram`, which opens the autonomy editor.
@@ -93,7 +93,7 @@ A layout is ready to run once three things are done: the diagram matches the tra
 
 **4. Make a station of each sensor where trains should stop.** A sensor is not a station until you say so. Right-click each one where you want trains to stop, choose `Station (...)` → `Yes - Trains Can Stop Here`, and name it with `Rename...` (Control+S); `Bulk Tools` → `Name Everything...` visits a page's unnamed sensors in turn. Leave the rest as they are - the sensors before and after a platform, and those that follow a train through a junction, are for passing. A station at the end of a line also needs `Changing Direction` → `Trains Must Change Direction Here` (see [Example 3](#example-3-a-terminus-and-trains-that-must-turn-round)).
 
-**5. Measure your trains and your track.** Pick a unit and use it everywhere. `Bulk Tools` → `Mass Assign Train Lengths...` asks for each train's length, and `Mass Assign Lengths...` for the track's, a stretch at a time; tick `Unmeasured Track` under `Visible Elements` to see what is left. Autonomy runs without lengths, but it cannot then tell whether a train fits a station or how much track a standing train covers, and it keeps each train's whole route reserved until it arrives. [Track lengths](#track-lengths-what-they-are-for) says what each number does, and what to measure first.
+**5. Measure your trains and your track.** Pick a unit and use it everywhere. `Bulk Tools` → `Mass Assign Train Lengths (... missing)...` asks for each train's length, and `Mass Assign Lengths...` for the track's, a stretch at a time; tick `Unmeasured Track` under `Visible Elements` to see what is left. Autonomy runs without lengths, but it cannot then tell whether a train fits a station or how much track a standing train covers, and it keeps each train's whole route reserved until it arrives. [Track lengths](#track-lengths-what-they-are-for) says what each number does, and what to measure first.
 
 **6. Place your trains.** Right-click the station each train is standing at → `Add a Locomotive to Autonomy...`. From then on TrainControl keeps track of them.
 
@@ -123,7 +123,7 @@ The window is titled "Autonomy Editor: *page*": the sidebar on the left, your di
 8. **`Page Settings`** - `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…`.
 9. **`Visible Elements`** - `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` - each square's recorded length (Control+G) - and `Unmeasured Track`, the track with no length yet.
 10. **`Text Labels`** - what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), `None`, or `Labels Only` (your own diagram text instead). Control+L steps through them.
-11. **`Track Directions`** - which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut - the usual one), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
+11. **`Track Directions`** - which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut - the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
 12. **`Save Changes`** and **`Cancel`** - see [Saving, cancelling, and changing page](#saving-cancelling-and-changing-page).
 
 The visibility settings are remembered between openings.
@@ -210,10 +210,11 @@ The last item of every right-click menu: things that act on the whole setup rath
 | `One-Way Run` | Arms a tool that closes a run of track to one direction - see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run) |
 | `Name Everything...` | Visits each unnamed sensor on this page in turn and asks for its name (`Skip` moves on) |
 | `Mass Assign Lengths...` | Walks each stretch of track on this page with no length, then asks one length for all its switches and one for all its crossings |
-| `Mass Assign Station Max Train Lengths...` | Walks each station with no maximum train length |
+| `Mass Assign Station Max Train Lengths...` | Walks each station on this page with no maximum train length |
 | `Mass Assign Train Lengths (... missing)...` | Walks each train autonomy would run that has no length of its own. The length is saved on the locomotive itself |
 | `Clear All Locomotives`, `Clear All Home Locomotives` | Takes every train off, or forgets every home - Cancel puts them back |
 | `Clear All Track Lengths`, `Clear All Station Max Train Lengths` | Starts the measurements over, on every page |
+| `Allow Every Path` | Opens every one-way or closed piece of track both ways, on every page - Cancel puts them back. Track that can only ever run one way stays as it is |
 | `Home All Trains Where They Stand` | Makes each train's present station its home |
 
 Each "Clear" asks first, and says how many it would clear.
@@ -381,7 +382,7 @@ Nothing above this line needs lengths. A layout with none set works, and TrainCo
 | A square's **segment length** | Right-click the square → `Segment Length...`, or Control+E with the pointer over it | How much train this piece of track physically holds |
 | A station's **maximum train length** | Right-click the station → `Station (...)` → `Maximum Train Length`, or Control+B | The longest train you are willing to have stop here, whatever the track says |
 
-The first is a measurement, the second is a preference. Both are checked and either can refuse. A train's own length is set with `Place Locomotive...` / `Edit Locomotive...`, or for every train at once with `Bulk Tools` → `Mass Assign Train Lengths...`. Tick **Track Lengths** under `Visible Elements` to see the measurements on the diagram, and **Unmeasured Track** to see what is still missing; `Bulk Tools` → `Clear All Track Lengths` starts you over.
+The first is a measurement, the second is a preference. Both are checked and either can refuse. A train's own length is set with `Place Locomotive...` / `Edit Locomotive...`, or for every train at once with `Bulk Tools` → `Mass Assign Train Lengths (... missing)...`. Tick **Track Lengths** under `Visible Elements` to see the measurements on the diagram, and **Unmeasured Track** to see what is still missing; `Bulk Tools` → `Clear All Track Lengths` starts you over.
 
 ### What lengths govern
 
@@ -431,7 +432,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **Each train is drawn as a small locomotive** on its station, pointing the way it faces - whether or not autonomy is running - and on its route while it moves. A train standing still on a route it holds - while its switches are set, or held on its way - is drawn the same, where it stands.
 
-**Station names are shown on the diagram.** In the editor, right-click a square beside a station and choose `Show a Station Name Here...` (or press Control+N over it); a station square shows its own name. `Text Labels` then chooses what every such caption shows: the station, the train parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption. To hide the names of stations autonomy will never send a train to, or to draw captions in light grey, see **Preferences** → Autonomy.
+**Station names are shown on the diagram.** In the editor, right-click a square beside a station and choose `Show a Station Name Here...` (or press Control+N over it); a station square shows its own name. `Text Labels` then chooses what every such caption shows: the station, the train parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption. To hide the names of stations autonomy will never send a train to, or to draw captions in blue rather than light grey, see **Preferences** → Autonomy.
 
 **A signal paired with a station** (`Exit Guard Signal...`) goes red while a train is standing there, and green again once it leaves.
 
@@ -535,7 +536,7 @@ A configuration is one way of running your railway. They are all under the Auton
 - `Stop Using Autonomy` unloads the configuration without deleting anything; `Delete This Layout’s Whole Autonomy Setup...` removes every configuration, with every station name, direction and caption - the track diagram itself is not touched.
 - `Pages with Autonomy Enabled…` says which pages autonomy uses.
 
-None of these can be done while autonomy is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked in Preferences.
+None of these can be done while autonomy is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked under Preferences → Startup.
 
 **Every configuration shares the railway itself:**
 
@@ -575,7 +576,7 @@ This is the section to read first when nothing happens. In rough order of how of
 
 **A locomotive was placed without a speed.** A train with no speed set will not be dispatched.
 
-**The sensor is not reporting.** If TrainControl never sees the arrival, the train stays "running" forever and the track it holds is never released. Watch the feedback in the Central Station tab while pushing a train over the contact by hand.
+**The sensor is not reporting.** If TrainControl never sees the arrival, the train stays "running" forever and the track it holds is never released. Watch its sensor square on the track diagram while pushing a train over the contact by hand.
 
 **A switch or signal on the route is not in the database.** A route is not used if one of its accessories is missing, because the alternative is a train running over track that was never set.
 
