@@ -1062,7 +1062,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         label.setCursor(turns ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
 
-        String says = turns ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
+        // THE LINE ONLY UNTIL A SQUARE HAS BEEN CLICKED (Adam, on MT-697: *"Stop showing it after the user has clicked any
+        // square"*) - the hand stays, saying the same thing without words
+        String says = turns && AutonomyEditorPanel.clickStillUnlearned()
+            ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
 
         label.setToolTipText(name == null ? says : says == null ? name
             : "<html>" + escaped(name) + "<br>" + escaped(says) + "</html>");
