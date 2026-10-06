@@ -27,10 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-698](#mt-698) | 2026-10-05 | The click's tooltip line goes once a square has been clicked | fixed unvalidated | Adam 2026-10-05 (MT-697) |
+| [MT-699](#mt-699) | 2026-10-05 | The click's tooltip line goes once a square is clicked, until the editor is opened again | fixed unvalidated | Adam 2026-10-05 (MT-697) |
 
-Everything else - 697 of 698 - needs nothing from you unless the area changes again:
-550 **fixed validated** and 147 **superseded**.
+Everything else - 698 of 699 - needs nothing from you unless the area changes again:
+550 **fixed validated** and 148 **superseded**.
 
 ---
 
@@ -33175,7 +33175,7 @@ Validated on your *Works*; your note is built in 4952b1e0 - MT-698.
 
 ### MT-698 - 2026-10-05 - The click's tooltip line goes once a square has been clicked
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam 2026-10-05 (MT-697)
 
 **Written:** 2026-10-05
@@ -33196,6 +33196,39 @@ after the user has clicked any square."*
 - Step 1: before any click, the hand and *Click to change allowed directions*.
 - Step 3: the hand, and no *Click to change* line - over a station only its name.
 - Step 4: still no line: the click is remembered.
+
+*What this is:* `regression.testTheAutonomyEditorKnowsWhichSquare.testTheClickLineGoesOnceASquareIsClicked`.
+
+**Claude, 2026-10-05.**
+
+Superseded by MT-699: on your word *"have that tooltip tracking state reset after the editor is closed"* the click is now forgotten when the editor closes (72baa179), so this entry's step 4 no longer holds.
+
+---
+
+<a id="mt-699"></a>
+
+### MT-699 - 2026-10-05 - The click's tooltip line goes once a square is clicked, until the editor is opened again
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (MT-697)
+
+**Written:** 2026-10-05
+
+Your note on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip tracking
+state reset after the editor is closed"*.
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main** and move the pointer over plain track.
+2. Click any square once - a blank one will do.
+3. Move the pointer over plain track again, and over a station's square.  Switch to another page and hover there too.
+4. Close the editor, open it again, and hover over track.
+
+**Expected**
+
+- Step 1: the hand and *Click to change allowed directions*.
+- Step 3: the hand, and no *Click to change* line - over a station only its name; the same on the other page.
+- Step 4: the line is back until the next click.
 
 *What this is:* `regression.testTheAutonomyEditorKnowsWhichSquare.testTheClickLineGoesOnceASquareIsClicked`.
 
