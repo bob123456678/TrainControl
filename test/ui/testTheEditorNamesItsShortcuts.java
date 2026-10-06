@@ -1774,6 +1774,186 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
+     * The pointer gone off the squares takes its blue outline with it, wherever it went, and a move onto the next square
+     * does not; and the margin keeps the selection's grip (Adam, 2026-10-06: *"Fix them"*, on RSA45's notes).
+     *
+     * A square heard nothing when the pointer left it, so only the margin took the blue off - and a pointer can go
+     * straight from a square onto the tools column, the Grid box beside the squares, crossing no margin.  The blue stayed
+     * on the last square, and the Grid box, which draws the outlines back since round 76, drew it there again.  And the
+     * margin took the grip off with the blue, until the pointer was on a square again.
+     *
+     * MUTATION: leave the blue where the pointer went off the squares, take it off on a move to the next square, or have
+     * the margin take the grip off, and this fails.
+     *
+     * @throws Exception from the window or reflection
+     */
+    @Test
+    public void testThePointerOffTheSquaresTakesItsOutlineWithIt() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        final boolean gridWas = LayoutEditor.showGrid();
+
+        try
+        {
+            settleTheEditor();
+
+            final int[] at = new int[2];
+
+            assertNotNull(aTrackSquareWithRoom(track[0], at), "precondition: no track square on " + PAGE);
+
+            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+
+            gridField.setAccessible(true);
+
+            final int x = at[0];
+            final int y = at[1];
+
+            // TWO SQUARES PICKED, AND THE POINTER OVER A THIRD
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+                    for (int dx = 0; dx < 2; dx++)
+                    {
+                        org.traincontrol.gui.LayoutLabel square = grid.getValueAt(x + dx, y);
+
+                        track[0].receiveClickEvent(new java.awt.event.MouseEvent(square,
+                            java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(),
+                            java.awt.event.InputEvent.SHIFT_DOWN_MASK | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, 1, 1, 1,
+                            false, java.awt.event.MouseEvent.BUTTON1), square);
+                    }
+
+                    org.traincontrol.gui.LayoutLabel over = grid.getValueAt(x, y + 1);
+
+                    track[0].receiveMoveEvent(new java.awt.event.MouseEvent(over, java.awt.event.MouseEvent.MOUSE_MOVED,
+                        System.currentTimeMillis(), 0, 1, 1, 0, false), over);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            final javax.swing.JLabel over = squareAt(gridField, track[0], x, y + 1);
+            final javax.swing.JLabel next = squareAt(gridField, track[0], x + 1, y + 1);
+
+            assertNotNull(next, "precondition: no square beside the one the pointer is over");
+
+            assertTrue(gripIsDrawn(gridField, track[0]) && wearsTheHover(track[0], over), "precondition: the selection's"
+                + " grip or the pointer's outline is not drawn");
+
+            // ONTO THE NEXT SQUARE: leaving one square for another takes nothing off - the next square's own hover moves it
+            leaveFor(over, next.getX() - over.getX() + next.getWidth() / 2, next.getY() - over.getY() + next.getHeight() / 2);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(wearsTheHover(track[0], over), "a move onto the next square took the pointer's outline off before that"
+                + " square's own hover drew it");
+
+            // STRAIGHT OFF THE SQUARES - onto the tools column and the Grid box beside them - crossing no margin
+            java.awt.Point outside = SwingUtilities.convertPoint(over.getParent(), new java.awt.Point(-20, -20), over);
+
+            leaveFor(over, outside.x, outside.y);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(wearsTheHover(track[0], over), "the pointer went off the squares, crossing no margin, and its outline"
+                + " stayed on the last square it was over");
+
+            assertTrue(gripIsDrawn(gridField, track[0]), "the pointer going off the squares took the selection's grip off");
+
+            // THE GRID BOX, twice, the pointer on it: the outlines drawn back, and not the pointer's - asked of the squares
+            // the redraw built, which are new ones
+            for (int turn = 0; turn < 2; turn++)
+            {
+                SwingUtilities.invokeAndWait(() -> track[0].setShowGrid(!LayoutEditor.showGrid()));
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+                for (java.awt.Component c : squareAt(gridField, track[0], x, y + 1).getParent().getComponents())
+                {
+                    assertFalse(c instanceof javax.swing.JLabel && wearsTheHover(track[0], (javax.swing.JLabel) c), "the"
+                        + " Grid box drew the pointer's outline back on a square the pointer had left for it (RSA45, noted)");
+                }
+
+                assertTrue(gripIsDrawn(gridField, track[0]), "after the Grid box the picked squares lost their grip"
+                    + " (RSA44-C2)");
+            }
+
+            // THE MARGIN, from a square: the pointer's outline off, and the grip kept
+            final javax.swing.JLabel again = squareAt(gridField, track[0], x, y + 1);
+
+            final org.traincontrol.gui.LayoutLabel square = (org.traincontrol.gui.LayoutLabel) again;
+
+            SwingUtilities.invokeAndWait(() -> track[0].receiveMoveEvent(new java.awt.event.MouseEvent(square,
+                java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, 1, 1, 0, false), square));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(wearsTheHover(track[0], again), "precondition: the pointer's outline was not drawn again");
+
+            java.lang.reflect.Field marginField = LayoutEditor.class.getDeclaredField("ExtLayoutPanel");
+
+            marginField.setAccessible(true);
+
+            final java.awt.Component margin = (java.awt.Component) marginField.get(track[0]);
+
+            final java.lang.reflect.Method entered = LayoutEditor.class.getDeclaredMethod("ExtLayoutPanelMouseEntered",
+                java.awt.event.MouseEvent.class);
+
+            entered.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    entered.invoke(track[0], new java.awt.event.MouseEvent(margin, java.awt.event.MouseEvent.MOUSE_ENTERED,
+                        System.currentTimeMillis(), 0, 1, 1, 0, false));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(wearsTheHover(track[0], again), "entering the margin did not take the pointer's outline off"
+                + " (RSA34-C1)");
+
+            assertTrue(gripIsDrawn(gridField, track[0]), "entering the margin took the selection's grip off, though it"
+                + " still moves the picked squares (RSA45, noted)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                if (LayoutEditor.showGrid() != gridWas) track[0].setShowGrid(gridWas);
+
+                track[0].dispose();
+            });
+        }
+    }
+
+    /** The pointer leaving a square for a point in the square's own coordinates, as AWT tells the square. */
+    private static void leaveFor(final java.awt.Component square, final int x, final int y) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> square.dispatchEvent(new java.awt.event.MouseEvent(square,
+            java.awt.event.MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, x, y, 0, false)));
+    }
+
+    /**
      * The click's tooltip line is for the visit: a page switch keeps it gone, so do the editor's own reopenings, and the
      * next opening through the main window says it again (RSA44-C1, -C4).
      *

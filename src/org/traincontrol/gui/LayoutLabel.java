@@ -212,6 +212,14 @@ public final class LayoutLabel extends JLabel
                     ((LayoutEditor) parent).receiveMoveEvent(e, clicked);
                 }
 
+                // AND WHEN IT LEAVES (Adam, 2026-10-06, on RSA45's notes): a pointer can go straight off the squares onto
+                // the tools column, crossing no margin, and the square it left kept the pointer's outline
+                @Override
+                public void mouseExited(MouseEvent e)
+                {
+                    ((LayoutEditor) parent).receiveExitEvent(e, clicked);
+                }
+
                 @Override
                 public void mousePressed(MouseEvent e)
                 {

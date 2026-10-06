@@ -185,6 +185,36 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
         }
     }
 
+    /**
+     * One old point that shared a square, or one thing left behind, is said in the singular - in the form each language
+     * takes for the number (`I18n.countForm`).  The import's dialog said "1 old points" and "1 things" (Adam, 2026-10-06:
+     * *"Fix them"*, on RSA45's notes).
+     *
+     * MUTATION: give either sentence one form for every number, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testOneIsSaidInTheSingular() throws Exception
+    {
+        for (String sentence : new String[] {"sharedSquaresSentence", "leftBehindSentence"})
+        {
+            java.lang.reflect.Method say = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(sentence,
+                int.class);
+
+            say.setAccessible(true);
+
+            String one = (String) say.invoke(null, 1);
+            String two = (String) say.invoke(null, 2);
+
+            assertTrue(one.contains("1") && two.contains("2"), "precondition: " + sentence + " does not say its number: "
+                + one + " / " + two);
+
+            org.testng.Assert.assertNotEquals(one, two.replace("2", "1"), sentence + " says one as it says two, in the"
+                + " plural: " + one);
+        }
+    }
+
     /** Deletes a folder and everything in it. */
     private static boolean deleteTree(File file)
     {

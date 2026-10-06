@@ -1284,6 +1284,48 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
+     * A list for the log as one entry: its heading, and each line under it, indented.  One entry, because the log puts its
+     * newest entry on top - a heading logged as an entry of its own before its lines stood below them, and the list read
+     * upwards (Adam, 2026-10-06: "Fix them", on RSA45's notes).
+     *
+     * @param heading what the list is
+     * @param lines its lines
+     * @return the entry
+     */
+    private static String listForTheLog(String heading, java.util.List<String> lines)
+    {
+        StringBuilder entry = new StringBuilder(heading);
+
+        for (String line : lines) entry.append("\n  ").append(line);
+
+        return entry.toString();
+    }
+
+    /**
+     * The import dialog's sentence for the old points whose names were not kept, in the form the number takes - "1 old
+     * point", not "1 old points" (Adam, 2026-10-06: "Fix them", on RSA45's notes).
+     *
+     * @param points how many
+     * @return the sentence
+     */
+    private static String sharedSquaresSentence(int points)
+    {
+        return I18n.f("autosetup.ui.importSharedSquares" + I18n.countForm(points), points);
+    }
+
+    /**
+     * The import dialog's sentence for what it deliberately left behind, in the form the number takes - "1 thing", not "1
+     * things".
+     *
+     * @param things how many
+     * @return the sentence
+     */
+    private static String leftBehindSentence(int things)
+    {
+        return I18n.f("autosetup.ui.leftBehind" + I18n.countForm(things), things);
+    }
+
+    /**
      * Reads an old autonomy.json onto the squares carrying the same sensors.
      *
      * Reached from the one Import action, which works out what the file is - so this takes the parsed
@@ -1458,12 +1500,7 @@ public class AutonomyViewerPanel extends JPanel
             // is there, which is the half that was missing.  Read above, before the save.
             if (!left.isEmpty() && ui.getModel() != null)
             {
-                ui.getModel().log(I18n.t("autosetup.ui.leftBehindHeading"));
-
-                for (String line : left)
-                {
-                    ui.getModel().log("  " + line);
-                }
+                ui.getModel().log(listForTheLog(I18n.t("autosetup.ui.leftBehindHeading"), left));
             }
 
             // AND THE FACINGS THAT WERE GUESSED (ACC-C4).
@@ -1510,20 +1547,14 @@ public class AutonomyViewerPanel extends JPanel
             // AND THE OLD POINTS THAT SHARED A SQUARE, whose names were not kept (RSA44-C3) - a list, so to the log
             if (!result.namesNotKept.isEmpty() && ui.getModel() != null)
             {
-                ui.getModel().log(I18n.t("autosetup.ui.importSharedSquaresHeading"));
-
-                for (String line : result.namesNotKept)
-                {
-                    ui.getModel().log("  " + line);
-                }
+                ui.getModel().log(listForTheLog(I18n.t("autosetup.ui.importSharedSquaresHeading"), result.namesNotKept));
             }
 
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched
-                + (result.namesNotKept.isEmpty() ? ""
-                    : NEWLINES + I18n.f("autosetup.ui.importSharedSquares", result.namesNotKept.size()))
-                + (left.isEmpty() ? "" : NEWLINES + I18n.f("autosetup.ui.leftBehind", left.size()))
+                + (result.namesNotKept.isEmpty() ? "" : NEWLINES + sharedSquaresSentence(result.namesNotKept.size()))
+                + (left.isEmpty() ? "" : NEWLINES + leftBehindSentence(left.size()))
                 + NEWLINES + where);
 
             // The one just created when nothing was running - so the import is loaded rather than left sitting on disk -

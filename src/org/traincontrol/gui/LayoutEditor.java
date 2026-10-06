@@ -4364,6 +4364,46 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * The pointer gone off the squares - into the margin, or straight off a square onto the tools column, the Grid box or
+     * another window, which crosses no margin: over no square, so its blue comes off, and the rest - the picked squares,
+     * the grip, a box being drawn - is drawn back (Adam, 2026-10-06: "Fix them", on RSA45's notes).  The margin used to take
+     * the grip off with the blue, and a pointer that skipped the margin left the blue for the Grid box to draw again.
+     *
+     * Posted, so it lands after any outline the last square's hover has posted, which would otherwise draw the blue back.
+     */
+    private void pointerOffTheSquares()
+    {
+        this.pointerOnGrid = false;
+
+        javax.swing.SwingUtilities.invokeLater(this::drawTheOutlinesBack);
+    }
+
+    /**
+     * The pointer has left a square of the track editor.  Onto another square, whose own hover moves the outline: nothing
+     * here.  Off the squares altogether - which the margin does not always see, since a pointer can go straight onto the
+     * tools column - it is over no square (Adam, 2026-10-06, on RSA45's notes).  The autonomy editor's hover is its own,
+     * and the palette's squares are not the grid's.
+     *
+     * @param e the exit, in the square's coordinates
+     * @param label the square left
+     */
+    public void receiveExitEvent(MouseEvent e, LayoutLabel label)
+    {
+        if (isAutonomyMode() || this.grid == null || label == null || getX(label) < 0) return;
+
+        JPanel squares = this.grid.getContainer();
+
+        java.awt.Point to = javax.swing.SwingUtilities.convertPoint(label, e.getPoint(), squares);
+
+        java.awt.Component under = squares.contains(to) ? squares.getComponentAt(to) : null;
+
+        // ONTO A SQUARE - another, or this one with a menu or a dialog opened over it
+        if (under instanceof LayoutLabel && !((LayoutLabel) under).isSpacer()) return;
+
+        pointerOffTheSquares();
+    }
+
+    /**
      * Picks a station label up, so the drag has something in it (FR-035).
      *
      * Adam: "snapshot the label so users can see it is being moved (make it follow the cursor while
@@ -7747,10 +7787,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }//GEN-LAST:event_cancelButtonActionPerformed
 
     private void ExtLayoutPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseEntered
-        // The margin: the pointer is over no square (RSA35-C1)
-        this.pointerOnGrid = false;
-
-        clearBordersFromChildren(this.grid.getContainer());
+        // The margin: the pointer is over no square (RSA35-C1) - and the grip stays (RSA45, noted)
+        pointerOffTheSquares();
     }//GEN-LAST:event_ExtLayoutPanelMouseEntered
 
     private void showAddressCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAddressCheckboxActionPerformed

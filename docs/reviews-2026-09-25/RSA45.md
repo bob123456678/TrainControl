@@ -77,7 +77,7 @@
 
 | | |
 |---|---|
-| **Disposition** | Checked - clean. |
+| **Disposition** | Checked - clean.  Its notes G1 and M0 fixed in round 78 on Adam's *"Fix them"* (2026-10-06): a square says when the pointer leaves it, and a pointer gone off the squares - into the margin or straight onto the tools column - takes its blue with it and leaves the grip and the picked squares drawn (`LayoutEditor.receiveExitEvent`, `pointerOffTheSquares`).  Claim `ui.testTheEditorNamesItsShortcuts.testThePointerOffTheSquaresTakesItsOutlineWithIt`, seen red.  e134156e; mutations TE, TF, TG and TI red. |
 | **Grade** | D |
 | **Names** | RSA44-C2, RSA43-C4, RSA35-C1, RSA35-D2, RSA35-D3, OB-172, OB-179 |
 | **Where** | `LayoutEditor.java:4309-4364`, `:5352-5415`, `:2790-2867`, `:4583-4644`, `:7423-7428`, `:4249-4256`, `:7749-7754` |
@@ -89,7 +89,7 @@
 
 | | |
 |---|---|
-| **Disposition** | Checked - clean, apart from RSA45-C1. |
+| **Disposition** | Checked - clean, apart from RSA45-C1.  Its notes fixed in round 78 on Adam's *"Fix them"* (2026-10-06): the shared points' sentence and the left-behind sentence take the form the number takes (`I18n.countForm`, a One and a Few beside each in eight bundles, the Polish declined rather than bracketed), and each list goes to the log as one entry, its heading first, so the log shows it under its heading.  Claims `core.testASecondImportFillsGapsAndDoesNotOverwrite.testOneIsSaidInTheSingular` and `regression.testTheImportDoorReadsAnOldFile.testASecondImportFromTheMenuKeepsAHandMadeChange`, seen red.  e134156e; mutations TA to TD red.  The import sentence's own counts, {0} to {5}, still stand before plural nouns, as counts do across the application: not taken on here. |
 | **Grade** | D |
 | **Names** | RSA44-C3, RSA44-D3, RG3-B2, V31-D9, MT-257, RLV13-C4 |
 | **Where** | `AutonomySession.java:1789-2034`; `AutonomyViewerPanel.java:1459-1527`; `TrainControlUI.java:10549-10576`; the three keys in each bundle (`importSharedSquares` en `:1549`, da `:1551`, de `:1549`, es `:1550`, fr `:1552`, it `:1552`, nl `:1552`, pl `:1550`, the other two on the lines after) |
