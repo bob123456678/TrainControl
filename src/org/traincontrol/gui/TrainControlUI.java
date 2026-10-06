@@ -5747,6 +5747,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
 
+        // WHETHER A SQUARE WAS CLICKED in the editor this one replaces, asked now - the build is posted (RSA44-C1)
+        final boolean carried = clickCarried;
+
         // ON ITS WAY from here until the posted build shows it (RLV13-C2) - every door that sends a train asks this too
         this.editorOnItsWay = true;
 
@@ -5781,6 +5784,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 editor.render();
 
                 if (opening != null) editor.setAutonomyMode(opening);
+
+                if (carried) editor.carryTheClick();
 
                 // SHOWN BY render()'s OWN POSTED TASK, which this runs after (RLV13-C2)
                 javax.swing.SwingUtilities.invokeLater(() -> this.editorOnItsWay = false);
@@ -8192,6 +8197,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         shown.setVisible(true);
         shown.toFront();
         shown.requestFocus();
+    }
+
+    /**
+     * Whether the editor about to be opened starts knowing a square was clicked - set only for the length of
+     * `openCarryingTheClick`, and read by `openLayoutEditor` as it is asked (RSA44-C1).
+     */
+    private boolean clickCarried = false;
+
+    /**
+     * Opens an editor in the place of one that closed itself to change page, carrying whether a square had been clicked
+     * in it (RSA44-C1): the click's tooltip line is for the visit, and the user closed nothing.  Cleared whatever the
+     * opening does, so an opening it refused cannot hand the click to the next Edit.
+     *
+     * @param clicked whether a square was clicked in the editor that closed
+     * @param open the opening
+     */
+    public void openCarryingTheClick(boolean clicked, Runnable open)
+    {
+        clickCarried = clicked;
+
+        try
+        {
+            open.run();
+        }
+        finally
+        {
+            clickCarried = false;
+        }
     }
 
     /**

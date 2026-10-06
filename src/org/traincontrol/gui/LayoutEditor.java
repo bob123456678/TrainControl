@@ -1891,8 +1891,11 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     layout.setEdit(false);
 
-                    // COUNTED BEFORE THE WINDOW GOES (RSA25-C1)
-                    parent.autonomyEditorClosedFromTheEditor(() -> parent.openAutonomyEditor(tile));
+                    // COUNTED BEFORE THE WINDOW GOES (RSA25-C1) - and the click with it: the user closed nothing (RSA44-C1)
+                    final boolean clicked = squareClicked;
+
+                    parent.autonomyEditorClosedFromTheEditor(
+                        () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(tile)));
 
                     dispose();
                 }
@@ -1904,8 +1907,11 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 layout.setEdit(false);
 
-                // COUNTED BEFORE THE WINDOW GOES (RSA25-C1)
-                parent.autonomyEditorClosedFromTheEditor(() -> parent.openAutonomyEditor(at, named));
+                // COUNTED BEFORE THE WINDOW GOES (RSA25-C1) - and the click with it: the user closed nothing (RSA44-C1)
+                final boolean clicked = squareClicked;
+
+                parent.autonomyEditorClosedFromTheEditor(
+                    () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(at, named)));
 
                 dispose();
             });
@@ -2229,12 +2235,20 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Whether a square has been clicked in this editor window, after which the click's tooltip line is not said (Adam,
-     * 2026-10-05, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip
+     * Whether a square has been clicked in this visit to the editor, after which the click's tooltip line is not said
+     * (Adam, 2026-10-05, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip
      * tracking state reset after the editor is closed"*).  The window's, not the page's or the preferences': every opening
-     * builds a new window, so the next visit starts not knowing, and a page switch inside one visit keeps it.
+     * builds a new window, so the next visit starts not knowing, and a page switch inside one visit keeps it.  Three doors
+     * change page by closing this window and opening another - a finding or a notice on another page, a link's other end -
+     * and the user closed nothing, so they hand it on (`carryTheClick`, RSA44-C1).
      */
     private boolean squareClicked = false;
+
+    /** The next editor opened by one of this window's own reopenings starts knowing a square was clicked (RSA44-C1). */
+    void carryTheClick()
+    {
+        squareClicked = true;
+    }
 
     /** The square `reveal` flashed last, so the next reveal can end that flash. */
     private LayoutLabel lastRevealed;
@@ -4328,6 +4342,25 @@ public class LayoutEditor extends PositionAwareJFrame
         // the diagram's offsets and dimensions, which live in `drawGrid`, and duplicating that here is
         // how the two come to disagree.
         drawGrid();
+
+        // AND THE OUTLINES DRAWN BACK, as after every redraw (RSA44-C2): Control+K and the Grid box took the picked squares,
+        // the grip, a box being drawn and the pointer's blue off until the pointer entered another square
+        drawTheOutlinesBack();
+    }
+
+    /**
+     * After a redraw, the track editor's outlines drawn back rather than only taken down (RSA43-C4, RSA44-C2): the picked
+     * squares, the selection's grip, a box being drawn, a landing and the pointer's blue - which all still act, and an
+     * undo, a redo, Control+K or the Grid box left looking gone until the pointer next moved.  `refreshSelectionBorders`
+     * begins with the same border pass.  The autonomy editor draws its own hover and has no selection here, so it gets the
+     * border pass alone, as it did.
+     */
+    private void drawTheOutlinesBack()
+    {
+        if (this.grid == null) return;
+
+        if (isAutonomyMode()) this.clearBordersFromChildren(this.grid.getContainer());
+        else refreshSelectionBorders();
     }
 
     /**
@@ -5352,13 +5385,8 @@ public class LayoutEditor extends PositionAwareJFrame
                     {
                         drawGrid();
 
-                        // THE TRACK EDITOR'S OUTLINES DRAWN BACK, not only taken down (RSA43-C4): an undo, a redo and every
-                        // other redraw left the picked squares' yellow and lost the selection's grip, a box being drawn and
-                        // the blue under the pointer until the pointer next moved - though all of them still acted.
-                        // `refreshSelectionBorders` begins with the same border pass.  The autonomy editor draws its own
-                        // hover, and has no selection here.
-                        if (isAutonomyMode()) this.clearBordersFromChildren(this.grid.getContainer());
-                        else refreshSelectionBorders();
+                        // THE TRACK EDITOR'S OUTLINES DRAWN BACK, not only taken down (RSA43-C4) - see drawTheOutlinesBack
+                        drawTheOutlinesBack();
                     }
                     finally
                     {
@@ -6012,8 +6040,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         layout.setEdit(false);
 
-        // COUNTED BEFORE THE WINDOW GOES (RSA25-C1)
-        parent.autonomyEditorClosedFromTheEditor(() -> parent.openAutonomyEditor(tile));
+        // COUNTED BEFORE THE WINDOW GOES (RSA25-C1) - and the click with it: the user closed nothing (RSA44-C1)
+        final boolean clicked = squareClicked;
+
+        parent.autonomyEditorClosedFromTheEditor(
+            () -> parent.openCarryingTheClick(clicked, () -> parent.openAutonomyEditor(tile)));
 
         dispose();
     }

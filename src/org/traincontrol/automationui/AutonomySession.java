@@ -1203,9 +1203,17 @@ public class AutonomySession
         public int matched = 0;
 
         /**
-         * Names left alone because the square already had one.
+         * Names left alone because the square already had one - before this import (RSA44-C3).
          */
         public int skipped = 0;
+
+        /**
+         * Old points whose square this import had already named from another point on the same sensor - a station and its
+         * approach guard, the ordinary shape of an old file - each as a line naming the point and the name its square kept
+         * (RSA44-C3).  A square has one name; these were counted in `skipped` as squares that "already had a name", and their
+         * names went unsaid.
+         */
+        public final List<String> namesNotKept = new ArrayList<>();
 
         /**
          * Locomotives put back where the old graph had them.
@@ -1777,6 +1785,9 @@ public class AutonomySession
         // after the loop, over the finished setup (REG4-C1).
         Map<TileKey, String> facingToFind = new LinkedHashMap<>();
 
+        // The squares this import names, so a second old point on one is told apart from a name the square had (RSA44-C3)
+        Set<TileKey> namedHere = new java.util.HashSet<>();
+
         for (int i = 0; i < points.length(); i++)
         {
             org.json.JSONObject point = points.optJSONObject(i);
@@ -1975,11 +1986,23 @@ public class AutonomySession
 
             if (existing != null && !existing.trim().isEmpty())
             {
-                result.skipped++;
+                // NAMED BY THIS IMPORT a point ago, from another old point on the same sensor (RSA44-C3): not a name the
+                // square already had, and this point's name is said rather than dropped
+                if (namedHere.contains(tile))
+                {
+                    result.namesNotKept.add(I18n.f("autosetup.ui.importSharedSquareLine", name, existing));
+                }
+                else
+                {
+                    result.skipped++;
+                }
+
                 continue;
             }
 
             store.setPointName(tile, name);
+
+            namedHere.add(tile);
 
             // Labelled on the station square itself.
             //

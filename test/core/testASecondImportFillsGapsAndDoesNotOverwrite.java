@@ -83,6 +83,69 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     }
 
     /**
+     * The import's {4} counts squares that had a name before it, and the old points that shared a square are said apart
+     * (RSA44-C3).
+     *
+     * A second old point on a sensor - a station and its approach guard, the ordinary shape of an old file - found its
+     * square already named by the same import, and was counted in {4} as a square that "already had a name and was left
+     * alone", its own name dropped unsaid.  On the frozen railway's file, onto setup with no names at all: {4} is 0, and
+     * the points the import could not name for sharing a square are listed, each with the name its square kept.
+     *
+     * MUTATION: count a square this import named as one that had a name, or drop the shared point unsaid, and this fails.
+     *
+     * @throws Exception from the import
+     */
+    @Test
+    public void testAnImportSaysWhichOldPointsSharedASquare() throws Exception
+    {
+        File empty = java.nio.file.Files.createTempDirectory("tc-shared-squares").toFile();
+
+        try
+        {
+            AutonomySession bare = new AutonomySession(empty);
+
+            bare.open(support.LayoutSandbox.wiredPages(model));
+            bare.getStore().createConfiguration("Shared", null);
+            bare.getStore().setActiveConfiguration("Shared");
+            bare.rebuild();
+
+            assertTrue(bare.getStore().getNamedTiles().isEmpty(), "precondition: a square has a name before the import");
+
+            AutonomySession.LegacyImport result = bare.importLegacy(legacy);
+
+            assertTrue(result.matched > 0, "precondition: the import named nothing");
+
+            assertEquals(result.skipped, 0, "no square had a name before the import, and its message says " + result.skipped
+                + " squares already had one and were left alone (RSA44-C3)");
+
+            java.util.List<?> notKept = (java.util.List<?>) result.getClass().getField("namesNotKept").get(result);
+
+            org.testng.Assert.assertFalse(notKept.isEmpty(), "the old points that shared a square with another are not said - their names"
+                + " dropped unsaid (RSA44-C3)");
+
+            for (Object line : notKept)
+            {
+                assertTrue(String.valueOf(line).contains(" ("), "a shared point's line does not name the square's kept name: "
+                    + line);
+            }
+        }
+        finally
+        {
+            org.testng.Assert.assertTrue(deleteTree(empty) || !empty.exists(), "could not delete " + empty);
+        }
+    }
+
+    /** Deletes a folder and everything in it. */
+    private static boolean deleteTree(File file)
+    {
+        File[] inside = file.listFiles();
+
+        if (inside != null) for (File each : inside) deleteTree(each);
+
+        return file.delete();
+    }
+
+    /**
      * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it was
      * (Adam, 2026-09-25, choosing between honouring the name and not asking for one: *"(a)"*).
      *
