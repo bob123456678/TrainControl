@@ -320,6 +320,10 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(sharedThen > 0, "the first import's message does not say the old points that shared a square (RSA44-C3,"
                 + " RSA45-C1): " + first);
 
+            // HIS RAILWAY HAS ITS NAMES, so the first import meets squares named before it - and counts them, each once
+            assertTrue(hadThen > 0, "the first import into his named railway says no square already had a name (RSA45-C1): "
+                + first);
+
             assertEquals(namedNow, Integer.valueOf(0), "precondition: the second import named a square: " + said);
 
             assertEquals(hadNow.intValue(), namedThen + hadThen, "the second import's message says " + hadNow + " squares"
