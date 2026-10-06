@@ -235,7 +235,10 @@ public class testTheImportDoorReadsAnOldFile
 
             final String inUse = session.getStore().getActiveConfiguration();
 
-            importFromTheMenu(ui[0], MT298, "MT-298 import");
+            // THE LOG FROM HERE ON, the class's other imports left out
+            final int logFrom = logged().length();
+
+            List<String> first = importFromTheMenu(ui[0], MT298, "MT-298 import");
 
             session = ui[0].getAutonomySession();
 
@@ -300,6 +303,40 @@ public class testTheImportDoorReadsAnOldFile
 
             assertFalse(said.contains(I18n.f("autosetup.ui.confirmImportOverwrites", "MT-298 import")), "importing an old"
                 + " file into a configuration of that name asked to replace it, and then filled gaps: " + said);
+
+            // AND COUNTS IN SQUARES (RSA45-C1): every square the first import met has a name now, and is counted once in {4}
+            // however many old points stand on it; the old points that shared a square are said again
+            String imported = "autosetup.ui.infoLegacyImported", shared = "autosetup.ui.importSharedSquares";
+
+            Integer namedThen = numberIn(first, imported, 0), hadThen = numberIn(first, imported, 4);
+            Integer namedNow = numberIn(said, imported, 0), hadNow = numberIn(said, imported, 4);
+
+            assertNotNull(namedThen, "precondition: the first import's message is not the import's: " + first);
+            assertNotNull(namedNow, "precondition: the second import's message is not the import's: " + said);
+
+            int sharedThen = numberIn(first, shared, 0) == null ? 0 : numberIn(first, shared, 0);
+            int sharedNow = numberIn(said, shared, 0) == null ? 0 : numberIn(said, shared, 0);
+
+            assertTrue(sharedThen > 0, "the first import's message does not say the old points that shared a square (RSA44-C3,"
+                + " RSA45-C1): " + first);
+
+            assertEquals(namedNow, Integer.valueOf(0), "precondition: the second import named a square: " + said);
+
+            assertEquals(hadNow.intValue(), namedThen + hadThen, "the second import's message says " + hadNow + " squares"
+                + " already had a name, where the first met " + (namedThen + hadThen) + " - a square counted once for each"
+                + " old point on it (RSA45-C1): " + said);
+
+            assertEquals(sharedNow, sharedThen, "the second import's message does not say again the old points that shared a"
+                + " square (RSA45-C1): " + said);
+
+            // AND THE LOG LISTS THEM (RSA45-C2): under its heading, one line for each point the two messages counted
+            String log = logged().substring(logFrom);
+
+            assertTrue(log.contains(I18n.t("autosetup.ui.importSharedSquaresHeading")), "the log has no heading for the old"
+                + " points that shared a square (RSA44-C3): " + log);
+
+            assertEquals(sharedLinesIn(log), sharedThen + sharedNow, "the log does not list each old point the messages say"
+                + " shared a square (RSA44-C3): " + log);
 
             session = ui[0].getAutonomySession();
 
@@ -4843,7 +4880,20 @@ public class testTheImportDoorReadsAnOldFile
     /** The locomotives the import's message says it placed - its {1} - or null where no message is the import's. */
     private static Integer placedIn(List<String> said)
     {
-        String template = I18n.t("autosetup.ui.infoLegacyImported");
+        return numberIn(said, "autosetup.ui.infoLegacyImported", 1);
+    }
+
+    /**
+     * The number a sentence of the bundle says in one of its places, read from the first message holding the sentence -
+     * or null where none does.
+     *
+     * @param said the messages
+     * @param key the sentence's key
+     * @param which the place, as its {n}
+     */
+    private static Integer numberIn(List<String> said, String key, int which)
+    {
+        String template = I18n.t(key);
 
         StringBuilder regex = new StringBuilder();
 
@@ -4860,7 +4910,7 @@ public class testTheImportDoorReadsAnOldFile
 
             group++;
 
-            if ("1".equals(slot.group(1))) placedGroup = group;
+            if (String.valueOf(which).equals(slot.group(1))) placedGroup = group;
 
             from = slot.end();
         }
@@ -4873,10 +4923,28 @@ public class testTheImportDoorReadsAnOldFile
         {
             Matcher m = pattern.matcher(message);
 
-            if (m.lookingAt() && placedGroup > 0) return Integer.valueOf(m.group(placedGroup).replaceAll("[^0-9]", ""));
+            if (m.find() && placedGroup > 0) return Integer.valueOf(m.group(placedGroup).replaceAll("[^0-9]", ""));
         }
 
         return null;
+    }
+
+    /** The lines of the import's list of old points that shared a square, in a log. */
+    private static int sharedLinesIn(String log)
+    {
+        String line = I18n.t("autosetup.ui.importSharedSquareLine");
+
+        String regex = "(?m)^  " + Pattern.quote(line.substring(0, line.indexOf("{0}"))) + ".+"
+            + Pattern.quote(line.substring(line.indexOf("{0}") + 3, line.indexOf("{1}"))) + ".+"
+            + Pattern.quote(line.substring(line.indexOf("{1}") + 3)) + "$";
+
+        Matcher m = Pattern.compile(regex).matcher(log);
+
+        int lines = 0;
+
+        while (m.find()) lines++;
+
+        return lines;
     }
 
     /** The text of a sentence before a placeholder. */

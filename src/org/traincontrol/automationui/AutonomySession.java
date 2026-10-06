@@ -1203,15 +1203,16 @@ public class AutonomySession
         public int matched = 0;
 
         /**
-         * Names left alone because the square already had one - before this import (RSA44-C3).
+         * Squares left alone because they had a name before this import - each counted once, however many old points stand
+         * on it (RSA44-C3, RSA45-C1).
          */
         public int skipped = 0;
 
         /**
-         * Old points whose square this import had already named from another point on the same sensor - a station and its
-         * approach guard, the ordinary shape of an old file - each as a line naming the point and the name its square kept
-         * (RSA44-C3).  A square has one name; these were counted in `skipped` as squares that "already had a name", and their
-         * names went unsaid.
+         * Old points whose square this import had already met from another point on the same sensor - a station and its
+         * approach guard, the ordinary shape of an old file - each as a line naming the point and the name its square kept,
+         * whether this import named the square or it had its name before (RSA44-C3, RSA45-C1).  A square has one name;
+         * these were counted in `skipped` once each, as squares that "already had a name", and their names went unsaid.
          */
         public final List<String> namesNotKept = new ArrayList<>();
 
@@ -1785,8 +1786,9 @@ public class AutonomySession
         // after the loop, over the finished setup (REG4-C1).
         Map<TileKey, String> facingToFind = new LinkedHashMap<>();
 
-        // The squares this import names, so a second old point on one is told apart from a name the square had (RSA44-C3)
-        Set<TileKey> namedHere = new java.util.HashSet<>();
+        // The squares this import has met - named here, or found named and counted once in `skipped` - so a further old point
+        // on one is said rather than counted again (RSA44-C3, RSA45-C1)
+        Set<TileKey> metHere = new java.util.HashSet<>();
 
         for (int i = 0; i < points.length(); i++)
         {
@@ -1986,9 +1988,12 @@ public class AutonomySession
 
             if (existing != null && !existing.trim().isEmpty())
             {
-                // NAMED BY THIS IMPORT a point ago, from another old point on the same sensor (RSA44-C3): not a name the
-                // square already had, and this point's name is said rather than dropped
-                if (namedHere.contains(tile))
+                // A SQUARE ALREADY MET, from another old point on the same sensor (RSA44-C3): named by this import a point
+                // ago, or found named before it and counted then - this point's name is said rather than dropped, and the
+                // square is not counted again.  A square named before the import counts once in {4}, however many old
+                // points stand on it (RSA45-C1): names are shared by every configuration, so a second import, or an old
+                // file brought into a named railway, meets every square this way.
+                if (!metHere.add(tile))
                 {
                     result.namesNotKept.add(I18n.f("autosetup.ui.importSharedSquareLine", name, existing));
                 }
@@ -2002,7 +2007,7 @@ public class AutonomySession
 
             store.setPointName(tile, name);
 
-            namedHere.add(tile);
+            metHere.add(tile);
 
             // Labelled on the station square itself.
             //
