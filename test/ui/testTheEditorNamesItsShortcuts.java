@@ -1677,6 +1677,434 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
+     * Control+K keeps the picked squares, the selection's grip and the pointer's blue outline (RSA44-C2).
+     *
+     * The grid's own redraw - Control+K and the Grid box, through `setShowGrid` - took every outline off until the pointer
+     * entered another square, the sibling of the undo's redraw RSA43-C4 fixed.  Turned off and on again, so the setting
+     * ends as it began.
+     *
+     * MUTATION: end `setShowGrid` without drawing the outlines back, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testControlKKeepsTheGripAndThePointersOutline() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        final boolean gridWas = LayoutEditor.showGrid();
+
+        try
+        {
+            settleTheEditor();
+
+            final int[] at = new int[2];
+
+            assertNotNull(aTrackSquareWithRoom(track[0], at), "precondition: no track square on " + PAGE);
+
+            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+
+            gridField.setAccessible(true);
+
+            final int x = at[0];
+            final int y = at[1];
+
+            // TWO SQUARES PICKED, AND THE POINTER OVER A THIRD
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+                    for (int dx = 0; dx < 2; dx++)
+                    {
+                        org.traincontrol.gui.LayoutLabel square = grid.getValueAt(x + dx, y);
+
+                        track[0].receiveClickEvent(new java.awt.event.MouseEvent(square,
+                            java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(),
+                            java.awt.event.InputEvent.SHIFT_DOWN_MASK | java.awt.event.InputEvent.BUTTON1_DOWN_MASK, 1, 1, 1,
+                            false, java.awt.event.MouseEvent.BUTTON1), square);
+                    }
+
+                    org.traincontrol.gui.LayoutLabel over = grid.getValueAt(x, y + 1);
+
+                    track[0].receiveMoveEvent(new java.awt.event.MouseEvent(over, java.awt.event.MouseEvent.MOUSE_MOVED,
+                        System.currentTimeMillis(), 0, 1, 1, 0, false), over);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(gripIsDrawn(gridField, track[0]) && wearsTheHover(track[0], squareAt(gridField, track[0], x, y + 1)),
+                "precondition: before Control+K the selection's grip or the pointer's outline is not drawn");
+
+            // CONTROL+K, twice - off and back - with the pointer where it was
+            for (int turn = 0; turn < 2; turn++)
+            {
+                SwingUtilities.invokeAndWait(() -> track[0].setShowGrid(!LayoutEditor.showGrid()));
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+                assertTrue(gripIsDrawn(gridField, track[0]), "after Control+K the picked squares lost the grip that moves"
+                    + " them, though it still moves them (RSA44-C2)");
+
+                assertTrue(wearsTheHover(track[0], squareAt(gridField, track[0], x, y + 1)), "after Control+K the square the"
+                    + " pointer is still over lost its blue outline (RSA44-C2)");
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                if (LayoutEditor.showGrid() != gridWas) track[0].setShowGrid(gridWas);
+
+                track[0].dispose();
+            });
+        }
+    }
+
+    /**
+     * The click's tooltip line is for the visit: a page switch keeps it gone, so do the editor's own reopenings, and the
+     * next opening through the main window says it again (RSA44-C1, -C4).
+     *
+     * Adam, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip tracking
+     * state reset after the editor is closed"*.  A finding or a notice on another page, and a link's other end, change page
+     * by closing the window and opening another - the user closed nothing, so the click goes with them; and the opening
+     * after the user closes the editor is on the same main window and setup, where a later change would be likeliest to
+     * keep the click.
+     *
+     * The class's own editor is put away for this, so the main window opens its own, and built again after.
+     *
+     * MUTATION: let a page switch, or one of the editor's own reopenings, forget the click; or keep it in the main window
+     * past the editor's closing - and this fails.
+     *
+     * @throws Exception from the windows or reflection
+     */
+    @Test(timeOut = 300000)
+    public void testTheClickLineIsForTheVisit() throws Exception
+    {
+        // THE CLASS'S EDITOR PUT AWAY - by dispose, not its X: the other claims leave it holding edits, which its X would ask
+        // about on the screen
+        final LayoutEditor first = editor;
+
+        SwingUtilities.invokeAndWait(() -> first.dispose());
+
+        // THE MAIN WINDOW AS AFTER EVERY EDITOR HAS CLOSED: other claims of this class build editors of their own and put
+        // them away with a bare dispose, which does not give Edit back - and a door asked while Edit is grey answers with a
+        // dialog that waits on the screen
+        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+
+        LayoutEditor a = null, b = null, c = null;
+
+        try
+        {
+            String says = I18n.t("autosetup.ui.tooltipClickToChangeDirections");
+
+            // OPENED AS THE MAIN WINDOW OPENS IT
+            a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+
+            int[] track = new int[2];
+
+            assertNotNull(aTrackSquareWithRoom(a, track), "precondition: no track square on " + PAGE);
+
+            assertTrue(says(a, track, says), "precondition: an editor just opened does not say what a click does");
+
+            // ANY SQUARE CLICKED - a blank one
+            int[] blank = blankSquare(a);
+
+            final LayoutEditor clicking = a;
+            final org.traincontrol.gui.LayoutLabel square = gridOf(a).getValueAt(blank[0], blank[1]);
+
+            SwingUtilities.invokeAndWait(() -> clicking.receiveClickEvent(new java.awt.event.MouseEvent(square,
+                java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_DOWN_MASK,
+                1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1), square));
+
+            settleTheEditor();
+
+            assertFalse(says(a, track, says), "after a square was clicked the track still says what a click does");
+
+            // A PAGE SWITCH IN PLACE keeps it gone - with nothing unsaved, so it asks nothing
+            assertFalse(unsaved(a), "precondition: the editor has unsaved work, so leaving the page would ask on the screen");
+
+            java.lang.reflect.Method leave = LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
+
+            leave.setAccessible(true);
+
+            final LayoutEditor switching = a;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    leave.invoke(switching, OTHER_PAGE, true);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settleTheEditor();
+
+            assertTrue(a.isDisplayable(), "precondition: the page switch closed the window, so it was not a switch in place");
+
+            int[] there = new int[2];
+
+            assertNotNull(aTrackSquareWithRoom(a, there), "precondition: no track square on " + OTHER_PAGE);
+
+            assertFalse(says(a, there, says), "after a page switch in place the track says what a click does again, though"
+                + " the visit is the same (MT-699 step 3)");
+
+            // A FINDING ON ANOTHER PAGE: the window closes itself and another opens - the same visit (RSA44-C1)
+            java.lang.reflect.Field jump = AutonomyEditorPanel.class.getDeclaredField("onJumpToPage");
+
+            jump.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            final java.util.function.Consumer<TileKey> toPage =
+                (java.util.function.Consumer<TileKey>) jump.get(a.getAutonomyPanel());
+
+            b = openedBy(() -> toPage.accept(new TileKey(PAGE, 1, 1)), a);
+
+            assertFalse(a.isDisplayable(), "precondition: the finding's door did not close the window it left");
+
+            int[] again = new int[2];
+
+            assertNotNull(aTrackSquareWithRoom(b, again), "precondition: no track square on " + PAGE);
+
+            assertFalse(says(b, again, says), "the window a finding on another page opened says what a click does again,"
+                + " though the user closed nothing (RSA44-C1)");
+
+            // CLOSED BY THE USER - the X - and opened again through the same main window: said again (RSA44-C4)
+            closeAsTheUserDoes(b);
+
+            assertFalse(b.isDisplayable(), "precondition: the X did not close the editor");
+
+            c = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), b);
+
+            int[] fresh = new int[2];
+
+            assertNotNull(aTrackSquareWithRoom(c, fresh), "precondition: no track square on " + PAGE);
+
+            assertTrue(says(c, fresh, says), "an editor opened after the user closed the one a square was clicked in does"
+                + " not say what a click does - Adam: \"have that tooltip tracking state reset after the editor is closed\"");
+        }
+        finally
+        {
+            for (LayoutEditor open : new LayoutEditor[] {a, b, c})
+            {
+                if (open != null)
+                {
+                    final LayoutEditor closing = open;
+
+                    SwingUtilities.invokeAndWait(() -> { if (closing.isDisplayable()) closing.dispose(); });
+                }
+            }
+
+            settleTheEditor();
+
+            // Edit as every editor closed leaves it, whatever stopped this claim part way
+            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+
+            // THE CLASS'S EDITOR BACK, as setUpClass built it
+            final LayoutEditor[] built = new LayoutEditor[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                built[0] = new LayoutEditor(page, 30, ui, 0);
+                built[0].render();
+                built[0].setAutonomyMode(session);
+            });
+
+            editor = built[0];
+
+            settleTheEditor();
+        }
+    }
+
+    /** The other page of the frozen railway, for a switch in place. */
+    private static final String OTHER_PAGE = "2 - Bottom";
+
+    /**
+     * The autonomy editor the main window shows after an opening - waited for until it is a new window, built and in
+     * autonomy mode.
+     *
+     * @param opening what opens it, run on the event thread
+     * @param not the editor it must not be, or null
+     * @return the editor
+     */
+    private static LayoutEditor openedBy(Runnable opening, LayoutEditor not) throws Exception
+    {
+        // NOT WITH EDIT GREY: the main window answers that with a dialog that waits on the screen
+        java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
+
+        button.setAccessible(true);
+
+        final boolean[] live = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                live[0] = ((javax.swing.JButton) button.get(ui)).isEnabled();
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        if (not == null || !not.isDisplayable())
+        {
+            assertTrue(live[0], "precondition: the main window's Edit is grey, so an editor would be refused with a dialog");
+        }
+
+        SwingUtilities.invokeAndWait(opening);
+
+        java.lang.reflect.Field shown = TrainControlUI.class.getDeclaredField("openEditor");
+
+        shown.setAccessible(true);
+
+        long until = System.currentTimeMillis() + 20000;
+
+        while (System.currentTimeMillis() < until)
+        {
+            settleTheEditor();
+
+            Object open = shown.get(ui);
+
+            if (open instanceof LayoutEditor && open != not && ((LayoutEditor) open).isDisplayable()
+                && ((LayoutEditor) open).isAutonomyMode() && gridOf((LayoutEditor) open) != null)
+            {
+                return (LayoutEditor) open;
+            }
+        }
+
+        Object open = shown.get(ui);
+
+        java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
+
+        onItsWay.setAccessible(true);
+
+        StringBuilder windows = new StringBuilder();
+
+        for (java.awt.Window w : java.awt.Window.getWindows())
+        {
+            if (w.isDisplayable()) windows.append(w.getClass().getSimpleName()).append(w.isShowing() ? "(showing) " : " ");
+        }
+
+        throw new AssertionError("precondition: no autonomy editor was opened - the window's editor " + open
+            + (open instanceof LayoutEditor ? " displayable " + ((LayoutEditor) open).isDisplayable() + " autonomy "
+                + ((LayoutEditor) open).isAutonomyMode() : "")
+            + "; on its way " + onItsWay.get(ui) + "; windows " + windows + "; the log: " + logTop());
+    }
+
+    /** Whether an editor holds autonomy work its Save has not written. */
+    private static boolean unsaved(LayoutEditor on) throws Exception
+    {
+        java.lang.reflect.Method asked = LayoutEditor.class.getDeclaredMethod("hasUnsavedAutonomyWork");
+
+        asked.setAccessible(true);
+
+        final boolean[] out = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                out[0] = (Boolean) asked.invoke(on);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        return out[0];
+    }
+
+    /**
+     * Closes an autonomy editor as its X does, after making sure it has nothing unsaved - so the close asks nothing on the
+     * screen, and the main window is told, as a bare dispose does not tell it.
+     */
+    private static void closeAsTheUserDoes(LayoutEditor on) throws Exception
+    {
+        if (on == null || !on.isDisplayable()) return;
+
+        assertFalse(unsaved(on), "precondition: the editor has unsaved work, so its X would ask on the screen");
+
+        SwingUtilities.invokeAndWait(() -> on.dispatchEvent(
+            new java.awt.event.WindowEvent(on, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+
+        settleTheEditor();
+    }
+
+    /** The newest lines of the main window's log, for a failure to say what went wrong. */
+    private static String logTop() throws Exception
+    {
+        java.lang.reflect.Field area = TrainControlUI.class.getDeclaredField("debugArea");
+
+        area.setAccessible(true);
+
+        String text = ((javax.swing.JTextArea) area.get(ui)).getText();
+
+        return text.substring(0, Math.min(1500, text.length()));
+    }
+
+    /** Whether the track square at these coordinates says what a click does, the pointer moved over it. */
+    private static boolean says(LayoutEditor on, int[] at, String line) throws Exception
+    {
+        final String[] tip = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                org.traincontrol.gui.LayoutLabel square = gridOf(on).getValueAt(at[0], at[1]);
+
+                on.receiveMoveEvent(new java.awt.event.MouseEvent(square, java.awt.event.MouseEvent.MOUSE_MOVED,
+                    System.currentTimeMillis(), 0, 1, 1, 0, false), square);
+
+                tip[0] = square.getToolTipText();
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        return String.valueOf(tip[0]).contains(line);
+    }
+
+    /** A blank square of an editor's grid. */
+    private static int[] blankSquare(LayoutEditor on) throws ReflectiveOperationException
+    {
+        org.traincontrol.gui.LayoutGrid grid = gridOf(on);
+
+        for (int y = 0; y < 20; y++)
+        {
+            for (int x = 0; x < 20; x++)
+            {
+                org.traincontrol.gui.LayoutLabel here = grid.getValueAt(x, y);
+
+                if (here != null && !here.isSpacer() && here.getComponent() == null) return new int[] {x, y};
+            }
+        }
+
+        throw new AssertionError("precondition: no blank square");
+    }
+
+    /**
      * An undo's redraw keeps the selection's grip and the pointer's blue outline (RSA43-C4).
      *
      * The redraw a Control+Z asks for ended with a pass that took every outline down and put back only the picked squares'

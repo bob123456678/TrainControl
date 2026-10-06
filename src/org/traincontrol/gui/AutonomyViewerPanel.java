@@ -1507,9 +1507,22 @@ public class AutonomyViewerPanel extends JPanel
                 : I18n.f("autosetup.ui.infoLegacyImportedNotInUse", into, inUse,
                     I18n.t("autosetup.ui.menuAutonomy") + " > " + I18n.f("autosetup.ui.menuConfigurations", inUse));
 
+            // AND THE OLD POINTS THAT SHARED A SQUARE, whose names were not kept (RSA44-C3) - a list, so to the log
+            if (!result.namesNotKept.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.t("autosetup.ui.importSharedSquaresHeading"));
+
+                for (String line : result.namesNotKept)
+                {
+                    ui.getModel().log("  " + line);
+                }
+            }
+
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched
+                + (result.namesNotKept.isEmpty() ? ""
+                    : NEWLINES + I18n.f("autosetup.ui.importSharedSquares", result.namesNotKept.size()))
                 + (left.isEmpty() ? "" : NEWLINES + I18n.f("autosetup.ui.leftBehind", left.size()))
                 + NEWLINES + where);
 
