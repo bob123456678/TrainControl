@@ -245,6 +245,24 @@ public class AutonomyEditorPanel extends JPanel
     private static final String PREF_UNMEASURED = "autonomyEditorUnmeasured";
 
     /**
+     * Whether a square has ever been clicked in this editor, after which the click's tooltip line is not said again
+     * (Adam, 2026-10-05, on MT-697: *"the long term presence of the "click to change" tooltip is annoying.  Stop showing it
+     * after the user has clicked any square."*).  Remembered with the view settings: it is about the person, not the
+     * railway, and a line learned in one visit is not worth saying in the next.
+     */
+    private static final String PREF_CLICK_LEARNED = "autonomyEditorClickLearned";
+
+    /**
+     * Whether the click's tooltip line is still worth saying - no square has been clicked in this editor yet (MT-697).
+     *
+     * @return true until one has
+     */
+    public static boolean clickStillUnlearned()
+    {
+        return !VIEW_PREFS.getBoolean(PREF_CLICK_LEARNED, false);
+    }
+
+    /**
      * Whether the captions in this editor name the train parked at a station or the station itself.
      *
      * FR-030. Adam: "in the autonomy editor, have them show the station name by default ... rather
@@ -7422,6 +7440,9 @@ public class AutonomyEditorPanel extends JPanel
     public void tileClicked(TileKey tile, LayoutDiagramComponent component, boolean addToSelection)
     {
         if (tile == null || session.getGraph() == null) return;
+
+        // ANY SQUARE CLICKED, and the click's tooltip line has done its job (MT-697's note) - written once
+        if (clickStillUnlearned()) VIEW_PREFS.putBoolean(PREF_CLICK_LEARNED, true);
 
         // A clicked finding's outline goes with the next click on the diagram (RLV9-C3)
         if (!noticeOutline.isEmpty())
