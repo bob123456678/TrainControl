@@ -16,7 +16,7 @@
 > is gone.
 
 
-Beyond its GUI, the TrainControl software can be used to progammatically control your Marklin layout, and even fully automate it.  This means that you can specify exactly how and when you want your trains, switches, signals, and accessories to behave.
+Beyond its GUI, the TrainControl software can be used to programmatically control your Marklin layout, and even fully automate it.  This means that you can specify exactly how and when you want your trains, switches, signals, and accessories to behave.
 
 There are three types of automation described on this page:
 * Manually defining basic automation logic and commands via the Java API (good)
@@ -135,9 +135,9 @@ These commands will execute before that edge is traversed by a locomotive.
     layout.createPoint("Main Track", false, null);
 
     //
-    // Define our edges (stations/points conncted to each other, and switch/signal commands needed to make those connections)
+    // Define our edges (stations/points connected to each other, and switch/signal commands needed to make those connections)
     //
-    // The addConfigCommand API provies sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would never be chosen
+    // The addConfigCommand API provides sanity checks for conflicting commands so that a path that includes opposite settings for the same accessory would never be chosen
     layout.createEdge("Station 2", "Main Track").addConfigCommand("Signal 2", GREEN);
     layout.createEdge("Station 1", "Main Track").addConfigCommand("Signal 1", GREEN);
 
@@ -198,7 +198,7 @@ If you want to try this out for yourself, be sure to change the locomotive names
 
 A few additional notes:
 * The layout class assumes that each locomotive is already set to go in the direction modeled in the graph (i.e., forward).  This can also be set explicitly in the code by calling `Locomotive.setDirection`.
-* Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  This value can be overriden by `preArrivalSpeedReduction` in the JSON (default 0.5, or 50%. Range 0.01 - 1.00, where 1.00 means no reduction).  The more S88's you have, the better!
+* Upon reaching the second-to-last point in its path, the layout class will halve each locomotive's speed to make for a more natural stop.  This value can be overridden by `preArrivalSpeedReduction` in the JSON (default 0.5, or 50%. Range 0.01 - 1.00, where 1.00 means no reduction).  The more S88's you have, the better!
 
 # Improving the layout
 
@@ -225,7 +225,7 @@ This functionality is essential when your layout includes crossings, since these
 
 # Running and Visualizing via TrainControl UI
 
-> **Since v3.0.0 the "Autonomy" tab described here is shown only for a layout read from the Central Station, where autonomy cannot be started.**  Download the layout (Layouts -> Download Central Station Layout Files), then import your `autonomy.json` from the autonomy menu and set the rest up on the track diagram (see [Automation.md](Automation.md)).
+> **Since v3.0.0 the "Autonomy" tab described here is gone.**  Download the layout (Layouts -> Download Central Station Layout Files), then import your `autonomy.json` from the autonomy menu and set the rest up on the track diagram (see [Automation.md](Automation.md)).
 
 To make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
 Moreover, to make it easier to create graphs, all state associated with graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  All locomotive settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
@@ -398,7 +398,7 @@ Point shapes and sizes work together: the SHAPE says whether trains turn here, t
 
 ![Sample layout](assets/graph2b.png?raw=true)
 
-# Prettifying the Graph Visualizaton
+# Prettifying the Graph Visualization
 
 > **The graph window described below was removed in v3.0.0.** Autonomy is now set up and watched on the track diagram (see [Automation.md](Automation.md)). The JSON format on this page is still what an older `autonomy.json` is written in, and the autonomy menu can import one; the coordinates and window instructions in this section no longer have anything to act on.
 
@@ -477,9 +477,9 @@ Locomotives inactive longer than `maxLocInactiveSeconds` seconds will be priorit
 
 TrainControl will enable/disable each locomotive's preferred functions, if any, before departure and upon arrival, respectively.  
 
-These preferred functons are set by right-clicking on any keyboard button in the Locomotive Control tab of the UI, and are automatically saved.  Therefore, they cannot be specified in the autonomy JSON.
-However, if you want to avoid turning on the fuctions on departure / turning off the functions on arrival, respectively, you can set `turnOnFunctionsOnDeparture` / `turnOffFunctionsOnArrival` to `false`.  A good reason to use these settings is to is to keep operating sounds / lights on between paths in the case of the latter,
- or to skip running sound altogethr in the case of the former.
+These preferred functions are set by right-clicking on any keyboard button in the Locomotive Control tab of the UI, and are automatically saved.  Therefore, they cannot be specified in the autonomy JSON.
+However, if you want to avoid turning on the functions on departure / turning off the functions on arrival, respectively, you can set `turnOnFunctionsOnDeparture` / `turnOffFunctionsOnArrival` to `false`.  A good reason to use these settings is to keep operating sounds / lights on between paths in the case of the latter,
+ or to skip running sound altogether in the case of the former.
 
 Unless the `speed` is specified within the `loc` array, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
@@ -504,7 +504,7 @@ However, if you set an exclusion on a non-station, the excluded locomotives will
 
 The `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 
 
-If set above 0, whenever the measured network latency between your computer and the Central Station exceeds the threshold, the power will automaticlly be turned off.
+If set above 0, whenever the measured network latency between your computer and the Central Station exceeds the threshold, the power will automatically be turned off.
 
 The lowest allowed nonzero threshold is 100ms.
 
@@ -540,7 +540,7 @@ Unless you say otherwise, a locomotive's home is simply the station it occupied 
 
 You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  In the autonomy tab, right-click a station and pick `Set Home Locomotive`, which names that station's current home and opens a chooser.  The blank entry at the top of the list is how a station gives up its locomotive.  The item is on every station, so there is always somewhere to make the first assignment.
 
-**Clear All Home Locomotives**, in the autonomy editor's tool column, clears every assignment at once and asks first.  A single station's assignment is cleared from its own right-click menu, and `Layout.clearHomeLocomotives` does the same thing programmatically.
+**Clear All Home Locomotives**, on the autonomy editor's Bulk Tools menu, clears every assignment at once and asks first.  A single station's assignment is cleared from its own right-click menu, and `Layout.clearHomeLocomotives` does the same thing programmatically.
 
 An assigned station is that locomotive's home whether or not it is standing there, and whether or not it is on the layout at all - an assignment for a locomotive you have not placed is simply ignored until you place it.  Each locomotive belongs at one station only, so assigning it somewhere new releases it from wherever it was assigned before.  Everything you do not assign still falls back to the rule above.
 
