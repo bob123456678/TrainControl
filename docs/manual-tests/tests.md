@@ -27,12 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-694](#mt-694) | 2026-10-05 | A station renamed while the setup has an error keeps its train's caption | fixed unvalidated | Adam 2026-10-05 (RSA40-C2) |
-| [MT-696](#mt-696) | 2026-10-05 | The file chooser opens without a freeze, follows shortcuts and shows Windows' columns | fixed unvalidated | Adam 2026-10-05 (MT-690, MT-692) |
-| [MT-697](#mt-697) | 2026-10-05 | A square a click turns shows a hand and says so; the menus' tooltips are short | fixed unvalidated | Adam 2026-10-05 (FR-112) |
+| [MT-698](#mt-698) | 2026-10-05 | The click's tooltip line goes once a square has been clicked | fixed unvalidated | Adam 2026-10-05 (MT-697) |
 
-Everything else - 694 of 697 - needs nothing from you unless the area changes again:
-547 **fixed validated** and 147 **superseded**.
+Everything else - 697 of 698 - needs nothing from you unless the area changes again:
+550 **fixed validated** and 147 **superseded**.
 
 ---
 
@@ -32994,7 +32992,7 @@ Superseded by MT-695, which names the Size list on the Track Diagram tab.
 
 ### MT-694 - 2026-10-05 - A station renamed while the setup has an error keeps its train's caption
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (RSA40-C2)
 
 **Written:** 2026-10-05
@@ -33017,6 +33015,14 @@ train standing there - blank, as if no train were there - until the setup built 
 - Step 4: the setup builds, and the caption shows the train as before.
 
 *What this is:* `regression.testAPendingTurnSurvivesTheRebuild.testARenameTheBuildRefusesKeepsTheTrainOnItsCaption`.
+
+**Adam, 2026-10-05 (triage).** Works.
+
+*Run against commit b372b59d, in English - build\classes, compiled 05 Oct 21:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.
 
 ---
 
@@ -33065,7 +33071,7 @@ Validated on your *Works*.
 
 ### MT-696 - 2026-10-05 - The file chooser opens without a freeze, follows shortcuts and shows Windows' columns
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (MT-690, MT-692)
 
 **Written:** 2026-10-05
@@ -33101,13 +33107,21 @@ Very good performance now
 
 *Run against commit 1e75afb9, in English - build\classes, compiled 05 Oct 08:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-10-05 (triage).** Works.
+
+*Run against commit b372b59d, in English - build\classes, compiled 05 Oct 21:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*.
+
 ---
 
 <a id="mt-697"></a>
 
 ### MT-697 - 2026-10-05 - A square a click turns shows a hand and says so; the menus' tooltips are short
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (FR-112)
 
 **Written:** 2026-10-05
@@ -33144,5 +33158,45 @@ menus, that are currently overly wide or long, and make them be more concise so 
 `regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree` and
 `testEveryTileMenuTooltipIsShort` (every language), and
 `regression.testTheMenusComeBackAtOneMoment.testTheMenuBarsTooltipsAreShortAndWrapped`.
+
+**Adam, 2026-10-05 (triage).** Works, with notes.
+
+Works, but the long term presence of the "click to change" tooltip is annoying.  Stop showing it after the user has clicked any square.
+
+*Run against commit b372b59d, in English - build\classes, compiled 05 Oct 21:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-05.**
+
+Validated on your *Works*; your note is built in 4952b1e0 - MT-698.
+
+---
+
+<a id="mt-698"></a>
+
+### MT-698 - 2026-10-05 - The click's tooltip line goes once a square has been clicked
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-05 (MT-697)
+
+**Written:** 2026-10-05
+
+Your note on MT-697: *"Works, but the long term presence of the "click to change" tooltip is annoying.  Stop showing it
+after the user has clicked any square."*
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main** and move the pointer over plain track.  If it already says only the square's
+   name, a square has been clicked here before - this is the state the steps end in.
+2. Click any square once - a blank one will do.
+3. Move the pointer over plain track again, and over a station's square.
+4. Close the editor, open it again, and hover over track.
+
+**Expected**
+
+- Step 1: before any click, the hand and *Click to change allowed directions*.
+- Step 3: the hand, and no *Click to change* line - over a station only its name.
+- Step 4: still no line: the click is remembered.
+
+*What this is:* `regression.testTheAutonomyEditorKnowsWhichSquare.testTheClickLineGoesOnceASquareIsClicked`.
 
 ---
