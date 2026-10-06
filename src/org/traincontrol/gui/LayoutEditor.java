@@ -1062,10 +1062,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         label.setCursor(turns ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
 
-        // THE LINE ONLY UNTIL A SQUARE HAS BEEN CLICKED (Adam, on MT-697: *"Stop showing it after the user has clicked any
-        // square"*) - the hand stays, saying the same thing without words
-        String says = turns && AutonomyEditorPanel.clickStillUnlearned()
-            ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
+        // THE LINE ONLY UNTIL A SQUARE HAS BEEN CLICKED in this window (Adam, on MT-697: *"Stop showing it after the user has
+        // clicked any square"*) - the hand stays, saying the same thing without words
+        String says = turns && !squareClicked ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
 
         label.setToolTipText(name == null ? says : says == null ? name
             : "<html>" + escaped(name) + "<br>" + escaped(says) + "</html>");
@@ -2229,6 +2228,14 @@ public class LayoutEditor extends PositionAwareJFrame
         label.flashHighlight();
     }
 
+    /**
+     * Whether a square has been clicked in this editor window, after which the click's tooltip line is not said (Adam,
+     * 2026-10-05, on MT-697: *"Stop showing it after the user has clicked any square"*, and then *"have that tooltip
+     * tracking state reset after the editor is closed"*).  The window's, not the page's or the preferences': every opening
+     * builds a new window, so the next visit starts not knowing, and a page switch inside one visit keeps it.
+     */
+    private boolean squareClicked = false;
+
     /** The square `reveal` flashed last, so the next reveal can end that flash. */
     private LayoutLabel lastRevealed;
 
@@ -2296,6 +2303,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 else
                 {
+                    // ANY SQUARE CLICKED, and the click's tooltip line has done its job for this visit (MT-697's note)
+                    squareClicked = true;
+
                     autonomyPanel.tileClicked(tile, layout.getComponent(x, y), e.isShiftDown());
                 }
             }

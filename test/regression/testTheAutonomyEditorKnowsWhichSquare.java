@@ -463,9 +463,6 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
         Editor open = open(true);
 
-        // THE LINE NOT YET LEARNED, whatever the operator's own preferences say - they seed this run's (MT-697's note)
-        String learned = pinClickLearned(false);
-
         try
         {
             org.traincontrol.gui.LayoutLabel track = hover(open.editor, 3, 2);
@@ -510,22 +507,22 @@ public class testTheAutonomyEditorKnowsWhichSquare
         }
         finally
         {
-            restoreClickLearned(learned);
-
             open.close();
         }
     }
 
     /**
-     * The click's line goes once a square has been clicked, and stays gone; the hand stays (MT-697's note).
+     * The click's line goes once a square has been clicked, and comes back with the next opening; the hand stays (MT-697's
+     * note).
      *
      * Adam, 2026-10-05, on MT-697: *"Works, but the long term presence of the "click to change" tooltip is annoying.  Stop
-     * showing it after the user has clicked any square."*  Remembered with the editor's other view settings, so a click
-     * in one visit is not asked for again in the next: the line is for somebody who has not yet found out.
+     * showing it after the user has clicked any square."*, and then *"have that tooltip tracking state reset after the
+     * editor is closed"*.  So it is the editor window that remembers: closed and opened again, the line is back.
      *
      * Any square: a blank one is clicked here, which changes nothing.
      *
-     * MUTATION: let a click leave the line to be said, or say it whatever is remembered, and this fails.
+     * MUTATION: let a click leave the line to be said, say it whatever was clicked, or remember the click past the window,
+     * and this fails.
      *
      * @throws Exception from the window
      */
@@ -537,9 +534,9 @@ public class testTheAutonomyEditorKnowsWhichSquare
             throw new org.testng.SkipException("the editor is a window");
         }
 
-        Editor open = open(true);
-
-        String learned = pinClickLearned(false);
+        final Editor open = open(true);
+        Editor reopened = null;
+        boolean closed = false;
 
         try
         {
@@ -565,56 +562,24 @@ public class testTheAutonomyEditorKnowsWhichSquare
             assertEquals(cursorOf(track), java.awt.Cursor.HAND_CURSOR, "the hand went with the line - it is the line that"
                 + " was asked to go");
 
-            assertTrue(clickLearned(), "the click was not remembered, so the next visit says the line again");
+            // CLOSED, AND OPENED AGAIN: the line is back
+            open.close();
+            closed = true;
+
+            reopened = open(true);
+
+            assertTrue(String.valueOf(hover(reopened.editor, 3, 2).getToolTipText()).contains(says), "an editor opened after"
+                + " the one a square was clicked in does not say what a click does - Adam: \"have that tooltip tracking state"
+                + " reset after the editor is closed\"");
         }
         finally
         {
-            restoreClickLearned(learned);
+            if (!closed) open.close();
 
-            open.close();
+            if (reopened != null) reopened.close();
         }
     }
 
-    /** The autonomy editor's own preferences node, the one `AutonomyEditorPanel` keeps its view settings in. */
-    private static java.util.prefs.Preferences editorPrefs()
-    {
-        return org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
-    }
-
-    /** Whether the autonomy editor remembers a square clicked. */
-    private static boolean clickLearned()
-    {
-        return editorPrefs().getBoolean("autonomyEditorClickLearned", false);
-    }
-
-    /**
-     * Sets whether the autonomy editor remembers a square clicked.
-     *
-     * @param to the value
-     * @return what was stored before, or null where nothing was
-     */
-    private static String pinClickLearned(boolean to) throws Exception
-    {
-        String was = editorPrefs().get("autonomyEditorClickLearned", null);
-
-        editorPrefs().putBoolean("autonomyEditorClickLearned", to);
-        editorPrefs().flush();
-
-        return was;
-    }
-
-    /**
-     * Puts back what was stored before `pinClickLearned`.
-     *
-     * @param was the value, or null to remove it
-     */
-    private static void restoreClickLearned(String was) throws Exception
-    {
-        if (was == null) editorPrefs().remove("autonomyEditorClickLearned");
-        else editorPrefs().put("autonomyEditorClickLearned", was);
-
-        editorPrefs().flush();
-    }
 
     /** The type of the pointer a square shows, read on the event thread. */
     private static int cursorOf(final org.traincontrol.gui.LayoutLabel label) throws Exception
