@@ -135,6 +135,56 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
         }
     }
 
+    /**
+     * A second import of the same file counts in {4} the squares that had a name, once each, and says again the old points
+     * that shared a square (RSA45-C1).
+     *
+     * Names are shared by every configuration, so an import into a diagram that already has its names - a second import
+     * of the same file (MT-298), or an old file brought into a new configuration of a named railway - finds every square
+     * named before it.  Such a square was counted once for each old point on it: the frozen railway's file, imported
+     * twice, said 18 squares already had a name, of the 16 it had named.
+     *
+     * MUTATION: count a square named before the import once for each old point on it, or leave its further points unsaid,
+     * and this fails.
+     *
+     * @throws Exception from the import
+     */
+    @Test
+    public void testASecondImportCountsSquaresNotPoints() throws Exception
+    {
+        File empty = java.nio.file.Files.createTempDirectory("tc-squares-not-points").toFile();
+
+        try
+        {
+            AutonomySession bare = new AutonomySession(empty);
+
+            bare.open(support.LayoutSandbox.wiredPages(model));
+            bare.getStore().createConfiguration("Twice", null);
+            bare.getStore().setActiveConfiguration("Twice");
+            bare.rebuild();
+
+            AutonomySession.LegacyImport first = bare.importLegacy(legacy);
+
+            org.testng.Assert.assertFalse(first.namesNotKept.isEmpty(), "precondition: no two old points share a square,"
+                + " so squares and points count alike");
+
+            AutonomySession.LegacyImport second = bare.importLegacy(legacy);
+
+            assertEquals(second.matched, 0, "precondition: the second import named a square the first left without a name");
+
+            assertEquals(second.skipped, first.matched, "the second import says " + second.skipped + " squares already had"
+                + " a name, where the first named " + first.matched + " - a square counted once for each old point on it"
+                + " (RSA45-C1)");
+
+            assertEquals(second.namesNotKept, first.namesNotKept, "the second import does not say the old points that"
+                + " shared a square as the first did (RSA45-C1)");
+        }
+        finally
+        {
+            org.testng.Assert.assertTrue(deleteTree(empty) || !empty.exists(), "could not delete " + empty);
+        }
+    }
+
     /** Deletes a folder and everything in it. */
     private static boolean deleteTree(File file)
     {

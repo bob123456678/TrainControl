@@ -1785,8 +1785,11 @@ public class testTheEditorNamesItsShortcuts
      *
      * The class's own editor is put away for this, so the main window opens its own, and built again after.
      *
-     * MUTATION: let a page switch, or one of the editor's own reopenings, forget the click; or keep it in the main window
-     * past the editor's closing - and this fails.
+     * Each of the three doors is gone through twice: from a window a square was clicked in, where the line stays gone, and
+     * from one nothing was clicked in, where it is still said (RSA45-C2).
+     *
+     * MUTATION: let a page switch, or any of the editor's three own reopenings, forget the click or hand on one nobody
+     * made; or keep it in the main window past the editor's closing - and this fails.
      *
      * @throws Exception from the windows or reflection
      */
@@ -1804,7 +1807,10 @@ public class testTheEditorNamesItsShortcuts
         // dialog that waits on the screen
         SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
 
-        LayoutEditor a = null, b = null, c = null;
+        // Every window this claim opens, put away in the finally
+        List<LayoutEditor> opened = new ArrayList<>();
+
+        LayoutEditor a = null;
 
         try
         {
@@ -1812,6 +1818,8 @@ public class testTheEditorNamesItsShortcuts
 
             // OPENED AS THE MAIN WINDOW OPENS IT
             a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+
+            opened.add(a);
 
             int[] track = new int[2];
 
@@ -1865,32 +1873,37 @@ public class testTheEditorNamesItsShortcuts
             assertFalse(says(a, there, says), "after a page switch in place the track says what a click does again, though"
                 + " the visit is the same (MT-699 step 3)");
 
-            // A FINDING ON ANOTHER PAGE: the window closes itself and another opens - the same visit (RSA44-C1)
-            java.lang.reflect.Field jump = AutonomyEditorPanel.class.getDeclaredField("onJumpToPage");
+            // THE EDITOR'S OWN REOPENINGS - a finding on another page, a guard notice on another page, a link's other end:
+            // each closes the window and has another opened, and the user closed nothing - the same visit (RSA44-C1), by
+            // every door (RSA45-C2)
+            String[][] clicked = {{"finding", PAGE}, {"notice", OTHER_PAGE}, {"link", PAGE}};
 
-            jump.setAccessible(true);
+            LayoutEditor from = a;
 
-            @SuppressWarnings("unchecked")
-            final java.util.function.Consumer<TileKey> toPage =
-                (java.util.function.Consumer<TileKey>) jump.get(a.getAutonomyPanel());
+            for (String[] door : clicked)
+            {
+                LayoutEditor to = throughDoor(from, door[0], new TileKey(door[1], 1, 1));
 
-            b = openedBy(() -> toPage.accept(new TileKey(PAGE, 1, 1)), a);
+                opened.add(to);
 
-            assertFalse(a.isDisplayable(), "precondition: the finding's door did not close the window it left");
+                int[] again = new int[2];
 
-            int[] again = new int[2];
+                assertNotNull(aTrackSquareWithRoom(to, again), "precondition: no track square on " + door[1]);
 
-            assertNotNull(aTrackSquareWithRoom(b, again), "precondition: no track square on " + PAGE);
+                assertFalse(says(to, again, says), "the window the " + door[0] + "'s door opened says what a click does"
+                    + " again, though the user closed nothing (RSA44-C1, RSA45-C2)");
 
-            assertFalse(says(b, again, says), "the window a finding on another page opened says what a click does again,"
-                + " though the user closed nothing (RSA44-C1)");
+                from = to;
+            }
 
             // CLOSED BY THE USER - the X - and opened again through the same main window: said again (RSA44-C4)
-            closeAsTheUserDoes(b);
+            closeAsTheUserDoes(from);
 
-            assertFalse(b.isDisplayable(), "precondition: the X did not close the editor");
+            assertFalse(from.isDisplayable(), "precondition: the X did not close the editor");
 
-            c = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), b);
+            LayoutEditor c = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), from);
+
+            opened.add(c);
 
             int[] fresh = new int[2];
 
@@ -1898,10 +1911,32 @@ public class testTheEditorNamesItsShortcuts
 
             assertTrue(says(c, fresh, says), "an editor opened after the user closed the one a square was clicked in does"
                 + " not say what a click does - Adam: \"have that tooltip tracking state reset after the editor is closed\"");
+
+            // AND NO DOOR HANDS ON A CLICK NOBODY MADE (RSA45-C2): from a window nothing was clicked in, each door's window
+            // still says what a click does
+            String[][] unclicked = {{"finding", OTHER_PAGE}, {"notice", PAGE}, {"link", OTHER_PAGE}};
+
+            from = c;
+
+            for (String[] door : unclicked)
+            {
+                LayoutEditor to = throughDoor(from, door[0], new TileKey(door[1], 1, 1));
+
+                opened.add(to);
+
+                int[] still = new int[2];
+
+                assertNotNull(aTrackSquareWithRoom(to, still), "precondition: no track square on " + door[1]);
+
+                assertTrue(says(to, still, says), "the window the " + door[0] + "'s door opened from one nothing was"
+                    + " clicked in does not say what a click does - a click handed on that nobody made (RSA45-C2)");
+
+                from = to;
+            }
         }
         finally
         {
-            for (LayoutEditor open : new LayoutEditor[] {a, b, c})
+            for (LayoutEditor open : opened)
             {
                 if (open != null)
                 {
@@ -1934,6 +1969,61 @@ public class testTheEditorNamesItsShortcuts
 
     /** The other page of the frozen railway, for a switch in place. */
     private static final String OTHER_PAGE = "2 - Bottom";
+
+    /**
+     * The editor one of the editor's own reopenings opens: a finding on another page, a guard notice on another page, or
+     * a link's other end - each closes the window it is in and has the main window open another.
+     *
+     * @param from the window the door is in, with nothing unsaved
+     * @param door "finding", "notice" or "link"
+     * @param tile the square it goes to
+     * @return the editor opened
+     */
+    private static LayoutEditor throughDoor(LayoutEditor from, String door, TileKey tile) throws Exception
+    {
+        // NOTHING UNSAVED, so the link's door asks nothing on the screen
+        assertFalse(unsaved(from), "precondition: the editor has unsaved work, so the " + door + "'s door would ask on the"
+            + " screen");
+
+        Runnable opening;
+
+        if ("finding".equals(door))
+        {
+            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToPage");
+
+            field.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            final java.util.function.Consumer<TileKey> toPage =
+                (java.util.function.Consumer<TileKey>) field.get(from.getAutonomyPanel());
+
+            opening = () -> toPage.accept(tile);
+        }
+        else if ("notice".equals(door))
+        {
+            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToNotice");
+
+            field.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            final java.util.function.BiConsumer<TileKey, List<TileKey>> toNotice =
+                (java.util.function.BiConsumer<TileKey, List<TileKey>>) field.get(from.getAutonomyPanel());
+
+            opening = () -> toNotice.accept(tile, new ArrayList<TileKey>());
+        }
+        else
+        {
+            assertEquals(door, "link", "precondition: no such door");
+
+            opening = () -> from.jumpToSquare(tile);
+        }
+
+        LayoutEditor opened = openedBy(opening, from);
+
+        assertFalse(from.isDisplayable(), "precondition: the " + door + "'s door did not close the window it left");
+
+        return opened;
+    }
 
     /**
      * The autonomy editor the main window shows after an opening - waited for until it is a new window, built and in
