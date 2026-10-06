@@ -235,8 +235,9 @@ public class testTheImportDoorReadsAnOldFile
 
             final String inUse = session.getStore().getActiveConfiguration();
 
-            // THE LOG FROM HERE ON, the class's other imports left out
+            // THE LOG FROM HERE ON, the class's other imports left out - as text, and entry by entry
             final int logFrom = logged().length();
+            final int entryFrom = loggedEntries().size();
 
             List<String> first = importFromTheMenu(ui[0], MT298, "MT-298 import");
 
@@ -314,8 +315,8 @@ public class testTheImportDoorReadsAnOldFile
             assertNotNull(namedThen, "precondition: the first import's message is not the import's: " + first);
             assertNotNull(namedNow, "precondition: the second import's message is not the import's: " + said);
 
-            int sharedThen = numberIn(first, shared, 0) == null ? 0 : numberIn(first, shared, 0);
-            int sharedNow = numberIn(said, shared, 0) == null ? 0 : numberIn(said, shared, 0);
+            int sharedThen = countIn(first, shared) == null ? 0 : countIn(first, shared);
+            int sharedNow = countIn(said, shared) == null ? 0 : countIn(said, shared);
 
             assertTrue(sharedThen > 0, "the first import's message does not say the old points that shared a square (RSA44-C3,"
                 + " RSA45-C1): " + first);
@@ -341,6 +342,31 @@ public class testTheImportDoorReadsAnOldFile
 
             assertEquals(sharedLinesIn(log), sharedThen + sharedNow, "the log does not list each old point the messages say"
                 + " shared a square (RSA44-C3): " + log);
+
+            // AND EACH LIST ONE ENTRY, ITS HEADING FIRST (Adam, 2026-10-06: "Fix them", on RSA45's notes): the main window's
+            // log puts its newest entry on top, so a heading logged as an entry of its own before its lines stood below
+            // them, and the list read upwards.  One entry is put on top whole, and reads down from its heading.
+            List<String> entries = loggedEntries().subList(entryFrom, loggedEntries().size());
+
+            String sharedEntry = lastStartingWith(entries, I18n.t("autosetup.ui.importSharedSquaresHeading"));
+
+            assertNotNull(sharedEntry, "the log has no entry for the old points that shared a square: " + entries);
+
+            assertEquals(sharedEntry.split("\n", -1).length - 1, sharedNow, "the log's entry for the old points that shared"
+                + " a square does not hold the " + sharedNow + " its message counts under its heading - an entry each, which"
+                + " the log shows above the heading: " + sharedEntry);
+
+            Integer leftNow = countIn(said, "autosetup.ui.leftBehind");
+
+            assertNotNull(leftNow, "precondition: the second import left nothing behind, so its list cannot be read: " + said);
+
+            String leftEntry = lastStartingWith(entries, I18n.t("autosetup.ui.leftBehindHeading"));
+
+            assertNotNull(leftEntry, "the log has no entry for what the import left behind: " + entries);
+
+            assertEquals(leftEntry.split("\n", -1).length - 1, leftNow.intValue(), "the log's entry for what the import"
+                + " left behind does not hold the " + leftNow + " its message counts under its heading - an entry each,"
+                + " which the log shows above the heading: " + leftEntry);
 
             session = ui[0].getAutonomySession();
 
@@ -4933,6 +4959,32 @@ public class testTheImportDoorReadsAnOldFile
         return null;
     }
 
+    /** The number a counted sentence says, in whichever form the number took (`I18n.countForm`) - or null where none does. */
+    private static Integer countIn(List<String> said, String key)
+    {
+        for (String form : new String[] {"", "One", "Few"})
+        {
+            Integer n = numberIn(said, key + form, 0);
+
+            if (n != null) return n;
+        }
+
+        return null;
+    }
+
+    /** The last of these entries that starts with a line, or null. */
+    private static String lastStartingWith(List<String> entries, String line)
+    {
+        String found = null;
+
+        for (String entry : entries)
+        {
+            if (entry.equals(line) || entry.startsWith(line + "\n")) found = entry;
+        }
+
+        return found;
+    }
+
     /** The lines of the import's list of old points that shared a square, in a log. */
     private static int sharedLinesIn(String log)
     {
@@ -5012,6 +5064,9 @@ public class testTheImportDoorReadsAnOldFile
     /** What the model has logged since this class was loaded - every line the operator's log shows. */
     private static final StringBuilder LOGGED = new StringBuilder();
 
+    /** The same, entry by entry: the main window's log puts each on top whole. */
+    private static final List<String> ENTRIES = new ArrayList<>();
+
     static
     {
         java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(
@@ -5023,6 +5078,8 @@ public class testTheImportDoorReadsAnOldFile
                     synchronized (LOGGED)
                     {
                         LOGGED.append(record.getMessage()).append('\n');
+
+                        ENTRIES.add(record.getMessage());
                     }
                 }
 
@@ -5036,6 +5093,17 @@ public class testTheImportDoorReadsAnOldFile
                 {
                 }
             });
+    }
+
+    /** What the model has logged, entry by entry, once the event thread has caught up. */
+    static List<String> loggedEntries() throws Exception
+    {
+        logged();
+
+        synchronized (LOGGED)
+        {
+            return new ArrayList<>(ENTRIES);
+        }
     }
 
     static String logged() throws Exception
