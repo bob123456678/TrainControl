@@ -27,10 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-699](#mt-699) | 2026-10-05 | The click's tooltip line goes once a square is clicked, until the editor is opened again | fixed unvalidated | Adam 2026-10-05 (MT-697) |
 
-Everything else - 698 of 699 - needs nothing from you unless the area changes again:
-550 **fixed validated** and 148 **superseded**.
+
+Everything else - 699 of 699 - needs nothing from you unless the area changes again:
+551 **fixed validated** and 148 **superseded**.
 
 ---
 
@@ -33209,7 +33209,7 @@ Superseded by MT-699: on your word *"have that tooltip tracking state reset afte
 
 ### MT-699 - 2026-10-05 - The click's tooltip line goes once a square is clicked, until the editor is opened again
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-05 (MT-697)
 
 **Written:** 2026-10-05
@@ -33231,5 +33231,13 @@ state reset after the editor is closed"*.
 - Step 4: the line is back until the next click.
 
 *What this is:* `regression.testTheAutonomyEditorKnowsWhichSquare.testTheClickLineGoesOnceASquareIsClicked`.
+
+**Adam, 2026-10-05 (triage).** Works.
+
+*Run against commit 983e73f2, in English - build\classes, compiled 05 Oct 23:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-06.**
+
+Validated on your *Works* of 2026-10-05. Since round 76 (a466df07) the editor's own reopenings keep the click too - following a finding or a guard notice to another page, or a link to its other end, is the same visit; only closing the editor brings the line back.
 
 ---
