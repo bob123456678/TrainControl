@@ -4837,4 +4837,51 @@ public class testEditorSurfaceRules
         assertTrue(statement.contains("tellAutonomy"), "deleteSelection asks for the autonomy setup whether or not it will"
             + " tell it, which on a cut builds one nobody needed (OB-236): " + statement.trim());
     }
+
+    /**
+     * The route editor's copy mark is drawn in outlines in whatever ink it is given, as the arrows, the trash and the plus
+     * beside it are (OB-258).  Its front sheet was filled white to hide the corner of the one behind, so on a selected row -
+     * drawn in the selection's ink, white on the selection's blue - it was a solid white sheet among outlines.
+     *
+     * Painted with no display, into a picture of the selection's blue.
+     *
+     * MUTATION: fill the front sheet again, and this fails.
+     */
+    @Test
+    public void testTheCopyMarkIsOutlinesInAnyInk()
+    {
+        final int size = 24;
+
+        final java.awt.Color ground = new java.awt.Color(38, 117, 191);
+
+        java.awt.image.BufferedImage picture = new java.awt.image.BufferedImage(size, size,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = picture.createGraphics();
+
+        g.setColor(ground);
+        g.fillRect(0, 0, size, size);
+
+        org.traincontrol.gui.RowIcons.copy(size, java.awt.Color.WHITE).paintIcon(null, g, 0, 0);
+
+        g.dispose();
+
+        // The front sheet, as the mark measures it
+        int w = Math.round(size * 0.52f);
+        int h = Math.round(size * 0.62f);
+        int gap = Math.max(2, Math.round(size * 0.20f));
+
+        boolean inked = false;
+
+        for (int y = 1 + gap + 2; y < 1 + gap + h - 2; y++)
+        {
+            for (int x = gap; x <= gap + 2; x++) inked |= ((picture.getRGB(x, y) >> 16) & 0xFF) > 120;
+        }
+
+        assertTrue(inked, "precondition: the copy mark's front sheet has no left edge in white ink, so nothing was drawn");
+
+        assertEquals(picture.getRGB(1 + gap + w / 2, 1 + gap + h / 2) & 0xFFFFFF, ground.getRGB() & 0xFFFFFF, "the copy"
+            + " mark's front sheet is filled rather than outlined, so on a selected row it is a solid sheet among outlines"
+            + " (OB-258)");
+    }
 }

@@ -23825,26 +23825,44 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Escape - which means no - was reaching it.
             if (dialogResult != JOptionPane.YES_OPTION) return;
 
-            this.model.getAutoLayout().setTimetable(new LinkedList<>());
-
-            // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once (RSA5-C1): left to the next fold, a Clear pressed while a
-            // page was out came back with the page
-            org.traincontrol.automationui.AutonomySession keeping = this.autonomySession;
-
-            if (keeping != null && this.activeDiagramConfiguration != null)
+            // ASKED AGAIN AFTER THE QUESTION, as Delete Entry asks (OB-260, RSA48-C1): it can stay open as long as the
+            // operator likes, and a run may have started meanwhile
+            if (this.isAutonomyBusy())
             {
-                try
-                {
-                    keeping.clearTheTimetable();
-                }
-                catch (java.io.IOException e)
-                {
-                    this.model.log(e);
-                }
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                return;
             }
 
-            this.repaintTimetable();
-            this.repaintAutoLocListLite();
+            final org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+
+            // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as every
+            // door onto that lock from the window is (OB-192)
+            new Thread(() ->
+            {
+                layout.emptyTimetable();
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once (RSA5-C1): left to the next fold, a Clear pressed
+                    // while a page was out came back with the page
+                    org.traincontrol.automationui.AutonomySession keeping = this.autonomySession;
+
+                    if (keeping != null && this.activeDiagramConfiguration != null)
+                    {
+                        try
+                        {
+                            keeping.clearTheTimetable();
+                        }
+                        catch (java.io.IOException e)
+                        {
+                            this.model.log(e);
+                        }
+                    }
+
+                    this.repaintTimetable();
+                    this.repaintAutoLocListLite();
+                });
+            }, "Timetable clear").start();
         });
     }
         
@@ -29527,6 +29545,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Anything but Yes.
             if (dialogResult != JOptionPane.YES_OPTION) return;
 
+            // ASKED AGAIN AFTER THE QUESTION (RSA48-C1): a reset under a timetable started meanwhile would set back the
+            // execution times its loop waits on
+            if (this.isAutonomyBusy())
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                return;
+            }
+
             this.getModel().getAutoLayout().resetTimetable();
             this.repaintTimetable();
         });
@@ -30562,6 +30588,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The array the crop dialog opens on and writes what the user settled on back into: SIX NUMBERS, the last the crop's
+     * width in the photograph's own pixels (OB-257), whatever the note it opens on held - an older note's five are copied
+     * in, and the sixth is written after the crop either way.
+     *
+     * @param opening the view the note held, or null
+     * @return the array, NaN where nothing was held
+     */
+    private static double[] viewToOpenOn(double[] opening)
+    {
+        double[] view = { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN };
+
+        if (opening != null) System.arraycopy(opening, 0, view, 0, Math.min(opening.length, view.length));
+
+        return view;
+    }
+
+    /**
      * FR-022 - runs the crop dialog over a picture the user has just picked, and stores what comes
      * back as a locomotive icon of our own.
      *
@@ -30590,12 +30633,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // One array, in and out: what to open on, and afterwards what the user settled on (OB-125).
         // Allocated here when the caller has nothing to open on, because the note still wants
         // recording either way.
-        //
-        // SIX NUMBERS, the last the crop's width in the photograph's own pixels (OB-257), whatever the note it opens on
-        // held: an older note's five are copied in, and the sixth is written after the crop either way.
-        double[] view = { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN };
-
-        if (opening != null) System.arraycopy(opening, 0, view, 0, Math.min(opening.length, view.length));
+        double[] view = viewToOpenOn(opening);
 
         BufferedImage picture;
 

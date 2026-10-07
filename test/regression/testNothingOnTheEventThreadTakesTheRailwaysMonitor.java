@@ -152,6 +152,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: the confirmed row is removed under the lock on a `new Thread` (OB-260), and the"
             + " timetable repainted through invokeLater.");
 
+        ALLOWED.put("TrainControlUI.java#clearTimetable",
+            "OFF THE EVENT THREAD: the confirmed clear empties the list under the lock on a `new Thread` (RSA48-C1),"
+            + " and the configuration's copy and the repaint are put back on the event thread with invokeLater.");
+
         ALLOWED.put("TrainControlUI.java#executeTimetableActionPerformed",
             "OFF THE EVENT THREAD: the button disables itself on the event thread and then runs the"
             + " timetable on a `new Thread`, re-enabling through invokeLater.");

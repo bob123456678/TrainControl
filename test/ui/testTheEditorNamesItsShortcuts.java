@@ -1984,8 +1984,23 @@ public class testTheEditorNamesItsShortcuts
 
             gridField.setAccessible(true);
 
-            // ADDRESSES SHOWN, as the box shows them
-            SwingUtilities.invokeAndWait(() -> { track[0].toggleAddresses(); addressesOn[0] = true; });
+            // ADDRESSES SHOWN, as the box shows them - turned on only when they are off: the run's preferences start as the
+            // operator's, and his Show Addresses may already have them on, which a toggle would turn off
+            final java.lang.reflect.Field drawn = LayoutEditor.class.getDeclaredField("layout");
+
+            drawn.setAccessible(true);
+
+            final LayoutDiagram shown = (LayoutDiagram) drawn.get(track[0]);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                if (!shown.getShowAddress())
+                {
+                    track[0].toggleAddresses();
+
+                    addressesOn[0] = true;
+                }
+            });
 
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -2226,18 +2241,33 @@ public class testTheEditorNamesItsShortcuts
 
             assertTrue(wearsTheHover(track[0], p), "precondition: a menu over the square took its outline off");
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                for (javax.swing.event.PopupMenuListener heard : menu[0].getPopupMenuListeners())
-                {
-                    if (heard.getClass().getName().startsWith(LayoutEditor.class.getName()))
-                    {
-                        heard.popupMenuWillBecomeInvisible(new javax.swing.event.PopupMenuEvent(menu[0]));
-                    }
-                }
-            });
+            // WHERE THE POINTER IS, said through the editor's own reader rather than read off the screen (RSA48-C3): the
+            // real pointer is wherever it was left, and this window is off the screen
+            final java.lang.reflect.Field pointerOver = LayoutEditor.class.getDeclaredField("pointerOver");
 
-            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+            pointerOver.setAccessible(true);
+
+            final Object theScreens = pointerOver.get(track[0]);
+
+            final javax.swing.JPanel panelOfSquares = gridOf(track[0]).getContainer();
+
+            final java.awt.Point overP = SwingUtilities.convertPoint(p, p.getWidth() / 2, p.getHeight() / 2,
+                panelOfSquares);
+
+            // (RSA48-C3) CLOSED WITH THE POINTER OVER THE SQUARE: the outline stays
+            pointerOver.set(track[0], (java.util.function.Function<javax.swing.JPanel, java.awt.Point>) on -> overP);
+
+            closeTheMenu(menu[0]);
+
+            assertTrue(wearsTheHover(track[0], p), "the right-click menu closed with the pointer over the square it was"
+                + " opened on, and the outline was taken off (RSA48-C3)");
+
+            // (C1) AND OFF THE SQUARES: it goes
+            pointerOver.set(track[0], (java.util.function.Function<javax.swing.JPanel, java.awt.Point>) on -> null);
+
+            closeTheMenu(menu[0]);
+
+            pointerOver.set(track[0], theScreens);
 
             assertFalse(anyWearsTheHover(track[0]), "the right-click menu closed with the pointer off the squares, and the"
                 + " outline stayed on the square it was over (RSA47-C1)");
@@ -3476,6 +3506,23 @@ public class testTheEditorNamesItsShortcuts
         });
 
         Thread.sleep(500);
+
+        for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** Closes a right-click menu as Swing tells the editor it has closed, and lets what that posts run. */
+    private static void closeTheMenu(final javax.swing.JPopupMenu menu) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (javax.swing.event.PopupMenuListener heard : menu.getPopupMenuListeners())
+            {
+                if (heard.getClass().getName().startsWith(LayoutEditor.class.getName()))
+                {
+                    heard.popupMenuWillBecomeInvisible(new javax.swing.event.PopupMenuEvent(menu));
+                }
+            }
+        });
 
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
     }

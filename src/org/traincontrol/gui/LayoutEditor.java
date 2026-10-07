@@ -4518,12 +4518,18 @@ public class LayoutEditor extends PositionAwareJFrame
 
         JPanel squares = this.grid.getContainer();
 
-        java.awt.Point at = squares.getMousePosition(true);
+        java.awt.Point at = this.pointerOver.apply(squares);
 
         if (at != null && squares.getVisibleRect().contains(at) && aSquareAt(squares, at)) return;
 
         pointerOffTheSquares();
     }
+
+    /**
+     * Where the pointer is over the squares' panel, in its coordinates, or null when it is not over this window: the
+     * screen's own pointer.  A field so that a claim can say where without moving the real one (RSA48-C3).
+     */
+    private java.util.function.Function<JPanel, java.awt.Point> pointerOver = squares -> squares.getMousePosition(true);
 
     /** This window's watch on where the pointer arrives (RSA46-C1). */
     private final PointerWatch pointerWatch = new PointerWatch(this);

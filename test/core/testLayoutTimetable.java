@@ -712,4 +712,31 @@ public class testLayoutTimetable
 
         assertEquals(layout.getTimetable(), Arrays.asList(before.get(0), before.get(2)), "the wrong entry was removed");
     }
+
+    /**
+     * Clear Timetable empties the list under the railway's lock, as the remove does (RSA48-C1).
+     *
+     * Capture appends under that lock from locomotive threads, and Clear replaced the list on the event thread without
+     * it: run side by side in a stress test, capture's append threw thousands of times a race.
+     *
+     * MUTATION: clear without the lock, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testAClearTakesTheRailwaysLock() throws Exception
+    {
+        Layout layout = layoutWithOnePath();
+
+        setEntries(layout, 100, 200, 300);
+
+        Method clear = Layout.class.getDeclaredMethod("emptyTimetable");
+
+        assertTrue(java.lang.reflect.Modifier.isSynchronized(clear.getModifiers()), "Clear Timetable does not take the"
+            + " railway's lock, which capture appends under from locomotive threads (RSA48-C1)");
+
+        clear.invoke(layout);
+
+        assertTrue(layout.getTimetable().isEmpty(), "Clear left entries: " + layout.getTimetable());
+    }
 }

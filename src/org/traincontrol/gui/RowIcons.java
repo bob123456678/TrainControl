@@ -109,15 +109,16 @@ public final class RowIcons
                 int h = Math.round(height * 0.62f);
                 int gap = Math.max(2, Math.round(width * 0.20f));
 
-                // The sheet behind, then the one in front FILLED over it, so the front one hides the
-                // corner of the back and the two read as two sheets rather than as a little grid
+                // The sheet behind, only where it shows - the one in front hides its lower right corner, so
+                // the two read as two sheets rather than as a little grid.  Not by filling the front one white
+                // over it: on a selected row, drawn in the selection's ink, that was a solid white sheet among
+                // the outlines beside it (OB-258)
                 g.setColor(colour);
-                g.drawRect(1, 1, w, h);
+                g.drawLine(1, 1, 1 + w, 1);
+                g.drawLine(1, 1, 1, 1 + h);
+                g.drawLine(1 + w, 1, 1 + w, 1 + gap);
+                g.drawLine(1, 1 + h, 1 + gap, 1 + h);
 
-                g.setColor(Color.WHITE);
-                g.fillRect(1 + gap, 1 + gap, w, h);
-
-                g.setColor(colour);
                 g.drawRect(1 + gap, 1 + gap, w, h);
             }
         };

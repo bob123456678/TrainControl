@@ -1099,4 +1099,281 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         assertFalse(strip.isSetupWaitingShown(), "the track diagram still says the setup is not applied after a load took"
             + " the change");
     }
+
+    /**
+     * The timetable's three doors ask whether anything runs again after their confirmation, which can stay open as long as
+     * the operator likes (OB-260, RSA48-C1, RSA48-C2): a run begun behind the question and then a Yes changes nothing, and
+     * the refusal is said.
+     *
+     * Delete Entry asked again from round 80; Clear Timetable and Restart Timetable asked only before, and Clear then
+     * emptied the list a run's capture appends to.  Busy is the staging flag, as this class makes it everywhere: the race's
+     * outcome without the race.
+     *
+     * MUTATION: take the second question out of any of the three doors, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheTimetableDoorsAskAgainAfterTheirQuestion() throws Exception
+    {
+        final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
+
+        // ITS OWN THREE ENTRIES, a one-edge path each: what the claims before this one leave of the snapshot's timetable
+        // is theirs to decide
+        final List<org.traincontrol.automation.TimetablePath> was = new java.util.ArrayList<>(railway.getTimetable());
+
+        assertFalse(railway.getEdges().isEmpty(), "precondition: the railway has no edges to make a timetable from");
+
+        final org.traincontrol.automation.Edge edge = railway.getEdges().iterator().next();
+
+        final org.traincontrol.base.Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        final List<org.traincontrol.automation.TimetablePath> before = new java.util.ArrayList<>();
+
+        for (int i = 0; i < 3; i++)
+        {
+            before.add(new org.traincontrol.automation.TimetablePath(train, java.util.Arrays.asList(edge), 0));
+        }
+
+        railway.setTimetable(before);
+
+        final String refusal = org.traincontrol.util.I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+
+        try
+        {
+            // RESTART: every entry run, so the reset has something to do and asks
+            for (org.traincontrol.automation.TimetablePath entry : before) entry.setExecutionTime(1000);
+
+            assertEquals(yesOnceARunBegins(() -> ui.restartTimetable()), refusal, "Restart Timetable did not refuse a"
+                + " Yes given after a run began behind its question (RSA48-C1)");
+
+            for (org.traincontrol.automation.TimetablePath entry : before)
+            {
+                assertEquals(entry.getExecutionTime(), 1000L, "Restart Timetable set back an entry under a run begun"
+                    + " behind its question (RSA48-C1)");
+            }
+
+            // CLEAR
+            assertEquals(yesOnceARunBegins(() -> ui.clearTimetable()), refusal, "Clear Timetable did not refuse a Yes"
+                + " given after a run began behind its question (RSA48-C1)");
+
+            assertTheSame(railway.getTimetable(), before, "Clear Timetable emptied the timetable under a run begun behind"
+                + " its question (RSA48-C1)");
+
+            // DELETE ENTRY, at the first row of the Auto tab's timetable
+            final javax.swing.JTable table = timetableTable();
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (System.currentTimeMillis() < until && rowsOf(table) == 0)
+            {
+                Thread.sleep(100);
+
+                SwingUtilities.invokeAndWait(() -> invokeRepaintTimetable());
+            }
+
+            assertTrue(rowsOf(table) > 0, "precondition: the timetable's table shows no rows");
+
+            final java.awt.event.MouseEvent onTheFirstRow = new java.awt.event.MouseEvent(table,
+                java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 2, table.getRowHeight() / 2, 1,
+                false);
+
+            assertEquals(yesOnceARunBegins(() -> ui.deleteTimetableEntry(onTheFirstRow)), refusal, "Delete Entry did not"
+                + " refuse a Yes given after a run began behind its question (OB-260, RSA48-C2)");
+
+            // ITS REMOVE RUNS ON A WORKER: given the time to, had it been sent
+            Thread.sleep(1000);
+
+            assertTheSame(railway.getTimetable(), before, "Delete Entry removed an entry under a run begun behind its"
+                + " question (OB-260, RSA48-C2)");
+        }
+        finally
+        {
+            busy(false);
+
+            railway.setTimetable(was);
+        }
+    }
+
+    /**
+     * Opens a door on the event thread, answers its first question Yes once the railway is made busy behind it, and
+     * reads and closes the message that follows.
+     *
+     * @param door the door
+     * @return the message after the Yes, or null when none came
+     * @throws Exception from the wait
+     */
+    private static String yesOnceARunBegins(Runnable door) throws Exception
+    {
+        SwingUtilities.invokeLater(door);
+
+        final boolean[] answered = new boolean[1];
+
+        long until = System.currentTimeMillis() + 10000;
+
+        while (!answered[0] && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JOptionPane pane = aPaneShowing(true);
+
+                if (pane == null) return;
+
+                try
+                {
+                    busy(true);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                pane.setValue(pane.getOptions()[0]);
+
+                SwingUtilities.getWindowAncestor(pane).dispose();
+
+                answered[0] = true;
+            });
+        }
+
+        assertTrue(answered[0], "precondition: the door asked nothing");
+
+        final String[] said = new String[1];
+
+        until = System.currentTimeMillis() + 5000;
+
+        while (said[0] == null && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JOptionPane pane = aPaneShowing(false);
+
+                if (pane == null) return;
+
+                said[0] = String.valueOf(pane.getMessage());
+
+                pane.setValue(javax.swing.JOptionPane.OK_OPTION);
+
+                SwingUtilities.getWindowAncestor(pane).dispose();
+            });
+        }
+
+        busy(false);
+
+        return said[0];
+    }
+
+    /**
+     * The option pane in a showing dialog: a question (one with options) or a message (none).  The caller answers it and
+     * then closes its window, in that order, so the door reads the answer.
+     *
+     * @param question whether a question is wanted
+     * @return the pane, or null when no such dialog is showing
+     */
+    private static javax.swing.JOptionPane aPaneShowing(boolean question)
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+            javax.swing.JOptionPane pane = paneIn((java.awt.Container) window);
+
+            if (pane == null || (pane.getOptions() != null) != question) continue;
+
+            return pane;
+        }
+
+        return null;
+    }
+
+    /**
+     * The option pane inside a container, at any depth.
+     *
+     * @param container where to look
+     * @return the pane, or null
+     */
+    private static javax.swing.JOptionPane paneIn(java.awt.Container container)
+    {
+        for (java.awt.Component c : container.getComponents())
+        {
+            if (c instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) c;
+
+            if (c instanceof java.awt.Container)
+            {
+                javax.swing.JOptionPane inner = paneIn((java.awt.Container) c);
+
+                if (inner != null) return inner;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * That the timetable holds exactly these entries, the same objects in the same order.
+     *
+     * @param now the timetable
+     * @param was the entries it held
+     * @param message what it means if not
+     */
+    private static void assertTheSame(List<?> now, List<?> was, String message)
+    {
+        assertEquals(now.size(), was.size(), message);
+
+        for (int i = 0; i < was.size(); i++) assertSame(now.get(i), was.get(i), message);
+    }
+
+    /**
+     * The Auto tab's timetable table.
+     *
+     * @return the table
+     * @throws Exception from the reflection
+     */
+    private static javax.swing.JTable timetableTable() throws Exception
+    {
+        Field table = TrainControlUI.class.getDeclaredField("timetable");
+
+        table.setAccessible(true);
+
+        return (javax.swing.JTable) table.get(ui);
+    }
+
+    /**
+     * How many rows a table shows, read on the event thread.
+     *
+     * @param table the table
+     * @return its rows
+     * @throws Exception from the event thread
+     */
+    private static int rowsOf(javax.swing.JTable table) throws Exception
+    {
+        final int[] rows = new int[1];
+
+        SwingUtilities.invokeAndWait(() -> rows[0] = table.getRowCount());
+
+        return rows[0];
+    }
+
+    /**
+     * Asks the window to fill its timetable's table, as a path's start and end do.
+     */
+    private static void invokeRepaintTimetable()
+    {
+        try
+        {
+            java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
+
+            repaint.setAccessible(true);
+
+            repaint.invoke(ui);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
 }

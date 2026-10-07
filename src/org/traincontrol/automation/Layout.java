@@ -12567,6 +12567,17 @@ public class Layout
     }
 
     /**
+     * Empties the timetable, for Clear Timetable (RSA48-C1).
+     *
+     * Under this railway's lock, as the remove is (OB-260): capture appends under it from locomotive threads, and the list
+     * is a plain one.  Not called clearTimetable, which is the window's door: the monitor guard reads callers by name.
+     */
+    synchronized public void emptyTimetable()
+    {
+        this.setTimetable(new java.util.LinkedList<>());
+    }
+
+    /**
      * Replaces the timetable with the one passed
      * Used when loading from JSON
      * @param lst 

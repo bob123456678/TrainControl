@@ -859,4 +859,189 @@ public class testTheArrivalHonoursTheAnswer
             x.setTrainLength(lengthWas);
         }
     }
+
+    /**
+     * A train sent by hand to a square it may turn at, and told to keep its direction, is drawn facing the way it will
+     * stand from the moment it stops - not the turning copy's way until its run is done (Adam, 2026-10-07, on MT-701:
+     * *"the locomotive icon direction doesn't always match the arrow (arrow is correct) when arriving at a may reverse
+     * station.  Example, ET22-245 from Tunnel to BottomMainB, the icon at BottomMainB initially faces west and then flips
+     * to the correct east only after arrival"*).
+     *
+     * The path ends on the square's TURNING copy, and the train is stood on the plain copy only once the run's end has
+     * run - a second or two later, with the default delay.  The caption's arrow asks `copyItWillStandOn` (OB-314); the
+     * icon read the copy the train held (OB-317), so it faced the turning copy's way, west, until the re-stand.  The end
+     * is held open here with the route-end callback, which is where that delay sits.
+     *
+     * MUTATION: take the copy it will stand on out of `DiagramMonitor.markTrain`, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheIconFacesTheWayTheTrainWillStand() throws Exception
+    {
+        MarklinFeedback ms = model.newFeedback(1971, null);
+        MarklinFeedback mm = model.newFeedback(1972, null);
+
+        model.setFeedbackState(ms.getName(), false);
+        model.setFeedbackState(mm.getName(), false);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(6));
+
+        final Integer lengthWas = x.getTrainLength();
+
+        final Layout rail = new Layout(model);
+
+        rail.createPoint("ICFS", true, ms.getName());
+        rail.createPoint("ICFT", true, mm.getName());
+        rail.createPoint("ICFP", true, mm.getName());
+        rail.getPoint("ICFT").setTerminus(true);
+        rail.getPoint("ICFT").setBlock("ICF");
+        rail.getPoint("ICFP").setBlock("ICF");
+        rail.createEdge("ICFS", "ICFT");
+        rail.createEdge("ICFS", "ICFP");
+        rail.getEdge("ICFS", "ICFT").setEntrySide("W");
+        rail.makeCurrent();
+
+        final Point turning = rail.getPoint("ICFT");
+        final Point plain = rail.getPoint("ICFP");
+
+        // THE OPERATOR SAID KEEP THE DIRECTION: asked about the turning copy, and no
+        final Layout.ReversalPolicy keep = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive loc, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at == turning;
+            }
+        };
+
+        // The diagram: the start on one square, both copies of the destination on another - the turning copy facing back
+        // the way trains come in, the plain one onward
+        final org.traincontrol.automationui.TileGraph.TileKey square =
+            new org.traincontrol.automationui.TileGraph.TileKey("main", 5, 1);
+
+        java.util.Map<String, org.traincontrol.automationui.TileGraph.TileKey> tiles = new java.util.LinkedHashMap<>();
+
+        tiles.put("ICFS", new org.traincontrol.automationui.TileGraph.TileKey("main", 1, 1));
+        tiles.put("ICFT", square);
+        tiles.put("ICFP", square);
+
+        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new java.util.LinkedHashMap<>();
+
+        facings.put("ICFS", org.traincontrol.automationui.TilePorts.Side.E);
+        facings.put("ICFT", org.traincontrol.automationui.TilePorts.Side.W);
+        facings.put("ICFP", org.traincontrol.automationui.TilePorts.Side.E);
+
+        final org.traincontrol.automationui.DiagramMonitor monitor = new org.traincontrol.automationui.DiagramMonitor(
+            () -> rail, new java.util.LinkedHashMap<String, org.traincontrol.automationui.GraphReducer.ReducedEdge>(), tiles,
+            overlays -> { });
+
+        monitor.setFacings(facings);
+
+        // THE ROUTE'S END HELD OPEN, the train stopped on the turning copy
+        final java.util.function.Consumer<Locomotive> wasEnd = x.hasCallback(Layout.CB_ROUTE_END)
+            ? x.getCallback(Layout.CB_ROUTE_END) : null;
+
+        final java.util.concurrent.CountDownLatch atTheEnd = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch letGo = new java.util.concurrent.CountDownLatch(1);
+
+        Thread journey = null;
+
+        try
+        {
+            x.setCallback(Layout.CB_ROUTE_END, l ->
+            {
+                atTheEnd.countDown();
+
+                try
+                {
+                    letGo.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            });
+
+            x.setSpeed(0);
+            x.setTrainLength(2);
+
+            rail.getPoint("ICFS").setLocomotive(x);
+
+            journey = new Thread(() -> rail.executePath(java.util.Arrays.asList(rail.getEdge("ICFS", "ICFT")), x, 30, null,
+                keep), "icon-facing-claim");
+
+            journey.setDaemon(true);
+            journey.start();
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(rail.getActiveLocomotives().containsKey(x), "precondition: the train was not sent to the turning"
+                + " copy: " + Layout.getLastError());
+
+            model.setFeedbackState(mm.getName(), true);
+
+            assertTrue(atTheEnd.await(10, java.util.concurrent.TimeUnit.SECONDS), "precondition: the run never reached its"
+                + " end");
+
+            assertEquals(turning.getCurrentLocomotive(), x, "precondition: the train is not on the turning copy while its"
+                + " run ends, so there is nothing here to draw the wrong way");
+
+            assertEquals(x.getSpeed(), 0, "precondition: the train has not stopped");
+
+            monitor.refresh();
+
+            org.traincontrol.automationui.TileOverlay stopped = monitor.getPublished().get(square);
+
+            assertTrue(stopped != null && stopped.hasTrain() && stopped.isParked(), "precondition: the stopped train is"
+                + " not drawn standing on its square: " + monitor.getPublished());
+
+            assertEquals(stopped.getFacing(), org.traincontrol.automationui.TilePorts.Side.E, "the stopped train's icon"
+                + " faces the turning copy's way while its run ends, though it kept its direction and the arrow says the"
+                + " plain copy's (Adam, 2026-10-07, on MT-701)");
+
+            // AND ONCE IT IS STOOD ON THE PLAIN COPY: the same way, no flip
+            letGo.countDown();
+
+            journey.join(10000);
+
+            assertEquals(plain.getCurrentLocomotive(), x, "precondition: the train was not stood on the plain copy");
+
+            monitor.refresh();
+
+            org.traincontrol.automationui.TileOverlay standing = monitor.getPublished().get(square);
+
+            assertTrue(standing != null && standing.isParked(), "the standing train is not drawn: "
+                + monitor.getPublished());
+
+            assertEquals(standing.getFacing(), org.traincontrol.automationui.TilePorts.Side.E, "the train stood on the"
+                + " plain copy faces the other way");
+        }
+        finally
+        {
+            letGo.countDown();
+
+            // No way to remove a callback: an absent one is put back as one that does nothing
+            x.setCallback(Layout.CB_ROUTE_END, wasEnd != null ? wasEnd : l -> { });
+
+            model.setFeedbackState(mm.getName(), false);
+            model.setFeedbackState(ms.getName(), false);
+
+            if (journey != null) journey.join(5000);
+
+            x.setSpeed(0);
+            x.setTrainLength(lengthWas);
+        }
+    }
 }
