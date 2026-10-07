@@ -27,9 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-700](#mt-700) | 2026-10-06 | The main window stays behind an open editor, and is back on top when it closes | fixed unvalidated | Adam 2026-10-06 |
+| [MT-701](#mt-701) | 2026-10-06 | A running train no longer hides the s88 address of its square | fixed unvalidated | OB-259 (2026-09-22) |
 
-
-Everything else - 699 of 699 - needs nothing from you unless the area changes again:
+Everything else - 699 of 701 - needs nothing from you unless the area changes again:
 551 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33239,5 +33240,64 @@ state reset after the editor is closed"*.
 **Claude, 2026-10-06.**
 
 Validated on your *Works* of 2026-10-05. Since round 76 (a466df07) the editor's own reopenings keep the click too - following a finding or a guard notice to another page, or a link to its other end, is the same visit; only closing the editor brings the line back.
+
+---
+
+<a id="mt-700"></a>
+
+### MT-700 - 2026-10-06 - The main window stays behind an open editor, and is back on top when it closes
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-06
+
+**Written:** 2026-10-06
+
+Your report of 2026-10-06: *"when opening the autonomy editor, temporarily turn off "always on top" in the main window,
+then restore it.  This used to be the behavior before, but seems to have regressed."*
+
+**Steps**
+
+1. Tick **Preferences > Window Always on Top**.
+2. Open the autonomy editor (**Autonomy > Edit Autonomy on Page**).
+3. In the editor, choose another page from the **Page** list; then switch **Editing** to **Track Diagram** and back to
+   **Autonomy Setup**.
+4. Close the editor.
+
+**Expected**
+
+- Steps 2 and 3: the editor stays in front of the main window; the main window does not come up over it at any point.
+- Step 4: the main window is on top of other programs again, as the setting asks.
+
+*What this is:* a page or mode switch inside the editor runs the refresh a closing editor runs, and that refresh put
+the setting back with the editor still open.  Now the setting is applied only while no editor window is open, and again
+when it goes.  `ui.testTheEditorNamesItsShortcuts.testTheMainWindowStaysBelowAnOpenEditor`,
+`regression.testTheAutoTabWaitsForTheTrains.testAnEditorWhoseDrawingRaisesAnErrorGivesEditBack`.
+
+---
+
+<a id="mt-701"></a>
+
+### MT-701 - 2026-10-06 - A running train no longer hides the s88 address of its square
+
+**Disposition:** fixed unvalidated
+**From:** OB-259 (2026-09-22)
+
+**Written:** 2026-10-06
+
+**Steps**
+
+1. Tick **Layouts > Show Addresses**.
+2. Start autonomy, or send a train by hand, and watch a sensor square with an address label as a train runs over it,
+   and a station whose name is drawn over the track.
+
+**Expected**
+
+- The train is drawn on top of the square, and the s88 number stays visible beside it while the train is there.
+- A station's name is never painted out by a train standing or running on its square.
+
+*What this is:* a square with a running train used to be lifted in front of its labels - from before the diagram drew
+its trains last of all (OB-159) - and, being opaque, it painted the address out for as long as the train was there.
+`core.testAutonomyDiagramMonitor.testASquareWithARunningTrainLeavesItsLabelsInFront`,
+`ui.testDiagramLooksRight.testTheTrainIconDoesNotPaintOutACaption`.
 
 ---
