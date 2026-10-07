@@ -96,6 +96,14 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.tipClearAll",
         "autosetup.ui.tipAllowEveryPath",
         "autosetup.ui.tipClearLocomotives",
+
+        // The legacy import's two counted sentences, <key> + I18n.countForm in AutonomyViewerPanel's
+        // sharedSquaresSentence and leftBehindSentence (round 78).  The plural is spelled there as a literal; the
+        // singular and Polish forms are named whole here, because a bare prefix would shield the two Heading keys too
+        "autosetup.ui.importSharedSquaresOne",
+        "autosetup.ui.importSharedSquaresFew",
+        "autosetup.ui.leftBehindOne",
+        "autosetup.ui.leftBehindFew",
     };
 
     /**
