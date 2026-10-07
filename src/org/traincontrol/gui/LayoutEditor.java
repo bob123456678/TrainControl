@@ -559,6 +559,8 @@ public class LayoutEditor extends PositionAwareJFrame
     @Override
     public void dispose()
     {
+        java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(this.pointerWatch);
+
         if (this.autonomySessionForTheNote != null)
         {
             // Said out loud when it fails.  The note lives under OneDrive and the delete can lose to a
@@ -783,6 +785,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // So the heading reads correctly before anything has been pressed
             showDiagramSize();
+
+            // THE POINTER WATCHED wherever it arrives in this window (RSA46-C1) - taken off in dispose
+            java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(this.pointerWatch, java.awt.AWTEvent.MOUSE_EVENT_MASK);
         }
         catch (RuntimeException | Error failed)
         {
@@ -4393,12 +4398,101 @@ public class LayoutEditor extends PositionAwareJFrame
 
         JPanel squares = this.grid.getContainer();
 
-        java.awt.Point to = javax.swing.SwingUtilities.convertPoint(label, e.getPoint(), squares);
+        // FROM WHAT WAS LEFT: the square, or an address label lying on it that passed its exit on (RSA46-C1)
+        java.awt.Component from = e.getComponent() != null ? e.getComponent() : label;
 
-        java.awt.Component under = squares.contains(to) ? squares.getComponentAt(to) : null;
+        java.awt.Point to = javax.swing.SwingUtilities.convertPoint(from, e.getPoint(), squares);
 
-        // ONTO A SQUARE - another, or this one with a menu or a dialog opened over it
-        if (under instanceof LayoutLabel && !((LayoutLabel) under).isSpacer()) return;
+        // ONTO A SQUARE - another, this one with a menu or a dialog opened over it, or something drawn over one
+        if (squares.contains(to) && aSquareAt(squares, to)) return;
+
+        pointerOffTheSquares();
+    }
+
+    /**
+     * Whether a square of the grid - not its padding - lies under a point of the grid's panel, whatever is drawn over it:
+     * an accessory's address label lies on the top left of its square (RSA46-C1), and the padding along the last column
+     * and row is no square (RSA46-C2).
+     *
+     * @param squares the grid's panel
+     * @param at a point of it
+     * @return whether a square is there
+     */
+    private static boolean aSquareAt(JPanel squares, java.awt.Point at)
+    {
+        java.awt.Component top = squares.getComponentAt(at);
+
+        if (top instanceof LayoutLabel) return !((LayoutLabel) top).isSpacer();
+
+        for (java.awt.Component c : squares.getComponents())
+        {
+            if (c instanceof LayoutLabel && !((LayoutLabel) c).isSpacer() && c.getBounds().contains(at)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Hears the pointer arrive anywhere in this window, so that a pointer gone off the squares without a square's exit
+     * saying so is still found off them (RSA46-C1): out from under a menu, or a dialog, that took the square's exit while
+     * the pointer was over the square and closed with it over the tools column.  The toolkit keeps what it is given for
+     * the life of the program, so this holds the window weakly and goes once the window has - besides being taken off in
+     * `dispose`.
+     */
+    private static final class PointerWatch implements java.awt.event.AWTEventListener
+    {
+        private final java.lang.ref.WeakReference<LayoutEditor> editor;
+
+        PointerWatch(LayoutEditor editor)
+        {
+            this.editor = new java.lang.ref.WeakReference<>(editor);
+        }
+
+        @Override
+        public void eventDispatched(java.awt.AWTEvent event)
+        {
+            if (event.getID() != MouseEvent.MOUSE_ENTERED) return;
+
+            LayoutEditor watching = this.editor.get();
+
+            if (watching == null)
+            {
+                java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+
+                return;
+            }
+
+            watching.pointerArrived(((MouseEvent) event).getComponent());
+        }
+    }
+
+    /** This window's watch on where the pointer arrives (RSA46-C1). */
+    private final PointerWatch pointerWatch = new PointerWatch(this);
+
+    /**
+     * The pointer has arrived on something in this window.  Off the squares, unless it is a square or something drawn
+     * over one, which the square's own hover answers - or a menu or a tooltip, which leave the square they cover as it
+     * was: a menu is about that square (RSA46-C1).
+     *
+     * @param on what the pointer arrived on
+     */
+    void pointerArrived(java.awt.Component on)
+    {
+        if (!this.pointerOnGrid || isAutonomyMode() || this.grid == null || on == null) return;
+
+        if (javax.swing.SwingUtilities.getWindowAncestor(on) != this) return;
+
+        if (this.popup != null && this.popup.isVisible()) return;
+
+        if (on instanceof javax.swing.JPopupMenu || on instanceof javax.swing.JToolTip
+            || javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JPopupMenu.class, on) != null
+            || javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JToolTip.class, on) != null) return;
+
+        // A SQUARE, or something drawn over one
+        if (on.getParent() == this.grid.getContainer() && !(on instanceof LayoutLabel && ((LayoutLabel) on).isSpacer()))
+        {
+            return;
+        }
 
         pointerOffTheSquares();
     }
