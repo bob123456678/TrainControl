@@ -356,6 +356,37 @@ public class testLocIconCrop
                         + view[i] + " and read as " + read[i]);
                 }
 
+                // AND WITH THE CROP'S WIDTH IN THE PHOTOGRAPH, the sixth number (OB-257, RSA48-C2): written, read back,
+                // and in the array the crop dialog opens on and writes into
+                double[] six = { 250.5, 200.25, 0.4, 2.5, 0.7, 812.5 };
+
+                ui.rememberCropSource(ours, source, six);
+
+                double[] readSix = ui.cropViewOf(url);
+
+                assertNotNull(readSix, "a note with the crop's width was not read back as a view at all, so re-crop opens"
+                    + " on the covering crop (OB-257)");
+
+                assertEquals(readSix.length, 6, "the crop's width did not come back with the view (OB-257)");
+
+                for (int i = 0; i < 6; i++)
+                {
+                    assertEquals(readSix[i], six[i], 1e-9, "the six-number view came back changed at position " + i);
+                }
+
+                java.lang.reflect.Method toOpenOn = TrainControlUI.class.getDeclaredMethod("viewToOpenOn", double[].class);
+
+                toOpenOn.setAccessible(true);
+
+                double[] fromFive = (double[]) toOpenOn.invoke(null, (Object) view);
+
+                assertEquals(fromFive.length, 6, "the crop dialog is given no slot for the crop's width, so a crop never"
+                    + " records it (OB-257)");
+
+                assertEquals(fromFive[4], view[4], 1e-9, "an older note's five numbers are not what the dialog opens on");
+
+                assertTrue(Double.isNaN(fromFive[5]), "an older note opens with a crop width nobody wrote");
+
                 // A note that says something else on its second line is not a view.
                 ui.rememberCropSource(ours, source);
 

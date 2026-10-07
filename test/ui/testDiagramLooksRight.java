@@ -219,127 +219,141 @@ public class testDiagramLooksRight
 
         assertNotNull(page, "the run is on a page that is not loaded");
 
-        // Nothing published: the railway as it is drawn when no train is going anywhere
-        javax.swing.SwingUtilities.invokeAndWait(() -> ui.getDiagramTileRegistry().publish(
-            new java.util.LinkedHashMap<org.traincontrol.automationui.TileGraph.TileKey,
-                org.traincontrol.automationui.TileOverlay>()));
+        // ADDRESSES OFF, whatever the operator's Show Addresses says (the run's preferences start as his): an address
+        // label stands in front of its square, as OB-259 has it, and its box covers the line there, which is not what
+        // this measures
+        final boolean addressesWere = page.getShowAddress();
 
-        BufferedImage bare = DiagramExport.render(page, 60, ui);
+        page.setShowAddress(false);
 
-        java.util.List<org.traincontrol.automationui.TileOverlay.State> states =
-            new java.util.ArrayList<>();
-
-        for (int i = 0; i < run.size(); i++)
+        try
         {
-            states.add(i < run.size() / 2
-                ? org.traincontrol.automationui.TileOverlay.State.REACHED
-                : org.traincontrol.automationui.TileOverlay.State.ACTIVE);
-        }
+            // Nothing published: the railway as it is drawn when no train is going anywhere
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.getDiagramTileRegistry().publish(
+                new java.util.LinkedHashMap<org.traincontrol.automationui.TileGraph.TileKey,
+                    org.traincontrol.automationui.TileOverlay>()));
 
-        final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            org.traincontrol.automationui.TileOverlay> overlays = new java.util.LinkedHashMap<>();
+            BufferedImage bare = DiagramExport.render(page, 60, ui);
 
-        org.traincontrol.automationui.DiagramMonitor.lay(overlays, run, states);
+            java.util.List<org.traincontrol.automationui.TileOverlay.State> states =
+                new java.util.ArrayList<>();
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> ui.getDiagramTileRegistry().publish(overlays));
-
-        BufferedImage drawn = DiagramExport.render(page, 60, ui);
-
-        // Both pictures kept, always. This is a tool as much as a test, and when it fails the first
-        // question is "show me" - which is the question the old way of working could never answer.
-        javax.imageio.ImageIO.write(bare, "png", new File(OUT, "run-bare.png"));
-        javax.imageio.ImageIO.write(drawn, "png", new File(OUT, "run-drawn.png"));
-
-        assertEquals(drawn.getWidth(), bare.getWidth(), "the two renders are different sizes");
-        assertEquals(drawn.getHeight(), bare.getHeight(), "the two renders are different sizes");
-
-        // WHERE the ink lands, square by square.
-        java.util.Map<String, Integer> inkPerSquare = new java.util.LinkedHashMap<>();
-
-        int offArt = 0;
-        int strayed = 0;
-
-        java.util.Set<String> onTheRun = new java.util.HashSet<>();
-
-        for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
-        {
-            onTheRun.add(tile.getX() + "," + tile.getY());
-        }
-
-        for (int y = 0; y < drawn.getHeight(); y++)
-        {
-            for (int x = 0; x < drawn.getWidth(); x++)
+            for (int i = 0; i < run.size(); i++)
             {
-                int now = drawn.getRGB(x, y);
-
-                if (now == bare.getRGB(x, y) || !isRunInk(now)) continue;
-
-                String square = (x / 60) + "," + (y / 60);
-
-                if (!onTheRun.contains(square)) strayed++;
-
-                Integer had = inkPerSquare.get(square);
-                inkPerSquare.put(square, had == null ? 1 : had + 1);
-
-                if (!nearTrack(bare, x, y)) offArt++;
+                states.add(i < run.size() / 2
+                    ? org.traincontrol.automationui.TileOverlay.State.REACHED
+                    : org.traincontrol.automationui.TileOverlay.State.ACTIVE);
             }
-        }
 
-        // 1. It was drawn at all.
-        int total = 0;
+            final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                org.traincontrol.automationui.TileOverlay> overlays = new java.util.LinkedHashMap<>();
 
-        for (int count : inkPerSquare.values()) total += count;
+            org.traincontrol.automationui.DiagramMonitor.lay(overlays, run, states);
 
-        assertTrue(total > 200, "only " + total + " pixels of route ink over " + run.size()
-            + " squares - the run was barely drawn, so nothing below would mean anything");
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.getDiagramTileRegistry().publish(overlays));
 
-        // 2. Every square of the run carries some. A square the line skips is a gap in a route, which
-        //    is what "the trace stops halfway" would look like.
-        java.util.List<String> blank = new java.util.ArrayList<>();
+            BufferedImage drawn = DiagramExport.render(page, 60, ui);
 
-        for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
-        {
-            String square = tile.getX() + "," + tile.getY();
+            // Both pictures kept, always. This is a tool as much as a test, and when it fails the first
+            // question is "show me" - which is the question the old way of working could never answer.
+            javax.imageio.ImageIO.write(bare, "png", new File(OUT, "run-bare.png"));
+            javax.imageio.ImageIO.write(drawn, "png", new File(OUT, "run-drawn.png"));
 
-            // The two ENDS are allowed to be hidden: a run stops at a station, and the station's badge
-            // is painted OVER the line there (MT-076), so the stub can be entirely covered.
-            if (tile.equals(run.get(0)) || tile.equals(run.get(run.size() - 1))) continue;
+            assertEquals(drawn.getWidth(), bare.getWidth(), "the two renders are different sizes");
+            assertEquals(drawn.getHeight(), bare.getHeight(), "the two renders are different sizes");
 
-            Integer here = inkPerSquare.get(square);
+            // WHERE the ink lands, square by square.
+            java.util.Map<String, Integer> inkPerSquare = new java.util.LinkedHashMap<>();
 
-            // A REAL segment's worth, not a few pixels.
+            int offArt = 0;
+            int strayed = 0;
+
+            java.util.Set<String> onTheRun = new java.util.HashSet<>();
+
+            for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
+            {
+                onTheRun.add(tile.getX() + "," + tile.getY());
+            }
+
+            for (int y = 0; y < drawn.getHeight(); y++)
+            {
+                for (int x = 0; x < drawn.getWidth(); x++)
+                {
+                    int now = drawn.getRGB(x, y);
+
+                    if (now == bare.getRGB(x, y) || !isRunInk(now)) continue;
+
+                    String square = (x / 60) + "," + (y / 60);
+
+                    if (!onTheRun.contains(square)) strayed++;
+
+                    Integer had = inkPerSquare.get(square);
+                    inkPerSquare.put(square, had == null ? 1 : had + 1);
+
+                    if (!nearTrack(bare, x, y)) offArt++;
+                }
+            }
+
+            // 1. It was drawn at all.
+            int total = 0;
+
+            for (int count : inkPerSquare.values()) total += count;
+
+            assertTrue(total > 200, "only " + total + " pixels of route ink over " + run.size()
+                + " squares - the run was barely drawn, so nothing below would mean anything");
+
+            // 2. Every square of the run carries some. A square the line skips is a gap in a route, which
+            //    is what "the trace stops halfway" would look like.
+            java.util.List<String> blank = new java.util.ArrayList<>();
+
+            for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
+            {
+                String square = tile.getX() + "," + tile.getY();
+
+                // The two ENDS are allowed to be hidden: a run stops at a station, and the station's badge
+                // is painted OVER the line there (MT-076), so the stub can be entirely covered.
+                if (tile.equals(run.get(0)) || tile.equals(run.get(run.size() - 1))) continue;
+
+                Integer here = inkPerSquare.get(square);
+
+                // A REAL segment's worth, not a few pixels.
+                //
+                // "Has some ink" is satisfiable by the NEIGHBOURS: a segment ends at the midpoint of the
+                // shared edge, so a handful of its pixels land on the far side of the boundary. Removing a
+                // square's overlay entirely still left it with a trace and this assertion passed, which the
+                // mutation check caught. A segment across a 60px tile is several hundred pixels; the bleed
+                // is single figures.
+                if (here == null || here < MINIMUM_INK_PER_SQUARE) blank.add(square + "=" + here);
+            }
+
+            assertEquals(blank, new java.util.ArrayList<String>(),
+                "the route line is missing from squares it runs over: " + blank);
+
+            // 3. And none of it landed anywhere else. Ink outside the run is a line drawn where no train
+            //    is going, which is the shape a mis-keyed overlay would take.
+            assertEquals(strayed, 0,
+                strayed + " pixels of route ink were painted on squares the run does not use");
+
+            // What is NOT asserted, and why - so the next reader does not mistake this for a full check.
             //
-            // "Has some ink" is satisfiable by the NEIGHBOURS: a segment ends at the midpoint of the
-            // shared edge, so a handful of its pixels land on the far side of the boundary. Removing a
-            // square's overlay entirely still left it with a trace and this assertion passed, which the
-            // mutation check caught. A segment across a 60px tile is several hundred pixels; the bleed
-            // is single figures.
-            if (here == null || here < MINIMUM_INK_PER_SQUARE) blank.add(square + "=" + here);
+            // "Every pixel of the line lies on track art" is the invariant I wanted, and it is not true as
+            // stated. The line is drawn as a straight chord between edge midpoints, deliberately: "a curve
+            // on this diagram is not an arc and a switch's diverging leg is not a right angle", and bending
+            // it through the tile centre was tried once and put it at forty-five degrees to the track. So
+            // on switches, crossings and scissors it legitimately cuts across the art. The rails are drawn
+            // as an OUTLINE with a pale interior, so ink in the middle of a rail is not on dark art either.
+            //
+            // Between them those two make the measurement a matter of tolerance, and a tolerance tuned
+            // until the test goes green is a test that has stopped checking anything. So the number is
+            // REPORTED and not asserted, and it is worth looking at when this output changes: today it is
+            // a few hundred pixels out of sixteen thousand, all of them on multi-road squares.
+            System.out.println("run ink: " + total + " pixels over " + inkPerSquare.size()
+                + " squares, " + offArt + " of them not within " + TOLERANCE + "px of tile art");
         }
-
-        assertEquals(blank, new java.util.ArrayList<String>(),
-            "the route line is missing from squares it runs over: " + blank);
-
-        // 3. And none of it landed anywhere else. Ink outside the run is a line drawn where no train
-        //    is going, which is the shape a mis-keyed overlay would take.
-        assertEquals(strayed, 0,
-            strayed + " pixels of route ink were painted on squares the run does not use");
-
-        // What is NOT asserted, and why - so the next reader does not mistake this for a full check.
-        //
-        // "Every pixel of the line lies on track art" is the invariant I wanted, and it is not true as
-        // stated. The line is drawn as a straight chord between edge midpoints, deliberately: "a curve
-        // on this diagram is not an arc and a switch's diverging leg is not a right angle", and bending
-        // it through the tile centre was tried once and put it at forty-five degrees to the track. So
-        // on switches, crossings and scissors it legitimately cuts across the art. The rails are drawn
-        // as an OUTLINE with a pale interior, so ink in the middle of a rail is not on dark art either.
-        //
-        // Between them those two make the measurement a matter of tolerance, and a tolerance tuned
-        // until the test goes green is a test that has stopped checking anything. So the number is
-        // REPORTED and not asserted, and it is worth looking at when this output changes: today it is
-        // a few hundred pixels out of sixteen thousand, all of them on multi-road squares.
-        System.out.println("run ink: " + total + " pixels over " + inkPerSquare.size()
-            + " squares, " + offArt + " of them not within " + TOLERANCE + "px of tile art");
+        finally
+        {
+            page.setShowAddress(addressesWere);
+        }
     }
 
     /** The window's session, for asking a square how many roads it has */

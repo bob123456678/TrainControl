@@ -354,7 +354,7 @@ public class DiagramMonitor
             // the ones Adam did not want marked as running.
             boolean running = entry.getKey() != null && entry.getKey().getSpeed() > 0;
 
-            if (at != null) markTrain(overlays, at, running);
+            if (at != null) markTrain(overlays, at, running, running ? null : willStandOn(layout, entry.getKey()));
         }
 
         // AND EVERY TRAIN PARKED WITH NO PATH (Adam, 2026-10-01): "when a train is standing somewhere, can we show its
@@ -520,7 +520,7 @@ public class DiagramMonitor
                 at = null;
             }
 
-            markTrain(into, at, false);
+            markTrain(into, at, false, willStandOn(layout, train));
         }
 
         // AND THOSE ON NO POINT, where the setup says they stand (RSA17-C2)
@@ -535,12 +535,37 @@ public class DiagramMonitor
     }
 
     /**
+     * The copy a train holding a path will be stood on once its run is done (OB-314), or null - asked of the running
+     * layout, which this timer thread may find being replaced.
+     *
+     * @param layout the running layout
+     * @param loc the train
+     * @return the Point, or null
+     */
+    private static Point willStandOn(Layout layout, org.traincontrol.base.Locomotive loc)
+    {
+        try
+        {
+            return layout.copyItWillStandOn(loc);
+        }
+        catch (RuntimeException replaced)
+        {
+            return null;
+        }
+    }
+
+    /**
      * Marks the tile a locomotive is standing on.
      *
      * The running Layout knows a Point only by name, so the tile comes from the index the builder's
      * names produced rather than from the Point itself, which has never heard of tiles.
+     *
+     * @param into the picture
+     * @param at the Point the train is on
+     * @param moving whether it is running
+     * @param will the copy it will be stood on when its run is done, or null
      */
-    private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving)
+    private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving, Point will)
     {
         if (at == null) return;
 
@@ -552,7 +577,19 @@ public class DiagramMonitor
         // autonomy is started and the blue path painted for a train, the locomotive icon disappears on the starting
         // station ... it needs to be added to the starting path / kept where it is standing").  The path line under it
         // says it holds a path; running, it is the run's own icon.
-        TileOverlay mark = moving ? new TileOverlay(State.IDLE, true, true, null) : TileOverlay.parked(facings.get(at.getName()));
+        //
+        // FACING THE WAY IT WILL STAND (Adam, 2026-10-07, on MT-701: "the locomotive icon direction doesn't always match the
+        // arrow (arrow is correct) when arriving at a may reverse station").  A train that kept its direction at a square
+        // it may turn at stops on the square's turning copy, and is stood on the plain copy only once its run is done -
+        // so it faced the turning copy's way until then.  The copy it will stand on, as the caption's arrow asks
+        // (`AutonomySession.facingOnTheRailway`, OB-314), when that is another copy of the same square.
+        Point facingCopy = will != null && will != at && will.isSamePlaceAs(at) ? will : at;
+
+        org.traincontrol.automationui.TilePorts.Side facing = facings.get(facingCopy.getName());
+
+        if (facing == null) facing = facings.get(at.getName());
+
+        TileOverlay mark = moving ? new TileOverlay(State.IDLE, true, true, null) : TileOverlay.parked(facing);
 
         TileOverlay existing = into.get(tile);
 
