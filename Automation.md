@@ -63,7 +63,7 @@ Automation rests on three things, and everything else in this guide is a refinem
 
 Press start, and TrainControl picks a train, picks somewhere it can go, sets the switches and signals along the way, sends it, and watches the sensors until it arrives. Then it does it again.
 
-The pictures in this guide are of a small demo layout: an oval with stations Ashby and Bramley, a passing loop with Carlton, and a branch to a terminus, Thornbury. The numbers on them are the steps below.
+The pictures in this guide are of a small demo layout: an oval with stations Ashby and Bramley, a passing loop with Carlton, and a branch to a terminus, Thornbury. The numbers on them are the steps below, and the letters the steps of [Example 1](#example-1-a-shuttle-between-two-stations).
 
 ---
 
@@ -289,21 +289,21 @@ The simplest arrangement that runs: two stations, one train, one piece of track 
 
 **Steps 1 and 2** - make the configuration and open the editor - are in [Getting started](#getting-started).
 
-**3. Name the two stations.** Right-click each of the sensor squares at A and B and choose `Rename...`. The name is what you will see in every list and every log line, and what an arrival is announced under.
+**A. Name the two stations.** Right-click each of the sensor squares at A and B and choose `Rename...`. The name is what you will see in every list and every log line, and what an arrival is announced under.
 
-**4. Make both of them stations.** The same menu has `Station (...)`: choose `Yes - Trains Can Stop Here`. A sensor is not a station until you do; sensors that are only there to track a train through a junction stay `No - Trains Can Only Pass Through`.
+**B. Make both of them stations.** The same menu has `Station (...)`: choose `Yes - Trains Can Stop Here`. A sensor is not a station until you do; sensors that are only there to track a train through a junction stay `No - Trains Can Only Pass Through`.
 
-**5. Put the train somewhere.** Right-click Station A and use `Add a Locomotive to Autonomy...`. This is a statement of fact about your railway: the train really does need to be standing at A.
+**C. Put the train somewhere.** Right-click Station A and use `Add a Locomotive to Autonomy...`. This is a statement of fact about your railway: the train really does need to be standing at A.
 
-![Steps 3 to 5 on a station's right-click menu: Rename..., Station (yes) and Yes - Trains Can Stop Here, and Add a Locomotive to Autonomy...](assets/automation/04-station-menu.png)
+![Steps A to C on a station's right-click menu: Rename..., Station (yes) and Yes - Trains Can Stop Here, and Add a Locomotive to Autonomy...](assets/automation/04-station-menu.png)
 
-**6. Save.** `Save Changes`, at the bottom of the editor's right-hand column.
+**D. Save.** `Save Changes`, at the bottom of the editor's right-hand column.
 
-![Step 6: Save Changes](assets/automation/05-save.png)
+![Step D: Save Changes](assets/automation/05-save.png)
 
-**7. Start.** `Start Autonomous Operation`, on the strip above the track diagram. The train runs to B. When it arrives, TrainControl notices, waits a moment, and runs it back to A. It will keep doing that.
+**E. Start.** `Start Autonomous Operation`, on the strip above the track diagram. The train runs to B. When it arrives, TrainControl notices, waits a moment, and runs it back to A. It will keep doing that.
 
-![Step 7: Start Autonomous Operation, on the strip above the track diagram](assets/automation/06-start.png)
+![Step E: Start Autonomous Operation, on the strip above the track diagram](assets/automation/06-start.png)
 
 **What just happened.** TrainControl traced your diagram, found that A connects to B, saw a train at A, and found exactly one place it could go. Nothing else was needed.
 
@@ -491,7 +491,7 @@ Autonomy running on its own is random by design. A timetable is the opposite: a 
 
 **To record one:** press `Capture Locomotive Commands`, then either start autonomy or send trains yourself. Every completed route is recorded, along with how long it was before the next one started. Press the button again to stop recording.
 
-**To play it back:** press `Execute Timetable`. Each entry runs in turn, waiting for the one before it to arrive rather than merely to set off.
+**To play it back:** press `Execute Timetable`. Each entry starts once the one before it has set off and the recorded pause has passed, and as soon as the track it needs is free. If that track stays blocked for a few minutes, the timetable stops and says which entry.
 
 **To edit it:** right-click an entry for `Change Delay`, `Delete Entry`, `Restart Timetable` and `Clear Timetable`.
 
@@ -528,9 +528,9 @@ These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings
 | Prioritize Locomotives After | A train that has not run for this many minutes is chosen first, so nothing sits forgotten. Zero is off |
 | Maximum Network Latency | Cuts track power if the network to the Central Station gets too slow. Off by default |
 | Atomic Routes | Whether a train reserves its whole route before setting off, or releases track behind it as it goes. Off is more capable and needs your lengths to be right, so it stays on while any track autonomy uses, or any train, has no length |
-| Turn Off Functions on Arrival, Turn On Functions on Departure | Whether each locomotive's chosen functions are switched on when it leaves and off when it arrives. Turn the arrival one off to keep sound running between routes. Which functions these are is ticked on the function itself, from the locomotive's right-click menu |
+| Turn Off Functions on Arrival, Turn On Functions on Departure | On departure, switch on the locomotive's saved function preset (right-click the locomotive → `Save Current Functions as Preset`, or Alt+S); on arrival, switch all its functions off. Untick the arrival one to keep sound running between routes. Separately, one function can be toggled as each train leaves and one as it arrives, whatever these two say: right-click that function's button and tick `Autonomy Departure Function` or `Autonomy Arrival Function` |
 | Routing Logic | See [Choosing how trains pick their route](#choosing-how-trains-pick-their-route) |
-| Linked Routes | `Toggle specified routes`: the routes ticked in the list are switched on while autonomy runs, and the others off — for emergency stops, sound effects, or safety signals |
+| Linked Routes | `Toggle specified routes`: whenever this configuration is loaded, and as soon as you tick a route, the routes ticked in the list are switched on and every other route is switched off, and they stay that way after autonomy stops - for emergency stops, sound effects, or safety signals. Only routes triggered by a sensor can be switched on this way |
 
 Per-station settings - priority, speed, train length, excluded locomotives - are on the station's right-click menu, under `Station (...)` and `Advanced Parameters...`.
 
@@ -600,11 +600,9 @@ This is the section to read first when nothing happens. In rough order of how of
 
 **Maximum Active Trains is reached.** Autonomy starts no more trains until one arrives. Trains you send by hand do not count.
 
-**A locomotive was placed without a speed.** A train with no speed set will not be dispatched.
-
 **Autonomy stopped by itself.** When a train fails part way along its route, it is stopped, its track is released, and autonomy stops, naming the train. Check where that train is really standing, and if TrainControl has it somewhere else, put it right before you start again. A train that has not reached its next sensor after five minutes is named in the log.
 
-**The sensor is not reporting.** If TrainControl never sees the arrival, the train stays "running" forever and the track it holds is never released. Watch its sensor square on the track diagram while pushing a train over the contact by hand.
+**The sensor is not reporting.** If TrainControl never sees the arrival, the train stays "running" forever and the track it holds is never released. Click the sensor square on the track diagram that the train was heading for: a left-click there switches the sensor as if the train had reached it, so TrainControl sees the arrival and the run carries on. Then find the faulty contact - watch its square while pushing a train over it by hand.
 
 **The Central Station does not confirm the switches.** With `Path Integrity Validation` on (Preferences → Autonomy), a train whose switches and signals are not confirmed does not leave. Check the network connection to the Central Station.
 

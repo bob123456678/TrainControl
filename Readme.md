@@ -386,7 +386,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.0 [Beta]
+* v3.0.0
     - Features
         - Autonomy
             - Automation is now set up on the track diagram itself, and the separate autonomy graph is gone.  TrainControl reads the track you have already drawn and works out for itself which squares connect to which, so there is no graph to build and no JSON file to write: stations, directions and settings are all edited by right-clicking a square.
@@ -410,7 +410,7 @@ Tab icons provided by Freepik.
             - Station names you had typed onto the track diagram in an earlier version (the ones written as "Point:name") are taken over by the new setup the first time it opens, and removed from the page file so they are not shown twice.  Each page that is changed gets a .bak file beside it holding the page as it stood the first time this version rewrote it, and the log says which pages were changed.  A name that no longer matches any station is left exactly where it is.
             - "Unavailable while occupied" can be answered by clicking the square on the diagram instead of finding it in a list, in the same way a station's signal is paired.
             - The track diagram's Autonomy Setup menu opens the full editor on the page and square you right-clicked, and every item on it names the square it is about.
-            - Right-clicking a train on the track diagram puts the stations autonomy chooses from at the top.  Everything else it can still be sent to by hand - parking tracks, reversing points, stations you have marked as not automatic - is under "More Destinations", which is not shortened.
+            - Right-clicking a train on the track diagram puts the stations autonomy chooses from at the top.  The stations you have unticked "Can Be Chosen in Full Autonomy" on, such as parking tracks, are under "More Destinations", which is not shortened.
             - **If you ever go back to v2.8.2 or earlier after using this version, keep a copy of your settings first.**  This version allows up to fifty locomotive keyboard pages and those versions read only the first ten - so opening your settings in the older version and closing it again discards pages 11 and up for good.
             - Which function autonomy fires on departure and on arrival is ticked on the function itself, from its own right-click menu, and a train's length is set from a dropdown on the locomotive's right-click menu.
             - In autonomy mode, a link switched off in autonomy is greyed out on the track diagram, not only while editing.
