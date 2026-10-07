@@ -127,7 +127,7 @@ Useful for testing, individual accessories can be directly controlled via their 
 
 TrainControl can run your trains on its own.  In version 3.0 you set this up on the track diagram itself, in the autonomy editor.  TrainControl works out how your track connects, so there is no graph to build and no file to write.  You set up stations, directions and settings by right-clicking a square.  The setup is checked before it runs, and each problem it finds takes you to the square it is about.
 
-You need S88 sensors, at least one per station, and digital switches.  Signals are optional ([what you need](Automation.md#what-you-need)).  Once you have placed your trains, TrainControl keeps track of where every train is.  You can send a particular train to a station, or let it keep picking destinations at random.  Everything is saved automatically when you exit.  If you set up autonomy in an older version, its [JSON configuration file](AutomationAPI.md) can be imported from the Autonomy menu.
+You need S88 sensors, at least one per station, and digital switches.  Signals are optional ([what you need](Automation.md#what-you-need)).  Once you have placed your trains, TrainControl keeps track of where every train is.  You can send a particular train to a station, or let it keep picking destinations at random.  Where your trains stand is saved when you exit; changes in the autonomy editor are kept with its Save Changes button.  If you set up autonomy in an older version, its [JSON configuration file](AutomationAPI.md) can be imported from the Autonomy menu.
 
 **Full guide:** [The autonomy editor: a user guide](Automation.md)
 
@@ -234,7 +234,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
     * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages, Control+plus/minus jumps 4 keyboards)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
-* Layout editor
+* Track diagram editor
     * Control+Z (undo)
     * Control+C (copy hovered tile)
     * Control+X (cut hovered tile)
@@ -243,24 +243,35 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+T (edit text of hovered tile)
     * Control+A (edit address of hovered tile)
     * Control+Y (redo)
-    * Control+L (show text labels; in the autonomy editor, step through the station caption options)
+    * Control+L (show text labels)
     * Control+D (show address labels)
     * Control+K (show the grid)
     * Control+I (increase diagram by 1 row and 1 column)
     * Control+M (select by dragging a box)
-    * Control+S (name the hovered square, in the autonomy editor)
-    * Control+N (show a station name on the hovered square, in the autonomy editor)
-    * Control+E (set the length of the hovered piece of track, in the autonomy editor)
-    * Control+B (set the hovered station's longest train, in the autonomy editor)
-    * Control+H (set the hovered station's home locomotive, in the autonomy editor)
-    * Control+G (show track lengths, in the autonomy editor)
-    * Plus/minus (next / previous page, in the track editor and the autonomy editor)
+    * Plus/minus (next / previous page)
     * Shift+click (pick several squares at once)
     * Delete (delete hovered tile)
     * Escape (let go of whatever is held; with nothing held, close the editor)
     * Left mouse click (cut hovered tile / paste new tile)
     * Middle-mouse click (rotate hovered tile)
     * Right mouse click (show all options)
+* Autonomy editor
+    * Control+S (name the hovered square)
+    * Control+N (show a station name on the hovered square)
+    * Control+E (set the length of the hovered piece of track)
+    * Control+B (set the hovered station's longest train)
+    * Control+H (set the hovered station's home locomotive)
+    * Control+G (show track lengths)
+    * Control+L (step through the station caption options)
+    * Control+D (show address labels)
+    * Control+K (show the grid)
+    * Plus/minus (next / previous page)
+    * Shift+click (pick several squares at once)
+    * Escape (put down an armed tool; with nothing armed, close the editor)
+* Track diagram (with autonomy loaded and stopped, pointer over a station)
+    * Control+X (pick up the train standing there)
+    * Control+V (put it, or the locomotive selected in the main window, down)
+    * Delete (take the train off)
 
 ![Diagram of TrainControl's keyboard mappings for locomotive and function control](assets/keyboard.png?raw=true)
 
@@ -380,10 +391,10 @@ Tab icons provided by Freepik.
         - Autonomy
             - Automation is now set up on the track diagram itself, and the separate autonomy graph is gone.  TrainControl reads the track you have already drawn and works out for itself which squares connect to which, so there is no graph to build and no JSON file to write: stations, directions and settings are all edited by right-clicking a square.
             - Autonomy setups are saved as named configurations that can be copied with New Configuration - which asks whether where the trains stand and the timetable come too - renamed, deleted, exported and imported, and the one you were last using is loaded when TrainControl starts, unless Load Autonomy has been unticked.  An autonomy.json from an older version can be imported from the same menu.
-            - Autonomy needs a track diagram stored on this computer.  For a layout read from your Central Station, the Autonomy menu offers to download it, as Layouts → Download Central Station Layout Files does.  The old Load Autonomy Configuration tab is gone, and TrainControl no longer reads or writes an autonomy.json of its own; the setup is saved in the layout folder.
+            - Autonomy needs a track diagram stored on this computer.  Without one, the Autonomy menu's "Autonomy needs a layout stored on this computer" offers to download it from your Central Station, as Layouts → Download Central Station Layout Files does, or to create a new one.  The old Load Autonomy Configuration tab is gone, and TrainControl no longer reads or writes an autonomy.json of its own; the setup is saved in the layout folder.
             - The Autonomy menu has a Documentation item that opens the automation guide.
             - You can now choose how trains pick their route when more than one will do: at random respecting station priority (the default, and how earlier versions behaved), completely at random, past the fewest or the most stations, over the shortest or the longest track, across the fewest or the most sensors, by whichever station has gone longest without a train, or by weighing a station's priority against how far away it is.  The choice is stored with the autonomy configuration, so two configurations can use different rules.
-            - Track with no recorded length now counts as one sensor's worth, so the shortest-track and longest-track rules give different answers on a railway where most sections are unmeasured.
+            - Track with no recorded length now counts as one, so the shortest-track and longest-track rules give different answers on a railway where most sections are unmeasured.
             - A station can be paired with signals, which are set to red while a train is standing at that station and back to green once it leaves - "Exit Guard Signal" on the station's right-click menu.  Pick each signal by clicking it on the diagram, or by typing its address.
             - A station can also have entry guard signals, set to red when a train arrives there at the end of its journey - "Entry Guard Signal" on the same menu.  The next route that needs one sets it green again.
             - The autonomy editor's Bulk Tools menu can walk a page asking for each missing track length and each station's missing longest train, and walk every train autonomy would run that has no length of its own - and can clear every track length, or every station's longest train, at once.
@@ -401,11 +412,14 @@ Tab icons provided by Freepik.
             - The track diagram's Autonomy Setup menu opens the full editor on the page and square you right-clicked, and every item on it names the square it is about.
             - Right-clicking a train on the track diagram puts the stations autonomy chooses from at the top.  Everything else it can still be sent to by hand - parking tracks, reversing points, stations you have marked as not automatic - is under "More Destinations", which is not shortened.
             - **If you ever go back to v2.8.2 or earlier after using this version, keep a copy of your settings first.**  This version allows up to fifty locomotive keyboard pages and those versions read only the first ten - so opening your settings in the older version and closing it again discards pages 11 and up for good.
-            - The autonomy menu's "Autonomy needs a layout stored on this computer" is now something you can press: it offers to download one, or to create a new one.
             - Which function autonomy fires on departure and on arrival is ticked on the function itself, from its own right-click menu, and a train's length is set from a dropdown on the locomotive's right-click menu.
             - In autonomy mode, a link switched off in autonomy is greyed out on the track diagram, not only while editing.
             - Nothing that changes the setup can be used while trains are running.  The Autonomy and Layouts menus grey whatever would change the setup or the track diagram, saying why - Open CS3 Web App, the pop-up pages and the picture export stay - and the Auto tab's settings, Execute Timetable and Capture Locomotive Commands are greyed until the trains have stopped.
             - When the setup has changes the railway has not taken yet - a link left unpaired while you edit, say - the strip above the track diagram says "Setup changes not applied yet", and the last setup that worked stays loaded until the setup builds again.
+            - Bulk Tools has Allow Every Path, which opens every one-way or closed piece of track again in one go, asking first.
+            - The autonomy editor's Track Directions can show only the directions trains may run, and the track diagram can draw them in green - Preferences → Autonomy → Display Allowed Directions.
+            - Switches without a decoder can be drawn with the Static switch tiles.  Autonomy runs trains through them from the legs towards the points only, and two Static Y switches drawn point to point act as a crossing.
+            - With the pointer over a station on the track diagram, Control+X picks up the train standing there, Control+V puts it down, and Delete takes it off.
         - Routes
             - A route will no longer throw a switch on track a train is running over, nor turn a signal green at a platform a train is standing at.  From the Routes tab and from a route tile on the diagram you are asked whether to go ahead anyway, once per route; a route fired by a sensor skips only the switches and signals a train is on or standing at, because there is nobody there to ask - the rest of it, such as speeds, functions and its other switches, still runs.  A route with an emergency stop in it runs without asking: its stop is always sent, and a switch under a train is still left alone.  Each command is checked again immediately before it is sent, so a train dispatched while a route is part way through is not missed.  Routes that touch nothing a train is using run exactly as before, and nothing changes at all when autonomy is stopped.
             - A route with an emergency stop can no longer have other commands in it.  A route that has both is split automatically when it is loaded or imported: it keeps everything else, and fires a new route named after it that is only the emergency stop.
@@ -422,9 +436,11 @@ Tab icons provided by Freepik.
             - Removed the "paste entire row" and "paste entire column" options, which each filled from the pasted tile to the edge of the diagram.  Picking the squares you mean and dragging them does the same job, visibly, and can be corrected before it happens rather than after.
             - The + and - keys step through the pages in both the track diagram editor and the autonomy editor.
             - Station labels are now light grey ovals rather than names in square brackets - blue with white lettering if you prefer (untick Grey Station Labels) - and the direction a train is facing is drawn as an arrow instead of a chevron.  They sit just below an east-west track and read upwards beside a north-south one, so they no longer cover the square they name.
-            - A small locomotive marks each train on the track diagram, facing the way it is going: on the sensor a running train is passing, and on the station where a train is standing, laid along the rail on a curve.  A train passing through a station shows an arrow for its direction of travel, and a train standing still on a route it holds is drawn where it stands.  The picture is a file - src/org/traincontrol/gui/resources/running_train.png - and can be replaced with any other.
+            - A small locomotive marks each train on the track diagram, facing the way it is going: on the sensor a running train is passing, and on the station where a train is standing, laid along the rail on a curve.  A train passing through a station shows an arrow for its direction of travel, and a train standing still on a route it holds is drawn where it stands.
             - A track diagram page can now be saved as a picture.  The Layouts menu offers the page you are looking at in one click, and writes the whole of it at whatever size you choose - not just the part scrolled into view, and without the window around it.
             - Track diagrams now show a spinner while they are being drawn, instead of the text labels appearing about a second before the track did, and loading a layout from disk shows what it is doing rather than appearing to do nothing until the finished diagram arrives.
+            - Layouts → Manage Pages → Combine Linked Pages... makes one new page showing this page and every page its links lead to.
+            - In the track diagram editor, Control+M, or Select by Dragging a Box on the right-click menu, picks out several squares by dragging a box round them.
         - Central Station
             - Backing up TrainControl now writes a single archive holding everything - the locomotive database, the window layout, the autonomy setups and the routes - and offers to download the track diagram first if it lives on the Central Station rather than on this computer.  The dialog offers to show you the file when it is done, and says so if anything could not be copied.
             - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, from every place a sync can start, and a second sync started while one is running is turned away rather than run alongside it.
@@ -967,7 +983,7 @@ Tab icons provided by Freepik.
         - Implemented checks to maintain compatibility with state files from prior versions (`LocDB.data`, `UIState.data`)
         - Added several new API methods for convenience, improved code comments
         - Expanded [API example code](src/org/traincontrol/examples/ProgrammaticControlExample.java)
-        - Added [Java docs](assets/javadoc/index.html)
+        - Added Java docs
     - Minor UI and tooltip tweaks
     - Swapped the Route and Autonomy tabs in the UI
     - Fixed bug where locomotives in save files with no operation history would prevent the Stats tab in the UI from rendering
