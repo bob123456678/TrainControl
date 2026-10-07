@@ -29,8 +29,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-700](#mt-700) | 2026-10-06 | The main window stays behind an open editor, and is back on top when it closes | fixed unvalidated | Adam 2026-10-06 |
 | [MT-701](#mt-701) | 2026-10-06 | A running train no longer hides the s88 address of its square | fixed unvalidated | OB-259 (2026-09-22) |
+| [MT-702](#mt-702) | 2026-10-07 | A train that keeps its direction at a may-reverse station faces the arrow's way as soon as it stops | fixed unvalidated | Adam's note on MT-701, 2026-10-07 |
 
-Everything else - 699 of 701 - needs nothing from you unless the area changes again:
+Everything else - 699 of 702 - needs nothing from you unless the area changes again:
 551 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33273,6 +33274,10 @@ the setting back with the editor still open.  Now the setting is applied only wh
 when it goes.  `ui.testTheEditorNamesItsShortcuts.testTheMainWindowStaysBelowAnOpenEditor`,
 `regression.testTheAutoTabWaitsForTheTrains.testAnEditorWhoseDrawingRaisesAnErrorGivesEditBack`.
 
+**Adam, 2026-10-07 (triage).** Works.
+
+*Run against commit c8595e1a, in English - build\classes, compiled 07 Oct 00:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-701"></a>
@@ -33299,5 +33304,43 @@ when it goes.  `ui.testTheEditorNamesItsShortcuts.testTheMainWindowStaysBelowAnO
 its trains last of all (OB-159) - and, being opaque, it painted the address out for as long as the train was there.
 `core.testAutonomyDiagramMonitor.testASquareWithARunningTrainLeavesItsLabelsInFront`,
 `ui.testDiagramLooksRight.testTheTrainIconDoesNotPaintOutACaption`.
+
+**Adam, 2026-10-07 (triage).** Works, with notes.
+
+Works.  Unrelated, the locomotive icon direction doesn't always match the arrow (arrow is correct) when arriving at a may reverse station.  Example, ET22-245 from Tunnel to BottomMainB, the icon at ButtomMainB initially faces west and then flips to the correct east only after arrival.
+
+*Run against commit c8595e1a, in English - build\classes, compiled 07 Oct 00:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-702"></a>
+
+### MT-702 - 2026-10-07 - A train that keeps its direction at a may-reverse station faces the arrow's way as soon as it stops
+
+**Disposition:** fixed unvalidated
+**From:** Adam's note on MT-701, 2026-10-07
+
+**Written:** 2026-10-07
+
+Your note of 2026-10-07: *"the locomotive icon direction doesn't always match the arrow (arrow is correct) when arriving
+at a may reverse station.  Example, ET22-245 from Tunnel to BottomMainB, the icon at BottomMainB initially faces west and
+then flips to the correct east only after arrival."*
+
+**Steps**
+
+1. Send ET22-245 from Tunnel to BottomMainB as you did on MT-701 - or any train to a station marked May Change Direction,
+   keeping its direction when asked.
+2. Watch the icon on BottomMainB as the train stops there, and for a few seconds after.
+
+**Expected**
+
+- From the moment the train stops, its icon faces the same way as the station's arrow (east, for this move).
+- It does not flip a second or two later.
+
+*What this is:* a path to a square trains may turn at ends on the square's turning copy, and a train that keeps its
+direction is moved onto the other copy only when its run is done - a second or two after it stops.  The caption's arrow
+already asked which copy the train would end up on (OB-314); the icon asked which copy it was on, so it faced the turning
+copy's way until then.  Both ask the same question now (round 81, `8efa1078`):
+`core.testTheArrivalHonoursTheAnswer.testTheIconFacesTheWayTheTrainWillStand`.
 
 ---

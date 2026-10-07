@@ -90,7 +90,6 @@
     },
     "1 - Main:20,13": {
       "maxTrainLength": 4,
-      "facing": "E",
       "canReverse": true
     },
     "1 - Main:21,6": {
@@ -102,32 +101,10 @@
     "1 - Main:7,7": {
       "loc": {"name": "ET22-245"},
       "maxTrainLength": 5,
-      "arrivedAlong": [
-        [
-          "TopMainR2",
-          "TopMainPost (eastbound)"
-        ],
-        [
-          "TopMainPost (eastbound)",
-          "RampDown (southbound)"
-        ],
-        [
-          "RampDown (southbound)",
-          "1 - Main 17,10 (westbound)"
-        ],
-        [
-          "1 - Main 17,10 (westbound)",
-          "BottomInner (northbound)"
-        ],
-        [
-          "BottomInner (northbound)",
-          "1 - Main 12,7"
-        ],
-        [
-          "1 - Main 12,7",
-          "Tunnel (southbound)"
-        ]
-      ],
+      "arrivedAlong": [[
+        "TunnelPre",
+        "Tunnel (southbound)"
+      ]],
       "facing": "S",
       "arrivedFrom": "N",
       "priority": -2
