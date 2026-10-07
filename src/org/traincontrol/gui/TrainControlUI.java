@@ -7116,7 +7116,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         final Layout.ReversalPolicy answered =
-            ManualReversalPrompt.forJourney(getAutonomySession(), asking, path, train);
+            ManualReversalPrompt.forJourney(getAutonomySession(), asking, path, train, railway);
 
         keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
@@ -29492,6 +29492,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (input != null)
                 {
+                    // ASKED AGAIN AFTER THE QUESTION, as the other timetable doors ask (RSA49-C2): it can stay open as
+                    // long as the operator likes, and a run started meanwhile may be waiting on this entry's delay
+                    if (this.isAutonomyBusy())
+                    {
+                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                        return;
+                    }
+
                     ttp.setSecondsToNext(Long.parseLong(input) * 1000);
                     this.repaintTimetable();
                 } 

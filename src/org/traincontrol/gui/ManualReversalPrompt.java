@@ -59,11 +59,13 @@ public final class ManualReversalPrompt
      * @param parent what to centre the dialog on
      * @param path the journey about to be run
      * @param loc the train
+     * @param railway the railway the path was offered on, or null
      * @return the policy to hand to executePath
      */
     public static org.traincontrol.automation.Layout.ReversalPolicy forJourney(
         final org.traincontrol.automationui.AutonomySession session, final Component parent,
-        final java.util.List<org.traincontrol.automation.Edge> path, final Locomotive loc)
+        final java.util.List<org.traincontrol.automation.Edge> path, final Locomotive loc,
+        final org.traincontrol.automation.Layout railway)
     {
         final org.traincontrol.automation.Layout.ReversalPolicy asking = forOperator(session, parent);
 
@@ -116,17 +118,7 @@ public final class ManualReversalPrompt
         // there; that is the route's business, and it now behaves exactly as it does for autonomy.
         // The destination is different: which way a train faces when it stops decides where it can go
         // next, and that is a decision rather than a consequence.
-        Point arrival = path == null || path.isEmpty() ? null
-            : path.get(path.size() - 1).getEnd();
-
-        // `!arrival.isTerminus()` IS GONE FROM THIS TEST (OB-205).  It was there to keep the prompt
-        // away from a real terminus, and `asksAbout` already does that - it is `mayTurnTiles()`, which
-        // excludes the compulsory turns - while `isTerminus()` also excluded the turning copy of a
-        // may-turn square, which is the one square this door exists to ask about.
-        if (arrival != null && asking.asksAbout(arrival))
-        {
-            first = arrival;
-        }
+        first = destinationAskedAbout(asking, railway, path);
 
         // AND A TRAIN THAT CANNOT REVERSE IS NOT ASKED (Adam, MT-368, 2026-09-13).
         //
@@ -206,6 +198,34 @@ public final class ManualReversalPrompt
                 return at == asked && asking.asksAbout(at);
             }
         };
+    }
+
+    /**
+     * The destination the operator is asked about for this journey, or null when nothing is asked - the part of
+     * `forJourney` that decides, without the dialog, so that it can be asked.
+     *
+     * @param asking the setup's answer to which squares the operator has a say over
+     * @param railway the railway the path was offered on, or null
+     * @param path the journey
+     * @return the Point asked about, or null
+     */
+    public static Point destinationAskedAbout(org.traincontrol.automation.Layout.ReversalPolicy asking,
+        org.traincontrol.automation.Layout railway, java.util.List<org.traincontrol.automation.Edge> path)
+    {
+        Point arrival = path == null || path.isEmpty() ? null
+            : path.get(path.size() - 1).getEnd();
+
+        // `!arrival.isTerminus()` IS GONE FROM THIS TEST (OB-205).  It was there to keep the prompt
+        // away from a real terminus, and `asksAbout` already does that - it is `mayTurnTiles()`, which
+        // excludes the compulsory turns - while `isTerminus()` also excluded the turning copy of a
+        // may-turn square, which is the one square this door exists to ask about.
+        if (arrival == null || !asking.asksAbout(arrival)) return null;
+
+        // NOT WHERE THE ANSWER COULD NOT BE HONOURED (RSA49-A1): no copy of the square faces on from the way the train
+        // comes, so the arrival turns it whatever is said - `Layout.turnsOnArrival`, the same question
+        if (railway != null && railway.noCopyFacesOnFrom(arrival, path.get(path.size() - 1).getStart())) return null;
+
+        return arrival;
     }
 
     /**

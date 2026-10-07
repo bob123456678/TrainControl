@@ -422,6 +422,12 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
         assertTrue(asked > 0 && question > asked, "the one hand door asks the reversal question before the standing"
             + " rules, or not at all - a question about a journey that is going to be refused reads as answered");
+
+        // AND IT GIVES THE QUESTION THE RAILWAY (RSA49-A1): without it the operator is asked where no copy of the square
+        // faces on from the train's approach, and the arrival turns the train whatever was answered
+        assertTrue(send.substring(question, send.indexOf(";", question)).replaceAll("\\s+", "").endsWith(",railway)"),
+            "the one hand door does not give the reversal question the railway, so it asks where the answer could not be"
+            + " honoured (RSA49-A1)");
     }
 
     /**

@@ -1101,15 +1101,15 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The timetable's three doors ask whether anything runs again after their confirmation, which can stay open as long as
-     * the operator likes (OB-260, RSA48-C1, RSA48-C2): a run begun behind the question and then a Yes changes nothing, and
-     * the refusal is said.
+     * The timetable's four doors ask whether anything runs again after their question, which can stay open as long as the
+     * operator likes (OB-260, RSA48-C1, RSA48-C2, RSA49-C2): a run begun behind the question and then a Yes - or a delay
+     * typed - changes nothing, and the refusal is said.
      *
      * Delete Entry asked again from round 80; Clear Timetable and Restart Timetable asked only before, and Clear then
      * emptied the list a run's capture appends to.  Busy is the staging flag, as this class makes it everywhere: the race's
      * outcome without the race.
      *
-     * MUTATION: take the second question out of any of the three doors, and this fails.
+     * MUTATION: take the second question out of any of the four doors, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1186,6 +1186,15 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertTheSame(railway.getTimetable(), before, "Delete Entry removed an entry under a run begun behind its"
                 + " question (OB-260, RSA48-C2)");
+
+            // CHANGE DELAY, at the first row: a delay typed once a run has begun behind its question is not written
+            final long delayWas = before.get(0).getSecondsToNext();
+
+            assertEquals(yesOnceARunBegins(() -> ui.updateTimetableDelay(onTheFirstRow), "7"), refusal, "Change Delay did"
+                + " not refuse a delay typed after a run began behind its question (RSA49-C2)");
+
+            assertEquals(before.get(0).getSecondsToNext(), delayWas, "Change Delay wrote a delay into an entry under a run"
+                + " begun behind its question (RSA49-C2)");
         }
         finally
         {
@@ -1204,6 +1213,19 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      * @throws Exception from the wait
      */
     private static String yesOnceARunBegins(Runnable door) throws Exception
+    {
+        return yesOnceARunBegins(door, null);
+    }
+
+    /**
+     * The same, typing this into a question that asks for something to be typed.
+     *
+     * @param door the door
+     * @param typed what to type, for a question that wants it
+     * @return the message after the answer, or null when none came
+     * @throws Exception from the wait
+     */
+    private static String yesOnceARunBegins(Runnable door, final String typed) throws Exception
     {
         SwingUtilities.invokeLater(door);
 
@@ -1230,7 +1252,15 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                     throw new IllegalStateException(e);
                 }
 
-                pane.setValue(pane.getOptions()[0]);
+                if (pane.getWantsInput())
+                {
+                    pane.setInputValue(typed);
+                    pane.setValue(javax.swing.JOptionPane.OK_OPTION);
+                }
+                else
+                {
+                    pane.setValue(pane.getOptions()[0]);
+                }
 
                 SwingUtilities.getWindowAncestor(pane).dispose();
 
@@ -1268,8 +1298,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * The option pane in a showing dialog: a question (one with options) or a message (none).  The caller answers it and
-     * then closes its window, in that order, so the door reads the answer.
+     * The option pane in a showing dialog: a question (one with options, or one asking for something to be typed) or a
+     * message.  The caller answers it and then closes its window, in that order, so the door reads the answer.
      *
      * @param question whether a question is wanted
      * @return the pane, or null when no such dialog is showing
@@ -1282,7 +1312,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             javax.swing.JOptionPane pane = paneIn((java.awt.Container) window);
 
-            if (pane == null || (pane.getOptions() != null) != question) continue;
+            if (pane == null || (pane.getOptions() != null || pane.getWantsInput()) != question) continue;
 
             return pane;
         }
