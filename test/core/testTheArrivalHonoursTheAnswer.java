@@ -864,8 +864,7 @@ public class testTheArrivalHonoursTheAnswer
      * A train sent by hand to a square it may turn at, and told to keep its direction, is drawn facing the way it will
      * stand from the moment it stops - not the turning copy's way until its run is done (Adam, 2026-10-07, on MT-701:
      * *"the locomotive icon direction doesn't always match the arrow (arrow is correct) when arriving at a may reverse
-     * station.  Example, ET22-245 from Tunnel to BottomMainB, the icon at BottomMainB initially faces west and then flips
-     * to the correct east only after arrival"*).
+     * station ... the icon at BottomMainB initially faces west and then flips to the correct east only after arrival"*).
      *
      * The path ends on the square's TURNING copy, and the train is stood on the plain copy only once the run's end has
      * run - a second or two later, with the default delay.  The caption's arrow asks `copyItWillStandOn` (OB-314); the
