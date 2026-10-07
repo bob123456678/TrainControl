@@ -39,6 +39,11 @@ public class TimetablePath
     private final JSONObject unbuilt;
     private final String whyNot;
 
+    // WHAT THE ARRIVAL WAS TOLD, for an entry recorded by hand (RSA49-B1): whether the train was turned at the end of
+    // its path, or null for one recorded from autonomy or written before this was kept.  Played back, it is answered
+    // again, so the train ends facing and standing as it did when it was recorded.
+    private Boolean turnAtTheEnd = null;
+
     public TimetablePath(Locomotive loc, List<Edge> path, long executionTime)
     {
         this.loc = loc;
@@ -83,6 +88,26 @@ public class TimetablePath
     public List<Edge> getPath()
     {
         return path;
+    }
+
+    /**
+     * Whether the train was turned at the end of this path when it was recorded by hand (RSA49-B1).
+     *
+     * @return the answer, or null for an entry recorded from autonomy or before this was kept
+     */
+    public Boolean getTurnAtTheEnd()
+    {
+        return turnAtTheEnd;
+    }
+
+    /**
+     * Records whether the train was turned at the end of this path.
+     *
+     * @param turnAtTheEnd the answer, or null
+     */
+    public void setTurnAtTheEnd(Boolean turnAtTheEnd)
+    {
+        this.turnAtTheEnd = turnAtTheEnd;
     }
 
     /**
@@ -176,6 +201,7 @@ public class TimetablePath
         hash = 29 * hash + (int) (this.executionTime ^ (this.executionTime >>> 32));
         hash = 29 * hash + (int) (this.secondsToNext ^ (this.secondsToNext >>> 32));
         hash = 29 * hash + Objects.hashCode(this.unbuilt == null ? null : this.unbuilt.toString());
+        hash = 29 * hash + Objects.hashCode(this.turnAtTheEnd);
         return hash;
     }
 
@@ -212,6 +238,10 @@ public class TimetablePath
         }
         if (!Objects.equals(this.unbuilt == null ? null : this.unbuilt.toString(),
             other.unbuilt == null ? null : other.unbuilt.toString()))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.turnAtTheEnd, other.turnAtTheEnd))
         {
             return false;
         }
@@ -253,6 +283,9 @@ public class TimetablePath
         
         json.put("executionTime", this.executionTime);
         json.put("secondsToNext", this.secondsToNext);
+
+        // Only where it was recorded: an entry without it is played back as autonomy, as every entry was before
+        if (this.turnAtTheEnd != null) json.put("turnAtTheEnd", this.turnAtTheEnd.booleanValue());
 
         return json;
     }
@@ -322,6 +355,12 @@ public class TimetablePath
         if (json.has("secondsToNext"))
         {
             ttp.setSecondsToNext(json.getLong("secondsToNext"));
+        }
+
+        // WHAT THE ARRIVAL WAS TOLD, where it was recorded by hand (RSA49-B1)
+        if (json.has("turnAtTheEnd"))
+        {
+            ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));
         }
         
         return ttp;

@@ -981,6 +981,29 @@ public class Layout
     }
     
     /**
+     * Writes onto the entry just recorded for this train and path whether its arrival turns it (RSA49-B1) - the newest
+     * such entry, which another train's capture may have followed already.
+     *
+     * @param loc the train
+     * @param path the path recorded
+     * @param turn whether the arrival turns it
+     */
+    synchronized private void answerTheEntryRecorded(Locomotive loc, List<Edge> path, boolean turn)
+    {
+        for (int i = this.timetable.size() - 1; i >= 0; i--)
+        {
+            TimetablePath entry = this.timetable.get(i);
+
+            if (entry.getLoc() == loc && entry.getPath() == path)
+            {
+                entry.setTurnAtTheEnd(turn);
+
+                return;
+            }
+        }
+    }
+
+    /**
      * Returns the timetable/path history
      * @return 
      */
@@ -4273,6 +4296,66 @@ public class Layout
     }
 
     /**
+     * Whether a train arriving on this copy from that Point has nowhere on the square to stand facing on (RSA49-A1): the
+     * copy is a turning copy, and no copy of its square that neither turns trains nor reverses them can be driven onto
+     * from where the train came - the search `plainSiblingFor` makes for the re-stand, asked of the approach rather than
+     * of a run, and whoever stands there.
+     *
+     * The end of a line marked "Trains May Change Direction Here" is one: the build emits only the turning copy for an
+     * arrival with no way on.  So is a may-turn square one of whose ways in has no way on, whose plain copy belongs to the
+     * other approach.  Kept facing on there, a train stands on the copy that faces back out with its decoder driving it
+     * forward.
+     *
+     * @param arrived the copy the train arrives on
+     * @param cameFrom the Point its last leg starts from
+     * @return whether no copy faces on from that approach
+     */
+    public boolean noCopyFacesOnFrom(Point arrived, Point cameFrom)
+    {
+        if (arrived == null || cameFrom == null) return false;
+
+        if (!arrived.isTerminus() && !arrived.isReversing()) return false;
+
+        // NOT WITHOUT A BLOCK - a hand-written configuration, or one built before the builder emitted them - where a
+        // Point is not a copy of anything and the rules stay as they were, as `hasAWayThrough`'s do
+        if (arrived.getBlock() == null) return false;
+
+        for (Point sibling : this.points.values())
+        {
+            if (sibling == arrived || !arrived.isSamePlaceAs(sibling)) continue;
+
+            if (sibling.isTerminus() || sibling.isReversing()) continue;
+
+            if (this.getEdge(cameFrom.getName(), sibling.getName()) != null) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether no way into this copy has a copy of its square facing on (RSA49-A1): `noCopyFacesOnFrom` asked of every
+     * Point an edge reaches it from.  False for a copy nothing reaches.
+     *
+     * @param arrived the copy
+     * @return whether every way in turns the train
+     */
+    private boolean noCopyFacesOnFromAnyWayIn(Point arrived)
+    {
+        boolean reached = false;
+
+        for (Edge edge : this.edges.values())
+        {
+            if (edge.getEnd() != arrived) continue;
+
+            reached = true;
+
+            if (!noCopyFacesOnFrom(arrived, edge.getStart())) return false;
+        }
+
+        return reached;
+    }
+
+    /**
      * Whether turning is compulsory at this square rather than a choice the operator was given.
      *
      * A square whose copies are ALL turning copies is one the graph turns every train at; where a
@@ -6039,9 +6122,13 @@ public class Layout
         //
         // To a train that cannot reverse the two words say one thing: you must turn round here.  The
         // same confusion as the `hasAWayThrough` test just above, which already reads both.
+        //
+        // AND ASKED OF THE WAYS INTO THIS COPY (RSA49-A1): a may-turn square has a way through for trains from one side and
+        // none for those from the other, and a train arriving on a copy whose ways in have no copy facing on is turned
+        // there whatever was answered - so, to a train that cannot reverse, a turn it cannot avoid.
         if (loc != null && !loc.isReversible() && (end.isTerminus() || end.isReversing())
             && end.isAutoDestination()
-            && !hasAWayThrough(end))
+            && (!hasAWayThrough(end) || noCopyFacesOnFromAnyWayIn(end)))
         {
             return I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName());
         }
@@ -7080,7 +7167,7 @@ public class Layout
                             long refusingSince = 0;
 
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(),
-                                ttp.getLoc().getPreferredSpeed(), ttp, ALWAYS_REVERSE, stopsAtChoice))
+                                ttp.getLoc().getPreferredSpeed(), ttp, playedBack(ttp), stopsAtChoice))
                             {
                                 // A SPEED IS NOT A BUSY TRACK (SG-A5).
                                 //
@@ -7490,6 +7577,24 @@ public class Layout
     public boolean turnsOnArrival(Point arrived, Locomotive loc, ReversalPolicy reversals)
     {
         if (arrived == null) return false;
+
+        // NOWHERE TO STAND FACING ON, SO NO CHOICE (RSA49-A1).  A journey that ends on a turning copy no copy of whose
+        // square faces on from the way it came - the end of a line marked "may", or a may-turn square one of whose ways in
+        // has no way on - turns the train whatever the door's answer and whether it can reverse.  Kept, it stood on the
+        // copy facing back out with its decoder driving it forward, and its next journey drove it into the end of the
+        // line over track nothing held: REG6-A1's hazard, on a square marked "may".  A dead end already turns a train
+        // that cannot reverse (SVV-C2, MT-245).  Asked of the journey the train holds, which is the one ending here; a
+        // caller with none gets the rules below.
+        if (loc != null && reversals != null && reversals != ALWAYS_REVERSE)
+        {
+            List<Edge> held = this.pathHeldBy(loc);
+
+            if (held != null && !held.isEmpty() && held.get(held.size() - 1).getEnd() == arrived
+                && noCopyFacesOnFrom(arrived, held.get(held.size() - 1).getStart()))
+            {
+                return true;
+            }
+        }
 
         // A TRAIN THAT CANNOT REVERSE IS NEVER TURNED WHERE TURNING IS OPTIONAL (Adam, MT-368,
         // 2026-09-13).
@@ -8967,6 +9072,40 @@ public class Layout
     public static final ReversalPolicy ALWAYS_REVERSE = (loc, at) -> true;
 
     /**
+     * The policy a timetable entry is played back with (RSA49-B1): autonomy's, for an entry recorded from autonomy or
+     * before the answer was kept; for one recorded by hand, the answer its arrival was given, at its destination only - the
+     * shape `ManualReversalPrompt.forJourney` hands in - so the train ends turned or kept, and stood, as it was recorded.
+     * Played back as autonomy, a train kept at a turning copy was turned, and the next entry, recorded from the copy it
+     * had been stood on, could not start.
+     *
+     * @param ttp the entry
+     * @return the policy
+     */
+    static ReversalPolicy playedBack(TimetablePath ttp)
+    {
+        final Boolean turn = ttp == null ? null : ttp.getTurnAtTheEnd();
+
+        if (turn == null || ttp.getPath().isEmpty()) return ALWAYS_REVERSE;
+
+        final Point end = ttp.getPath().get(ttp.getPath().size() - 1).getEnd();
+
+        return new ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive loc, Point at)
+            {
+                return turn && at == end;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at != null && at == end;
+            }
+        };
+    }
+
+    /**
      * Locks a path and runs the locomotive from the start to the end
      * @param path
      * @param loc
@@ -9489,7 +9628,12 @@ public class Layout
                 this.pathToString(path),
                 loc.getName()
             );
-            this.addTimetableEntry(loc, path);
+            // AND WHAT ITS ARRIVAL IS TOLD, for a send by hand (RSA49-B1): played back as autonomy, a train kept at a
+            // turning copy was turned, and the next entry, recorded from the copy it was stood on, could not start
+            if (this.addTimetableEntry(loc, path) && reversals != null && reversals != ALWAYS_REVERSE)
+            {
+                this.answerTheEntryRecorded(loc, path, turnsOnArrival(path.get(path.size() - 1).getEnd(), loc, reversals));
+            }
         }
         
                     

@@ -5,6 +5,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
@@ -183,6 +184,17 @@ public class testTheArrivalHonoursTheAnswer
         layout.createEdge("MT368_OTHERAPPROACH", "MT368_OTHERWAY");
 
         loc = model.getLocByName(model.getLocList().get(0));
+    }
+
+    /**
+     * The class's railway made current again after each claim: a claim that builds a railway of its own retires every
+     * other one (`Layout`'s constructor counts a new version), and the claims after it that send a train on this one
+     * found it retired - the run refused, and "the train never set off".
+     */
+    @AfterMethod(alwaysRun = true)
+    public void theClassRailwayIsCurrentAgain()
+    {
+        if (layout != null) layout.makeCurrent();
     }
 
     @AfterClass(alwaysRun = true)
@@ -1041,6 +1053,426 @@ public class testTheArrivalHonoursTheAnswer
 
             x.setSpeed(0);
             x.setTrainLength(lengthWas);
+        }
+    }
+
+    /**
+     * A train told to keep its direction at a square it may turn at is turned all the same where no copy of that square
+     * faces on from the way it came (RSA49-A1): the end of a line marked "Trains May Change Direction Here", or a may-turn
+     * square one of whose ways in has no way on.
+     *
+     * Kept, the train stood on the turning copy - the only copy the build makes for that approach, facing back out - with
+     * its decoder still driving it forward: its next journey set the route back the way it came and drove it into the end
+     * of the line, over track nothing held.  REG6-A1 took the question away from squares marked "must"; a square marked
+     * "may" where nothing faces on is a compulsory turn in all but its flag.  So is it for a train that cannot reverse,
+     * which a dead end turns already (SVV-C2, Adam's MT-245 ruling): the model and the decoder agree, which is what keeps
+     * the next journey on its path.
+     *
+     * Two shapes - no other copy at all, and a plain copy the train's approach cannot reach - each sent with the answer
+     * keep, and the second with a train that cannot reverse as well.
+     *
+     * MUTATION: take the compulsory turn out of `Layout.turnsOnArrival`, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testKeepingTheDirectionWhereNoCopyFacesOnStillTurnsTheTrain() throws Exception
+    {
+        MarklinFeedback s1 = model.newFeedback(1981, null);
+        MarklinFeedback t1 = model.newFeedback(1982, null);
+        MarklinFeedback s2 = model.newFeedback(1983, null);
+        MarklinFeedback t2 = model.newFeedback(1984, null);
+        MarklinFeedback q2 = model.newFeedback(1985, null);
+
+        for (MarklinFeedback f : new MarklinFeedback[] {s1, t1, s2, t2, q2}) model.setFeedbackState(f.getName(), false);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(6));
+
+        final Integer lengthWas = x.getTrainLength();
+        final boolean reversibleWas = x.isReversible();
+
+        final Layout rail = new Layout(model);
+
+        // THE END OF A LINE: one copy, the turning one
+        rail.createPoint("NCF1S", true, s1.getName());
+        rail.createPoint("NCF1T", true, t1.getName());
+        rail.getPoint("NCF1T").setTerminus(true);
+        rail.getPoint("NCF1T").setBlock("NCF1");
+        rail.createEdge("NCF1S", "NCF1T");
+        rail.getEdge("NCF1S", "NCF1T").setEntrySide("W");
+
+        // A PLAIN COPY, but only for trains from the other way
+        rail.createPoint("NCF2S", true, s2.getName());
+        rail.createPoint("NCF2Q", true, q2.getName());
+        rail.createPoint("NCF2T", true, t2.getName());
+        rail.createPoint("NCF2P", true, t2.getName());
+        rail.getPoint("NCF2T").setTerminus(true);
+        rail.getPoint("NCF2T").setBlock("NCF2");
+        rail.getPoint("NCF2P").setBlock("NCF2");
+        rail.createEdge("NCF2S", "NCF2T");
+        rail.createEdge("NCF2Q", "NCF2P");
+        rail.getEdge("NCF2S", "NCF2T").setEntrySide("W");
+        rail.getEdge("NCF2Q", "NCF2P").setEntrySide("E");
+        rail.makeCurrent();
+
+        try
+        {
+            x.setTrainLength(2);
+
+            assertTurnedKeeping(rail, x, "NCF1S", "NCF1T", t1, "the end of a line marked may");
+
+            assertTurnedKeeping(rail, x, "NCF2S", "NCF2T", t2, "a may-turn square whose plain copy this approach cannot"
+                + " reach");
+
+            x.setReversible(false);
+
+            assertTurnedKeeping(rail, x, "NCF2S", "NCF2T", t2, "the same, with a train that cannot reverse");
+        }
+        finally
+        {
+            for (MarklinFeedback f : new MarklinFeedback[] {s1, t1, s2, t2, q2}) model.setFeedbackState(f.getName(), false);
+
+            x.setSpeed(0);
+            x.setTrainLength(lengthWas);
+            x.setReversible(reversibleWas);
+        }
+    }
+
+    /**
+     * Sends a train from one Point to the next with the answer keep, asked about the destination, and asserts it was
+     * turned there.
+     */
+    private static void assertTurnedKeeping(Layout rail, Locomotive x, String from, String to, MarklinFeedback arrive,
+        String shape) throws Exception
+    {
+        final Point end = rail.getPoint(to);
+
+        model.setFeedbackState(arrive.getName(), false);
+
+        x.setSpeed(0);
+
+        rail.getPoint(from).setLocomotive(x);
+
+        final boolean forward = x.goingForward();
+
+        final Layout.ReversalPolicy keep = answering(false, end);
+
+        final java.util.List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(rail.getEdge(from, to));
+
+        Thread journey = new Thread(() -> rail.executePath(path, x, 30, null, keep), "no-copy-faces-on-claim");
+
+        journey.setDaemon(true);
+        journey.start();
+
+        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            "precondition (" + shape + "): the train was not sent: " + Layout.getLastError());
+
+        model.setFeedbackState(arrive.getName(), true);
+
+        journey.join(15000);
+
+        assertFalse(journey.isAlive(), "precondition (" + shape + "): the journey did not end");
+
+        assertEquals(end.getCurrentLocomotive(), x, "precondition (" + shape + "): the train is not on the copy it was"
+            + " sent to");
+
+        assertEquals(x.goingForward(), !forward, shape + ": the train was kept facing on where no copy of the square faces"
+            + " on from its approach, so it stands on the copy facing back out with its decoder still driving it forward,"
+            + " and its next journey drives it into the end of the line (RSA49-A1)");
+
+        model.setFeedbackState(arrive.getName(), false);
+    }
+
+    /**
+     * The operator is not asked about a destination where no copy faces on from the train's approach, since the answer
+     * could not be honoured there (RSA49-A1) - and still is where one does.
+     *
+     * Asked of `ManualReversalPrompt.destinationAskedAbout`, the part of the question that decides whether to ask, because
+     * asking puts a modal dialog up.
+     *
+     * MUTATION: ask about such a destination again, and this fails.
+     */
+    @Test
+    public void testNobodyIsAskedWhereTheAnswerCouldNotBeHonoured() throws Exception
+    {
+        MarklinFeedback s = model.newFeedback(1991, null);
+        MarklinFeedback t = model.newFeedback(1992, null);
+        MarklinFeedback q = model.newFeedback(1993, null);
+
+        final Layout rail = new Layout(model);
+
+        rail.createPoint("NAS", true, s.getName());
+        rail.createPoint("NAQ", true, q.getName());
+        rail.createPoint("NAT", true, t.getName());
+        rail.createPoint("NAP", true, t.getName());
+        rail.getPoint("NAT").setTerminus(true);
+        rail.getPoint("NAT").setBlock("NA");
+        rail.getPoint("NAP").setBlock("NA");
+        rail.createEdge("NAS", "NAT");
+        rail.createEdge("NAQ", "NAT");
+        rail.createEdge("NAQ", "NAP");
+
+        // The setup's answer: every square is one the operator may be asked about
+        final Layout.ReversalPolicy everywhere = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive train, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at != null;
+            }
+        };
+
+        assertEquals(org.traincontrol.gui.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
+            java.util.Arrays.asList(rail.getEdge("NAS", "NAT"))), null, "the operator is asked whether to keep the"
+            + " direction at a square no copy of which faces on from the train's approach - an answer the arrival cannot"
+            + " honour (RSA49-A1)");
+
+        assertEquals(org.traincontrol.gui.ManualReversalPrompt.destinationAskedAbout(everywhere, rail,
+            java.util.Arrays.asList(rail.getEdge("NAQ", "NAT"))), rail.getPoint("NAT"), "the operator is no longer asked"
+            + " at a may-turn square whose plain copy the train's approach reaches");
+
+        assertTrue(rail.noCopyFacesOnFrom(rail.getPoint("NAT"), rail.getPoint("NAS")), "a turning copy with no plain copy"
+            + " this approach reaches was not found to have none");
+
+        assertFalse(rail.noCopyFacesOnFrom(rail.getPoint("NAT"), rail.getPoint("NAQ")), "a turning copy whose plain copy"
+            + " this approach reaches was found to have none");
+
+        assertFalse(rail.noCopyFacesOnFrom(rail.getPoint("NAP"), rail.getPoint("NAQ")), "a plain copy was found to be one"
+            + " nothing faces on from");
+    }
+
+    /**
+     * A timetable recorded by hand through a square trains may turn at plays back what was decided there (RSA49-B1).
+     *
+     * The operator kept the direction, the hand path ended on the square's turning copy, and the train was stood on the
+     * plain copy; the next entry was recorded from there.  Playback ran every entry as autonomy does, turning wherever the
+     * route ends on a turning copy - so it turned the train where the recording had not, and the next entry, which starts
+     * on the plain copy, never started: three minutes later the run stopped saying the track never became free.  The
+     * entry now keeps the answer the arrival was given, and is played back with it.
+     *
+     * MUTATION: record no answer, or play every entry back as autonomy again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATimetableRecordedByHandPlaysBackTheAnswer() throws Exception
+    {
+        MarklinFeedback s = model.newFeedback(2001, null);
+        MarklinFeedback m = model.newFeedback(2002, null);
+        MarklinFeedback c = model.newFeedback(2003, null);
+
+        for (MarklinFeedback f : new MarklinFeedback[] {s, m, c}) model.setFeedbackState(f.getName(), false);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(6));
+
+        final Integer lengthWas = x.getTrainLength();
+
+        // Playback drives an entry at the train's preferred speed, and one with none is skipped (SG-A5)
+        final int speedWas = x.getPreferredSpeed();
+
+        final Layout rail = new Layout(model);
+
+        rail.setMaxDelay(1);
+        rail.setMinDelay(1);
+
+        rail.createPoint("TBS", true, s.getName());
+        rail.createPoint("TBT", true, m.getName());
+        rail.createPoint("TBP", true, m.getName());
+        rail.createPoint("TBC", true, c.getName());
+        rail.getPoint("TBT").setTerminus(true);
+        rail.getPoint("TBT").setBlock("TB");
+        rail.getPoint("TBP").setBlock("TB");
+        rail.createEdge("TBS", "TBT");
+        rail.createEdge("TBS", "TBP");
+        rail.createEdge("TBP", "TBC");
+        rail.getEdge("TBS", "TBT").setEntrySide("W");
+        rail.makeCurrent();
+
+        final Point turning = rail.getPoint("TBT");
+        final Point plain = rail.getPoint("TBP");
+        final Point onward = rail.getPoint("TBC");
+
+        final long stuckWas = Layout.TIMETABLE_STUCK_MS;
+
+        try
+        {
+            x.setSpeed(0);
+            x.setTrainLength(2);
+            x.setPreferredSpeed(30);
+
+            rail.getPoint("TBS").setLocomotive(x);
+
+            final boolean forward = x.goingForward();
+
+            // RECORDED BY HAND: kept at the turning copy and stood on the plain one, then on from there
+            rail.setTimetableCapture(true);
+
+            sendByHand(rail, x, java.util.Arrays.asList(rail.getEdge("TBS", "TBT")), answering(false, turning), m);
+
+            assertEquals(plain.getCurrentLocomotive(), x, "precondition: the kept train was not stood on the plain copy");
+
+            sendByHand(rail, x, java.util.Arrays.asList(rail.getEdge("TBP", "TBC")),
+                org.traincontrol.gui.ManualReversalPrompt.KEEP_DIRECTION, c);
+
+            assertEquals(onward.getCurrentLocomotive(), x, "precondition: the second send did not arrive");
+
+            rail.setTimetableCapture(false);
+
+            assertEquals(rail.getTimetable().size(), 2, "precondition: the two sends were not recorded: "
+                + rail.getTimetable());
+
+            assertEquals(rail.getTimetable().get(0).getTurnAtTheEnd(), Boolean.FALSE, "the first entry does not keep the"
+                + " answer its arrival was given, so playback cannot give it again (RSA49-B1)");
+
+            // AND IT IS SAVED WITH IT: the timetable is written to the configuration and read back at the next start
+            assertEquals(org.traincontrol.automation.TimetablePath.fromJSON(rail.getTimetable().get(0).toJSON().toString(),
+                model, rail).getTurnAtTheEnd(), Boolean.FALSE, "the answer is lost when the timetable is saved and read"
+                + " back (RSA49-B1)");
+
+            // BACK TO THE START, facing as it did when the recording began, and played back
+            x.setSpeed(0);
+
+            rail.getPoint("TBS").setLocomotive(x);
+
+            if (x.goingForward() != forward) x.switchDirection();
+
+            for (org.traincontrol.automation.TimetablePath entry : rail.getTimetable())
+            {
+                entry.setSecondsToNext(0);
+                entry.setExecutionTime(0);
+            }
+
+            Layout.TIMETABLE_STUCK_MS = 8000;
+
+            Thread runner = new Thread(rail::executeTimetable, "recorded-answer-playback");
+
+            runner.setDaemon(true);
+            runner.start();
+
+            // THE FIRST ENTRY: to the square, and kept as recorded
+            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                "precondition: the first entry did not start: " + Layout.getLastError());
+
+            model.setFeedbackState(m.getName(), true);
+
+            assertTrue(waitFor(() -> plain.getCurrentLocomotive() == x || (turning.getCurrentLocomotive() == x
+                && !rail.getActiveLocomotives().containsKey(x)), 15000), "precondition: the first entry did not end");
+
+            model.setFeedbackState(m.getName(), false);
+
+            assertEquals(x.goingForward(), forward, "playback turned the train where the recording kept its direction"
+                + " (RSA49-B1)");
+
+            assertEquals(plain.getCurrentLocomotive(), x, "playback left the train on the turning copy, where the recording"
+                + " had it stood on the plain one, so the next entry cannot start (RSA49-B1)");
+
+            // THE SECOND ENTRY, from the plain copy, as recorded
+            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                "the second entry, recorded from the plain copy, never started (RSA49-B1): " + Layout.getLastError());
+
+            model.setFeedbackState(c.getName(), true);
+
+            assertTrue(waitFor(() -> onward.getCurrentLocomotive() == x && !rail.getActiveLocomotives().containsKey(x),
+                15000), "the second entry did not arrive");
+        }
+        finally
+        {
+            Layout.TIMETABLE_STUCK_MS = stuckWas;
+
+            rail.stopLocomotives();
+            rail.setTimetableCapture(false);
+
+            for (MarklinFeedback f : new MarklinFeedback[] {s, m, c}) model.setFeedbackState(f.getName(), false);
+
+            x.setSpeed(0);
+            x.setTrainLength(lengthWas);
+            x.setPreferredSpeed(speedWas);
+        }
+    }
+
+    /**
+     * Sends a train by hand along a path with the answer given, and plays its arrival sensor.
+     */
+    private static void sendByHand(Layout rail, Locomotive x, java.util.List<org.traincontrol.automation.Edge> path,
+        Layout.ReversalPolicy answer, MarklinFeedback arrive) throws Exception
+    {
+        Thread journey = new Thread(() -> rail.executePath(path, x, 30, null, answer), "recorded-by-hand");
+
+        journey.setDaemon(true);
+        journey.start();
+
+        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            "precondition: the hand send did not start: " + Layout.getLastError());
+
+        model.setFeedbackState(arrive.getName(), true);
+
+        journey.join(15000);
+
+        assertFalse(journey.isAlive(), "precondition: the hand send did not end");
+
+        model.setFeedbackState(arrive.getName(), false);
+    }
+
+    /**
+     * A train that cannot reverse is not offered by hand the turning copy of a may-turn square when no way into that copy
+     * has a copy facing on (RSA49-A1): it would be turned there and leave backwards, which is what Adam's MT-367 ruling
+     * keeps it from being sent to - the rule asked of the copy's ways in, where it was asked of the square alone, and the
+     * square has a way through for trains from the other side.
+     *
+     * MUTATION: ask the square alone again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainThatCannotReverseIsNotOfferedATurnItCannotAvoid() throws Exception
+    {
+        MarklinFeedback s = model.newFeedback(2011, null);
+        MarklinFeedback t = model.newFeedback(2012, null);
+        MarklinFeedback q = model.newFeedback(2013, null);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(6));
+
+        final boolean reversibleWas = x.isReversible();
+
+        final Layout rail = new Layout(model);
+
+        rail.createPoint("NOS", true, s.getName());
+        rail.createPoint("NOQ", true, q.getName());
+        rail.createPoint("NOT", true, t.getName());
+        rail.createPoint("NOP", true, t.getName());
+        rail.getPoint("NOT").setTerminus(true);
+        rail.getPoint("NOT").setBlock("NO");
+        rail.getPoint("NOP").setBlock("NO");
+        rail.createEdge("NOS", "NOT");
+        rail.createEdge("NOQ", "NOP");
+
+        try
+        {
+            x.setReversible(false);
+
+            assertTrue(rail.hasAWayThrough(rail.getPoint("NOT")), "precondition: the square has no way through, so the"
+                + " square's own rule would bar it and this asks nothing new");
+
+            assertFalse(rail.isOfferableToOperator(rail.getPoint("NOT"), x), "a train that cannot reverse is offered the"
+                + " turning copy of a may-turn square whose only way in has no copy facing on - it would be turned there"
+                + " and leave backwards (RSA49-A1, MT-367)");
+
+            assertTrue(rail.isOfferableToOperator(rail.getPoint("NOP"), x), "the plain copy, which it can drive through,"
+                + " is not offered to it");
+
+            x.setReversible(true);
+
+            assertTrue(rail.isOfferableToOperator(rail.getPoint("NOT"), x), "a train that can reverse is not offered it");
+        }
+        finally
+        {
+            x.setReversible(reversibleWas);
         }
     }
 }
