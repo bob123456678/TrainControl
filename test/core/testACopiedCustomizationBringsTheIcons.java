@@ -184,6 +184,61 @@ public class testACopiedCustomizationBringsTheIcons
     }
 
     /**
+     * Copy Customizations and Cancel leave the locomotive's own customized flag as it was, and saving it stores that
+     * flag, not the answer its icons give (OB-245; Adam, 2026-10-06: "Fix OB-245").
+     *
+     * `isCustomFunctions` is derived - any custom icon makes it true.  The Cancel's snapshot recorded that derived answer,
+     * so a locomotive customized by an icon alone came back from a cancelled copy with its flag set by the copy, and the
+     * save wrote the derived answer as the flag.  Delete the icon afterwards and it read as customized for ever - and
+     * the Central Station sync never gives a customized locomotive its function types again.
+     *
+     * MUTATION: snapshot or save the derived answer again, and this fails.
+     */
+    @Test
+    public void testACancelledCopyLeavesTheFlagAsItWas()
+    {
+        asHeHadThem();
+
+        assertTrue(target.isCustomFunctions(), "precondition: the target's own icon does not make it read as customized");
+
+        Locomotive.Customizations was = target.captureCustomizations();
+
+        // As the dialog's Copy does: the source's customizations, and the flag, since the target now carries somebody
+        // else's functions
+        target.copyCustomizationsFrom(source);
+        target.setCustomFunctions(true);
+
+        // Cancel
+        target.applyCustomizations(was);
+
+        // And the icon that made it read as customized deleted later
+        target.unsetLocalFunctionImageURLs();
+
+        assertFalse(target.isCustomFunctions(), "after a cancelled copy, the locomotive reads as customized with no"
+            + " custom function and no icon - the copy's flag stayed, and the Central Station sync now leaves its"
+            + " function types alone for good (OB-245)");
+    }
+
+    /**
+     * Saving a locomotive customized by an icon alone stores its flag as it is, not the answer its icon gives (OB-245).
+     *
+     * MUTATION: save `isCustomFunctions` again, and this fails.
+     */
+    @Test
+    public void testTheSaveKeepsTheFlagNotTheIconsAnswer()
+    {
+        asHeHadThem();
+
+        assertTrue(target.isCustomFunctions(), "precondition: the target's own icon does not make it read as customized");
+
+        org.traincontrol.marklin.MarklinSimpleComponent saved =
+            new org.traincontrol.marklin.MarklinSimpleComponent((org.traincontrol.marklin.MarklinLocomotive) target);
+
+        assertFalse(saved.getCustomFunctions(), "a locomotive customized by one icon is saved as customized in its own"
+            + " right, so once the icon is deleted after the next start it reads as customized for ever (OB-245)");
+    }
+
+    /**
      * The two locomotives do not end up sharing one map.
      *
      * `setLocalFunctionImageURLs` keeps the reference it is given, so a copy that passed the source's

@@ -197,6 +197,12 @@ public class MarklinLocomotive extends Locomotive
     {
         return this.customFunctions || !this.getLocalFunctionImageURLs().isEmpty();
     }
+
+    @Override
+    public boolean hasCustomFunctionsFlag()
+    {
+        return this.customFunctions;
+    }
     
     /**
      * Validates a proposed address for the locomotive

@@ -148,6 +148,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: the one door both hand doors send through (2026-09-29) dispatches the run on"
             + " a `new Thread`, and a refusal is put back on the event thread with invokeLater.");
 
+        ALLOWED.put("TrainControlUI.java#deleteTimetableEntry",
+            "OFF THE EVENT THREAD: the confirmed row is removed under the lock on a `new Thread` (OB-260), and the"
+            + " timetable repainted through invokeLater.");
+
         ALLOWED.put("TrainControlUI.java#executeTimetableActionPerformed",
             "OFF THE EVENT THREAD: the button disables itself on the event thread and then runs the"
             + " timetable on a `new Thread`, re-enabling through invokeLater.");

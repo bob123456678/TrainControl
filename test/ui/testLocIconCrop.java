@@ -460,6 +460,67 @@ public class testLocIconCrop
     }
 
     /**
+     * A remembered view crops the same part of the photograph in a dialog of another shape (OB-257; Adam, 2026-10-06:
+     * "Fix OB-257").
+     *
+     * The five numbers saved held the zoom relative to the panel, and the crop window's size relative to the panel too,
+     * so the same view reopened in a dialog resized to another shape cropped a different rectangle.  A sixth number now
+     * holds the crop's width in the photograph's own pixels, and the zoom is worked out from it.
+     *
+     * The control: the same view without the sixth number does crop differently there, or this would prove nothing.
+     *
+     * MUTATION: open on the saved zoom alone again, and this fails.
+     */
+    @Test
+    public void testARememberedViewCropsTheSameRectangleInAnotherShape() throws Exception
+    {
+        java.awt.image.BufferedImage picture =
+            new java.awt.image.BufferedImage(800, 600, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        org.traincontrol.gui.LocIconCropDialog.CropPanel first =
+            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+
+        first.setSize(600, 420);
+        first.setView(new double[] { 250.5, 200.25, 0.4, 2.5, 0.7 });
+        first.getScale();
+
+        java.awt.Rectangle taken = first.sourceRect();
+
+        double[] saved = new double[6];
+
+        first.copyViewInto(saved);
+
+        // ANOTHER SHAPE OF DIALOG: tall rather than wide
+        org.traincontrol.gui.LocIconCropDialog.CropPanel again =
+            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+
+        again.setSize(420, 640);
+        again.setView(saved);
+        again.getScale();
+
+        java.awt.Rectangle reopened = again.sourceRect();
+
+        // THE CONTROL: the five numbers alone, in the same tall dialog
+        org.traincontrol.gui.LocIconCropDialog.CropPanel byZoom =
+            new org.traincontrol.gui.LocIconCropDialog.CropPanel(picture, 100, 50);
+
+        byZoom.setSize(420, 640);
+        byZoom.setView(java.util.Arrays.copyOf(saved, 5));
+        byZoom.getScale();
+
+        assertTrue(Math.abs(byZoom.sourceRect().width - taken.width) > 2, "precondition: the five numbers alone crop the"
+            + " same width in the tall dialog, so this shape proves nothing: " + byZoom.sourceRect() + " against " + taken);
+
+        assertTrue(Math.abs(reopened.width - taken.width) <= 1 && Math.abs(reopened.height - taken.height) <= 1,
+            "the remembered view crops " + reopened + " in a dialog of another shape, where it was taken as " + taken
+            + " (OB-257)");
+
+        assertTrue(Math.abs(reopened.getCenterX() - taken.getCenterX()) <= 1
+            && Math.abs(reopened.getCenterY() - taken.getCenterY()) <= 1, "the remembered view is centred elsewhere in"
+            + " the photograph: " + reopened + " against " + taken);
+    }
+
+    /**
      * The view is handed in only when the re-crop works from the photograph it was measured over.
      *
      * The fallback crops the crop itself. The same numbers point somewhere else in that picture, so

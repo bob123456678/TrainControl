@@ -159,7 +159,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
         // this.totalRuntime = l.getTotalRuntime(); // deprecated
         this.historicalOperatingTimeNew = l.getHistoricalOperatingTime();
         this.localImageURL = l.getLocalImageURL();
-        this.customFunctions = l.isCustomFunctions();
+        // THE FLAG, not the answer the icons give (OB-245): stored as the flag and loaded back as one, the answer made a
+        // locomotive customized by an icon alone customized for ever once the icon was deleted
+        this.customFunctions = l.hasCustomFunctionsFlag();
         this.localFunctionImageURLs = l.getLocalFunctionImageURLs();
         this.notes = l.getNotes();
         this.linkedLocomotives = l.getLinkedLocomotiveNames();

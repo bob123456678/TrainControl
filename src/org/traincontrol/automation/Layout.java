@@ -12547,6 +12547,26 @@ public class Layout
     }
     
     /**
+     * Removes the timetable entry the operator chose - the one they were shown, and only that one (OB-260).
+     *
+     * Under this railway's lock, which capture appends under from locomotive threads: the list is a plain one, and a
+     * remove made beside an append could corrupt it.  And asked of the entry as well as the row, because the confirmation
+     * before it can stay open as long as the operator likes.
+     *
+     * @param index the row chosen
+     * @param shown the entry that row held when the operator was asked
+     * @return whether it was removed
+     */
+    synchronized public boolean removeTimetableEntry(int index, TimetablePath shown)
+    {
+        if (shown == null || index < 0 || index >= this.timetable.size() || this.timetable.get(index) != shown) return false;
+
+        this.timetable.remove(index);
+
+        return true;
+    }
+
+    /**
      * Replaces the timetable with the one passed
      * Used when loading from JSON
      * @param lst 

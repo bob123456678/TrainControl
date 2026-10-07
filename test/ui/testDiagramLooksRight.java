@@ -2177,6 +2177,47 @@ public class testDiagramLooksRight
     }
 
     /**
+     * A sensor's caption knows which way its rails run whatever the sensor was reporting when the layout was saved
+     * (OB-263; Adam, 2026-10-06: "Fix OB-263").
+     *
+     * A sensor tile has one state in the port table, and the state a Central Station saves for it is whether a train
+     * stood on it at the time: 1 found no ports at all, so a vertical station saved occupied read as running east to
+     * west and its caption lay flat - persistently, and differently for two identical stations.
+     *
+     * MUTATION: ask the port table with the sensor's saved state again, and this fails.
+     */
+    @Test
+    public void testASensorSavedOccupiedKnowsWhichWayItsRailsRun() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("occupied", 4, 4, null, null);
+
+        org.traincontrol.base.LayoutDiagramComponent.componentType sensor =
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK;
+
+        for (int o = 0; o < 2; o++)
+        {
+            for (int state = 0; state < 2; state++)
+            {
+                page.addComponent(sensor, o, state, o, state, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2,
+                    null);
+            }
+        }
+
+        boolean flatFree = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(0, 0));
+        boolean turnedFree = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(1, 0));
+
+        assertNotEquals(flatFree, turnedFree, "precondition: a free sensor and the same sensor turned a quarter are given"
+            + " the same answer, so this cannot tell the two apart");
+
+        assertEquals(org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(0, 1)), flatFree, "a sensor saved"
+            + " occupied is said to run a different way from the same sensor saved free (OB-263)");
+
+        assertEquals(org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(1, 1)), turnedFree, "a turned"
+            + " sensor saved occupied is said to run a different way from the same sensor saved free, so its station's"
+            + " caption lies flat (OB-263)");
+    }
+
+    /**
      * The autonomy menu for a square opens with that square\u2019s name, disabled.
      *
      * OB-112, and written because reading the code and looking at the screen disagreed. Adam sent a

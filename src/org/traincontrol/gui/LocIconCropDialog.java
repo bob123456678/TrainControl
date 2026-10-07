@@ -870,6 +870,11 @@ public class LocIconCropDialog extends JDialog
             out[2] = this.zoomFraction;
             out[3] = this.frameAspect;
             out[4] = this.frameSize;
+
+            // AND THE CROP'S WIDTH IN THE PHOTOGRAPH'S OWN PIXELS (OB-257), where there is room for it: the zoom and the
+            // frame's size are both relative to the panel, so on their own they crop a different rectangle in a dialog
+            // of another shape
+            if (out.length >= 6) out[5] = cropWindow().width / getScale();
         }
 
         /**
@@ -1021,6 +1026,22 @@ public class LocIconCropDialog extends JDialog
                 this.zoomFraction = view[2];
                 this.centerX = view[0];
                 this.centerY = view[1];
+
+                // THE SAME RECTANGLE OF THE PHOTOGRAPH, where the view says how wide it was (OB-257): the zoom is worked
+                // out from that width against this panel, rather than taken as a fraction of a panel that may have had
+                // another shape
+                if (view.length >= 6 && view[5] > 0 && !Double.isInfinite(view[5]))
+                {
+                    double floor = getMinScale();
+
+                    if (floor > 0)
+                    {
+                        double wanted = cropWindow().width / view[5];
+
+                        this.zoomFraction = Math.max(0.0, Math.min(1.0,
+                            Math.log(wanted / floor) / Math.log(MAX_ZOOM / MIN_ZOOM)));
+                    }
+                }
 
                 // The photograph may not be the one this view was taken over - it is the user's file
                 // and they may have edited or replaced it. Clamping is what makes that a slightly

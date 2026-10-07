@@ -2402,6 +2402,112 @@ public class testTheEditorNamesItsShortcuts
         }
     }
 
+    /**
+     * While an editor window is open the main window is not kept on top of it, even when the editor switches page in
+     * place, and closing the editor puts the operator's setting back (Adam, 2026-10-06: "when opening the autonomy
+     * editor, temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").
+     *
+     * Opening did take it off.  But a page or mode switch inside the editor runs the refresh a closing editor runs, and
+     * that refresh put the setting back with the editor still open - the main window came up over it.
+     *
+     * MUTATION: let the refresh apply the setting whatever is open, or not apply it when the editor goes, and this fails.
+     *
+     * @throws Exception from the windows or reflection
+     */
+    @Test(timeOut = 300000)
+    public void testTheMainWindowStaysBelowAnOpenEditor() throws Exception
+    {
+        final String key = TrainControlUI.ONTOP_SETTING_PREF;
+        final String was = TrainControlUI.getPrefs().get(key, null);
+        final boolean onTopWas = ui.isAlwaysOnTop();
+
+        final LayoutEditor first = editor;
+
+        SwingUtilities.invokeAndWait(() -> first.dispose());
+        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+
+        LayoutEditor a = null;
+
+        try
+        {
+            // THE OPERATOR WANTS IT ON TOP
+            TrainControlUI.getPrefs().putBoolean(key, true);
+
+            SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(true));
+
+            a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+
+            assertFalse(ui.isAlwaysOnTop(), "precondition: opening the autonomy editor left the main window on top of it");
+
+            // A PAGE SWITCH IN PLACE, nothing unsaved
+            assertFalse(unsaved(a), "precondition: the editor has unsaved work, so leaving the page would ask on the screen");
+
+            java.lang.reflect.Method leave = LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
+
+            leave.setAccessible(true);
+
+            final LayoutEditor switching = a;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    leave.invoke(switching, OTHER_PAGE, true);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settleTheEditor();
+
+            assertTrue(a.isDisplayable(), "precondition: the page switch closed the window, so it was not a switch in place");
+
+            assertFalse(ui.isAlwaysOnTop(), "after a page switch inside the editor the main window is kept on top of it"
+                + " again - the editor's own refresh put the setting back with the editor still open");
+
+            // CLOSED BY THE USER: the setting back
+            closeAsTheUserDoes(a);
+
+            settleTheEditor();
+
+            assertTrue(ui.isAlwaysOnTop(), "after the editor closed, the main window is not put back on top as the"
+                + " operator's setting asks");
+        }
+        finally
+        {
+            if (a != null)
+            {
+                final LayoutEditor closing = a;
+
+                SwingUtilities.invokeAndWait(() -> { if (closing.isDisplayable()) closing.dispose(); });
+            }
+
+            settleTheEditor();
+
+            if (was == null) TrainControlUI.getPrefs().remove(key);
+            else TrainControlUI.getPrefs().put(key, was);
+
+            SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(onTopWas));
+
+            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+
+            final LayoutEditor[] built = new LayoutEditor[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                built[0] = new LayoutEditor(page, 30, ui, 0);
+                built[0].render();
+                built[0].setAutonomyMode(session);
+            });
+
+            editor = built[0];
+
+            settleTheEditor();
+        }
+    }
+
     /** The other page of the frozen railway, for a switch in place. */
     private static final String OTHER_PAGE = "2 - Bottom";
 

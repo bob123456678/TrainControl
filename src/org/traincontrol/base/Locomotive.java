@@ -1670,7 +1670,7 @@ public abstract class Locomotive
         return new Customizations(
             Arrays.copyOf(this.getFunctionTypes(), this.getFunctionTypes().length),
             Arrays.copyOf(this.getFunctionTriggerTypes(), this.getFunctionTriggerTypes().length),
-            this.isCustomFunctions(),
+            this.hasCustomFunctionsFlag(),
             new java.util.HashMap<>(this.getLocalFunctionImageURLs()));
     }
 
@@ -1689,13 +1689,11 @@ public abstract class Locomotive
         // reference, so applying one snapshot twice would otherwise hand two locomotives one map.
         this.setLocalFunctionImageURLs(new java.util.HashMap<>(was.icons));
 
-        // ONLY WHERE THE ANSWER IS NOT ALREADY RIGHT, because `isCustomFunctions` is DERIVED: a
-        // locomotive with any custom icon reads as customized whatever the flag says
-        // (`MarklinLocomotive.isCustomFunctions`).  A snapshot can therefore only ever capture the
-        // derived answer, and writing it back unconditionally would set the flag on a locomotive that
-        // was customized by its icons alone - which reads the same until the last icon is deleted, and
-        // then does not.  Restoring the icons first makes this comparison the honest one.
-        if (this.isCustomFunctions() != was.custom) this.setCustomFunctions(was.custom);
+        // THE FLAG ITSELF, as the snapshot took it (OB-245).  `isCustomFunctions` is derived - any custom icon makes it
+        // true - and the snapshot used to take that answer and write it back only where it differed, so a copy's flag
+        // survived a Cancel on a locomotive customized by an icon alone: the answer read the same, nothing was written,
+        // and once the icon was deleted it read as customized for ever.
+        this.setCustomFunctions(was.custom);
     }
 
     /**
@@ -1973,6 +1971,14 @@ public abstract class Locomotive
     abstract public String getFunctionIconUrl(int fType, boolean active, boolean yellow);
     abstract public int getNumFnIcons();
     abstract public boolean isCustomFunctions();
+
+    /**
+     * Whether this locomotive's functions are marked customized in their own right, whatever icons it carries - the flag
+     * `isCustomFunctions` reads together with the icons.  What a snapshot, a Cancel and the save keep (OB-245).
+     *
+     * @return the flag alone
+     */
+    abstract public boolean hasCustomFunctionsFlag();
     abstract public void setFunctionType(int fNo, int type, int triggerType);
     abstract public void setCustomFunctions(boolean state);
 

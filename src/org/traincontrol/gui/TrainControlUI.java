@@ -8098,11 +8098,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
             applyLayoutEditingAvailability();
+
+            applyAlwaysOnTop();
         }
         else
         {
-            javax.swing.SwingUtilities.invokeLater(this::applyLayoutEditingAvailability);
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                applyLayoutEditingAvailability();
+
+                applyAlwaysOnTop();
+            });
         }
+    }
+
+    /**
+     * The operator's always-on-top setting - except while an editor window is open, which this window stays below (Adam,
+     * 2026-10-06: "when opening the autonomy editor, temporarily turn off 'always on top' in the main window, then restore
+     * it").  Opening an editor takes it off; a page or mode switch inside the editor runs the refresh a closing editor
+     * runs, and that refresh used to put the setting back with the editor still open, so the main window came up over
+     * it.  Applied again when the editor window has gone (`editorWindowClosed`).
+     */
+    private void applyAlwaysOnTop()
+    {
+        boolean editing = this.openEditor != null && this.openEditor.isDisplayable();
+
+        setAlwaysOnTop(!editing && prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
     }
 
     /**
@@ -25333,7 +25354,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void windowAlwaysOnTopMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_windowAlwaysOnTopMenuItemActionPerformed
         prefs.putBoolean(ONTOP_SETTING_PREF, this.windowAlwaysOnTopMenuItem.isSelected());
-        setAlwaysOnTop(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
+        applyAlwaysOnTop();
     }//GEN-LAST:event_windowAlwaysOnTopMenuItemActionPerformed
 
     /**
@@ -29370,12 +29391,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             if (index >= 0)
             {
+                // THE ENTRY SHOWN, so the one removed is it or none (OB-260)
+                final Object shown = this.getTimetableEntryAtCursor(evt);
+
                 int dialogResult = JOptionPane.showOptionDialog(
                     this,
                     I18n.f(
                         "timetable.ui.confirmRemoveEntryContinue",
                         index,
-                        this.getTimetableEntryAtCursor(evt)
+                        shown
                     ),
                     I18n.t("timetable.ui.dialogConfirmDeletion"),
                     JOptionPane.YES_NO_OPTION,
@@ -29390,9 +29414,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Anything but Yes.
                 if (dialogResult != JOptionPane.YES_OPTION) return;
-         
-                this.model.getAutoLayout().getTimetable().remove(index);
-                this.repaintTimetable();
+
+                // ASKED AGAIN AFTER THE QUESTION (OB-260): it can stay open as long as the operator likes, and a run may
+                // have started meanwhile
+                if (this.isAutonomyBusy())
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    return;
+                }
+
+                if (!(shown instanceof TimetablePath)) return;
+
+                final org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+                final int row = index;
+
+                // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as
+                // every door onto that lock from the window is (OB-192)
+                new Thread(() ->
+                {
+                    layout.removeTimetableEntry(row, (TimetablePath) shown);
+
+                    javax.swing.SwingUtilities.invokeLater(this::repaintTimetable);
+                }, "Timetable entry removal").start();
             }
         }
         catch (Exception e)
@@ -30541,8 +30584,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // One array, in and out: what to open on, and afterwards what the user settled on (OB-125).
         // Allocated here when the caller has nothing to open on, because the note still wants
         // recording either way.
-        double[] view = opening != null ? opening
-            : new double[] { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN };
+        //
+        // SIX NUMBERS, the last the crop's width in the photograph's own pixels (OB-257), whatever the note it opens on
+        // held: an older note's five are copied in, and the sixth is written after the crop either way.
+        double[] view = { Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN };
+
+        if (opening != null) System.arraycopy(opening, 0, view, 0, Math.min(opening.length, view.length));
 
         BufferedImage picture;
 
@@ -30686,6 +30733,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             + (LocIconCropDialog.CropPanel.viewIsUsable(view)
                 ? "\n" + CROP_VIEW_PREFIX + view[0] + "," + view[1] + "," + view[2] + ","
                     + view[3] + "," + view[4]
+                    + (view.length >= 6 && view[5] > 0 && !Double.isInfinite(view[5]) ? "," + view[5] : "")
                 : "");
 
         try
@@ -30717,13 +30765,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         String[] parts = line.split(",");
 
-        if (parts.length != 5) return null;
+        // FIVE, as notes were written before OB-257, or SIX with the crop's width in the photograph
+        if (parts.length != 5 && parts.length != 6) return null;
 
-        double[] view = new double[5];
+        double[] view = new double[parts.length];
 
         try
         {
-            for (int i = 0; i < 5; i++) view[i] = Double.parseDouble(parts[i].trim());
+            for (int i = 0; i < parts.length; i++) view[i] = Double.parseDouble(parts[i].trim());
         }
         catch (NumberFormatException notANumber)
         {
