@@ -30,8 +30,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-700](#mt-700) | 2026-10-06 | The main window stays behind an open editor, and is back on top when it closes | fixed unvalidated | Adam 2026-10-06 |
 | [MT-701](#mt-701) | 2026-10-06 | A running train no longer hides the s88 address of its square | fixed unvalidated | OB-259 (2026-09-22) |
 | [MT-702](#mt-702) | 2026-10-07 | A train that keeps its direction at a may-reverse station faces the arrow's way as soon as it stops | fixed unvalidated | Adam's note on MT-701, 2026-10-07 |
+| [MT-703](#mt-703) | 2026-10-07 | A timetable recorded by sending trains by hand through a may-turn station plays back as recorded | fixed unvalidated | RSA49-B1, the release validator of 2026-10-07 |
 
-Everything else - 699 of 702 - needs nothing from you unless the area changes again:
+Everything else - 699 of 703 - needs nothing from you unless the area changes again:
 551 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33342,5 +33343,37 @@ direction is moved onto the other copy only when its run is done - a second or t
 already asked which copy the train would end up on (OB-314); the icon asked which copy it was on, so it faced the turning
 copy's way until then.  Both ask the same question now (round 81, `8efa1078`):
 `core.testTheArrivalHonoursTheAnswer.testTheIconFacesTheWayTheTrainWillStand`.
+
+---
+
+<a id="mt-703"></a>
+
+### MT-703 - 2026-10-07 - A timetable recorded by sending trains by hand through a may-turn station plays back as recorded
+
+**Disposition:** fixed unvalidated
+**From:** RSA49-B1, the release validator of 2026-10-07
+
+**Written:** 2026-10-07
+
+**Steps**
+
+1. Note which way ET22-245 faces at Tunnel.  Press **Capture Locomotive Commands**.
+2. Send ET22-245 by hand from Tunnel to BottomMainB, and answer the question by keeping its direction.
+3. When it has arrived, send it by hand from BottomMainB to any station onward.
+4. Stop capturing.  Put ET22-245 back at Tunnel facing as in step 1 (send it back by hand, or move it and set its
+   facing).
+5. Press **Execute Timetable**.
+
+**Expected**
+
+- At BottomMainB the train is not turned round: it stops facing as it did in step 2, and its icon and arrow agree.
+- The second entry then runs from BottomMainB, as recorded in step 3.
+
+*What this is:* the timetable kept only the path of each move, not what you answered at the end of it, and played every
+entry back as autonomy does - which turns a train wherever its route ends on the turning side of a station.  So the
+train was turned at BottomMainB where you had kept it, and the next entry, recorded from the other side of the station,
+could not start: three minutes later the run stopped saying the track never became free.  Each entry recorded by hand
+now keeps your answer, saved with the timetable, and is played back with it (round 82, `990aad86`):
+`core.testTheArrivalHonoursTheAnswer.testATimetableRecordedByHandPlaysBackTheAnswer`.
 
 ---
