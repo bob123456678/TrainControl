@@ -32,7 +32,7 @@ The `MarklinControlStation` class is your gateway to the CS2/CS3's database of l
 
 Note that as of v2.3.2, all TrainControl code has been moved into the org.traincontrol package.  Custom code using older versions would therefore need to be updated.
 
-Refer to the Java docs for class and method details.
+For class and method details, read the Javadoc comments in the source: most public classes and methods carry one.
 
 ## Sample Layout
 
