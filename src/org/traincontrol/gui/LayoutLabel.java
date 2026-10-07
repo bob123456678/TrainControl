@@ -1341,8 +1341,9 @@ public final class LayoutLabel extends JLabel
 
         autonomyOverlay = effective;
 
-        // A square with a train running on it comes to the front (FR-027).
-        liftAboveLabels(effective != null && effective.isMoving());
+        // NOTHING LIFTED for a running train (OB-259): the diagram's panel paints every train after all of its
+        // components (OB-159), so the square keeps its place behind its captions and its address label - lifted,
+        // an opaque tile only painted them out.
 
         // repaint() is safe from any thread; the monitor publishes from its own worker.  AND THE TILES AROUND IT when a
         // train comes or goes (MT-642): its icon is not clipped to this tile, and on a curve it reaches onto the next
@@ -1357,118 +1358,6 @@ public final class LayoutLabel extends JLabel
         {
             this.repaint();
         }
-    }
-
-    /**
-     * Whether this tile is currently in front of the labels that are normally drawn over it.
-     *
-     * Remembered so the reordering happens on the two transitions and not on every publish: the
-     * monitor republishes as often as the railway changes, and moving a component within its container
-     * on each of those would be real work for no change.
-     */
-    private boolean liftedForTrain = false;
-
-    /**
-     * Puts every station caption in a container back in front of everything else.
-     *
-     * Public and static so the rule can be given a container and asked what it does with it -
-     * `testTheTrainIconDoesNotPaintOutACaption` builds one out of plain components and checks the
-     * order, which is the whole of what this has to get right and needs no railway to establish.
-     *
-     * @param parent the container holding the tiles and their labels
-     */
-    public static void keepCaptionsInFront(java.awt.Container parent)
-    {
-        java.awt.Component[] all = parent.getComponents();
-
-        // BACKWARDS, so the labels keep the order they were built in (D2).
-        //
-        // Pushing each one to the front in turn reverses them, and `StationCaption` is not only the
-        // pills - LayoutGrid builds every piece of text on a diagram as one, including the user's own
-        // writing. Going the other way round leaves the first-built label at the front, which is where
-        // it started.
-        for (int at = all.length - 1; at >= 0; at--)
-        {
-            if (all[at] instanceof StationCaption) parent.setComponentZOrder(all[at], 0);
-        }
-    }
-
-    /**
-     * Brings this tile in front of the address labels, or puts it back behind everything - and, since
-     * OB-117, hands the front straight back to the station captions so this ends up above the
-     * addresses but below them, not above both.
-     *
-     * Adam, looking at the locomotive icon: "make sure it renders on top of the S88's.  Right now,
-     * it's a coin toss."  It was not really a toss - it was fixed and wrong. The overlay is painted
-     * after `super.paintComponent`, so it is reliably over this tile's own icon, and the note above
-     * `paintComponent` says as much. What it also says is that the address and station labels are
-     * SEPARATE components, z-ordered to the front by LayoutGrid as they are added - and no painting
-     * order inside one component can reach over a sibling drawn after it. Which of the two you saw
-     * depended on where the number happened to fall, which is what looked like chance.
-     *
-     * So the fix is where the problem is: the component order. Index 0 is painted last, which is why
-     * the labels claim it; a tile with a train on it claims it for as long as the train is running and
-     * gives it back afterwards. Tiles do not overlap each other, so their order among themselves means
-     * nothing and the release can simply send this one to the back.
-     *
-     * On the event thread, because the monitor publishes from its own worker and container order is
-     * not thread-safe - the repaint above is, which is why it needs no such care.
-     *
-     * @param lift whether this tile should be in front
-     */
-    private void liftAboveLabels(final boolean lift)
-    {
-        if (lift == liftedForTrain) return;
-
-        liftedForTrain = lift;
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            java.awt.Container parent = getParent();
-
-            if (parent == null) return;
-
-            try
-            {
-                parent.setComponentZOrder(this, lift ? 0 : parent.getComponentCount() - 1);
-
-                // And the station captions back above it (OB-117).
-                //
-                // Adam: "on route departure from 1016 as the origin station, the locomotive icon covers
-                // the autonomy label with a blank white space."
-                //
-                // What he asked for when this lift was written was that the locomotive clear the S88
-                // ADDRESS labels, and index 0 does that. It also clears the station captions, which he
-                // did not ask for and which is worse than what it fixed: a tile is opaque, so a lifted
-                // one does not merely draw its locomotive over a caption, it paints out every pixel of
-                // the caption that lies within the square - the "blank white space", which is this
-                // tile's own background.
-                //
-                // Swing has one ordering and no notion of layers, so "above the addresses but below
-                // the captions" has to be arranged rather than declared: take the front, then hand it
-                // straight back to the captions. They end up at 0..n-1 and this tile at n, which is
-                // above every address label and every other tile.
-                //
-                // Cheap enough to do plainly: the lift is edge-triggered - it runs when a train
-                // starts or stops moving on this square, not on every repaint.
-                //
-                // The order among the labels themselves DOES matter, which the first version of this
-                // comment denied on the grounds that captions do not overlap. Pills do not; but every
-                // piece of text on a diagram is a StationCaption, the user's own writing included, and
-                // that can overlap a neighbour. So the loop walks backwards and the built order
-                // survives.
-                if (lift) keepCaptionsInFront(parent);
-
-                // The PARENT, not this tile: the labels that were covering it have moved too, and a
-                // repaint of one component cannot clean up where another one used to be.
-                parent.repaint();
-            }
-            catch (RuntimeException e)
-            {
-                // The tile left its grid between the publish and this running - a page rebuilt under a
-                // running layout, which happens. There is nothing to lift and nothing to report.
-            }
-        });
     }
 
     /**
@@ -1518,13 +1407,8 @@ public final class LayoutLabel extends JLabel
      * After super, so it lands over the icon and never touches setIcon - which is what lets it coexist
      * with the transient highlight.
      *
-     * Do NOT read this as "captions can never be covered, so keepCaptionsInFront is redundant" - that
-     * reasoning is what OB-117 was filed about, and it is only half true. Station captions are pulled
-     * back in front of a lifted tile by keepCaptionsInFront (see liftAboveLabels), and stay covered
-     * only for the instant between the lift and that call running. Address labels get no such rescue:
-     * they are plain JLabels, not StationCaption, so keepCaptionsInFront skips them, and a lifted tile
-     * paints over their text for as long as a train sits on the square - which is the "coin toss"
-     * liftAboveLabels' own javadoc describes.
+     * Nothing is lifted over the captions or the address labels: the diagram's panel paints every train after all of
+     * its components (OB-159), so a tile keeps its place behind them (OB-259).
      *
      * @param g
      */

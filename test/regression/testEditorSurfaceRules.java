@@ -4800,4 +4800,41 @@ public class testEditorSurfaceRules
             "the refresh comes after the menu is built, which is the same as not refreshing at all");
     }
 
+
+    /**
+     * A cut asks for no autonomy setup it is not going to tell (OB-236; Adam, 2026-10-06: "fix the mentioned OB's that are
+     * valid"): `deleteSelection` reads the session only when it is going to tell it what was emptied, and a cut is not.
+     *
+     * Read rather than run: every door that reaches a cut has had the session built by the editor's opening, which is
+     * why the ask never showed - and why only the source can say whether it is made.
+     *
+     * MUTATION: ask for the session before asking whether it will be told, and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testACutAsksForNoSetupItWillNotTell() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutEditor.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        int at = source.indexOf("synchronized public boolean deleteSelection(boolean tellAutonomy)");
+
+        assertTrue(at > 0, "deleteSelection has been renamed; this test is looking for nothing");
+
+        int next = source.indexOf("synchronized public void delete(", at);
+
+        assertTrue(next > at, "precondition: the member after deleteSelection has moved");
+
+        String body = source.substring(at, next);
+
+        int ask = body.indexOf("getAutonomySession()");
+
+        assertTrue(ask > 0, "deleteSelection no longer asks for the session at all");
+
+        String statement = body.substring(body.lastIndexOf(";", ask) + 1, body.indexOf(";", ask));
+
+        assertTrue(statement.contains("tellAutonomy"), "deleteSelection asks for the autonomy setup whether or not it will"
+            + " tell it, which on a cut builds one nobody needed (OB-236): " + statement.trim());
+    }
 }

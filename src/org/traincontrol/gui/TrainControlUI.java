@@ -22038,30 +22038,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     OK_CANCEL_OPTS[0] // default selection
                 );
 
-                String newAddress = edit.getAddress();
-                decoderType newDecoderType = edit.getDecoderType();
-                Integer proposedAddress;
-
-                if (result == JOptionPane.OK_OPTION && newAddress != null && !"".equals(newAddress.trim()))
-                {
-                    if (newDecoderType == decoderType.MFX && newAddress.contains("0x"))
-                    {
-                        proposedAddress = Integer.valueOf(newAddress.replace("0x", ""), 16);
-                    }
-                    else
-                    {
-                        proposedAddress = Integer.valueOf(newAddress);
-                    }
-
-                    if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
-                    {
-                        this.model.changeLocAddress(l.getName(), proposedAddress, newDecoderType);
-                    }
-                }
-
+                // THE NAME ASKED FIRST (OB-301): a name refused returns before anything has changed.  It used to
+                // return after the new address had gone through and before the sweep that takes a clash off the
+                // railway - so a standing train given another standing train's address and a taken name stayed on
+                // the railway beside it, the two answering to one decoder address.
                 String newName = edit.getLocName();
 
-                if (result == JOptionPane.OK_OPTION && newName != null && !l.getName().equals(newName))
+                boolean renaming = result == JOptionPane.OK_OPTION && newName != null && !l.getName().equals(newName);
+
+                if (renaming)
                 {
                     if (newName.trim().length() == 0)
                     {
@@ -22104,9 +22089,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         );
                         return;
                     }
-
-                    this.model.renameLoc(l.getName(), newName);
                 }
+
+                String newAddress = edit.getAddress();
+                decoderType newDecoderType = edit.getDecoderType();
+                Integer proposedAddress;
+
+                if (result == JOptionPane.OK_OPTION && newAddress != null && !"".equals(newAddress.trim()))
+                {
+                    if (newDecoderType == decoderType.MFX && newAddress.contains("0x"))
+                    {
+                        proposedAddress = Integer.valueOf(newAddress.replace("0x", ""), 16);
+                    }
+                    else
+                    {
+                        proposedAddress = Integer.valueOf(newAddress);
+                    }
+
+                    if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
+                    {
+                        this.model.changeLocAddress(l.getName(), proposedAddress, newDecoderType);
+                    }
+                }
+
+                if (renaming) this.model.renameLoc(l.getName(), newName);
 
                 // Refresh everything
                 if (result == JOptionPane.OK_OPTION)

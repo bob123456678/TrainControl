@@ -2140,26 +2140,18 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A square with a train running on it is drawn in front of the labels that sit over it.
+     * A square with a train running on it leaves the labels over it where they are - in front of it (OB-259; Adam,
+     * 2026-10-06: "fix the mentioned OB's that are valid").
      *
-     * Adam, looking at the icon: "make sure it renders on top of the S88's.  Right now, it's a coin
-     * toss."  It was not a toss - it was fixed and wrong, and looked like chance because it depended on
-     * where the address number happened to fall on the tile.
+     * The square used to be lifted to the front for as long as its train ran, so the locomotive was not hidden by the s88
+     * number (Adam: "make sure it renders on top of the S88's").  Since OB-159 the diagram's panel paints every train
+     * after all of its components, so the lift did nothing for the locomotive - and a tile is opaque, so it painted the
+     * address out instead, for as long as the train was on the square.
      *
-     * The overlay is painted after `super.paintComponent`, so it is reliably over the tile's OWN icon.
-     * What it can never reach is a SIBLING: LayoutGrid adds the address and station labels as separate
-     * components and z-orders them to the front, and no painting order inside one component gets over
-     * something drawn after it. So the fix is in the component order, and so is the test.
-     *
-     * Both halves matter. Coming to the front is the feature; going back afterwards is what stops a
-     * railway that has been run for an hour ending up with every square that ever held a train
-     * permanently over its own address label.
-     *
-     * MUTATION: removing the liftAboveLabels call from setAutonomyOverlay fails the first half;
-     * lifting unconditionally, or never releasing, fails the second.
+     * MUTATION: lift the square of a running train again, and this fails.
      */
     @Test
-    public void testASquareWithARunningTrainComesToTheFront() throws Exception
+    public void testASquareWithARunningTrainLeavesItsLabelsInFront() throws Exception
     {
         javax.swing.JPanel grid = new javax.swing.JPanel();
 
@@ -2171,34 +2163,26 @@ public class testAutonomyDiagramMonitor
         grid.add(tile);
         grid.add(address);
 
-        // What LayoutGrid does with an address label: to index 0, which is painted LAST and therefore
-        // on top.  Without this line the test would be about a panel nothing covers.
+        // What LayoutGrid does with an address label: to index 0, which is painted LAST and therefore on top.
         grid.setComponentZOrder(address, 0);
 
-        assertEquals(grid.getComponentZOrder(address), 0,
-            "precondition: the address label is where LayoutGrid puts it");
-
-        assertTrue(grid.getComponentZOrder(tile) > 0,
-            "precondition: the tile starts behind that label, which is the situation being fixed");
+        assertTrue(grid.getComponentZOrder(tile) > grid.getComponentZOrder(address),
+            "precondition: the tile does not start behind the address label");
 
         tile.setAutonomyOverlay(new TileOverlay(State.IDLE, true, true, null));
 
         settle();
 
-        assertEquals(grid.getComponentZOrder(tile), 0,
-            "a square with a train running on it is still behind the address label, so the locomotive "
-            + "is drawn and then covered by a number - which is what it looked like a coin toss "
-            + "between");
+        assertTrue(grid.getComponentZOrder(tile) > grid.getComponentZOrder(address), "a square with a train running on"
+            + " it came in front of its address label and, being opaque, painted the number out - the train itself is"
+            + " drawn above every component by the diagram's panel (OB-159), so nothing has to move (OB-259)");
 
-        // And back down when it stops.
         tile.setAutonomyOverlay(new TileOverlay(State.IDLE, true, false, null));
 
         settle();
 
         assertTrue(grid.getComponentZOrder(tile) > grid.getComponentZOrder(address),
-            "the square stayed in front after its train stopped. Every square that ever held a moving "
-            + "train would end up permanently over its own address label, which is a diagram that "
-            + "degrades the longer it is used");
+            "the square is in front of its address label after its train stopped");
     }
 
     /**
