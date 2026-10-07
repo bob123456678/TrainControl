@@ -492,6 +492,196 @@ public class testARouteDrivenLocomotiveIsNotEdited
         return null;
     }
 
+    /** The two locomotives of OB-301's claim. */
+    private static final String EDITED = "OB-301 edited";
+    private static final String TAKEN = "OB-301 taken";
+
+    /**
+     * A name the edit door refuses changes nothing - not the address either (OB-301; Adam, 2026-10-06: "fix the mentioned
+     * OB's that are valid").
+     *
+     * The door applied the new address first and checked the name after.  A refused name returned once the address had
+     * gone through and before the sweep that takes a clash off the railway - so a train given another standing train's
+     * address and a taken name stayed on the railway beside it, the two answering to one decoder address, every command
+     * for one reaching both.
+     *
+     * MUTATION: apply the address before the name is asked, and this fails.
+     *
+     * @throws Exception from the windows
+     */
+    @Test
+    public void testARefusedNameChangesNothing() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            model = MarklinControlStation.init(null, true, false, false, false);
+
+            final MarklinControlStation m = model;
+            final TrainControlUI[] made = new TrainControlUI[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    made[0] = new TrainControlUI();
+                    made[0].setViewListener(m, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            ui = made[0];
+
+            model.newMM2Locomotive(EDITED, 64);
+            model.newMM2Locomotive(TAKEN, 65);
+
+            final org.traincontrol.base.Locomotive edited = model.getLocByName(EDITED);
+            final TrainControlUI window = ui;
+
+            // ANOTHER TRAIN'S ADDRESS, AND A NAME THAT IS TAKEN
+            String said = answerTheEditDoor(() -> window.changeLocAddress(edited, null), "65", TAKEN);
+
+            assertEquals(said, I18n.f("loc.ui.errorLocomotiveAlreadyExists", TAKEN), "precondition: the door did not refuse"
+                + " a name another locomotive has");
+
+            assertEquals(model.getLocByName(EDITED).getAddress(), 64, "the edit door refused the name and kept the new"
+                + " address - after the check, so the sweep that takes a clash off the railway never ran (OB-301)");
+        }
+        finally
+        {
+            closeEveryDialog();
+
+            if (model != null)
+            {
+                try { model.deleteLoc(EDITED); } catch (Exception ignored) { }
+                try { model.deleteLoc(TAKEN); } catch (Exception ignored) { }
+            }
+
+            if (ui != null)
+            {
+                final TrainControlUI window = ui;
+
+                SwingUtilities.invokeAndWait(() -> window.dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Opens the edit door, types an address and a name into it and presses OK; then the first message after the OK,
+     * closed without answering yes.
+     *
+     * @param door the door
+     * @param address the address to type
+     * @param name the name to type
+     * @return the message after OK, or null when none was shown
+     * @throws Exception from the wait
+     */
+    private static String answerTheEditDoor(Runnable door, String address, String name) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                door.run();
+            }
+            finally
+            {
+                returned.set(true);
+            }
+        });
+
+        final boolean[] typed = new boolean[1];
+
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (!typed[0] && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!(window instanceof JDialog) || !window.isShowing()) continue;
+
+                    JOptionPane pane = paneIn((java.awt.Container) window);
+
+                    if (pane == null || !(pane.getMessage() instanceof org.traincontrol.gui.LocomotiveAddressChange)) continue;
+
+                    try
+                    {
+                        Object edit = pane.getMessage();
+
+                        java.lang.reflect.Field addressField = edit.getClass().getDeclaredField("address");
+                        java.lang.reflect.Field nameField = edit.getClass().getDeclaredField("locName");
+
+                        addressField.setAccessible(true);
+                        nameField.setAccessible(true);
+
+                        ((javax.swing.JTextField) addressField.get(edit)).setText(address);
+                        ((javax.swing.JTextField) nameField.get(edit)).setText(name);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+
+                    pane.setValue(pane.getOptions()[0]);
+
+                    window.dispose();
+
+                    typed[0] = true;
+
+                    return;
+                }
+            });
+        }
+
+        assertTrue(typed[0], "precondition: the edit door showed no Change Name or Address dialog");
+
+        String said = null;
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            final String[] found = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> found[0] = closeTheFirstQuestion());
+
+            said = found[0];
+        }
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (!returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
+        }
+
+        assertTrue(returned.get(), "precondition: the edit door never returned");
+
+        return said;
+    }
+
     /** Closes the first showing option pane, as its X does, and says what it said; null when none is showing. */
     private static String closeTheFirstQuestion()
     {

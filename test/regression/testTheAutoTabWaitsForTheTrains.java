@@ -1019,8 +1019,14 @@ public class testTheAutoTabWaitsForTheTrains
 
         final String failing = "Fails to draw (RSA31-C3)";
 
+        // THE OPERATOR WANTS THE MAIN WINDOW ON TOP, put back as it was in the finally
+        final String onTopKey = TrainControlUI.ONTOP_SETTING_PREF;
+        final String onTopWas = TrainControlUI.getPrefs().get(onTopKey, null);
+
         try
         {
+            TrainControlUI.getPrefs().putBoolean(onTopKey, true);
+
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             ui[0] = openTheWindow();
@@ -1078,9 +1084,17 @@ public class testTheAutoTabWaitsForTheTrains
             assertTrue(control(ui[0], "editLayoutButton").isEnabled()
                 && control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"
                 + " editor's drawing raised an Error (RSA31-C3)");
+
+            // AND THE MAIN WINDOW BACK ON TOP (round 80): opening took the setting off, and the window that failed to
+            // draw is the only one that can put it back as it goes
+            assertTrue(ui[0].isAlwaysOnTop(), "after an editor failed to draw, the main window is not put back on top as"
+                + " the operator's setting asks");
         }
         finally
         {
+            if (onTopWas == null) TrainControlUI.getPrefs().remove(onTopKey);
+            else TrainControlUI.getPrefs().put(onTopKey, onTopWas);
+
             if (pages != null) pages.delete(failing);
 
             putTheFolderBack(folderWas);

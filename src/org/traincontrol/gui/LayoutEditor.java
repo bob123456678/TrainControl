@@ -2379,7 +2379,7 @@ public class LayoutEditor extends PositionAwareJFrame
         
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                popup = new LayoutEditorRightclickMenu(this, parent, label, lc);
+                popup = menuFor(label, lc);
 
                 popup.show(e.getComponent(), e.getX(), e.getY());      
             });
@@ -3729,9 +3729,11 @@ public class LayoutEditor extends PositionAwareJFrame
             this.pauseRepaint = was;
         }
 
-        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+        // ASKED ONLY WHEN IT WILL BE TOLD (OB-236): a cut is not, and asking builds the session where there is none
+        org.traincontrol.automationui.AutonomySession autonomy =
+            tellAutonomy && !emptied.isEmpty() ? parent.getAutonomySession() : null;
 
-        if (tellAutonomy && autonomy != null && !emptied.isEmpty() && autonomy.forgetTiles(emptied))
+        if (autonomy != null && autonomy.forgetTiles(emptied))
         {
             rememberAutonomy(autonomy);
         }
@@ -4403,8 +4405,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         java.awt.Point to = javax.swing.SwingUtilities.convertPoint(from, e.getPoint(), squares);
 
-        // ONTO A SQUARE - another, this one with a menu or a dialog opened over it, or something drawn over one
-        if (squares.contains(to) && aSquareAt(squares, to)) return;
+        // ONTO A SQUARE - another, this one with a menu or a dialog opened over it, or something drawn over one - AND IN
+        // VIEW: the half of a square the view has scrolled out of sight is no square to be over (RSA47-C2)
+        if (squares.contains(to) && squares.getVisibleRect().contains(to) && aSquareAt(squares, to)) return;
 
         pointerOffTheSquares();
     }
@@ -4466,6 +4469,62 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
+    /**
+     * The right-click menu for a square, made to ask where the pointer is once it goes (RSA47-C1): it takes the square's
+     * exit while the pointer is still over the square, and while it is open the watch leaves the outline alone - so,
+     * dismissed with the pointer over the tools column, or over a part of the window nothing listens on, nothing else
+     * asked again, and the Grid box drew the blue back.
+     *
+     * @param label the square
+     * @param lc what is drawn on it, or null
+     * @return the menu, not yet shown
+     */
+    LayoutEditorRightclickMenu menuFor(LayoutLabel label, LayoutDiagramComponent lc)
+    {
+        LayoutEditorRightclickMenu menu = new LayoutEditorRightclickMenu(this, parent, label, lc);
+
+        menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
+        {
+            @Override
+            public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e)
+            {
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e)
+            {
+                javax.swing.SwingUtilities.invokeLater(LayoutEditor.this::askWhereThePointerIs);
+            }
+
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e)
+            {
+                javax.swing.SwingUtilities.invokeLater(LayoutEditor.this::askWhereThePointerIs);
+            }
+        });
+
+        return menu;
+    }
+
+    /**
+     * Where the pointer is, asked once what covered the squares has gone (RSA47-C1): over a square in view, the outline
+     * stays; anywhere else, the pointer is off the squares.
+     */
+    private void askWhereThePointerIs()
+    {
+        if (!this.pointerOnGrid || isAutonomyMode() || this.grid == null) return;
+
+        if (this.popup != null && this.popup.isVisible()) return;
+
+        JPanel squares = this.grid.getContainer();
+
+        java.awt.Point at = squares.getMousePosition(true);
+
+        if (at != null && squares.getVisibleRect().contains(at) && aSquareAt(squares, at)) return;
+
+        pointerOffTheSquares();
+    }
+
     /** This window's watch on where the pointer arrives (RSA46-C1). */
     private final PointerWatch pointerWatch = new PointerWatch(this);
 
@@ -4480,7 +4539,9 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (!this.pointerOnGrid || isAutonomyMode() || this.grid == null || on == null) return;
 
-        if (javax.swing.SwingUtilities.getWindowAncestor(on) != this) return;
+        // THIS WINDOW, or anything in it.  The window's own entry counts (RSA47-C1): AWT hands it on only where nothing
+        // that listens lies under the pointer, and every square listens - so it is the pointer back over a quiet part.
+        if (on != this && javax.swing.SwingUtilities.getWindowAncestor(on) != this) return;
 
         if (this.popup != null && this.popup.isVisible()) return;
 

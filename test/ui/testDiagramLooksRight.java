@@ -1026,43 +1026,30 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A tile lifted for a running train stays BELOW the station captions.
+     * A square with a train running on it stays below the station captions and the address label over it (OB-117,
+     * OB-259).
      *
-     * OB-117. Adam: "on route departure from 1016 as the origin station, the locomotive icon covers the
-     * autonomy label with a blank white space."
+     * OB-117. Adam: "on route departure from 1016 as the origin station, the locomotive icon covers the autonomy label
+     * with a blank white space."  That was the tile, lifted to the front for its train: a tile is opaque, so it painted
+     * the caption out.  The lift went in OB-259 - the diagram's panel paints every train after all of its components
+     * (OB-159), so nothing needs to move - and this holds the order a running train leaves behind it: the captions in
+     * the order they were built, the address label, and the tile behind them all.
      *
-     * The lift exists because he asked for the opposite of a different overlap - "make sure it renders
-     * on top of the S88's" - and z-order 0 does that. It also puts the tile over the station captions,
-     * and a tile is OPAQUE: it does not merely draw a locomotive across a caption, it paints out every
-     * pixel of the caption inside that square. The white he saw is the tile's own background.
+     * MUTATION: lift the square of a running train again, and this fails.
      *
-     * Swing has one ordering and no layers, so this cannot be declared, only arranged - and a rule
-     * that has to be arranged is a rule that can be forgotten. Hence a test on the arrangement itself,
-     * built from plain components: no railway is needed to establish what the order has to be.
-     *
-     * MUTATION: dropping the `keepCaptionsInFront` call from the lift fails the LAST assertion - and
-     * only the last one. The first three exercise the rule directly and survived that mutation, which
-     * is why the last one is here.
+     * @throws Exception from the event thread
      */
     @Test
     public void testTheTrainIconDoesNotPaintOutACaption() throws Exception
     {
         javax.swing.JPanel grid = new javax.swing.JPanel(null);
 
-        // A caption, an address label, and the tile that will be lifted.  The address label is added
-        // LAST and pushed to the front, which is the order LayoutGrid builds them in.
-        // THREE captions, not one.
-        //
-        // With a single caption, walking the list forwards and backwards are indistinguishable - which
-        // a validator demonstrated by reverting the loop and watching this pass. The order among the
-        // captions is half of what `keepCaptionsInFront` has to get right: pushing each to the front in
-        // turn reverses them, and every piece of text on a diagram is a StationCaption, the user's own
-        // writing included.
+        // THREE captions, so an order among them that changed would show
         org.traincontrol.gui.StationCaption caption = new org.traincontrol.gui.StationCaption();
         org.traincontrol.gui.StationCaption second = new org.traincontrol.gui.StationCaption();
         org.traincontrol.gui.StationCaption third = new org.traincontrol.gui.StationCaption();
 
-        javax.swing.JLabel tile = new javax.swing.JLabel("tile");
+        org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, 30, null, false);
         javax.swing.JLabel address = new javax.swing.JLabel("86");
 
         grid.add(caption);
@@ -1076,72 +1063,24 @@ public class testDiagramLooksRight
         grid.setComponentZOrder(third, 2);
         grid.setComponentZOrder(address, 3);
 
-        // What the lift does: take the front, then hand it back to the captions.
-        grid.setComponentZOrder(tile, 0);
+        // A TRAIN STARTS ON THE SQUARE
+        tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+            org.traincontrol.automationui.TileOverlay.State.IDLE, true, true, null));
 
-        assertTrue(grid.getComponentZOrder(tile) < grid.getComponentZOrder(address),
-            "the lifted tile is behind the address label, so the locomotive would be hidden by the "
-            + "sensor number - which is the fault the lift was added to fix");
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-        org.traincontrol.gui.LayoutLabel.keepCaptionsInFront(grid);
+        assertTrue(grid.getComponentZOrder(caption) < grid.getComponentZOrder(tile)
+                && grid.getComponentZOrder(second) < grid.getComponentZOrder(tile)
+                && grid.getComponentZOrder(third) < grid.getComponentZOrder(tile),
+            "a square with a train running on it came in front of a station caption, and a tile is opaque: it paints the"
+            + " name out and leaves its own background, the blank white space of OB-117");
 
-        assertTrue(grid.getComponentZOrder(caption) < grid.getComponentZOrder(tile),
-            "the lifted tile is in front of the station caption. A tile is opaque, so that does not "
-            + "put a locomotive over a name - it paints the name out and leaves the tile's own "
-            + "background, which is the blank white space in OB-117");
+        assertTrue(grid.getComponentZOrder(address) < grid.getComponentZOrder(tile), "a square with a train running on it"
+            + " came in front of its address label, painting the number out (OB-259)");
 
-        assertTrue(grid.getComponentZOrder(tile) < grid.getComponentZOrder(address),
-            "putting the captions back also gave the address label the front again, so the fix for "
-            + "OB-117 has undone the reason the lift exists");
-
-        // And in the order they were built, not reversed.
         assertTrue(grid.getComponentZOrder(caption) < grid.getComponentZOrder(second)
                 && grid.getComponentZOrder(second) < grid.getComponentZOrder(third),
-            "the captions came back in reverse order. Pushing each one to the front in turn does that, "
-            + "and these are not only the station pills - every piece of text on a diagram is one, the "
-            + "user's own writing included, and those can overlap each other");
-
-        // AND THAT THE LIFT ACTUALLY CALLS IT.
-        //
-        // Everything above tests the rule; none of it tests that anybody asks. Deleting the call from
-        // `liftAboveLabels` left all three assertions passing, because they reach the helper directly
-        // - the defect simply moved from the rule to its one call site, which is where extracting a
-        // rule always moves it.
-        //
-        // Read rather than run, and that is a weaker thing: `liftAboveLabels` is private, fires off
-        // the autonomy monitor's worker thread, and needs a live grid with a moving train to reach.
-        // What this catches is the call being dropped or moved out of the lifting branch, which is
-        // the whole of what a reader can break here.
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutLabel.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        int lift = source.indexOf("private void liftAboveLabels(");
-
-        assertTrue(lift > 0, "liftAboveLabels has been renamed; this test is looking for nothing");
-
-        // Bounded by the NEXT member rather than by a closing brace.
-        //
-        // Looking for a line separator plus a brace assumed the file's line endings; it is written
-        // with LF and System.lineSeparator() is CRLF here, so the search found nothing and the
-        // substring threw. Two members is a bound that does not care.
-        int next = source.length();
-
-        for (String start : new String[] {"    private ", "    public ", "    static "})
-        {
-            int at = source.indexOf(start, lift + 10);
-
-            if (at > 0 && at < next) next = at;
-        }
-
-        // Comments stripped first (TST-C10): otherwise a comment left behind describing the removed
-        // call - "keepCaptionsInFront(parent) is handled by the caller now" - keeps this string match
-        // passing after the real call is gone.
-        String body = withoutComments(source.substring(lift, next));
-
-        assertTrue(body.contains("keepCaptionsInFront("),
-            "the lift no longer puts the station captions back in front of the tile it raised. The "
-            + "rule above still works and nothing calls it, so a running train paints out the name "
-            + "of the station it is standing at - which is OB-117 exactly");
+            "the captions are no longer in the order they were built");
     }
 
     /**
@@ -2174,6 +2113,47 @@ public class testDiagramLooksRight
         assertFalse(org.traincontrol.gui.LayoutGrid.runsNorthSouth(null),
             "a square with nothing on it is reported as running north to south, which is an opinion "
             + "about a square that has no rails at all");
+    }
+
+    /**
+     * A sensor's caption knows which way its rails run whatever the sensor was reporting when the layout was saved
+     * (OB-263; Adam, 2026-10-06: "Fix OB-263").
+     *
+     * A sensor tile has one state in the port table, and the state a Central Station saves for it is whether a train
+     * stood on it at the time: 1 found no ports at all, so a vertical station saved occupied read as running east to
+     * west and its caption lay flat - persistently, and differently for two identical stations.
+     *
+     * MUTATION: ask the port table with the sensor's saved state again, and this fails.
+     */
+    @Test
+    public void testASensorSavedOccupiedKnowsWhichWayItsRailsRun() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("occupied", 4, 4, null, null);
+
+        org.traincontrol.base.LayoutDiagramComponent.componentType sensor =
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK;
+
+        for (int o = 0; o < 2; o++)
+        {
+            for (int state = 0; state < 2; state++)
+            {
+                page.addComponent(sensor, o, state, o, state, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2,
+                    null);
+            }
+        }
+
+        boolean flatFree = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(0, 0));
+        boolean turnedFree = org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(1, 0));
+
+        assertNotEquals(flatFree, turnedFree, "precondition: a free sensor and the same sensor turned a quarter are given"
+            + " the same answer, so this cannot tell the two apart");
+
+        assertEquals(org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(0, 1)), flatFree, "a sensor saved"
+            + " occupied is said to run a different way from the same sensor saved free (OB-263)");
+
+        assertEquals(org.traincontrol.gui.LayoutGrid.runsNorthSouth(page.getComponent(1, 1)), turnedFree, "a turned"
+            + " sensor saved occupied is said to run a different way from the same sensor saved free, so its station's"
+            + " caption lies flat (OB-263)");
     }
 
     /**

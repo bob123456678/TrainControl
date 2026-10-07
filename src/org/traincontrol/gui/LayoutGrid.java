@@ -486,9 +486,12 @@ public class LayoutGrid
 
         try
         {
+            // A SENSOR'S STATE IS NOT A SHAPE (OB-263): it has one state in the port table, and the state a Central Station
+            // saves for it is whether a train stood on it - 1 found no ports, and a vertical station saved occupied read
+            // as running east to west, its caption flat
             for (org.traincontrol.automationui.TilePorts.Route route
                 : org.traincontrol.automationui.TilePorts.ports(
-                    c.getType(), c.getOrientation(), c.getState()))
+                    c.getType(), c.getOrientation(), c.isFeedback() ? 0 : c.getState()))
             {
                 if (route.touches(org.traincontrol.automationui.TilePorts.Side.E)
                     || route.touches(org.traincontrol.automationui.TilePorts.Side.W))

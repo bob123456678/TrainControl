@@ -675,4 +675,41 @@ public class testLayoutTimetable
         return new org.json.JSONObject().put("loc", loc).put("executionTime", 0L).put("secondsToNext", 0L)
             .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", start).put("end", end)));
     }
+
+    /**
+     * A row deleted from the timetable is the entry the operator was shown, removed under the railway's lock - or nothing
+     * (OB-260; Adam, 2026-10-06: "Fix OB-260").
+     *
+     * The delete asked, held a confirmation open as long as the operator liked, and then removed the row by number from
+     * the plain list capture appends to under this railway's lock.  So it is asked of the entry, and taken under the lock.
+     *
+     * MUTATION: remove by the row number alone, or without the lock, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testADeletedRowIsTheOneShownOrNone() throws Exception
+    {
+        Layout layout = layoutWithOnePath();
+
+        setEntries(layout, 100, 200, 300);
+
+        List<TimetablePath> before = new ArrayList<>(layout.getTimetable());
+
+        Method remove = Layout.class.getDeclaredMethod("removeTimetableEntry", int.class, TimetablePath.class);
+
+        assertTrue(java.lang.reflect.Modifier.isSynchronized(remove.getModifiers()), "the timetable's remove does not take"
+            + " the railway's lock, which capture appends under from locomotive threads (OB-260)");
+
+        // ANOTHER ENTRY AT THAT ROW NOW: nothing goes
+        assertFalse((Boolean) remove.invoke(layout, 1, before.get(2)), "a row whose entry is no longer the one the"
+            + " operator was shown was removed anyway (OB-260)");
+
+        assertEquals(layout.getTimetable(), before, "a refused removal changed the timetable");
+
+        // THE ONE SHOWN: it goes, and only it
+        assertTrue((Boolean) remove.invoke(layout, 1, before.get(1)), "the row the operator confirmed was not removed");
+
+        assertEquals(layout.getTimetable(), Arrays.asList(before.get(0), before.get(2)), "the wrong entry was removed");
+    }
 }

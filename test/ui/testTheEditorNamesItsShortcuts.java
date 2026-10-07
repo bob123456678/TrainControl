@@ -2147,6 +2147,250 @@ public class testTheEditorNamesItsShortcuts
         }
     }
 
+    /**
+     * The pointer is found off the squares however it gets there, and only from this window: out from under the
+     * right-click menu once it closes, back into the window over a part nothing listens on, or past the edge of the view
+     * from a square cut by it - and not by an arrival in a dialog over the square.  The watch is on the toolkit while the
+     * window is, and gone with it (RSA47-C1 to -C3).
+     *
+     * A menu takes the square's exit where the pointer still is, and while it was open the watch left the outline alone;
+     * nothing asked again when it closed.  The window's own entry, which AWT hands on only where nothing listens, was
+     * asked whose window it was in, and a window is in none.  And a square half scrolled out of sight counted as a square
+     * all the way across.
+     *
+     * MUTATION: ask nothing when the menu closes, leave the window's own entry out, count the hidden half of a square,
+     * act on an arrival in another window, or leave the watch on the toolkit after dispose - and this fails.
+     *
+     * @throws Exception from the windows or reflection
+     */
+    @Test
+    public void testThePointerIsFoundOffTheSquaresWhereverItGoes() throws Exception
+    {
+        int watchesBefore = pointerWatches();
+
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        javax.swing.JDialog over = null;
+
+        try
+        {
+            settleTheEditor();
+
+            assertEquals(pointerWatches(), watchesBefore + 1, "the editor window put no watch on the toolkit, or more than"
+                + " one");
+
+            final int[] at = new int[2];
+
+            assertNotNull(aTrackSquareWithRoom(track[0], at), "precondition: no track square on " + PAGE);
+
+            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+
+            gridField.setAccessible(true);
+
+            final org.traincontrol.gui.LayoutLabel p = (org.traincontrol.gui.LayoutLabel) squareAt(gridField, track[0], at[0],
+                at[1]);
+
+            // (C1) A MENU OVER THE SQUARE, closed with the pointer off the squares
+            hoverOver(track[0], p);
+
+            assertTrue(wearsTheHover(track[0], p), "precondition: the pointer's outline was not drawn on the square");
+
+            leaveFor(p, p.getWidth() / 2, p.getHeight() / 2);
+
+            java.lang.reflect.Method made = LayoutEditor.class.getDeclaredMethod("menuFor",
+                org.traincontrol.gui.LayoutLabel.class, org.traincontrol.base.LayoutDiagramComponent.class);
+
+            made.setAccessible(true);
+
+            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    menu[0] = (javax.swing.JPopupMenu) made.invoke(track[0], p, page.getComponent(at[0], at[1]));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(wearsTheHover(track[0], p), "precondition: a menu over the square took its outline off");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (javax.swing.event.PopupMenuListener heard : menu[0].getPopupMenuListeners())
+                {
+                    if (heard.getClass().getName().startsWith(LayoutEditor.class.getName()))
+                    {
+                        heard.popupMenuWillBecomeInvisible(new javax.swing.event.PopupMenuEvent(menu[0]));
+                    }
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(anyWearsTheHover(track[0]), "the right-click menu closed with the pointer off the squares, and the"
+                + " outline stayed on the square it was over (RSA47-C1)");
+
+            // (C1) BACK INTO THE WINDOW WHERE NOTHING LISTENS: the window's own entry, as AWT hands it to the watch
+            final org.traincontrol.gui.LayoutLabel q = (org.traincontrol.gui.LayoutLabel) squareAt(gridField, track[0], at[0],
+                at[1]);
+
+            hoverOver(track[0], q);
+
+            assertTrue(wearsTheHover(track[0], q), "precondition: the pointer's outline was not drawn again");
+
+            leaveFor(q, q.getWidth() / 2, q.getHeight() / 2);
+
+            final java.awt.event.AWTEventListener watch = theWatchOf(track[0]);
+
+            assertNotNull(watch, "precondition: no watch of this window's on the toolkit");
+
+            SwingUtilities.invokeAndWait(() -> watch.eventDispatched(new java.awt.event.MouseEvent(track[0],
+                java.awt.event.MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 1, 1, 0, false)));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(anyWearsTheHover(track[0]), "the pointer came back into the window over a part nothing listens on,"
+                + " and the outline stayed (RSA47-C1)");
+
+            // (C3) AN ARRIVAL IN ANOTHER WINDOW - a dialog over the square - leaves the outline where it is
+            final org.traincontrol.gui.LayoutLabel r = (org.traincontrol.gui.LayoutLabel) squareAt(gridField, track[0], at[0],
+                at[1]);
+
+            hoverOver(track[0], r);
+
+            final javax.swing.JButton inTheDialog = new javax.swing.JButton("OK");
+
+            final javax.swing.JDialog[] dialog = new javax.swing.JDialog[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                dialog[0] = new javax.swing.JDialog(track[0]);
+                dialog[0].getContentPane().add(inTheDialog);
+                dialog[0].pack();
+            });
+
+            over = dialog[0];
+
+            SwingUtilities.invokeAndWait(() -> inTheDialog.dispatchEvent(new java.awt.event.MouseEvent(inTheDialog,
+                java.awt.event.MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 2, 2, 0, false)));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(wearsTheHover(track[0], r), "an arrival in a dialog over the square took its outline off, as though"
+                + " the pointer had gone somewhere else in the editor (RSA47-C3)");
+
+            // (C2) PAST THE EDGE OF THE VIEW, from a square half scrolled out of sight - the window narrowed first, so the
+            // view scrolls and keeps where it is scrolled to: a view that fits is put back at 0 by the next layout
+            SwingUtilities.invokeAndWait(() ->
+            {
+                track[0].setSize(560, 560);
+                track[0].validate();
+            });
+
+            settleTheEditor();
+
+            javax.swing.JPanel squares = gridOf(track[0]).getContainer();
+
+            final javax.swing.JViewport viewport = (javax.swing.JViewport) SwingUtilities.getAncestorOfClass(
+                javax.swing.JViewport.class, squares);
+
+            assertNotNull(viewport, "precondition: the squares are not in a scrolled view");
+
+            final int room = squares.getWidth() - viewport.getExtentSize().width;
+
+            assertTrue(room > 0, "precondition: the view does not scroll in this window - " + viewport.getExtentSize()
+                + " of " + squares.getSize());
+
+            org.traincontrol.gui.LayoutLabel cut = null;
+
+            for (java.awt.Component c : squares.getComponents())
+            {
+                if (c instanceof org.traincontrol.gui.LayoutLabel && !((org.traincontrol.gui.LayoutLabel) c).isSpacer()
+                    && c.getX() > c.getWidth() && c.getY() > 0 && c.getWidth() > 4 && c.getX() + c.getWidth() / 2 <= room
+                    && (cut == null || c.getX() < cut.getX()))
+                {
+                    cut = (org.traincontrol.gui.LayoutLabel) c;
+                }
+            }
+
+            assertNotNull(cut, "precondition: no square away from the left edge to scroll half out of sight");
+
+            final org.traincontrol.gui.LayoutLabel half = cut;
+
+            hoverOver(track[0], half);
+
+            SwingUtilities.invokeAndWait(() -> viewport.setViewPosition(new java.awt.Point(half.getX() + half.getWidth() / 2,
+                0)));
+
+            assertFalse(squares.getVisibleRect().contains(half.getX() + half.getWidth() / 4, half.getY() + 1), "precondition:"
+                + " the left half of the square is still in view");
+
+            assertTrue(wearsTheHover(track[0], half), "precondition: the pointer's outline is not on the half-hidden square");
+
+            leaveFor(half, half.getWidth() / 4, half.getHeight() / 2);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(anyWearsTheHover(track[0]), "the pointer left a square cut by the edge of the view, past that edge,"
+                + " and the outline stayed: the hidden half counted as a square (RSA47-C2)");
+
+            SwingUtilities.invokeAndWait(() -> viewport.setViewPosition(new java.awt.Point(0, 0)));
+        }
+        finally
+        {
+            final javax.swing.JDialog closing = over;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                if (closing != null) closing.dispose();
+
+                track[0].dispose();
+            });
+        }
+
+        // (C3) THE WATCH GONE WITH THE WINDOW
+        assertEquals(pointerWatches(), watchesBefore, "the editor's watch stayed on the toolkit after the window was"
+            + " disposed, holding nothing and called on every mouse event for the rest of the session (RSA47-C3)");
+    }
+
+    /** The toolkit's listeners that are editor windows' pointer watches. */
+    private static int pointerWatches()
+    {
+        int n = 0;
+
+        for (java.awt.event.AWTEventListener l : java.awt.Toolkit.getDefaultToolkit().getAWTEventListeners())
+        {
+            java.awt.event.AWTEventListener inner = l instanceof java.awt.event.AWTEventListenerProxy
+                ? ((java.awt.event.AWTEventListenerProxy) l).getListener() : l;
+
+            if (inner.getClass().getName().endsWith("$PointerWatch")) n++;
+        }
+
+        return n;
+    }
+
+    /** This editor window's pointer watch, as the toolkit holds it. */
+    private static java.awt.event.AWTEventListener theWatchOf(LayoutEditor editor) throws Exception
+    {
+        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("pointerWatch");
+
+        field.setAccessible(true);
+
+        return (java.awt.event.AWTEventListener) field.get(editor);
+    }
+
     /** The pointer's hover over a square, as its own listener gives it, and the event thread after it. */
     private static void hoverOver(final LayoutEditor editor, final org.traincontrol.gui.LayoutLabel square) throws Exception
     {
@@ -2387,6 +2631,112 @@ public class testTheEditorNamesItsShortcuts
             SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
 
             // THE CLASS'S EDITOR BACK, as setUpClass built it
+            final LayoutEditor[] built = new LayoutEditor[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                built[0] = new LayoutEditor(page, 30, ui, 0);
+                built[0].render();
+                built[0].setAutonomyMode(session);
+            });
+
+            editor = built[0];
+
+            settleTheEditor();
+        }
+    }
+
+    /**
+     * While an editor window is open the main window is not kept on top of it, even when the editor switches page in
+     * place, and closing the editor puts the operator's setting back (Adam, 2026-10-06: "when opening the autonomy
+     * editor, temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").
+     *
+     * Opening did take it off.  But a page or mode switch inside the editor runs the refresh a closing editor runs, and
+     * that refresh put the setting back with the editor still open - the main window came up over it.
+     *
+     * MUTATION: let the refresh apply the setting whatever is open, or not apply it when the editor goes, and this fails.
+     *
+     * @throws Exception from the windows or reflection
+     */
+    @Test(timeOut = 300000)
+    public void testTheMainWindowStaysBelowAnOpenEditor() throws Exception
+    {
+        final String key = TrainControlUI.ONTOP_SETTING_PREF;
+        final String was = TrainControlUI.getPrefs().get(key, null);
+        final boolean onTopWas = ui.isAlwaysOnTop();
+
+        final LayoutEditor first = editor;
+
+        SwingUtilities.invokeAndWait(() -> first.dispose());
+        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+
+        LayoutEditor a = null;
+
+        try
+        {
+            // THE OPERATOR WANTS IT ON TOP
+            TrainControlUI.getPrefs().putBoolean(key, true);
+
+            SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(true));
+
+            a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+
+            assertFalse(ui.isAlwaysOnTop(), "precondition: opening the autonomy editor left the main window on top of it");
+
+            // A PAGE SWITCH IN PLACE, nothing unsaved
+            assertFalse(unsaved(a), "precondition: the editor has unsaved work, so leaving the page would ask on the screen");
+
+            java.lang.reflect.Method leave = LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
+
+            leave.setAccessible(true);
+
+            final LayoutEditor switching = a;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    leave.invoke(switching, OTHER_PAGE, true);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settleTheEditor();
+
+            assertTrue(a.isDisplayable(), "precondition: the page switch closed the window, so it was not a switch in place");
+
+            assertFalse(ui.isAlwaysOnTop(), "after a page switch inside the editor the main window is kept on top of it"
+                + " again - the editor's own refresh put the setting back with the editor still open");
+
+            // CLOSED BY THE USER: the setting back
+            closeAsTheUserDoes(a);
+
+            settleTheEditor();
+
+            assertTrue(ui.isAlwaysOnTop(), "after the editor closed, the main window is not put back on top as the"
+                + " operator's setting asks");
+        }
+        finally
+        {
+            if (a != null)
+            {
+                final LayoutEditor closing = a;
+
+                SwingUtilities.invokeAndWait(() -> { if (closing.isDisplayable()) closing.dispose(); });
+            }
+
+            settleTheEditor();
+
+            if (was == null) TrainControlUI.getPrefs().remove(key);
+            else TrainControlUI.getPrefs().put(key, was);
+
+            SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(onTopWas));
+
+            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+
             final LayoutEditor[] built = new LayoutEditor[1];
 
             SwingUtilities.invokeAndWait(() ->
@@ -3112,6 +3462,18 @@ public class testTheEditorNamesItsShortcuts
     private static void settleTheEditor() throws Exception
     {
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+        // OUT FROM UNDER THE REAL POINTER (round 80).  The editor windows these claims open are shown on the screen, and a
+        // pointer resting where one appears tells the window the pointer has arrived over it - over a part nothing listens
+        // on, that is the pointer off the squares (RSA47-C1), and it took a simulated hover's outline off part way through
+        // a claim.  Off the screen, no real pointer reaches them.
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof LayoutEditor && window.isShowing() && window.getX() > -5000) window.setLocation(-8000, -8000);
+            }
+        });
 
         Thread.sleep(500);
 
