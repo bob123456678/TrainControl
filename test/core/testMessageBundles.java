@@ -709,6 +709,42 @@ public class testMessageBundles
     }
 
     /**
+     * The line a switch click leaves in the message strip names the menu its arms are ticked in, by the name that menu has
+     * in each language (Adam, 2026-10-06, accepting D19 of the documentation pass).
+     *
+     * It said "Connections and direction", a heading the square's menu no longer has: the arms are ticked under "Trains May
+     * Depart...".  Compared without the trailing ellipsis, as the terminus error's menu is.
+     *
+     * MUTATION: put the old heading back in any bundle, and this fails.
+     */
+    @Test
+    public void testTheSwitchClickNamesTheDeparturesMenu() throws Exception
+    {
+        List<String> offenders = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            String said = values.getProperty("autosetup.ui.cycledSwitch");
+
+            String departures = trimmed(values.getProperty("autosetup.ui.menuConnections"));
+
+            if (said == null || departures == null)
+            {
+                offenders.add(bundle.getName() + " is missing one of the two keys");
+
+                continue;
+            }
+
+            if (!said.contains(departures)) offenders.add(bundle.getName() + " does not name \"" + departures + "\": " + said);
+        }
+
+        assertTrue(offenders.isEmpty(), "a switch click names a menu the square does not have, where its arms are ticked"
+            + " under Trains May Depart...: " + offenders);
+    }
+
+    /**
      * A menu label without its trailing ellipsis, so a cosmetic change to it does not fail a test.
      *
      * @param label the label, or null

@@ -213,6 +213,42 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
             org.testng.Assert.assertNotEquals(one, two.replace("2", "1"), sentence + " says one as it says two, in the"
                 + " plural: " + one);
         }
+
+        // AND IN EACH LANGUAGE'S OWN FORM (RSA46-C2): French says 0 in the singular, and Polish has a form of its own for 2
+        // to 4 but not 12 to 14 - asked of the bundle's own One, Few and plain keys
+        String[][] keys = {{"sharedSquaresSentence", "autosetup.ui.importSharedSquares"},
+            {"leftBehindSentence", "autosetup.ui.leftBehind"}};
+
+        Object[][] forms = {{"fr", 0, "One"}, {"fr", 2, ""}, {"pl", 1, "One"}, {"pl", 2, "Few"}, {"pl", 5, ""},
+            {"pl", 12, ""}, {"pl", 22, "Few"}};
+
+        java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        try
+        {
+            for (Object[] form : forms)
+            {
+                org.traincontrol.util.I18n.setLocale(new java.util.Locale((String) form[0]));
+
+                int n = (Integer) form[1];
+
+                for (String[] key : keys)
+                {
+                    java.lang.reflect.Method say = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(key[0],
+                        int.class);
+
+                    say.setAccessible(true);
+
+                    assertEquals((String) say.invoke(null, n), org.traincontrol.util.I18n.f(key[1] + form[2], n), key[0]
+                        + " in " + form[0] + " for " + n + " is not the bundle's " + (((String) form[2]).isEmpty() ? "plain"
+                        : (String) form[2]) + " form (RSA46-C2)");
+                }
+            }
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+        }
     }
 
     /** Deletes a folder and everything in it. */

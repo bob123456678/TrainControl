@@ -1867,6 +1867,18 @@ public class LayoutGrid
                                 listener.mouseEntered(e);
                             }
                         }
+
+                        // AND ITS EXIT (RSA46-C1): the label covers the top left of its square, and a pointer that left
+                        // the squares from here told no square - the track editor's outline stayed on it, and the main
+                        // window's keys still aimed at it
+                        @Override
+                        public void mouseExited(MouseEvent e)
+                        {
+                            for (MouseListener listener : outer.getMouseListeners())
+                            {
+                                listener.mouseExited(e);
+                            }
+                        }
                     });
 
                     text.setForeground(Color.RED);
