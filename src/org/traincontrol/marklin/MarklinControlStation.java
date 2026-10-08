@@ -4349,10 +4349,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             String name = route.getName() == null ? "" : route.getName().trim();
 
-            if (!ids.add(route.getId()) || !names.add(name))
+            boolean idTwice = !ids.add(route.getId());
+
+            boolean nameTwice = !names.add(name);
+
+            // SAYING WHAT REPEATS (RSA56-C2): the name and the number together sent the operator to one that appears once
+            if (idTwice)
             {
-                throw new IllegalArgumentException(I18n.f("route.errorImportNamesARouteTwice", name,
+                throw new IllegalArgumentException(I18n.f("route.errorImportNumbersARouteTwice",
                     String.valueOf(route.getId())));
+            }
+
+            if (nameTwice)
+            {
+                throw new IllegalArgumentException(name.isEmpty() ? I18n.t("route.errorImportTwoRoutesWithNoName")
+                    : I18n.f("route.errorImportNamesARouteTwice", name));
             }
         }
 

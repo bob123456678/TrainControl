@@ -358,8 +358,10 @@ abstract public class Route
             }
             String s88 = Integer.toString(rc.getAddress());
 
-            // Avoid a race condition and ensure the autonomy resolution finishes first
-            layout.waitForS88Reached(loc, s88);
+            // THE RUN'S BOOKKEEPING CAUGHT UP WITH THE TRAIN FIRST, and no longer (RSA56-C1): while the train stands on
+            // the sensor its run has not yet recorded - the gap in which a route fired by that sensor asks - and not at all
+            // for a sensor it has not reached, which this used to wait for, untimed, until the train got there
+            layout.waitForTheRunToRecord(loc, 3000);
 
             // The last milestone reached, while the locomotive is running a path
             if (s88.equals(layout.getLatestMilestoneS88(loc)))

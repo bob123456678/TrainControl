@@ -2079,4 +2079,114 @@ public class testRoutes
 
         assertFalse(run.isAlive(), "precondition: the run from " + at[0] + " did not end");
     }
+
+    /**
+     * "Train X at sensor T" is answered for the moment it is asked, the run's bookkeeping caught up first (RSA56-C1, the
+     * rest of OB-250; Adam, 2026-10-08: "X is at T now" - the last sensor X reached, or where it stands).  The train's
+     * driver records a sensor some 200 ms after it reads occupied (`FEEDBACK_DURATION_THRESHOLD`), and a route fired by
+     * that same sensor asked in the gap: about the sensor before, it was told yes, the milestone not yet moved on; and
+     * about the sensor the train was heading for, it waited, untimed, until the train got there, and fired seconds late.
+     * Now it waits only while the train stands on the sensor its run is waiting for - the gap - and asks nothing of a
+     * sensor the train has not reached.
+     *
+     * MUTATION: wait for the sensor ahead again, or not at all, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainIsAtTheSensorItHasJustReachedNotTheOneBefore() throws Exception
+    {
+        final int a = 8851, p = 8852, q = 8853, b = 8854;
+
+        for (int s : new int[] {a, p, q, b})
+        {
+            model.newFeedback(s, null);
+            model.setFeedbackState(String.valueOf(s), false);
+        }
+
+        model.parseAuto("{"
+            + "\"points\": ["
+            + " {\"name\": \"C1 A\", \"station\": true, \"s88\": " + a + "},"
+            + " {\"name\": \"C1 P\", \"station\": false, \"s88\": " + p + "},"
+            + " {\"name\": \"C1 Q\", \"station\": false, \"s88\": " + q + "},"
+            + " {\"name\": \"C1 B\", \"station\": true, \"s88\": " + b + "}"
+            + "],"
+            + "\"edges\": ["
+            + " {\"start\": \"C1 A\", \"end\": \"C1 P\"}, {\"start\": \"C1 P\", \"end\": \"C1 Q\"},"
+            + " {\"start\": \"C1 Q\", \"end\": \"C1 B\"}"
+            + "],"
+            + "\"minDelay\": 0, \"maxDelay\": 0, \"defaultLocSpeed\": 30"
+            + "}");
+
+        final org.traincontrol.automation.Layout rail = model.getAutoLayout();
+
+        assertTrue(rail != null && rail.isValid(), "precondition: the line did not load");
+
+        final String name = model.getLocList().get(0);
+
+        final org.traincontrol.base.Locomotive x = model.getLocByName(name);
+
+        assertTrue(rail.moveLocomotive(name, "C1 A", false), "precondition: the train is not at A");
+
+        final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(
+            rail.getEdge("C1 A", "C1 P"), rail.getEdge("C1 P", "C1 Q"), rail.getEdge("C1 Q", "C1 B"));
+
+        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "RSA56-C1 run");
+
+        run.setDaemon(true);
+        run.start();
+
+        long until = System.currentTimeMillis() + 10000;
+
+        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(50);
+        }
+
+        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
+            + " off: " + org.traincontrol.automation.Layout.getLastError());
+
+        try
+        {
+            // THE SENSOR IT IS HEADING FOR, before it gets there: no, at once
+            final boolean[] answer = new boolean[1];
+
+            Thread asking = new Thread(() -> answer[0] = Route.evaluate(
+                RouteCommand.RouteCommandAutoLocomotive(name, p), model), "RSA56-C1 asking ahead");
+
+            asking.setDaemon(true);
+            asking.start();
+            asking.join(1500);
+
+            assertFalse(asking.isAlive(), "asked whether the train is at the sensor it is heading for, before it gets there,"
+                + " the condition waited for the train to arrive - a route fired by another sensor fires seconds late, at"
+                + " the arrival, and watches nothing meanwhile (RSA56-C1)");
+
+            assertFalse(answer[0], "a train short of the sensor it is heading for was said to be at it");
+
+            // THE SENSOR IT HAS JUST REACHED, asked inside the run's 200 ms before it records it: at P, not at A
+            model.setFeedbackState(String.valueOf(p), true);
+
+            assertFalse(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(name, a), model), "a train that has just"
+                + " reached P was said to be still at A - the route its arrival at P fired asked before the run had"
+                + " recorded P (RSA56-C1)");
+
+            assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(name, p), model), "a train that has just"
+                + " reached P was not said to be at P");
+        }
+        finally
+        {
+            for (int next : new int[] {p, q, b})
+            {
+                model.setFeedbackState(String.valueOf(next), true);
+                Thread.sleep(500);
+            }
+
+            run.join(15000);
+
+            for (int next : new int[] {p, q, b}) model.setFeedbackState(String.valueOf(next), false);
+        }
+
+        assertFalse(run.isAlive(), "precondition: the run did not end");
+    }
 }

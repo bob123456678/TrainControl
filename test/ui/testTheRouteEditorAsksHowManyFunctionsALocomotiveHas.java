@@ -471,6 +471,46 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
+     * A name with a space at either end stays in its cell as it stands (RSA56-C3).  GSR-B5's cells offered the name
+     * trimmed, and a combo box cannot select a value it has not got, so one click into a command naming " X " and one away
+     * still wrote the first locomotive in the list.  Only a routes file edited by hand carries such a name.
+     *
+     * MUTATION: offer the cell's name trimmed again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAPaddedNameStaysInItsCellAsItStands() throws Exception
+    {
+        final String padded = " RSA56-C3 padded ";
+
+        java.util.List<RouteCommand> commands = new java.util.ArrayList<>();
+        commands.add(RouteCommand.RouteCommandFunction(padded, 1, true));
+
+        final org.traincontrol.marklin.MarklinRoute route = new org.traincontrol.marklin.MarklinRoute(model,
+            "RSA56-C3 route", 9865, commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+            false, null);
+
+        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+
+        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, "RSA56-C3 route", route));
+
+        try
+        {
+            assertEquals(frame[0].commandRowForTest(0).getTarget(), padded, "precondition: the editor did not keep the"
+                + " name as the route holds it");
+
+            assertTrue(frame[0].targetChoicesForTest(0).contains(padded), "a command naming \"" + padded + "\" is"
+                + " offered a list without that name as it stands, so one click into the cell and one away writes another"
+                + " locomotive: " + frame[0].targetChoicesForTest(0));
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+        }
+    }
+
+    /**
      * Whether the editor's save gate names this problem.
      *
      * @param editor the window

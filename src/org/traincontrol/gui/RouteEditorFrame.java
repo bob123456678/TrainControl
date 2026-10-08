@@ -1022,9 +1022,9 @@ public class RouteEditorFrame extends JFrame
     {
         java.util.List<String> out = names == null ? new ArrayList<>() : new ArrayList<>(names);
 
-        String own = has == null ? "" : has.trim();
-
-        if (!own.isEmpty() && !out.contains(own)) out.add(own);
+        // AS IT STANDS, spaces and all (RSA56-C3): offered trimmed, a name a hand-edited file padded was still not the
+        // value the combo box was handed, and the click wrote the first name in the list
+        if (has != null && !has.trim().isEmpty() && !out.contains(has)) out.add(has);
 
         return out.toArray(new String[0]);
     }
@@ -3182,9 +3182,10 @@ public class RouteEditorFrame extends JFrame
      * Answers "would this route fire right now", off the event thread (GSR-B1).
      *
      * **THE EVALUATION CANNOT RUN ON THE EVENT THREAD.**  An autoloc condition - "train X at sensor
-     * Y" - is evaluated by the static `Route.evaluate`, which begins by waiting for the autonomy
-     * resolution to finish: `Layout.waitForS88Reached`, an untimed wait that holds until the train
-     * reaches the sensor it has been dispatched to.  Pressed while that train is running, this froze
+     * Y" - is evaluated by the static `Route.evaluate`, which began by waiting for the autonomy
+     * resolution to finish: `Layout.waitForS88Reached`, an untimed wait that held until the train
+     * reached the sensor it had been dispatched to.  (Since RSA56-C1 it waits only while the train stands
+     * on a sensor its run has not yet recorded, three seconds at most - and still not on this thread.)  Pressed while that train is running, this froze
      * the whole window - Stop with it - until the train arrived, and for good where an emergency stop
      * had left the run parked in its own feedback wait with nothing to clear the pending sensor.
      *

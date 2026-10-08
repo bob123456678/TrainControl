@@ -264,4 +264,55 @@ public class testAnImportSaysItsRoutesAreOff
         assertTrue(refused, "a routes file naming one route twice was imported without a word: the second was turned"
             + " away, and nothing said why");
     }
+
+    /**
+     * The refusal of a file naming a route twice says what repeats: the name, the number, or a route with no name
+     * (RSA56-C2).  It named the second route's name and its number together, though only one of them repeated, so the
+     * operator looking for the repeat was sent first to a name or a number that appears once.
+     *
+     * MUTATION: name both again, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testTheRefusalSaysWhatRepeats() throws Exception
+    {
+        assertEquals(refusalOf(route("C2 one", 9860), route("C2 one", 9861)),
+            I18n.f("route.errorImportNamesARouteTwice", "C2 one"), "two routes named one way, numbered two ways");
+
+        assertEquals(refusalOf(route("C2 first", 9862), route("C2 second", 9862)),
+            I18n.f("route.errorImportNumbersARouteTwice", "9862"), "two routes numbered one way, named two ways");
+
+        assertEquals(refusalOf(route("", 9863), route("  ", 9864)),
+            I18n.t("route.errorImportTwoRoutesWithNoName"), "two routes with no name");
+    }
+
+    /** A route as an export writes it. */
+    private static JSONObject route(String name, int id) throws Exception
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(299, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+
+        return new MarklinRoute(model, name, id, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)
+            .toJSON();
+    }
+
+    /** What the import says when it refuses a file of these routes, or null where it imports it. */
+    private static String refusalOf(JSONObject... routes)
+    {
+        JSONArray file = new JSONArray();
+
+        for (JSONObject route : routes) file.put(route);
+
+        try
+        {
+            model.importRoutes(new JSONObject().put("routes", file).toString());
+
+            return null;
+        }
+        catch (RuntimeException refused)
+        {
+            return refused.getMessage();
+        }
+    }
 }
