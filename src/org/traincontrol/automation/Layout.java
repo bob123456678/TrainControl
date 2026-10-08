@@ -10296,7 +10296,10 @@ public class Layout
 
             if (stillThisRailway) loc.switchDirection().delay(1000); // pause to avoid network issues
 
-            restandAfterTheTurn = stillThisRailway;
+            // ONLY A TURN THE OPERATOR ANSWERED (RSA51-B1): a plan - autonomy, Return Home, staging, a timetable recorded
+            // from autonomy - turns a train on the turning copy and plans its next leg from that copy, so it stays there
+            // until the railway is idle, as it always did; standing it on the drain's copy at once refused that leg
+            restandAfterTheTurn = stillThisRailway && reversals != null && reversals != ALWAYS_REVERSE;
 
             // AND THE GRAPH IS TOLD, at the destination, which is the only place that knows (Adam,
             // 2026-09-07).  See `reversedOnArrival` for why neither of the two paths that follow a
@@ -11205,9 +11208,14 @@ public class Layout
 
         java.util.Optional<ReversalPolicy> answer = this.runPolicies.get(loc);
 
-        // TURNED, ONTO THE COPY IT WILL FACE ON FROM (RSA50-A3): where the arrival will stand it once it has turned
-        if (turnsOnArrival(end, loc, answer == null ? null : answer.orElse(null)))
+        ReversalPolicy policy = answer == null ? null : answer.orElse(null);
+
+        // TURNED, ONTO THE COPY IT WILL FACE ON FROM (RSA50-A3): where the arrival will stand it once it has turned - for a
+        // turn the operator answered; a plan's turned train stays on the copy it arrives on (RSA51-B1)
+        if (turnsOnArrival(end, loc, policy))
         {
+            if (policy == null || policy == ALWAYS_REVERSE) return end;
+
             Point onto = copyAfterTheTurn(end, entrySideOf(path.get(path.size() - 1), end));
 
             return onto != null ? onto : end;

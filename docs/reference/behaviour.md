@@ -390,13 +390,16 @@ ask about it (`ManualReversalPrompt.destinationAskedAbout`), and a train that ca
 offered such a copy by hand (MT-367's rule, asked of the copy's ways in).  The setup check's NOTICE -
 *"every train turns round anyway"* - says what happens.
 
-**A train that turned is stood at once on the copy that faces the way it came in** (RSA50-A3,
+**A train the operator turned is stood at once on the copy that faces the way it came in** (RSA50-A3,
 RSA50-B1): the copy the window's idle drain chooses (`AutonomySession.copyFacing` - one trains may
 arrive at first, and of those one that does not turn trains), chosen by the arrival from the copies'
 own facings, after the path is unlocked as the declined turn's re-stand is.  The drain used to be the
 only thing that moved it, and the drain waits for the railway to be idle: until then the train stood
 on the copy for its old heading, and a hand send in between set the route ahead while the decoder
-drove it back.  The drain now finds it where it would have put it, and writes the facing.
+drove it back.  The drain now finds it where it would have put it, and writes the facing.  **Not a
+train a plan turned** (RSA51-B1) - autonomy, Return Home, staging, a timetable recorded from autonomy:
+a plan turns its train on the turning copy and plans the next leg from that copy, so the train stays
+there until the railway is idle, as it always did.
 
 **A timetable entry recorded by hand plays back the answer its arrival was given** (RSA49-B1).  The
 entry keeps it (`turnAtTheEnd`, saved with the timetable) and playback asks it at the destination only;
