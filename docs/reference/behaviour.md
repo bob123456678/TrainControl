@@ -402,7 +402,12 @@ a plan turns its train on the turning copy and plans the next leg from that copy
 there.  **And a train already on a copy that faces its new way, one trains may arrive at, stays on it**
 (RSA52-B1) - the arrival and the drain alike: the turning copy of the way it came in already faces back
 out, and the drain moving a plan's turned train from it onto the other side's plain copy at the next
-idle moment left a timetable recorded from the turning copy unable to start its next entry.
+idle moment left a timetable recorded from the turning copy unable to start its next entry.  **And a
+timetable entry counts its train at its start on any copy of the start square facing the same way**
+(RSA53-B1), and stands it on the start copy first: the setup keeps a standing train as its square and
+facing only, so the exit and the next start, Autonomy > Load and every placement door stand it on the
+plain copy, and the entry, recorded from the turning copy, was refused at a square the train already
+stood on facing its way.  The two copies leave by the same edges.
 
 **A timetable entry recorded by hand plays back the answer its arrival was given** (RSA49-B1).  The
 entry keeps it (`turnAtTheEnd`, saved with the timetable) and playback asks it at the destination only;

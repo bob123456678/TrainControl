@@ -1141,4 +1141,193 @@ public class testACompulsoryTurnIsNotAQuestion
                 + standing(rail, x));
         });
     }
+
+    /**
+     * A timetable entry that starts on a may-turn station's turning copy runs after TrainControl has been closed and opened
+     * again (RSA53-B1).  A turn there leaves the train on the turning copy, and the entry is recorded from it (RSA52-B1);
+     * but the setup keeps a standing train as its square and facing only, and the next start stands it on the plain copy
+     * of that square facing the same way - so Execute Timetable said the train *"must be moved to"* a square it already
+     * stood on facing its way, and the entry's own check refused it.  Both now count it as at its start, and the entry
+     * stands it on the start copy first.  The exit and the start are the two calls they make: the setup captures the
+     * railway, and the railway is built again from the setup.
+     *
+     * MUTATION: ask the entry's start by copy again, in the window's check or in the entry's own, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAnEntryFromATurningCopyRunsAfterTheExitAndTheStart() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        final long stuckWas = Layout.TIMETABLE_STUCK_MS;
+
+        onALine("XAS", x, folder ->
+        {
+            AutonomySession line = aLine(folder, "XAS", 1952, false, true);
+
+            Layout rail = model.getAutoLayout();
+
+            org.traincontrol.automation.Edge in = intoA(rail, "XASBeta", true, "XASAlpha");
+
+            assertNotNull(in, "precondition: no edge from Alpha onto Beta's turning copy");
+
+            final Point turning = in.getEnd();
+
+            org.traincontrol.automation.Edge back = null;
+
+            for (org.traincontrol.automation.Edge edge : rail.getEdges())
+            {
+                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("XASAlpha")) back = edge;
+            }
+
+            assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
+
+            // AT REST ON THE TURNING COPY, as a turn there leaves a train (RSA52-B1), with an entry recorded from it
+            turning.setLocomotive(x);
+
+            rail.setTimetable(java.util.Arrays.asList(new org.traincontrol.automation.TimetablePath(x,
+                java.util.Arrays.asList(back), 0)));
+
+            // THE EXIT AND THE NEXT START: the setup captures the railway, and the railway is built again from the setup
+            line.captureFromLayout(rail.toJSON());
+
+            line.rebuild();
+
+            model.parseAuto(line.buildConfiguration());
+
+            final Layout again = model.getAutoLayout();
+
+            assertTrue(again != null && again != rail, "precondition: the railway was not built again");
+
+            assertTrue(again.getTimetable().size() == 1, "precondition: the timetable did not come back with the setup: "
+                + again.getTimetable());
+
+            final org.traincontrol.automation.TimetablePath entry = again.getTimetable().get(0);
+
+            Point on = standing(again, x);
+
+            assertTrue(on != null && on != entry.getStart() && on.isSamePlaceAs(entry.getStart()), "precondition: the"
+                + " start stood the train on " + on + ", not on another copy of " + entry.getStart() + "'s square - this"
+                + " does not pose RSA53-B1");
+
+            org.traincontrol.automation.TimetablePath notThere = org.traincontrol.gui.TrainControlUI.aTrainNotAtItsStart(again);
+
+            assertTrue(notThere == null, "Execute Timetable says the train must be moved to " + entry.getStart()
+                + " while it stands on that square facing that way, on " + on + " (RSA53-B1)");
+
+            Layout.TIMETABLE_STUCK_MS = 8000;
+
+            try
+            {
+                final boolean[] ran = new boolean[1];
+
+                Thread runner = new Thread(() -> ran[0] = again.executeTimetable(), "an-entry-after-the-exit-and-the-start");
+
+                runner.setDaemon(true);
+                runner.start();
+
+                assertTrue(waitFor(() -> x.getSpeed() > 0 && again.getActiveLocomotives().containsKey(x), 10000),
+                    "the entry from Beta's turning copy did not set off after the exit and the start, with the train on "
+                    + on + " facing its way: " + Layout.getLastError() + " (RSA53-B1)");
+
+                Point alpha = entry.getPath().get(entry.getPath().size() - 1).getEnd();
+
+                model.setFeedbackState(alpha.getS88(), true);
+
+                assertTrue(waitFor(() -> !again.getActiveLocomotives().containsKey(x), 15000), "precondition: the entry"
+                    + " did not end");
+
+                model.setFeedbackState(alpha.getS88(), false);
+
+                runner.join(15000);
+
+                assertTrue(ran[0], "the timetable did not run whole after the exit and the start: " + Layout.getLastError());
+            }
+            finally
+            {
+                Layout.TIMETABLE_STUCK_MS = stuckWas;
+            }
+        });
+    }
+
+    /**
+     * A train on the start square of a timetable entry facing the other way is not at its start (RSA53-B1's bound): only a
+     * copy facing the start copy's way leaves by the same edges.  Counted as at its start, the entry would stand it on a
+     * copy facing back the way its decoder does not drive.
+     *
+     * MUTATION: count any copy of the start square as the start, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainFacingTheOtherWayIsNotAtItsEntrysStart() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        onALine("XOW", x, folder ->
+        {
+            aLine(folder, "XOW", 1955, false, true);
+
+            Layout rail = model.getAutoLayout();
+
+            org.traincontrol.automation.Edge in = intoA(rail, "XOWBeta", true, "XOWAlpha");
+
+            assertNotNull(in, "precondition: no edge from Alpha onto Beta's turning copy");
+
+            final Point turning = in.getEnd();
+
+            org.traincontrol.automation.Edge back = null;
+
+            for (org.traincontrol.automation.Edge edge : rail.getEdges())
+            {
+                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("XOWAlpha")) back = edge;
+            }
+
+            assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
+
+            Point other = null;
+
+            for (Point p : rail.getPoints())
+            {
+                if (p != turning && p.isSamePlaceAs(turning) && p.getCopyFacing() != null
+                    && !p.getCopyFacing().equals(turning.getCopyFacing())) other = p;
+            }
+
+            assertNotNull(other, "precondition: Beta has no copy facing the other way");
+
+            other.setLocomotive(x);
+
+            rail.setTimetable(java.util.Arrays.asList(new org.traincontrol.automation.TimetablePath(x,
+                java.util.Arrays.asList(back), 0)));
+
+            assertTrue(rail.standsAsAtTheStart(turning, x) == null, "a train on " + other + ", facing "
+                + other.getCopyFacing() + ", was counted as at the start " + turning + ", facing "
+                + turning.getCopyFacing() + " - the entry would stand it facing the way its decoder does not drive");
+
+            assertTrue(org.traincontrol.gui.TrainControlUI.aTrainNotAtItsStart(rail) != null, "Execute Timetable does"
+                + " not ask for a train facing the other way on its entry's start square to be moved");
+
+            // AND NOT WHERE ANOTHER TRAIN HOLDS THE START COPY: stood there, that train would be swept off it
+            Point same = null;
+
+            for (Point p : rail.getPoints())
+            {
+                if (p != turning && p.isSamePlaceAs(turning) && turning.getCopyFacing().equals(p.getCopyFacing())) same = p;
+            }
+
+            assertNotNull(same, "precondition: Beta has no other copy facing the start copy's way");
+
+            final org.traincontrol.base.Locomotive y = model.getLocByName(model.getLocList().get(1));
+
+            assertTrue(y != null && y != x, "precondition: no second train in the database");
+
+            same.setLocomotive(x);
+
+            turning.setLocomotive(y);
+
+            assertTrue(rail.standsAsAtTheStart(turning, x) == null, "a train on " + same + " was counted as at the start "
+                + turning + " while " + y.getName() + " holds it - the entry would stand it there and sweep the other off");
+        });
+    }
 }
