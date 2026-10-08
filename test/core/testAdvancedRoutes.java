@@ -1195,4 +1195,345 @@ public class testAdvancedRoutes
             try { layouts.delete(page.getName()); } catch (Exception ignored) { }
         }
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Every command and trigger, run (Adam, 2026-10-08: "Add the tests.  Advise if any fail") - the gaps
+    // a read of the suite found: features that were only parsed or round-tripped, never run as a route
+    // ---------------------------------------------------------------------------------------------
+
+    /** Polls a condition every 50 ms until it holds or the time is up. */
+    private static boolean until(java.util.function.BooleanSupplier holds, long ms) throws InterruptedException
+    {
+        long end = System.currentTimeMillis() + ms;
+
+        while (!holds.getAsBoolean() && System.currentTimeMillis() < end) Thread.sleep(50);
+
+        return holds.getAsBoolean();
+    }
+
+    /** A route run by hand, not watching a sensor. */
+    private static MarklinRoute byHand(String name, int id, RouteCommand... commands)
+    {
+        List<RouteCommand> list = new ArrayList<>();
+
+        for (RouteCommand command : commands) list.add(command);
+
+        return new MarklinRoute(model, name, id, list, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
+    /**
+     * A route set to fire when its sensor clears fires then, and not when the sensor becomes occupied.  The live
+     * railway has some fourteen such routes, and no test had ever fired one.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAFiresOnClearRouteFiresWhenItsSensorClears() throws Exception
+    {
+        int trigger = 8890;
+
+        prepareFeedback(trigger);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandFunction(loc.getName(), FUNCTION, true));
+
+        MarklinRoute route = new MarklinRoute(model, "AR fires on clear", 9890, commands, trigger,
+            MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, true, null);
+
+        try
+        {
+            Thread.sleep(600);
+
+            model.setFeedbackState(Integer.toString(trigger), true);
+            Thread.sleep(1500);
+
+            assertFalse(loc.getF(FUNCTION), "a route set to fire when its sensor clears fired when the sensor became"
+                + " occupied");
+
+            model.setFeedbackState(Integer.toString(trigger), false);
+
+            assertTrue(until(() -> loc.getF(FUNCTION), 3000), "a route set to fire when its sensor clears did not fire"
+                + " when it cleared");
+        }
+        finally
+        {
+            route.disable();
+            model.setFeedbackState(Integer.toString(trigger), false);
+        }
+    }
+
+    /**
+     * A route set to fire when its sensor becomes occupied does not fire when the sensor clears.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAFiresOnOccupiedRouteIgnoresTheClearingEdge() throws Exception
+    {
+        int trigger = 8891;
+
+        model.newFeedback(trigger, null);
+        model.setFeedbackState(Integer.toString(trigger), true);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandFunction(loc.getName(), FUNCTION, true));
+
+        MarklinRoute route = new MarklinRoute(model, "AR fires on occupied", 9891, commands, trigger,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            Thread.sleep(600);
+
+            model.setFeedbackState(Integer.toString(trigger), false);
+            Thread.sleep(1500);
+
+            assertFalse(loc.getF(FUNCTION), "a route set to fire when its sensor becomes occupied fired when the sensor"
+                + " cleared");
+
+            model.setFeedbackState(Integer.toString(trigger), true);
+
+            assertTrue(until(() -> loc.getF(FUNCTION), 3000), "a route set to fire when its sensor becomes occupied did"
+                + " not fire when it did");
+        }
+        finally
+        {
+            route.disable();
+            model.setFeedbackState(Integer.toString(trigger), false);
+        }
+    }
+
+    /**
+     * A route's direction and speed commands drive the locomotive, and a speed of -1 stops it at once.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testSpeedDirectionAndInstantStopRunThroughARoute() throws Exception
+    {
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        loc.setDirection(org.traincontrol.base.Locomotive.locDirection.DIR_FORWARD);
+
+        assertTrue(until(() -> loc.getDirection() == org.traincontrol.base.Locomotive.locDirection.DIR_FORWARD, 2000),
+            "precondition: the locomotive does not face forward");
+
+        byHand("AR backward at 40", 9892,
+            RouteCommand.RouteCommandLocomotiveDirection(loc.getName(), org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD),
+            RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), 40)).execRoute(false);
+
+        assertTrue(until(() -> loc.getSpeed() == 40, 3000), "a route's speed command did not set the speed: "
+            + loc.getSpeed());
+
+        assertEquals(loc.getDirection(), org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD, "a route's"
+            + " direction command did not turn the locomotive");
+
+        byHand("AR instant stop", 9893, RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), -1)).execRoute(false);
+
+        assertTrue(until(() -> loc.getSpeed() == 0, 3000), "a route's speed of -1 did not stop the locomotive: "
+            + loc.getSpeed());
+    }
+
+    /**
+     * A route that chains to an ordinary route runs that route's commands; the chain stops one route deep, as the
+     * changelog for 2.5.3 says (a chained route triggers no further routes); and a route that names itself runs its
+     * other commands once and does not loop.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAChainedRouteRunsAndTheChainStopsAtItsLimit() throws Exception
+    {
+        MarklinLocomotive first = loco("AR solo", 61);
+        MarklinLocomotive third = loco("AR other", 64);
+        MarklinLocomotive self = loco("AR head", 62);
+
+        MarklinRoute c = byHand("AR chain C", 9896, RouteCommand.RouteCommandFunction(third.getName(), FUNCTION, true));
+        MarklinRoute b = byHand("AR chain B", 9895, RouteCommand.RouteCommandFunction(first.getName(), FUNCTION, true),
+            RouteCommand.RouteCommandRoute("AR chain C"));
+        MarklinRoute a = byHand("AR chain A", 9894, RouteCommand.RouteCommandRoute("AR chain B"));
+        MarklinRoute s = byHand("AR chain self", 9897, RouteCommand.RouteCommandRoute("AR chain self"),
+            RouteCommand.RouteCommandFunction(self.getName(), FUNCTION, true));
+
+        try
+        {
+            for (MarklinRoute r : new MarklinRoute[] {a, b, c, s})
+            {
+                assertTrue(model.newRoute(r), "precondition: " + r.getName() + " could not be added");
+            }
+
+            a.execRoute(false);
+
+            assertTrue(until(() -> first.getF(FUNCTION), 3000), "a route chained to an ordinary route did not run that"
+                + " route's commands");
+
+            Thread.sleep(1500);
+
+            assertFalse(third.getF(FUNCTION), "a chain ran a second level deep - a chained route is not to trigger"
+                + " further routes (2.5.3)");
+
+            s.execRoute(false);
+
+            assertTrue(until(() -> self.getF(FUNCTION), 3000), "a route that names itself did not run its other commands");
+
+            assertTrue(until(() -> !s.isExecuting(), 3000), "a route that names itself is still running - it loops");
+        }
+        finally
+        {
+            for (MarklinRoute r : new MarklinRoute[] {a, b, c, s}) model.deleteRoute(r.getName());
+        }
+    }
+
+    /**
+     * A function OFF command, All Functions Off, All Lights On and All Lights On (Autonomy Locomotives Only) each do
+     * what they say when a route runs them.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testFunctionOffAndTheLightAndFunctionSweepsRunThroughARoute() throws Exception
+    {
+        MarklinLocomotive loc = loco("AR solo", 61);
+        MarklinLocomotive other = loco("AR other", 64);
+
+        loc.setF(FUNCTION, true);
+
+        byHand("AR function off", 9898, RouteCommand.RouteCommandFunction(loc.getName(), FUNCTION, false))
+            .execRoute(false);
+
+        assertTrue(until(() -> !loc.getF(FUNCTION), 3000), "a route's function OFF command left the function on");
+
+        loc.setF(FUNCTION, true);
+
+        byHand("AR all functions off", 9899, RouteCommand.RouteCommandFunctionsOff()).execRoute(false);
+
+        assertTrue(until(() -> !loc.getF(FUNCTION), 5000), "All Functions Off left a locomotive's function on");
+
+        loc.setF(0, false);
+        other.setF(0, false);
+
+        byHand("AR all lights on", 9888, RouteCommand.RouteCommandLightsOn()).execRoute(false);
+
+        assertTrue(until(() -> loc.getF(0) && other.getF(0), 5000), "All Lights On did not turn every locomotive's"
+            + " lights on");
+
+        // ONLY THE AUTONOMY LOCOMOTIVES: one on the railway, one not
+        model.parseAuto(stationAutonomy("AR_Lights", 8889));
+
+        assertTrue(model.getAutoLayout().moveLocomotive(loc.getName(), "AR_Lights", false), "precondition: the"
+            + " locomotive is not on the railway");
+
+        loc.setF(0, false);
+        other.setF(0, false);
+
+        byHand("AR autonomy lights on", 9887, RouteCommand.RouteCommandAutonomyLightsOn()).execRoute(false);
+
+        assertTrue(until(() -> loc.getF(0), 5000), "All Lights On (Autonomy Locomotives Only) did not turn on the"
+            + " lights of a locomotive on the railway");
+
+        Thread.sleep(500);
+
+        assertFalse(other.getF(0), "All Lights On (Autonomy Locomotives Only) turned on the lights of a locomotive"
+            + " that is not on the railway");
+    }
+
+    /**
+     * A sensor condition and a switch condition hold back a route its own sensor fires, until both hold; a DCC
+     * switch's state is read apart from the MM2 switch at the same address; and groups inside a group are evaluated
+     * as written.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testSensorAndSwitchConditionsHoldBackAFiredRoute() throws Exception
+    {
+        int trigger = 8886, sensor = 8885, other = 8884;
+
+        prepareFeedback(trigger);
+        prepareFeedback(sensor);
+        prepareFeedback(other);
+
+        model.setAccessoryState(281, Accessory.accessoryDecoderType.MM2, false);
+        model.setAccessoryState(283, Accessory.accessoryDecoderType.MM2, false);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> conditions = new ArrayList<>();
+        conditions.add(RouteCommand.RouteCommandFeedback(sensor, true));
+        conditions.add(RouteCommand.RouteCommandAccessory(281, Accessory.accessoryDecoderType.MM2, true));
+
+        MarklinRoute route = functionRoute("AR held back", 9886, loc.getName(), trigger, conditions);
+
+        try
+        {
+            Thread.sleep(600);
+
+            pulseFeedback(trigger);
+
+            assertFalse(loc.getF(FUNCTION), "the route fired with its sensor condition clear and its switch straight");
+
+            model.setFeedbackState(Integer.toString(sensor), true);
+
+            pulseFeedback(trigger);
+
+            assertFalse(loc.getF(FUNCTION), "the route fired with its switch condition not met");
+
+            model.setAccessoryState(281, Accessory.accessoryDecoderType.MM2, true);
+
+            pulseFeedback(trigger);
+
+            assertTrue(loc.getF(FUNCTION), "the route did not fire with both its conditions met");
+        }
+        finally
+        {
+            route.disable();
+        }
+
+        // A DCC SWITCH IS ITS OWN DEVICE, apart from the MM2 switch at the same address
+        model.setAccessoryState(282, Accessory.accessoryDecoderType.DCC, true);
+        model.setAccessoryState(282, Accessory.accessoryDecoderType.MM2, false);
+
+        assertTrue(Route.evaluate(RouteCommand.RouteCommandAccessory(282, Accessory.accessoryDecoderType.DCC, true), model),
+            "a DCC switch condition did not read the DCC switch");
+
+        assertFalse(Route.evaluate(RouteCommand.RouteCommandAccessory(282, Accessory.accessoryDecoderType.MM2, true),
+            model), "an MM2 switch condition read the DCC switch at the same address");
+
+        // GROUPS INSIDE A GROUP: ((sensor OR other) AND (281 OR 283))
+        String a = RouteCommand.RouteCommandFeedback(sensor, true).toLine(null);
+        String b = RouteCommand.RouteCommandFeedback(other, true).toLine(null);
+        String c = RouteCommand.RouteCommandAccessory(281, Accessory.accessoryDecoderType.MM2, true)
+            .toLine(model.getAccessoryByAddress(281, Accessory.accessoryDecoderType.MM2));
+        String d = RouteCommand.RouteCommandAccessory(283, Accessory.accessoryDecoderType.MM2, true)
+            .toLine(model.getAccessoryByAddress(283, Accessory.accessoryDecoderType.MM2));
+
+        NodeExpression nested = NodeExpression.fromTextRepresentation(
+            "((" + a + "\nOR\n" + b + ")\nAND\n(" + c + "\nOR\n" + d + "))", model);
+
+        boolean[][] cases = {
+            // sensor, other, 281, 283, expected
+            {true, false, false, true, true},
+            {false, false, true, true, false},
+            {false, true, false, false, false},
+            {false, true, true, false, true},
+        };
+
+        for (boolean[] k : cases)
+        {
+            model.setFeedbackState(Integer.toString(sensor), k[0]);
+            model.setFeedbackState(Integer.toString(other), k[1]);
+            model.setAccessoryState(281, Accessory.accessoryDecoderType.MM2, k[2]);
+            model.setAccessoryState(283, Accessory.accessoryDecoderType.MM2, k[3]);
+
+            assertEquals(nested.evaluate(model), k[4], "((sensor OR other) AND (281 OR 283)) with sensor " + k[0]
+                + ", other " + k[1] + ", 281 " + k[2] + ", 283 " + k[3]);
+        }
+
+        model.setFeedbackState(Integer.toString(sensor), false);
+        model.setFeedbackState(Integer.toString(other), false);
+    }
 }

@@ -696,7 +696,8 @@ public class Layout
      * already passed, and drove on without slowing or stopping.
      *
      * Nothing else waits on or notifies the layout monitor - waitForS88Reached and updatePendingS88
-     * are the only pair - so moving them here costs nothing and unpicks the two jobs.
+     * are the only pair - so moving them here costs nothing and unpicks the two jobs.  (`waitForTheRunToRecord`
+     * waits here too since RSA56-C1, briefly and never while it reads the feedback store.)
      */
     private final Object pendingS88Monitor = new Object();
     
@@ -7550,6 +7551,60 @@ public class Layout
         return !abandoned.get();
     }
     
+    /**
+     * Waits while a running train stands on the sensor its run is waiting for and has not yet recorded (RSA56-C1; Adam,
+     * 2026-10-08, on OB-250: "X is at T now" - the last sensor X reached, or where it stands) - at most `atMostMs`.
+     *
+     * The run records a sensor `Locomotive.FEEDBACK_DURATION_THRESHOLD` after it reads occupied, and a route fired by that
+     * same sensor asks "where is the train" in the gap: asked then, the last sensor reached was still the one before.  And
+     * nothing is waited for on a sensor the train has not reached: `waitForS88Reached`, which a route's condition asked
+     * before this, waited for the sensor the run was heading for, and held the route's monitor - untimed - until the train
+     * got there, so the route fired seconds after its trigger, and watched nothing meanwhile.
+     *
+     * @param l the train
+     * @param atMostMs the longest wait
+     */
+    public void waitForTheRunToRecord(Locomotive l, long atMostMs)
+    {
+        if (l == null) return;
+
+        long until = System.currentTimeMillis() + atMostMs;
+
+        boolean interrupted = false;
+
+        while (true)
+        {
+            String pending = this.locomotivePendingS88.get(l);
+
+            // READ OUTSIDE THE MONITOR: the feedback store has a lock of its own
+            if (pending == null || !this.control.getFeedbackState(pending)) break;
+
+            long left = until - System.currentTimeMillis();
+
+            if (left <= 0) break;
+
+            synchronized (pendingS88Monitor)
+            {
+                if (!pending.equals(this.locomotivePendingS88.get(l))) continue;
+
+                try
+                {
+                    // WOKEN when the run moves on (`updatePendingS88`), and asked again within 50 ms for a sensor that
+                    // clears without the run recording it
+                    pendingS88Monitor.wait(Math.min(left, 50));
+                }
+                catch (InterruptedException e)
+                {
+                    interrupted = true;
+
+                    break;
+                }
+            }
+        }
+
+        if (interrupted) Thread.currentThread().interrupt();
+    }
+
     /**
      * If targetS88 is the nextS88 for the given locomotive, this method will wait until it isn't
      * @param l
