@@ -1310,6 +1310,11 @@ public class testAdvancedRoutes
     /**
      * A route's direction and speed commands drive the locomotive, and a speed of -1 stops it at once.
      *
+     * "At once" is the station's train-stop command for this locomotive: an ordinary speed of 0 stops it too, at the
+     * decoder's own deceleration, and sends no such command (RSA57-C2).
+     *
+     * MUTATION: hand the -1 to an ordinary stop (`setSpeed(0)`) and this fails.
+     *
      * @throws Exception from the fixture
      */
     @Test
@@ -1332,10 +1337,31 @@ public class testAdvancedRoutes
         assertEquals(loc.getDirection(), org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD, "a route's"
             + " direction command did not turn the locomotive");
 
-        byHand("AR instant stop", 9893, RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), -1)).execRoute(false);
+        final java.util.concurrent.atomic.AtomicInteger trainStops = new java.util.concurrent.atomic.AtomicInteger();
 
-        assertTrue(until(() -> loc.getSpeed() == 0, 3000), "a route's speed of -1 did not stop the locomotive: "
-            + loc.getSpeed());
+        model.setSentMessageObserver(m ->
+        {
+            if (m.isSysCommand() && m.getSubCommand() == org.traincontrol.marklin.udp.CS2Message.CMD_SYSSUB_TRAINSTOP
+                && m.extractUID() == loc.getIntUID())
+            {
+                trainStops.incrementAndGet();
+            }
+        });
+
+        try
+        {
+            byHand("AR instant stop", 9893, RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), -1)).execRoute(false);
+
+            assertTrue(until(() -> loc.getSpeed() == 0, 3000), "a route's speed of -1 did not stop the locomotive: "
+                + loc.getSpeed());
+
+            assertTrue(until(() -> trainStops.get() > 0, 3000), "a route's speed of -1 stopped the locomotive as an"
+                + " ordinary stop does - the station's train-stop command was not sent (RSA57-C2)");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+        }
     }
 
     /**
