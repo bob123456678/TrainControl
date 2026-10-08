@@ -4338,6 +4338,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
         java.util.Set<String> savedArmed = armAsSaved
             ? new java.util.HashSet<>(routesSavedArmed(json)) : java.util.Collections.<String>emptySet();
 
+        // A FILE THAT NAMES ONE ROUTE TWICE IS REFUSED WHOLE, before anything is deleted (OB-253; Adam, 2026-10-08: "Fix b5
+        // and 253"): the routes are replaced, and `newRoute` turns away the second of two sharing an id or a trimmed name
+        // - so a hand-edited or merged file lost that route, and every route it replaced was already gone.  The same two
+        // keys `newRoute` asks.  Thrown, so the door says the import failed and the log says why.
+        java.util.Set<Integer> ids = new java.util.HashSet<>();
+        java.util.Set<String> names = new java.util.HashSet<>();
+
+        for (MarklinRoute route : routes)
+        {
+            String name = route.getName() == null ? "" : route.getName().trim();
+
+            if (!ids.add(route.getId()) || !names.add(name))
+            {
+                throw new IllegalArgumentException(I18n.f("route.errorImportNamesARouteTwice", name,
+                    String.valueOf(route.getId())));
+            }
+        }
+
         // EVERY ROUTE HERE IS BUILT DISARMED - parseRoutesFromJson says why (REG2-C6): a route built armed
         // starts watching its sensor at once, before the old routes are gone.  Adam's rule of 2026-09-10 is
         // that an imported file does not start driving the railway until the operator says so; since

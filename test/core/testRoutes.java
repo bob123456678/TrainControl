@@ -1968,4 +1968,115 @@ public class testRoutes
 
         assertEquals(explicit, bare, "zero clears a previously set delay");
     }
+
+    /**
+     * A running train is at the sensor it last reached, not at one further along its path (OB-250; Adam, 2026-10-08:
+     * *"250- the first"* - "X is at T now": the last sensor X reached, or where it stands).  A route condition "X at T" is
+     * asked when the route's own sensor fires, and past the train's last milestone it read "the Point that holds the
+     * train" - the first in the railway's hash order, and every Point of a locked path holds it - so it could answer yes
+     * for a sensor the train had not reached.  A line A - P - Q - B run both ways, asked about the two sensors beyond the
+     * next one before anything is reached: whichever Point the hash order gives first, one answer was wrong.  (The next
+     * sensor itself is waited for, and the start is the first milestone.)
+     *
+     * MUTATION: ask which Point holds the train again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testARunningTrainIsAtTheSensorItLastReached() throws Exception
+    {
+        final int a = 8841, p = 8842, q = 8843, b = 8844;
+
+        for (int s : new int[] {a, p, q, b})
+        {
+            model.newFeedback(s, null);
+            model.setFeedbackState(String.valueOf(s), false);
+        }
+
+        model.parseAuto("{"
+            + "\"points\": ["
+            + " {\"name\": \"O250 A\", \"station\": true, \"s88\": " + a + "},"
+            + " {\"name\": \"O250 P\", \"station\": false, \"s88\": " + p + "},"
+            + " {\"name\": \"O250 Q\", \"station\": false, \"s88\": " + q + "},"
+            + " {\"name\": \"O250 B\", \"station\": true, \"s88\": " + b + "}"
+            + "],"
+            + "\"edges\": ["
+            + " {\"start\": \"O250 A\", \"end\": \"O250 P\"}, {\"start\": \"O250 P\", \"end\": \"O250 Q\"},"
+            + " {\"start\": \"O250 Q\", \"end\": \"O250 B\"}, {\"start\": \"O250 B\", \"end\": \"O250 Q\"},"
+            + " {\"start\": \"O250 Q\", \"end\": \"O250 P\"}, {\"start\": \"O250 P\", \"end\": \"O250 A\"}"
+            + "],"
+            + "\"minDelay\": 0, \"maxDelay\": 0, \"defaultLocSpeed\": 30"
+            + "}");
+
+        final org.traincontrol.automation.Layout rail = model.getAutoLayout();
+
+        assertTrue(rail != null && rail.isValid(), "precondition: the line did not load");
+
+        final String name = model.getLocList().get(0);
+
+        final org.traincontrol.base.Locomotive x = model.getLocByName(name);
+
+        assertTrue(rail.moveLocomotive(name, "O250 A", false), "precondition: the train is not at A");
+
+        // A TO B, asked about Q and B while on the way to P
+        runAndAsk(rail, x, new String[] {"O250 A", "O250 P", "O250 Q", "O250 B"}, new int[] {a, p, q, b});
+
+        // AND B TO A, asked about P and A, so a hash order that favours one end is caught at the other
+        runAndAsk(rail, x, new String[] {"O250 B", "O250 Q", "O250 P", "O250 A"}, new int[] {b, q, p, a});
+    }
+
+    /**
+     * Runs the train along four Points, asking where it is before it reaches the second: at the first, and at neither the
+     * third nor the fourth.
+     */
+    private static void runAndAsk(final org.traincontrol.automation.Layout rail, final org.traincontrol.base.Locomotive x,
+        String[] at, int[] s88) throws Exception
+    {
+        final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(
+            rail.getEdge(at[0], at[1]), rail.getEdge(at[1], at[2]), rail.getEdge(at[2], at[3]));
+
+        assertFalse(path.contains(null), "precondition: no path from " + at[0] + " to " + at[3]);
+
+        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "OB-250 " + at[0] + " to " + at[3]);
+
+        run.setDaemon(true);
+        run.start();
+
+        long until = System.currentTimeMillis() + 10000;
+
+        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(50);
+        }
+
+        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
+            + " off from " + at[0] + ": " + org.traincontrol.automation.Layout.getLastError());
+
+        try
+        {
+            for (int beyond = 2; beyond < 4; beyond++)
+            {
+                assertFalse(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(x.getName(), s88[beyond]), model),
+                    "a train on its way from " + at[0] + ", short of " + at[1] + ", was said to be at " + at[beyond]
+                    + "'s sensor - one it has not reached (OB-250)");
+            }
+
+            assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(x.getName(), s88[0]), model), "a train"
+                + " that has reached nothing since it left " + at[0] + " was not said to be at " + at[0] + "'s sensor");
+        }
+        finally
+        {
+            for (int next = 1; next < 4; next++)
+            {
+                model.setFeedbackState(String.valueOf(s88[next]), true);
+                Thread.sleep(500);
+            }
+
+            run.join(15000);
+
+            for (int next = 1; next < 4; next++) model.setFeedbackState(String.valueOf(s88[next]), false);
+        }
+
+        assertFalse(run.isAlive(), "precondition: the run from " + at[0] + " did not end");
+    }
 }

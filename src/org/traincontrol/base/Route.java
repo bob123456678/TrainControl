@@ -367,10 +367,12 @@ abstract public class Route
                 return true;
             }
 
-            // Otherwise wherever the locomotive is standing, for a path that has completed.  A
-            // locomotive that is not on the autonomy graph at all has no location, and so simply does
-            // not satisfy this condition
-            Point location = layout.getLocomotiveLocation(loc);
+            // Otherwise WHERE THE TRAIN IS NOW (OB-250; Adam, 2026-10-08: "250- the first" - the last sensor it
+            // reached, or where it stands): the start of the road it was given until it reaches a sensor, and wherever
+            // it stands once a path has completed.  This asked which Point holds the train, and every Point of a locked
+            // path holds it - the first in hash order, which could be one the train had not reached.  A locomotive that
+            // is not on the autonomy graph at all is nowhere, and so simply does not satisfy this condition
+            Point location = layout.whereTheTrainIs(loc);
 
             return location != null && s88.equals(location.getS88());
         }
