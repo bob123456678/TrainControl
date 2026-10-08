@@ -2889,4 +2889,107 @@ public class testAutoLayout
             + "route another train into it (ACC-A1)");
 
     }
+
+    /**
+     * Autonomy does not send a reversible train to a terminus it could not leave again at its length (E2E-B1).
+     *
+     * A may-turn square's turning copy is a terminus whose one way out is back the way the train came.  On Adam's railway
+     * BottomMainB admits a train of 4, and every station its turning copy leads to is shorter: a reversible train of 4
+     * that autonomy turned there never moved again - no journey, nothing offered by hand - and while it stood there Return
+     * Home found no plan for the whole fleet.  A train that cannot reverse has been kept out of a terminus since
+     * 2026-09-01; this is the same rule for one that can, at its length.
+     *
+     * Here the terminus is the first choice by priority and leads only to a station of 2, so a train of 4 is sent to the
+     * other station and a train of 2 to the terminus; the Why Not Moving? reasons say the same.
+     *
+     * MUTATION: drop the new clause from pickPath's terminus filter and the first assertion fails; have it refuse every
+     * terminus and the third does; drop it from the yield probe and the last does.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAReversibleTrainIsNotSentToATerminusItCouldNotLeave() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String[] names = {"TL_Start", "TL_Turn", "TL_Short", "TL_Long"};
+        int[] sensors = {8964, 8965, 8966, 8967};
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback fb = model.newFeedback(sensors[i], null);
+
+            model.setFeedbackState(fb.getName(), false);
+
+            layout.createPoint(names[i], true, fb.getName());
+        }
+
+        Point turn = layout.getPoint("TL_Turn");
+
+        turn.setTerminus(true);
+        turn.setMaxTrainLength(4);
+
+        // THE FIRST CHOICE: bands are settled in priority order, so a train that may go there is sent there
+        turn.setPriority(5);
+
+        layout.getPoint("TL_Short").setMaxTrainLength(2);
+        layout.getPoint("TL_Long").setMaxTrainLength(9);
+
+        layout.createEdge("TL_Start", "TL_Turn");
+        layout.createEdge("TL_Turn", "TL_Short");
+        layout.createEdge("TL_Start", "TL_Long");
+
+        layout.setPathPreference(Layout.PathPreference.FEWEST_POINTS);
+
+        org.traincontrol.marklin.MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // Borrowed from the real database and given back
+        boolean wasReversible = loc.isReversible();
+        Integer wasLength = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(true);
+            loc.setTrainLength(4);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "TL_Start", false), "precondition: the train is not placed");
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "TL_Long", "a reversible train of 4 was sent to a"
+                + " terminus that leads only to a station of 2 - it could never leave it again (E2E-B1, BottomMainB)");
+
+            assertNotNull(layout.explainDestinations(loc).get("TL_Turn"), "Why Not Moving? says the train of 4 may go"
+                + " to the terminus that autonomy will not send it to");
+
+            // THE CONTROL: a train of 2 fits the station beyond, so it can leave the terminus and is sent there first
+            loc.setTrainLength(2);
+
+            assertEquals(nameOfSecondPoint(layout.pickPath(loc)), "TL_Turn", "a reversible train of 2, which fits the"
+                + " station beyond the terminus, was not sent to it - the rule refuses a terminus it could leave");
+
+            assertNull(layout.explainDestinations(loc).get("TL_Turn"), "Why Not Moving? gives a reason against a"
+                + " terminus the train of 2 is sent to");
+
+            // AND THE YIELD PROBE AGREES - pickPath's mirror, which decides whether the other trains wait for this one.
+            // With the other station switched off, the terminus is all there is for a train of 4, and a train autonomy
+            // will send nowhere is not one to wait for.
+            loc.setTrainLength(4);
+
+            layout.getPoint("TL_Long").setActive(false);
+
+            assertNull(layout.pickPath(loc), "precondition: autonomy found somewhere to send the train of 4");
+
+            java.lang.reflect.Method probe = Layout.class.getDeclaredMethod("hasAutonomousDestination", Locomotive.class);
+
+            probe.setAccessible(true);
+
+            assertFalse((Boolean) probe.invoke(layout, loc), "the yield probe says autonomy has somewhere to send the"
+                + " train of 4, whose only station is a terminus it could not leave - the other trains would stop and wait"
+                + " for a train that is never sent");
+        }
+        finally
+        {
+            loc.setReversible(wasReversible);
+            loc.setTrainLength(wasLength);
+        }
+    }
 }

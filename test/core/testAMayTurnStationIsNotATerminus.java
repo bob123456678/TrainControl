@@ -2,6 +2,7 @@ package core;
 
 import java.util.List;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -281,6 +282,79 @@ public class testAMayTurnStationIsNotATerminus
         finally
         {
             train.setReversible(false);
+        }
+    }
+
+    /**
+     * On his railway: autonomy does not choose BottomMainB's turning copy for a reversible train of 4, which no station
+     * reachable from there takes, and does for one of 3, which BottomInner beyond it takes (E2E-B1).
+     *
+     * The end-to-end validator ran his railway for twelve minutes with eight trains: a reversible train of 4 was turned
+     * there in four runs of seven and never moved again, and while it stood there Return Home found no plan for anyone.
+     * And a pick, which now asks this of each terminus it might choose, still takes well under a second here.
+     *
+     * MUTATION: drop the clause from `barredFromAutonomy` and the first assertion fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainOfFourIsNotTurnedWhereItCouldNotLeave() throws Exception
+    {
+        Point turning = named("BottomMainB (eastbound, reverse)");
+
+        assertTrue(turning.isTerminus(), "precondition: " + turning.getName() + " is not a terminus");
+
+        // Anywhere else to stand: the standing reasons do not depend on where the train is, only that it is somewhere
+        Point elsewhere = null;
+
+        for (Point p : layout.getPoints())
+        {
+            if (p.isDestination() && !p.isSamePlaceAs(turning) && p.getCurrentLocomotive() == null
+                && (p.getMaxTrainLength() == null || p.getMaxTrainLength() == 0 || p.getMaxTrainLength() >= 4))
+            {
+                elsewhere = p;
+                break;
+            }
+        }
+
+        assertNotNull(elsewhere, "precondition: nowhere else on the railway to stand the train");
+
+        Integer wasLength = train.getTrainLength();
+
+        try
+        {
+            train.setReversible(true);
+            train.setTrainLength(4);
+
+            assertTrue(layout.moveLocomotive(train.getName(), elsewhere.getName(), false),
+                "precondition: the train could not be stood at " + elsewhere.getName());
+
+            assertTrue(layout.destinationsBarredFromAutonomy(train).contains(turning.getName()),
+                "autonomy may still turn a reversible train of 4 at " + turning.getName() + ", where every station"
+                + " it leads to is shorter - the train never moves again, and Return Home finds no plan for anyone"
+                + " (E2E-B1): " + layout.explainDestinations(train).get(turning.getName()));
+
+            long began = System.currentTimeMillis();
+
+            layout.pickPath(train);
+
+            long took = System.currentTimeMillis() - began;
+
+            assertTrue(took < 1000, "a pick on his railway took " + took + " ms");
+
+            // THE CONTROL: a train of 3 fits BottomInner, which the turning copy leads to
+            train.setTrainLength(3);
+
+            assertFalse(layout.destinationsBarredFromAutonomy(train).contains(turning.getName()),
+                "a reversible train of 3, which can leave " + turning.getName() + " for BottomInner, is kept from it: "
+                + layout.explainDestinations(train).get(turning.getName()));
+        }
+        finally
+        {
+            train.setTrainLength(wasLength);
+            train.setReversible(false);
+
+            layout.moveLocomotive(null, elsewhere.getName(), true);
         }
     }
 

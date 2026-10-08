@@ -5361,6 +5361,9 @@ public class Layout
         // and asking for one per start/end pair would make this probe under-report: the single path
         // kept for a pair may be the one that crosses a berth while a berth-free alternative to the
         // same destination exists, and pickPath would have found that alternative.
+        // Each terminus asked once, however many routes end there (E2E-B1)
+        java.util.Map<Point, Boolean> leaves = new java.util.HashMap<>();
+
         for (List<Edge> path : this.getPossiblePaths(loc, false))
         {
             Point end = path.get(path.size() - 1).getEnd();
@@ -5380,7 +5383,8 @@ public class Layout
             // step once already" - and mirroring a method is easier to keep true than mirroring four
             // conditions.
             if (isSendableDestination(end)
-                    && (!end.isTerminus() || loc.isReversible())
+                    && (!end.isTerminus()
+                        || (loc.isReversible() && leaves.computeIfAbsent(end, t -> this.leavesForAStationItFits(t, loc))))
                     && !end.getExcludedLocs().contains(loc)
                     && !this.reversesAlongTheWay(path))
             {
@@ -5735,9 +5739,11 @@ public class Layout
                     // The four shared clauses are `isSendableDestination`; what stays here is what
                     // only this site can ask - the square it started on, whether anything is standing
                     // there NOW, and the two per-locomotive questions (DR-B3).
+                    // NOR ONE IT COULD NOT LEAVE AT ITS LENGTH (E2E-B1): a reversible train is sent to a
+                    // terminus only where some station it fits is reachable from there again.
                     if (!end.equals(start) && end.getBlockLocomotive() == null
                             && isSendableDestination(end)
-                            && (!end.isTerminus() || loc.isReversible())
+                            && (!end.isTerminus() || (loc.isReversible() && this.leavesForAStationItFits(end, loc)))
                             && !end.getExcludedLocs().contains(loc))
                     {
                         try 
@@ -6339,6 +6345,77 @@ public class Layout
     }
 
     /**
+     * Whether a train standing at this terminus could be sent on again by autonomy: to some station autonomy would send
+     * it to and that it fits, on the railway as it is set up, whoever else is on it (E2E-B1).
+     *
+     * A may-turn square's turning copy is a terminus whose one way out is back the way the train came.  A reversible
+     * train is sent to one to turn there, and nothing asked whether, at its length, anything is reachable from it again:
+     * on Adam's railway BottomMainB admits a train of 4 and every station its turning copy leads to is shorter, so a
+     * train of 4 that autonomy turned there never moved again - and Return Home found no plan for the whole fleet while
+     * it stood there.  A train that cannot reverse has been kept out of a terminus since 2026-09-01; this is the same
+     * rule for one that can, at its length.
+     *
+     * THE STANDING CLAUSES ONLY, so a terminus is never refused for something that clears by itself: occupancy, the
+     * sensors, the cap and the routes held are not asked.  What is asked is what autonomy would refuse every time from
+     * there - a station it does not choose or that does not take this train, a route that turns on the way, one with a
+     * square switched off, one the train does not fit, and one whose switch commands conflict.  One hop: a terminus that
+     * leads only to another terminus is not followed further.
+     *
+     * Allows on doubt: a search that fails says nothing about the railway, and the terminus is then not refused.
+     *
+     * @param from the terminus
+     * @param loc the train
+     * @return true when some station autonomy would send this train to is reachable from there
+     */
+    private boolean leavesForAStationItFits(Point from, Locomotive loc)
+    {
+        for (Point d : this.points.values())
+        {
+            if (d.equals(from) || !isSendableDestination(d) || d.getExcludedLocs().contains(loc)) continue;
+
+            if (d.isTerminus() && !loc.isReversible()) continue;
+
+            // Another copy of the square it is standing on is not somewhere else
+            if (from.getBlock() != null && from.getBlock().equals(d.getBlock())) continue;
+
+            try
+            {
+                List<List<Edge>> seenPaths = new LinkedList<>();
+                List<Edge> path;
+
+                while ((path = this.bfs(from, d, seenPaths)) != null)
+                {
+                    seenPaths.add(path);
+
+                    if (this.reversesAlongTheWay(path) || whyTooLongForThisRoute(path, loc) != null) continue;
+
+                    boolean switchedOff = false;
+
+                    for (Edge e : path)
+                    {
+                        if (!e.getStart().isActive() || !e.getEnd().isActive()) switchedOff = true;
+                    }
+
+                    if (switchedOff) continue;
+
+                    // The same preview isPathClear makes: no command is sent
+                    EdgeConfigurationState validity = new EdgeConfigurationState();
+
+                    for (Edge e : path) this.configureEdge(e, validity);
+
+                    if (validity.configIsValid) return true;
+                }
+            }
+            catch (Exception e)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Why autonomy will never choose this point for this locomotive, or null when it is a candidate.
      *
      * The STANDING bars only - the ones that are a property of how the railway is set up rather than
@@ -6377,6 +6454,13 @@ public class Layout
         if (loc != null && end.isTerminus() && !loc.isReversible())
         {
             return I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName());
+        }
+
+        // AND ONE A TRAIN THAT CAN REVERSE COULD NOT LEAVE AT ITS LENGTH (E2E-B1): pickPath's clause, through the same
+        // method, so the window and the choice give one answer.
+        if (loc != null && end.isTerminus() && !this.leavesForAStationItFits(end, loc))
+        {
+            return I18n.f("autolayout.why.terminusItCouldNotLeave", loc.getName());
         }
 
         if (loc != null && end.getExcludedLocs().contains(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
