@@ -3689,7 +3689,9 @@ public class testTheEditorNamesItsShortcuts
      * The exit brings a minimised track editor back before it asks about its unsaved work (the popups sweep, on Adam's
      * MT-703 note): the question is owned by the editor, and a minimised window hides what it owns - so closing
      * TrainControl with the editor in the taskbar asked Save, Discard or Cancel where nobody could see it, and the exit
-     * waited on it.
+     * waited on it.  The editor has a turned square unsaved, so the exit does ask, and the editor is read while the
+     * question shows (RSA53-C2: an editor with nothing unsaved asked nothing, and the claim saw only that the exit
+     * restored it).
      *
      * MUTATION: ask without bringing the editor back, and this fails.
      *
@@ -3706,9 +3708,26 @@ public class testTheEditorNamesItsShortcuts
             track[0].render();
         });
 
+        final Thread[] answering = new Thread[1];
+
+        final java.util.concurrent.atomic.AtomicBoolean stop = new java.util.concurrent.atomic.AtomicBoolean();
+
         try
         {
             settleTheEditor();
+
+            // SOMETHING UNSAVED, so the exit asks
+            final org.traincontrol.gui.LayoutLabel[] squares = aTrackSquareWithRoom(track[0], new int[2]);
+
+            assertNotNull(squares, "precondition: the page has no track square to turn");
+
+            SwingUtilities.invokeAndWait(() -> track[0].rotate(squares[0]));
+
+            final boolean[] canUndo = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> canUndo[0] = track[0].canUndo());
+
+            assertTrue(canUndo[0], "precondition: turning a square left the editor nothing unsaved to ask about");
 
             SwingUtilities.invokeAndWait(() -> track[0].setExtendedState(java.awt.Frame.ICONIFIED));
 
@@ -3722,18 +3741,103 @@ public class testTheEditorNamesItsShortcuts
             assertTrue((track[0].getExtendedState() & java.awt.Frame.ICONIFIED) != 0, "precondition: the editor would"
                 + " not minimise");
 
+            // THE QUESTION, answered Discard - the editor read while it shows; and closed unanswered if it never shows
+            // as a button can be pressed on, so a question nobody can see fails this rather than hanging it
+            final String discard = I18n.t("layout.ui.switchDiscard");
+
+            final java.util.concurrent.atomic.AtomicReference<String> seen = new java.util.concurrent.atomic.AtomicReference<>();
+
+            final java.util.concurrent.atomic.AtomicReference<java.awt.Window> owner =
+                new java.util.concurrent.atomic.AtomicReference<>();
+
+            answering[0] = new Thread(() ->
+            {
+                long giveUp = System.currentTimeMillis() + 10000;
+
+                while (!stop.get())
+                {
+                    for (java.awt.Window w : java.awt.Window.getWindows())
+                    {
+                        // ANY OWNER: a question owned elsewhere is answered too, and its owner read, rather than left
+                        // to hang the exit
+                        if (!(w instanceof javax.swing.JDialog) || !w.isVisible()) continue;
+
+                        if (System.currentTimeMillis() > giveUp)
+                        {
+                            SwingUtilities.invokeLater(w::dispose);
+
+                            continue;
+                        }
+
+                        javax.swing.AbstractButton button = buttonIn(w, discard);
+
+                        if (button == null) continue;
+
+                        if (seen.compareAndSet(null, (track[0].getExtendedState() & java.awt.Frame.ICONIFIED) != 0
+                            ? "minimised" : "shown"))
+                        {
+                            owner.set(w.getOwner());
+                        }
+
+                        SwingUtilities.invokeLater(button::doClick);
+                    }
+
+                    try
+                    {
+                        Thread.sleep(50);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        return;
+                    }
+                }
+            }, "the exit's question");
+
+            answering[0].setDaemon(true);
+            answering[0].start();
+
             final boolean[] may = new boolean[1];
 
             SwingUtilities.invokeAndWait(() -> may[0] = track[0].maySettleBeforeExit());
 
-            assertTrue(may[0], "precondition: the editor had something unsaved and asked");
+            assertNotNull(seen.get(), "precondition: the exit did not ask about the turned square");
 
-            assertTrue((track[0].getExtendedState() & java.awt.Frame.ICONIFIED) == 0, "the exit left the editor"
-                + " minimised - where the question it owns about its unsaved work cannot be seen");
+            assertTrue(may[0], "precondition: Discard did not let the exit go on");
+
+            assertTrue(owner.get() == track[0], "the exit's question about the editor's unsaved work is owned by "
+                + owner.get() + ", not by the editor");
+
+            assertEquals(seen.get(), "shown", "the exit asked about the editor's unsaved work while the editor was still"
+                + " minimised - where the question it owns cannot be seen");
         }
         finally
         {
+            stop.set(true);
+
+            if (answering[0] != null) answering[0].join(2000);
+
             SwingUtilities.invokeAndWait(() -> track[0].dispose());
         }
+    }
+
+    /** The button of that text in a window, or null. */
+    private static javax.swing.AbstractButton buttonIn(java.awt.Container in, String text)
+    {
+        for (java.awt.Component child : in.getComponents())
+        {
+            if (child instanceof javax.swing.AbstractButton && text.equals(((javax.swing.AbstractButton) child).getText()))
+            {
+                return (javax.swing.AbstractButton) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.AbstractButton found = buttonIn((java.awt.Container) child, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
     }
 }

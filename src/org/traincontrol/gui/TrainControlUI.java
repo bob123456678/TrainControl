@@ -29011,7 +29011,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         I18n.f(
                             "timetable.ui.infoLocomotiveMustBeMovedToStart",
                             notThere.getLoc().getName(),
-                            notThere.getStart()
+                            // AS THE TIMETABLE SHOWS IT (RSA53-B1): the station and its facing, not the copy's own name
+                            timetableStop(notThere, true)
                         )
                     );
                     this.executeTimetable.setEnabled(true);
@@ -31452,9 +31453,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (seen.contains(ttp.getLoc())) continue;
 
-            Point locLocation = layout.getLocomotiveLocation(ttp.getLoc());
-
-            if (locLocation == null || !locLocation.equals(ttp.getStart())) return ttp;
+            // ON ITS START COPY, or on another copy of that square facing the same way, which the entry stands it on
+            // first (RSA53-B1): the exit and the next start, Autonomy > Load and the placement doors stand a train on the
+            // plain copy, and the entry may name the turning one
+            if (layout.standsAsAtTheStart(ttp.getStart(), ttp.getLoc()) == null) return ttp;
 
             seen.add(ttp.getLoc());
         }

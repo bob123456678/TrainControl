@@ -4438,6 +4438,66 @@ public class Layout
     }
 
     /**
+     * The copy of a timetable entry's start square a train stands on as at the start (RSA53-B1): the start copy itself, or
+     * another copy of that square facing the start copy's way, with the start copy free for it.  Two copies of one square
+     * facing one way leave by the same edges - the turning copy of one approach and the plain copy of the other - and the
+     * train stands as one on either.  The arrival and the window's idle drain leave a turned train on the turning copy
+     * (RSA52-B1) and the timetable names it; but the setup keeps a standing train as its square and facing only, so the
+     * exit and the next start, Autonomy > Load and every placement door stand it on the plain copy - and the next entry,
+     * asked by copy, was refused at a square the train already stood on facing its way.
+     *
+     * @param start the entry's start copy
+     * @param loc the entry's train
+     * @return the copy it stands on, or null where it is not at its start
+     */
+    public Point standsAsAtTheStart(Point start, Locomotive loc)
+    {
+        if (start == null || loc == null) return null;
+
+        if (loc.equals(start.getCurrentLocomotive())) return start;
+
+        if (start.getCopyFacing() == null || start.getCurrentLocomotive() != null) return null;
+
+        for (Point copy : this.points.values())
+        {
+            if (copy != start && loc.equals(copy.getCurrentLocomotive()) && copy.isSamePlaceAs(start)
+                && start.getCopyFacing().equals(copy.getCopyFacing()))
+            {
+                return copy;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Stands a timetable entry's train on the entry's start copy where it stands as at the start on another copy of that
+     * square (RSA53-B1, `standsAsAtTheStart`), with the side and the road it came in by, as the arrival's re-stands do -
+     * onto the start copy first, and only then off the other, so the square never reads empty.
+     *
+     * @param start the entry's start copy
+     * @param loc the entry's train
+     */
+    private void standOnTheEntrysStart(Point start, Locomotive loc)
+    {
+        Point on = standsAsAtTheStart(start, loc);
+
+        if (on == null || on == start) return;
+
+        String tail = on.getArrivedFrom();
+
+        java.util.List<Edge> along = on.getArrivedAlong();
+
+        start.reserve(loc);
+
+        start.setArrivedFrom(tail);
+
+        start.setArrivedAlong(along);
+
+        clearLocomotiveExcept(loc, start);
+    }
+
+    /**
      * Whether turning is compulsory at this square rather than a choice the operator was given.
      *
      * A square whose copies are ALL turning copies is one the graph turns every train at; where a
@@ -9604,6 +9664,17 @@ public class Layout
         }
 
         Point start = path.get(0).getStart();
+
+        // A TIMETABLE ENTRY'S TRAIN ON ANOTHER COPY OF ITS START SQUARE, facing the same way, is at its start (RSA53-B1):
+        // stood on the start copy first.  An entry only - a hand send, autonomy and a route choose their path from the
+        // copy the train stands on.  Inside the monitor, as the arrival's re-stands are.
+        if (ttp != null && !loc.equals(start.getCurrentLocomotive()))
+        {
+            synchronized (this.activeLocomotives)
+            {
+                standOnTheEntrysStart(start, loc);
+            }
+        }
 
         if (!loc.equals(start.getCurrentLocomotive()))
         {
