@@ -29006,14 +29006,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (notThere != null)
                 {
+                    // THE STATION AS THE TIMETABLE SHOWS IT, AND THE WAY TO FACE (RSA53-B1, RSA54-C1): a train refused at its
+                    // start's square faces the other way, and the station's name alone told it to move where it stood
+                    String facing = notThere.getStart() == null ? null : notThere.getStart().getCopyFacing();
+
                     JOptionPane.showMessageDialog(
                         this,
-                        I18n.f(
-                            "timetable.ui.infoLocomotiveMustBeMovedToStart",
-                            notThere.getLoc().getName(),
-                            // AS THE TIMETABLE SHOWS IT (RSA53-B1): the station and its facing, not the copy's own name
-                            timetableStop(notThere, true)
-                        )
+                        facing == null
+                            ? I18n.f("timetable.ui.infoLocomotiveMustBeMovedToStart", notThere.getLoc().getName(),
+                                timetableStop(notThere, true))
+                            : I18n.f("timetable.ui.infoLocomotiveMustBeMovedToStartFacing", notThere.getLoc().getName(),
+                                timetableStop(notThere, true), I18n.t("autosetup.ui.facing" + facing))
                     );
                     this.executeTimetable.setEnabled(true);
                     return;
@@ -31453,10 +31456,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (seen.contains(ttp.getLoc())) continue;
 
-            // ON ITS START COPY, or on another copy of that square facing the same way, which the entry stands it on
-            // first (RSA53-B1): the exit and the next start, Autonomy > Load and the placement doors stand a train on the
-            // plain copy, and the entry may name the turning one
-            if (layout.standsAsAtTheStart(ttp.getStart(), ttp.getLoc()) == null) return ttp;
+            // ON ITS START COPY, or on another copy of that square facing the same way, which the entry runs from
+            // (RSA53-B1, RSA54-A1): the exit and the next start, Autonomy > Load and the placement doors stand a train on
+            // the plain copy, and the entry may name the turning one
+            if (layout.pathFromWhereItStands(ttp.getPath(), ttp.getLoc()) == null) return ttp;
 
             seen.add(ttp.getLoc());
         }
