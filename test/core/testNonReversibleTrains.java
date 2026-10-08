@@ -136,7 +136,8 @@ public class testNonReversibleTrains
      * (MT-245), so a rule that refused everywhere would stop Return Home working.
      *
      * The control is the same train made reversible: without it this would pass on a layout where
-     * autonomy picks nothing for anybody.
+     * autonomy picks nothing for anybody.  The terminus is given a way back out for it, because a terminus
+     * nothing leads out of is refused to a reversible train too (E2E-B1, round 92).
      *
      * MUTATIONS, run 2026-09-13. Deleting `(!end.isTerminus() || loc.isReversible())` from `pickPath`
      * fails this. Deleting `!end.isReversing()` from `isSendableDestination` does NOT - a reversing
@@ -155,6 +156,10 @@ public class testNonReversibleTrains
             Layout layout = twoPointLayout(reversing, true);
 
             if (!reversing) layout.getPoint("REV_end").setTerminus(true);
+
+            // A WAY BACK OUT, for the control's sake (E2E-B1): since round 92 autonomy sends even a reversible train to a
+            // terminus only where some station is reachable from it again, and the fixture's one edge leads in and not out
+            if (!reversing) layout.createEdge("REV_end", "REV_start");
 
             Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
