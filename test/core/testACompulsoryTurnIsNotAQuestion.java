@@ -918,4 +918,59 @@ public class testACompulsoryTurnIsNotAQuestion
             }
         });
     }
+
+    /**
+     * A train a plan turns - autonomy, Return Home, staging, a timetable recorded from autonomy - stays on the turning
+     * copy it arrived on, where the plan's next leg starts (RSA51-B1).  Round 83 stood every turned train at once on the
+     * copy the window's idle drain would choose, a plain copy of the other approach where there is one; Return Home's
+     * planner models the train on the move's end and plans its next move from there (AMH-D4), so that move was refused
+     * at its start check three times and the run stopped half-staged.  The re-stand at the arrival is for the turns an
+     * operator answered, whose next journey nobody has planned.
+     *
+     * MUTATION: stand a train a plan turned on the drain's copy again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainAPlanTurnsStaysWhereItsNextLegStarts() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        onALine("PTS", x, folder ->
+        {
+            aLine(folder, "PTS", 1943, false, true);
+
+            Layout rail = model.getAutoLayout();
+
+            org.traincontrol.automation.Edge in = intoA(rail, "PTSBeta", true, "PTSAlpha");
+
+            assertNotNull(in, "precondition: no edge from Alpha onto the turning copy of Beta");
+
+            final Point turning = in.getEnd();
+
+            in.getStart().setLocomotive(x);
+
+            // THE PLAN'S LEG, with the policy every plan hands in
+            sendByHand(rail, x, java.util.Arrays.asList(in), Layout.ALWAYS_REVERSE);
+
+            assertTrue(standing(rail, x) == turning, "a train a plan turned at a may-turn station's turning copy was moved"
+                + " onto " + standing(rail, x) + " - the plan's next leg starts from the turning copy, and is refused"
+                + " (RSA51-B1)");
+
+            // AND THAT NEXT LEG STARTS: from the turning copy, back the way it came
+            org.traincontrol.automation.Edge back = null;
+
+            for (org.traincontrol.automation.Edge edge : rail.getEdges())
+            {
+                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("PTSAlpha")) back = edge;
+            }
+
+            assertNotNull(back, "precondition: the turning copy has no way back to Alpha");
+
+            sendByHand(rail, x, java.util.Arrays.asList(back), Layout.ALWAYS_REVERSE);
+
+            assertTrue(back.getEnd().getCurrentLocomotive() == x || standing(rail, x).isSamePlaceAs(back.getEnd()),
+                "the plan's next leg from the turning copy did not take the train back to Alpha");
+        });
+    }
 }
