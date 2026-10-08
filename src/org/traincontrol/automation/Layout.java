@@ -7561,6 +7561,10 @@ public class Layout
      * before this, waited for the sensor the run was heading for, and held the route's monitor - untimed - until the train
      * got there, so the route fired seconds after its trigger, and watched nothing meanwhile.
      *
+     * A sensor the run has already recorded is not waited for (RSA57-C1): the run keeps a sensor pending until its step
+     * ends, and at a reversing point partway along that is after the turn's pause - seconds in which the train stands
+     * on a sensor it has long since reached.
+     *
      * @param l the train
      * @param atMostMs the longest wait
      */
@@ -7576,8 +7580,10 @@ public class Layout
         {
             String pending = this.locomotivePendingS88.get(l);
 
-            // READ OUTSIDE THE MONITOR: the feedback store has a lock of its own
-            if (pending == null || !this.control.getFeedbackState(pending)) break;
+            // READ OUTSIDE THE MONITOR: the feedback store has a lock of its own.  ALREADY RECORDED: still pending
+            // through a turn, but the answer is already there (RSA57-C1)
+            if (pending == null || pending.equals(this.getLatestMilestoneS88(l))
+                || !this.control.getFeedbackState(pending)) break;
 
             long left = until - System.currentTimeMillis();
 

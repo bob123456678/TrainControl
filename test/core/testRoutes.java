@@ -2189,4 +2189,108 @@ public class testRoutes
 
         assertFalse(run.isAlive(), "precondition: the run did not end");
     }
+
+    /**
+     * A train turning at a reversing point on its way is answered at once, not after the turn (RSA57-C1).  The run keeps
+     * the sensor it turns on pending until the step ends - after the turn's pause - so round 90's wait, which held while
+     * the pending sensor read occupied, held every "train X at sensor T" about that train for the length of the turn, up
+     * to its three seconds: a route on another sensor fired seconds late.  A sensor the run has already recorded is not
+     * waited for.
+     *
+     * MUTATION: wait while the pending sensor reads occupied, recorded or not, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATurningTrainIsAnsweredWithoutWaitingForTheTurn() throws Exception
+    {
+        final int a = 8961, r = 8962, c = 8963;
+
+        for (int s : new int[] {a, r, c})
+        {
+            model.newFeedback(s, null);
+            model.setFeedbackState(String.valueOf(s), false);
+        }
+
+        model.parseAuto("{"
+            + "\"points\": ["
+            + " {\"name\": \"T57 A\", \"station\": true, \"s88\": " + a + "},"
+            + " {\"name\": \"T57 R\", \"station\": false, \"reversing\": true, \"s88\": " + r + "},"
+            + " {\"name\": \"T57 C\", \"station\": true, \"s88\": " + c + "}"
+            + "],"
+            + "\"edges\": [ {\"start\": \"T57 A\", \"end\": \"T57 R\"}, {\"start\": \"T57 R\", \"end\": \"T57 C\"} ],"
+            + "\"minDelay\": 2, \"maxDelay\": 2, \"defaultLocSpeed\": 30"
+            + "}");
+
+        final org.traincontrol.automation.Layout rail = model.getAutoLayout();
+
+        assertTrue(rail != null && rail.isValid(), "precondition: the line did not load: "
+            + (rail == null ? "no railway" : rail.getInvalidReason()));
+
+        final String name = model.getLocList().get(0);
+
+        final org.traincontrol.base.Locomotive x = model.getLocByName(name);
+
+        assertTrue(rail.moveLocomotive(name, "T57 A", false), "precondition: the train is not at A");
+
+        final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(
+            rail.getEdge("T57 A", "T57 R"), rail.getEdge("T57 R", "T57 C"));
+
+        Thread run = new Thread(() -> rail.executePath(path, x, 30, null), "RSA57-C1 run");
+
+        run.setDaemon(true);
+        run.start();
+
+        long until = System.currentTimeMillis() + 15000;
+
+        while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(50);
+        }
+
+        assertTrue(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), "precondition: the train did not set"
+            + " off: " + org.traincontrol.automation.Layout.getLastError());
+
+        try
+        {
+            // AT THE REVERSING POINT: the run records R, then turns, R still pending, for the two-second pause
+            model.setFeedbackState(String.valueOf(r), true);
+
+            until = System.currentTimeMillis() + 3000;
+
+            while (!String.valueOf(r).equals(rail.getLatestMilestoneS88(x)) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(20);
+            }
+
+            assertEquals(rail.getLatestMilestoneS88(x), String.valueOf(r), "precondition: the run did not record R");
+
+            long asked = System.currentTimeMillis();
+
+            boolean atA = Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(name, a), model);
+
+            long took = System.currentTimeMillis() - asked;
+
+            assertFalse(atA, "a train that has reached R was said to be still at A");
+
+            assertTrue(took < 1000, "asked during the train's turn at R, a condition about it waited " + took + " ms for"
+                + " the turn - a route fires that much late (RSA57-C1)");
+
+            assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(name, r), model), "a train turning at R was"
+                + " not said to be at R");
+        }
+        finally
+        {
+            Thread.sleep(2500);
+
+            model.setFeedbackState(String.valueOf(r), false);
+            model.setFeedbackState(String.valueOf(c), true);
+
+            run.join(15000);
+
+            model.setFeedbackState(String.valueOf(c), false);
+        }
+
+        assertFalse(run.isAlive(), "precondition: the run did not end");
+    }
 }
