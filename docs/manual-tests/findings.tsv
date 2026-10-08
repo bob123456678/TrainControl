@@ -1321,7 +1321,7 @@ GSR-B1	2026-09-22-GS-routes.md	Closed	The route editor's **Test** button parks t
 GSR-B2	2026-09-22-GS-routes.md	Open	`syncWithCS2`'s address-update branch is the fourth writer of a locomotive's address and t	the fourth writer past `runningRouteDriving`
 GSR-B3	2026-09-22-GS-routes.md	Open	`editRoute` replaces the route OBJECT, so `isExecuting` - and the guard that reads it - fo	the running flag belongs to an object the edit throws away
 GSR-B4	2026-09-22-GS-routes.md	Open	Deleting a route leaves every other route's chain command naming it, and a later route of 	a deleted route's name is still a live target
-GSR-B5	2026-09-22-GS-routes.md	Open	The target dropdown cannot show a name the database has not got, so one click into that ce	a dropdown that cannot show the value in the cell rewrites it
+GSR-B5	2026-09-22-GS-routes.md	Closed	The target dropdown cannot show a name the database has not got, so one click into that ce	a dropdown that cannot show the value in the cell rewrites it
 GSR-B6	2026-09-22-GS-routes.md	Open	`refuseWhileARouteDrivesIt` is asked BEFORE a modal dialog at two of its three doors, and 	the guard is asked before the dialog, and the thing it guards against starts on its own
 GSR-C1	2026-09-22-GS-routes.md	Open	An autonomy ("train X at sensor Y") condition's sensor number is the one target the editor	the one target the editor does not range-check
 GSR-C2	2026-09-22-GS-routes.md	Open	`protectsAnOccupiedSquare` reads reservation as occupancy, and the sentence it puts in fro	reservation read as occupancy, then described as standing
