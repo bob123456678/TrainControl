@@ -399,14 +399,20 @@ on the copy for its old heading, and a hand send in between set the route ahead 
 drove it back.  The drain now finds it where it would have put it, and writes the facing.  **Not a
 train a plan turned** (RSA51-B1) - autonomy, Return Home, staging, a timetable recorded from autonomy:
 a plan turns its train on the turning copy and plans the next leg from that copy, so the train stays
-there until the railway is idle, as it always did.
+there.  **And a train already on a copy that faces its new way, one trains may arrive at, stays on it**
+(RSA52-B1) - the arrival and the drain alike: the turning copy of the way it came in already faces back
+out, and the drain moving a plan's turned train from it onto the other side's plain copy at the next
+idle moment left a timetable recorded from the turning copy unable to start its next entry.
 
 **A timetable entry recorded by hand plays back the answer its arrival was given** (RSA49-B1).  The
 entry keeps it (`turnAtTheEnd`, saved with the timetable) and playback asks it at the destination only;
 an entry recorded from autonomy, or before this was kept, plays back as autonomy, as every entry did.
 Where the railway now turns every train - a square marked "must" since, or the end of a line - the
 compulsory turn above is asked first, so a recorded "keep" cannot stand a train facing the end of the
-line (RSA50-A2).
+line (RSA50-A2).  And where the square no longer turns trains - "Trains May Change Direction Here" taken off
+since - a recorded turn is not made: the train keeps its direction, and an entry that needs it the other
+way fails as any journey would (RSA52-C1; Adam, 2026-10-07: *"The path should organically fail in the
+direction no longer allowed."*).
 
 **Every copy of a may-reverse square is asked about, the turning one included** (UIX-C1, 2026-09-19),
 apart from the copies no copy faces on from, above.

@@ -1092,7 +1092,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask
                     // (RLV12-B1), the setup, the power - this path's standing rules, the reversal question, the
                     // atomic-routes gate and the dispatch, in that order.
-                    this.parent.sendATrainByHand(this.layout, chosen, locomotive, this);
+                    this.parent.sendATrainByHand(this.layout, chosen, locomotive);
                 }
             } 
         });

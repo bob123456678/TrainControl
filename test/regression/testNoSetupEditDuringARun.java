@@ -2841,8 +2841,7 @@ public class testNoSetupEditDuringARun
                 final Object[] hand = found;
 
                 final java.lang.reflect.Method send = TrainControlUI.class.getDeclaredMethod("sendATrainByHand",
-                    org.traincontrol.automation.Layout.class, List.class, org.traincontrol.base.Locomotive.class,
-                    Component.class);
+                    org.traincontrol.automation.Layout.class, List.class, org.traincontrol.base.Locomotive.class);
 
                 send.setAccessible(true);
 
@@ -2852,7 +2851,7 @@ public class testNoSetupEditDuringARun
                 {
                     try
                     {
-                        send.invoke(ui[0], railway, hand[0], hand[1], ui[0]);
+                        send.invoke(ui[0], railway, hand[0], hand[1]);
                     }
                     catch (Exception e)
                     {

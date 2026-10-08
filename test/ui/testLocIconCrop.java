@@ -1373,4 +1373,43 @@ public class testLocIconCrop
     {
         for (int pass = 0; pass < 4; pass++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
+
+    /**
+     * The crop window is owned by the window it is given (the popups sweep, on Adam's MT-703 note): `crop` asked for
+     * the window AROUND its parent, and the main window - which the crop mark and Set Local Locomotive Icon hand it -
+     * has none, so the modal crop window had no owner and opened under an always-on-top main window.
+     *
+     * MUTATION: ask for the window around a window again, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testTheCropWindowIsOwnedByTheWindowItIsGiven() throws Exception
+    {
+        java.lang.reflect.Method ownerOf = org.traincontrol.gui.LocIconCropDialog.class.getDeclaredMethod("ownerOf",
+            java.awt.Component.class);
+
+        ownerOf.setAccessible(true);
+
+        final javax.swing.JFrame[] frame = new javax.swing.JFrame[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0] = new javax.swing.JFrame());
+
+        try
+        {
+            final javax.swing.JPanel inside = new javax.swing.JPanel();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame[0].add(inside));
+
+            assertSame(ownerOf.invoke(null, frame[0]), frame[0], "the crop window given a window is owned by none - the"
+                + " window around it, which a window has not - so it opens under an always-on-top main window");
+
+            assertSame(ownerOf.invoke(null, inside), frame[0], "the crop window given a panel is not owned by the"
+                + " panel's window");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+        }
+    }
 }

@@ -1001,6 +1001,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // instantiated; `init` asks as well, for the case where no window is built at all.
         initComponents();
 
+        // THE WINDOWS IT OPENS FOLLOW ITS ALWAYS-ON-TOP (the popups sweep, on Adam's MT-703 note)
+        this.addPropertyChangeListener("alwaysOnTop", change ->
+            childWindowsFollowAlwaysOnTop(Boolean.TRUE.equals(change.getNewValue())));
+
         // THE LOG IS SOMETHING TO READ (Adam, MT-362).
         //
         // *"Works, but the user should not be allowed to type anything into the log."*  A JTextArea is
@@ -6891,7 +6895,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.model == null || !this.model.isAutonomyRunning()) return false;
 
-        JOptionPane.showMessageDialog(source == null ? this : source,
+        // OVER THE MAIN WINDOW where the source is not showing (the popups sweep, on Adam's MT-703 note): a menu's item
+        // has left its window by the time it runs, and the message went to Swing's hidden frame - under an
+        // always-on-top main window
+        JOptionPane.showMessageDialog(source == null || !source.isShowing() ? this : source,
             I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
 
         return true;
@@ -7097,10 +7104,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param railway the railway the path was offered on
      * @param path the path, as read where the operator chose it
      * @param train the train
-     * @param asking what the reversal question is shown over
      */
-    void sendATrainByHand(final Layout railway, final List<org.traincontrol.automation.Edge> path, final Locomotive train,
-        Component asking)
+    void sendATrainByHand(final Layout railway, final List<org.traincontrol.automation.Edge> path,
+        final Locomotive train)
     {
         if (railway == null || path == null || path.isEmpty() || train == null) return;
 
@@ -7116,7 +7122,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         final Layout.ReversalPolicy answered =
-            ManualReversalPrompt.forJourney(getAutonomySession(), asking, path, train, railway);
+            ManualReversalPrompt.forJourney(getAutonomySession(), this, path, train, railway);
 
         keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
@@ -8109,6 +8115,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 applyAlwaysOnTop();
             });
+        }
+    }
+
+    /**
+     * The windows this one opens - a popped-out diagram, the route editor, Add Locomotive, the locomotive database, the
+     * usage histogram - follow its always-on-top whenever it changes (the popups sweep, on Adam's MT-703 note).  They
+     * copied it once, when they were made: a later change of the setting left them as they were, a popped-out window
+     * restored at start-up copied the start-up's forced "on" and stayed on top with the setting off, and one on top
+     * stayed above an open editor and its dialogs while this window gave way.  Heard from the window's own property, so
+     * every door that changes it - the setting, an editor opening and closing, the start-up's raise - is followed.
+     *
+     * @param onTop the setting this window now has
+     */
+    private void childWindowsFollowAlwaysOnTop(boolean onTop)
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (window == this || !window.isDisplayable()) continue;
+
+            if (window instanceof LayoutPopupUI || window instanceof RouteEditorFrame || window instanceof AddLocomotive
+                || window instanceof LocomotiveSelector || window instanceof UsageHistogram)
+            {
+                if (window.isAlwaysOnTop() != onTop) window.setAlwaysOnTop(onTop);
+            }
         }
     }
 
@@ -22007,6 +22037,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void changeLocAddress(Locomotive l, MouseEvent evt)
     {
         Component source = evt != null ? (Component) evt.getSource() : this;
+
+        // THE WINDOW, read now (the popups sweep, on Adam's MT-703 note): the database's refresh below takes the tile
+        // out of it, and an error after that was owned by Swing's hidden frame
+        final java.awt.Window around = javax.swing.SwingUtilities.getWindowAncestor(source);
+
+        final Component sourceWindow = source instanceof java.awt.Window ? source : around != null ? around : this;
         
         if (this.model.isAutonomyRunning())
         {
@@ -22163,7 +22199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.log(e);
 
             JOptionPane.showMessageDialog(
-                source,
+                sourceWindow,
                 I18n.f("loc.ui.errorLocomotiveEditException", e.getMessage())
             );
         }

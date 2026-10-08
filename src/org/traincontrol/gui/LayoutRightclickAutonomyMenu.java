@@ -1455,8 +1455,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // setup, the power - this path's standing rules, the reversal question, the atomic-routes gate and the dispatch.
         // Every message there belongs to the main window, not to this menu, which has left its window by the time an item's
         // action runs (RLU-B2).
-        item.addActionListener(event -> ui.sendATrainByHand(railway, path, locomotive,
-            javax.swing.SwingUtilities.getWindowAncestor(this)));
+        item.addActionListener(event -> ui.sendATrainByHand(railway, path, locomotive));
 
         return item;
     }

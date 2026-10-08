@@ -1406,4 +1406,184 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             throw new IllegalStateException(e);
         }
     }
+
+    /**
+     * A refusal from a menu item is owned by the main window, though the menu has closed by the time it is said (the
+     * popups sweep, on Adam's MT-703 note).  Locomotives > Utilities > Sync Full Function State and Locomotives > Add
+     * Locomotive refused, while trains run, over the item itself: its menu gone, the message went to Swing's hidden
+     * frame and opened under an always-on-top main window - modal, so the window looked frozen.
+     *
+     * MUTATION: say the refusal over the item again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARefusalFromAClosedMenuIsOwnedByTheMainWindow() throws Exception
+    {
+        final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
+
+        assertNotNull(railway, "precondition: no running layout to be running");
+
+        Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
+
+        running.setAccessible(true);
+
+        final boolean was = running.getBoolean(railway);
+
+        try
+        {
+            running.setBoolean(railway, true);
+
+            for (String item : new String[] {"syncFullLocStateMenuItem", "addLocomotiveMenuItem"})
+            {
+                Field field = TrainControlUI.class.getDeclaredField(item);
+
+                field.setAccessible(true);
+
+                final javax.swing.JMenuItem menuItem = (javax.swing.JMenuItem) field.get(ui);
+
+                java.awt.Window owner = ownerOfTheMessageAfter(() -> menuItem.doClick(0));
+
+                assertSame(owner, ui, item + "'s refusal while trains run is owned by " + owner + ", not the main"
+                    + " window: it opens under an always-on-top main window");
+            }
+        }
+        finally
+        {
+            running.setBoolean(railway, was);
+        }
+    }
+
+    /**
+     * The windows the main window opens - a popped-out diagram, the route editor, Add Locomotive, the locomotive
+     * database, the usage histogram - follow its always-on-top setting whenever it changes (the popups sweep, on Adam's
+     * MT-703 note).  They copied it once, when they were made: a later change of the setting left them as they were, a
+     * popped-out window restored at start-up copied the start-up's forced "on" and stayed on top with the setting off,
+     * and one on top stayed above an open editor and its dialogs while the main window gave way.
+     *
+     * MUTATION: let the windows copy the setting once again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAWindowTheMainWindowOpensFollowsItsAlwaysOnTop() throws Exception
+    {
+        final boolean was = ui.isAlwaysOnTop();
+
+        final org.traincontrol.gui.AddLocomotive[] child = new org.traincontrol.gui.AddLocomotive[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            ui.setAlwaysOnTop(false);
+
+            child[0] = new org.traincontrol.gui.AddLocomotive(model, ui);
+
+            child[0].pack();
+        });
+
+        try
+        {
+            assertFalse(child[0].isAlwaysOnTop(), "precondition: the window did not copy the main window's setting");
+
+            SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(true));
+
+            assertTrue(child[0].isAlwaysOnTop(), "the main window went on top and a window it opened stayed below it -"
+                + " with Always on Top it, and every dialog it owns, opens under the main window");
+
+            SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(false));
+
+            assertFalse(child[0].isAlwaysOnTop(), "the main window gave way - Always on Top switched off, or an editor"
+                + " opened - and a window it opened stayed on top");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                child[0].dispose();
+
+                ui.setAlwaysOnTop(was);
+            });
+        }
+    }
+
+    /**
+     * Opens a door on the event thread, reads the owner of the message it shows, and closes it.
+     *
+     * @param door the door
+     * @return the window owning the message's dialog
+     * @throws Exception from the wait
+     */
+    private static java.awt.Window ownerOfTheMessageAfter(Runnable door) throws Exception
+    {
+        SwingUtilities.invokeLater(door);
+
+        final java.awt.Window[] owner = new java.awt.Window[1];
+
+        long until = System.currentTimeMillis() + 10000;
+
+        while (owner[0] == null && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JOptionPane pane = aPaneShowing(false);
+
+                if (pane == null) return;
+
+                java.awt.Window dialog = SwingUtilities.getWindowAncestor(pane);
+
+                owner[0] = dialog.getOwner() == null ? dialog : dialog.getOwner();
+
+                pane.setValue(javax.swing.JOptionPane.OK_OPTION);
+
+                dialog.dispose();
+            });
+        }
+
+        assertNotNull(owner[0], "precondition: the door said nothing");
+
+        return owner[0];
+    }
+
+    /**
+     * Edit Name/Address/Decoder's error is owned by the window the operator clicked in, read before the locomotive
+     * database refreshes (the popups sweep, on Adam's MT-703 note).  The refresh takes every tile out of the database
+     * window and builds new ones, so an error said over the clicked tile after it was owned by Swing's hidden frame - under
+     * an always-on-top main window.  Read off the source, because only a failure of the database reaches that error.
+     *
+     * MUTATION: say the error over the clicked tile again, and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn() throws Exception
+    {
+        final String window = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        final int start = window.indexOf("public void changeLocAddress(Locomotive l, MouseEvent evt)");
+
+        assertTrue(start >= 0, "precondition: changeLocAddress(Locomotive, MouseEvent) has gone");
+
+        final String body = window.substring(start, window.indexOf("\n    }", start)).replaceAll("//[^\n]*", "");
+
+        final int refresh = body.indexOf("refreshLocSelectorList()");
+
+        assertTrue(refresh > 0, "precondition: the address edit no longer refreshes the locomotive database");
+
+        final int read = body.indexOf("getWindowAncestor(source)");
+
+        assertTrue(read > 0 && read < refresh, "the address edit looks for the clicked tile's window after the database"
+            + " has refreshed - by then the tile is out of it");
+
+        final String after = body.substring(refresh).replaceAll("\\s+", "");
+
+        assertTrue(after.contains("showMessageDialog(sourceWindow,"), "precondition: no message after the refresh is"
+            + " said over the window read before it");
+
+        assertFalse(after.contains("showMessageDialog(source,"), "a message after the locomotive database's refresh is"
+            + " said over the clicked tile, which the refresh has taken out of its window - so Swing's hidden frame owns"
+            + " it, under an always-on-top main window");
+    }
 }

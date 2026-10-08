@@ -584,6 +584,65 @@ public class testLayoutTiles
     }
 
     /**
+     * The exit brings a minimised route editor back before it asks about its unsaved typing (the popups sweep, on Adam's
+     * MT-703 note): the question is owned by the route editor, and a minimised window hides what it owns - so closing
+     * TrainControl with the route editor in the taskbar asked where nobody could see it, and the exit waited on it.
+     * `toFront`, which it did call, does not restore a minimised window.
+     *
+     * MUTATION: ask without bringing the route editor back, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheExitBringsAMinimisedRouteEditorBackBeforeItAsks() throws Exception
+    {
+        final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorFrame(ui, null, null)));
+
+        final RouteEditorFrame editor = ref.get();
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> editor.setVisible(true));
+
+            SwingUtilities.invokeAndWait(() -> editor.appendCommand("Switch 90,turn"));
+
+            assertTrue(editor.hasUnsavedWork(), "precondition: the route editor has nothing unsaved to ask about");
+
+            SwingUtilities.invokeAndWait(() -> editor.setExtendedState(java.awt.Frame.ICONIFIED));
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while ((editor.getExtendedState() & java.awt.Frame.ICONIFIED) == 0 && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(50);
+            }
+
+            assertTrue((editor.getExtendedState() & java.awt.Frame.ICONIFIED) != 0, "precondition: the route editor would"
+                + " not minimise");
+
+            // THE QUESTION ANSWERED through the hook, which stands in for the dialog only
+            RouteEditorFrame.discardAnswerForTest = Boolean.TRUE;
+
+            final boolean[] may = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> may[0] = editor.maySettleBeforeExit());
+
+            assertTrue(may[0], "precondition: the route editor was answered yes and still stopped the exit");
+
+            assertTrue((editor.getExtendedState() & java.awt.Frame.ICONIFIED) == 0, "the exit left the route editor"
+                + " minimised - where the question it owns about its unsaved typing cannot be seen");
+        }
+        finally
+        {
+            RouteEditorFrame.discardAnswerForTest = null;
+
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
      * The route editor notices its route being changed or deleted underneath it (GUX-B1).
      *
      * This window is not modal and does not hold the route: Enable/Disable in the route list, a delete, an import or

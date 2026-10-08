@@ -938,7 +938,7 @@ public class testACompulsoryTurnIsNotAQuestion
 
         onALine("PTS", x, folder ->
         {
-            aLine(folder, "PTS", 1943, false, true);
+            AutonomySession line = aLine(folder, "PTS", 1943, false, true);
 
             Layout rail = model.getAutoLayout();
 
@@ -957,6 +957,16 @@ public class testACompulsoryTurnIsNotAQuestion
                 + " onto " + standing(rail, x) + " - the plan's next leg starts from the turning copy, and is refused"
                 + " (RSA51-B1)");
 
+            // AND THE WINDOW'S IDLE DRAIN LEAVES IT THERE (RSA52-B1): the copy already faces the way the train came in,
+            // and trains may arrive at it - moved onto the other side's plain copy, the next entry of a timetable
+            // recorded from the turning copy could not start after a Graceful Stop, or after any idle moment in the
+            // recording
+            theIdleDrain(rail, line);
+
+            assertTrue(standing(rail, x) == turning, "the window's idle drain moved a train a plan turned off the"
+                + " turning copy, which already faces the way it came in, onto " + standing(rail, x) + " - where the"
+                + " plan's next leg, or the timetable's next entry, does not start (RSA52-B1)");
+
             // AND THAT NEXT LEG STARTS: from the turning copy, back the way it came
             org.traincontrol.automation.Edge back = null;
 
@@ -971,6 +981,84 @@ public class testACompulsoryTurnIsNotAQuestion
 
             assertTrue(back.getEnd().getCurrentLocomotive() == x || standing(rail, x).isSamePlaceAs(back.getEnd()),
                 "the plan's next leg from the turning copy did not take the train back to Alpha");
+        });
+    }
+
+    /**
+     * A turn recorded by hand is not played back where the station no longer lets trains turn (RSA52-C1; Adam,
+     * 2026-10-07: *"The path should organically fail in the direction no longer allowed."*).  The recorded answer is
+     * honoured where a turn is still the railway's to make - a square with a turning copy - and otherwise the train
+     * keeps its direction, so an entry that needs it the other way fails as any journey would.  Playback turned it
+     * where no door could any more.
+     *
+     * MUTATION: play a recorded turn back wherever it was recorded, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testARecordedTurnIsNotMadeWhereTheStationNoLongerTurnsTrains() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        final long stuckWas = Layout.TIMETABLE_STUCK_MS;
+
+        onALine("NLT", x, folder ->
+        {
+            // BETA AN ORDINARY STATION NOW - the recording below was made while it was marked "may"
+            aLine(folder, "NLT", 1946, false, false);
+
+            Layout rail = model.getAutoLayout();
+
+            org.traincontrol.automation.Edge in = intoA(rail, "NLTBeta", false, "NLTAlpha");
+
+            assertNotNull(in, "precondition: no edge from Alpha onto Beta");
+
+            boolean turning = false;
+
+            for (Point p : rail.getPoints())
+            {
+                turning |= p.isSamePlaceAs(in.getEnd()) && (p.isTerminus() || p.isReversing());
+            }
+
+            assertFalse(turning, "precondition: Beta still has a copy that turns trains");
+
+            org.traincontrol.automation.TimetablePath entry = new org.traincontrol.automation.TimetablePath(x,
+                java.util.Arrays.asList(in), 0);
+
+            entry.setTurnAtTheEnd(true);
+
+            rail.setTimetable(java.util.Arrays.asList(entry));
+
+            in.getStart().setLocomotive(x);
+
+            boolean forward = x.goingForward();
+
+            Layout.TIMETABLE_STUCK_MS = 8000;
+
+            try
+            {
+                Thread runner = new Thread(rail::executeTimetable, "recorded-turn-no-longer-allowed");
+
+                runner.setDaemon(true);
+                runner.start();
+
+                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                    "precondition: the entry did not start: " + Layout.getLastError());
+
+                model.setFeedbackState(in.getEnd().getS88(), true);
+
+                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "precondition: the entry"
+                    + " did not end");
+
+                model.setFeedbackState(in.getEnd().getS88(), false);
+
+                assertTrue(x.goingForward() == forward, "a turn recorded at a station that no longer lets trains turn"
+                    + " was played back - a turn no door could make now (RSA52-C1)");
+            }
+            finally
+            {
+                Layout.TIMETABLE_STUCK_MS = stuckWas;
+            }
         });
     }
 }

@@ -4370,6 +4370,10 @@ public class Layout
     {
         if (arrived == null || cameInBy == null || arrived.getCopyFacing() == null) return null;
 
+        // ALREADY FACING THAT WAY, AND A COPY TRAINS MAY ARRIVE AT: where it is (RSA52-B1) - the turning copy of the
+        // way it came in, as the window's drain now leaves it
+        if (cameInBy.equals(arrived.getCopyFacing()) && arrived.isDestination()) return arrived;
+
         Point best = null;
 
         int rank = Integer.MAX_VALUE;
@@ -9156,16 +9160,30 @@ public class Layout
      * Played back as autonomy, a train kept at a turning copy was turned, and the next entry, recorded from the copy it
      * had been stood on, could not start.
      *
+     * **Only where a turn is still the railway's to make** (RSA52-C1; Adam, 2026-10-07: *"The path should organically
+     * fail in the direction no longer allowed."*): a square with a turning copy.  Where the station has since lost
+     * "Trains May Change Direction Here", the recorded turn is not made, and an entry that needs the train the other way
+     * fails as any journey would.
+     *
      * @param ttp the entry
      * @return the policy
      */
-    static ReversalPolicy playedBack(TimetablePath ttp)
+    ReversalPolicy playedBack(TimetablePath ttp)
     {
-        final Boolean turn = ttp == null ? null : ttp.getTurnAtTheEnd();
+        final Boolean recorded = ttp == null ? null : ttp.getTurnAtTheEnd();
 
-        if (turn == null || ttp.getPath().isEmpty()) return ALWAYS_REVERSE;
+        if (recorded == null || ttp.getPath().isEmpty()) return ALWAYS_REVERSE;
 
         final Point end = ttp.getPath().get(ttp.getPath().size() - 1).getEnd();
+
+        boolean turnsTrains = false;
+
+        for (Point copy : this.points.values())
+        {
+            if ((copy == end || end.isSamePlaceAs(copy)) && (copy.isTerminus() || copy.isReversing())) turnsTrains = true;
+        }
+
+        final boolean turn = recorded && turnsTrains;
 
         return new ReversalPolicy()
         {

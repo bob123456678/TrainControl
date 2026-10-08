@@ -312,7 +312,7 @@ public class LocIconCropDialog extends JDialog
     {
         if (source == null) return null;
 
-        Window owner = parent == null ? null : SwingUtilities.getWindowAncestor(parent);
+        Window owner = ownerOf(parent);
 
         LocIconCropDialog dialog = new LocIconCropDialog(owner, I18n.t("loc.ui.cropTitle"), source,
             outWidth, outHeight);
@@ -1631,5 +1631,21 @@ public class LocIconCropDialog extends JDialog
             // this method's own javadoc warns about two paragraphs up.
             return new Rectangle(x, y, Math.max(1, width), Math.max(1, height));
         }
+    }
+
+    /**
+     * The window a crop window opens over and belongs to.
+     *
+     * @param parent what the caller handed in
+     * @return the window, or null
+     */
+    static Window ownerOf(Component parent)
+    {
+        // A WINDOW IS ITS OWN (the popups sweep, on Adam's MT-703 note): the window around the main window is none, and
+        // the main window is what the crop mark and Set Local Locomotive Icon hand in - so the modal crop window had no
+        // owner
+        if (parent instanceof Window) return (Window) parent;
+
+        return parent == null ? null : SwingUtilities.getWindowAncestor(parent);
     }
 }
