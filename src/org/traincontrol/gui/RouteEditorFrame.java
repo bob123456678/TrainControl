@@ -635,9 +635,16 @@ public class RouteEditorFrame extends JFrame
     {
         if (!hasUnsavedWork()) return true;
 
-        if (discardAnswerForTest != null) return discardAnswerForTest;
+        // OUT OF THE TASKBAR before it asks (the popups sweep, on Adam's MT-703 note): a minimised window hides what it
+        // owns, and `toFront` does not restore one
+        if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
+        {
+            setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+        }
 
         toFront();
+
+        if (discardAnswerForTest != null) return discardAnswerForTest;
 
         return JOptionPane.showOptionDialog(this,
             I18n.t("route.ui.confirmDiscardChanges"),

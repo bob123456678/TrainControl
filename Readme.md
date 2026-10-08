@@ -441,6 +441,7 @@ Tab icons provided by Freepik.
             - Track diagrams now show a spinner while they are being drawn, instead of the text labels appearing about a second before the track did, and loading a layout from disk shows what it is doing rather than appearing to do nothing until the finished diagram arrives.
             - Layouts → Manage Pages → Combine Linked Pages... makes one new page showing this page and every page its links lead to.
             - In the track diagram editor, Control+M, or Select by Dragging a Box on the right-click menu, picks out several squares by dragging a box round them.
+            - The tunnel and overpass squares have new, cleaner icons.
         - Central Station
             - Backing up TrainControl now writes a single archive holding everything - the locomotive database, the window layout, the autonomy setups and the routes - and offers to download the track diagram first if it lives on the Central Station rather than on this computer.  The dialog offers to show you the file when it is done, and says so if anything could not be copied.
             - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, from every place a sync can start, and a second sync started while one is running is turned away rather than run alongside it.

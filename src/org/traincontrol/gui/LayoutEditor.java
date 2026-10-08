@@ -6331,6 +6331,15 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      */
     public boolean maySettleBeforeExit()
     {
+        // BACK AND IN FRONT FIRST (the popups sweep, on Adam's MT-703 note): its question about unsaved work is its
+        // own, and a minimised window hides what it owns, so the exit waited on a question nobody could see
+        if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
+        {
+            setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+        }
+
+        toFront();
+
         if (!settleUnsavedWork()) return false;
 
         // THE RUNNING LAYOUT HAS FOLLOWED A DISCARD BY NOW (WKV-B2): Discard in autonomy mode restores the setup as the

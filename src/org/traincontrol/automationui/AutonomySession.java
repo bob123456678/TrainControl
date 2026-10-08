@@ -2835,6 +2835,13 @@ public class AutonomySession
 
         if (onto.getCurrentLocomotive() == train) return;
 
+        // ALREADY ON A COPY THAT FACES THAT WAY, AND ONE TRAINS MAY ARRIVE AT: left there (RSA52-B1).  A train a plan
+        // turned on a may-turn station's turning copy faces the way it came in already; moved onto the other side's
+        // plain copy at the next idle moment, the next entry of a timetable recorded from the turning copy could not
+        // start after a Graceful Stop, or after any idle moment in the recording.  `Layout.copyAfterTheTurn` asks the
+        // same.
+        if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;
+
         // AND THE TAIL COMES WITH IT (REV9-B1).
         //
         // `Point.setLocomotive` clears `arrivedFrom` on every change of occupant - *"a different

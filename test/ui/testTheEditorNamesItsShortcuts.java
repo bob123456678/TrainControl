@@ -3684,4 +3684,56 @@ public class testTheEditorNamesItsShortcuts
 
         return null;
     }
+
+    /**
+     * The exit brings a minimised track editor back before it asks about its unsaved work (the popups sweep, on Adam's
+     * MT-703 note): the question is owned by the editor, and a minimised window hides what it owns - so closing
+     * TrainControl with the editor in the taskbar asked Save, Discard or Cancel where nobody could see it, and the exit
+     * waited on it.
+     *
+     * MUTATION: ask without bringing the editor back, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheExitBringsAMinimisedEditorBackBeforeItAsks() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            settleTheEditor();
+
+            SwingUtilities.invokeAndWait(() -> track[0].setExtendedState(java.awt.Frame.ICONIFIED));
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while ((track[0].getExtendedState() & java.awt.Frame.ICONIFIED) == 0 && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(50);
+            }
+
+            assertTrue((track[0].getExtendedState() & java.awt.Frame.ICONIFIED) != 0, "precondition: the editor would"
+                + " not minimise");
+
+            final boolean[] may = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> may[0] = track[0].maySettleBeforeExit());
+
+            assertTrue(may[0], "precondition: the editor had something unsaved and asked");
+
+            assertTrue((track[0].getExtendedState() & java.awt.Frame.ICONIFIED) == 0, "the exit left the editor"
+                + " minimised - where the question it owns about its unsaved work cannot be seen");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
 }

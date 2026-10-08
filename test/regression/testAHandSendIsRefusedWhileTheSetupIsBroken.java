@@ -423,6 +423,14 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertTrue(asked > 0 && question > asked, "the one hand door asks the reversal question before the standing"
             + " rules, or not at all - a question about a journey that is going to be refused reads as answered");
 
+        // AND OVER THE MAIN WINDOW (the popups sweep, on Adam's MT-703 note): the diagram's menu handed in its own
+        // window, which it has left by the time an item runs, and the question opened under an always-on-top main
+        // window
+        assertTrue(send.substring(question, send.indexOf(";", question)).replaceAll("\\s+", "")
+            .startsWith("ManualReversalPrompt.forJourney(getAutonomySession(),this,"), "the one hand door asks whether"
+            + " to keep the direction over a window other than the main one - from the diagram's menu, a window the"
+            + " closed menu has left, so the question opens under an always-on-top main window");
+
         // AND IT GIVES THE QUESTION THE RAILWAY (RSA49-A1): without it the operator is asked where no copy of the square
         // faces on from the train's approach, and the arrival turns the train whatever was answered
         assertTrue(send.substring(question, send.indexOf(";", question)).replaceAll("\\s+", "").endsWith(",railway)"),

@@ -264,8 +264,7 @@ public class testTheAutoTabWaitsForTheTrains
             for (String name : WAITING_FOR_THE_TRAINS) atRest.put(name, control(ui[0], name).getToolTipText());
 
             final java.lang.reflect.Method send = TrainControlUI.class.getDeclaredMethod("sendATrainByHand",
-                org.traincontrol.automation.Layout.class, List.class, org.traincontrol.base.Locomotive.class,
-                java.awt.Component.class);
+                org.traincontrol.automation.Layout.class, List.class, org.traincontrol.base.Locomotive.class);
 
             send.setAccessible(true);
 
@@ -279,7 +278,7 @@ public class testTheAutoTabWaitsForTheTrains
             {
                 try
                 {
-                    send.invoke(ui[0], railway, chosen, sent, ui[0]);
+                    send.invoke(ui[0], railway, chosen, sent);
 
                     // STRAIGHT AFTER THE CLICK, in the same event: before the route is set or the train sets off
                     for (String name : WAITING_FOR_THE_TRAINS)
