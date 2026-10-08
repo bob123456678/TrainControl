@@ -31,8 +31,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-701](#mt-701) | 2026-10-06 | A running train no longer hides the s88 address of its square | fixed unvalidated | OB-259 (2026-09-22) |
 | [MT-702](#mt-702) | 2026-10-07 | A train that keeps its direction at a may-reverse station faces the arrow's way as soon as it stops | fixed unvalidated | Adam's note on MT-701, 2026-10-07 |
 | [MT-703](#mt-703) | 2026-10-07 | A timetable recorded by sending trains by hand through a may-turn station plays back as recorded | fixed unvalidated | RSA49-B1, the release validator of 2026-10-07 |
+| [MT-704](#mt-704) | 2026-10-07 | A train turned by hand at a may-turn station faces its new way at once, and a timetable recorded with the turn plays back | fixed unvalidated | RSA50-A3 and RSA50-B1, the release validator of 2026-10-07 |
 
-Everything else - 699 of 703 - needs nothing from you unless the area changes again:
+Everything else - 699 of 704 - needs nothing from you unless the area changes again:
 551 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33375,5 +33376,37 @@ train was turned at BottomMainB where you had kept it, and the next entry, recor
 could not start: three minutes later the run stopped saying the track never became free.  Each entry recorded by hand
 now keeps your answer, saved with the timetable, and is played back with it (round 82, `990aad86`):
 `core.testTheArrivalHonoursTheAnswer.testATimetableRecordedByHandPlaysBackTheAnswer`.
+
+---
+
+<a id="mt-704"></a>
+
+### MT-704 - 2026-10-07 - A train turned by hand at a may-turn station faces its new way at once, and a timetable recorded with the turn plays back
+
+**Disposition:** fixed unvalidated
+**From:** RSA50-A3 and RSA50-B1, the release validator of 2026-10-07
+
+**Written:** 2026-10-07
+
+**Steps**
+
+1. Note which way ET22-245 faces at Tunnel.  Press **Capture Locomotive Commands**.
+2. Send ET22-245 by hand from Tunnel to BottomMainB, and answer the question by turning it round.
+3. Watch its icon and the station's arrow at BottomMainB from the moment it stops.
+4. Send it by hand from BottomMainB to a station back the way it came.
+5. Stop capturing.  Put ET22-245 back at Tunnel facing as in step 1.  Press **Execute Timetable**.
+
+**Expected**
+
+- Step 3: the icon and the arrow face back the way the train came as soon as it stops - not a second or two later, and
+  not only once every other train has stopped.
+- Step 5: both entries run, the second from BottomMainB as recorded.
+
+*What this is:* a train turned at a station's arrival was moved onto the copy of the station that faces its new way only
+once the whole railway stood still.  Until then it stood on the copy for its old heading: with another train out, its
+next send could set the route ahead while the locomotive drove back; and a timetable played back - the railway never
+standing still - could not start the next entry.  It is moved at the arrival now (round 83, `3aa9e834`):
+`core.testACompulsoryTurnIsNotAQuestion.testATrainTurnedAtAPlainCopyIsStoodFacingItsWayAtOnce`,
+`testATimetableRecordedWithATurnPlaysBack`.
 
 ---
