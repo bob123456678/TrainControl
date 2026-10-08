@@ -1148,8 +1148,8 @@ public class testACompulsoryTurnIsNotAQuestion
      * but the setup keeps a standing train as its square and facing only, and the next start stands it on the plain copy
      * of that square facing the same way - so Execute Timetable said the train *"must be moved to"* a square it already
      * stood on facing its way, and the entry's own check refused it.  Both now count it as at its start, and the entry
-     * stands it on the start copy first.  The exit and the start are the two calls they make: the setup captures the
-     * railway, and the railway is built again from the setup.
+     * runs from the copy it stands on (RSA54-A1).  The exit and the start are the two calls they make: the setup captures
+     * the railway, and the railway is built again from the setup.
      *
      * MUTATION: ask the entry's start by copy again, in the window's check or in the entry's own, and this fails.
      *
@@ -1253,8 +1253,8 @@ public class testACompulsoryTurnIsNotAQuestion
 
     /**
      * A train on the start square of a timetable entry facing the other way is not at its start (RSA53-B1's bound): only a
-     * copy facing the start copy's way leaves by the same edges.  Counted as at its start, the entry would stand it on a
-     * copy facing back the way its decoder does not drive.
+     * copy facing the start copy's way leaves to the same Points.  Counted as at its start, the entry would run it off
+     * the way its decoder does not drive.
      *
      * MUTATION: count any copy of the start square as the start, and this fails.
      *
@@ -1301,9 +1301,11 @@ public class testACompulsoryTurnIsNotAQuestion
             rail.setTimetable(java.util.Arrays.asList(new org.traincontrol.automation.TimetablePath(x,
                 java.util.Arrays.asList(back), 0)));
 
-            assertTrue(rail.standsAsAtTheStart(turning, x) == null, "a train on " + other + ", facing "
+            final List<org.traincontrol.automation.Edge> recorded = java.util.Arrays.asList(back);
+
+            assertTrue(rail.pathFromWhereItStands(recorded, x) == null, "a train on " + other + ", facing "
                 + other.getCopyFacing() + ", was counted as at the start " + turning + ", facing "
-                + turning.getCopyFacing() + " - the entry would stand it facing the way its decoder does not drive");
+                + turning.getCopyFacing() + " - the entry would run it off the way its decoder does not drive");
 
             assertTrue(org.traincontrol.gui.TrainControlUI.aTrainNotAtItsStart(rail) != null, "Execute Timetable does"
                 + " not ask for a train facing the other way on its entry's start square to be moved");
@@ -1326,8 +1328,132 @@ public class testACompulsoryTurnIsNotAQuestion
 
             turning.setLocomotive(y);
 
-            assertTrue(rail.standsAsAtTheStart(turning, x) == null, "a train on " + same + " was counted as at the start "
-                + turning + " while " + y.getName() + " holds it - the entry would stand it there and sweep the other off");
+            assertTrue(rail.pathFromWhereItStands(recorded, x) == null, "a train on " + same + " was counted as at the"
+                + " start " + turning + " while " + y.getName() + " holds it");
+        });
+    }
+
+    /**
+     * A timetable entry recorded from a may-turn station's turning copy leaves a train that came in from the other side
+     * where it stands, with its tail where it lies (RSA54-A1).  The plain copy it stands on faces the turning copy's way,
+     * so the entry counts it as at its start (RSA53-B1) - but a turning copy has rails on one side only, the side it is
+     * arrived at from, and round 86 stood the train on it with its own tail side: the railway then claimed none of the
+     * track the train lay over, and a second train was routed onto it, while the entry waited for its way and after the
+     * run gave up.  The entry runs from the copy the train stands on now.
+     *
+     * MUTATION: stand the train on the entry's start copy again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAnEntryFromATurningCopyLeavesATrainFromTheOtherSideItsTail() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        final Integer lengthWas = x.getTrainLength();
+
+        final long stuckWas = Layout.TIMETABLE_STUCK_MS;
+
+        onALine("XTL", x, folder ->
+        {
+            aLine(folder, "XTL", 1958, false, true);
+
+            Layout rail = model.getAutoLayout();
+
+            // MEASURED TRACK, so a standing train's tail claims what it lies over: the walk stops at track of no length
+            for (org.traincontrol.automation.Edge edge : rail.getEdges()) edge.setLength(3);
+
+            // FROM THE FAR SIDE: Gamma onto Beta's plain copy, which faces the way the turning copy of Alpha's arrival does
+            org.traincontrol.automation.Edge fromGamma = intoA(rail, "XTLBeta", false, "XTLGamma");
+
+            assertNotNull(fromGamma, "precondition: no edge from Gamma onto a plain copy of Beta");
+
+            final Point plain = fromGamma.getEnd();
+
+            org.traincontrol.automation.Edge in = intoA(rail, "XTLBeta", true, "XTLAlpha");
+
+            assertNotNull(in, "precondition: no edge from Alpha onto Beta's turning copy");
+
+            final Point turning = in.getEnd();
+
+            assertTrue(plain.getCopyFacing() != null && plain.getCopyFacing().equals(turning.getCopyFacing()),
+                "precondition: " + plain + " does not face the way " + turning + " does");
+
+            org.traincontrol.automation.Edge back = null;
+
+            for (org.traincontrol.automation.Edge edge : rail.getEdges())
+            {
+                if (edge.getStart() == turning && edge.getEnd().getName().startsWith("XTLAlpha")) back = edge;
+            }
+
+            assertNotNull(back, "precondition: no edge from Beta's turning copy back to Alpha");
+
+            final Point alpha = back.getEnd();
+
+            x.setTrainLength(2);
+
+            try
+            {
+                fromGamma.getStart().setLocomotive(x);
+
+                final List<org.traincontrol.automation.Edge> drive = java.util.Arrays.asList(fromGamma);
+
+                Thread journey = new Thread(() -> rail.executePath(drive, x, 30, null), "from-the-far-side");
+
+                journey.setDaemon(true);
+                journey.start();
+
+                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                    "precondition: the train did not set off from Gamma: " + Layout.getLastError());
+
+                model.setFeedbackState(plain.getS88(), true);
+
+                journey.join(20000);
+
+                model.setFeedbackState(plain.getS88(), false);
+
+                assertTrue(standing(rail, x) == plain, "precondition: the train from Gamma stands on " + standing(rail, x)
+                    + ", not on " + plain);
+
+                assertTrue(rail.edgesCoveredByStandingTrains().containsValue(x), "precondition: the train claims none of"
+                    + " the track it stands over before any entry");
+
+                rail.setTimetable(java.util.Arrays.asList(new org.traincontrol.automation.TimetablePath(x,
+                    java.util.Arrays.asList(back), 0)));
+
+                // THE ENTRY'S WAY NOT CLEAR, so it is refused, and retried until the run gives up
+                model.setFeedbackState(alpha.getS88(), true);
+
+                Layout.TIMETABLE_STUCK_MS = 4000;
+
+                Thread runner = new Thread(rail::executeTimetable, "an-entry-from-the-turning-copy");
+
+                runner.setDaemon(true);
+                runner.start();
+
+                Thread.sleep(1500);
+
+                assertTrue(rail.edgesCoveredByStandingTrains().containsValue(x), "while the entry from " + turning
+                    + " waited for its way, the train from the far side - now on " + standing(rail, x) + " - claimed"
+                    + " none of the track it lies over, and a second train could be routed onto it (RSA54-A1)");
+
+                runner.join(20000);
+
+                assertFalse(runner.isAlive(), "precondition: the run did not give up");
+
+                assertTrue(standing(rail, x) == plain && rail.edgesCoveredByStandingTrains().containsValue(x), "after the"
+                    + " run gave up the train stands on " + standing(rail, x) + " and claims "
+                    + (rail.edgesCoveredByStandingTrains().containsValue(x) ? "its track" : "none of its track")
+                    + " - not where it came in, with its tail behind it (RSA54-A1)");
+            }
+            finally
+            {
+                model.setFeedbackState(alpha.getS88(), false);
+
+                x.setTrainLength(lengthWas);
+
+                Layout.TIMETABLE_STUCK_MS = stuckWas;
+            }
         });
     }
 }
