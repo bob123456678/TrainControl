@@ -39,7 +39,7 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 120 entries - 78 OB and 42 FR, recounted from the file on 2026-10-05 (FR-112 the newest).  On 2026-09-24 eighteen entries
+Today it holds 121 entries - 78 OB and 43 FR, recounted from the file on 2026-10-07 (FR-113 the newest).  On 2026-09-24 eighteen entries
 left it on Adam's word.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and

@@ -1629,6 +1629,16 @@ Except where we already show the drag icon (station labels), show a pointer mous
 
 In passing, look for other tooltips in the autonomy editor right click menus, and in the main JMenu right click menus, that are currently overly wide or long, and make them be more concise so they don't cover up other things.
 
+### FR-113 - 2026-10-07 - for 3.1.0: a notice area above the editor's diagram whose height does not move the diagram
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-07  
+**Filed:** 2026-10-07  
+
+Adam, 2026-10-07: *"File a 3.1.0 FR: the notice area above the editor diagram should be redesigned so that it height change doesn't affect UX"*.
+
+**For v3.1.0**, on Adam's word.  The area of notices above the diagram in the autonomy editor - the setup's findings and the messages a click leaves - grows and shrinks with what it holds, and every change of its height moves the whole diagram below it: the square under the pointer is no longer the one it was over, mid-gesture.  Redesign it so that a change in what it says never moves the diagram.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
