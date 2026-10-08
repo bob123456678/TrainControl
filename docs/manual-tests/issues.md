@@ -1661,6 +1661,18 @@ Adam, 2026-10-08: *"Add a FR for 3.1.0 of locomotive data import via csv (simila
 
 To settle when it is built: how a row finds its locomotive (by name, or by name with decoder type and address); which columns it writes and which it only reads (the running time is a statistic, not a setting); what happens to a row that names no locomotive in the database, and to a locomotive the file leaves out; whether the button mappings come back too; and a preview of what will change before anything is written.
 
+### OB-325 - 2026-10-08 - Return Home says no plan was found, and does not name the train that has nowhere to go
+
+**Kind:** bug  
+**Raised from:** E2E-B1  
+**Filed:** 2026-10-08  
+
+From the end-to-end release validation, 2026-10-08 (E2E-B1).  A reversible train of 4 standing on BottomMainB's turning copy has nowhere it fits to go: every station reachable from there is shorter.  While it stands there, Return Home answers "no plan found" for the whole fleet - after about 15 seconds of searching - and names nobody, so the operator cannot tell which train to move.
+
+Round 92 stops full autonomy sending a train there.  A train placed there, or sent there by hand, still meets this.  The planner checks each train's track and home (`HomeStaging.canGetHome`) but not its length, so the plan is not refused with a name; the search simply finds no first move for that train.
+
+To settle: when one train has no first move at all, Return Home should name it and say why (too long for every station reachable from where it stands), rather than searching the whole fleet and reporting nothing.  A setup check that warns where a turning copy admits a longer train than any station it leads to would catch the same thing before a run.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
