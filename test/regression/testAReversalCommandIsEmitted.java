@@ -61,6 +61,11 @@ public class testAReversalCommandIsEmitted
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);
+
+        // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
+        // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
+        // fixtures give the destination one (RSA50-A1), is every claim here
+        model.getLocByName(DRIVER).setReversible(true);
     }
 
     @AfterClass(alwaysRun = true)
