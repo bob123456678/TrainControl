@@ -151,7 +151,10 @@ Each locomotive on the run list has a loop of its own: choose a journey, drive i
 **What follows only ORDERS the journeys the rules of this document already admit.** A candidate is a
 station autonomy may send a train to (`Layout.isSendableDestination`: active, a destination, choosable
 in full autonomy, not a reversing point), with nothing standing in its block, not a terminus for a
-train that cannot reverse, and not a station that excludes this train; and a route to it is used only
+train that cannot reverse - nor, for one that can, a terminus from which no station it fits is reachable
+again (E2E-B1: a train of 4 turned at BottomMainB's turning copy, where everything beyond is shorter, never
+moved again; `Layout.leavesForAStationItFits`, asked by the Why Not Moving? reasons too) - and not a
+station that excludes this train; and a route to it is used only
 if it turns the train nowhere on the way and `isPathClear` passes it. No routing rule can admit a
 journey any of that refuses.
 
