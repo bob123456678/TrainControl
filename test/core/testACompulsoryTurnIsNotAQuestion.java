@@ -1061,4 +1061,84 @@ public class testACompulsoryTurnIsNotAQuestion
             }
         });
     }
+
+    /**
+     * A train turned by hand on a may-turn station's turning copy stays on it (RSA52-B1): that copy already faces the way
+     * the train came in, and trains may arrive at it.  The arrival moved it onto the other side's plain copy, which faces
+     * the same way - while a plan's turned train, and now the window's idle drain, leave a train on the turning copy, so
+     * the same turn stood the train on two different copies by which door had sent it.  On its way, the railway names the
+     * copy it will stand on, and the drain then moves nothing.
+     *
+     * MUTATION: re-stand a train turned on a turning copy that already faces its way, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainTurnedByHandOnATurningCopyStaysOnIt() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        onALine("THT", x, folder ->
+        {
+            AutonomySession line = aLine(folder, "THT", 1949, false, true);
+
+            Layout rail = model.getAutoLayout();
+
+            org.traincontrol.automation.Edge e = intoA(rail, "THTBeta", true, "THTAlpha");
+
+            assertNotNull(e, "precondition: no edge from Alpha onto Beta's turning copy");
+
+            final Point turning = e.getEnd();
+
+            assertTrue(e.getEntrySide().equals(turning.getCopyFacing()) && turning.isDestination(), "precondition: Beta's"
+                + " turning copy does not face the way a train comes in by, or is not a station");
+
+            boolean another = false;
+
+            for (Point p : rail.getPoints())
+            {
+                another |= p != turning && p.isSamePlaceAs(turning) && p.isDestination() && !p.isTerminus()
+                    && !p.isReversing() && e.getEntrySide().equals(p.getCopyFacing());
+            }
+
+            assertTrue(another, "precondition: Beta has no plain copy facing the same way for the train to be moved onto");
+
+            Layout.ReversalPolicy asking = ManualReversalPrompt.forOperator(line, null);
+
+            e.getStart().setLocomotive(x);
+
+            final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(e);
+
+            Thread journey = new Thread(() -> rail.executePathByHand(path, x, 30, answered(true, turning, asking), -1),
+                "turned-on-a-turning-copy");
+
+            journey.setDaemon(true);
+            journey.start();
+
+            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                "precondition: the hand send did not start: " + Layout.getLastError());
+
+            Point will = rail.copyItWillStandOn(x);
+
+            assertTrue(will == turning, "on its way to be turned on Beta's turning copy, the train is said to be going to"
+                + " stand on " + will + " - not the copy it arrives on, which already faces its new way (RSA52-B1)");
+
+            model.setFeedbackState(turning.getS88(), true);
+
+            journey.join(20000);
+
+            model.setFeedbackState(turning.getS88(), false);
+
+            assertFalse(journey.isAlive(), "precondition: the hand send did not end");
+
+            assertTrue(standing(rail, x) == turning, "a train turned by hand on Beta's turning copy, which already faces"
+                + " the way it came in, was moved onto " + standing(rail, x) + " - a plan's turn there leaves the train"
+                + " where it is (RSA52-B1)");
+
+            theIdleDrain(rail, line);
+
+            assertTrue(standing(rail, x) == turning, "the window's idle drain moved the turned train again, onto "
+                + standing(rail, x));
+        });
+    }
 }
