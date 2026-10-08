@@ -2021,8 +2021,11 @@ public class Layout
     {
         this.isValid = false;
 
-        if (this.invalidReason == null) this.invalidReason = "(no reason was recorded)";
+        if (this.invalidReason == null) this.invalidReason = NO_REASON_RECORDED;
     }
+
+    /** What `invalidReason` says where the layout was invalidated without one, until a reason is given. */
+    private static final String NO_REASON_RECORDED = "(no reason was recorded)";
 
     /**
      * Why this layout was invalidated, kept apart from lastError.
@@ -2043,13 +2046,29 @@ public class Layout
     public void invalidate(String message)
     {
         this.isValid = false;
-        this.invalidReason = message;
+
+        // EVERY REASON, FIRST FIRST (OB-266; Adam, 2026-10-08: "fix 266 to report all reason"): a layout refused once
+        // for a cause is often refused again for what follows from it, and keeping only the latest named a consequence
+        // wherever the reason is repeated - the log line beside "Configuration is invalid" when a train is sent
+        if (this.invalidReason == null || NO_REASON_RECORDED.equals(this.invalidReason))
+        {
+            this.invalidReason = message;
+        }
+        else if (!java.util.Arrays.asList(this.invalidReason.split(NL_REASONS)).contains(message))
+        {
+            this.invalidReason = this.invalidReason + NL_REASONS + message;
+        }
+
         Layout.lastError = message;
         this.control.log(message);
     }
 
+    /** Between two reasons in `invalidReason`. */
+    private static final String NL_REASONS = "\n";
+
     /**
-     * @return why this layout was invalidated, or null while it is still valid
+     * @return every reason this layout was invalidated for, in the order they were found, one per line - or null while
+     *     it is still valid
      */
     public String getInvalidReason()
     {
