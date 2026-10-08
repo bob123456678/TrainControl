@@ -5575,11 +5575,9 @@ public class Layout
      * of those callers are right as they are - they report, decide or check about a train that is not
      * running.
      *
-     * The one that is NOT about a standing train is the s88 arm of the static `Route.evaluate`, which
-     * asks `getLatestMilestoneS88` (on this class, and it has no fallback of its own) and then falls
-     * back to `getLocomotiveLocation` itself - so an autoloc condition can be told a train is at a
-     * sensor it has not reached.  That decides when a route FIRES, so it is filed as OB-250 rather than
-     * changed in passing.
+     * The s88 arm of the static `Route.evaluate` - a route's "train X at sensor T" - asks this too (OB-250;
+     * Adam, 2026-10-08: "X is at T now" is the last sensor X reached, or where it stands).  It fell back
+     * to `getLocomotiveLocation`, and was told a running train was at a sensor it had not reached.
      *
      * NOT asked by `AutoLocomotiveStatus`'s @-station line, which shows NOTHING rather than a
      * reservation where a run has reported no milestone yet: that is a decision about a line of text,

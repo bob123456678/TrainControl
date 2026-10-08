@@ -421,6 +421,56 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
+     * A name the database no longer has stays in the cell that holds it (GSR-B5; Adam, 2026-10-08: *"Fix b5 and 253"*).
+     * The locomotive and route columns, and a condition's locomotive, offered only the names the database has; a combo box
+     * handed a value it has not got keeps its own selection, so one click into a route naming a deleted locomotive and one
+     * click away rewrote the command to the first locomotive in the list - and the Save gate, which names "a locomotive
+     * nobody owns", was then satisfied.  The function column already kept a number in its cell (MT-464, above).
+     *
+     * MUTATION: offer only the database's names again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testANameTheDatabaseNoLongerHasStaysInItsCell() throws Exception
+    {
+        final String gone = "GSR-B5 deleted locomotive";
+        final String goneRoute = "GSR-B5 deleted route";
+
+        assertNull(model.getLocByName(gone), "precondition: the database has a locomotive named " + gone);
+        assertNull(model.getRoute(goneRoute), "precondition: the database has a route named " + goneRoute);
+
+        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+
+        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, null, null));
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                frame[0].appendCommand(RouteCommand.RouteCommandFunction(gone, 1, true).toLine(null).trim());
+                frame[0].appendCommand(RouteCommand.RouteCommandRoute(goneRoute).toLine(null).trim());
+                frame[0].setConditionRowsForTest(java.util.Arrays.asList(org.traincontrol.base.ConditionOutline.Row
+                    .condition(1, RouteCommand.RouteCommandAutoLocomotive(gone, 8851))));
+            });
+
+            assertTrue(frame[0].targetChoicesForTest(0).contains(gone), "a command naming a locomotive the database no"
+                + " longer has is offered a list without it, so one click into the cell and one away rewrites it to"
+                + " another locomotive: " + frame[0].targetChoicesForTest(0));
+
+            assertTrue(frame[0].targetChoicesForTest(1).contains(goneRoute), "a command naming a route the database no"
+                + " longer has is offered a list without it: " + frame[0].targetChoicesForTest(1));
+
+            assertTrue(frame[0].conditionTargetChoicesForTest(0).contains(gone), "a condition naming a locomotive the"
+                + " database no longer has is offered a list without it: " + frame[0].conditionTargetChoicesForTest(0));
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+        }
+    }
+
+    /**
      * Whether the editor's save gate names this problem.
      *
      * @param editor the window

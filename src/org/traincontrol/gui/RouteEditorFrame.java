@@ -1008,11 +1008,25 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * A list of names as an array, empty rather than null when there are none.
+     * The names to offer in a locomotive or route cell: the database's, and the name already in the cell (GSR-B5; Adam,
+     * 2026-10-08: "Fix b5 and 253").  A combo box cannot show a value it has not got: handed one, it keeps whatever was
+     * selected, so a route naming a locomotive or route since deleted had that cell rewritten to the first name in the list
+     * by a click and a click away - and the Save gate, which names "a locomotive nobody owns", was then satisfied.  Offered,
+     * the name survives being looked at, and the gate still names it.  The function column's rule (`functionsOffered`).
+     *
+     * @param names the database's names, or null
+     * @param has what the cell holds, or null
+     * @return the names to offer
      */
-    private static String[] namesOf(java.util.List<String> names)
+    private static String[] withTheCellsOwn(java.util.List<String> names, String has)
     {
-        return names == null ? new String[0] : names.toArray(new String[0]);
+        java.util.List<String> out = names == null ? new ArrayList<>() : new ArrayList<>(names);
+
+        String own = has == null ? "" : has.trim();
+
+        if (!own.isEmpty() && !out.contains(own)) out.add(own);
+
+        return out.toArray(new String[0]);
     }
 
     /**
@@ -2769,7 +2783,42 @@ public class RouteEditorFrame extends JFrame
         // column 5 back onto the `digitsOnly()` line - the one mutation that matters here, because it
         // is what the operator meets - left the helper untouched and the test green.  What decides
         // whether a number can be typed is the editor this column is given, so that is what is asked.
-        javax.swing.table.TableCellEditor editor = commands.getCellEditor(row, 5);
+        return offeredBy(commands, row, 5);
+    }
+
+    /**
+     * What a command's locomotive or route cell would offer, for a test (GSR-B5).
+     *
+     * @param row which row
+     * @return the names offered, or null where the cell is not a list
+     */
+    public java.util.List<String> targetChoicesForTest(int row)
+    {
+        return offeredBy(commands, row, 4);
+    }
+
+    /**
+     * What a condition's locomotive cell would offer, for a test (GSR-B5).
+     *
+     * @param line which line of the conditions
+     * @return the names offered, or null where the cell is not a list
+     */
+    public java.util.List<String> conditionTargetChoicesForTest(int line)
+    {
+        return offeredBy(conditions, line, 5);
+    }
+
+    /**
+     * What one cell's editor offers, read through the editor the table would use (VD12-T3).
+     *
+     * @param table the table
+     * @param row its row
+     * @param column its column
+     * @return the values offered, or null where the cell is not a list
+     */
+    private static java.util.List<String> offeredBy(JTable table, int row, int column)
+    {
+        javax.swing.table.TableCellEditor editor = table.getCellEditor(row, column);
 
         if (!(editor instanceof DefaultCellEditor)) return null;
 
@@ -4067,7 +4116,8 @@ public class RouteEditorFrame extends JFrame
 
                 if (kind == CommandRow.Kind.ROUTE)
                 {
-                    return chooseFrom(namesOf(parent.getModel().getRouteList()));
+                    return chooseFrom(withTheCellsOwn(parent.getModel().getRouteList(),
+                        rows.get(row).getRow().getTarget()));
                 }
 
                 if (kind == CommandRow.Kind.LOCOMOTIVE_SPEED
@@ -4075,7 +4125,8 @@ public class RouteEditorFrame extends JFrame
                     || kind == CommandRow.Kind.FUNCTION
                     || kind == CommandRow.Kind.AUTO_LOCOMOTIVE)
                 {
-                    return chooseFrom(namesOf(parent.getModel().getLocList()));
+                    return chooseFrom(withTheCellsOwn(parent.getModel().getLocList(),
+                        rows.get(row).getRow().getTarget()));
                 }
             }
 
@@ -4612,7 +4663,7 @@ public class RouteEditorFrame extends JFrame
             {
                 if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE)
                 {
-                    return chooseFrom(namesOf(parent.getModel().getLocList()));
+                    return chooseFrom(withTheCellsOwn(parent.getModel().getLocList(), term.getTarget()));
                 }
 
                 return digitsOnly();

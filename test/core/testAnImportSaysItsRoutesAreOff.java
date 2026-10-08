@@ -206,4 +206,62 @@ public class testAnImportSaysItsRoutesAreOff
         assertFalse(model.getRoute("REG2-C7 probe 0").isEnabled(), "answered No, the import still turned automatic"
             + " firing on");
     }
+
+    /**
+     * A routes file that names one route twice is refused whole, before anything is deleted (OB-253; Adam, 2026-10-08:
+     * *"Fix b5 and 253"*).  The import deletes every route and adds the file's, and the second of two routes sharing an id
+     * or a name was turned away as it was added - so a hand-edited or merged file lost that route, and every route it
+     * replaced was already gone.  Now the import says why, and the routes there before are kept.
+     *
+     * MUTATION: delete before looking for a repeat, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAFileThatNamesARouteTwiceIsRefusedWhole() throws Exception
+    {
+        JSONArray kept = new JSONArray();
+
+        for (int i = 0; i < 2; i++)
+        {
+            List<RouteCommand> commands = new ArrayList<>();
+            commands.add(RouteCommand.RouteCommandAccessory(295 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+
+            kept.put(new MarklinRoute(model, "OB-253 kept " + i, 9840 + i, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null).toJSON());
+        }
+
+        assertEquals(model.importRoutes(new JSONObject().put("routes", kept).toString()), 2, "precondition: the two"
+            + " routes to keep were not imported");
+
+        JSONArray twice = new JSONArray();
+
+        for (int i = 0; i < 2; i++)
+        {
+            List<RouteCommand> commands = new ArrayList<>();
+            commands.add(RouteCommand.RouteCommandAccessory(297 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+
+            // ONE NAME, two ids - a file merged by hand from two exports
+            twice.put(new MarklinRoute(model, "OB-253 twice", 9850 + i, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null).toJSON());
+        }
+
+        boolean refused = false;
+
+        try
+        {
+            model.importRoutes(new JSONObject().put("routes", twice).toString());
+        }
+        catch (RuntimeException expected)
+        {
+            refused = true;
+        }
+
+        assertTrue(model.getRoute("OB-253 kept 0") != null && model.getRoute("OB-253 kept 1") != null, "a routes file"
+            + " naming one route twice deleted the routes that were there - and the second of the two was turned away as"
+            + " well (OB-253)");
+
+        assertTrue(refused, "a routes file naming one route twice was imported without a word: the second was turned"
+            + " away, and nothing said why");
+    }
 }
