@@ -762,4 +762,35 @@ public class testInvalidInput
             model.deleteLoc("UC C11 loco");
         }
     }
+
+    /**
+     * A setup refused for several reasons keeps every one of them, first first (OB-266; Adam, 2026-10-08: *"fix 266 to
+     * report all reason"*).  A refusal usually happens once for its cause and again for what follows from it, and the
+     * reason kept - the one repeated in the log when a train is sent on the refused railway - was the last of them, a
+     * consequence rather than the cause.
+     *
+     * MUTATION: keep only the latest reason again, and this fails.
+     */
+    @Test
+    public void testEveryReasonASetupIsRefusedForIsKept()
+    {
+        String first = "{'name': 'IN A', 'station': true, 's88': 8880, 'x': 10, 'y': 10, 'maxTrainLength': -1}";
+        String second = "{'name': 'IN B', 'station': true, 's88': 8881, 'x': 20, 'y': 20, 'maxTrainLength': -2}";
+
+        Layout layout = Layout.fromJSON(config(first + ", " + second, EDGE_AB, ""), model);
+
+        assertNotNull(layout, "fromJSON returned null rather than an invalid layout");
+
+        assertFalse(layout.isValid(), "precondition: two stations with a negative longest train were accepted");
+
+        String reason = String.valueOf(layout.getInvalidReason());
+
+        int a = reason.indexOf("IN A"), b = reason.indexOf("IN B");
+
+        assertTrue(a >= 0 && b >= 0, "the setup was refused for both stations' longest train, and the reason kept names "
+            + (a >= 0 ? "only IN A" : b >= 0 ? "only IN B" : "neither") + ": " + reason);
+
+        assertTrue(a < b, "the reasons are kept out of order - the first, which is usually the cause, is not first: "
+            + reason);
+    }
 }
