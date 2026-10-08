@@ -1649,6 +1649,18 @@ From the popups sweep of 2026-10-07, on Adam's note on MT-703 (*"Do a sweep for 
 
 The page windows now follow the main window's always-on-top (round 85), which is what makes owning their own messages safe.  The sweep's table, with each place in the code, is section B of the round's notes.
 
+### FR-114 - 2026-10-08 - for 3.1.0: import locomotive data from a CSV file, as Export to CSV writes it
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-08  
+**Filed:** 2026-10-08  
+
+Adam, 2026-10-08: *"Add a FR for 3.1.0 of locomotive data import via csv (similar to current export)"*
+
+**For v3.1.0**, on Adam's word.  Locomotives > Export to CSV writes the locomotive database to a file - Name, ButtonMappings, DecoderType, Address, PreferredSpeed, TotalRuntime, Start Year, End Year, RailwayName, Notes - and nothing reads one back.  Add an import that reads a file in the same format, so the locomotive data can be edited in a spreadsheet, or carried from one computer to another, and brought back in.
+
+To settle when it is built: how a row finds its locomotive (by name, or by name with decoder type and address); which columns it writes and which it only reads (the running time is a statistic, not a setting); what happens to a row that names no locomotive in the database, and to a locomotive the file leaves out; whether the button mappings come back too; and a preview of what will change before anything is written.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
