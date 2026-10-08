@@ -7,7 +7,22 @@
     "preArrivalSpeedReduction": 0.5,
     "defaultLocSpeed": 35,
     "maxLatency": 0,
-    "timetable": [],
+    "timetable": [{
+      "executionTime": 1791436002200,
+      "secondsToNext": 0,
+      "loc": "ET22-245",
+      "path": [
+        {
+          "start": "Tunnel (southbound)",
+          "end": "BottomMainBCPre (eastbound)"
+        },
+        {
+          "start": "BottomMainBCPre (eastbound)",
+          "end": "BottomMainB (eastbound, reverse)"
+        }
+      ],
+      "turnAtTheEnd": true
+    }],
     "maxDelay": 2,
     "turnOffFunctionsOnArrival": false,
     "maxLocInactiveSeconds": 0,
@@ -89,7 +104,20 @@
       "arrivedFrom": "W"
     },
     "1 - Main:20,13": {
+      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
+      "arrivedAlong": [
+        [
+          "Tunnel (southbound)",
+          "BottomMainBCPre (eastbound)"
+        ],
+        [
+          "BottomMainBCPre (eastbound)",
+          "BottomMainB (eastbound, reverse)"
+        ]
+      ],
+      "facing": "W",
+      "arrivedFrom": "W",
       "canReverse": true
     },
     "1 - Main:21,6": {
@@ -99,14 +127,8 @@
     },
     "3 - Top Parking:4,9": {},
     "1 - Main:7,7": {
-      "loc": {"name": "ET22-245"},
       "maxTrainLength": 5,
-      "arrivedAlong": [[
-        "TunnelPre",
-        "Tunnel (southbound)"
-      ]],
       "facing": "S",
-      "arrivedFrom": "N",
       "priority": -2
     },
     "1 - Main:5,9": {},

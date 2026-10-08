@@ -27,14 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-700](#mt-700) | 2026-10-06 | The main window stays behind an open editor, and is back on top when it closes | fixed unvalidated | Adam 2026-10-06 |
-| [MT-701](#mt-701) | 2026-10-06 | A running train no longer hides the s88 address of its square | fixed unvalidated | OB-259 (2026-09-22) |
-| [MT-702](#mt-702) | 2026-10-07 | A train that keeps its direction at a may-reverse station faces the arrow's way as soon as it stops | fixed unvalidated | Adam's note on MT-701, 2026-10-07 |
-| [MT-703](#mt-703) | 2026-10-07 | A timetable recorded by sending trains by hand through a may-turn station plays back as recorded | fixed unvalidated | RSA49-B1, the release validator of 2026-10-07 |
-| [MT-704](#mt-704) | 2026-10-07 | A train turned by hand at a may-turn station faces its new way at once, and a timetable recorded with the turn plays back | fixed unvalidated | RSA50-A3 and RSA50-B1, the release validator of 2026-10-07 |
+| [MT-705](#mt-705) | 2026-10-07 | With the window always on top, its questions and messages open in front of it | fixed unvalidated | Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent" |
 
-Everything else - 699 of 704 - needs nothing from you unless the area changes again:
-551 **fixed validated** and 148 **superseded**.
+Everything else - 704 of 705 - needs nothing from you unless the area changes again:
+556 **fixed validated** and 148 **superseded**.
 
 ---
 
@@ -33250,7 +33246,7 @@ Validated on your *Works* of 2026-10-05. Since round 76 (a466df07) the editor's 
 
 ### MT-700 - 2026-10-06 - The main window stays behind an open editor, and is back on top when it closes
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-06
 
 **Written:** 2026-10-06
@@ -33280,13 +33276,21 @@ when it goes.  `ui.testTheEditorNamesItsShortcuts.testTheMainWindowStaysBelowAnO
 
 *Run against commit c8595e1a, in English - build\classes, compiled 07 Oct 00:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-10-07 (triage).** Works.
+
+*Run against commit 0092df64, in English - build\classes, compiled 07 Oct 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-07.**
+
+Validated on your *Works* of 2026-10-07.
+
 ---
 
 <a id="mt-701"></a>
 
 ### MT-701 - 2026-10-06 - A running train no longer hides the s88 address of its square
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-259 (2026-09-22)
 
 **Written:** 2026-10-06
@@ -33313,13 +33317,21 @@ Works.  Unrelated, the locomotive icon direction doesn't always match the arrow 
 
 *Run against commit c8595e1a, in English - build\classes, compiled 07 Oct 00:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-10-07 (triage).** Works.
+
+*Run against commit 0092df64, in English - build\classes, compiled 07 Oct 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-07.**
+
+Validated on your *Works* of 2026-10-07.
+
 ---
 
 <a id="mt-702"></a>
 
 ### MT-702 - 2026-10-07 - A train that keeps its direction at a may-reverse station faces the arrow's way as soon as it stops
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's note on MT-701, 2026-10-07
 
 **Written:** 2026-10-07
@@ -33345,13 +33357,21 @@ already asked which copy the train would end up on (OB-314); the icon asked whic
 copy's way until then.  Both ask the same question now (round 81, `8efa1078`):
 `core.testTheArrivalHonoursTheAnswer.testTheIconFacesTheWayTheTrainWillStand`.
 
+**Adam, 2026-10-07 (triage).** Works.
+
+*Run against commit 0092df64, in English - build\classes, compiled 07 Oct 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-07.**
+
+Validated on your *Works* of 2026-10-07.
+
 ---
 
 <a id="mt-703"></a>
 
 ### MT-703 - 2026-10-07 - A timetable recorded by sending trains by hand through a may-turn station plays back as recorded
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA49-B1, the release validator of 2026-10-07
 
 **Written:** 2026-10-07
@@ -33377,13 +33397,25 @@ could not start: three minutes later the run stopped saying the track never beca
 now keeps your answer, saved with the timetable, and is played back with it (round 82, `990aad86`):
 `core.testTheArrivalHonoursTheAnswer.testATimetableRecordedByHandPlaysBackTheAnswer`.
 
+**Adam, 2026-10-07 (triage).** Works, with notes.
+
+With the window always on top, the question about facing appears below it.  Do a sweep for popups not tied to the right parent.
+
+Timetable behavior in this test otherwise works.
+
+*Run against commit 0092df64, in English - build\classes, compiled 07 Oct 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-07.**
+
+Validated on your *Works* of 2026-10-07: the timetable plays back as recorded.  Your note - the question about facing opening below the window that is always on top - was the popups sweep, fixed in round 85 (`f61a3811`) and filed as MT-705; the dialogs that open over the main window from a track diagram page's own window are OB-324, for 3.1.0.
+
 ---
 
 <a id="mt-704"></a>
 
 ### MT-704 - 2026-10-07 - A train turned by hand at a may-turn station faces its new way at once, and a timetable recorded with the turn plays back
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA50-A3 and RSA50-B1, the release validator of 2026-10-07
 
 **Written:** 2026-10-07
@@ -33408,5 +33440,54 @@ next send could set the route ahead while the locomotive drove back; and a timet
 standing still - could not start the next entry.  It is moved at the arrival now (round 83, `3aa9e834`):
 `core.testACompulsoryTurnIsNotAQuestion.testATrainTurnedAtAPlainCopyIsStoodFacingItsWayAtOnce`,
 `testATimetableRecordedWithATurnPlaysBack`.
+
+**Adam, 2026-10-07 (triage).** Works.
+
+*Run against commit 0092df64, in English - build\classes, compiled 07 Oct 22:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-07.**
+
+Validated on your *Works* of 2026-10-07.
+
+---
+
+<a id="mt-705"></a>
+
+### MT-705 - 2026-10-07 - With the window always on top, its questions and messages open in front of it
+
+**Disposition:** fixed unvalidated
+**From:** Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent"
+
+**Written:** 2026-10-07
+
+**Steps**
+
+1. Tick **Window Always on Top**.
+2. On the track diagram, right-click a square where a train stands and send it to a station marked "Trains May Change
+   Direction Here".
+3. Send it back the same way from the Auto tab, by double-clicking one of its paths to such a station.
+4. On the Layout tab press **Small** to open the page in its own window.  Untick **Window Always on Top**, then tick it
+   again.
+5. Start autonomy and choose **Add Locomotive**.  Stop autonomy.
+6. Open the track diagram editor, move a tile, and minimise the editor.  Close TrainControl.
+
+**Expected**
+
+- Steps 2 and 3: the question about which way the train should face opens in front of the main window, not behind it.
+- Step 4: the page's window stays above other programs while the setting is ticked, and not while it is unticked -
+  following each change, not only the setting it was opened with.
+- Step 5: the message that this cannot be done while autonomy is running opens in front of the main window.
+- Step 6: the editor comes back up before it asks whether to save, and the question can be answered.
+
+*What this is:* a question or message whose window had gone - a menu that had closed, a list that had been rebuilt - was
+given to a hidden window instead, and with the main window always on top it opened behind it; a minimised editor hid the
+question it asked as TrainControl closed; and windows opened from the main window copied its always-on-top once, when
+they were made.  Each now opens over a window that is there (round 85, `f61a3811`):
+`regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testBothHandDoorsSayWhenATrainWouldMeetItsOwnTail`,
+`regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testARefusalFromAClosedMenuIsOwnedByTheMainWindow`,
+`testAWindowTheMainWindowOpensFollowsItsAlwaysOnTop`, `testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn`,
+`ui.testLocIconCrop.testTheCropWindowIsOwnedByTheWindowItIsGiven`,
+`ui.testTheEditorNamesItsShortcuts.testTheExitBringsAMinimisedEditorBackBeforeItAsks`,
+`core.testLayoutTiles.testTheExitBringsAMinimisedRouteEditorBackBeforeItAsks`.
 
 ---

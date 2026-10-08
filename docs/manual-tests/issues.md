@@ -1639,6 +1639,16 @@ Adam, 2026-10-07: *"File a 3.1.0 FR: the notice area above the editor diagram sh
 
 **For v3.1.0**, on Adam's word.  The area of notices above the diagram in the autonomy editor - the setup's findings and the messages a click leaves - grows and shrinks with what it holds, and every change of its height moves the whole diagram below it: the square under the pointer is no longer the one it was over, mid-gesture.  Redesign it so that a change in what it says never moves the diagram.
 
+### OB-324 - 2026-10-07 - for 3.1.0: messages from a pop-up diagram window or another window open over the main window instead
+
+**Kind:** bug  
+**Raised from:** the popups sweep, 2026-10-07, on Adam's note on MT-703  
+**Filed:** 2026-10-07  
+
+From the popups sweep of 2026-10-07, on Adam's note on MT-703 (*"Do a sweep for popups not tied to the right parent"*).  Its eight cases of a message with no visible window behind it were fixed in round 85 (`f61a3811`, MT-705).  This is the other group, left for **v3.1.0**: about 35 questions and messages that open over the main window although the operator was working in another one - a track diagram page opened in its own window (Small or Large on the Layout tab), the locomotive database, the route editor, the track editor.  They are seen today because the main window is usually in front; with it minimised they are hidden, and they appear away from where the operator clicked.  Among them: clicking a switch, signal or route tile in a page's own window (power off, a route conflict); its right-click autonomy menu and the questions it leads to (which side a train arrived from, a train's tail, the setup report); a hand send's refusals from that window; keyboard shortcuts pressed there; Multi-Unit from the locomotive database; Save of a new route; Open in Route Editor from the track editor.
+
+The page windows now follow the main window's always-on-top (round 85), which is what makes owning their own messages safe.  The sweep's table, with each place in the code, is section B of the round's notes.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
