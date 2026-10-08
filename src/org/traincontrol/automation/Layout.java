@@ -4316,9 +4316,9 @@ public class Layout
 
         if (!arrived.isTerminus() && !arrived.isReversing()) return false;
 
-        // NOT WITHOUT A BLOCK - a hand-written configuration, or one built before the builder emitted them - where a
-        // Point is not a copy of anything and the rules stay as they were, as `hasAWayThrough`'s do
-        if (arrived.getBlock() == null) return false;
+        // A COPY WITH NO BLOCK COUNTS (RSA50-A1): the build gives a square of ONE copy no block - the end of a line marked
+        // "may" is one, its only copy the turning one - and leaving it out left exactly the case this asks about.  A
+        // hand-written railway's lone turning Point is no different: kept facing on, its train stands facing back out.
 
         for (Point sibling : this.points.values())
         {
@@ -4353,6 +4353,84 @@ public class Layout
         }
 
         return reached;
+    }
+
+    /**
+     * The copy of its square a train turned on arriving here is stood on (RSA50-A3, RSA50-B1): one whose train points the
+     * way it came in - one trains may arrive at before one they may not, and of those one that does not turn trains
+     * before one that does.  That is the window's choice after a turn (`AutonomySession.copyFacing`, which its idle drain
+     * makes); read here from the copies' own facings (`Point.getCopyFacing`, written by the build for a split square), so
+     * that the arrival makes it and the drain then finds the train where it would have put it.
+     *
+     * @param arrived the copy the train arrived on
+     * @param cameInBy the side it came in by, which a turned train faces
+     * @return the copy, or null where the square is not split or no copy faces that way
+     */
+    private Point copyAfterTheTurn(Point arrived, String cameInBy)
+    {
+        if (arrived == null || cameInBy == null || arrived.getCopyFacing() == null) return null;
+
+        Point best = null;
+
+        int rank = Integer.MAX_VALUE;
+
+        for (Point copy : this.points.values())
+        {
+            if (!arrived.isSamePlaceAs(copy) || !cameInBy.equals(copy.getCopyFacing())) continue;
+
+            int r = (copy.isDestination() ? 0 : 2) + (copy.isTerminus() || copy.isReversing() ? 1 : 0);
+
+            if (r < rank)
+            {
+                rank = r;
+                best = copy;
+            }
+        }
+
+        return best;
+    }
+
+    /**
+     * Moves a train that has just turned onto the copy of its square it now faces on from (RSA50-A3, RSA50-B1), with the
+     * side and the road it came in by, as `standOnTheCopyItDidNotTurnOn` does for a train that kept its direction - onto
+     * that copy first, and only then off the one it arrived on, so the square never reads empty.
+     *
+     * And the record the window writes the turn from (`reversedOnArrival`) names the copy it stands on now, whose side
+     * it came in by is the same: the window's drain writes the facing from it and finds the train already on the copy it
+     * would have chosen.
+     *
+     * @param arrived the Point the path ended on
+     * @param loc the train that has just arrived and turned
+     */
+    private void standOnTheCopyItFacesAfterTheTurn(Point arrived, Locomotive loc)
+    {
+        if (arrived == null || loc == null || arrived.getCurrentLocomotive() != loc) return;
+
+        Point onto = copyAfterTheTurn(arrived, arrived.getArrivedFrom());
+
+        if (onto == null || onto == arrived) return;
+
+        if (onto.getCurrentLocomotive() != null && onto.getCurrentLocomotive() != loc) return;
+
+        String tail = arrived.getArrivedFrom();
+
+        java.util.List<Edge> along = arrived.getArrivedAlong();
+
+        onto.reserve(loc);
+
+        onto.setArrivedFrom(tail);
+
+        onto.setArrivedAlong(along);
+
+        clearLocomotiveExcept(loc, onto);
+
+        if (loc.getName() != null && arrived.getName().equals(this.reversedOnArrival.get(loc.getName())))
+        {
+            this.reversedOnArrival.put(loc.getName(), onto.getName());
+        }
+
+        // Nothing logged: the turn itself is (autolayout.infoLocomotiveReachedTerminusOrFinalReversingStation), and which
+        // copy of one square the graph keeps the train on is bookkeeping the operator cannot see
     }
 
     /**
@@ -10190,6 +10268,10 @@ public class Layout
         // path is unlocked (PRW-A1, PRV-B2).
         boolean restandAfterUnlocking = false;
 
+        // Set when the arrival turned the train, and acted on after the path is unlocked as the declined turn's re-stand is
+        // (RSA50-A3, RSA50-B1)
+        boolean restandAfterTheTurn = false;
+
         // The same rule as the intermediate points, asked of the arrival (DIR-A2, and Adam's
         // may-reverse ruling of 2026-09-06).
         //
@@ -10213,6 +10295,8 @@ public class Layout
             final boolean stillThisRailway = isCurrentLayout();
 
             if (stillThisRailway) loc.switchDirection().delay(1000); // pause to avoid network issues
+
+            restandAfterTheTurn = stillThisRailway;
 
             // AND THE GRAPH IS TOLD, at the destination, which is the only place that knows (Adam,
             // 2026-09-07).  See `reversedOnArrival` for why neither of the two paths that follow a
@@ -10304,6 +10388,11 @@ public class Layout
             // Point and before this line those Points are still this run's reservations.  Inside the
             // monitor, because everything else that rearranges the railway at the end of a path is.
             if (restandAfterUnlocking) standOnTheCopyItDidNotTurnOn(arrived, loc, path);
+
+            // AND A TRAIN THAT TURNED, ONTO THE COPY IT NOW FACES ON FROM (RSA50-A3, RSA50-B1) - at the arrival rather than
+            // at the window's idle drain, which is the only thing that moved it before: while another train was out it
+            // stood on the copy for its old heading, and a timetable played back is never idle
+            else if (restandAfterTheTurn) standOnTheCopyItFacesAfterTheTurn(arrived, loc);
                                   
             // Fire callbacks
             for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
@@ -11116,7 +11205,13 @@ public class Layout
 
         java.util.Optional<ReversalPolicy> answer = this.runPolicies.get(loc);
 
-        if (turnsOnArrival(end, loc, answer == null ? null : answer.orElse(null))) return end;
+        // TURNED, ONTO THE COPY IT WILL FACE ON FROM (RSA50-A3): where the arrival will stand it once it has turned
+        if (turnsOnArrival(end, loc, answer == null ? null : answer.orElse(null)))
+        {
+            Point onto = copyAfterTheTurn(end, entrySideOf(path.get(path.size() - 1), end));
+
+            return onto != null ? onto : end;
+        }
 
         Point plain = plainSiblingFor(end, path);
 

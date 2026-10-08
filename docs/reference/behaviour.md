@@ -380,7 +380,33 @@ stood here until 2026-09-07 and described a case that cannot arise.  Declining l
 exactly as it drove in: at the *plain* copy no turn was needed to complete the journey, and at the
 *turning* copy the train is re-stood on the copy it did not turn on (PRV-B2).
 
-**Every copy of a may-reverse square is asked about, the turning one included** (UIX-C1, 2026-09-19).
+**Except where no copy faces on: there the train is turned, whatever was answered, and nobody is asked**
+(RSA49-A1, RSA50-A1).  A journey ending on a turning copy no copy of whose square faces on from the way
+the train came - the end of a line marked "may", which the build makes one turning copy, or a may-turn
+square one of whose ways in has no way on - has no copy to re-stand a kept train on: kept, it stood
+facing back out with its decoder driving it forward, and its next journey drove it into the end of the
+line over track nothing held.  So `Layout.turnsOnArrival` turns it first of all, the hand doors do not
+ask about it (`ManualReversalPrompt.destinationAskedAbout`), and a train that cannot reverse is not
+offered such a copy by hand (MT-367's rule, asked of the copy's ways in).  The setup check's NOTICE -
+*"every train turns round anyway"* - says what happens.
+
+**A train that turned is stood at once on the copy that faces the way it came in** (RSA50-A3,
+RSA50-B1): the copy the window's idle drain chooses (`AutonomySession.copyFacing` - one trains may
+arrive at first, and of those one that does not turn trains), chosen by the arrival from the copies'
+own facings, after the path is unlocked as the declined turn's re-stand is.  The drain used to be the
+only thing that moved it, and the drain waits for the railway to be idle: until then the train stood
+on the copy for its old heading, and a hand send in between set the route ahead while the decoder
+drove it back.  The drain now finds it where it would have put it, and writes the facing.
+
+**A timetable entry recorded by hand plays back the answer its arrival was given** (RSA49-B1).  The
+entry keeps it (`turnAtTheEnd`, saved with the timetable) and playback asks it at the destination only;
+an entry recorded from autonomy, or before this was kept, plays back as autonomy, as every entry did.
+Where the railway now turns every train - a square marked "must" since, or the end of a line - the
+compulsory turn above is asked first, so a recorded "keep" cannot stand a train facing the end of the
+line (RSA50-A2).
+
+**Every copy of a may-reverse square is asked about, the turning one included** (UIX-C1, 2026-09-19),
+apart from the copies no copy faces on from, above.
 The sentence here used to say the opposite - that a journey ending on the turning copy ends at a
 terminus and a terminus is never asked about - and the code has not worked that way since PRV-B2
 made "declined on the turning copy" a coherent outcome.  The door exempts a terminus only where the

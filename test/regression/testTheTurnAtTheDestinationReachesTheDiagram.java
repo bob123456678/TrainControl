@@ -542,12 +542,34 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
             fail("the journey never arrived, so this test never reached the turn it is about");
         }
 
-        assertNotNull(turn.plain.getCurrentLocomotive(),
-            "the train is not standing at " + turn.plain.getName() + " after the run");
+        // ON A COPY OF THE SQUARE - since round 83 already the one for its new facing (RSA50-A3): the arrival stands a turned
+        // train there itself, rather than leave it on the copy for its old heading until the drain
+        Point standing = standingOn(turn);
 
-        assertEquals(turn.plain.getArrivedFrom(), turn.arrival.name(),
+        assertNotNull(standing, "the train is on no copy of " + turn.square + " after the run");
+
+        assertEquals(standing.getArrivedFrom(), turn.arrival.name(),
             "the arrival recorded a different side from the one the path came in by, so the"
             + " expectations below are about a journey that did not happen");
+    }
+
+    /**
+     * The copy of the journey's square the train stands on, or null.
+     *
+     * @param turn the journey
+     * @return the copy
+     */
+    private static Point standingOn(Turn turn)
+    {
+        for (Map.Entry<String, Side> copy : session.facingsFor(turn.square).entrySet())
+        {
+            Point point = layout.getPoint(copy.getKey());
+
+            if (point != null && point.getCurrentLocomotive() != null
+                && turn.train.getName().equals(point.getCurrentLocomotive().getName())) return point;
+        }
+
+        return null;
     }
 
     /**

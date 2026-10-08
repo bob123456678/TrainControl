@@ -61,6 +61,11 @@ public class testAReversalCommandIsEmitted
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);
+
+        // A TRAIN THAT CAN REVERSE, which is the one the operator is asked about: a new locomotive is not, and one that
+        // cannot is not turned where its destination has a copy it can stand on facing on (MT-368) - which, since the
+        // fixtures give the destination one (RSA50-A1), is every claim here
+        model.getLocByName(DRIVER).setReversible(true);
     }
 
     @AfterClass(alwaysRun = true)
@@ -125,6 +130,8 @@ public class testAReversalCommandIsEmitted
 
         layout.createEdge(tag + "_START", tag + "_END");
 
+        withAPlainCopy(layout, tag, end, tag + "_START");
+
         layout.getPoint(tag + "_START").setLocomotive(model.getLocByName(DRIVER));
 
         // WITHOUT THIS THE TRAIN NEVER ARRIVES.  `executePath` blocks on the destination sensor,
@@ -132,6 +139,28 @@ public class testAReversalCommandIsEmitted
         layout.setSimulate(true);
 
         return layout;
+    }
+
+    /**
+     * Makes the destination a square trains MAY turn at, as the build makes one a train can stand on facing on: its
+     * turning copy and a plain copy beside it, one piece of track on one sensor, the plain one reached from the same
+     * approach (RSA50-A1).  A lone turning Point is the end of a line, where a train is turned whatever is answered -
+     * kept facing on there, it stood facing back out - so on that alone "keep" could not be asked about.
+     *
+     * @param layout the railway
+     * @param tag the fixture's names
+     * @param sensor the destination's sensor
+     * @param approach the Point the last leg starts from
+     */
+    private static void withAPlainCopy(Layout layout, String tag, MarklinFeedback sensor, String approach)
+        throws Exception
+    {
+        layout.createPoint(tag + "_END_PLAIN", true, sensor.getName());
+
+        layout.getPoint(tag + "_END").setBlock(tag + "_ENDS");
+        layout.getPoint(tag + "_END_PLAIN").setBlock(tag + "_ENDS");
+
+        layout.createEdge(approach, tag + "_END_PLAIN");
     }
 
     /**
@@ -164,6 +193,8 @@ public class testAReversalCommandIsEmitted
 
         layout.createEdge(tag + "_START", tag + "_MIDDLE");
         layout.createEdge(tag + "_MIDDLE", tag + "_END");
+
+        withAPlainCopy(layout, tag, end, tag + "_MIDDLE");
 
         layout.getPoint(tag + "_START").setLocomotive(model.getLocByName(DRIVER));
 

@@ -362,4 +362,560 @@ public class testACompulsoryTurnIsNotAQuestion
 
         return null;
     }
+
+    // ------------------------------------------------------------------------------------------------ RSA50, built lines
+
+    /**
+     * A line of three stations - Alpha, Beta, Gamma - set up as an operator would and built into the running layout by the
+     * setup's own builder (RSA50-A1: a claim whose railway is assembled by hand can give a Point a block the build never
+     * emits, and pass on a shape no user has).  Alpha is a compulsory turn; Gamma is one too, or a may-turn square at the
+     * end of the line; Beta may be a may-turn square.
+     *
+     * @param folder where the setup is kept
+     * @param tag what every name starts with
+     * @param address the first of the three sensors
+     * @param gammaMay whether the end of the line is marked "may" rather than "must"
+     * @param betaMay whether the middle station is marked "may"
+     * @return the setup
+     * @throws Exception from the setup
+     */
+    private static AutonomySession aLine(File folder, String tag, int address, boolean gammaMay, boolean betaMay)
+        throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
+
+        org.traincontrol.base.Accessory.accessoryDecoderType mm2 = org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
+
+        for (int i = 0; i < 3; i++) model.newFeedback(address + i, null);
+
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, 1, 1, 0, 0, address, address,
+            mm2, null);
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, 3, 1, 0, 0, address + 1,
+            address + 1, mm2, null);
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, 5, 1, 0, 0, address + 2,
+            address + 2, mm2, null);
+        page.setPageId("1");
+
+        AutonomySession line = new AutonomySession(folder);
+
+        line.open(java.util.Arrays.asList(page));
+        line.initialize(tag);
+
+        TileKey alpha = new TileKey("main", 1, 1);
+        TileKey beta = new TileKey("main", 3, 1);
+        TileKey gamma = new TileKey("main", 5, 1);
+
+        for (TileKey t : new TileKey[] {alpha, beta, gamma}) line.setStation(t, true);
+
+        line.setPointName(alpha, tag + "Alpha");
+        line.setPointName(beta, tag + "Beta");
+        line.setPointName(gamma, tag + "Gamma");
+
+        line.setPointProperty(alpha, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+
+        if (gammaMay)
+        {
+            line.setPointFlag(gamma, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, true);
+            line.setPointProperty(gamma, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, null);
+        }
+        else
+        {
+            line.setPointProperty(gamma, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+        }
+
+        if (betaMay)
+        {
+            line.setPointFlag(beta, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, true);
+            line.setPointProperty(beta, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, null);
+        }
+
+        line.rebuild();
+
+        model.parseAuto(line.buildConfiguration());
+
+        assertNotNull(model.getAutoLayout(), "precondition: the line did not build");
+
+        return line;
+    }
+
+    /** The edge into this copy from a copy whose name starts so, or null. */
+    private static org.traincontrol.automation.Edge into(Layout rail, Point end, String from)
+    {
+        for (org.traincontrol.automation.Edge edge : rail.getEdges())
+        {
+            if (edge.getEnd() == end && edge.getStart().getName().startsWith(from)) return edge;
+        }
+
+        return null;
+    }
+
+    /** The copy whose name starts so, of the kind asked for (turning or not), that an edge from a copy of that name reaches. */
+    private static org.traincontrol.automation.Edge intoA(Layout rail, String to, boolean turning, String from)
+    {
+        for (org.traincontrol.automation.Edge edge : rail.getEdges())
+        {
+            Point end = edge.getEnd();
+
+            if (!end.getName().startsWith(to) || (end.isTerminus() || end.isReversing()) != turning) continue;
+
+            if (edge.getStart().getName().startsWith(from)) return edge;
+        }
+
+        return null;
+    }
+
+    /** Where a train stands on the running layout: the Point that holds it. */
+    private static Point standing(Layout rail, org.traincontrol.base.Locomotive x)
+    {
+        for (Point p : rail.getPoints())
+        {
+            if (p.getCurrentLocomotive() == x) return p;
+        }
+
+        return null;
+    }
+
+    /** Waits for something to come true, or gives up. */
+    private static boolean waitFor(java.util.function.BooleanSupplier what, long ms) throws InterruptedException
+    {
+        long until = System.currentTimeMillis() + ms;
+
+        while (System.currentTimeMillis() < until)
+        {
+            if (what.getAsBoolean()) return true;
+
+            Thread.sleep(20);
+        }
+
+        return what.getAsBoolean();
+    }
+
+    /** Sends a train by hand through the hand door's own entry to the railway, and plays its arrival sensor. */
+    private static void sendByHand(Layout rail, org.traincontrol.base.Locomotive x, List<org.traincontrol.automation.Edge> path,
+        Layout.ReversalPolicy answer) throws Exception
+    {
+        Point end = path.get(path.size() - 1).getEnd();
+
+        Thread journey = new Thread(() -> rail.executePathByHand(path, x, 30, answer, -1), "built-line-claim");
+
+        journey.setDaemon(true);
+        journey.start();
+
+        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            "precondition: the hand send did not start: " + Layout.getLastError());
+
+        model.setFeedbackState(end.getS88(), true);
+
+        journey.join(20000);
+
+        model.setFeedbackState(end.getS88(), false);
+
+        assertFalse(journey.isAlive(), "precondition: the hand send did not end");
+    }
+
+    /** The operator's answer at the destination, as the door hands it over once asked. */
+    private static Layout.ReversalPolicy answered(final boolean turn, final Point end, final Layout.ReversalPolicy asking)
+    {
+        return new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(org.traincontrol.base.Locomotive train, Point at)
+            {
+                return turn && at == end;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at == end && asking.asksAbout(at);
+            }
+        };
+    }
+
+    /** What the window does with the railway's record of a turn once the railway is idle (`writeTheTurns`). */
+    private static void theIdleDrain(Layout rail, AutonomySession line)
+    {
+        java.util.Map<String, String> turned = rail.takeReversalsOnArrival();
+
+        try
+        {
+            for (java.util.Iterator<java.util.Map.Entry<String, String>> pending = turned.entrySet().iterator();
+                pending.hasNext();)
+            {
+                java.util.Map.Entry<String, String> t = pending.next();
+
+                if (line.faceTheWayItCameIn(t.getKey(), rail.getPoint(t.getValue()), rail) != null) pending.remove();
+            }
+        }
+        finally
+        {
+            rail.restoreReversalsOnArrival(turned);
+        }
+    }
+
+    /** Runs a claim on a built line in a folder of its own, putting the class's railway and the train back after. */
+    private static void onALine(String tag, org.traincontrol.base.Locomotive x, ThrowingClaim claim) throws Exception
+    {
+        File folder = java.nio.file.Files.createTempDirectory("tc-built-line-" + tag).toFile();
+
+        final int speedWas = x.getPreferredSpeed();
+
+        // A TRAIN THAT CAN REVERSE, whatever the locomotive database says of this one: one that cannot is not turned at a
+        // square it can drive through, and the claims below are about trains that are
+        final boolean reversibleWas = x.isReversible();
+
+        borrowTheLengthOf(x);
+
+        try
+        {
+            x.setSpeed(0);
+            x.setTrainLength(1);
+            x.setPreferredSpeed(30);
+            x.setReversible(true);
+
+            claim.run(folder);
+        }
+        finally
+        {
+            Layout rail = model.getAutoLayout();
+
+            if (rail != null) rail.stopLocomotives();
+
+            x.setSpeed(0);
+            x.setPreferredSpeed(speedWas);
+            x.setReversible(reversibleWas);
+
+            model.parseAuto(session.buildConfiguration());
+
+            deleteAll(folder);
+        }
+    }
+
+    /** A claim run on a built line. */
+    private interface ThrowingClaim
+    {
+        void run(File folder) throws Exception;
+    }
+
+    private static void deleteAll(File f)
+    {
+        File[] inside = f.listFiles();
+
+        if (inside != null) for (File c : inside) deleteAll(c);
+
+        f.delete();
+    }
+
+    /**
+     * The end of a line marked "Trains May Change Direction Here", as the build makes it - one copy, no block - turns a
+     * train sent there by hand, and the operator is not asked (RSA50-A1).  Round 82 left the copy with no block out, as
+     * a Point of a hand-written railway, and the build gives a single copy no block: so the operator was asked, "keep"
+     * was honoured, and the train stood facing the end of the line with its next journey routed back.
+     *
+     * MUTATION: leave a copy with no block out of `Layout.noCopyFacesOnFrom` again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheEndOfALineMarkedMayTurnsATrainNobodyIsAskedAbout() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        onALine("EOLM", x, folder ->
+        {
+            AutonomySession line = aLine(folder, "EOLM", 1931, true, false);
+
+            Layout rail = model.getAutoLayout();
+
+            Point gamma = rail.getPoint("EOLMGamma");
+
+            assertNotNull(gamma, "precondition: the end of the line built to no Point of its own name");
+
+            assertTrue(gamma.isTerminus() && gamma.getBlock() == null, "precondition: the build no longer makes the end of"
+                + " a line marked may one turning copy with no block - the shape RSA50-A1 is about");
+
+            Layout.ReversalPolicy asking = ManualReversalPrompt.forOperator(line, null);
+
+            assertTrue(asking.asksAbout(gamma), "precondition: the setup no longer counts the end of the line as a square"
+                + " the operator has a say over");
+
+            List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(into(rail, gamma, "EOLMBeta"));
+
+            assertNotNull(path.get(0), "precondition: no edge from Beta to the end of the line");
+
+            assertTrue(ManualReversalPrompt.destinationAskedAbout(asking, rail, path) == null, "the operator is asked"
+                + " whether to keep the direction at the end of a line, where keeping it leaves the train facing the end"
+                + " and its next journey driving it there (RSA50-A1)");
+
+            path.get(0).getStart().setLocomotive(x);
+
+            boolean forward = x.goingForward();
+
+            sendByHand(rail, x, path, answered(false, gamma, asking));
+
+            assertTrue(x.goingForward() != forward, "a train sent by hand to the end of a line marked may, kept, was not"
+                + " turned: it stands facing the end of the line while its next journey is routed back (RSA50-A1)");
+        });
+    }
+
+    /**
+     * A timetable entry recorded with "keep" plays back turned where the railway turns every train (RSA50-A2): the end of
+     * a line marked "may" - recorded before round 83 - or a station marked "must" after the recording.  The compulsory
+     * turn is asked before the recorded answer.
+     *
+     * MUTATION: answer the recorded "keep" before the compulsory turn, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAKeepRecordedWhereTheRailwayTurnsEveryTrainPlaysBackTurned() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        final long stuckWas = Layout.TIMETABLE_STUCK_MS;
+
+        onALine("EOLT", x, folder ->
+        {
+            aLine(folder, "EOLT", 1934, true, false);
+
+            Layout rail = model.getAutoLayout();
+
+            Point gamma = rail.getPoint("EOLTGamma");
+
+            List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(into(rail, gamma, "EOLTBeta"));
+
+            org.traincontrol.automation.TimetablePath entry = new org.traincontrol.automation.TimetablePath(x, path, 0);
+
+            entry.setTurnAtTheEnd(false);
+
+            rail.setTimetable(java.util.Arrays.asList(entry));
+
+            path.get(0).getStart().setLocomotive(x);
+
+            boolean forward = x.goingForward();
+
+            Layout.TIMETABLE_STUCK_MS = 8000;
+
+            try
+            {
+                Thread runner = new Thread(rail::executeTimetable, "recorded-keep-playback");
+
+                runner.setDaemon(true);
+                runner.start();
+
+                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                    "precondition: the entry did not start: " + Layout.getLastError());
+
+                model.setFeedbackState(gamma.getS88(), true);
+
+                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "precondition: the entry"
+                    + " did not end");
+
+                model.setFeedbackState(gamma.getS88(), false);
+
+                assertTrue(x.goingForward() != forward, "a timetable entry recorded with keep was played back keeping the"
+                    + " train facing the end of a line - a turn every train must make (RSA50-A2)");
+            }
+            finally
+            {
+                Layout.TIMETABLE_STUCK_MS = stuckWas;
+            }
+        });
+    }
+
+    /**
+     * A train turned by hand at a may-turn station's plain copy is stood at once on the copy that faces the way it came
+     * in - the copy the window's idle drain would stand it on, which then changes nothing (RSA50-A3).  The drain ran only
+     * once the railway was idle: while another train was out, this one stood on the copy for its old heading, and its next
+     * hand send set the route ahead while its decoder drove it back.
+     *
+     * MUTATION: leave a turned train for the idle drain again, or stand it on another copy than the drain's, and this
+     * fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainTurnedAtAPlainCopyIsStoodFacingItsWayAtOnce() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        onALine("TPC", x, folder ->
+        {
+            AutonomySession line = aLine(folder, "TPC", 1937, false, true);
+
+            Layout rail = model.getAutoLayout();
+
+            org.traincontrol.automation.Edge e = intoA(rail, "TPCBeta", false, "TPCAlpha");
+
+            assertNotNull(e, "precondition: no edge from Alpha onto a plain copy of Beta");
+
+            Point plain = e.getEnd();
+
+            assertTrue(plain.getCopyFacing() != null, "precondition: Beta's copies do not record which way each faces");
+
+            Layout.ReversalPolicy asking = ManualReversalPrompt.forOperator(line, null);
+
+            e.getStart().setLocomotive(x);
+
+            final List<org.traincontrol.automation.Edge> path = java.util.Arrays.asList(e);
+
+            Thread journey = new Thread(() -> rail.executePathByHand(path, x, 30, answered(true, plain, asking), -1),
+                "turned-at-a-plain-copy");
+
+            journey.setDaemon(true);
+            journey.start();
+
+            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                "precondition: the hand send did not start: " + Layout.getLastError());
+
+            // ON ITS WAY, the copy it will stand on - which the caption's arrow and the icon read - faces the way it will
+            // face once turned
+            Point will = rail.copyItWillStandOn(x);
+
+            assertTrue(will != null && e.getEntrySide().equals(will.getCopyFacing()), "on its way to be turned at a plain"
+                + " copy, the train is said to be going to stand on " + will + ", facing its old heading - the caption's"
+                + " arrow and the icon show the way it will not face (RSA50-A3)");
+
+            model.setFeedbackState(plain.getS88(), true);
+
+            journey.join(20000);
+
+            model.setFeedbackState(plain.getS88(), false);
+
+            assertFalse(journey.isAlive(), "precondition: the hand send did not end");
+
+            Point on = standing(rail, x);
+
+            assertNotNull(on, "precondition: the train stands nowhere after its arrival");
+
+            assertTrue(e.getEntrySide().equals(on.getCopyFacing()), "a train turned at a plain copy still stands on a copy"
+                + " facing its old heading (" + on.getName() + ", facing " + on.getCopyFacing() + ") until the railway is"
+                + " idle - its next hand send is routed ahead while its decoder drives it back (RSA50-A3)");
+
+            theIdleDrain(rail, line);
+
+            assertTrue(standing(rail, x) == on, "the window's idle drain moved the turned train again, onto "
+                + standing(rail, x) + ": the arrival did not stand it where the drain would (RSA50-A3, RSA50-B1)");
+
+            // AND THE DRAIN STILL WRITES THE TURN into the setup, from the record the arrival pointed at the copy
+            assertTrue(e.getEntrySide().equals(String.valueOf(line.getFacing(new TileKey("main", 3, 1)))), "the window's"
+                + " idle drain wrote no turn into the setup: its record still names the copy the train has left");
+        });
+    }
+
+    /**
+     * A timetable recorded by hand where the operator turned a train at a may-turn station plays back (RSA50-B1): the
+     * window's idle drain stood the turned train on another copy between the recorded sends, and the next entry was
+     * recorded from it; playback is never idle, so the train was still on the copy it turned on and the next entry could
+     * not start.  It is stood there at the arrival now, in the recording and in the playback alike.
+     *
+     * MUTATION: leave a turned train for the idle drain again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATimetableRecordedWithATurnPlaysBack() throws Exception
+    {
+        final org.traincontrol.base.Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        final long stuckWas = Layout.TIMETABLE_STUCK_MS;
+
+        onALine("RWT", x, folder ->
+        {
+            AutonomySession line = aLine(folder, "RWT", 1940, false, true);
+
+            Layout rail = model.getAutoLayout();
+
+            org.traincontrol.automation.Edge first = intoA(rail, "RWTBeta", true, "RWTAlpha");
+
+            assertNotNull(first, "precondition: no edge from Alpha onto the turning copy of Beta");
+
+            Layout.ReversalPolicy asking = ManualReversalPrompt.forOperator(line, null);
+
+            Point start = first.getStart();
+
+            start.setLocomotive(x);
+
+            boolean forward = x.goingForward();
+
+            // RECORDED: turned at Beta, the window's drain between the sends as at any idle moment, and back to Alpha
+            rail.setTimetableCapture(true);
+
+            sendByHand(rail, x, java.util.Arrays.asList(first), answered(true, first.getEnd(), asking));
+
+            theIdleDrain(rail, line);
+
+            Point turnedOn = standing(rail, x);
+
+            org.traincontrol.automation.Edge second = null;
+
+            for (org.traincontrol.automation.Edge edge : rail.getEdges())
+            {
+                if (edge.getStart() == turnedOn && edge.getEnd().getName().startsWith("RWTAlpha")) second = edge;
+            }
+
+            assertNotNull(second, "precondition: the turned train, on " + turnedOn + ", has no way back to Alpha");
+
+            sendByHand(rail, x, java.util.Arrays.asList(second), ManualReversalPrompt.KEEP_DIRECTION);
+
+            rail.setTimetableCapture(false);
+
+            assertTrue(rail.getTimetable().size() == 2, "precondition: the two sends were not recorded: "
+                + rail.getTimetable());
+
+            // PLAYED BACK from where the recording began, facing as it did
+            x.setSpeed(0);
+
+            start.setLocomotive(x);
+
+            if (x.goingForward() != forward) x.switchDirection();
+
+            for (org.traincontrol.automation.TimetablePath entry : rail.getTimetable())
+            {
+                entry.setSecondsToNext(0);
+                entry.setExecutionTime(0);
+            }
+
+            final Point alpha = second.getEnd();
+            final Point beta = first.getEnd();
+
+            Layout.TIMETABLE_STUCK_MS = 8000;
+
+            try
+            {
+                Thread runner = new Thread(rail::executeTimetable, "recorded-turn-playback");
+
+                runner.setDaemon(true);
+                runner.start();
+
+                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                    "precondition: the first entry did not start: " + Layout.getLastError());
+
+                model.setFeedbackState(beta.getS88(), true);
+
+                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "precondition: the first"
+                    + " entry did not end");
+
+                model.setFeedbackState(beta.getS88(), false);
+
+                assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                    "the second entry, recorded from the copy the turned train was stood on, never started - playback is"
+                    + " never idle, and the train was still on the copy it turned on (RSA50-B1): "
+                    + Layout.getLastError());
+
+                model.setFeedbackState(alpha.getS88(), true);
+
+                assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(x), 15000), "the second entry did not"
+                    + " arrive");
+
+                model.setFeedbackState(alpha.getS88(), false);
+            }
+            finally
+            {
+                Layout.TIMETABLE_STUCK_MS = stuckWas;
+            }
+        });
+    }
 }
