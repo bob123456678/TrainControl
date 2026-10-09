@@ -1705,6 +1705,16 @@ Adam, 2026-10-09, with a screenshot: *"narrow/nudge so that pills rotated vertic
 
 A caption turned on end, beside a vertical track, is as thick as a flat pill is tall and is placed by the same offset, so where a station or a buffer stop stands on the next square it runs into it.  Narrow the pill on end, or nudge it, so that it clears what stands beside it.
 
+### FR-116 - 2026-10-09 - A square's address is red letters on a white halo, not in a box
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-09  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09: *“Can we prettify address labels to have a white halo outline around the red text rather than a rectangle around them?”*, and then *“Make sure we also track the outline FR for the red address labels”*.
+
+With Show Addresses on, each accessory's and sensor's address is drawn in red at the top left of its square, on a translucent white box that covers the corner of the square's track and signal art.  Draw the letters with a white halo round their outlines instead, and nothing behind the rest, so the number reads on black track and on white alike and covers only what the letters would.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1721,6 +1731,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-09 | FR-116 | feature request | An address is red letters on a white halo with nothing behind them - `AddressLabel`, drawn as letter shapes with a round-joined white stroke round them, in place of the translucent box (round 102, `6061f789`): `ui.testDiagramLooksRight.testAnAddressHasAHaloAndNoBox`, red before on the box (*“paints its corner (0,0) - a box behind the text”*).  Awaiting Adam's look. | fixed unvalidated | - |
 | 2026-10-08 | OB-325 | bug | Return Home names a train that cannot leave where it stands, with the reason, instead of searching the whole fleet and answering that no plan was found (round 93, `66cffd63`): `core.testHomeStaging.testATrainThatCannotLeaveWhereItStandsIsNamed`, the guard `core.testHomeStaging.testATrainHeldInOnlyByAnotherIsPlannedNotNamed`, and on Adam's railway `core.testAMayTurnStationIsNotATerminus.testReturnHomeNamesATrainThatCannotLeaveTheTurningCopy`.  The setup check the entry also suggested was not built: since round 92 autonomy no longer turns a train there, and on his railway it would warn at BottomMainB.  **Claude, 2026-10-08:** closed on its claims, on Adam's *"Fix OB-325 and run a validator"*. | fixed validated | - |
 | 2026-09-21 | OB-250 | bug | A route's "train X at sensor T" asks where the train is now - the last sensor it reached, or where it stands - and not which Point holds it, which for a running train could be one it had not reached (round 89, `129bebda`): `core.testRoutes.testARunningTrainIsAtTheSensorItLastReached`.  **Claude, 2026-10-08:** closed on its claim, on Adam's *"250- the first.  Fix b5 and 253"* (*"X is at T now"*). | fixed validated | - |
 | 2026-09-22 | OB-253 | bug | A routes file naming one route twice, by id or by name, is refused whole before anything is deleted, and says why (round 89, `129bebda`): `core.testAnImportSaysItsRoutesAreOff.testAFileThatNamesARouteTwiceIsRefusedWhole`.  **Claude, 2026-10-08:** closed on its claim, on Adam's *"250- the first.  Fix b5 and 253"*. | fixed validated | - |
