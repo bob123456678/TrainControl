@@ -2992,4 +2992,196 @@ public class testAutoLayout
             loc.setTrainLength(wasLength);
         }
     }
+
+    /**
+     * A clear route is found although a shorter one that throws a switch both ways reaches a square on it first
+     * (RSA59-B1; Adam, 2026-10-09: "Fix B1").
+     *
+     * The route search marked a square visited the first time any route reached it.  So a shorter route that set a
+     * switch one way and then the other - refused for its conflicting commands - hid a clear route reaching the same
+     * square with the switch untouched, and the station beyond was offered on some openings of the right-click menu and
+     * not on others, with Why Not Moving? blaming the conflict.  On Adam's railway the lower level's eleven stations came
+     * and went that way, Switches 51 and 99.
+     *
+     * Here the short way RV_S - RV_X - RV_E sets the switch STRAIGHT and then TURN; the long way RV_S - RV_Y - RV_W - RV_X
+     * - RV_E sets it only TURN.  RV_X is reached by the short way two squares sooner, so the old search never found the long
+     * way at all, whatever order it took the squares in.  Asked twelve times, because the answer used to depend on that
+     * order.
+     *
+     * MUTATION: key the search on the square alone again and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAClearRouteIsNotHiddenByAConflictingOne() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinAccessory sw = borrowedAccessory(0);
+
+        String[] names = {"RV_S", "RV_X", "RV_Y", "RV_W", "RV_E"};
+        boolean[] stations = {true, false, false, false, true};
+        int[] sensors = {8970, 8971, 8972, 8973, 8974};
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback fb = model.newFeedback(sensors[i], null);
+
+            model.setFeedbackState(fb.getName(), false);
+
+            layout.createPoint(names[i], stations[i], fb.getName());
+        }
+
+        layout.createEdge("RV_S", "RV_X").addConfigCommand(sw.getName(), Accessory.accessorySetting.STRAIGHT);
+        layout.createEdge("RV_X", "RV_E").addConfigCommand(sw.getName(), Accessory.accessorySetting.TURN);
+        layout.createEdge("RV_S", "RV_Y");
+        layout.createEdge("RV_Y", "RV_W");
+        layout.createEdge("RV_W", "RV_X");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "RV_S", false), "precondition: the train is not placed");
+
+        for (int ask = 1; ask <= 12; ask++)
+        {
+            List<Edge> found = null;
+
+            for (List<Edge> path : layout.getPossiblePaths(loc, false))
+            {
+                if ("RV_E".equals(path.get(path.size() - 1).getEnd().getName())) found = path;
+            }
+
+            assertNotNull(found, "on ask " + ask + " RV_E was not offered: the only clear way there, by RV_Y and RV_W, was"
+                + " hidden by the shorter way through RV_X, which throws the switch both ways (RSA59-B1)");
+
+            assertEquals(found.size(), 4, "RV_E was offered by a way that is not the clear one: " + found);
+        }
+
+        assertNull(layout.explainDestinations(loc, true).get("RV_E"), "Why Not Moving? (by hand) gives a reason against"
+            + " RV_E, which the clear way reaches: " + layout.explainDestinations(loc, true).get("RV_E"));
+
+        layout.moveLocomotive(null, "RV_S", true);
+    }
+
+    /**
+     * Two routes of the same length to a station are both offered, every time (RSA59-B1's fix; Adam, 2026-10-09: "Fix
+     * B1").
+     *
+     * The route search marks a square when it is taken OFF the queue, not when it is put on, so a square two routes reach
+     * at the same distance is followed on from by both - and the menu, which asks again with each route it has been given
+     * excluded, gets both.  The search B1 brought in, by square and switch settings, must keep that: marked when a square
+     * is put on the queue, the second way to EQ_X is dropped whenever the first is taken first, and the menu offers one
+     * route to EQ_E on some openings and two on others - the flicker B1 was about, by another road.
+     *
+     * Here EQ_S - EQ_A - EQ_X - EQ_E and EQ_S - EQ_B - EQ_X - EQ_E, no switches at all.  Asked twelve times, because which
+     * way is taken first depends on the order `getNeighbors` shuffles into.
+     *
+     * MUTATION: mark a square when it is put on the queue and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTwoRoutesOfTheSameLengthAreBothOffered() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String[] names = {"EQ_S", "EQ_A", "EQ_B", "EQ_X", "EQ_E"};
+        boolean[] stations = {true, false, false, false, true};
+        int[] sensors = {8975, 8976, 8977, 8978, 8979};
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback fb = model.newFeedback(sensors[i], null);
+
+            model.setFeedbackState(fb.getName(), false);
+
+            layout.createPoint(names[i], stations[i], fb.getName());
+        }
+
+        layout.createEdge("EQ_S", "EQ_A");
+        layout.createEdge("EQ_S", "EQ_B");
+        layout.createEdge("EQ_A", "EQ_X");
+        layout.createEdge("EQ_B", "EQ_X");
+        layout.createEdge("EQ_X", "EQ_E");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "EQ_S", false), "precondition: the train is not placed");
+
+        try
+        {
+            for (int ask = 1; ask <= 12; ask++)
+            {
+                java.util.Set<String> via = new java.util.TreeSet<>();
+
+                for (List<Edge> path : layout.getPossiblePaths(loc, false))
+                {
+                    if ("EQ_E".equals(path.get(path.size() - 1).getEnd().getName())) via.add(path.get(0).getEnd().getName());
+                }
+
+                assertEquals(via, new java.util.TreeSet<>(java.util.Arrays.asList("EQ_A", "EQ_B")), "on ask " + ask
+                    + " EQ_E was offered by way of " + via + " only - the other route of the same length was dropped");
+            }
+        }
+        finally
+        {
+            layout.moveLocomotive(null, "EQ_S", true);
+        }
+    }
+
+    /**
+     * Where the only route to a station throws a switch both ways, Why Not Moving? still says so (RSA59-B1's fix; Adam,
+     * 2026-10-09: "Fix B1").
+     *
+     * The search B1 brought in keeps a route whose switch commands disagree out of the way of every route whose commands
+     * do not - but it still follows it, and still returns it when it reaches the station, because that is how Why Not
+     * Moving? learns the reason.  Dropped instead, the station would be explained as if no route led there at all.
+     *
+     * Here RC_S - RC_X sets the switch STRAIGHT and RC_X - RC_E sets it TURN, and there is no other way.
+     *
+     * MUTATION: drop a route the moment its commands disagree and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAConflictThatIsAllThereIsIsStillTheReason() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinAccessory sw = borrowedAccessory(0);
+
+        String[] names = {"RC_S", "RC_X", "RC_E"};
+        boolean[] stations = {true, false, true};
+        int[] sensors = {8980, 8981, 8982};
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback fb = model.newFeedback(sensors[i], null);
+
+            model.setFeedbackState(fb.getName(), false);
+
+            layout.createPoint(names[i], stations[i], fb.getName());
+        }
+
+        layout.createEdge("RC_S", "RC_X").addConfigCommand(sw.getName(), Accessory.accessorySetting.STRAIGHT);
+        layout.createEdge("RC_X", "RC_E").addConfigCommand(sw.getName(), Accessory.accessorySetting.TURN);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "RC_S", false), "precondition: the train is not placed");
+
+        try
+        {
+            String why = layout.explainDestinations(loc, true).get("RC_E");
+
+            assertNotNull(why, "RC_E, which only a route throwing " + sw.getName() + " both ways reaches, has no reason"
+                + " against it");
+
+            assertTrue(why.contains(sw.getName()), "RC_E is explained without the switch whose commands disagree: " + why);
+        }
+        finally
+        {
+            layout.moveLocomotive(null, "RC_S", true);
+        }
+    }
 }

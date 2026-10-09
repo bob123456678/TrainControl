@@ -1573,7 +1573,7 @@ public final class HomeStaging
      * platform and its approach both drive the same signal, the shortest route between two stations is
      * routinely one of these: the planner offered it and the runtime then refused to drive it.
      */
-    private static Map<String, Accessory.accessorySetting> withCommandsOf(Edge e,
+    static Map<String, Accessory.accessorySetting> withCommandsOf(Edge e,
         Map<String, Accessory.accessorySetting> soFar)
     {
         if (e.getConfigCommands().isEmpty()) return soFar;
@@ -1600,7 +1600,7 @@ public final class HomeStaging
      * committed to nothing that this one has not also committed to - then anything reachable from here
      * was reachable from there.
      */
-    private static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
+    static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
         String p, Map<String, Accessory.accessorySetting> commands)
     {
         if (!seen.containsKey(p)) return false;

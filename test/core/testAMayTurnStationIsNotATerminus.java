@@ -1,8 +1,10 @@
 package core;
 
 import java.util.List;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -460,5 +462,100 @@ public class testAMayTurnStationIsNotATerminus
 
         throw new SkipException("the snapshot has no Point called " + name
             + ", so it is about a railway that has moved");
+    }
+
+    /**
+     * On his railway the right-click menu offers a standing train the same stations every time it is asked (RSA59-B1;
+     * Adam, 2026-10-09: "Fix B1").
+     *
+     * The final validation asked it twelve times for a train standing alone at BottomMainA and got twelve different
+     * menus: the lower level's stations - LowerBack, LowerFront, LowerParkingOuter, ParkingTrack4 to 10 - came and went,
+     * because the shortest routes there throw Switches 51 and 99 both ways and the search let them hide the clear ones.
+     * When one was missing, Why Not Moving? blamed the conflict - "Has conflicting commands ([Switch 51 TURN, Switch 99
+     * TURN])" - for a station the next opening offered.
+     *
+     * ALONE, as the validation asked it: the other trains standing in the snapshot shut the lower level off with
+     * occupied track whichever way the search goes, so they are lifted off for the question and put back after it.
+     *
+     * MUTATION: key the route search on the square alone again and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheMenuOffersTheSameStationsEveryTime() throws Exception
+    {
+        Point at = named("BottomMainA (eastbound)");
+
+        Integer wasLength = train.getTrainLength();
+
+        // Every train standing, and where, to be put back as found
+        java.util.Map<String, Locomotive> standing = new java.util.LinkedHashMap<>();
+
+        for (Point p : layout.getPoints())
+        {
+            if (p.getCurrentLocomotive() != null) standing.put(p.getName(), p.getCurrentLocomotive());
+        }
+
+        try
+        {
+            for (String p : standing.keySet()) layout.moveLocomotive(null, p, true);
+
+            train.setReversible(true);
+            train.setTrainLength(1);
+
+            assertTrue(layout.moveLocomotive(train.getName(), at.getName(), false),
+                "precondition: the train could not be stood on " + at.getName());
+
+            java.util.Set<String> first = null;
+
+            long began = System.currentTimeMillis();
+
+            for (int ask = 1; ask <= 12; ask++)
+            {
+                java.util.Set<String> offered = new java.util.TreeSet<>();
+
+                for (List<org.traincontrol.automation.Edge> path : layout.getPossiblePaths(train, false))
+                {
+                    offered.add(path.get(path.size() - 1).getEnd().getName());
+                }
+
+                if (first == null) first = offered;
+
+                assertEquals(offered, first, "the menu for a train standing alone at " + at.getName() + " changed between"
+                    + " ask 1 and ask " + ask + " (RSA59-B1)");
+            }
+
+            long took = System.currentTimeMillis() - began;
+
+            assertTrue(first.stream().anyMatch(n -> n.startsWith("ParkingTrack5")) && first.stream().anyMatch(n ->
+                n.startsWith("LowerBack")), "the lower level is not offered from " + at.getName() + ": " + first);
+
+            assertTrue(took < 12 * 2000, "twelve asks took " + took + " ms");
+
+            // And Why Not Moving? by hand has nothing against any of them - it used to blame the conflict
+            java.util.Map<String, String> why = layout.explainDestinations(train, true);
+
+            for (String lower : new String[] {"LowerBack", "LowerFront (eastbound)", "LowerFront (eastbound, reverse)",
+                "LowerParkingOuter", "ParkingTrack4", "ParkingTrack5", "ParkingTrack6", "ParkingTrack7", "ParkingTrack8",
+                "ParkingTrack9", "ParkingTrack10"})
+            {
+                assertTrue(first.contains(lower), lower + " is not offered from " + at.getName() + ": " + first);
+
+                assertNull(why.get(lower), "Why Not Moving? (by hand) gives a reason against " + lower + ", which the"
+                    + " menu offers: " + why.get(lower));
+            }
+        }
+        finally
+        {
+            train.setTrainLength(wasLength);
+            train.setReversible(false);
+
+            layout.moveLocomotive(null, at.getName(), true);
+
+            for (java.util.Map.Entry<String, Locomotive> was : standing.entrySet())
+            {
+                layout.moveLocomotive(was.getValue().getName(), was.getKey(), false);
+            }
+        }
     }
 }

@@ -5228,6 +5228,23 @@ public class Layout
         // reaching a point by several different routes in order to find one that is not excluded.
         // Marking on enqueue would explore only the first route to each point and could then fail to
         // return an allowed alternative that exists.
+        // THE SQUARE AND THE SWITCHES SET ON THE WAY THERE, not the square alone (RSA59-B1; Adam, 2026-10-09: "Fix B1").
+        //
+        // This marked a square visited the first time any route reached it, so a shorter route that set a switch one way
+        // and then the other - refused later for its conflicting commands - hid a clear route reaching the same square
+        // with the switch untouched.  Callers ask again with the routes found excluded, and which routes they ever got
+        // depended on the order `getNeighbors` shuffles into: on Adam's railway the right-click menu offered the lower
+        // level's eleven stations on some openings and not others (Switches 51 and 99), and Why Not Moving? blamed the
+        // conflict.  So a square is passed over only when it has been reached already under switch settings that leave
+        // at least as much freedom - Return Home's planner's own rule (`HomeStaging.alreadyReached`), shared rather
+        // than copied.  A route already in conflict is still followed, and still returned when it reaches the end - Why
+        // Not Moving? says so where it is all there is - but each square only once in that state, and never in the
+        // way of a route that is not.
+        //
+        // NOT FOR THE TRACK-ONLY QUESTION (`throughTermini`): whether any track connects two points does not depend on
+        // the switches, and the square alone answers it completely.
+        if (!throughTermini) return bfsBySettings(start, end, excludePaths);
+
         Set<Point> visited = new HashSet<>();
         Queue<PointPath> queue = new LinkedList<>();
         
@@ -5295,6 +5312,87 @@ public class Layout
         return null;   
     }
     
+    /**
+     * One step of `bfsBySettings`: where it has got to, the route there, and the switch commands that route sets - null
+     * once two of them have disagreed.
+     */
+    private static final class SettingsStep
+    {
+        final Point at;
+        final List<Edge> path;
+        final Map<String, Accessory.accessorySetting> commands;
+
+        SettingsStep(Point at, List<Edge> path, Map<String, Accessory.accessorySetting> commands)
+        {
+            this.at = at;
+            this.path = path;
+            this.commands = commands;
+        }
+    }
+
+    /**
+     * The shortest route from start to end that is not among those excluded, never through a terminus or another copy
+     * of either end, searched by square AND the switch settings on the way (RSA59-B1) - see the note in `bfs`.
+     *
+     * @param start where from
+     * @param end where to, a destination
+     * @param excludePaths routes already found, to be passed over
+     * @return the route, or null
+     */
+    private List<Edge> bfsBySettings(Point start, Point end, List<List<Edge>> excludePaths)
+    {
+        // MARKED WHEN TAKEN OFF THE QUEUE, as `bfs` marks a square, and for its reason: routes of the same length to
+        // a square are all followed on from it, so a caller that has excluded one of them still finds the next
+        Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
+        Set<Point> conflicted = new HashSet<>();
+        Queue<SettingsStep> queue = new LinkedList<>();
+
+        queue.add(new SettingsStep(start, new LinkedList<>(), new HashMap<>()));
+
+        while (!queue.isEmpty())
+        {
+            SettingsStep current = queue.remove();
+
+            if (current.commands == null) conflicted.add(current.at);
+            else if (!HomeStaging.alreadyReached(seen, current.at.getUniqueId(), current.commands))
+            {
+                seen.computeIfAbsent(current.at.getUniqueId(), k -> new ArrayList<>()).add(current.commands);
+            }
+
+            for (Edge next : this.getNeighbors(current.at))
+            {
+                Map<String, Accessory.accessorySetting> commands = current.commands == null ? null
+                    : HomeStaging.withCommandsOf(next, current.commands);
+
+                if (next.getEnd().equals(end))
+                {
+                    List<Edge> path = new LinkedList<>(current.path);
+                    path.add(next);
+
+                    if (excludePaths == null || !excludePaths.contains(path)) return path;
+
+                    continue;
+                }
+
+                // Never through a terminus that is not the end (OB-229), nor round onto another copy of either end (AMR-B1)
+                if (next.getEnd().isTerminus() || next.getEnd().isSamePlaceAs(start)
+                    || next.getEnd().isSamePlaceAs(end)) continue;
+
+                // Passed over when this square has been left already under settings that leave as much freedom - or,
+                // for a route already in conflict, when it has been left in conflict
+                if (commands == null ? conflicted.contains(next.getEnd())
+                    : HomeStaging.alreadyReached(seen, next.getEnd().getUniqueId(), commands)) continue;
+
+                List<Edge> path = new LinkedList<>(current.path);
+                path.add(next);
+
+                queue.add(new SettingsStep(next.getEnd(), path, commands));
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Whether a path would turn the train round on its way somewhere else.
      *
