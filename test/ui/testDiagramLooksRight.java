@@ -2930,4 +2930,88 @@ public class testDiagramLooksRight
         assertTrue(edge[1] < 15, "an empty station's dash pill has an edge " + edge[1] + " darker than its fill - it is"
             + " louder, where D1 made it quieter");
     }
+
+    /**
+     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes (Adam, 2026-10-09:
+     * "make a pass on the curve and switch tile to make sure they are symmetrical.  It looks like there are some pixel
+     * artifacts, as they were made in raster programs"; "extend it to the others too, like the 4-way").
+     *
+     * A curve between the south and east sides is its own mirror image across the diagonal; a left switch is a right
+     * switch turned over; a crossing is the same turned a quarter.  Drawn by hand, they were not: a set sensor on a curve
+     * differed from its own mirror image in 78 pixels at 30 and 230 at 60, the crossing switch from itself turned half
+     * round in 164 and 256.  They are drawn from their geometry now (`docs/tools/tile-icons.py`), and a pixel more than
+     * a shade out (12 of 255) on either side of a mirror is a pixel this counts.
+     *
+     * MUTATION: put any one of the old icons back and this fails.
+     *
+     * @throws Exception reading the icons
+     */
+    @Test
+    public void testTheCurveAndSwitchTilesAreMirrorImages() throws Exception
+    {
+        // tile, what it is the mirror image of: "T" across its diagonal, "H" turned half round, "LR" left to right,
+        // "TB" top to bottom, or another tile's name to be that tile turned over left to right
+        String[][] checks = {
+            {"curve", "T"}, {"curve_parallel", "H"}, {"curve_parallel", "T"}, {"s88_curve", "T"}, {"s88_curve_active", "T"},
+            {"s88_double_curve", "T"}, {"s88_double_curve_active", "T"},
+            {"switch_left", "switch_right"}, {"switch_left_active", "switch_right_active"}, {"switch_y", "switch_y_active"},
+            {"threeway", "LR"}, {"threeway_active", "threeway_active2"},
+            {"cross", "LR"}, {"cross", "TB"}, {"cross", "T"}, {"crossswitch", "H"}, {"crossswitch", "T"},
+            {"crossswitch_active", "H"}, {"crossswitch_active", "T"},
+            {"custom_scissors", "TB"}, {"custom_scissors_active", "TB"}, {"custom_perm_scissors", "TB"},
+            {"custom_perm_left", "custom_perm_right"}, {"custom_perm_y", "LR"}, {"custom_perm_threeway", "LR"},
+            {"s88", "LR"}, {"s88", "TB"}, {"s88_active", "LR"}, {"s88_active", "TB"}, {"end", "LR"}};
+
+        java.util.List<String> off = new java.util.ArrayList<>();
+
+        for (int size : new int[] {30, 60})
+        {
+            for (String[] check : checks)
+            {
+                BufferedImage a = icon(size, check[0]);
+                String how = check[1];
+                BufferedImage b = how.length() <= 2 ? a : icon(size, how);
+                int n = a.getWidth(), wrong = 0;
+
+                for (int y = 0; y < n; y++)
+                {
+                    for (int x = 0; x < n; x++)
+                    {
+                        int mx, my;
+
+                        switch (how)
+                        {
+                            case "T": mx = y; my = x; break;
+                            case "H": mx = n - 1 - x; my = n - 1 - y; break;
+                            case "TB": mx = x; my = n - 1 - y; break;
+                            default: mx = n - 1 - x; my = y;
+                        }
+
+                        int p = a.getRGB(x, y), q = b.getRGB(mx, my), most = 0;
+
+                        for (int shift = 0; shift <= 16; shift += 8)
+                        {
+                            most = Math.max(most, Math.abs(((p >> shift) & 0xFF) - ((q >> shift) & 0xFF)));
+                        }
+
+                        if (most > 12) wrong++;
+                    }
+                }
+
+                if (wrong > 0) off.add(check[0] + " at " + size + " vs " + how + ": " + wrong + " pixels");
+            }
+        }
+
+        assertTrue(off.isEmpty(), "tiles that are not the mirror images their shapes say they are: " + off);
+    }
+
+    /** A tile's icon, as the diagram loads it. */
+    private static BufferedImage icon(int size, String name) throws Exception
+    {
+        java.net.URL at = TrainControlUI.class.getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name + ".gif");
+
+        assertNotNull(at, "no icon " + name + " at " + size);
+
+        return javax.imageio.ImageIO.read(at);
+    }
 }
