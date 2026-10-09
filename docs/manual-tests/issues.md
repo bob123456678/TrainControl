@@ -1715,6 +1715,18 @@ Adam, 2026-10-09: *“Can we prettify address labels to have a white halo outlin
 
 With Show Addresses on, each accessory's and sensor's address is drawn in red at the top left of its square, on a translucent white box that covers the corner of the square's track and signal art.  Draw the letters with a white halo round their outlines instead, and nothing behind the rest, so the number reads on black track and on white alike and covers only what the letters would.
 
+### FR-117 - 2026-10-09 - An autonomy configuration remembers which locomotives are paused, as set on the autonomy locomotive controls tab
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-09  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09: *“Additional FR (don't build yet): in autonomy configs, track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab.”*
+
+**Not to be built yet**, on Adam's word.  The autonomy locomotive controls tab lets a locomotive be paused, so that autonomy leaves it standing while it runs the others.  Today that choice is not kept with the configuration, so it is lost when the configuration is closed, switched or reopened.  Keep it in the configuration, so each configuration comes back with the same locomotives paused.
+
+To settle when it is built: whether the pause belongs to the configuration or to the locomotive (a locomotive paused in one configuration and running in another); what happens to a paused locomotive the configuration no longer has placed; and whether Return Home and the right-click send respect it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
