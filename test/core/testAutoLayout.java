@@ -3137,7 +3137,10 @@ public class testAutoLayout
      * do not - but it still follows it, and still returns it when it reaches the station, because that is how Why Not
      * Moving? learns the reason.  Dropped instead, the station would be explained as if no route led there at all.
      *
-     * Here RC_S - RC_X sets the switch STRAIGHT and RC_X - RC_E sets it TURN, and there is no other way.
+     * Here RC_S - RC_X sets the switch STRAIGHT and RC_X - RC_Y sets it TURN, and RC_Y - RC_E is the only way on: the
+     * conflict arises a square BEFORE the station, so the route has to be followed on from RC_Y in conflict to be found
+     * at all.  (Where it arose on the last edge, the route would be returned on reaching the station whatever was done
+     * with conflicted routes on the way, and the claim could not fail.)
      *
      * MUTATION: drop a route the moment its commands disagree and this fails.
      *
@@ -3150,9 +3153,9 @@ public class testAutoLayout
 
         MarklinAccessory sw = borrowedAccessory(0);
 
-        String[] names = {"RC_S", "RC_X", "RC_E"};
-        boolean[] stations = {true, false, true};
-        int[] sensors = {8980, 8981, 8982};
+        String[] names = {"RC_S", "RC_X", "RC_Y", "RC_E"};
+        boolean[] stations = {true, false, false, true};
+        int[] sensors = {8980, 8981, 8983, 8982};
 
         for (int i = 0; i < names.length; i++)
         {
@@ -3164,7 +3167,8 @@ public class testAutoLayout
         }
 
         layout.createEdge("RC_S", "RC_X").addConfigCommand(sw.getName(), Accessory.accessorySetting.STRAIGHT);
-        layout.createEdge("RC_X", "RC_E").addConfigCommand(sw.getName(), Accessory.accessorySetting.TURN);
+        layout.createEdge("RC_X", "RC_Y").addConfigCommand(sw.getName(), Accessory.accessorySetting.TURN);
+        layout.createEdge("RC_Y", "RC_E");
 
         Locomotive loc = model.getLocByName(model.getLocList().get(0));
 
