@@ -77,6 +77,9 @@ public class testTheTrainIsShownAsALine
     private static BufferedImage withTheTrain;
     private static BufferedImage without;
 
+    /** The tile with the train standing there, drawn in the other style a preference may choose: the line. */
+    private static BufferedImage asALine;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -131,6 +134,18 @@ public class testTheTrainIsShownAsALine
         tile = drawnTileFor(covered);
 
         withTheTrain = paint(tile);
+
+        // And in the style the switch offers instead of coaches (T2): today's line, edge to edge
+        LayoutLabel.setTailStyle(LayoutLabel.TailStyle.LINE);
+
+        try
+        {
+            asALine = paint(tile);
+        }
+        finally
+        {
+            LayoutLabel.setTailStyle(null);
+        }
 
         // AND THE SAME SQUARE WITH NOTHING STANDING ANYWHERE.  A length of zero is how this railway
         // says "not set", and an unmeasured train covers nothing - so the square goes back to being
@@ -581,5 +596,65 @@ public class testTheTrainIsShownAsALine
 
             pump();
         }
+    }
+
+    /**
+     * A train is drawn as whole coaches, one to a square, each stopping short of the square's edge, so the gaps fall at
+     * the joins on a curve as on a straight and no coach is ever cut short (T2 of the look's train tails; Adam,
+     * 2026-10-09: "Do T2 only if you can maintain shape continuity across curves rather than a jagged look when it
+     * straightens out").
+     *
+     * A dash pattern laid along the line would restart at every square and leave a stub wherever a square's road is not a
+     * whole number of dashes long - the diagonal chord of a curve, about seven-tenths of a straight one.  One coach to a
+     * square, its ends trimmed by half a gap, has no stub to leave.  So nothing orange reaches the edge of the square.
+     *
+     * MUTATION: draw the line edge to edge again and this fails.
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheTrainIsDrawnAsWholeCoaches()
+    {
+        int atTheEdge = orangeAtTheEdge(withTheTrain);
+
+        assertEquals(atTheEdge, 0, atTheEdge + " orange pixels lie on the edge of " + covered + " - the train is drawn"
+            + " edge to edge, not as a coach that stops short of the square, so the next square's coach meets it with no"
+            + " gap");
+    }
+
+    /**
+     * Set to the line, the switch draws today's look again: the train edge to edge along its road (Adam, 2026-10-09:
+     * "make it so that we can easily add an option later to switch between T2 and the current look").
+     *
+     * `LayoutLabel.tailStyle` is the one place a preference will read; this is what it must still be able to choose.
+     *
+     * MUTATION: draw coaches whatever the style and this fails.
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheLineStyleStillRunsEdgeToEdge()
+    {
+        assertTrue(orangeAtTheEdge(asALine) > 0, "set to LINE, the train on " + covered + " still stops short of the"
+            + " square's edge - the switch between coaches and today's line does nothing");
+    }
+
+    /**
+     * The orange pixels on a picture's outermost ring.
+     *
+     * @param shot the tile, painted
+     * @return how many there are
+     */
+    private static int orangeAtTheEdge(BufferedImage shot)
+    {
+        int atTheEdge = 0;
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                boolean edge = x <= 0 || y <= 0 || x >= shot.getWidth() - 1 || y >= shot.getHeight() - 1;
+
+                if (edge && isOrange(shot.getRGB(x, y))) atTheEdge++;
+            }
+        }
+
+        return atTheEdge;
     }
 }

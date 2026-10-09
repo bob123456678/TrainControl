@@ -863,26 +863,11 @@ public class StationCaption extends JLabel
                 g2.fillRoundRect(0, 0, len, thick, thick, thick);
 
                 if (isDestination(getBackground())) ring(g2, 0, 0, len, thick);
+                else if (namesSomething()) edge(g2, 0, 0, len, thick);
             }
 
-            String text = drawnText();
-
-            if (text != null && !text.isEmpty() && getFont() != null)
-            {
-                g2.setFont(getFont());
-                g2.setColor(getForeground());
-
-                java.awt.FontMetrics fm = g2.getFontMetrics();
-
-                int pad = (int) Math.round(lineHeight() * SIDE_PADDING);
-
-                // Centred across the pill by its ASCENT and descent rather than by the line height,
-                // which carries leading that no letter occupies - the same correction the page badge
-                // needed when its digits measured a pixel low.
-                int baseline = (thick - (fm.getAscent() + fm.getDescent())) / 2 + fm.getAscent();
-
-                g2.drawString(text, pad, baseline);
-            }
+            // In the middle of the pill, measured as drawn - the same as the flat pill
+            paintText(g2, 0, 0, len, thick);
         }
         finally
         {
@@ -932,6 +917,7 @@ public class StationCaption extends JLabel
                     drawn.height, drawn.height);
 
                 if (isDestination(getBackground())) ring(g2, drawn.x, drawn.y, drawn.width, drawn.height);
+                else if (namesSomething()) edge(g2, drawn.x, drawn.y, drawn.width, drawn.height);
             }
             finally
             {
@@ -939,6 +925,93 @@ public class StationCaption extends JLabel
             }
         }
 
+        // THE PILL'S TEXT IS DRAWN HERE, IN THE MIDDLE OF IT (Adam, 2026-10-09: "In the station label pills, there has
+        // always been a padding issue on the right ... Fix it").  The label's own painter placed it by the width the
+        // text measured for layout; painted at a larger scale - a display at 125 or 150 per cent - the glyphs come out
+        // wider than that, and all of the difference landed at the right end.  Centred by the width it is drawn at, the
+        // two ends get the same room whatever the scale.
+        if (pill)
+        {
+            java.awt.Rectangle drawn = pillBounds();
+
+            if (drawn != null) paintText(g, drawn.x, drawn.y, drawn.width, drawn.height);
+
+            return;
+        }
+
         super.paintComponent(g);
+    }
+
+    /**
+     * Draws the caption's text in the middle of a pill `len` long and `thick` deep, measured as it is drawn.
+     *
+     * @param g the graphics, already turned for a rotated caption
+     * @param x the pill's left
+     * @param y the pill's top
+     * @param len its length along the text
+     * @param thick its depth across the text
+     */
+    private void paintText(Graphics g, int x, int y, int len, int thick)
+    {
+        String text = drawnText();
+
+        if (text == null || text.isEmpty() || getFont() == null) return;
+
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        try
+        {
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.setFont(getFont());
+            g2.setColor(getForeground());
+
+            java.awt.FontMetrics fm = g2.getFontMetrics();
+
+            // By the width as DRAWN: the glyph vector's own advance in this graphics, which carries its scale
+            double wide = getFont().createGlyphVector(g2.getFontRenderContext(), text).getLogicalBounds().getWidth();
+
+            float left = (float) (x + (len - wide) / 2.0);
+            int baseline = y + (thick - (fm.getAscent() + fm.getDescent())) / 2 + fm.getAscent();
+
+            g2.drawString(text, left, baseline);
+        }
+        finally
+        {
+            g2.dispose();
+        }
+    }
+
+    /**
+     * Whether this caption names something - a train, a station - rather than holding a placeholder dash or an arrow
+     * alone.  Only these get the edge (D2), so an empty station gets no louder.
+     *
+     * @return whether the text has a letter or a digit in it
+     */
+    private boolean namesSomething()
+    {
+        String text = getText();
+
+        if (text == null) return false;
+
+        for (int i = 0; i < text.length(); i++)
+        {
+            if (Character.isLetterOrDigit(text.charAt(i))) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * A faint edge round a pill, a shade darker than its fill (D2 of the look's design pass; Adam, 2026-10-09: "Do D1
+     * and D2"), so a caption parts from a signal or a switch drawn under it.
+     */
+    private void edge(Graphics2D g, int x, int y, int w, int h)
+    {
+        Color f = getBackground();
+
+        g.setColor(new Color(Math.max(0, f.getRed() - 70), Math.max(0, f.getGreen() - 70), Math.max(0, f.getBlue() - 70),
+            Math.min(255, f.getAlpha() + 30)));
+        g.setStroke(new java.awt.BasicStroke(1f));
+        g.drawRoundRect(x, y, w - 1, h - 1, h, h);
     }
 }

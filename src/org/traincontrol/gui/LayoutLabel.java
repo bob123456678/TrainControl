@@ -1684,6 +1684,80 @@ public final class LayoutLabel extends JLabel
      *
      * @param g the tile's graphics
      */
+    /**
+     * One coach of a train, along one road of a square (T2 of the look's train tails; Adam, 2026-10-09: "Do T2 only if
+     * you can maintain shape continuity across curves rather than a jagged look when it straightens out").
+     *
+     * WHOLE COACHES, ONE TO A SQUARE.  A dash pattern laid along the line restarts at every square and leaves a stub
+     * wherever a road is not a whole number of dashes long - a curve's diagonal chord is about seven-tenths of a
+     * straight one - which is the jagged look.  Here every road is one coach, its ends trimmed by half a gap, so the
+     * gaps fall exactly at the joins between squares, on a curve as on a straight, and no coach is ever cut short.  On
+     * a curve the coach is shorter, as its chord is.
+     *
+     * @param g the graphics, its colour and stroke set by the caller
+     * @param a one end of the road, a side's midpoint
+     * @param b the other end
+     * @param span the square's size
+     */
+    public static void paintCoach(java.awt.Graphics2D g, int[] a, int[] b, int span)
+    {
+        double dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+
+        if (len < 1) return;
+
+        double ux = dx / len, uy = dy / len;
+
+        // Half a gap at each end, and the round cap's reach inside it, so the drawn coach stops half a gap short
+        float band = Math.max(3f, span / 7f);
+        double trim = COACH_GAP * span / 2.0 + band / 2.0;
+
+        if (len <= 2 * trim) return;
+
+        g.draw(new java.awt.geom.Line2D.Double(a[0] + ux * trim, a[1] + uy * trim, b[0] - ux * trim, b[1] - uy * trim));
+    }
+
+    /** The gap between two coaches, as a share of a square. */
+    public static final double COACH_GAP = 0.16;
+
+    /**
+     * How a train's body is drawn along the track it lies on.
+     */
+    public enum TailStyle
+    {
+        /** A line edge to edge along each road, as since MT-309 and FR-106. */
+        LINE,
+
+        /** Whole coaches, one to a square, the gaps at the joins (T2) - see `paintCoach`. */
+        COACHES
+    }
+
+    /**
+     * The style trains are drawn in.  Coaches since 2026-10-09 (T2).
+     */
+    private static volatile TailStyle tailStyle = TailStyle.COACHES;
+
+    /**
+     * The style trains are drawn in, asked in ONE place so a preference can choose it later (Adam, 2026-10-09: "make it
+     * so that we can easily add an option later to switch between T2 and the current look"): read the preference here,
+     * as `TrainControlUI.stationLabelsAreGrey` reads the caption colour, and every square follows on its next paint.
+     *
+     * @return how a train's body is drawn
+     */
+    public static TailStyle tailStyle()
+    {
+        return tailStyle;
+    }
+
+    /**
+     * Chooses how trains are drawn from now on - for that preference, and for a test.
+     *
+     * @param style the style, null for the default
+     */
+    public static void setTailStyle(TailStyle style)
+    {
+        tailStyle = style == null ? TailStyle.COACHES : style;
+    }
+
     private void paintCoveredMark(java.awt.Graphics2D g)
     {
         if (component == null || component.isText()) return;
@@ -1721,7 +1795,9 @@ public final class LayoutLabel extends JLabel
 
             if (a == null || b == null) continue;
 
-            g.drawLine(a[0], a[1], b[0], b[1]);
+            // A COACH (T2) or a line edge to edge, whichever the diagram is set to draw - see `tailStyle`
+            if (tailStyle() == TailStyle.COACHES) paintCoach(g, a, b, span);
+            else g.drawLine(a[0], a[1], b[0], b[1]);
         }
     }
 

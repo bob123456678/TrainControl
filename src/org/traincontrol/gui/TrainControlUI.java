@@ -6532,7 +6532,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // Empty station
                         j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
 
-                        j.setForeground(Color.BLACK);
+                        // A PLACEHOLDER, so the placeholder grey (D1 of the look's design pass; Adam, 2026-10-09: "Do D1
+                        // and D2"): `StationCaption.onPill` dims it below a name, as the editors' dash already was.  In
+                        // black it was as loud as a train's name.
+                        j.setForeground(new Color(150, 150, 150));
                         j.setBackground(StationCaption.restingFill());
                     }
 

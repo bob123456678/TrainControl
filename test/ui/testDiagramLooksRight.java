@@ -2782,4 +2782,152 @@ public class testDiagramLooksRight
         assertTrue(blue > 60, "a destination caption has " + blue + " pixels of the route's blue round it - it is not"
             + " ringed, so nothing ties it to the route that leads there");
     }
+
+    /**
+     * A pill's text sits in the middle of it, as much room at the right end as at the left (Adam, 2026-10-09: "In the
+     * station label pills, there has always been a padding issue on the right ... Fix it").
+     *
+     * The pill was sized from the text's width as measured for layout, and the text drawn by the label's own painter,
+     * centred by that same measurement; painted at a larger scale - a display scaled to 125 or 150 per cent, or the 2x
+     * the guide's pictures are made at - the glyphs come out wider than measured, and all of the difference lands at the
+     * right end.  Painted here at 2x, the room either side of the ink is measured: with the arrow on the left, on the
+     * right, and none.
+     *
+     * MUTATION: draw the text where the label's layout put it again, and this fails.
+     */
+    @Test
+    public void testAPillsTextSitsInTheMiddleOfIt()
+    {
+        String[] texts = {
+            org.traincontrol.gui.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.StationCaption.ARROW_W),
+            org.traincontrol.gui.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.StationCaption.ARROW_E),
+            "Carlton", "75 407 DB" };
+
+        for (int points : new int[] {12, 15})
+        {
+            for (String text : texts)
+            {
+                org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+                pill.setPill(true);
+                pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, points));
+                pill.setBackground(org.traincontrol.gui.StationCaption.PILL_GREY);
+                pill.setForeground(java.awt.Color.BLACK);
+                pill.setText(text);
+                pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(30, pill.lineHeight()));
+
+                java.awt.Dimension size = pill.getPreferredSize();
+
+                pill.setBounds(0, 0, size.width, size.height);
+
+                java.awt.Rectangle drawn = pill.drawnBounds();
+
+                java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
+                    size.width * 2, size.height * 2, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                java.awt.Graphics2D g = shot.createGraphics();
+
+                g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+                    java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g.scale(2, 2);
+
+                pill.paint(g);
+
+                g.dispose();
+
+                // The pill's ends, along its middle row
+                int mid = (drawn.y + drawn.height / 2) * 2, left = -1, right = -1;
+
+                for (int x = 0; x < shot.getWidth(); x++)
+                {
+                    if (((shot.getRGB(x, mid) >>> 24) & 0xFF) > 100)
+                    {
+                        if (left < 0) left = x;
+                        right = x;
+                    }
+                }
+
+                // The ink, anywhere across the pill's height
+                int inkLeft = Integer.MAX_VALUE, inkRight = -1;
+
+                for (int y = drawn.y * 2; y < (drawn.y + drawn.height) * 2 && y < shot.getHeight(); y++)
+                {
+                    for (int x = 0; x < shot.getWidth(); x++)
+                    {
+                        java.awt.Color c = new java.awt.Color(shot.getRGB(x, y), true);
+
+                        if (c.getAlpha() > 100 && c.getRed() < 90 && c.getGreen() < 90 && c.getBlue() < 90)
+                        {
+                            inkLeft = Math.min(inkLeft, x);
+                            inkRight = Math.max(inkRight, x);
+                        }
+                    }
+                }
+
+                assertTrue(left >= 0 && inkRight >= 0, "precondition: nothing was drawn for \"" + text + "\"");
+
+                int before = inkLeft - left, after = right - inkRight;
+
+                assertTrue(Math.abs(before - after) <= 3, "\"" + text + "\" at " + points + " points, painted at 2x, has "
+                    + before + " pixels of pill before its text and " + after + " after it - the text is not in the middle");
+
+                assertTrue(after >= 4, "\"" + text + "\" at " + points + " points runs to within " + after + " pixels of"
+                    + " the pill's right end");
+            }
+        }
+    }
+
+    /**
+     * A caption that names a train has a faint edge, so it parts from a signal or a switch drawn under it; a placeholder
+     * dash has none, so an empty station gets no louder (D2 of the look's design pass; Adam, 2026-10-09: "Do D1 and D2").
+     *
+     * MUTATION: drop the edge, or draw it on the dash too, and this fails.
+     */
+    @Test
+    public void testANamedCaptionHasAnEdgeAndADashHasNone()
+    {
+        java.awt.Color fill = org.traincontrol.gui.StationCaption.PILL_GREY;
+
+        int[] edge = new int[2];
+
+        String[] texts = {"Carlton", org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY};
+
+        for (int i = 0; i < texts.length; i++)
+        {
+            org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+            pill.setPill(true);
+            pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
+            pill.setBackground(fill);
+            pill.setForeground(java.awt.Color.BLACK);
+            pill.setText(texts[i]);
+            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(30, pill.lineHeight()));
+
+            java.awt.Dimension size = pill.getPreferredSize();
+
+            pill.setBounds(0, 0, size.width, size.height);
+
+            java.awt.Rectangle drawn = pill.drawnBounds();
+
+            java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
+                size.width, size.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            pill.paint(g);
+
+            g.dispose();
+
+            // The top edge, a quarter of the way along: darker than the fill by how much?
+            java.awt.Color top = new java.awt.Color(shot.getRGB(drawn.x + drawn.width / 2, drawn.y), true);
+
+            edge[i] = (fill.getRed() + fill.getGreen() + fill.getBlue()) / 3 - (top.getRed() + top.getGreen() + top.getBlue()) / 3;
+        }
+
+        assertTrue(edge[0] > 30, "a caption naming a train has no edge: its top is only " + edge[0] + " darker than its fill");
+
+        assertTrue(edge[1] < 15, "an empty station's dash pill has an edge " + edge[1] + " darker than its fill - it is"
+            + " louder, where D1 made it quieter");
+    }
 }
