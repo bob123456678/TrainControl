@@ -1727,6 +1727,8 @@ Adam, 2026-10-09: *“Additional FR (don't build yet): in autonomy configs, trac
 
 To settle when it is built: whether the pause belongs to the configuration or to the locomotive (a locomotive paused in one configuration and running in another); what happens to a paused locomotive the configuration no longer has placed; and whether Return Home and the right-click send respect it.
 
+**Adam, 2026-10-09, added:** *“To FR-117, add a requirement to add an ‘active’ checkbox to the right click autonomy menu (also accessible via track diagram).  Show it if there is a locomotive at that station.  On the track diagram viewer, inactive locomotive icons go from black to gray on the track diagram.”*  So: an **Active** tick on the autonomy right-click menu, the diagram's included, offered on a station with a locomotive standing on it and setting the same paused or unpaused state the locomotive controls tab sets; and on the track diagram viewer a paused locomotive's icon is drawn grey where an active one is black.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
