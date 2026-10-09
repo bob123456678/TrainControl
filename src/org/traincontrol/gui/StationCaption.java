@@ -175,6 +175,19 @@ public class StationCaption extends JLabel
     public static final float FONT_SCALE = 0.81f;
 
     /**
+     * How much smaller a caption's text is when it is stood on end (OB-327; Adam, 2026-10-09: "narrow/nudge so that
+     * pills rotated vertically don't touch adjacent stations or terminuses").
+     *
+     * A caption on end stands between two vertical tracks a square apart, in the room between the two stations' badges -
+     * half a square, since a station's badge is half a square across.  At its full size its pill was thicker than that
+     * room: at 60 pixels 32 across a gap of 30, against its own badge on one side and its neighbour's on the other.
+     */
+    private static final float ON_END_SCALE = 0.85f;
+
+    /** The room above and below the letters in a pill on end, as a share of its text's size. */
+    private static final double ON_END_PAD = 0.12;
+
+    /**
      * Whether this label is a caption at all.
      *
      * The same JLabel class draws the user's own writing on the diagram - yard names, notes - and
@@ -383,7 +396,11 @@ public class StationCaption extends JLabel
             // is centred as far as that room goes and then simply starts at the top of it.
             int top = Math.max(0, upShift + (tile - wide) / 2);
 
-            setBorder(javax.swing.BorderFactory.createEmptyBorder(top, backShift + offset, 0, 0));
+            // ACROSS: CENTRED ON THE LINE BETWEEN ITS SQUARE AND THE NEXT (OB-327), which is the middle of the gap
+            // between this station's badge and the badge of a station one square over.  It was set off from its rail
+            // by the flat caption's offset, a line and a nudge, which put it against its own badge.
+            setBorder(javax.swing.BorderFactory.createEmptyBorder(top, Math.max(0, backShift + tile - thickness() / 2),
+                0, 0));
 
             return;
         }
@@ -406,6 +423,11 @@ public class StationCaption extends JLabel
         String text = drawnText();
 
         if (text == null || text.isEmpty()) return 0;
+
+        if (rotated)
+        {
+            return getFontMetrics(drawnFont()).stringWidth(text) + (int) Math.round(thickness() * SIDE_PADDING * 2);
+        }
 
         return getFontMetrics(font).stringWidth(text)
             + (int) Math.round(lineHeight() * SIDE_PADDING * 2);
@@ -762,7 +784,7 @@ public class StationCaption extends JLabel
         if (rotated)
         {
             int len = width();
-            int thick = lineHeight();
+            int thick = thickness();
 
             if (len <= 0 || thick <= 0) return null;
 
@@ -807,7 +829,7 @@ public class StationCaption extends JLabel
             java.awt.Insets pad = getInsets();
 
             return new java.awt.Dimension(
-                lineHeight() + (pad == null ? 0 : pad.left + pad.right),
+                thickness() + (pad == null ? 0 : pad.left + pad.right),
                 width() + (pad == null ? 0 : pad.top + pad.bottom));
         }
 
@@ -833,6 +855,42 @@ public class StationCaption extends JLabel
         if (font == null) return 12;
 
         return getFontMetrics(font).getHeight();
+    }
+
+    /**
+     * The font the text is DRAWN in: the caption's own, or, stood on end, a little smaller (OB-327, `ON_END_SCALE`).
+     *
+     * @return the font
+     */
+    private java.awt.Font drawnFont()
+    {
+        java.awt.Font font = getFont();
+
+        if (!rotated || font == null) return font;
+
+        return font.deriveFont(font.getSize2D() * ON_END_SCALE);
+    }
+
+    /**
+     * How thick the pill is across its text: the line's height flat, and on end as thick as the letters need (OB-327) -
+     * from the top of a tall letter to the foot of one that hangs below the line, and a little room either side.  The
+     * font's line runs higher than any letter, which on end was width spent against the stations either side.
+     *
+     * @return the pill's thickness in pixels
+     */
+    private int thickness()
+    {
+        if (!rotated) return lineHeight();
+
+        java.awt.Font font = drawnFont();
+
+        if (font == null) return lineHeight();
+
+        java.awt.font.FontRenderContext frc = getFontMetrics(font).getFontRenderContext();
+
+        double letters = font.createGlyphVector(frc, "Hgjy").getVisualBounds().getHeight();
+
+        return (int) Math.ceil(letters + 2 * font.getSize2D() * ON_END_PAD);
     }
 
     /**
@@ -1002,7 +1060,7 @@ public class StationCaption extends JLabel
         try
         {
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2.setFont(getFont());
+            g2.setFont(drawnFont());
             g2.setColor(getForeground());
 
             // MEASURED AS DRAWN, in this graphics, which carries its scale.
@@ -1014,8 +1072,8 @@ public class StationCaption extends JLabel
             // twice the size, 13 pixels of pill above "Carlton" and 8 below.  A letter that hangs below the line still
             // does, from the same line as every other caption's.
             java.awt.font.FontRenderContext frc = g2.getFontRenderContext();
-            java.awt.geom.Rectangle2D ink = getFont().createGlyphVector(frc, text).getVisualBounds();
-            double capitals = getFont().createGlyphVector(frc, "H").getVisualBounds().getHeight();
+            java.awt.geom.Rectangle2D ink = drawnFont().createGlyphVector(frc, text).getVisualBounds();
+            double capitals = drawnFont().createGlyphVector(frc, "H").getVisualBounds().getHeight();
 
             float left = (float) (x + (len - ink.getWidth()) / 2.0 - ink.getX());
             float baseline = (float) (y + (thick + capitals) / 2.0);

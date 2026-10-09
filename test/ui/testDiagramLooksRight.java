@@ -3326,4 +3326,81 @@ public class testDiagramLooksRight
 
         return sum;
     }
+
+    /**
+     * A caption stood on end beside a station's vertical track clears that station's badge, and the badge of a station on
+     * the next square over (OB-327; Adam, 2026-10-09: "narrow/nudge so that pills rotated vertically don't touch adjacent
+     * stations or terminuses").
+     *
+     * The badge is MEASURED, painted as the diagram paints a station on vertical track, so this follows whatever size the
+     * badge rule gives; the caption is built and placed as the grid builds and places one, at both tile sizes, empty and
+     * with a train's name.  It stands to the right of its own track, so its near edge must clear its own badge and its
+     * far edge the same badge one square to the right, each by a pixel at 30 and two at 60.
+     *
+     * MUTATION: place it by the flat caption's offset again, or give it the full line height, and this fails.
+     */
+    @Test
+    public void testAPillOnEndClearsTheStationsBesideIt()
+    {
+        String[] texts = {org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY, "75 407 DB",
+            org.traincontrol.gui.StationCaption.withArrow("EN57-947", " " + org.traincontrol.gui.StationCaption.ARROW_W)};
+
+        for (int tile : new int[] {30, 60})
+        {
+            // The station's badge, as drawn, measured across its middle row
+            BufferedImage square = paintedOnWhite(new org.traincontrol.automationui.TileAnnotation(null, 0, false,
+                new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true,
+                    org.traincontrol.automationui.TilePorts.Side.N, org.traincontrol.automationui.TilePorts.Side.S),
+                false, false, false, null), tile);
+
+            int badgeLeft = -1, badgeRight = -1;
+
+            for (int x = 0; x < tile; x++)
+            {
+                int rgb = square.getRGB(x, tile / 2);
+
+                if (255 - Math.min((rgb >> 16) & 0xFF, Math.min((rgb >> 8) & 0xFF, rgb & 0xFF)) > 40)
+                {
+                    if (badgeLeft < 0) badgeLeft = x;
+                    badgeRight = x;
+                }
+            }
+
+            assertTrue(badgeLeft >= 0, "precondition: no station badge drawn at " + tile + " pixels");
+
+            int margin = tile >= 60 ? 2 : 1;
+
+            for (String text : texts)
+            {
+                org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+                // as the grid builds one: the caption font, a tenth or so smaller, then stood on end and placed
+                java.awt.Font font = new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN,
+                    tile / 2);
+
+                pill.setPill(true);
+                pill.setFont(font.deriveFont(font.getSize2D() * org.traincontrol.gui.StationCaption.FONT_SCALE));
+                pill.setBackground(org.traincontrol.gui.StationCaption.PILL_GREY);
+                pill.setText(text);
+                pill.setRotated(true);
+                pill.setTileGeometry(tile, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(tile, pill.lineHeight()));
+
+                java.awt.Dimension size = pill.getPreferredSize();
+
+                pill.setBounds(0, 0, size.width, size.height);
+
+                java.awt.Rectangle drawn = pill.drawnBounds();
+
+                // the cell of a caption on end starts at its own square, so these are from the square's left edge
+                int near = drawn.x, far = drawn.x + drawn.width - 1;
+
+                assertTrue(near >= badgeRight + 1 + margin, "\"" + text + "\" stood on end at " + tile + " pixels starts"
+                    + " at " + near + ", on or against its own station's badge, which reaches " + badgeRight);
+
+                assertTrue(far <= tile + badgeLeft - 1 - margin, "\"" + text + "\" stood on end at " + tile + " pixels"
+                    + " reaches " + far + ", on or against the badge of a station one square over, which starts at "
+                    + (tile + badgeLeft));
+            }
+        }
+    }
 }
