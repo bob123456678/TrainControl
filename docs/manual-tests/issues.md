@@ -1685,6 +1685,26 @@ A bulk tool on the autonomy diagram's right-click menu.  Every locomotive that h
 
 To settle when it is built: what it does while a run is in progress (refused, as other placements are); a locomotive whose home another train's home shares or overlaps; a home on a page that is not loaded; whether it asks before clearing the stations it empties; and how the tail behind each train is laid, since a train put down with no road it came by has no tail.
 
+### OB-326 - 2026-10-09 - At the large tile size, the marks that say trains cannot arrive from a direction are misshapen and tan; they should be the small size's shape, in grey
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-09  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09, with a screenshot of the 60-pixel view: *"In 60px view, the “trains can't arrive from this direction” arrow's have an odd shape. Make it consistent with the 30px, and gray."*
+
+At 60 pixels the mark beside a station that refuses arrivals from one side is drawn as a hollow triangle outline and a tan chevron, where the 30-pixel diagram draws a plain arrow.  It should be the same shape at both sizes, scaled, and grey.
+
+### OB-327 - 2026-10-09 - A station's pill stood on end touches the station or buffer stop beside it
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-09  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09, with a screenshot: *"narrow/nudge so that pills rotated vertically don't touch adjacent stations or terminuses."*
+
+A caption turned on end, beside a vertical track, is as thick as a flat pill is tall and is placed by the same offset, so where a station or a buffer stop stands on the next square it runs into it.  Narrow the pill on end, or nudge it, so that it clears what stands beside it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
