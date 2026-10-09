@@ -3114,4 +3114,121 @@ public class testDiagramLooksRight
     {
         return (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3;
     }
+
+    /**
+     * A square's address is red letters with a white halo round them, and no box behind them (Adam, 2026-10-09: "Can we
+     * prettify address labels to have a white halo outline around the red text rather than a rectangle around them?").
+     *
+     * Each address label on a page with Show Addresses on is painted alone onto black.  A box behind the text lights the
+     * label's corners; a halo leaves them black and puts white only round the letters.
+     *
+     * MUTATION: put the box back and this fails.
+     *
+     * @throws Exception from Swing
+     */
+    @Test
+    public void testAnAddressHasAHaloAndNoBox() throws Exception
+    {
+        LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
+
+        final boolean addressesWere = page.getShowAddress();
+
+        page.setShowAddress(true);
+
+        try
+        {
+            support.Rendered drawn = support.Rendered.open(page, ui);
+
+            drawn.snapshot();
+
+            java.util.List<javax.swing.JLabel> addresses = new java.util.ArrayList<>();
+
+            collectAddresses(drawn.host(), addresses);
+
+            assertFalse(addresses.isEmpty(), "precondition: no address label on " + page.getName() + " with Show Addresses on");
+
+            int checked = 0;
+
+            for (final javax.swing.JLabel label : addresses)
+            {
+                final BufferedImage[] shot = new BufferedImage[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    java.awt.Dimension d = label.getSize();
+
+                    shot[0] = new BufferedImage(Math.max(1, d.width), Math.max(1, d.height), BufferedImage.TYPE_INT_RGB);
+
+                    java.awt.Graphics2D g = shot[0].createGraphics();
+
+                    g.setColor(java.awt.Color.BLACK);
+                    g.fillRect(0, 0, shot[0].getWidth(), shot[0].getHeight());
+
+                    label.paint(g);
+
+                    g.dispose();
+                });
+
+                BufferedImage s = shot[0];
+
+                if (s.getWidth() < 4 || s.getHeight() < 4) continue;
+
+                int red = 0, white = 0;
+
+                for (int y = 0; y < s.getHeight(); y++)
+                {
+                    for (int x = 0; x < s.getWidth(); x++)
+                    {
+                        int rgb = s.getRGB(x, y), r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                        if (r > 180 && g < 80 && b < 80) red++;
+                        if (r > 200 && g > 200 && b > 200) white++;
+                    }
+                }
+
+                String what = "the address \"" + label.getText() + "\" on " + page.getName();
+
+                for (int[] corner : new int[][] {{0, 0}, {s.getWidth() - 1, 0}, {0, s.getHeight() - 1},
+                    {s.getWidth() - 1, s.getHeight() - 1}})
+                {
+                    int rgb = s.getRGB(corner[0], corner[1]);
+
+                    int brightest = Math.max((rgb >> 16) & 0xFF, Math.max((rgb >> 8) & 0xFF, rgb & 0xFF));
+
+                    assertTrue(brightest < 40, what + " paints its corner (" + corner[0] + "," + corner[1] + ") - a box"
+                        + " behind the text, where Adam asked for a halo round the letters");
+                }
+
+                // and the letters, red on white
+                assertTrue(red > 0, what + " draws nothing red");
+
+                assertTrue(white > 0, what + " has no white round its letters");
+
+                checked++;
+            }
+
+            assertTrue(checked > 0, "precondition: no address label big enough to look at on " + page.getName());
+        }
+        finally
+        {
+            page.setShowAddress(addressesWere);
+        }
+    }
+
+    /** Every address label under a component: a plain label, not a square's tile or a station's caption. */
+    private static void collectAddresses(java.awt.Container under, java.util.List<javax.swing.JLabel> into)
+    {
+        for (java.awt.Component c : under.getComponents())
+        {
+            if (c instanceof javax.swing.JLabel && !(c instanceof org.traincontrol.gui.LayoutLabel)
+                && !(c instanceof org.traincontrol.gui.StationCaption))
+            {
+                String text = ((javax.swing.JLabel) c).getText();
+
+                if (text != null && text.replaceAll("<[^>]*>", "").trim().matches("\\d+[rg]?(\\s.*)?")) into.add((javax.swing.JLabel) c);
+            }
+
+            if (c instanceof java.awt.Container) collectAddresses((java.awt.Container) c, into);
+        }
+    }
 }

@@ -86,6 +86,16 @@ public final class Rendered
     }
 
     /**
+     * The panel the grid was built into, for a test that looks at what the grid put there.
+     *
+     * @return the host
+     */
+    public JPanel host()
+    {
+        return host;
+    }
+
+    /**
      * Paints the grid as it stands now.
      *
      * The tiles decode their images on a worker, so this waits for them to settle first - otherwise the
