@@ -99,6 +99,13 @@ agree.
   The scan that used to produce that verdict was wrong three separate times and was removed rather
   than repaired, so the weaker true answer is the one that stands.
   `core.testHomeStaging.testTwoHomesThatHoldEachOtherBackAreADeadlock` pins it.
+- **A train that cannot leave where it stands is named** (OB-325, from E2E-B1). With every other train
+  taken off, a train with no move at all - a reversible train of 4 on BottomMainB's turning copy, where
+  every station reachable is shorter - can never get home, and Return Home answers `IMPOSSIBLE` with its
+  name and the reason (`HomeStaging.hasAFirstMove`). It used to search the whole fleet for about fifteen
+  seconds and answer `NO_PLAN_FOUND`, naming nobody. A proof, not a guess: another train only ever takes
+  moves away, so a train held in only by another is still planned
+  (`core.testHomeStaging.testATrainHeldInOnlyByAnotherIsPlannedNotNamed`).
 
 **"Full autonomy" is still narrower than "autonomy is running", and the distinction survives this
 change.** Executing a timetable sets the same running flag, and a Return Home run *is* a timetable, so

@@ -8,6 +8,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
@@ -355,6 +356,80 @@ public class testAMayTurnStationIsNotATerminus
             train.setReversible(false);
 
             layout.moveLocomotive(null, elsewhere.getName(), true);
+        }
+    }
+
+    /**
+     * On his railway: Return Home names a train of 4 standing on BottomMainB's turning copy, from which nothing it fits
+     * can be reached, rather than searching the whole fleet and answering that no plan was found (OB-325, from E2E-B1).
+     *
+     * The end-to-end validation found it there: about fifteen seconds of searching, then "no plan found", naming nobody.
+     * Since round 92 autonomy does not send a train there; one placed or sent there by hand still stands there.
+     *
+     * MUTATION: drop the first-move scan from `HomeStaging.plan` and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testReturnHomeNamesATrainThatCannotLeaveTheTurningCopy() throws Exception
+    {
+        Point turning = named("BottomMainB (eastbound, reverse)");
+
+        // A home anywhere else that would take the train, so that the only thing in its way is where it stands
+        Point home = null;
+
+        for (Point p : layout.getPoints())
+        {
+            if (p.isDestination() && p.isActive() && !p.isTerminus() && !p.isSamePlaceAs(turning)
+                && p.getCurrentLocomotive() == null
+                && (p.getMaxTrainLength() == null || p.getMaxTrainLength() == 0 || p.getMaxTrainLength() >= 4))
+            {
+                home = p;
+                break;
+            }
+        }
+
+        assertNotNull(home, "precondition: no station on the railway would take a train of 4 as its home");
+
+        Point hadHome = layout.getHomeStation(train);
+        Integer wasLength = train.getTrainLength();
+
+        try
+        {
+            train.setReversible(true);
+            train.setTrainLength(4);
+
+            assertTrue(layout.moveLocomotive(train.getName(), turning.getName(), false),
+                "precondition: the train could not be stood on " + turning.getName());
+
+            layout.setHomeLocomotive(home.getName(), train.getName());
+
+            long began = System.currentTimeMillis();
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            long took = System.currentTimeMillis() - began;
+
+            assertTrue(plan.getBlocked().contains(train), "Return Home did not name the train of 4 that cannot leave "
+                + turning.getName() + " - it answered " + plan.getOutcome() + " after " + took + " ms, naming "
+                + plan.getBlocked() + " (OB-325)");
+
+            List<String> why = plan.getReasons().get(train);
+
+            assertTrue(why != null && why.stream().anyMatch(s -> s.contains("BottomMainB")),
+                "the reason does not say where the train is stuck: " + why);
+
+            assertTrue(took < 5000, "naming the train took " + took + " ms - the whole fleet was searched first");
+        }
+        finally
+        {
+            train.setTrainLength(wasLength);
+            train.setReversible(false);
+
+            layout.moveLocomotive(null, turning.getName(), true);
+            layout.setHomeLocomotive(home.getName(), null);
+
+            if (hadHome != null) layout.setHomeLocomotive(hadHome.getName(), train.getName());
         }
     }
 
