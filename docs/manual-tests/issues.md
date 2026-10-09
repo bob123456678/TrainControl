@@ -1673,6 +1673,18 @@ Round 92 stops full autonomy sending a train there.  A train placed there, or se
 
 To settle: when one train has no first move at all, Return Home should name it and say why (too long for every station reachable from where it stands), rather than searching the whole fleet and reporting nothing.  A setup check that warns where a turning copy admits a longer train than any station it leads to would catch the same thing before a run.
 
+### FR-115 - 2026-10-09 - Place all at their homes: every locomotive put on its home, facing the way it is homed, every other station cleared, nothing moved
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-09  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09: *"Add a new FR (bulk tool in autonomy): Place all at their homes.  Teleports locomotives to their home stations, facing the correct way, and clears all other locomotives from other stations (without actually moving anything).  Then build this and add it to the right-click menu"*
+
+A bulk tool on the autonomy diagram's right-click menu.  Every locomotive that has a home is put on its home station, facing the way it is homed; every other station is cleared of whatever locomotive stands there.  Nothing is sent to the railway: it changes where autonomy believes the trains are, as placing a train by hand does, for when the trains are already standing at home (after a session, or after carrying them there by hand) and the diagram has lost track of them.
+
+To settle when it is built: what it does while a run is in progress (refused, as other placements are); a locomotive whose home another train's home shares or overlaps; a home on a page that is not loaded; whether it asks before clearing the stations it empties; and how the tail behind each train is laid, since a train put down with no road it came by has no tail.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
