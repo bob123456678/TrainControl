@@ -605,7 +605,14 @@ public final class HomeStaging
 
             Point from = locationOf(this.start, l);
 
-            if (atHome(home, from) || this.hasAFirstMove(l, from)) continue;
+            if (atHome(home, from) || this.hasAFirstMove(l, from, true)) continue;
+
+            // NOT WHERE A SENSOR IS ALL THAT HOLDS IT (RSA58-C1).  A sensor that reads occupied with no train on the
+            // graph to account for it - a vehicle TrainControl does not know, a dirty contact, a tail past where the walk
+            // stops - blocks every arrangement alike, so it would pass for a proof; but it is live state, and goes when
+            // somebody clears it.  A train with a move once no sensor is read is left to the search, which answers as it
+            // did before round 93: nothing found, it may still be possible - try moving something by hand.
+            if (this.hasAFirstMove(l, from, false)) continue;
 
             unreachable.add(l);
 
@@ -2095,11 +2102,15 @@ public final class HomeStaging
      * turn on the way may end, a train turned by the plan going only home) are not asked, so this may say "it can move"
      * where the search would not - that train is then searched for as before - and never the other way round.
      *
+     * Asked twice by `plan`: reading the sensors, as the search reads them, and then with none read - a train held only
+     * by a sensor nothing on the graph accounts for is not named (RSA58-C1).
+     *
      * @param l the train
      * @param from where it stands
+     * @param readTheSensors false to ask as if no sensor read occupied
      * @return true when some station can be reached from there by a route the search could use
      */
-    private boolean hasAFirstMove(Locomotive l, Point from)
+    private boolean hasAFirstMove(Locomotive l, Point from, boolean readTheSensors)
     {
         // Nothing to ask the track with: not a proof either way
         if (this.layout == null || from == null) return true;
@@ -2111,7 +2122,7 @@ public final class HomeStaging
             if (l.equals(at.getValue())) alone.put(at.getKey(), l);
         }
 
-        Set<String> blocked = blockedSensors(alone);
+        Set<String> blocked = readTheSensors ? blockedSensors(alone) : new HashSet<String>();
 
         // AS THE SEARCH BEGINS: nothing moved yet, so no train carries a route that brought it here
         Map<Locomotive, List<Edge>> was = this.movedAlong;
