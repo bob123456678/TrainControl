@@ -57,6 +57,13 @@ public final class DiagramColours
     public static final float PATH_HELD_WASH_ALPHA = 0.45f;
 
     /**
+     * A running train's destination caption: a warm yellow, ringed in `PATH_AHEAD` by the pill that wears it (Adam,
+     * 2026-10-09, the diagram look proposals: "Build 2,3,5,6").  It was pure yellow with red text, the loudest pair
+     * on the page, and red reads as a fault; the ring ties the destination to the route that leads there.
+     */
+    public static final Color DESTINATION = new Color(255, 214, 64);
+
+    /**
      * A train: its line along the track it lies on, the whole length of its tail, standing or running (MT-309, FR-106),
      * and the cross of a square nothing can pass: an orange, rgb(255,102,0).
      */

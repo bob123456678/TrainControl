@@ -56,8 +56,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         this.locName.setText(locomotive.getName());
         
         // Style labels
-        locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), new Color(0,0,115), 1, 999));
-        locStation.setBackground(new Color(0,0,115));
+        locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), StationCaption.PILL, 1, 999));
+        locStation.setBackground(StationCaption.PILL);
         locStation.setForeground(new Color(255,255,255));
         
         explainOnHover();
@@ -242,7 +242,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         {
             DefaultListModel<String> pathList = new DefaultListModel<>();
             
-            this.locDest.setForeground(new Color(0, 0, 115));
+            this.locDest.setForeground(StationCaption.PILL);
             
             // Ensure consistent state
             this.pauseButton.setSelected(locomotive.isAutonomyPaused());
@@ -297,9 +297,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.pauseButton.setVisible(true);
                 
                 // Restore label color
-                locStation.setBackground(new Color(0,0,115));
+                locStation.setBackground(StationCaption.PILL);
                 locStation.setForeground(Color.WHITE);
-                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), new Color(0,0,115), 1, 999 ));
+                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), StationCaption.PILL, 1, 999 ));
             }
             
             this.locStation.setToolTipText("");
