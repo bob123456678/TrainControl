@@ -6791,4 +6791,59 @@ public class testHomeStaging
 
         assertEveryoneHome(layout);
     }
+
+    /**
+     * A sensor reading occupied with nothing known on it is not a proof that a train can never leave (RSA58-C1).
+     *
+     * Round 93 names a train with no move at all as one that can never get home.  A sensor that reads occupied which
+     * no train on the graph accounts for blocks every arrangement alike, so where one lay on a train's only way out the
+     * train was named, with a sentence about its length and where it may stop - neither of which was the cause.  What
+     * holds such a contact is a vehicle TrainControl does not know, a dirty contact, or a tail past where the walk stops,
+     * and it goes when somebody clears it: that is live state, not a fact about the railway.  So such a train is left to
+     * the search, which answers as it did before round 93 - nothing found, it may still be possible.  The control: the
+     * sensor clear, the plan is ready.
+     *
+     * MUTATION: name the train without asking again with no sensor read, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testASensorOnTheOnlyWayOutIsNotAProof() throws Exception
+    {
+        Layout layout = load(json("{'points': ["
+            + "{'name': 'HS T', 'station': true, 's88': " + S88_BASE + ", 'loc': {'name': '" + LOC_A + "'}},"
+            + "{'name': 'HS M', 'station': false, 's88': " + (S88_BASE + 1) + "},"
+            + "{'name': 'HS H', 'station': true, 's88': " + (S88_BASE + 2) + "}"
+            + "],'edges': [" + edge("HS T", "HS M") + "," + edge("HS M", "HS H")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assign(layout, LOC_A, "HS H");
+
+        String sensor = layout.getPoint("HS M").getS88();
+
+        try
+        {
+            model.setFeedbackState(sensor, true);
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertFalse(plan.getBlocked().contains(loc(LOC_A)), "a train held only by a sensor that reads occupied with"
+                + " nothing known on it was named as one that can never get home (" + plan.getOutcome() + ", "
+                + plan.getReasons() + ") - the sensor goes when somebody clears it (RSA58-C1)");
+
+            assertEquals(plan.getOutcome(), HomeStaging.Outcome.NO_PLAN_FOUND, "a train held only by an occupied sensor"
+                + " is answered as before round 93: nothing found, it may still be possible");
+
+            // THE CONTROL: the sensor clear, the one road home is open
+            model.setFeedbackState(sensor, false);
+
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "control: with the sensor clear the train still cannot be planned home, so the answer above is not the"
+                + " sensor's");
+        }
+        finally
+        {
+            model.setFeedbackState(sensor, false);
+        }
+    }
 }
