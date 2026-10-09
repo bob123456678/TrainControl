@@ -587,6 +587,31 @@ public final class HomeStaging
             }
         }
 
+        // NOR ONE THAT CANNOT LEAVE WHERE IT STANDS (OB-325, from E2E-B1).
+        //
+        // The end-to-end validation stood a reversible train of 4 on BottomMainB's turning copy, from which every station
+        // reachable is shorter.  Its home was connected by track, so the scan above passed it, and the search could find
+        // no first move for it: Return Home searched the whole fleet for about fifteen seconds and answered "no plan
+        // found", naming nobody.  A train with no first move and not at home can never get home, so that is a proof, and
+        // it is said with the train's name.
+        //
+        // Asked with every other train taken off (`hasAFirstMove`), which is what makes it a proof rather than a guess:
+        // another train only ever takes moves away, so a train with no move on an empty railway has none on any.
+        for (Locomotive l : this.start.values())
+        {
+            Point home = this.homes.get(l);
+
+            if (home == null || unreachable.contains(l)) continue;
+
+            Point from = locationOf(this.start, l);
+
+            if (atHome(home, from) || this.hasAFirstMove(l, from)) continue;
+
+            unreachable.add(l);
+
+            reason(reasons, l, I18n.f("autolayout.whyHomeCannotLeave", Layout.placeNameOf(from)));
+        }
+
         // Goals that conflict with each other, which no arrangement can satisfy either.  Two homes on
         // one detection section is the easiest wrong click on a layout that shares addresses - a
         // platform and its bypass - and nothing warns when the assignment is made, because canBeHome is
@@ -2055,6 +2080,59 @@ public final class HomeStaging
         }
 
         return null;
+    }
+
+    /**
+     * Whether this train could make any move at all from where it stands, with every other train taken off (OB-325).
+     *
+     * The search's own move - `firstClearRoute`, to each station it would try - asked of an arrangement holding this
+     * train alone.  Every rule that reads the arrangement only takes moves away when another train is in it: a square
+     * someone stands on, a sensor a standing train or its tail explains, a station held back by an occupied one, a tail
+     * lying across the way.  A sensor occupied with nothing known on it blocks every arrangement alike.  So no move here
+     * means no move in any arrangement the search could reach, and `plan` may name the train as a proof.
+     *
+     * Looser than the search on purpose where it differs: the rules the search applies after a route is found (where a
+     * turn on the way may end, a train turned by the plan going only home) are not asked, so this may say "it can move"
+     * where the search would not - that train is then searched for as before - and never the other way round.
+     *
+     * @param l the train
+     * @param from where it stands
+     * @return true when some station can be reached from there by a route the search could use
+     */
+    private boolean hasAFirstMove(Locomotive l, Point from)
+    {
+        // Nothing to ask the track with: not a proof either way
+        if (this.layout == null || from == null) return true;
+
+        Map<Point, Locomotive> alone = new HashMap<>();
+
+        for (Map.Entry<Point, Locomotive> at : this.start.entrySet())
+        {
+            if (l.equals(at.getValue())) alone.put(at.getKey(), l);
+        }
+
+        Set<String> blocked = blockedSensors(alone);
+
+        // AS THE SEARCH BEGINS: nothing moved yet, so no train carries a route that brought it here
+        Map<Locomotive, List<Edge>> was = this.movedAlong;
+
+        this.movedAlong = new java.util.HashMap<>();
+
+        try
+        {
+            for (Point to : this.stations)
+            {
+                if (to.equals(from) || alone.containsKey(to)) continue;
+
+                if (firstClearRoute(alone, blocked, l, from, to) != null) return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            this.movedAlong = was;
+        }
     }
 
     /**

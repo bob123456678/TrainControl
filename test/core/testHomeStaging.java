@@ -4048,7 +4048,9 @@ public class testHomeStaging
             turning.getPoint("RN_R").setReversing(true);
             assign(turning, LOC_A, "RN_H");
 
-            assertEquals(HomeStaging.snapshot(turning).plan().getOutcome(), HomeStaging.Outcome.NO_PLAN_FOUND,
+            // IMPOSSIBLE, NAMING IT, since OB-325: RN_H is the only other station, so a train refused the one road there
+            // has no move at all, and the plan says so with its name rather than searching and answering "no plan found"
+            assertEquals(HomeStaging.snapshot(turning).plan().getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
                 "the only road home turns the train at RN_R, where one unit of measured track lies behind it, and a"
                 + " three-unit train was sent there anyway - so it stands across the junction and the railway refuses"
                 + " the move (AMH-C2)");
@@ -6678,5 +6680,115 @@ public class testHomeStaging
         assertTrue(model.getAutoLayout().isValid(),
             "the plain fixture does not load either, so the claim above is about the fixture and not the maximum: "
             + Layout.getLastError());
+    }
+
+    /**
+     * A train that cannot leave where it stands is named, not searched for (OB-325, from E2E-B1).
+     *
+     * The end-to-end validation stood a reversible train of 4 on BottomMainB's turning copy, from which every station
+     * reachable is shorter.  Its home was connected by track, so the pre-scan passed it, and the search could find no
+     * first move for it: Return Home searched the whole fleet for about fifteen seconds and answered "no plan found",
+     * naming nobody, so the operator could not tell which train to move.
+     *
+     * Here the train stands on HS T, whose one way out is HS U - a terminus that takes 2 - and its home HS A lies beyond
+     * HS U.  The track connects them; a train of 4 can never leave.  The plan is IMPOSSIBLE and names it, with the
+     * reason.  The control: a train of 2 fits HS U and goes home in two moves.
+     *
+     * MUTATION: drop the first-move scan from `plan` and the first assertion fails (NO_PLAN_FOUND); have the scan
+     * answer "no move" for everybody and the control does.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainThatCannotLeaveWhereItStandsIsNamed() throws Exception
+    {
+        Layout layout = load(json("{'points': ["
+            + "{'name': 'HS A', 'station': true, 's88': " + S88_BASE + ", 'maxTrainLength': 9},"
+            + "{'name': 'HS T', 'station': true, 's88': " + (S88_BASE + 1) + ", 'loc': {'name': '" + LOC_A + "'}},"
+            + "{'name': 'HS U', 'station': true, 's88': " + (S88_BASE + 2) + ", 'terminus': true, 'maxTrainLength': 2}"
+            + "],'edges': [" + edge("HS T", "HS U") + "," + edge("HS U", "HS A")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assertTrue(layout.getPoint("HS U").isTerminus(), "precondition: HS U is not a terminus");
+        assertEquals((int) layout.getPoint("HS U").getMaxTrainLength(), 2, "precondition: HS U does not take 2");
+
+        assign(layout, LOC_A, "HS A");
+
+        MarklinLocomotive train = loc(LOC_A);
+
+        boolean[] wasReversible = setReversible(true, LOC_A);
+        Integer wasLength = train.getTrainLength();
+
+        try
+        {
+            train.setTrainLength(4);
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE, "a train of 4 on HS T, whose only way out is"
+                + " a terminus that takes 2, can never leave - Return Home searched for it and answered that nothing was"
+                + " found, naming nobody (OB-325).  Got: " + plan.getOutcome());
+
+            assertEquals(plan.getBlocked(), java.util.Collections.singletonList(train), "the train that cannot leave was"
+                + " not the one named");
+
+            List<String> why = plan.getReasons().get(train);
+
+            assertTrue(why != null && why.stream().anyMatch(s -> s.contains("HS T")), "the reason does not say where the"
+                + " train is stuck: " + why);
+
+            // THE CONTROL: a train of 2 fits HS U, turns there and goes home
+            train.setTrainLength(2);
+
+            HomeStaging.Plan control = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(control.getOutcome(), HomeStaging.Outcome.READY, "a train of 2, which fits HS U, was not planned"
+                + " home - the scan refuses a train that can leave.  Got: " + control);
+        }
+        finally
+        {
+            train.setTrainLength(wasLength);
+            restoreReversible(wasReversible, LOC_A);
+        }
+    }
+
+    /**
+     * A train held in only by another train is planned, not named (OB-325's guard).
+     *
+     * The first-move scan names a train as one that can never leave, and that is a proof only because it is asked with
+     * every other train taken off.  Here HS alpha's one way out runs through HS U, where HS bravo stands, and HS bravo can
+     * move on to its own home first.  Asked with HS bravo left where it is, HS alpha would have no move at all, and the
+     * plan would name it as stuck where two moves bring both trains home.
+     *
+     * MUTATION: ask the scan with the whole arrangement instead of the train alone, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainHeldInOnlyByAnotherIsPlannedNotNamed() throws Exception
+    {
+        Layout layout = load(json("{'points': ["
+            + station("HS X", 0, LOC_A) + ","
+            + station("HS U", 1, LOC_B) + ","
+            + station("HS H", 2, null) + ","
+            + station("HS Y", 3, null)
+            + "],'edges': [" + edge("HS X", "HS U") + "," + edge("HS U", "HS H") + "," + edge("HS U", "HS Y")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assign(layout, LOC_A, "HS H");
+        assign(layout, LOC_B, "HS Y");
+
+        assertEquals(locationOfLoc(layout, LOC_B), layout.getPoint("HS U"),
+            "precondition: HS bravo is not standing in HS alpha's way");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY, "HS alpha's only way out is through HS bravo, which"
+            + " can move on to its own home first - the plan answered " + plan.getOutcome() + ", naming "
+            + plan.getBlocked() + ": a train that another only had to move out of the way for was named as stuck");
+
+        applyPlan(layout, plan);
+
+        assertEveryoneHome(layout);
     }
 }
