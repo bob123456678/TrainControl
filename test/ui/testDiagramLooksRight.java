@@ -3403,4 +3403,103 @@ public class testDiagramLooksRight
             }
         }
     }
+
+    /**
+     * A square's address is drawn over the locomotive standing on it, not under it (FR-116; Adam, 2026-10-09: "Red
+     * address labels look good, but make sure they are rendered on top of the autonomy locomotive icons").
+     *
+     * The diagram's container paints its children and then every tile's train over them (OB-159), so an address,
+     * being a child, was painted over by the icon.  Here an address lies across the middle of a square with a running
+     * train on it, where the icon is; its red letters must all still be there with the train drawn.
+     *
+     * MUTATION: drop the last pass that paints the addresses over the trains and this fails.
+     */
+    @Test
+    public void testAnAddressIsDrawnOverTheTrain() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        final int size = 120;
+
+        org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        org.traincontrol.gui.AddressLabel address = new org.traincontrol.gui.AddressLabel();
+
+        address.setForeground(java.awt.Color.RED);
+        address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, size / 3));
+        address.setLines("88");
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size, size);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        tile.setBounds(0, 0, size, size);
+
+        java.awt.Dimension d = address.getPreferredSize();
+
+        // across the middle of the square, where the icon is drawn
+        address.setBounds((size - d.width) / 2, (size - d.height) / 2, d.width, d.height);
+
+        grid.add(address);
+        grid.add(tile);
+
+        // the order the grid builds them in: an address in front of its tile
+        grid.setComponentZOrder(address, 0);
+
+        BufferedImage alone = shotOf(grid, size);
+
+        tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+            org.traincontrol.automationui.TileOverlay.State.ACTIVE, true, true, null));
+
+        BufferedImage withTrain = shotOf(grid, size);
+
+        // CONTROL: the train is drawn where the address is, or nothing below could tell the orders apart
+        assertTrue(differs(alone, withTrain, address.getBounds()), "precondition: the train's icon does not reach the"
+            + " address in the middle of the square, so the order they are drawn in cannot show");
+
+        int red = 0, kept = 0;
+
+        java.awt.Rectangle at = address.getBounds();
+
+        for (int y = at.y; y < at.y + at.height; y++)
+        {
+            for (int x = at.x; x < at.x + at.width; x++)
+            {
+                if (isAddressRed(alone.getRGB(x, y)))
+                {
+                    red++;
+
+                    if (isAddressRed(withTrain.getRGB(x, y))) kept++;
+                }
+            }
+        }
+
+        assertTrue(red > 0, "precondition: the address drew nothing red");
+
+        assertTrue(kept == red, "with a train on the square, " + (red - kept) + " of the address's " + red + " red pixels are"
+            + " painted over - the locomotive's icon is drawn on top of the address");
+    }
+
+    private static boolean isAddressRed(int rgb)
+    {
+        return ((rgb >> 16) & 0xFF) > 200 && ((rgb >> 8) & 0xFF) < 60 && (rgb & 0xFF) < 60;
+    }
+
+    private static boolean differs(BufferedImage a, BufferedImage b, java.awt.Rectangle within)
+    {
+        for (int y = within.y; y < within.y + within.height; y++)
+        {
+            for (int x = within.x; x < within.x + within.width; x++)
+            {
+                if (a.getRGB(x, y) != b.getRGB(x, y)) return true;
+            }
+        }
+
+        return false;
+    }
 }

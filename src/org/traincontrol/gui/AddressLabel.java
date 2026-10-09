@@ -32,7 +32,7 @@ public final class AddressLabel extends JLabel
     /** The lines drawn, top to bottom. */
     private String[] lines = new String[0];
 
-    AddressLabel()
+    public AddressLabel()
     {
         setOpaque(false);
     }
@@ -42,7 +42,7 @@ public final class AddressLabel extends JLabel
      *
      * @param lines the lines, top to bottom; null or empty ones are left out
      */
-    void setLines(String... lines)
+    public void setLines(String... lines)
     {
         java.util.List<String> kept = new java.util.ArrayList<>();
 

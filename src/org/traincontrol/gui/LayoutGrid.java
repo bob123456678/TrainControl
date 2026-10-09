@@ -863,7 +863,7 @@ public class LayoutGrid
      * Public and static so a test can build one out of plain components and look at what comes out -
      * which is the whole of what this has to get right and needs no railway to establish.
      *
-     * @return a panel that draws its tiles, then its captions, then its trains
+     * @return a panel that draws its tiles, then its captions, then its trains, then its addresses
      */
     public static JPanel newDiagramContainer()
     {
@@ -879,6 +879,27 @@ public class LayoutGrid
                     if (child instanceof LayoutLabel)
                     {
                         ((LayoutLabel) child).paintTrainOverCaptions(g);
+                    }
+                }
+
+                // AND THE ADDRESSES OVER THE TRAINS (FR-116; Adam, 2026-10-09: "Red address labels look good, but make
+                // sure they are rendered on top of the autonomy locomotive icons").  An address is what the operator
+                // turned Show Addresses on to read, and the pass above drew every icon over it.  Since round 102 it
+                // covers only its letters and their halo, so drawn last it hides nothing of the icon but the number.
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof AddressLabel && child.isVisible())
+                    {
+                        java.awt.Graphics over = g.create(child.getX(), child.getY(), child.getWidth(), child.getHeight());
+
+                        try
+                        {
+                            child.paint(over);
+                        }
+                        finally
+                        {
+                            over.dispose();
+                        }
                     }
                 }
 
