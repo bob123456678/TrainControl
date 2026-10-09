@@ -2803,6 +2803,7 @@ public class testDiagramLooksRight
             org.traincontrol.gui.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.StationCaption.ARROW_E),
             "Carlton", "75 407 DB" };
 
+        for (double scale : new double[] {1.25, 1.5, 2.0})
         for (int points : new int[] {12, 15})
         {
             for (String text : texts)
@@ -2823,21 +2824,23 @@ public class testDiagramLooksRight
                 java.awt.Rectangle drawn = pill.drawnBounds();
 
                 java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
-                    size.width * 2, size.height * 2, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    (int) Math.ceil(size.width * scale) + 2, (int) Math.ceil(size.height * scale) + 2,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
 
                 java.awt.Graphics2D g = shot.createGraphics();
 
                 g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
                 g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
                     java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                g.scale(2, 2);
+                g.scale(scale, scale);
+                g.setClip(0, 0, size.width, size.height);
 
                 pill.paint(g);
 
                 g.dispose();
 
                 // The pill's ends, along its middle row
-                int mid = (drawn.y + drawn.height / 2) * 2, left = -1, right = -1;
+                int mid = (int) ((drawn.y + drawn.height / 2.0) * scale), left = -1, right = -1;
 
                 for (int x = 0; x < shot.getWidth(); x++)
                 {
@@ -2849,18 +2852,27 @@ public class testDiagramLooksRight
                 }
 
                 // The ink, anywhere across the pill's height
-                int inkLeft = Integer.MAX_VALUE, inkRight = -1;
+                int inkLeft = Integer.MAX_VALUE, inkRight = -1, inkTop = Integer.MAX_VALUE, inkBottom = -1;
+                int pillTop = Integer.MAX_VALUE, pillBottom = -1;
 
-                for (int y = drawn.y * 2; y < (drawn.y + drawn.height) * 2 && y < shot.getHeight(); y++)
+                for (int y = 0; y < shot.getHeight(); y++)
                 {
                     for (int x = 0; x < shot.getWidth(); x++)
                     {
                         java.awt.Color c = new java.awt.Color(shot.getRGB(x, y), true);
 
+                        if (c.getAlpha() > 100)
+                        {
+                            pillTop = Math.min(pillTop, y);
+                            pillBottom = Math.max(pillBottom, y);
+                        }
+
                         if (c.getAlpha() > 100 && c.getRed() < 90 && c.getGreen() < 90 && c.getBlue() < 90)
                         {
                             inkLeft = Math.min(inkLeft, x);
                             inkRight = Math.max(inkRight, x);
+                            inkTop = Math.min(inkTop, y);
+                            inkBottom = Math.max(inkBottom, y);
                         }
                     }
                 }
@@ -2869,11 +2881,25 @@ public class testDiagramLooksRight
 
                 int before = inkLeft - left, after = right - inkRight;
 
-                assertTrue(Math.abs(before - after) <= 3, "\"" + text + "\" at " + points + " points, painted at 2x, has "
-                    + before + " pixels of pill before its text and " + after + " after it - the text is not in the middle");
+                assertTrue(Math.abs(before - after) <= 3, "\"" + text + "\" at " + points + " points, painted at " + scale
+                    + "x, has " + before + " pixels of pill before its text and " + after + " after it - the text is not in"
+                    + " the middle");
 
-                assertTrue(after >= 4, "\"" + text + "\" at " + points + " points runs to within " + after + " pixels of"
-                    + " the pill's right end");
+                // AND UP AND DOWN (Adam, 2026-10-09: "make sure the pill label padding issue on the right/lower-right is
+                // addressed").  Asked of the two names without an arrow: neither has a letter that hangs below the
+                // line, so their ink is the capitals' height and should sit in the middle of the pill.  An arrow is a
+                // symbol from another font and sits where that font puts it.
+                int above = inkTop - pillTop, below = pillBottom - inkBottom;
+
+                if (text.equals("Carlton") || text.equals("75 407 DB"))
+                {
+                    assertTrue(Math.abs(above - below) <= 2, "\"" + text + "\" at " + points + " points, painted at "
+                        + scale + "x, has " + above + " pixels of pill above its text and " + below + " below it - the text"
+                        + " sits" + (above > below ? " low" : " high") + " in the pill");
+                }
+
+                assertTrue(after >= 2 * scale, "\"" + text + "\" at " + points + " points runs to within " + after
+                    + " pixels of the pill's right end");
             }
         }
     }
@@ -3013,5 +3039,79 @@ public class testDiagramLooksRight
         assertNotNull(at, "no icon " + name + " at " + size);
 
         return javax.imageio.ImageIO.read(at);
+    }
+
+    /**
+     * A pill's edge (D2) and a destination's ring are as thick on the right and the bottom as on the left and the top
+     * (Adam, 2026-10-09: "make sure the pill label padding issue on the right/lower-right is addressed").
+     *
+     * They were drawn as `drawRoundRect(x, y, w - 1, h - 1)` - the whole-pixel way of keeping a one-pixel outline inside
+     * a box, which with anti-aliasing puts the left and top of the outline half outside the fill and the right and
+     * bottom wholly inside it, a sliver of fill showing past them.  Painted at twice the size, where the pill's ends
+     * fall on whole pixels, the four sides of an even outline read the same from the outside in.
+     *
+     * MUTATION: draw the outline the old way and this fails.
+     */
+    @Test
+    public void testAPillsOutlineIsEvenAllRound()
+    {
+        java.awt.Color[] fills = {org.traincontrol.gui.StationCaption.PILL_GREY, org.traincontrol.gui.StationCaption.DESTINATION_FILL};
+
+        for (java.awt.Color fill : fills)
+        {
+            org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+            pill.setPill(true);
+            pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
+            pill.setBackground(fill);
+            pill.setForeground(java.awt.Color.BLACK);
+            pill.setText("Carlton");
+            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(30, pill.lineHeight()));
+
+            java.awt.Dimension size = pill.getPreferredSize();
+
+            pill.setBounds(0, 0, size.width, size.height);
+
+            java.awt.Rectangle drawn = pill.drawnBounds();
+
+            java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(size.width * 2, size.height * 2,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
+            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            g.scale(2, 2);
+            g.setClip(0, 0, size.width, size.height);
+
+            pill.paint(g);
+
+            g.dispose();
+
+            int midRow = (drawn.y * 2 + (drawn.y + drawn.height) * 2) / 2;
+            int left = drawn.x * 2, right = (drawn.x + drawn.width) * 2 - 1;
+            int top = drawn.y * 2, bottom = (drawn.y + drawn.height) * 2 - 1;
+
+            // the middle of the long sides: a column a third of the way along, clear of the text
+            int col = left + (right - left) / 6;
+
+            for (int in = 0; in < 3; in++)
+            {
+                int l = grey(shot.getRGB(left + in, midRow)), r = grey(shot.getRGB(right - in, midRow));
+                int t = grey(shot.getRGB(col, top + in)), b = grey(shot.getRGB(col, bottom - in));
+
+                assertTrue(Math.abs(l - r) <= 24, "a pill filled " + fill + " is not as dark " + in + " pixels in from its right"
+                    + " end (" + r + ") as from its left (" + l + ") - its outline sits differently on the two sides");
+
+                assertTrue(Math.abs(t - b) <= 24, "a pill filled " + fill + " is not as dark " + in + " pixels in from its"
+                    + " bottom (" + b + ") as from its top (" + t + ") - its outline sits differently on the two sides");
+            }
+        }
+    }
+
+    private static int grey(int rgb)
+    {
+        return (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3;
     }
 }

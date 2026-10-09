@@ -90,8 +90,49 @@ public class StationCaption extends JLabel
     private static void ring(Graphics2D g, int x, int y, int w, int h)
     {
         g.setColor(org.traincontrol.automationui.DiagramColours.PATH_AHEAD);
-        g.setStroke(new java.awt.BasicStroke(Math.max(1.4f, h / 12f)));
-        g.drawRoundRect(x, y, w - 1, h - 1, h, h);
+        outline(g, x, y, w, h, Math.max(1.4f, h / 12f));
+    }
+
+    /**
+     * An outline round a pill, inside it by half its own width on EVERY side (round 100; Adam, 2026-10-09: "make sure
+     * the pill label padding issue on the right/lower-right is addressed").
+     *
+     * It was `drawRoundRect(x, y, w - 1, h - 1)`, the whole-pixel way of keeping a one-pixel line inside a box.  With
+     * anti-aliasing, and Java's stroke normalising nudging it half a pixel, that put the outline's left and top half
+     * outside the fill and its right and bottom wholly inside it, with a sliver of fill showing past them: the pill
+     * looked heavier and tighter at the lower right.  Drawn as the exact shape, with the stroke left pure, the four
+     * sides are the same.
+     *
+     * @param g the graphics, its colour set
+     * @param x the pill's left
+     * @param y its top
+     * @param w its length
+     * @param h its depth
+     * @param width how thick the outline is
+     */
+    private static void outline(Graphics2D g, int x, int y, int w, int h, float width)
+    {
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g.setStroke(new java.awt.BasicStroke(width));
+
+        double in = width / 2.0, arc = h - width;
+
+        g.draw(new java.awt.geom.RoundRectangle2D.Double(x + in, y + in, w - width, h - width, arc, arc));
+    }
+
+    /**
+     * A pill's fill, as the exact shape - see `outline`.
+     *
+     * @param g the graphics, its colour set
+     * @param x the pill's left
+     * @param y its top
+     * @param w its length
+     * @param h its depth
+     */
+    private static void fillPill(Graphics2D g, int x, int y, int w, int h)
+    {
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g.fill(new java.awt.geom.RoundRectangle2D.Double(x, y, w, h, h, h));
     }
 
     /**
@@ -860,7 +901,7 @@ public class StationCaption extends JLabel
             if (getBackground() != null)
             {
                 g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, len, thick, thick, thick);
+                fillPill(g2, 0, 0, len, thick);
 
                 if (isDestination(getBackground())) ring(g2, 0, 0, len, thick);
                 else if (namesSomething()) edge(g2, 0, 0, len, thick);
@@ -913,8 +954,7 @@ public class StationCaption extends JLabel
                 // An arc as tall as the pill gives semicircular ends, which is the oval the request
                 // asks for at any width - a fixed arc turns into a rectangle with rounded corners as
                 // soon as the name is long.
-                g2.fillRoundRect(drawn.x, drawn.y, drawn.width, drawn.height,
-                    drawn.height, drawn.height);
+                fillPill(g2, drawn.x, drawn.y, drawn.width, drawn.height);
 
                 if (isDestination(getBackground())) ring(g2, drawn.x, drawn.y, drawn.width, drawn.height);
                 else if (namesSomething()) edge(g2, drawn.x, drawn.y, drawn.width, drawn.height);
@@ -965,13 +1005,20 @@ public class StationCaption extends JLabel
             g2.setFont(getFont());
             g2.setColor(getForeground());
 
-            java.awt.FontMetrics fm = g2.getFontMetrics();
+            // MEASURED AS DRAWN, in this graphics, which carries its scale.
+            //
+            // ACROSS BY THE INK, not the advance: the advance carries the first letter's and the last one's side room,
+            // which is not the same at the two ends.  UP AND DOWN BY THE CAPITALS (round 100; Adam, 2026-10-09: "make
+            // sure the pill label padding issue on the right/lower-right is addressed"): the font's ascent includes room
+            // above the capitals that no letter fills, so text centred by ascent and descent sat low - at 15 points and
+            // twice the size, 13 pixels of pill above "Carlton" and 8 below.  A letter that hangs below the line still
+            // does, from the same line as every other caption's.
+            java.awt.font.FontRenderContext frc = g2.getFontRenderContext();
+            java.awt.geom.Rectangle2D ink = getFont().createGlyphVector(frc, text).getVisualBounds();
+            double capitals = getFont().createGlyphVector(frc, "H").getVisualBounds().getHeight();
 
-            // By the width as DRAWN: the glyph vector's own advance in this graphics, which carries its scale
-            double wide = getFont().createGlyphVector(g2.getFontRenderContext(), text).getLogicalBounds().getWidth();
-
-            float left = (float) (x + (len - wide) / 2.0);
-            int baseline = y + (thick - (fm.getAscent() + fm.getDescent())) / 2 + fm.getAscent();
+            float left = (float) (x + (len - ink.getWidth()) / 2.0 - ink.getX());
+            float baseline = (float) (y + (thick + capitals) / 2.0);
 
             g2.drawString(text, left, baseline);
         }
@@ -1011,7 +1058,6 @@ public class StationCaption extends JLabel
 
         g.setColor(new Color(Math.max(0, f.getRed() - 70), Math.max(0, f.getGreen() - 70), Math.max(0, f.getBlue() - 70),
             Math.min(255, f.getAlpha() + 30)));
-        g.setStroke(new java.awt.BasicStroke(1f));
-        g.drawRoundRect(x, y, w - 1, h - 1, h, h);
+        outline(g, x, y, w, h, 1f);
     }
 }
