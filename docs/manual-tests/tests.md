@@ -33491,3 +33491,63 @@ they were made.  Each now opens over a window that is there (round 85, `f61a3811
 `core.testLayoutTiles.testTheExitBringsAMinimisedRouteEditorBackBeforeItAsks`.
 
 ---
+
+### MT-706 - 2026-10-09 - Place All at Their Homes puts every homed train on its home, facing as homed, and takes the others off
+
+**Disposition:** fixed unvalidated
+**From:** FR-115 - Adam, 2026-10-09: "Place all at their homes"
+
+**Written:** 2026-10-09
+
+**Steps**
+
+1. Give two trains homes on stations with two ways to face (right-click the station, Home Locomotive), one of them
+   facing the other way from how it now stands.
+2. Stand those two trains on other stations, and a third train with no home on a station too.
+3. On the track diagram, right-click a square and open **Autonomy Setup > Bulk Tools**.  Read the item **Place All at
+   Their Homes** and its tooltip.
+4. Choose it, read the question, and answer **Yes**.
+
+**Expected**
+
+- Step 3: the item counts the two homes; it is greyed, with a reason, when no train has a home.
+- Step 4: the question names two trains to put on their homes and one to take off, and says nothing is sent to the
+  railway.  Afterwards both homed trains stand on their homes, each facing the way it was homed; the third is off the
+  diagram; nothing moved on the railway; and the Auto tab agrees.
+
+*What this is:* FR-115, built in round 106 (`635b6ec8`): the setup's placements are rewritten to the homes the operator
+gave and the running layout is rebuilt from them, naming every train it moved or took off so the rebuild puts none of
+them back.  Claim `core.testPlaceAllAtTheirHomes`, on Adam's frozen railway.
+
+---
+
+### MT-707 - 2026-10-09 - The diagram's new look: redrawn tiles, the see-through line, centred pills, addresses on a halo, grey arrival marks
+
+**Disposition:** fixed unvalidated
+**From:** Adam's look requests of 2026-10-09 - the tiles, the tail, the pills, the addresses, OB-326 and OB-327
+
+**Written:** 2026-10-09
+
+**Steps**
+
+1. Open the track diagram at the Small size and then the Large size, with **Show Addresses** ticked.
+2. Look at the curves, switches, crossings, crossing switches and sensors where they meet the tracks beside them.
+3. Stand a train on a station and run another.
+4. Look at a station caption stood on end beside a vertical track with another station one square over.
+5. Look at a station that refuses arrivals from one side, at both sizes.
+
+**Expected**
+
+- Step 2: the tiles are symmetric and clean-edged, and the track runs on from tile to tile with no step or gap.
+- Step 3: the train's line is see-through orange, the track showing through it; a running train's addresses stay on
+  top of its icon.
+- Step 1: every address is red with a white halo round its letters and no box behind it.
+- Step 4: the caption on end touches neither station's badge.
+- Step 5: the mark for a side trains may not arrive by is the same grey chevron at both sizes.
+- Every caption's text sits in the middle of its pill, left to right and top to bottom.
+
+*What this is:* rounds 99 to 105 - the see-through line (`b8cd693b`), the pill's text and outline (`4f98ed40`), the
+tiles (`b70abee3`), the address halo (`6061f789`) and its place over the trains (`64dbe905`), OB-326 (`c9b6c475`) and
+OB-327 (`a54ea8e4`) - each with its claims in `ui.testDiagramLooksRight` and `ui.testTheTrainIsShownAsALine`.
+
+---
