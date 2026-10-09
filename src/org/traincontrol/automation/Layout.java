@@ -5238,8 +5238,8 @@ public class Layout
         // conflict.  So a square is passed over only when it has been reached already under switch settings that leave
         // at least as much freedom - Return Home's planner's own rule (`HomeStaging.alreadyReached`), shared rather
         // than copied.  A route already in conflict is still followed, and still returned when it reaches the end - Why
-        // Not Moving? says so where it is all there is - but each square only once in that state, and never in the
-        // way of a route that is not.
+        // Not Moving? says so where it is all there is - but under the square-alone rule, into no square any route has
+        // left, so it can neither hide a clear route nor go round a loop.
         //
         // NOT FOR THE TRACK-ONLY QUESTION (`throughTermini`): whether any track connects two points does not depend on
         // the switches, and the square alone answers it completely.
@@ -5344,7 +5344,7 @@ public class Layout
         // MARKED WHEN TAKEN OFF THE QUEUE, as `bfs` marks a square, and for its reason: routes of the same length to
         // a square are all followed on from it, so a caller that has excluded one of them still finds the next
         Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
-        Set<Point> conflicted = new HashSet<>();
+        Set<Point> left = new HashSet<>();
         Queue<SettingsStep> queue = new LinkedList<>();
 
         queue.add(new SettingsStep(start, new LinkedList<>(), new HashMap<>()));
@@ -5353,8 +5353,9 @@ public class Layout
         {
             SettingsStep current = queue.remove();
 
-            if (current.commands == null) conflicted.add(current.at);
-            else if (!HomeStaging.alreadyReached(seen, current.at.getUniqueId(), current.commands))
+            left.add(current.at);
+
+            if (current.commands != null && !HomeStaging.alreadyReached(seen, current.at.getUniqueId(), current.commands))
             {
                 seen.computeIfAbsent(current.at.getUniqueId(), k -> new ArrayList<>()).add(current.commands);
             }
@@ -5378,9 +5379,15 @@ public class Layout
                 if (next.getEnd().isTerminus() || next.getEnd().isSamePlaceAs(start)
                     || next.getEnd().isSamePlaceAs(end)) continue;
 
-                // Passed over when this square has been left already under settings that leave as much freedom - or,
-                // for a route already in conflict, when it has been left in conflict
-                if (commands == null ? conflicted.contains(next.getEnd())
+                // Passed over when this square has been left already under settings that leave as much freedom.
+                //
+                // A ROUTE ALREADY IN CONFLICT KEEPS THE SQUARE-ALONE RULE `bfs` HAS ALWAYS HAD: a square any route has
+                // left is closed to it.  It is followed only so that Why Not Moving? can name the conflict where that is
+                // all there is, so it must find nothing the old search could not.  Given a square set of its own it
+                // went round loops the clear routes were kept out of - on Adam's railway a 17-edge route from
+                // BottomSecondary back through Tunnel twice, whose refusal ("does not fit at RampDown") then stood in
+                // for OB-294's own-tail sentence for LowerFront.
+                if (commands == null ? left.contains(next.getEnd())
                     : HomeStaging.alreadyReached(seen, next.getEnd().getUniqueId(), commands)) continue;
 
                 List<Edge> path = new LinkedList<>(current.path);
