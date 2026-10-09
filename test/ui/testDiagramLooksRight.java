@@ -3231,4 +3231,99 @@ public class testDiagramLooksRight
             if (c instanceof java.awt.Container) collectAddresses((java.awt.Container) c, into);
         }
     }
+
+    /**
+     * A side trains may not arrive by is marked with the same grey chevron at the large size as at the small one (OB-326;
+     * Adam, 2026-10-09: "In 60px view, the trains can't arrive from this direction arrow's have an odd shape.  Make it
+     * consistent with the 30px, and gray.").
+     *
+     * The mark is painted on a 30-pixel square and on a 60-pixel one.  Every pixel it inks is grey - as much red as green
+     * as blue - and the large one, shrunk to half, carries the ink the small one does: a chevron whose arms scale with
+     * the square, not a hollow shape whose strokes come apart at the larger size.
+     *
+     * MUTATION: put the old strokes or the old tan back and this fails.
+     */
+    @Test
+    public void testABarredArrivalIsTheSameGreyChevronAtBothSizes()
+    {
+        org.traincontrol.automationui.TileAnnotation barred = new org.traincontrol.automationui.TileAnnotation(null, 0,
+            false, null, false, false, false, null, false, java.util.Collections.singletonList(
+                new org.traincontrol.automationui.TileAnnotation.Arrival(
+                    org.traincontrol.automationui.TilePorts.Side.N, false)));
+
+        BufferedImage small = paintedOnWhite(barred, 30), large = paintedOnWhite(barred, 60);
+
+        for (BufferedImage shot : new BufferedImage[] {small, large})
+        {
+            for (int y = 0; y < shot.getHeight(); y++)
+            {
+                for (int x = 0; x < shot.getWidth(); x++)
+                {
+                    int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+                    int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+
+                    // the red direction arrow a barred side also carries is its own mark, not this one
+                    if (isArrowRed(rgb)) continue;
+
+                    assertTrue(255 - min < 30 || max - min <= 16, "the barred-arrival mark at " + shot.getWidth()
+                        + " pixels is rgb(" + r + "," + g + "," + b + ") at " + x + "," + y + ", not grey");
+                }
+            }
+        }
+
+        double inkSmall = ink(small), inkLarge = ink(large) / 4.0;
+
+        assertTrue(inkSmall > 0, "precondition: the barred-arrival mark drew nothing at 30 pixels");
+
+        assertTrue(Math.abs(inkLarge - inkSmall) <= inkSmall * 0.12, "the barred-arrival mark at 60 pixels, taken to"
+            + " half size, carries " + Math.round(inkLarge) + " of ink against " + Math.round(inkSmall) + " at 30 - not"
+            + " the same shape scaled");
+    }
+
+    /** An annotation painted alone on a white square of this size. */
+    private static BufferedImage paintedOnWhite(org.traincontrol.automationui.TileAnnotation annotation, int size)
+    {
+        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, size, size);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+        annotation.paint(g, size, size);
+
+        g.dispose();
+
+        return shot;
+    }
+
+    /** A pixel of a red direction arrow: more red than green or blue, which are alike. */
+    private static boolean isArrowRed(int rgb)
+    {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+        // by hue, so its anti-aliased pink edge counts too; the old tan, rgb(150,140,100), is not red
+        return r - g > 20 && r - b > 20 && Math.abs(g - b) <= 12;
+    }
+
+    /** How much darker than white a picture is, in all, leaving out a red direction arrow. */
+    private static double ink(BufferedImage shot)
+    {
+        double sum = 0;
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                int rgb = shot.getRGB(x, y);
+
+                if (isArrowRed(rgb)) continue;
+
+                sum += 255 - (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3.0;
+            }
+        }
+
+        return sum;
+    }
 }
