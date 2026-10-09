@@ -28,8 +28,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-705](#mt-705) | 2026-10-07 | With the window always on top, its questions and messages open in front of it | fixed unvalidated | Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent" |
+| [MT-706](#mt-706) | 2026-10-09 | Place All at Their Homes puts every homed train on its home, facing as homed, and takes the others off | fixed unvalidated | FR-115 - Adam, 2026-10-09: "Place all at their homes" |
+| [MT-707](#mt-707) | 2026-10-09 | The diagram's new look: redrawn tiles, the see-through line, centred pills, addresses on a halo, grey arrival marks | fixed unvalidated | Adam's look requests of 2026-10-09 - the tiles, the tail, the pills, the addresses, OB-326 and OB-327 |
 
-Everything else - 704 of 705 - needs nothing from you unless the area changes again:
+Everything else - 704 of 707 - needs nothing from you unless the area changes again:
 556 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33492,6 +33494,8 @@ they were made.  Each now opens over a window that is there (round 85, `f61a3811
 
 ---
 
+<a id="mt-706"></a>
+
 ### MT-706 - 2026-10-09 - Place All at Their Homes puts every homed train on its home, facing as homed, and takes the others off
 
 **Disposition:** fixed unvalidated
@@ -33520,6 +33524,8 @@ gave and the running layout is rebuilt from them, naming every train it moved or
 them back.  Claim `core.testPlaceAllAtTheirHomes`, on Adam's frozen railway.
 
 ---
+
+<a id="mt-707"></a>
 
 ### MT-707 - 2026-10-09 - The diagram's new look: redrawn tiles, the see-through line, centred pills, addresses on a halo, grey arrival marks
 
