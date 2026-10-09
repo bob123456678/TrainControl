@@ -10314,6 +10314,129 @@ public class AutonomySession
     }
 
     /**
+     * Every home a train can be put on: the square, and the locomotive it is home to (FR-115).
+     *
+     * A home the operator GAVE - the setup's `home` on a square - and not wherever a train last stood, which the
+     * running layout also calls a home until the next build.  On a page autonomy runs, as placements are
+     * (`placedLocomotives`).  What Place All at Their Homes is counted and offered by, and what it walks, so the two
+     * cannot answer differently.
+     *
+     * @return the homes, square to locomotive, in no particular order
+     */
+    public Map<TileKey, String> homesToPlace()
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+
+        for (TileKey tile : tilesWithAHome())
+        {
+            if (store.getExcludedPages().contains(tile.getPage())) continue;
+
+            Object home = getPointProperty(tile, "home");
+
+            if (home == null || home.toString().trim().isEmpty()) continue;
+
+            out.put(tile, home.toString());
+        }
+
+        return out;
+    }
+
+    /**
+     * Puts every locomotive with a home on it, facing the way it was homed, and takes every other locomotive off its
+     * station - in the SETUP only, nothing sent to the railway (FR-115; Adam, 2026-10-09: "Place all at their homes.
+     * Teleports locomotives to their home stations, facing the correct way, and clears all other locomotives from other
+     * stations (without actually moving anything)").
+     *
+     * **The facing** is the home's own where it was homed with one (`homeFacing`); where it was not, the one the caller
+     * gives - the running layout's home copy, which the build chose for it - or none, on a square with one way to face.
+     *
+     * **No arrival side and no road.**  A train put down with no road it came by has no tail behind it (TDU2-A1), and an
+     * unknown arrival is the safe answer: nothing is held behind the train.
+     *
+     * **Each train's settings travel with it** - speed, arrival functions and the rest live on the placement, and the
+     * build resets whatever a placement leaves out - so a homed train standing elsewhere brings its own to its home.
+     *
+     * **Every train the railway or the setup has standing is named in the answer**, homed or not, because the rebuild
+     * that follows (`TrainControlUI.rebuildRunningLayoutFromSetup`) puts back every train it is not told about where the
+     * railway had it - which would undo this for any train it missed.
+     *
+     * Re-derives once, as the other bulk doors do.  Homes and placements on pages left out of autonomy are left alone,
+     * as Clear All Locomotives leaves them.
+     *
+     * @param fallbackFacings for a home recorded without a facing, the way its locomotive should face there; may be empty
+     * @return every locomotive this put on a home or took off a station
+     */
+    public java.util.Set<String> placeEveryTrainAtHome(Map<TileKey, Side> fallbackFacings)
+    {
+        Map<TileKey, String> homes = homesToPlace();
+
+        java.util.Set<String> touched = new LinkedHashSet<>();
+
+        for (String standing : trainsWhereTheyStand().values())
+        {
+            if (standing != null) touched.add(standing);
+        }
+
+        // OFF EVERY STATION, each train's settings kept to carry to its home
+        Map<String, org.json.JSONObject> settings = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            Object loc = getPointProperty(placed.getKey(), "loc");
+
+            if (loc instanceof org.json.JSONObject && placed.getValue() != null)
+            {
+                settings.putIfAbsent(placed.getValue(), new org.json.JSONObject(loc.toString()));
+            }
+
+            writePointProperty(placed.getKey(), "loc", null);
+            writePointProperty(placed.getKey(), AutonomyBuilder.FACING, null);
+            writePointProperty(placed.getKey(), "arrivedFrom", null);
+            writePointProperty(placed.getKey(), "arrivedAlong", null);
+
+            if (placed.getValue() != null) touched.add(placed.getValue());
+        }
+
+        // AND ONTO ITS HOME, facing the way it was homed
+        for (Map.Entry<TileKey, String> home : homes.entrySet())
+        {
+            org.json.JSONObject loc = settings.containsKey(home.getValue())
+                ? settings.get(home.getValue()) : new org.json.JSONObject();
+
+            loc.put("name", home.getValue());
+
+            writePointProperty(home.getKey(), "loc", loc);
+
+            Side facing = sideNamed(getPointProperty(home.getKey(), AutonomyBuilder.HOME_FACING));
+
+            if (facing == null && fallbackFacings != null) facing = fallbackFacings.get(home.getKey());
+
+            writePointProperty(home.getKey(), AutonomyBuilder.FACING, facing == null ? null : facing.name());
+
+            touched.add(home.getValue());
+        }
+
+        deriveStationIndex();
+
+        return touched;
+    }
+
+    /** A side from its stored name, or null for none or a name that is not a side. */
+    private static Side sideNamed(Object name)
+    {
+        if (name == null) return null;
+
+        try
+        {
+            return Side.valueOf(name.toString().trim());
+        }
+        catch (IllegalArgumentException notASide)
+        {
+            return null;
+        }
+    }
+
+    /**
      * Where this locomotive is already at home, if it is somewhere other than the given square.
      *
      * For the menu, which warns before moving it rather than moving it silently - the same shape as the
