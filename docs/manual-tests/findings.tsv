@@ -971,6 +971,14 @@ DY3-D6	2026-09-02-last-day-review.md	Closed	-	the five strengthened tests can no
 DY3-D7	2026-09-02-last-day-review.md	Closed	-	every new bundle key is in all eight bundles, and ASCII-only
 DY3-D8	2026-09-02-last-day-review.md	Closed	-	`clearAllHomes` does not write to disk
 DY3-D9	2026-09-02-last-day-review.md	Closed	-	`SVN-B14`, Cancel really does restore both slots
+E2E-B1	E2E.md	Closed	Fixed in round 92, by the validator's first way: `pickPath` sends a reversible train to a 	New in 3.0.0, the length twin of RTG-A1: full autonomy sends a reversible train as long as BottomMainB allows (4) to BottomMainB's turning copy, and e
+E2E-C1	E2E.md	Closed	Closed - not an issue, on Adam's ruling (2026-10-08, asked whether the first start should 	New in 3.0.0: a 2.8.x user who ran autonomy starts 3.0.0 to no autonomy at all, and nothing in the program says that the old autonomy.json is no longe
+E2E-D1	E2E.md	Closed	Checked - clean.	A week on Adam's railway: eight trains, Atomic Routes on and then off, hand sends beside autonomy, a timetable played back, Return Home and five resta
+E2E-D2	E2E.md	Closed	Checked - clean.	Exit and restart: five times, every train on the same copy facing the same side, the timetable entry for entry, the homes and Atomic Routes as they we
+E2E-D3	E2E.md	Closed	Checked - clean.	A timetable recorded from autonomy and by hand, played back with a Graceful Stop, an exit and a restart between: it resumed at the entry it stopped be
+E2E-D4	E2E.md	Closed	Checked - clean.	The upgrade from an old autonomy.json: Adam's own 2.x file imported onto his diagram builds and runs, with everything it leaves behind named; four pag
+E2E-D5	E2E.md	Closed	Checked - clean.	Routes beside autonomy: 39 of his routes armed on their sensors beside eight trains fired 142 times; the route guard left 38 switches under running tr
+E2E-D6	E2E.md	Closed	Checked - clean.	Going back to 2.8.2 after 3.0.0: the locomotive database and its routes serialise exactly as 2.8.2 reads them; the 3.0.0 downgrade matrix still holds,
 E8-A1	E8-eight-day-review.md	Closed	fixed	§6 tells the reader Return Home ignores the occupancy restrictions, and both halves of that are now false
 E8-A1	E8V-validation.md	Closed	**HELD**	`behaviour.md` §6 must stop saying Return Home ignores the occupancy restrictions
 E8-A2	E8-eight-day-review.md	Closed	fixed	§3 still says the compulsory-turn clause is there and the question is open
@@ -3293,6 +3301,13 @@ RSA56-D1	RSA56.md	Closed	Checked - clean.	OB-266: a layout refused for several r
 RSA56-D2	RSA56.md	Closed	Checked - clean.	OB-250: "train X at sensor T" asks where the train is - its start until its first sensor, then its last milestone - so a running train is no longer at
 RSA56-D3	RSA56.md	Closed	Checked - clean.	OB-253: a routes file naming one route twice - by id, by a name with spaces round it, by both, by an id and its negative, by two empty names - is refu
 RSA56-D4	RSA56.md	Closed	Checked - clean.	GSR-B5: the locomotive and route cells of the commands table and a condition's locomotive cell offer the name already in the cell as well as the datab
+RSA57-C1	RSA57.md	Closed	Fixed in round 91, by the validator's direction: a sensor the run has already recorded is 	New in round 90: the wait asks whether the train's pending sensor is occupied, not whether the run has recorded it - and the run keeps it pending thro
+RSA57-C2	RSA57.md	Closed	Fixed in round 91 - the claim watches the frames sent while the route runs and asks for th	New in `dc78e2e5`: `testSpeedDirectionAndInstantStopRunThroughARoute` says a speed of -1 stops the locomotive "at once" and asserts only that its spee
+RSA57-D1	RSA57.md	Closed	Checked - clean.	RSA56-C1 fixed: "train X at sensor T" is answered for the moment it is asked - the sensor just reached once the run records it (about 200 ms), never t
+RSA57-D2	RSA57.md	Closed	Checked - clean.	RSA56-C2 fixed: the refusal names what repeats - the name, the number, or a route with no name - and reads correctly in all eight languages; a route r
+RSA57-D3	RSA57.md	Closed	Checked - clean.	RSA56-C3 fixed: the three cells offer a padded name as it stands, so a click into the cell and away writes that name - which the commands table then t
+RSA57-D4	RSA57.md	Closed	Checked - clean (but RSA57-C2).	The six route tests of `dc78e2e5` run what their names say and are green; what they leave behind - a direction, lights, a one-station railway with a t
+RSA57-D5	RSA57.md	Closed	Checked - clean (the bound is RSA57-C1's).	Round 90's claims discriminate and are not timing-fragile: the C1 claim's window (the train seen setting off before its first sensor is pending) is ab
 RSA6-A1	RSA6.md	Closed	Fixed - every session sees the running railway from the moment the window makes it (TrainC	The direction refusal cannot see the railway until a station's Facing menu or the setup editor has told the session where it is: after start-up, or an
 RSA6-A2	RSA6.md	Closed	Fixed - the fold writes each running Point into the square it says it is a copy of (Point.	The fold reads the running layout by Point name through the setup's naming as the gesture has already changed it: a page ticked out from the Autonomy
 RSA6-A3	RSA6.md	Closed	Fixed - a link switched off where a train came in through it is refused and put back, as a	"Use this link" switched off beside a station where the run left a train that came in through the link: the station is left with one copy, facing the
