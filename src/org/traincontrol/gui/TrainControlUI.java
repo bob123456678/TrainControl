@@ -6450,25 +6450,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         if (milestones != null)
                         {                                 
+                            // IN THE ROUTE'S COLOURS (Adam, 2026-10-09, the diagram look proposals: "Build 2,3,5,6"):
+                            // the route ahead's blue until the train gets there, its driven grey after - where they
+                            // were the red and black the route itself was drawn in before FR-106.  `onPill` keeps
+                            // each legible on either pill.
                             if (milestones.contains(p))
                             {
-                                // Completed parts of the route in black
-                                j.setForeground(Color.BLACK);
+                                j.setForeground(org.traincontrol.automationui.DiagramColours.PATH_DRIVEN);
                             }
                             else
                             {
-                                // Pending in red
-                                j.setForeground(Color.RED);
+                                j.setForeground(org.traincontrol.automationui.DiagramColours.PATH_AHEAD);
                             }    
 
                             if (p.equals(destination))
                             {
-                                // Highlight destination
-                                j.setBackground(new Color(255, 255, 0, LayoutGrid.LAYOUT_STATION_OPACITY)); // yellow
+                                // Highlight destination: a warm yellow, dark text, and the pill rings it in the
+                                // route's blue (the second look proposal - it was pure yellow with red text)
+                                j.setBackground(StationCaption.DESTINATION_FILL);
+                                j.setForeground(Color.BLACK);
                                 
                                 // No arrow of its own here.  The label already carries the way the
                                 // train is FACING, and the running path is drawn along the track in
-                                // red and green - so a > bolted onto the brackets said a third time,
+                                // blue and grey - so a > bolted onto the brackets said a third time,
                                 // less clearly, what those two already say, and cost two characters
                                 // of a name that has just been cut to fit.
                             }

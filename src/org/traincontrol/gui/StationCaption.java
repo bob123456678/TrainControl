@@ -30,12 +30,16 @@ import javax.swing.JLabel;
 public class StationCaption extends JLabel
 {
     /**
-     * The blue of the station badge on an autonomy locomotive panel.
+     * The blue of the station badge on an autonomy locomotive panel, and of the diagram's own station badges and route.
      *
      * The same value, not a similar one: Adam asked for "similar to what we have on the auto loc
      * panels", and two blues a shade apart on one screen look like a mistake rather than a family.
+     *
+     * ONE BLUE SINCE 2026-10-09 (Adam, the diagram look proposals: "Build 2,3,5,6").  It was a navy, rgb(0,0,115),
+     * shared with the Auto tab's badge, beside badges and a route of rgb(0,0,200) - the two blues a shade apart this
+     * note warns of.  The Auto tab's badge asks this constant, so the three cannot drift apart again.
      */
-    public static final Color PILL = new Color(0, 0, 115);
+    public static final Color PILL = org.traincontrol.automationui.DiagramColours.STATION;
 
     /**
      * The resting fill, with the diagram's own translucency.
@@ -61,6 +65,34 @@ public class StationCaption extends JLabel
      */
     public static final Color PILL_GREY =
         new Color(196, 198, 202, LayoutGrid.LAYOUT_STATION_OPACITY);
+
+    /**
+     * A running train's destination: `DiagramColours.DESTINATION` with the diagram's translucency (the second look
+     * proposal).  A pill with this fill draws a ring in the route's blue - the fill says "destination", as every
+     * colour this caption carries says something, and the ring follows it.
+     */
+    public static final Color DESTINATION_FILL = new Color(org.traincontrol.automationui.DiagramColours.DESTINATION.getRed(),
+        org.traincontrol.automationui.DiagramColours.DESTINATION.getGreen(),
+        org.traincontrol.automationui.DiagramColours.DESTINATION.getBlue(), LayoutGrid.LAYOUT_STATION_OPACITY);
+
+    /**
+     * Whether this fill is the destination's, by colour and not by alpha.
+     *
+     * @param fill the pill's fill
+     * @return whether a ring belongs round it
+     */
+    public static boolean isDestination(Color fill)
+    {
+        return fill != null && (fill.getRGB() & 0xFFFFFF) == (DESTINATION_FILL.getRGB() & 0xFFFFFF);
+    }
+
+    /** The ring round a destination, in the route's blue. */
+    private static void ring(Graphics2D g, int x, int y, int w, int h)
+    {
+        g.setColor(org.traincontrol.automationui.DiagramColours.PATH_AHEAD);
+        g.setStroke(new java.awt.BasicStroke(Math.max(1.4f, h / 12f)));
+        g.drawRoundRect(x, y, w - 1, h - 1, h, h);
+    }
 
     /**
      * Whichever resting colour the operator has chosen (FR-031).
@@ -609,6 +641,14 @@ public class StationCaption extends JLabel
             return dark ? new Color(255, 150, 150) : new Color(150, 0, 0);
         }
 
+        // THE ROUTE'S BLUE (the third look proposal): a station a running train has not reached yet, said in the colour
+        // the route ahead is drawn in - itself on a light pill, lifted to a light blue on the blue one, where the
+        // route's own blue would disappear.
+        if (wanted != null && wanted.getBlue() > 150 && wanted.getRed() < 80 && wanted.getGreen() < 80)
+        {
+            return dark ? new Color(165, 185, 255) : wanted;
+        }
+
         if (isNeutralGrey(wanted))
         {
             // Still dimmer than a name, on whichever ground.  Not so far towards the pill that it
@@ -821,6 +861,8 @@ public class StationCaption extends JLabel
             {
                 g2.setColor(getBackground());
                 g2.fillRoundRect(0, 0, len, thick, thick, thick);
+
+                if (isDestination(getBackground())) ring(g2, 0, 0, len, thick);
             }
 
             String text = drawnText();
@@ -888,6 +930,8 @@ public class StationCaption extends JLabel
                 // soon as the name is long.
                 g2.fillRoundRect(drawn.x, drawn.y, drawn.width, drawn.height,
                     drawn.height, drawn.height);
+
+                if (isDestination(getBackground())) ring(g2, drawn.x, drawn.y, drawn.width, drawn.height);
             }
             finally
             {

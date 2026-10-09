@@ -1478,8 +1478,10 @@ public class testAutonomyDiagramMonitor
         {
             for (int x = 0; x < 3 * size; x++)
             {
-                boolean p = (drawn.getRGB(x, y) >>> 24) >= 128;
-                boolean q = (expected.getRGB(x, y) >>> 24) >= 128;
+                // THE ICON'S BODY, not its white rim or the halo round it (the fifth look proposal, 2026-10-09): the
+                // halo draws white past the icon by design, and the body is where the placement is
+                boolean p = body(drawn.getRGB(x, y));
+                boolean q = body(expected.getRGB(x, y));
 
                 if (p && q) both++;
                 if (p || q) either++;
@@ -1501,6 +1503,17 @@ public class testAutonomyDiagramMonitor
 
         return String.format("%.0f%% the same as expected (centred on (%d,%d), front towards %s, %d px); %d pixels drawn"
             + " past the tile where %d belong", overlap * 100, cx, cy, heading, side, outside, expectedOutside);
+    }
+
+    /**
+     * Whether a pixel is the icon's dark body: painted, and darker than half way.
+     *
+     * @param argb the pixel
+     * @return whether it is the body
+     */
+    private static boolean body(int argb)
+    {
+        return (argb >>> 24) >= 128 && (((argb >> 16) & 0xFF) + ((argb >> 8) & 0xFF) + (argb & 0xFF)) / 3 < 128;
     }
 
     /**
@@ -2571,5 +2584,93 @@ public class testAutonomyDiagramMonitor
 
         assertTrue(drawn != null && drawn.isParked() && drawn.getFacing() == Side.W, "a train on no Point is not drawn"
             + " parked, facing west, where the setup records it: " + drawn);
+    }
+
+    /**
+     * A train's icon is drawn with a white halo, so it reads as on top of the caption and the badge it stands over (Adam,
+     * 2026-10-09: "Build 2,3,5,6" - the fifth look proposal).  Its size is unchanged.
+     *
+     * The icon carries a thin white rim of its own - about a pixel and a half at a 60-pixel square - so its outermost
+     * pixels were white before the halo too.  What the halo adds is depth: read in from the edge of what was painted, the
+     * third layer is still white, where without it that layer is the icon's dark body.
+     *
+     * MUTATION: drop the halo and this fails.
+     */
+    @Test
+    public void testATrainsIconHasAHalo()
+    {
+        int size = 60;
+
+        org.traincontrol.automationui.TileOverlay overlay =
+            org.traincontrol.automationui.TileOverlay.parked(org.traincontrol.automationui.TilePorts.Side.E);
+
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        overlay.paintTrain(g, size, size, null);
+
+        g.dispose();
+
+        // How deep each painted pixel lies: 1 at the edge, counting in from the nearest unpainted one
+        int[][] depth = new int[size][size];
+        java.util.ArrayDeque<int[]> queue = new java.util.ArrayDeque<>();
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                if (((image.getRGB(x, y) >>> 24) & 0xFF) <= 128)
+                {
+                    depth[y][x] = 0;
+                    queue.add(new int[] {x, y});
+                }
+                else
+                {
+                    depth[y][x] = Integer.MAX_VALUE;
+                }
+            }
+        }
+
+        while (!queue.isEmpty())
+        {
+            int[] at = queue.poll();
+
+            for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}})
+            {
+                int nx = at[0] + d[0], ny = at[1] + d[1];
+
+                if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+
+                if (depth[ny][nx] > depth[at[1]][at[0]] + 1)
+                {
+                    depth[ny][nx] = depth[at[1]][at[0]] + 1;
+                    queue.add(new int[] {nx, ny});
+                }
+            }
+        }
+
+        int third = 0, white = 0;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                if (depth[y][x] != 3) continue;
+
+                third++;
+
+                java.awt.Color c = new java.awt.Color(image.getRGB(x, y), true);
+
+                if (c.getRed() > 200 && c.getGreen() > 200 && c.getBlue() > 200) white++;
+            }
+        }
+
+        assertTrue(third > 20, "precondition: no icon was drawn");
+
+        assertTrue(white >= third * 0.8, "only " + white + " of the " + third + " pixels three in from the edge of a"
+            + " train's icon are white - it has only the icon's own thin rim, no halo, and runs into the caption and the"
+            + " badge under it");
     }
 }

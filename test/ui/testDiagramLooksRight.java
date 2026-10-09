@@ -2689,4 +2689,97 @@ public class testDiagramLooksRight
 
         return shot;
     }
+
+    /**
+     * A caption on a running route is in the route's colours: the blue of the path ahead until the train gets there (Adam,
+     * 2026-10-09: "Build 2,3,5,6" - the third of the diagram look proposals).  The captions had kept the red the route
+     * itself was drawn in before FR-106 moved the route to blue ahead and grey behind.
+     *
+     * On both pills the operator can choose, because the blue has to read on each: the path's own blue on the pale grey,
+     * lifted to a light blue on the blue pill, where the path's own blue would disappear.
+     *
+     * MUTATION: let `onPill` answer the route's blue with plain black or white - what it did - and this fails.
+     */
+    @Test
+    public void testARouteCaptionStaysInTheRoutesBlueOnEitherPill()
+    {
+        java.awt.Color ahead = org.traincontrol.automationui.DiagramColours.PATH_AHEAD;
+
+        for (java.awt.Color fill : new java.awt.Color[] {
+            org.traincontrol.gui.StationCaption.PILL_GREY, org.traincontrol.gui.StationCaption.PILL_AT_REST })
+        {
+            java.awt.Color drawn = org.traincontrol.gui.StationCaption.onPill(fill, ahead);
+
+            assertTrue(drawn.getBlue() > drawn.getRed() + 60 && drawn.getBlue() > drawn.getGreen() + 40,
+                "a caption the train has not reached yet is drawn in " + drawn + " on " + fill + ", not the route's blue");
+
+            assertTrue(distance(drawn, fill) > 90, "the route's blue cannot be read on " + fill + ": " + drawn);
+        }
+
+        assertEquals(org.traincontrol.gui.StationCaption.onPill(org.traincontrol.gui.StationCaption.PILL_GREY, ahead),
+            ahead, "on the pale grey pill the caption is not the route's own blue but a cousin of it");
+    }
+
+    /**
+     * The blue captions, the station badges, the route and the Auto tab's station badge are one blue (the sixth look
+     * proposal).  The captions were navy, rgb(0,0,115), beside badges and a route of rgb(0,0,200): two blues a shade
+     * apart, which the caption's own note says look like a mistake rather than a family.
+     *
+     * MUTATION: put the navy back and this fails.
+     */
+    @Test
+    public void testTheCaptionsAreTheBadgesBlue()
+    {
+        assertEquals(org.traincontrol.gui.StationCaption.PILL.getRGB() & 0xFFFFFF,
+            org.traincontrol.automationui.DiagramColours.STATION.getRGB() & 0xFFFFFF,
+            "the blue captions are " + org.traincontrol.gui.StationCaption.PILL + " beside badges of "
+            + org.traincontrol.automationui.DiagramColours.STATION + " - two blues a shade apart");
+    }
+
+    /**
+     * A destination is a warm yellow ringed in the route's blue (the second look proposal), so it is tied to the route that
+     * leads there; the fill says "destination" and the pill draws the ring whenever it has that fill.
+     *
+     * MUTATION: drop the ring from the pill's painting and this fails.
+     */
+    @Test
+    public void testADestinationIsRingedInTheRoutesBlue()
+    {
+        org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+        pill.setPill(true);
+        pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 20));
+        pill.setBackground(new java.awt.Color(255, 214, 64, org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_OPACITY));
+        pill.setForeground(java.awt.Color.BLACK);
+        pill.setText("Carlton");
+        pill.setTileGeometry(60, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(60, pill.lineHeight()));
+
+        java.awt.Dimension size = pill.getPreferredSize();
+
+        pill.setBounds(0, 0, size.width, size.height);
+
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
+            size.width, size.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        pill.paint(g);
+
+        g.dispose();
+
+        int blue = 0;
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                java.awt.Color c = new java.awt.Color(shot.getRGB(x, y), true);
+
+                if (c.getAlpha() > 120 && c.getBlue() > 140 && c.getRed() < 100 && c.getGreen() < 110) blue++;
+            }
+        }
+
+        assertTrue(blue > 60, "a destination caption has " + blue + " pixels of the route's blue round it - it is not"
+            + " ringed, so nothing ties it to the route that leads there");
+    }
 }

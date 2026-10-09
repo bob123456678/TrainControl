@@ -562,6 +562,64 @@ public class TileOverlay
         return null;
     }
 
+    /** The white halo round the train's icon, worked out once from it (the fifth look proposal). */
+    private static java.awt.image.BufferedImage halo;
+
+    /** How far the halo reaches past the icon, as a share of the icon's width. */
+    private static final double HALO_REACH = 1.0 / 14;
+
+    /**
+     * The icon's silhouette in white, grown by `HALO_REACH` on every side (Adam, 2026-10-09, the diagram look
+     * proposals: "Build 2,3,5,6").  Drawn under the icon so it reads as on top of the caption and the badge it stands
+     * over; the icon's own thin rim did not.  The icon's size is unchanged - his "C: full size".
+     *
+     * @param icon the train's icon
+     * @return the halo, `reach` pixels larger than the icon on every side
+     */
+    private static synchronized java.awt.image.BufferedImage haloOf(java.awt.image.BufferedImage icon)
+    {
+        if (halo != null) return halo;
+
+        int reach = haloReach(icon);
+        int w = icon.getWidth(), h = icon.getHeight();
+
+        java.awt.image.BufferedImage grown = new java.awt.image.BufferedImage(w + 2 * reach, h + 2 * reach,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        for (int y = 0; y < grown.getHeight(); y++)
+        {
+            for (int x = 0; x < grown.getWidth(); x++)
+            {
+                int alpha = 0;
+
+                for (int dy = -reach; dy <= reach && alpha < 255; dy++)
+                {
+                    for (int dx = -reach; dx <= reach && alpha < 255; dx++)
+                    {
+                        if (dx * dx + dy * dy > reach * reach) continue;
+
+                        int sx = x - reach + dx, sy = y - reach + dy;
+
+                        if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
+
+                        alpha = Math.max(alpha, (icon.getRGB(sx, sy) >>> 24) & 0xFF);
+                    }
+                }
+
+                grown.setRGB(x, y, (alpha << 24) | 0x00FFFFFF);
+            }
+        }
+
+        halo = grown;
+
+        return halo;
+    }
+
+    private static int haloReach(java.awt.image.BufferedImage icon)
+    {
+        return Math.max(1, (int) Math.round(icon.getWidth() * HALO_REACH));
+    }
+
     /**
      * The locomotive picture, read from the resources folder the first time it is wanted (FR-027).
      *
@@ -808,6 +866,13 @@ public class TileOverlay
 
                     if (along != null) turnAlong(g, along);
                     else turnToTravel(g);
+
+                    // The halo first, at the icon's own scale and reaching past it on every side
+                    int reach = haloReach(picture);
+                    double scale = side / (double) picture.getWidth();
+                    int out = (int) Math.round(reach * scale);
+
+                    g.drawImage(haloOf(picture), -side / 2 - out, -side / 2 - out, side + 2 * out, side + 2 * out, null);
 
                     g.drawImage(picture, -side / 2, -side / 2, side, side, null);
                 }
