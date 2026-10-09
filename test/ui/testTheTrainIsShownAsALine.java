@@ -77,8 +77,8 @@ public class testTheTrainIsShownAsALine
     private static BufferedImage withTheTrain;
     private static BufferedImage without;
 
-    /** The tile with the train standing there, drawn in the other style a preference may choose: the line. */
-    private static BufferedImage asALine;
+    /** The tile with the train standing there, drawn in the other style a preference may choose: coaches. */
+    private static BufferedImage asCoaches;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -135,12 +135,12 @@ public class testTheTrainIsShownAsALine
 
         withTheTrain = paint(tile);
 
-        // And in the style the switch offers instead of coaches (T2): today's line, edge to edge
-        LayoutLabel.setTailStyle(LayoutLabel.TailStyle.LINE);
+        // And in the style a preference may choose instead of the line: whole coaches (T2)
+        LayoutLabel.setTailStyle(LayoutLabel.TailStyle.COACHES);
 
         try
         {
-            asALine = paint(tile);
+            asCoaches = paint(tile);
         }
         finally
         {
@@ -599,7 +599,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * A train is drawn as whole coaches, one to a square, each stopping short of the square's edge, so the gaps fall at
+     * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
+     * edge, so the gaps fall at
      * the joins on a curve as on a straight and no coach is ever cut short (T2 of the look's train tails; Adam,
      * 2026-10-09: "Do T2 only if you can maintain shape continuity across curves rather than a jagged look when it
      * straightens out").
@@ -613,7 +614,7 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainIsDrawnAsWholeCoaches()
     {
-        int atTheEdge = orangeAtTheEdge(withTheTrain);
+        int atTheEdge = orangeAtTheEdge(asCoaches);
 
         assertEquals(atTheEdge, 0, atTheEdge + " orange pixels lie on the edge of " + covered + " - the train is drawn"
             + " edge to edge, not as a coach that stops short of the square, so the next square's coach meets it with no"
@@ -621,18 +622,50 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * Set to the line, the switch draws today's look again: the train edge to edge along its road (Adam, 2026-10-09:
-     * "make it so that we can easily add an option later to switch between T2 and the current look").
+     * The train is drawn as the line, edge to edge along its road, unless a preference chooses coaches (Adam,
+     * 2026-10-09, having seen both: "revert back to the original occupied line shape").
      *
-     * `LayoutLabel.tailStyle` is the one place a preference will read; this is what it must still be able to choose.
-     *
-     * MUTATION: draw coaches whatever the style and this fails.
+     * MUTATION: make coaches the default again, or draw coaches whatever the style, and this fails.
      */
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
-    public void testTheLineStyleStillRunsEdgeToEdge()
+    public void testTheTrainIsDrawnAsALineByDefault()
     {
-        assertTrue(orangeAtTheEdge(asALine) > 0, "set to LINE, the train on " + covered + " still stops short of the"
-            + " square's edge - the switch between coaches and today's line does nothing");
+        assertTrue(orangeAtTheEdge(withTheTrain) > 0, "the train on " + covered + " stops short of the square's edge -"
+            + " it is drawn as coaches, where Adam chose the line: \"revert back to the original occupied line shape\"");
+    }
+
+    /**
+     * The train's line is the soft orange, rgb(245,140,60) (Adam, 2026-10-09, from the tail colour options: "let's go
+     * with the soft orange").
+     *
+     * Read off the picture, as the commonest orange pixel - the line's own colour, where its anti-aliased edges are
+     * the minority - rather than off the constant, which would agree with whatever it was changed to.
+     *
+     * MUTATION: the old orange, rgb(255,102,0), and this fails.
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheTrainIsTheSoftOrange()
+    {
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+
+        for (int y = 0; y < withTheTrain.getHeight(); y++)
+        {
+            for (int x = 0; x < withTheTrain.getWidth(); x++)
+            {
+                int rgb = withTheTrain.getRGB(x, y) & 0xFFFFFF;
+
+                if (isOrange(rgb)) counts.merge(rgb, 1, Integer::sum);
+            }
+        }
+
+        assertFalse(counts.isEmpty(), "nothing orange on " + covered + " to read the colour off");
+
+        int commonest = java.util.Collections.max(counts.entrySet(), java.util.Map.Entry.comparingByValue()).getKey();
+
+        int r = (commonest >> 16) & 0xFF, g = (commonest >> 8) & 0xFF, b = commonest & 0xFF;
+
+        assertTrue(Math.abs(r - 245) <= 4 && Math.abs(g - 140) <= 4 && Math.abs(b - 60) <= 4, "the train's line on "
+            + covered + " is rgb(" + r + "," + g + "," + b + "), not the soft orange Adam chose, rgb(245,140,60)");
     }
 
     /**

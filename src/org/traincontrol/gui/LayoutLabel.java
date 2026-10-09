@@ -1650,41 +1650,6 @@ public final class LayoutLabel extends JLabel
     public static final float BLOCKED_ALPHA = 0.40f;
 
     /**
-     * Draws what a standing train has done to this square: the grey it has blocked, the orange it is
-     * lying on.
-     *
-     * **BOTH MARKS, AND THEY SAY DIFFERENT THINGS** (Adam, 2026-09-09: *"'train is here' should also
-     * mean 'track is blocked' - that is the whole point.  it's the same as greying out edges, just in
-     * a different way"*).  Between 2026-09-08 and that ruling the line stood alone, and what was drawn
-     * was a strict subset of what routing refuses - so a square the railway would not let a train onto
-     * looked exactly like free track.  A square with orange on it is where a train IS; a square that
-     * is merely grey is track that train's presence has made unusable; a square with neither is free.
-     *
-     * **The wash is under the line**, so a square that is both still reads as both.  The other order
-     * would bury the train under the consequence of the train.
-     *
-     * **The road, not the square** (Adam, 2026-09-08: *"graying makes it look confusing on double
-     * curve tiles"*). A double curve carries two roads that never meet, and a wash over the whole
-     * square said a train was on both. The window is asked which routes of this square are covered -
-     * an answer the reduction already had, since each step of an edge records the route it runs
-     * through - and one line is drawn along each of them.
-     *
-     * Edge to edge in one stroke, along the rail rather than around it, which is the same shape and
-     * the same reasoning as the run line: "a curve here is not an arc and a switch's diverging leg is
-     * not a right angle", see `TileAnnotation.paintTraces`.
-     *
-     * Where the window can name no road - a portal hop, which has no side on the grid - nothing is
-     * drawn rather than a line across the middle of the square. A mark in a place no rail goes is
-     * worse than none, and the square is still spoken for on the railway either way.
-     *
-     * THE VIEWER ONLY, not either editor (Adam, 2026-09-07: "don't show shading in the autonomy or
-     * diagram editor, only the track diagram viewer"). An editor is where the railway is arranged,
-     * and what happens to be standing on it while you arrange it is a fact about right now rather
-     * than about the drawing.
-     *
-     * @param g the tile's graphics
-     */
-    /**
      * One coach of a train, along one road of a square (T2 of the look's train tails; Adam, 2026-10-09: "Do T2 only if
      * you can maintain shape continuity across curves rather than a jagged look when it straightens out").
      *
@@ -1732,9 +1697,10 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * The style trains are drawn in.  Coaches since 2026-10-09 (T2).
+     * The style trains are drawn in: the line (Adam, 2026-10-09, having seen both: "revert back to the original
+     * occupied line shape").  Coaches stay, for a preference to choose.
      */
-    private static volatile TailStyle tailStyle = TailStyle.COACHES;
+    private static volatile TailStyle tailStyle = TailStyle.LINE;
 
     /**
      * The style trains are drawn in, asked in ONE place so a preference can choose it later (Adam, 2026-10-09: "make it
@@ -1755,9 +1721,45 @@ public final class LayoutLabel extends JLabel
      */
     public static void setTailStyle(TailStyle style)
     {
-        tailStyle = style == null ? TailStyle.COACHES : style;
+        tailStyle = style == null ? TailStyle.LINE : style;
     }
 
+    /**
+     * Draws what a standing train has done to this square: the grey it has blocked, the orange it is
+     * lying on.
+     *
+     * **BOTH MARKS, AND THEY SAY DIFFERENT THINGS** (Adam, 2026-09-09: *"'train is here' should also
+     * mean 'track is blocked' - that is the whole point.  it's the same as greying out edges, just in
+     * a different way"*).  Between 2026-09-08 and that ruling the line stood alone, and what was drawn
+     * was a strict subset of what routing refuses - so a square the railway would not let a train onto
+     * looked exactly like free track.  A square with orange on it is where a train IS; a square that
+     * is merely grey is track that train's presence has made unusable; a square with neither is free.
+     *
+     * **The wash is under the line**, so a square that is both still reads as both.  The other order
+     * would bury the train under the consequence of the train.
+     *
+     * **The road, not the square** (Adam, 2026-09-08: *"graying makes it look confusing on double
+     * curve tiles"*). A double curve carries two roads that never meet, and a wash over the whole
+     * square said a train was on both. The window is asked which routes of this square are covered -
+     * an answer the reduction already had, since each step of an edge records the route it runs
+     * through - and one line is drawn along each of them.
+     *
+     * Edge to edge in one stroke - or as whole coaches, where a preference chooses them (`tailStyle`) - along the rail
+     * rather than around it, which is the same shape and
+     * the same reasoning as the run line: "a curve here is not an arc and a switch's diverging leg is
+     * not a right angle", see `TileAnnotation.paintTraces`.
+     *
+     * Where the window can name no road - a portal hop, which has no side on the grid - nothing is
+     * drawn rather than a line across the middle of the square. A mark in a place no rail goes is
+     * worse than none, and the square is still spoken for on the railway either way.
+     *
+     * THE VIEWER ONLY, not either editor (Adam, 2026-09-07: "don't show shading in the autonomy or
+     * diagram editor, only the track diagram viewer"). An editor is where the railway is arranged,
+     * and what happens to be standing on it while you arrange it is a fact about right now rather
+     * than about the drawing.
+     *
+     * @param g the tile's graphics
+     */
     private void paintCoveredMark(java.awt.Graphics2D g)
     {
         if (component == null || component.isText()) return;

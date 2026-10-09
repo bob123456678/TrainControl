@@ -149,10 +149,11 @@ public class TileAnnotation
 
     /**
      * And a square nothing can pass - the X - in orange again (Adam, 2026-09-29: *"make the nothing can pass (X
-     * stations) be orange again"*): the orange it had before FR-103, which is the train line's orange
-     * (`LayoutLabel.TRAIN_MARK`).  A square shut to every train reads apart from a berth autonomy merely does not choose.
+     * stations) be orange again"*): the orange it had before FR-103, rgb(255,102,0).  A square shut to every train reads
+     * apart from a berth autonomy merely does not choose.  It was the train line's own constant until the line went to a
+     * softer orange on 2026-10-09 (`DiagramColours.TRAIN`); the X kept the orange it was asked to be.
      */
-    private static final Color POINT_IMPASSABLE = DiagramColours.TRAIN;
+    private static final Color POINT_IMPASSABLE = new Color(255, 102, 0);
 
     /**
      * What a sensor has been designated as, drawn as a badge on its tile.
