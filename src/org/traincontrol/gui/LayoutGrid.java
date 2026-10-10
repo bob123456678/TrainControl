@@ -1712,6 +1712,12 @@ public class LayoutGrid
                             text.getFont().getSize2D() * StationCaption.FONT_SCALE));
                     }
 
+                    // AND A HALO ROUND EVERY LABEL THAT IS NOT A PILL (Adam, 2026-10-10: "Give regular text labels on
+                    // the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that
+                    // labels are visible against black backgrounds like tracks.") - the user's own writing, and an old
+                    // file's station label; a pill has its own fill.
+                    text.setHalo(!text.isPill());
+
                     // The one label drawn ON something rather than beside it.  Opaque, so the name
                     // reads over the tile art; translucent, so the tile art still shows through.  It
                     // has to come after the WHITE above, which is the whole reason it is down here.

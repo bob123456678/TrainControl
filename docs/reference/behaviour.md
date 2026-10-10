@@ -2031,7 +2031,7 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   is where it stands, so it is home already and nothing is planned for it, the search never moves it out of another
   train's way, and the log says it is paused and stays where it stands. The check after a run counts it home, so the
   window does not report the run as stopped short. `core.testAPausedTrainStaysPaused`.
-- **Place All at Their Homes** (FR-115, Bulk Tools; Adam, 2026-10-09: *"Teleports locomotives to their home stations,
+- **Place All Trains at Their Homes** (FR-115, Bulk Tools; Adam, 2026-10-09: *"Teleports locomotives to their home stations,
   facing the correct way, and clears all other locomotives from other stations (without actually moving anything)"*)
   rewrites the setup only: every train with a home is put on it facing the way it was homed (a home with no recorded
   facing takes the facing of the copy the running layout homes it on), every other train is taken off, and the running

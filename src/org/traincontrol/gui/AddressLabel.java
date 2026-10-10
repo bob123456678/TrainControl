@@ -26,8 +26,9 @@ import javax.swing.JLabel;
  */
 public class AddressLabel extends JLabel
 {
-    /** The white of the halo, nearly opaque, so the letters part from whatever is under them. */
-    private static final Color HALO = new Color(255, 255, 255, 235);
+    /** The white of the halo, nearly opaque, so the letters part from whatever is under them - the diagram's own writing's
+     *  too (`StationCaption.setHalo`). */
+    static final Color HALO = new Color(255, 255, 255, 235);
 
     /** The lines drawn, top to bottom. */
     private String[] lines = new String[0];

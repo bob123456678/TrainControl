@@ -4095,6 +4095,93 @@ public class testDiagramLooksRight
         return n;
     }
 
+    /**
+     * Writing of the user's own on the diagram has a white halo round its letters, as an address has, so it can be read
+     * where it lies over black track (Adam, 2026-10-10: *"Give regular text labels on the track diagram (.text) the same
+     * halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like
+     * tracks."*).  A label as the grid builds one - black, the diagram's font at half the square - painted over black: with
+     * its halo it shows white round its letters, at 30 and 60 pixels; and the halo is thinner than an address's, as he
+     * allowed - no wider round the letters than a sixth of their size.
+     *
+     * MUTATION: draw the label without its halo, and this fails.
+     */
+    @Test
+    public void testTheDiagramsOwnWritingHasAHalo()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            org.traincontrol.gui.StationCaption text = new org.traincontrol.gui.StationCaption();
+
+            text.setText("Yard");
+            text.setForeground(java.awt.Color.BLACK);
+            text.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, size / 2));
+            text.setHalo(true);
+            text.setSize(text.getPreferredSize());
+
+            BufferedImage shot = new BufferedImage(text.getWidth(), text.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            try
+            {
+                g.setColor(java.awt.Color.BLACK);
+                g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
+
+                text.paint(g);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            int white = 0, widest = 0;
+
+            for (int y = 0; y < shot.getHeight(); y++)
+            {
+                int run = 0;
+
+                for (int x = 0; x < shot.getWidth(); x++)
+                {
+                    int rgb = shot.getRGB(x, y);
+
+                    boolean light = ((rgb >> 16) & 0xFF) > 200 && ((rgb >> 8) & 0xFF) > 200 && (rgb & 0xFF) > 200;
+
+                    if (light) white++;
+
+                    run = light ? run + 1 : 0;
+                    widest = Math.max(widest, run);
+                }
+            }
+
+            assertTrue(white > 20, "the diagram's own writing at " + size + " pixels showed " + white + " pixels of white"
+                + " over black - no halo, so it cannot be read over track (Adam: \"Give regular text labels on the track"
+                + " diagram (.text) the same halo as address labels\")");
+
+            // a halo stroke round a letter: its two sides and the thickness between - well under a whole word's width
+            assertTrue(widest < text.getWidth() / 2, "the halo at " + size + " pixels ran " + widest + " pixels across in"
+                + " one row - a box behind the writing rather than a halo round its letters");
+        }
+    }
+
+    /**
+     * And the grid gives it to every label it does not make a pill - the user's own writing, and an old file's station
+     * label autonomy cannot act on - and to no pill, which has its own fill.  Asked of the grid's source, where every
+     * label on the diagram is built.
+     *
+     * MUTATION: build the labels without the halo, and this fails.
+     *
+     * @throws Exception from reading the source
+     */
+    @Test
+    public void testTheGridGivesEveryLabelThatIsNotAPillAHalo() throws Exception
+    {
+        String grid = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutGrid.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(grid.contains("text.setHalo(!text.isPill());"), "the grid builds its labels without a halo - Adam:"
+            + " \"Give regular text labels on the track diagram (.text) the same halo as address labels\"");
+    }
+
     /** A named station on an E-S curve, as the diagram builds one. */
     private static org.traincontrol.automationui.TileAnnotation aCurvedStation()
     {

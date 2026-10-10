@@ -10564,7 +10564,7 @@ public class AutonomySession
      *
      * A home the operator GAVE - the setup's `home` on a square - and not wherever a train last stood, which the
      * running layout also calls a home until the next build.  On a page autonomy runs, as placements are
-     * (`placedLocomotives`).  What Place All at Their Homes is counted and offered by, and what it walks, so the two
+     * (`placedLocomotives`).  What Place All Trains at Their Homes is counted and offered by, and what it walks, so the two
      * cannot answer differently.
      *
      * @return the homes, square to locomotive, in no particular order
