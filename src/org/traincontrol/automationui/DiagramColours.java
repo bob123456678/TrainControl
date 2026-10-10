@@ -57,11 +57,20 @@ public final class DiagramColours
     public static final float PATH_HELD_WASH_ALPHA = 0.45f;
 
     /**
-     * A running train's destination caption: a warm yellow, ringed in `PATH_AHEAD` by the pill that wears it (Adam,
-     * 2026-10-09, the diagram look proposals: "Build 2,3,5,6").  It was pure yellow with red text, the loudest pair
-     * on the page, and red reads as a fault; the ring ties the destination to the route that leads there.
+     * A running train's destination caption: the orange a train's line shows on white - `TRAIN_SEE_THROUGH` laid on
+     * white, rgb(255,171,115) - solid, and ringed in `DESTINATION_RING` by the pill that wears it (Adam, 2026-10-09: "Make
+     * the yellow labels (trains on their way somewhere) have the same orange background color as occupied train tiles,
+     * just without the fading"; and, shown the line's own orange at full strength as too bright, "Go with as the line
+     * actually looks on white").  It was a warm yellow, and before that pure yellow with red text.  Its text is black,
+     * which reads on it at about eleven to one.
      */
-    public static final Color DESTINATION = new Color(255, 214, 64);
+    public static final Color DESTINATION = new Color(255, 171, 115);
+
+    /**
+     * The ring round a destination's caption: the train's orange, rgb(255,102,0), darkened by a fifth (Adam, 2026-10-09:
+     * "give the pill a dark orange border instead of the blue border").  It was the route's blue, `PATH_AHEAD`.
+     */
+    public static final Color DESTINATION_RING = new Color(204, 82, 0);
 
     /**
      * A train: its line along the track it lies on, the whole length of its tail, standing or running (MT-309, FR-106):

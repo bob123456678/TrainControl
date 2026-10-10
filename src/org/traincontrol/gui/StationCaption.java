@@ -67,13 +67,14 @@ public class StationCaption extends JLabel
         new Color(196, 198, 202, LayoutGrid.LAYOUT_STATION_OPACITY);
 
     /**
-     * A running train's destination: `DiagramColours.DESTINATION` with the diagram's translucency (the second look
-     * proposal).  A pill with this fill draws a ring in the route's blue - the fill says "destination", as every
-     * colour this caption carries says something, and the ring follows it.
+     * A running train's destination: `DiagramColours.DESTINATION`, solid - not with the diagram's translucency the other
+     * pills have (Adam, 2026-10-09: "the same orange background color as occupied train tiles, just without the
+     * fading").  A pill with this fill draws a ring in a dark orange - the fill says "destination", as every colour
+     * this caption carries says something, and the ring follows it.
      */
     public static final Color DESTINATION_FILL = new Color(org.traincontrol.automationui.DiagramColours.DESTINATION.getRed(),
         org.traincontrol.automationui.DiagramColours.DESTINATION.getGreen(),
-        org.traincontrol.automationui.DiagramColours.DESTINATION.getBlue(), LayoutGrid.LAYOUT_STATION_OPACITY);
+        org.traincontrol.automationui.DiagramColours.DESTINATION.getBlue());
 
     /**
      * Whether this fill is the destination's, by colour and not by alpha.
@@ -86,10 +87,10 @@ public class StationCaption extends JLabel
         return fill != null && (fill.getRGB() & 0xFFFFFF) == (DESTINATION_FILL.getRGB() & 0xFFFFFF);
     }
 
-    /** The ring round a destination, in the route's blue. */
+    /** The ring round a destination, in a dark orange (`DiagramColours.DESTINATION_RING`). */
     private static void ring(Graphics2D g, int x, int y, int w, int h)
     {
-        g.setColor(org.traincontrol.automationui.DiagramColours.PATH_AHEAD);
+        g.setColor(org.traincontrol.automationui.DiagramColours.DESTINATION_RING);
         outline(g, x, y, w, h, Math.max(1.4f, h / 12f));
     }
 

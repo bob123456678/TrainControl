@@ -2737,19 +2737,50 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A destination is a warm yellow ringed in the route's blue (the second look proposal), so it is tied to the route that
-     * leads there; the fill says "destination" and the pill draws the ring whenever it has that fill.
+     * A destination is ringed in a dark orange, not the route's blue (Adam, 2026-10-09: "give the pill a dark orange
+     * border instead of the blue border"); the fill says "destination" and the pill draws the ring whenever it has that
+     * fill.
      *
-     * MUTATION: drop the ring from the pill's painting and this fails.
+     * MUTATION: drop the ring from the pill's painting, or draw it in the route's blue again, and this fails.
      */
     @Test
-    public void testADestinationIsRingedInTheRoutesBlue()
+    public void testADestinationIsRingedInDarkOrange()
+    {
+        java.awt.image.BufferedImage shot = destinationPill();
+
+        int ring = 0, blue = 0;
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                java.awt.Color c = new java.awt.Color(shot.getRGB(x, y), true);
+
+                if (c.getAlpha() <= 120) continue;
+
+                if (c.getRed() >= 170 && c.getRed() <= 235 && c.getGreen() >= 55 && c.getGreen() <= 115 && c.getBlue() < 45)
+                {
+                    ring++;
+                }
+
+                if (c.getBlue() > 140 && c.getRed() < 100 && c.getGreen() < 110) blue++;
+            }
+        }
+
+        assertTrue(ring > 60, "a destination caption has " + ring + " pixels of dark orange round it - it is not ringed"
+            + " in the dark orange Adam asked for");
+
+        assertEquals(blue, 0, "a destination caption still has " + blue + " pixels of the route's blue round it");
+    }
+
+    /** A destination's pill with a name on it, painted. */
+    private static java.awt.image.BufferedImage destinationPill()
     {
         org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
 
         pill.setPill(true);
         pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 20));
-        pill.setBackground(new java.awt.Color(255, 214, 64, org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_OPACITY));
+        pill.setBackground(org.traincontrol.gui.StationCaption.DESTINATION_FILL);
         pill.setForeground(java.awt.Color.BLACK);
         pill.setText("Carlton");
         pill.setTileGeometry(60, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(60, pill.lineHeight()));
@@ -2767,20 +2798,7 @@ public class testDiagramLooksRight
 
         g.dispose();
 
-        int blue = 0;
-
-        for (int y = 0; y < shot.getHeight(); y++)
-        {
-            for (int x = 0; x < shot.getWidth(); x++)
-            {
-                java.awt.Color c = new java.awt.Color(shot.getRGB(x, y), true);
-
-                if (c.getAlpha() > 120 && c.getBlue() > 140 && c.getRed() < 100 && c.getGreen() < 110) blue++;
-            }
-        }
-
-        assertTrue(blue > 60, "a destination caption has " + blue + " pixels of the route's blue round it - it is not"
-            + " ringed, so nothing ties it to the route that leads there");
+        return shot;
     }
 
     /**
@@ -3562,5 +3580,64 @@ public class testDiagramLooksRight
         assertFalse(counts.isEmpty(), "precondition: a picture with nothing drawn in it");
 
         return java.util.Collections.max(counts.entrySet(), java.util.Map.Entry.comparingByValue()).getKey();
+    }
+
+    /**
+     * A running train's destination is drawn in the orange the train's line shows on white, solid (Adam, 2026-10-09:
+     * "Make the yellow labels (trains on their way somewhere) have the same orange background color as occupied train
+     * tiles, just without the fading", then "Go with as the line actually looks on white").
+     *
+     * The colour against the train's see-through line laid on white - worked out here from the line's own colour and
+     * see-through - and the pill painted on white: its commonest colour, the fill between the ring and the letters, is
+     * that orange exactly, with nothing more of the white through it.
+     *
+     * MUTATION: put the bright orange or the warm yellow back, or draw the destination see-through, and this fails.
+     */
+    @Test
+    public void testADestinationIsTheLineAsItLooksOnWhite()
+    {
+        java.awt.Color fill = org.traincontrol.gui.StationCaption.DESTINATION_FILL;
+        java.awt.Color line = org.traincontrol.automationui.DiagramColours.TRAIN_SEE_THROUGH;
+
+        double a = line.getAlpha() / 255.0;
+
+        int expected = (int) Math.round(line.getRed() * a + 255 * (1 - a)) << 16
+            | (int) Math.round(line.getGreen() * a + 255 * (1 - a)) << 8
+            | (int) Math.round(line.getBlue() * a + 255 * (1 - a));
+
+        assertEquals(Integer.toHexString(fill.getRGB() & 0xFFFFFF), Integer.toHexString(expected), "a destination is "
+            + fill + ", not the train's line as it shows on white");
+
+        assertEquals(fill.getAlpha(), 255, "a destination is drawn faded, at " + fill.getAlpha() + " of 255");
+
+        java.awt.image.BufferedImage shot = destinationPill();
+
+        java.awt.image.BufferedImage onWhite = new java.awt.image.BufferedImage(shot.getWidth(), shot.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = onWhite.createGraphics();
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
+        g.drawImage(shot, 0, 0, null);
+        g.dispose();
+
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+
+        for (int y = 0; y < onWhite.getHeight(); y++)
+        {
+            for (int x = 0; x < onWhite.getWidth(); x++)
+            {
+                int rgb = onWhite.getRGB(x, y) & 0xFFFFFF;
+
+                if (rgb != 0xFFFFFF) counts.merge(rgb, 1, Integer::sum);
+            }
+        }
+
+        int commonest = java.util.Collections.max(counts.entrySet(), java.util.Map.Entry.comparingByValue()).getKey();
+
+        assertEquals(Integer.toHexString(commonest), Integer.toHexString(expected), "a destination's pill painted on white"
+            + " is mostly rgb(" + ((commonest >> 16) & 0xFF) + "," + ((commonest >> 8) & 0xFF) + "," + (commonest & 0xFF)
+            + "), not the train's line as it shows on white");
     }
 }

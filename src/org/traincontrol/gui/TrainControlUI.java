@@ -6509,8 +6509,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             if (p.equals(destination))
                             {
-                                // Highlight destination: a warm yellow, dark text, and the pill rings it in the
-                                // route's blue (the second look proposal - it was pure yellow with red text)
+                                // Highlight destination: the train's line as it shows on white, solid, black text, and
+                                // the pill rings it in a dark orange (Adam, 2026-10-09 - it was a warm yellow, ringed blue)
                                 j.setBackground(StationCaption.DESTINATION_FILL);
                                 j.setForeground(Color.BLACK);
                                 
