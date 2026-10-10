@@ -2145,6 +2145,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return false;
         }
 
+        // NOT WHILE IT RUNS (GSR-B3), and refused before anything is deleted too.
+        //
+        // This edits by deleting the route and adding a new object under the same id, and what a route is doing lives on
+        // its object: `isExecuting`, which `runningRouteDriving` asks before any door edits or deletes a locomotive the
+        // route drives, which the route tile draws as running, and which is the route's own guard against being started
+        // again on top of itself.  The new object read idle while the old one's thread went on sending its commands, so
+        // all three forgot a running route.  Carrying the flag across would not mend that: the thread that clears it
+        // holds the OLD object, so the new one would read running for ever.
+        //
+        // Refused and said in the log, and each caller leaves the route as it was: the route editor's Save says the route
+        // could not be saved and keeps the window open, Enable/Disable and Bulk change nothing, and the stop split of a
+        // start or an import drops the stop route it made and tries again next time.  Nothing is lost by waiting - a
+        // route runs the commands it started with (`execRoute` takes a copy), so an edit lands on the next run either way.
+        if (existing.isExecuting())
+        {
+            this.logf("route.errorEditRouteWhileRunning", name);
+            return false;
+        }
+
         String trimmedNewName = newName.trim();
 
         // Checked before anything is deleted.  This method edits by delete-then-re-add, and newRoute
@@ -3847,6 +3866,75 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }        
     }
     
+    /**
+     * Every other route with a command that runs this one, by name (GSR-B4).
+     *
+     * What the route delete door counts for its question, before anything is deleted - afterwards there is nothing left
+     * to count.  The route's own commands are not asked: a route that runs itself goes with it.
+     *
+     * @param name the route
+     * @return the routes that run it, empty when none does or there is no such route
+     */
+    @Override
+    public List<String> routesCalling(String name)
+    {
+        List<String> out = new ArrayList<>();
+
+        MarklinRoute called = name == null ? null : this.routeDB.getByName(name);
+
+        if (called == null) return out;
+
+        for (MarklinRoute r : this.getRoutes())
+        {
+            if (r != null && r != called && r.callsRoute(called.getName())) out.add(r.getName());
+        }
+
+        return out;
+    }
+
+    /**
+     * Deletes a route and takes every command that runs it out of every other route, logging each route that lost one
+     * (GSR-B4).
+     *
+     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' commands that run it, as deleting a
+     * locomotive removes the commands that drive it (`deleteLoc`, `Route.locomotiveDeleted`).  Left behind, such a
+     * command did nothing while the route was gone and then ran whatever route was next given the name - a route
+     * nobody put into the one running it.
+     *
+     * A door of its own, not `deleteRoute`: `editRoute` deletes and re-adds through that, and an edit - a rename
+     * included - keeps every call to the route, which `otherRouteRenamed` follows.  The sync and an import replace
+     * routes rather than delete them, and go through `deleteRoute` too.
+     *
+     * @param name the route
+     * @return how many routes lost a command that ran it
+     */
+    @Override
+    public int deleteRouteAndItsCalls(String name)
+    {
+        MarklinRoute deleted = name == null ? null : this.routeDB.getByName(name);
+
+        if (deleted == null) return 0;
+
+        String called = deleted.getName();
+
+        int stripped = 0;
+
+        for (MarklinRoute r : this.getRoutes())
+        {
+            // WHICH ROUTES LOSE COMMANDS, by name, as each loses them - as the locomotive delete says it
+            if (r != null && r != deleted && r.otherRouteDeleted(called))
+            {
+                stripped++;
+
+                this.logf("route.warnCommandsRemovedForDeletedRoute", r.getName(), called);
+            }
+        }
+
+        this.deleteRoute(called);
+
+        return stripped;
+    }
+
     /**
      * Returns a route ID, or 0 if not found
      * @param name

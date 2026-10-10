@@ -2967,9 +2967,57 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return path != null && !path.isEmpty();
     }
 
+    /**
+     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none to read
+     * (GSP-B2).  Worked out afresh by `getAutonomySession` at every attempt to build the session.
+     */
+    private String autonomySetupUnreadable;
+
+    /**
+     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none (GSP-B2).
+     *
+     * `getAutonomySession` hands back null for two different things: a layout with no folder to keep a setup in, and a
+     * setup that is there and would not read - a setup.json that is not JSON, one written by a newer TrainControl, a
+     * configuration that will not parse.  Every door said the first whatever was true, so somebody whose setup had a
+     * typing slip in it was told their layout needs a folder it already has.  This tells the two apart and carries the
+     * reason for the doors to show.  It offers nothing more: a setup that would not read is left exactly as it is.
+     *
+     * @return the reason, or null
+     */
+    public String whyTheSetupCannotBeRead()
+    {
+        return autonomySetupUnreadable;
+    }
+
+    /**
+     * A failure to open the autonomy setup, in words somebody can act on (GSP-B2).
+     *
+     * The store's refusal of a setup written by a newer TrainControl arrives as its message KEY with the two version
+     * numbers after it - `AutonomyCompanionStore.ERROR_VERSION + " (3 > 2)"` - because the store writes no sentences;
+     * it is translated here, numbers kept.  An unreadable configuration arrives in words already, and a setup.json that
+     * is not JSON as the parser's own message, which is the most anybody has to go on.
+     *
+     * @param failure what opening the session threw
+     * @return the reason, never null
+     */
+    private static String describeSetupFailure(Exception failure)
+    {
+        String message = failure.getMessage();
+
+        if (message == null || message.trim().isEmpty()) return failure.getClass().getSimpleName();
+
+        String version = org.traincontrol.automationui.AutonomyCompanionStore.ERROR_VERSION;
+
+        return message.startsWith(version) ? I18n.t(version) + message.substring(version.length()) : message;
+    }
+
     public org.traincontrol.automationui.AutonomySession getAutonomySession()
     {
         if (autonomySession != null) return autonomySession;
+
+        // EACH ATTEMPT SAYS AFRESH WHY IT FAILED (GSP-B2): a setup mended since, or a layout with no folder now, is not
+        // the reason the last attempt gave.
+        autonomySetupUnreadable = null;
 
         String path = getLocalLayoutPath();
 
@@ -3067,6 +3115,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         catch (Exception e)
         {
             this.model.log(e);
+
+            // AND WHY, KEPT FOR THE DOORS (GSP-B2).  A setup that is there and would not read is not a layout with no
+            // folder to keep one in, which is what every door said when all it had was this null: the editor's refusal
+            // that it "needs a local layout folder", the Autonomy menu that autonomy "needs a layout stored on this
+            // computer".  Nothing is written: the setup stays exactly as it is on disk.
+            autonomySetupUnreadable = describeSetupFailure(e);
+
             return null;
         }
 
@@ -5643,7 +5698,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!this.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
 
-        if (this.getAutonomySession() == null) return "autosetup.ui.errorNoSetupToEdit";
+        // A SETUP THAT IS THERE AND WOULD NOT READ is not a layout with nowhere to keep one (GSP-B2), and openLayoutEditor
+        // says which of the two it is - so both keys are answered here.  `sayWhyAutonomyEditorCannotOpen` puts the reason
+        // into the first.
+        if (this.getAutonomySession() == null)
+        {
+            return whyTheSetupCannotBeRead() != null
+                ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit";
+        }
 
         if (this.isAutonomyBusy()) return "autolayout.errorCannotEditWhileRunning";
 
@@ -5653,6 +5715,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return null;
+    }
+
+    /**
+     * A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show (GSP-B2).
+     *
+     * Every refusal there is a message key shown as it stands but one: a setup that is there and would not read is said
+     * with the reason it would not, which only this window holds - `whyTheSetupCannotBeRead`.
+     *
+     * @param why a key `whyAutonomyEditorCannotOpen` returned
+     * @return the sentence, translated
+     */
+    public String sayWhyAutonomyEditorCannotOpen(String why)
+    {
+        if ("autosetup.ui.errorSetupUnreadable".equals(why))
+        {
+            return I18n.f("autosetup.ui.errorSetupUnreadable", String.valueOf(whyTheSetupCannotBeRead()));
+        }
+
+        return I18n.t(why);
     }
 
     public void openLayoutEditor(String page, Boolean autonomy,
@@ -5717,7 +5798,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // An explicit request says why it cannot be honoured; a remembered one just falls back
             if (autonomy != null)
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoSetupToEdit"));
+                // WITH THE REASON, when the setup is there and would not read (GSP-B2) - the two keys
+                // whyAutonomyEditorCannotOpen answers this refusal with.
+                JOptionPane.showMessageDialog(this, whyTheSetupCannotBeRead() != null
+                    ? I18n.f("autosetup.ui.errorSetupUnreadable", whyTheSetupCannotBeRead())
+                    : I18n.t("autosetup.ui.errorNoSetupToEdit"));
                 return;
             }
 
@@ -21429,9 +21514,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (route != null)
         {            
+            // THE ROUTES THAT RUN IT, COUNTED BEFORE IT GOES (GSR-B4).  Adam, 2026-10-10: deleting a route removes the
+            // other routes' commands that run it, and the question says how many routes call it - as deleting a
+            // locomotive does with the commands that drive it.  Counted here because afterwards there is nothing left
+            // to count; which routes, by name, goes to the log as each loses its commands.
+            int calledBy = this.model.routesCalling(route.getName()).size();
+
             int dialogResult = JOptionPane.showOptionDialog(
                 RoutePanel,
-                I18n.f("route.ui.confirmDeleteRoute", route.getName()),
+                calledBy > 0
+                    ? I18n.f("route.ui.confirmDeleteRouteWithCallers", route.getName(), calledBy)
+                    : I18n.f("route.ui.confirmDeleteRoute", route.getName()),
                 I18n.t("route.ui.dialogDeleteRoute"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
@@ -21448,7 +21541,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The lock, not the id: see enableOrDisableRoute for why the id cannot say (MT-467).
                 boolean wasLocal = !route.isLocked();
 
-                this.model.deleteRoute(route.getName());
+                // THE DOOR'S OWN DELETE, which takes the route out of every route that runs it (GSR-B4).  Not the
+                // model's `deleteRoute`: `editRoute` deletes and re-adds through that, and an edit keeps its callers.
+                this.model.deleteRouteAndItsCalls(route.getName());
                 refreshRouteList();
 
                 // ONLY WHEN THE STATION COULD HAVE KNOWN THE ROUTE (OB-155).
@@ -28718,7 +28813,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (why != null)
         {
-            JOptionPane.showMessageDialog(this, I18n.t(why));
+            JOptionPane.showMessageDialog(this, sayWhyAutonomyEditorCannotOpen(why));
 
             return;
         }

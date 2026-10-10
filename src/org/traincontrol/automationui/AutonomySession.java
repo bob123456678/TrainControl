@@ -353,7 +353,9 @@ public class AutonomySession
 
         migrationFailures = migrateStationLabels();
 
-        forgetCaptionsOfNonStations();
+        // NO CAPTION IS FORGOTTEN HERE FOR NAMING A SQUARE THAT IS NOT A STATION NOW (GSE-C4).  It was, to clean up setups
+        // written before demoting took the caption with it; demoting keeps it now (Adam, 2026-10-10: keep them, ignored
+        // while not a station), and `getCaptionTarget` leaves it undrawn until the square is a station again.
 
         dirty = false;
     }
@@ -500,28 +502,6 @@ public class AutonomySession
             {
                 store.setBarredArrivals(entry.getKey(), live);
             }
-        }
-    }
-
-    /**
-     * Drops name plaques belonging to squares that are no longer stations.
-     *
-     * The rule is enforced at the setter now, but setups written before it exists carry captions for
-     * squares that were demoted long ago - and one of them is what made a reversing point announce
-     * itself as a station the moment a train touched it.  Cleared at open, once, so nobody has to find
-     * and delete them by hand.
-     *
-     * Silent: there is nothing here a user could act on, and the plaque comes back the moment the
-     * square is made a station again.
-     */
-    private void forgetCaptionsOfNonStations()
-    {
-        for (Map.Entry<TileKey, TileKey> caption
-            : new LinkedHashMap<>(store.getCaptions()).entrySet())
-        {
-            if (caption.getValue() == null) continue;
-
-            if (!store.isStation(caption.getValue())) store.setCaption(caption.getKey(), null);
         }
     }
 
@@ -3221,26 +3201,44 @@ public class AutonomySession
      * All pages, including excluded ones: exclusion says autonomy will not route over a page, not that
      * the page has stopped being drawn, and a caption there is still on the user's screen.
      *
-     * @return the sensors that have a caption somewhere
+     * Stations only (GSE-C4): a caption kept for a square that is not a station now is not drawn, so it labels nothing.
+     *
+     * @return the stations that have a caption somewhere
      */
     public Set<TileKey> getLabelledStationTiles()
     {
-        return new LinkedHashSet<>(store.getCaptions().values());
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        for (TileKey station : store.getCaptions().values())
+        {
+            if (station != null && store.isStation(station)) out.add(station);
+        }
+
+        return out;
     }
 
     /**
      * The station a caption on this square is about.
      *
+     * A caption kept for a square that is not a station now is none (GSE-C4).  Demoting a station keeps its caption -
+     * Adam, 2026-10-10, asked: keep them, ignored while not a station - and this is what the diagram and the editor draw
+     * by (`TrainControlUI.autonomyCaptionAt`), so it answers null until the square is a station again.  Drawn, the label
+     * is registered on a plain point, and a train reversing there lights up a station name for a place that is no longer
+     * one.  The store and `captionsFor` still hold it, for the moves and deletes that have to carry or forget it.
+     *
      * @param captionTile the square the text sits on
-     * @return the sensor's square, or null when nothing is captioned there
+     * @return the sensor's square, or null when nothing is captioned there or the sensor is not a station now
      */
     public TileKey getCaptionTarget(TileKey captionTile)
     {
-        return store.getCaptionTarget(captionTile);
+        TileKey station = store.getCaptionTarget(captionTile);
+
+        return station != null && store.isStation(station) ? station : null;
     }
 
     /**
-     * Every square showing this station's name.
+     * Every caption this station has: drawn, or kept while the square is not a station (GSE-C4) - `getCaptionTarget` is
+     * the one that says what is drawn.
      *
      * @param stationTile
      * @return the caption squares, possibly none
@@ -3356,6 +3354,12 @@ public class AutonomySession
     }
 
     /**
+     * Whether `revertUnfinishedEdit` found a pre-edit note of the right shape that still would not read - a value of the
+     * wrong type inside it - so that `unusableEditNote` says so of it, as of a note refused on its shape (GSP-C4).
+     */
+    private boolean editNoteWouldNotRead;
+
+    /**
      * Whether a pre-edit note is on disk that this build could not use.
      *
      * Asked after `revertUnfinishedEdit` returns false, which by itself does not say whether there was
@@ -3365,7 +3369,7 @@ public class AutonomySession
      */
     public boolean unusableEditNote()
     {
-        return store.hasUnfinishedEditNote() && store.unfinishedEdit() == null;
+        return store.hasUnfinishedEditNote() && (editNoteWouldNotRead || store.unfinishedEdit() == null);
     }
 
     /**
@@ -3389,7 +3393,23 @@ public class AutonomySession
 
         if (was == null) return false;
 
-        restoreSetup(was);
+        // A NOTE OF THE RIGHT SHAPE THAT STILL WILL NOT READ is refused like one of the wrong shape (GSP-C4): kept, for
+        // the build that wrote it, and reported through `unusableEditNote`.
+        //
+        // `unfinishedEdit` checks the note's top level only, and a value of the wrong type inside it threw out of the
+        // read.  Out of here, it skipped the forget below and reached `TrainControlUI.getAutonomySession`, which catches
+        // it and builds no session - so autonomy stayed unopenable at every start, the note being still there to do it
+        // again.  The store's `restoreSetup` puts back what it had before it throws, so the setup is as it was.
+        try
+        {
+            restoreSetup(was);
+        }
+        catch (RuntimeException noteWillNotRead)
+        {
+            editNoteWouldNotRead = true;
+
+            return false;
+        }
 
         store.forgetBeforeEdit();
 
@@ -5478,7 +5498,8 @@ public class AutonomySession
      */
     public TileKey getProtectingSignal(TileKey station)
     {
-        return store.getProtectingSignal(station);
+        // A STATION'S (GSE-C4): a square that is not one now keeps its guards for when it is, and they guard nothing
+        return store.isStation(station) ? store.getProtectingSignal(station) : null;
     }
 
     /**
@@ -5487,7 +5508,8 @@ public class AutonomySession
      */
     public List<TileKey> getProtectingSignals(TileKey station)
     {
-        return store.getProtectingSignals(station);
+        // A STATION'S (GSE-C4), as `getProtectingSignal`
+        return store.isStation(station) ? store.getProtectingSignals(station) : new ArrayList<TileKey>();
     }
 
     /**
@@ -5518,7 +5540,8 @@ public class AutonomySession
      */
     public List<TileKey> getEntrySignals(TileKey station)
     {
-        return store.getEntrySignals(station);
+        // A STATION'S (GSE-C4), as `getProtectingSignal`
+        return store.isStation(station) ? store.getEntrySignals(station) : new ArrayList<TileKey>();
     }
 
     /**
@@ -5564,7 +5587,7 @@ public class AutonomySession
      */
     public Map<TileKey, List<String>> protectingSignalNames()
     {
-        return signalNames(store.getProtectingSignals());
+        return signalNames(stationsOnly(store.getProtectingSignals()));
     }
 
     /**
@@ -5574,7 +5597,7 @@ public class AutonomySession
      */
     public Map<TileKey, List<String>> entrySignalNames()
     {
-        return signalNames(store.getEntrySignals());
+        return signalNames(stationsOnly(store.getEntrySignals()));
     }
 
     /**
@@ -5610,9 +5633,33 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * Only the entries about squares that are stations now (GSE-C4).
+     *
+     * A station that is demoted KEEPS its station settings - its caption, the sides it bars arrivals by, its exit and
+     * entry guards - and has them again when it is promoted.  Adam, 2026-10-10, asked: keep them, ignored while not a
+     * station, as its maximum train length (OB-291) and its blockers (AMS-B2) already were.  The store keeps them; the
+     * build, the checks and the editor read them through this, so a square that is not a station has none of them.
+     *
+     * @param bySquare a store map keyed by station square
+     * @param <V> what each square holds
+     * @return a copy holding the stations' entries only
+     */
+    private <V> Map<TileKey, V> stationsOnly(Map<TileKey, V> bySquare)
+    {
+        Map<TileKey, V> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, V> entry : bySquare.entrySet())
+        {
+            if (entry.getKey() != null && store.isStation(entry.getKey())) out.put(entry.getKey(), entry.getValue());
+        }
+
+        return out;
+    }
+
     public Map<TileKey, Set<Side>> barredArrivals()
     {
-        return store.getBarredArrivals();
+        return stationsOnly(store.getBarredArrivals());
     }
 
     /**
@@ -5621,7 +5668,8 @@ public class AutonomySession
      */
     public Set<Side> getBarredArrivals(TileKey tile)
     {
-        Set<Side> barred = store.getBarredArrivals(tile);
+        // A STATION'S (GSE-C4): a square that is not one now keeps the sides it barred, for when it is, and bars nothing
+        Set<Side> barred = store.isStation(tile) ? store.getBarredArrivals(tile) : new LinkedHashSet<Side>();
 
         if (barred.isEmpty()) return barred;
 
@@ -6096,8 +6144,10 @@ public class AutonomySession
 
         if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE))) return true;
 
-        // a terminus was always "a station where trains turn round"
-        if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) return true;
+        // a terminus was always "a station where trains turn round" - so on a square that is not a station now it turns
+        // nothing round: demoting keeps the flag for when the square is promoted again (GSE-C4; Adam, 2026-10-10: keep
+        // them, ignored while not a station)
+        if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) return true;
 
         // a reversing point that is NOT a station was "somewhere trains turn round on the way past"
         return Boolean.TRUE.equals(getPointProperty(tile, "reversing")) && !store.isStation(tile);
@@ -7043,9 +7093,10 @@ public class AutonomySession
         //
         // BOTH GUARDS (FR-096): an entry-guard signal that has gone is dropped from the build the same way, and the
         // way into that station is then as unguarded as a platform whose protecting signal went.
-        Map<TileKey, List<TileKey>> both = new LinkedHashMap<>(store.getProtectingSignals());
+        // STATIONS' (GSE-C4): a square that is not one now keeps its guards, and nothing throws them
+        Map<TileKey, List<TileKey>> both = new LinkedHashMap<>(stationsOnly(store.getProtectingSignals()));
 
-        for (Map.Entry<TileKey, List<TileKey>> entry : store.getEntrySignals().entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
         {
             List<TileKey> merged = new ArrayList<>(both.containsKey(entry.getKey())
                 ? both.get(entry.getKey()) : java.util.Collections.<TileKey>emptyList());
@@ -7392,7 +7443,8 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
+            // A STATION'S, as `isTurnAround` reads the same flag (GSE-C4)
+            if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
         // "May turn round here" where no arriving train could do anything else (OB-123).
@@ -7468,6 +7520,9 @@ public class AutonomySession
 
         for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
         {
+            // NOT ONE KEPT FOR A SQUARE THAT IS NOT A STATION NOW (GSE-C4): it is not drawn, so nothing covers it
+            if (caption.getValue() == null || !store.isStation(caption.getValue())) continue;
+
             LayoutDiagram page = pageOf(caption.getKey());
 
             if (page == null) continue;
@@ -7592,9 +7647,10 @@ public class AutonomySession
 
         if (graph == null) return out;
 
-        Map<TileKey, List<TileKey>> exits = store.getProtectingSignals();
+        // STATIONS' (GSE-C4), as `signalsThatAreGone`
+        Map<TileKey, List<TileKey>> exits = stationsOnly(store.getProtectingSignals());
 
-        for (Map.Entry<TileKey, List<TileKey>> entry : store.getEntrySignals().entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
         {
             if (store.getExcludedPages().contains(entry.getKey().getPage()) || !exits.containsKey(entry.getKey())) continue;
 
@@ -7702,6 +7758,9 @@ public class AutonomySession
         for (TileKey station : stations)
         {
             if (store.getExcludedPages().contains(station.getPage())) continue;
+
+            // NOR ONE THAT IS NOT A STATION NOW (GSE-C4): it keeps its guards, and nothing throws them
+            if (!store.isStation(station)) continue;
 
             java.util.Set<Integer> in = waysAt(station, true, from, to, named, stops);
             java.util.Set<Integer> outOf = waysAt(station, false, from, to, named, stops);
@@ -8455,27 +8514,17 @@ public class AutonomySession
         // here asks about stations - `tilesWithAMaxTrainLength` and `modelsAnyLength` included.
         store.setStation(tile, station);
 
-        // A caption names a station, so demoting one takes its name plaque with it.
+        // AND SO DOES EVERY OTHER STATION SETTING (GSE-C4): its caption, the sides it bars arrivals by, its exit guard and
+        // its entry guards - and the editor keeps the old "terminus" turn flag beside them.  Adam, 2026-10-10, asked:
+        // keep them, ignored while not a station - as the maximum train length above and the blockers below already are.
         //
-        // Left behind, the plaque outlives the thing it names: the square is drawn as a plain point
-        // and the label under it stays registered, so a train reversing there lights up a station
-        // name for a place that is no longer a station.  Which is exactly what happened, and read as
-        // the diagram contradicting itself.
-        //
-        // Promotion already places a caption, so the pair is symmetrical - and re-promoting gives the
-        // plaque back, on the square the placer picks.
-        if (!station) clearCaptions(tile, null);
-
-        // And so does any restriction on how trains may arrive at it.  It is inert while the square is
-        // not a station, so leaving it costs nothing today and everything the day somebody makes the
-        // square a station again and finds it refusing trains for a reason recorded months ago.
-        if (!station) store.setBarredArrivals(tile, null);
-
-        // And the signal that protected it: a plain point is not somewhere trains are held out of.
-        if (!station) store.setProtectingSignal(tile, null);
-
-        // And its entry guard (FR-096), for the same reason: nothing arrives at a plain point.
-        if (!station) store.setEntrySignals(tile, null);
+        // Each was taken off here for a reason that still holds of a plain point, and each reason is now answered where
+        // the setting is READ: a caption left drawn lit a station name up on a plain point when a train reversed there,
+        // and a guard would be thrown red over a square nothing is sent to.  So the session's views of them - the caption
+        // the diagram draws by (`getCaptionTarget`), `getLabelledStationTiles`, `barredArrivals` and `getBarredArrivals`,
+        // the guard getters, and the accessory names the build is given - leave out a square that is not a station now,
+        // and the checks are handed those views.  What the store keeps comes back when the square is promoted, which is
+        // the operator's own act, on the menu that shows every one of them.
 
         // NOT being unavailable while another square is occupied (Adam, 2026-09-24, reversing AMS-B2: "do allow
         // restrictions on non-stations, and let's not clear them when the type changes").  It stays in force on a square

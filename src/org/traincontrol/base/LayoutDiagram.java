@@ -1023,6 +1023,9 @@ public class LayoutDiagram
                 }
             }
 
+            // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+            shiftUnmodelledElements(true, startCol, true);
+
             this.checkBounds();
         }
     }
@@ -1057,6 +1060,9 @@ public class LayoutDiagram
                 }
             }
 
+            // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+            shiftUnmodelledElements(false, startRow, true);
+
            this.checkBounds();
         }
     }
@@ -1088,6 +1094,9 @@ public class LayoutDiagram
             }
         }
 
+        // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+        shiftUnmodelledElements(false, startRow, false);
+
         this.checkBounds();
     }
     
@@ -1118,9 +1127,79 @@ public class LayoutDiagram
             }
         }
 
+        // AND WHAT THIS BUILD COULD NOT MODEL, by the same rule (GSP-C2) - see shiftUnmodelledElements
+        shiftUnmodelledElements(true, startCol, false);
+
         this.checkBounds();
     }
     
+    /**
+     * Moves the elements this build could not model with a shift, as the shift moves the tiles (GSP-C2).
+     *
+     * An element whose type TrainControl does not know is kept as the file had it and written back verbatim on save -
+     * its id with it, and the id IS its square: x + (y << 8), as `LayoutDiagramComponent.exportToCS2TextFormat` writes a
+     * tile's and `CS2File` reads both.  The four shifts moved every tile and left these on their old ids, so the next
+     * save put scenery the Central Station draws onto squares the track had moved away from.
+     *
+     * The rule the shift applies to the tiles: inserting at `start` moves everything at or past it one further on, and
+     * removing `start` moves everything past it one back.  An element ON the row or column a removal takes out is KEPT
+     * where it is - on what moved into its place - rather than dropped.  The tiles there are deleted, and the operator
+     * saw them go; this program cannot draw an element, so nobody removing that row could see one was there, and
+     * deleting what was never seen is the loss `unmodelledElements` exists to prevent.  Sharing a square with a tile is
+     * something the Central Station's own screen shows, and it can be moved there; a deletion cannot be got back.
+     *
+     * An id that does not read as `CS2File` reads one is left alone: there is no square to move it from.
+     *
+     * @param columns true for a shift along x (right, left), false for one along y (down, up)
+     * @param start the first column or row the shift moved, after the shift's own normalising
+     * @param inserted true for a shift that inserts (right, down), false for one that removes (left, up)
+     */
+    private void shiftUnmodelledElements(boolean columns, int start, boolean inserted)
+    {
+        for (int i = 0; i < unmodelledElements.size(); i++)
+        {
+            Map<String, String> element = unmodelledElements.get(i);
+
+            String id = element.get("id");
+
+            int coordinate;
+
+            try
+            {
+                // AS `CS2File` READS IT: hex after the 0x, and none meaning 0,0
+                coordinate = id == null ? 0 : Integer.valueOf(id.replace("0x", ""), 16);
+            }
+            catch (NumberFormatException unreadable)
+            {
+                continue;
+            }
+
+            int x = coordinate % 256;
+            int y = (coordinate >> 8) % 256;
+
+            int at = columns ? x : y;
+
+            int to = inserted ? (at >= start ? at + 1 : at) : (at > start ? at - 1 : at);
+
+            if (to == at) continue;
+
+            x = columns ? to : x;
+            y = columns ? y : to;
+
+            // WRITTEN AS A TILE'S IS: the id first, and none at 0,0 - and the rest of the element exactly as it was
+            Map<String, String> moved = new LinkedHashMap<>();
+
+            if (x != 0 || y != 0) moved.put("id", "0x" + Integer.toHexString(x + (y << 8)));
+
+            for (Map.Entry<String, String> entry : element.entrySet())
+            {
+                if (!"id".equals(entry.getKey())) moved.put(entry.getKey(), entry.getValue());
+            }
+
+            unmodelledElements.set(i, moved);
+        }
+    }
+
     /**
      * Writes a file with the list of all layout pages
      * We just piggyback off Marklin's CS2 format to simplify compatibility

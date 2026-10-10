@@ -40,6 +40,26 @@ public interface ViewListener
     public void setAccessoryState(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     public void execRoute(String name);
     public void deleteRoute(String name);
+
+    /**
+     * Every other route with a command that runs this one, by name (GSR-B4) - what the route delete door counts before
+     * it asks.
+     *
+     * @param name the route
+     * @return the routes that run it, empty when none does or there is no such route
+     */
+    public List<String> routesCalling(String name);
+
+    /**
+     * Deletes a route and takes every command that runs it out of every other route, logging each route that lost one
+     * (GSR-B4) - the route delete door's delete.  `deleteRoute` leaves the other routes alone, because `editRoute`
+     * deletes and re-adds through it.
+     *
+     * @param name the route
+     * @return how many routes lost a command that ran it
+     */
+    public int deleteRouteAndItsCalls(String name);
+
     public boolean getAccessoryState(int address, Accessory.accessoryDecoderType decoderType);
 
     /**

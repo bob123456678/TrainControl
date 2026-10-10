@@ -243,6 +243,22 @@ An inactive square is refused as a **destination** and as an **intermediate** po
 you take it out of service; the train then has to be driven off it by hand, and a rule that refused
 that would strand it.
 
+### 2a. A square that stops being a station keeps what it had
+
+Adam, 2026-10-10, asked what setting a station to `No - Trains Cannot Stop Here` should do with its settings: *keep
+them, ignored while it is not a station* (GSE-C4).  A square demoted keeps its caption, the sides trains may not arrive
+by, its exit and entry guard signals and its turn setting, as it already kept its longest train (OB-291) and what blocks
+it (AMS-B2).  While it is not a station none of them is read: no caption is drawn for it, no guard is built for it, no
+side of it is barred.  Made a station again, it has them all back.  They used to be cleared on demotion, with nothing
+said and no way back.  `core.testAutonomyDiagramSession.testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`,
+`testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation`, `testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow`.
+
+**And a route deleted takes the calls to it with it** (GSR-B4; Adam, 2026-10-10, asked: remove the calls).  The
+question before deleting a route names the routes that run it; deleting it takes those "run this route" commands out of
+them, each logged, as deleting a locomotive takes the commands that drive it - so a new route given the old name does not
+inherit them.  At the window's door only: editing a route deletes and remakes it inside the model, and must not.
+`core.testAdvancedRoutes.testADeletedRouteIsNotRunByTheRoutesThatCalledIt`.
+
 ---
 
 ## 3. Reversals

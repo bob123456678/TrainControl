@@ -320,8 +320,23 @@ public class AutonomyMenu extends JMenu
                 return;
             }
 
-            JMenuItem none = new JMenuItem(I18n.t("autosetup.ui.menuNoSetupPossible"));
+            // A SETUP THAT IS THERE AND WOULD NOT READ SAYS SO, with the reason on the greyed line (GSP-B2).
+            //
+            // This line said that autonomy needs a layout stored on this computer whatever had left the session null - and
+            // on a layout stored on this computer, whose setup.json had a typing slip in it or came from a newer
+            // TrainControl, that sent the reader looking for a folder they already had.  The window keeps why the setup
+            // would not read; the line only offers to say it.
+            String unreadable = ui.whyTheSetupCannotBeRead();
+
+            JMenuItem none = new JMenuItem(I18n.t(unreadable != null
+                ? "autosetup.ui.menuSetupUnreadable" : "autosetup.ui.menuNoSetupPossible"));
             none.setEnabled(false);
+
+            if (unreadable != null)
+            {
+                none.setToolTipText(AutonomyEditorPanel.wrapped(I18n.f("autosetup.ui.errorSetupUnreadable", unreadable)));
+            }
+
             add(none);
 
             return;

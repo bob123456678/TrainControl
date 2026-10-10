@@ -4576,14 +4576,15 @@ public class AutonomyEditorPanel extends JPanel
         // from being vertical (correct) to being horizontal (wrong) and back again."*
         if (on && !session.getLabelledStationTiles().contains(tile)) placeLabelFor(tile);
 
-        // A sensor demoted back to a plain point keeps no designation nobody can see any more.
+        // A SENSOR DEMOTED TO A PLAIN POINT KEEPS ITS OLD "terminus" FLAG (GSE-C4), with the rest of what it had as a
+        // station - Adam, 2026-10-10, asked: keep them, ignored while not a station.  It is how setups written before the
+        // three switches said "a station where trains turn round", and `AutonomySession.isTurnAround` and the checks read
+        // it of a station only, so on a plain point it turns nothing round, and it is there again when the square is
+        // promoted.
         //
-        // Active is NOT cleared with it.  It applies to any point, station or not - the graph menu
-        // offered it on all of them - so clearing it here would silently re-enable a point somebody had
-        // switched off, on a gesture that says nothing about that.
-        // Active is not cleared here any more: what a square is and whether it is open are the same
-        // three-way choice now, and setUsage sets both together.
-        if (!on) session.setPointProperty(tile, "terminus", null);
+        // Active is not cleared either.  It applies to any point, station or not, so clearing it here would silently
+        // re-enable a point somebody had switched off, on a gesture that says nothing about that; what a square is and
+        // whether it is open are one three-way choice now, and setUsage sets both together.
 
         // Persisted, and the running layout told (MT-246).
         setupChanged();

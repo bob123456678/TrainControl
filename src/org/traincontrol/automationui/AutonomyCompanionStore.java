@@ -2585,7 +2585,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Puts back everything snapshotSetup took.
+     * Puts back everything snapshotSetup took - or, when the snapshot will not read, leaves the setup exactly as it was
+     * and throws (GSP-C4).
      *
      * @param was a snapshot from snapshotSetup
      */
@@ -2593,6 +2594,38 @@ public class AutonomyCompanionStore
     {
         if (was == null) return;
 
+        // WHAT IS HERE NOW FIRST, so that a snapshot this build cannot read changes nothing (GSP-C4).
+        //
+        // The read below empties the store and then reads with the strict accessors, which is safe for what
+        // `snapshotSetup` hands back in memory and not for a snapshot that came off a disk.  The pre-edit note that
+        // `AutonomySession.revertUnfinishedEdit` applies is written by another run, possibly another build, and
+        // `unfinishedEdit` checks only its top-level shape - so a value of the wrong type inside `shared` threw part way
+        // through with the store already emptied, and nothing put it back.  `load()` keeps the same promise the same way:
+        // a read that fails leaves the setup as it was, and the failure is still thrown, for the caller to say so.
+        JSONObject wasThere = snapshotSetup();
+
+        try
+        {
+            readSnapshot(was);
+        }
+        catch (RuntimeException unreadable)
+        {
+            readSnapshot(wasThere);
+
+            throw unreadable;
+        }
+    }
+
+    /**
+     * Replaces the whole setup with a snapshot: the shared half, every configuration, and which one is chosen.
+     *
+     * What `restoreSetup` did on its own until GSP-C4, kept apart so that it can be run a second time over what was there
+     * when the first run threw.  It empties before it reads, so it is only safe beside a snapshot taken first.
+     *
+     * @param was a snapshot from snapshotSetup
+     */
+    private void readSnapshot(JSONObject was)
+    {
         clearShared();
         readShared(was.getJSONObject("shared"));
 

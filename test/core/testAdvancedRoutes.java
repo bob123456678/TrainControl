@@ -1160,6 +1160,135 @@ public class testAdvancedRoutes
     }
 
     /**
+     * A route is not edited while it runs, so afterwards it is still running and still drives what it drove (GSR-B3).
+     *
+     * `editRoute` edits by deleting the route and adding a new object under the same id.  It carries across whether
+     * autonomy selected the route and whether it is locked, and not whether it is EXECUTING, which lives on the object:
+     * the new one read idle while the old one's thread went on sending its commands.  So `runningRouteDriving` lost it,
+     * and every door that refuses to edit or delete a locomotive a running route drives stood open; the route tile
+     * stopped showing it running; and its guard against being started again on top of itself was gone.
+     *
+     * The flag is set as `MarklinRoute.execRoute` sets it, with no thread, so nothing is sent and nothing is waited for.
+     *
+     * MUTATION: take the refusal out of `MarklinControlStation.editRoute`, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARunningRouteIsNotEdited() throws Exception
+    {
+        final String loc = "ProbeGSR3 loc";
+        final String name = "ProbeGSR3 route";
+
+        model.newMM2Locomotive(loc, 66);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        MarklinRoute running = model.getRoute(name);
+
+        try
+        {
+            assertTrue(running.setExecuting(), "precondition: the route was marked running already");
+
+            assertNotNull(model.runningRouteDriving(loc), "precondition: the model does not see the running route drive "
+                + loc + ", so there is nothing for an edit to forget");
+
+            boolean edited = model.editRoute(name, name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+                null);
+
+            assertNotNull(model.runningRouteDriving(loc), "an edit of a running route forgot it was running, so every door"
+                + " that refuses to edit or delete " + loc + " while a route drives it stands open (GSR-B3)");
+
+            assertTrue(model.getRoute(name).isExecuting(), "the route the database holds after the edit reads idle while"
+                + " the one that was running goes on sending its commands (GSR-B3)");
+
+            assertFalse(edited, "the edit of a running route reported success, so the route editor would close as though"
+                + " it had been saved");
+        }
+        finally
+        {
+            running.stopExecuting();
+
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them
+     * (GSR-B4).
+     *
+     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' commands that run it, and the delete's
+     * question says how many routes call it - as deleting a locomotive removes the commands that drive it.  Left behind,
+     * a command naming a deleted route did nothing until somebody made a route of that name, and from then on ran it: a
+     * route nobody had put into the first one.
+     *
+     * Through the door's own model method, `deleteRouteAndItsCalls`.  The model's `deleteRoute` is left as it is,
+     * because `editRoute` deletes and re-adds through it, and an edit must not strip a route's callers.
+     *
+     * MUTATION: take the strip out of `deleteRouteAndItsCalls`, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testADeletedRouteIsNotRunByTheRoutesThatCalledIt() throws Exception
+    {
+        final String called = "ProbeGSR4 called";
+        final String caller = "ProbeGSR4 caller";
+
+        List<RouteCommand> sets = new ArrayList<>();
+
+        sets.add(RouteCommand.RouteCommandAccessory(93, Accessory.accessoryDecoderType.MM2, true));
+
+        model.newRoute(called, sets, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        List<RouteCommand> runs = new ArrayList<>();
+
+        runs.add(RouteCommand.RouteCommandAccessory(95, Accessory.accessoryDecoderType.MM2, true));
+        runs.add(RouteCommand.RouteCommandRoute(called));
+
+        model.newRoute(caller, runs, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        try
+        {
+            // COUNTED BEFORE, as the door counts for its question
+            List<String> counted = model.routesCalling(called);
+
+            model.deleteRouteAndItsCalls(called);
+
+            assertNull(model.getRoute(called), "precondition: the route was not deleted");
+
+            // A NEW ROUTE OF THAT NAME
+            List<RouteCommand> again = new ArrayList<>();
+
+            again.add(RouteCommand.RouteCommandAccessory(96, Accessory.accessoryDecoderType.MM2, true));
+
+            model.newRoute(called, again, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            for (RouteCommand rc : model.getRoute(caller).getRoute())
+            {
+                assertFalse(rc.isRoute() && called.equals(rc.getName()), caller + " still runs " + called + " after it was"
+                    + " deleted, so it now runs the new route of that name - one nobody put in it (GSR-B4)");
+            }
+
+            assertEquals(model.getRoute(caller).getRoute().size(), 1, "the route that ran " + called + " lost more than"
+                + " the command that ran it");
+
+            assertEquals(counted, java.util.Collections.singletonList(caller), "the count the delete's question gives is"
+                + " not the one route that runs " + called + " (GSR-B4)");
+        }
+        finally
+        {
+            try { model.deleteRoute(called); } catch (Exception ignored) { }
+            try { model.deleteRoute(caller); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
      * A route whose name carries a leading or trailing space can still be found and deleted (CS3-C1).
      *
      * The two file parsers build a `MarklinRoute` with the name exactly as the file has it; `newRoute` then indexed

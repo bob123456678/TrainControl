@@ -9489,28 +9489,148 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * Demoting a station forgets how trains were allowed to arrive at it.
+     * A station demoted and promoted again has every setting it had as a station (GSE-C4).
      *
-     * Inert while it is not a station, so leaving it costs nothing today - and everything the day
-     * somebody makes the square a station again and finds it refusing trains for a reason recorded
-     * months earlier.  Symmetrical with the caption rule.
+     * Adam, 2026-10-10, asked: keep them, ignored while not a station - as its maximum train length (OB-291) and its
+     * blockers (AMS-B2) already were.  Demoting cleared five, with no warning, from the editor and from the track
+     * diagram's own menu: the caption, the sides it bars arrivals by, its exit guard, its entry guards, and the turn flag
+     * older setups spell "terminus".  This claim replaces one that said it forgot its arrival restriction - the rule his
+     * ruling reverses.
+     *
+     * Through the editor's own answer to the station menu, `setUsage`, because the turn flag was cleared there and the
+     * other four in the session.  The caption sits two squares below the platform, where the placer never puts one, so a
+     * caption placed afresh on promotion cannot pass for the one kept.
+     *
+     * MUTATION: clear any of the five on demotion again, and this fails naming it.
+     *
+     * @throws Exception from the panel
      */
     @Test
-    public void testDemotingAStationForgetsItsArrivalRestriction() throws Exception
+    public void testADemotedStationHasItsSettingsBackWhenItIsAStationAgain() throws Exception
     {
-        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        org.traincontrol.gui.AutonomyEditorPanel panel = aStationWithEverySetting();
 
         TileKey station = new TileKey("main", 3, 1);
 
-        session.setStation(station, true);
-        session.setBarredArrivals(station,
-            new java.util.LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
+        Set<Side> barred = session.getBarredArrivals(station);
 
-        session.setStation(station, false);
-        session.setStation(station, true);
+        answerTheStationMenu(panel, station, false);
+        answerTheStationMenu(panel, station, true);
 
-        assertTrue(session.getBarredArrivals(station).isEmpty(),
-            "a restriction nobody remembers setting came back with the station");
+        assertTrue(session.getStore().isStation(station), "precondition: the square is not a station again");
+
+        assertEquals(session.getCaptionTarget(new TileKey("main", 3, 3)), station, "the station's caption did not come"
+            + " back with it (GSE-C4)");
+
+        assertEquals(session.getBarredArrivals(station), barred, "the sides the station barred arrivals by did not come"
+            + " back with it (GSE-C4)");
+
+        assertEquals(session.getProtectingSignals(station), Arrays.asList(new TileKey("main", 2, 1)), "the station's"
+            + " exit guard did not come back with it (GSE-C4)");
+
+        assertEquals(session.getEntrySignals(station), Arrays.asList(new TileKey("main", 4, 1)), "the station's entry"
+            + " guard did not come back with it (GSE-C4)");
+
+        assertEquals(session.getPointProperty(station, "terminus"), Boolean.TRUE, "the station's turn flag did not come"
+            + " back with it (GSE-C4)");
+    }
+
+    /**
+     * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not
+     * (GSE-C4): the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
+     * (address 22) on the track either side, wired as parsing a real layout wires them.
+     *
+     * @return the page, its file written
+     * @throws IOException if the page file cannot be written
+     */
+    private LayoutDiagram pageWithAGuardedTwoEndedStation() throws IOException
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        page.addComponent(componentType.SIGNAL, 2, 1, 0, 0, 21, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SIGNAL, 4, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
+
+        wire(page, 2, 1, 21);
+        wire(page, 4, 1, 22);
+
+        return page;
+    }
+
+    /**
+     * Opens that page, makes 3,1 a station and gives it every setting a plain point does not have (GSE-C4): a caption
+     * two squares below it at 3,3, its first arrival side barred, the signal at 2,1 as its exit guard, the one at 4,1 as
+     * its entry guard, and the turn flag older setups spell "terminus".  Each is asserted as set before anything is
+     * demoted.
+     *
+     * @return an editor over the page, to answer the station menu through
+     * @throws Exception from the session or the panel
+     */
+    private org.traincontrol.gui.AutonomyEditorPanel aStationWithEverySetting() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardedTwoEndedStation()));
+        session.initialize("Default");
+
+        TileKey station = new TileKey("main", 3, 1);
+        TileKey caption = new TileKey("main", 3, 3);
+        TileKey exit = new TileKey("main", 2, 1);
+        TileKey entry = new TileKey("main", 4, 1);
+
+        session.setStation(station, true);
+        session.setCaption(caption, station);
+        session.setBarredArrivals(station, new LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
+        session.setProtectingSignal(station, exit);
+        session.setEntrySignals(station, Arrays.asList(entry));
+        session.setPointProperty(station, "terminus", Boolean.TRUE);
+
+        assertEquals(session.getCaptionTarget(caption), station, "precondition: the caption was not set");
+
+        assertFalse(session.getBarredArrivals(station).isEmpty(), "precondition: no arrival side was barred");
+
+        assertEquals(session.getProtectingSignals(station), Arrays.asList(exit), "precondition: the exit guard was not"
+            + " paired");
+
+        assertEquals(session.getEntrySignals(station), Arrays.asList(entry), "precondition: the entry guard was not"
+            + " paired");
+
+        assertEquals(session.getPointProperty(station, "terminus"), Boolean.TRUE, "precondition: the turn flag was not"
+            + " set");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        return panel[0];
+    }
+
+    /**
+     * Answers the station menu over a square as the operator does - Yes, or No - Trains Can Only Pass Through - through
+     * the editor's own `setUsage`, on the event thread (GSE-C4).
+     *
+     * @param panel the editor
+     * @param square the square
+     * @param station true to make it a station, false for a square trains only pass through
+     * @throws Exception from the event thread or the reflection
+     */
+    private static void answerTheStationMenu(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square,
+        final boolean station) throws Exception
+    {
+        final java.lang.reflect.Method usage = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
+            TileKey.class, boolean.class, boolean.class);
+
+        usage.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                usage.invoke(panel, square, station, true);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
     }
 
     /**
@@ -9711,7 +9831,8 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A station's protecting signal survives a save, and goes when the station does.
+     * A station's protecting signal survives a save, and is not read while the square is not a station - it is kept for
+     * when it is one again (GSE-C4, `testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`).
      *
      * Kept with the captions and the arrival restrictions rather than beside the running state: it is a
      * fact about the railway, not about today's traffic.
@@ -10061,8 +10182,8 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A station's entry guard survives a save, is kept apart from its protecting signals, and goes when the station
-     * does (FR-096).
+     * A station's entry guard survives a save, is kept apart from its protecting signals, and is not read while the
+     * square is not a station (FR-096; kept for when it is one again, GSE-C4).
      */
     @Test
     public void testAnEntryGuardIsKeptApartAndForgottenWithTheStation() throws Exception
@@ -10687,47 +10808,113 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * Demoting a station takes its name plaque with it.
+     * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws them
+     * (GSE-C4).
      *
-     * The two used to be independent, so a demoted square kept a caption pointing at it - and a caption
-     * is not inert: it is a registered label that fills in the moment anything stands on the square.  A
-     * reversing point that was once a station therefore announced itself as one the first time a train
-     * touched it, on a square drawn as a plain point.  The diagram contradicted itself and neither half
-     * was wrong on its own.
+     * Each was cleared on demotion for a reason that still holds of a plain point: a caption is drawn, and lights a
+     * station's name up when a train reverses there; a guard is thrown red over a square nothing is sent to; the old turn
+     * flag turns every train round.  They are kept now, at Adam's ruling of 2026-10-10 ("keep them, ignored while not a
+     * station"), so the readers ask whether the square is a station: the caption the diagram draws by, the labelled
+     * stations the checks count, the barred sides, the guards and the accessory names the build is given, whether trains
+     * turn there - and the built railway itself.  This claim replaces one that said demoting took the caption away.
+     *
+     * MUTATION: hand the build every square's exit guards again, station or not, and this fails.
+     *
+     * @throws Exception from the panel or the build
      */
     @Test
-    public void testDemotingAStationTakesItsCaptionWithIt() throws Exception
+    public void testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        org.traincontrol.gui.AutonomyEditorPanel panel = aStationWithEverySetting();
 
-        session.open(Arrays.asList(page));
+        TileKey station = new TileKey("main", 3, 1);
+        TileKey caption = new TileKey("main", 3, 3);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
+        answerTheStationMenu(panel, station, false);
 
-        session.setStation(station, true);
-        session.setCaption(caption, station);
+        session.rebuild();
 
-        assertEquals(session.getCaptionTarget(caption), station, "precondition: the plaque is up");
+        assertFalse(session.getStore().isStation(station), "precondition: the square is still a station");
 
-        session.setStation(station, false);
+        // KEPT, or there is nothing to ignore
+        assertEquals(session.getStore().getCaptionTarget(caption), station, "precondition: demoting the station took its"
+            + " caption, so nothing below asks whether a kept one is ignored (GSE-C4)");
 
-        assertNull(session.getCaptionTarget(caption),
-            "the name plaque outlived the station it names");
+        assertFalse(session.getStore().getBarredArrivals(station).isEmpty(), "precondition: demoting the station took"
+            + " its arrival restriction (GSE-C4)");
 
-        assertTrue(session.captionsFor(station).isEmpty(),
-            "and the station still believes it is captioned somewhere");
+        assertFalse(session.getStore().getProtectingSignals(station).isEmpty(), "precondition: demoting the station took"
+            + " its exit guard (GSE-C4)");
+
+        assertFalse(session.getStore().getEntrySignals(station).isEmpty(), "precondition: demoting the station took its"
+            + " entry guard (GSE-C4)");
+
+        assertEquals(session.getPointProperty(station, "terminus"), Boolean.TRUE, "precondition: demoting the station"
+            + " took its turn flag (GSE-C4)");
+
+        // AND IGNORED
+        assertNull(session.getCaptionTarget(caption), "a plain point's kept caption is drawn - the diagram asks this -"
+            + " and lights a station name up when a train reverses there");
+
+        assertFalse(session.getLabelledStationTiles().contains(station), "a plain point counts as a labelled station");
+
+        assertTrue(session.getBarredArrivals(station).isEmpty(), "a plain point bars arrivals by its kept restriction");
+
+        assertFalse(session.barredArrivals().containsKey(station), "the build and the checks are given a plain point's"
+            + " kept arrival restriction");
+
+        assertNull(session.getProtectingSignal(station), "a plain point has an exit guard");
+
+        assertTrue(session.getEntrySignals(station).isEmpty(), "a plain point has an entry guard");
+
+        assertFalse(session.protectingSignalNames().containsKey(station), "the build is given a plain point's kept exit"
+            + " guard, and throws it red");
+
+        assertFalse(session.entrySignalNames().containsKey(station), "the build is given a plain point's kept entry"
+            + " guard, and throws it red");
+
+        assertFalse(session.isTurnAround(station), "a plain point's kept turn flag turns trains round there");
+
+        org.json.JSONArray points = new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points");
+
+        int copies = 0;
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            if (!station.toString().equals(point.optString("square"))) continue;
+
+            copies++;
+
+            assertFalse(point.has("protectingSignal") || point.has("entrySignal"), "the built railway throws a kept guard"
+                + " for a square that is not a station: " + point);
+
+            assertFalse(point.optBoolean("terminus", false) || point.optBoolean("reversing", false), "the built railway"
+                + " turns trains round on a plain point by its kept turn flag: " + point);
+        }
+
+        assertTrue(copies > 0, "precondition: the built railway has no point for " + station + ", so nothing above read"
+            + " it");
     }
 
     /**
-     * A setup written before that rule is cleaned up when it is opened.
+     * A caption kept for a square that is not a station now survives the setup being opened, undrawn, and is drawn again
+     * once the square is a station (GSE-C4).
      *
-     * The rule stops new ones appearing; it cannot touch the ones already on disk, and the setup that
-     * showed this fault has one.  Nothing here is a user's to fix - the plaque comes back the moment
-     * the square is made a station again - so it is cleared silently.
+     * Opening used to forget every caption naming a square that is not a station - a clean-up for setups written before
+     * demoting took the caption with it.  Adam, 2026-10-10, asked for the opposite rule: keep them, ignored while not a
+     * station - so that clean-up would throw away, at the next start, what demoting now keeps.  This claim replaces the
+     * one that said opening forgot them.
+     *
+     * The square is demoted behind the session's back, as a setup written by another build would arrive.
+     *
+     * MUTATION: forget non-stations' captions in `open` again, and this fails.
+     *
+     * @throws Exception from the files
      */
     @Test
-    public void testOpeningForgetsPlaquesForSquaresThatAreNoLongerStations() throws Exception
+    public void testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow() throws Exception
     {
         LayoutDiagram page = pageOnDisk();
 
@@ -10739,15 +10926,21 @@ public class testAutonomyDiagramSession
         session.setStation(station, true);
         session.setCaption(caption, station);
 
-        // behind the session's back, exactly as a setup written by an older build would look
         session.getStore().setStation(station, false);
         session.save();
 
         AutonomySession reopened = new AutonomySession(layout);
         reopened.open(Arrays.asList(pageOnDisk()));
 
-        assertNull(reopened.getCaptionTarget(caption),
-            "the stale plaque survived being opened and will light up again");
+        assertNull(reopened.getCaptionTarget(caption), "a caption kept for a square that is not a station is drawn");
+
+        assertEquals(reopened.getStore().getCaptionTarget(caption), station, "opening the setup forgot the caption of a"
+            + " square that is not a station now, which is kept for when it is one again (GSE-C4)");
+
+        reopened.setStation(station, true);
+
+        assertEquals(reopened.getCaptionTarget(caption), station, "the square is a station again and its caption is not"
+            + " drawn (GSE-C4)");
     }
 
     /**
