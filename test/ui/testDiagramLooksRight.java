@@ -3962,6 +3962,139 @@ public class testDiagramLooksRight
             + " its own square repainted - its spill stays on the squares beside it: " + onRemoval);
     }
 
+    /**
+     * A curve's station spills onto the squares beside it at the middle of their edges, which is where their arrows are
+     * (Adam, 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*).  The
+     * arrows of a square a spill reaches are drawn back over it.  Nine squares in the diagram's own container, a station
+     * on an E-S curve in the middle, every kind - the may-turn and must-turn icons and a terminus are longer than the
+     * curve's chord - and the square to its right a one-way road from W to E, or the square below from N to S, at 30 and
+     * 60 pixels: that square's arrows have all their pixels with the station beside it as without.
+     *
+     * MUTATION: take the arrows' pass over the spill out of `LayoutGrid.newDiagramContainer`, and this fails.
+     */
+    @Test
+    public void testANeighboursArrowsAreDrawnOverASpill()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        for (int size : new int[] {30, 60})
+        {
+            for (boolean below : new boolean[] {false, true})
+            {
+                int alone = arrowsBesideACurvedStation(size, below, null);
+
+                assertTrue(alone > 0, "precondition: the square " + (below ? "below" : "beside") + " the station drew no"
+                    + " arrows at " + size + " pixels");
+
+                for (org.traincontrol.automationui.TileAnnotation station : curvedStationsOfEveryKind())
+                {
+                    int beside = arrowsBesideACurvedStation(size, below, station);
+
+                    assertTrue(beside >= alone * 0.95, "the curve's " + station + " spilled over the arrows of the square "
+                        + (below ? "below" : "beside") + " it at " + size + " pixels: " + beside + " of their " + alone
+                        + " pixels showing - Adam: \"make sure that the optional ingress/egress arrows remain visible,"
+                        + " especially on curves\"");
+                }
+            }
+        }
+    }
+
+    /** A named station on an E-S curve of every kind: plain, may turn, must turn, a terminus each way. */
+    private static java.util.List<org.traincontrol.automationui.TileAnnotation> curvedStationsOfEveryKind()
+    {
+        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
+        org.traincontrol.automationui.TilePorts.Side s = org.traincontrol.automationui.TilePorts.Side.S;
+
+        java.util.List<org.traincontrol.automationui.TileAnnotation> kinds = new java.util.ArrayList<>();
+
+        for (org.traincontrol.automationui.TileAnnotation.Badge badge : new org.traincontrol.automationui.TileAnnotation.Badge[] {
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, null),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, true, false, false, true, e, s, true, false, null),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, true, false, false, true, e, s, false, false, null),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, e),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, s)})
+        {
+            kinds.add(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+                new org.traincontrol.automationui.TileAnnotation.Mark(e, s, null)), -1, false, badge, false, false, false,
+                null, true, null));
+        }
+
+        return kinds;
+    }
+
+    /**
+     * The red and green pixels of the arrows on the square to the right of the middle one - or below it, a road from N to
+     * S - in the diagram's own container, with a station on an E-S curve in the middle, or none.
+     */
+    private static int arrowsBesideACurvedStation(int size, boolean below,
+        org.traincontrol.automationui.TileAnnotation station)
+    {
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        middle.setBounds(size, size, size, size);
+
+        if (station != null) middle.setAutonomyAnnotation(station);
+
+        grid.add(middle);
+
+        org.traincontrol.gui.LayoutLabel right = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        right.setOpaque(true);
+        right.setBackground(java.awt.Color.WHITE);
+        right.setBounds(below ? size : 2 * size, below ? 2 * size : size, size, size);
+        right.setAutonomyAnnotation(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+            new org.traincontrol.automationui.TileAnnotation.Mark(
+                below ? org.traincontrol.automationui.TilePorts.Side.N : org.traincontrol.automationui.TilePorts.Side.W,
+                below ? org.traincontrol.automationui.TilePorts.Side.S : org.traincontrol.automationui.TilePorts.Side.E,
+                org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)),
+            -1, false, null, false, false, false, null, true, null));
+
+        // painted after the station, as a later square on the page is
+        grid.add(right, 0);
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int n = 0;
+
+        for (int x = right.getX(); x < right.getX() + size; x++)
+        {
+            for (int y = right.getY(); y < right.getY() + size; y++)
+            {
+                int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                // the arrows' own red and green, solid
+                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30 && Math.abs(gr - 205) < 30
+                    && Math.abs(b - 90) < 30)) n++;
+            }
+        }
+
+        return n;
+    }
+
     /** A named station on an E-S curve, as the diagram builds one. */
     private static org.traincontrol.automationui.TileAnnotation aCurvedStation()
     {

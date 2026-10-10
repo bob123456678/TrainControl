@@ -2692,12 +2692,58 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * And on a curve, where the icon is its full size across the chord the arrows sit on (Adam, 2026-10-10: *"Now with
+     * these new station badges, make sure that the optional ingress/egress arrows remain visible, especially on
+     * curves."*).  Every kind, every curve, both sizes, on the diagram and in the editor, at rest and with the icon drawn
+     * again over a run: the arrows' pixels are all still there with the icon.
+     *
+     * MUTATION: paint a station's icon over its square's arrows again, and this fails.
+     */
+    @Test
+    public void testTheArrowsAreDrawnOverAStationsIconOnACurve()
+    {
+        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : curves)
+            {
+                for (TileAnnotation.Badge badge : everyKind(road[0], road[1]))
+                {
+                    for (boolean editor : new boolean[] {false, true})
+                    {
+                        for (boolean overRun : new boolean[] {false, true})
+                        {
+                            int bare = arrowInk(null, road, size, editor, overRun);
+                            int over = arrowInk(badge, road, size, editor, overRun);
+
+                            assertTrue(bare > 0, "precondition: no arrows drawn on a curve " + road[0] + "-" + road[1]
+                                + " at " + size + " pixels");
+
+                            assertTrue(over >= bare * 0.95, badge + " on a curve " + road[0] + "-" + road[1] + " at " + size
+                                + " pixels" + (editor ? " in the editor" : "") + (overRun ? " over a run" : "") + " leaves "
+                                + over + " of the arrows' " + bare + " pixels showing - Adam: \"make sure that the optional"
+                                + " ingress/egress arrows remain visible, especially on curves\"");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** `arrowInk` on a W-E road. */
+    private static int arrowInk(TileAnnotation.Badge badge, int size, boolean editor, boolean overRun)
+    {
+        return arrowInk(badge, new Side[] {Side.W, Side.E}, size, editor, overRun);
+    }
+
+    /**
      * How many of a square's pixels are its arrows' red or green, painted as the diagram paints it - the square, and with
-     * `overRun` the icon again over a running train's line - with a one-way road from W to E.
+     * `overRun` the icon again over a running train's line - with a road one way from its first side to its second.
      *
      * @param badge the station, or null for none
      */
-    private static int arrowInk(TileAnnotation.Badge badge, int size, boolean editor, boolean overRun)
+    private static int arrowInk(TileAnnotation.Badge badge, Side[] road, int size, boolean editor, boolean overRun)
     {
         java.awt.image.BufferedImage image =
             new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
@@ -2709,7 +2755,7 @@ public class testAutonomyDiagramMonitor
             g.setColor(java.awt.Color.WHITE);
             g.fillRect(0, 0, size, size);
 
-            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E,
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1],
                 org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, badge, false, false, false, null,
                 false, null);
 

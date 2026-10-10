@@ -2230,16 +2230,17 @@ public final class LayoutLabel extends JLabel
      * drawn (Adam, 2026-10-10: *"make the stations spill over onto adjacent tiles"*) - `TileAnnotation.paintSpill`.
      *
      * @param g the diagram's graphics
+     * @return whether anything was drawn: a spill reaching what is being repainted
      */
-    public void paintStationSpill(java.awt.Graphics g)
+    public boolean paintStationSpill(java.awt.Graphics g)
     {
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 
-        if (!spills(annotation) || !isVisible()) return;
+        if (!spills(annotation) || !isVisible()) return false;
 
         java.awt.Rectangle clip = g.getClipBounds();
 
-        if (clip != null && !clip.intersects(spillReach())) return;
+        if (clip != null && !clip.intersects(spillReach())) return false;
 
         java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
 
@@ -2248,6 +2249,49 @@ public final class LayoutLabel extends JLabel
             g2.translate(getX(), getY());
 
             annotation.paintSpill(g2, getWidth(), getHeight());
+        }
+        finally
+        {
+            g2.dispose();
+        }
+
+        return true;
+    }
+
+    /**
+     * This square's arrows back over a neighbour's station that spilled onto it (Adam, 2026-10-10: *"make sure that the
+     * optional ingress/egress arrows remain visible, especially on curves"*) - `TileAnnotation.paintArrowsAgain`, asked by
+     * the diagram once the spills are drawn.  Only where another square's spill reaches this one.
+     *
+     * @param g the diagram's graphics
+     * @param spilt the squares that spilled, and how far
+     */
+    void paintArrowsOverSpill(java.awt.Graphics g, java.util.Map<LayoutLabel, java.awt.Rectangle> spilt)
+    {
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
+
+        if (annotation == null || !isVisible()) return;
+
+        java.awt.Rectangle mine = getBounds();
+
+        java.awt.Rectangle clip = g.getClipBounds();
+
+        if (clip != null && !clip.intersects(mine)) return;
+
+        boolean under = false;
+
+        for (java.util.Map.Entry<LayoutLabel, java.awt.Rectangle> spill : spilt.entrySet())
+        {
+            if (spill.getKey() != this && spill.getValue().intersects(mine)) under = true;
+        }
+
+        if (!under) return;
+
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create(getX(), getY(), getWidth(), getHeight());
+
+        try
+        {
+            annotation.paintArrowsAgain(g2, getWidth(), getHeight());
         }
         finally
         {
@@ -2284,7 +2328,7 @@ public final class LayoutLabel extends JLabel
     }
 
     /** As far as a spill reaches, in the diagram's coordinates: half a square past each edge - a curve's icon less. */
-    private java.awt.Rectangle spillReach()
+    java.awt.Rectangle spillReach()
     {
         return new java.awt.Rectangle(getX() - getWidth() / 2, getY() - getHeight() / 2, 2 * getWidth(), 2 * getHeight());
     }

@@ -2397,6 +2397,37 @@ public class TileAnnotation
     private boolean spilling;
 
     /**
+     * This square's arrows and barred-arrival marks again, over a neighbour's station that spilled onto it (Adam,
+     * 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*): they sit at
+     * the middle of the square's edges, which is where a curve's station reaches it.  As `paint` draws them; nothing on a
+     * square autonomy takes no notice of, where `paint` draws none.
+     *
+     * @param g graphics at this square's origin, cut off at its edges
+     * @param width the square's width
+     * @param height the square's height
+     */
+    public void paintArrowsAgain(Graphics2D g, int width, int height)
+    {
+        if (ignored) return;
+
+        Graphics2D a = (Graphics2D) g.create();
+
+        try
+        {
+            a.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            a.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+
+            paintArrows(a, width, height);
+
+            paintArrivals(a, width, height);
+        }
+        finally
+        {
+            a.dispose();
+        }
+    }
+
+    /**
      * The sensor's contact covered, under a station's icon on straight track (FR-118; Adam: *"make sure the white would
      * cover an s88 circle"*).  The contact is 14 pixels across at 30 and 26 at 60: white a pixel wider all round, and the
      * track's black band, `tile` * 8 / 30 across, drawn back over it.  The icons are no taller than the contact, so they

@@ -864,7 +864,7 @@ public class LayoutGrid
      * which is the whole of what this has to get right and needs no railway to establish.
      *
      * @return a panel that draws its tiles, then its captions, then what its curves' stations spill onto the squares
-     *     beside them, then its trains, then its addresses
+     *     beside them and those squares' arrows back over it, then its trains, then its addresses
      */
     public static JPanel newDiagramContainer()
     {
@@ -880,11 +880,28 @@ public class LayoutGrid
                 // drawn here, once every square is drawn: its own square cuts it off at its edges, and a square painted
                 // after it would paint its white over what reached that far.  Under the trains and the addresses, as the
                 // icon on its own square is.
+                java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
+
                 for (java.awt.Component child : getComponents())
                 {
-                    if (child instanceof LayoutLabel)
+                    if (child instanceof LayoutLabel && ((LayoutLabel) child).paintStationSpill(g))
                     {
-                        ((LayoutLabel) child).paintStationSpill(g);
+                        spilt.put((LayoutLabel) child, ((LayoutLabel) child).spillReach());
+                    }
+                }
+
+                // AND THE ARROWS OF THE SQUARES A SPILL REACHED, BACK OVER IT (Adam, 2026-10-10: "make sure that the
+                // optional ingress/egress arrows remain visible, especially on curves").  A square's arrows sit at the
+                // middle of its edges, and a curve's station reaches its neighbours at exactly those two places - so the
+                // spill drew over the arrows that say which way a train may enter or leave the square beside it.
+                if (!spilt.isEmpty())
+                {
+                    for (java.awt.Component child : getComponents())
+                    {
+                        if (child instanceof LayoutLabel)
+                        {
+                            ((LayoutLabel) child).paintArrowsOverSpill(g, spilt);
+                        }
                     }
                 }
 
