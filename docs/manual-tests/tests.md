@@ -30,8 +30,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-705](#mt-705) | 2026-10-07 | With the window always on top, its questions and messages open in front of it | fixed unvalidated | Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent" |
 | [MT-707](#mt-707) | 2026-10-09 | The diagram's new look: redrawn tiles, the see-through line, centred pills, addresses on a halo, grey arrival marks | fixed unvalidated | Adam's look requests of 2026-10-09 - the tiles, the tail, the pills, the addresses, OB-326 and OB-327 |
 | [MT-709](#mt-709) | 2026-10-09 | Round 108: a train's line ends rounded, the Auto tab's darker blue, the tail question's Cancel, a maximised window comes forward, a smaller halo at 60 px | fixed unvalidated | Adam, 2026-10-09 - the rounded end, the Auto tab's colours, "drop not known, keep cancel", and his notes on MT-705 (OB-328) and MT-707 (OB-329) |
+| [MT-710](#mt-710) | 2026-10-09 | Round 110: the new station icons, and captions on end at full size (FR-118) | fixed unvalidated | Adam, 2026-10-09 - FR-118, as chosen on the station icon page, and "Ok, now implement FR-118 and advise when it's in so I can run MT's" |
+| [MT-711](#mt-711) | 2026-10-09 | Round 109: a train's destination is the train's orange, ringed in dark orange | fixed unvalidated | Adam, 2026-10-09 - "Make the yellow labels (trains on their way somewhere) have the same orange background color as occupied train tiles, just without the fading", then "Go with as the line actually looks on white, but give the pill a dark orange border instead of the blue border" |
 
-Everything else - 706 of 709 - needs nothing from you unless the area changes again:
+Everything else - 706 of 711 - needs nothing from you unless the area changes again:
 558 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33679,5 +33681,73 @@ Validated on your *Works* of 2026-10-09.
 `ui.testAMaximisedWindowComesForward` (OB-328) and `core.testAutonomyDiagramMonitor.testTheHaloIsNarrowerAtTheLargeSize`
 (OB-329).  Whether Windows now brings the maximised window forward is this MT's to say: the claim holds the order the
 fix relies on, maximised only once on screen.
+
+---
+
+<a id="mt-710"></a>
+### MT-710 - 2026-10-09 - Round 110: the new station icons, and captions on end at full size (FR-118)
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-09 - FR-118, as chosen on the station icon page, and "Ok, now implement FR-118 and advise when it's in so I can run MT's"
+
+**Written:** 2026-10-09
+
+**Steps**
+
+1. Load a configuration and look at the track diagram at the Small size, then the Large, at stations of every kind: an
+   ordinary one, one where trains may change direction, one where they must, one against a buffer stop, one where the
+   drawn track simply stops, a parking berth (Can Be Chosen in Full Autonomy unticked), one out of service, and one
+   with no name.
+2. Look at a station whose track runs out on the right, and one on vertical track whose track runs out at the top or
+   the bottom.
+3. Look at a station on a curve.
+4. Look at the station names stood on end beside vertical track, at both sizes, where two stations are a square apart.
+5. Open the autonomy editor on the same pages and look at the same stations, a curved one included.
+6. Run a train to a station where trains must change direction, and watch it arrive.
+
+**Expected**
+
+- Step 1: an ordinary station is a rounded blue block; where trains may change direction, a hexagon pointed at both
+  ends, the same shape at both sizes; where they must, two arrows back to back pointing away from each other, a white
+  bar in each and the track's black line between them; against a buffer stop, or where the track stops, a hexagon flat
+  at that end with a white bar there - whatever its Changing Direction setting; a parking berth is grey in whichever
+  of those shapes it has; a station out of service is the orange X over a grey block; one with no name is white,
+  ringed in its colour.  None is taller than the sensor under it, and no part of the sensor's circle shows round an
+  icon on straight track.
+- Step 2: the flat end is always towards the end of the track.
+- Step 3: the icon lies along the curve, a little smaller, inside its square.
+- Step 4: the names are the size of the ones lying flat, and clear of the icons either side.
+- Step 5: the same icons; a station on a curve sits off the rails, clear of the arrows, as before.
+- Step 6: the icon stays drawn over the train's line as the train arrives.
+
+*What this is:* round 110 (`67cf6045`), FR-118.  Claims in `core.testAutonomyDiagramMonitor` (one for each icon, and
+the sensor covered), `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`, and
+`ui.testDiagramLooksRight.testAPillOnEndIsFullSize` with `testAPillOnEndClearsTheStationsBesideIt`.  A station with one
+way out only because of a setting - a one-way run, a barred arrival - while its track carries on keeps its own shape.
+
+---
+
+<a id="mt-711"></a>
+### MT-711 - 2026-10-09 - Round 109: a train's destination is the train's orange, ringed in dark orange
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-09 - "Make the yellow labels (trains on their way somewhere) have the same orange background color as occupied train tiles, just without the fading", then "Go with as the line actually looks on white, but give the pill a dark orange border instead of the blue border"
+
+**Written:** 2026-10-09
+
+**Steps**
+
+1. Send a train somewhere by hand, or start autonomy, and look at the station name it is going to, at the Small size
+   and the Large - flat, and stood on end beside vertical track.
+2. Look at the train's line on the track beside it.
+
+**Expected**
+
+- The destination's name is on a solid light orange - the train's line as it looks on white - ringed in dark orange,
+  in black letters, where it was a warm yellow ringed in blue; it is not see-through.
+- Every other station name is as before.
+
+*What this is:* round 109 (`65756aab`).  Claims `ui.testDiagramLooksRight.testADestinationIsTheLineAsItLooksOnWhite` and
+`testADestinationIsRingedInDarkOrange`, and `ui.testARunsCaptionsSpeakInItsColours`.
 
 ---
