@@ -28,12 +28,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-705](#mt-705) | 2026-10-07 | With the window always on top, its questions and messages open in front of it | fixed unvalidated | Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent" |
-| [MT-706](#mt-706) | 2026-10-09 | Place All at Their Homes puts every homed train on its home, facing as homed, and takes the others off | fixed unvalidated | FR-115 - Adam, 2026-10-09: "Place all at their homes" |
 | [MT-707](#mt-707) | 2026-10-09 | The diagram's new look: redrawn tiles, the see-through line, centred pills, addresses on a halo, grey arrival marks | fixed unvalidated | Adam's look requests of 2026-10-09 - the tiles, the tail, the pills, the addresses, OB-326 and OB-327 |
-| [MT-708](#mt-708) | 2026-10-09 | A paused train stays paused: the Is Active tick, the grey icon, Return Home, and the configuration remembers | fixed unvalidated | FR-117 - Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab" |
 
-Everything else - 704 of 708 - needs nothing from you unless the area changes again:
-556 **fixed validated** and 148 **superseded**.
+Everything else - 706 of 708 - needs nothing from you unless the area changes again:
+558 **fixed validated** and 148 **superseded**.
 
 ---
 
@@ -33501,13 +33499,17 @@ The rest of the popups seem OK.
 
 *Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-09.**
+
+Filed as OB-328 (a maximised diagram window or editor is not brought to the front).
+
 ---
 
 <a id="mt-706"></a>
 
 ### MT-706 - 2026-10-09 - Place All at Their Homes puts every homed train on its home, facing as homed, and takes the others off
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-115 - Adam, 2026-10-09: "Place all at their homes"
 
 **Written:** 2026-10-09
@@ -33535,6 +33537,10 @@ them back.  Claim `core.testPlaceAllAtTheirHomes`, on Adam's frozen railway.
 **Adam, 2026-10-09 (triage).** Works.
 
 *Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-09.**
+
+Validated on your *Works* of 2026-10-09.
 
 ---
 
@@ -33575,12 +33581,16 @@ reduce the size of halos around the locomotive slightly in 60px mode.  rest look
 
 *Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-09.**
+
+Filed as OB-329 (the halo a little narrower at the large size); the rest passed.
+
 ---
 
 <a id="mt-708"></a>
 ### MT-708 - 2026-10-09 - A paused train stays paused: the Is Active tick, the grey icon, Return Home, and the configuration remembers
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-117 - Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab"
 
 **Written:** 2026-10-09
@@ -33620,5 +33630,9 @@ the editor's tick change the same thing.  Claims `core.testAPausedTrainStaysPaus
 **Adam, 2026-10-09 (triage).** Works.
 
 *Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-09.**
+
+Validated on your *Works* of 2026-10-09.
 
 ---

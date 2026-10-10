@@ -1731,6 +1731,26 @@ To settle when it is built: whether the pause belongs to the configuration or to
 
 **Built in round 107** (`ed0d310d`), on Adam's answers of 2026-10-09: the tick is offered only while autonomy is stopped (*“Only when stopped”*), and a paused train is kept out of autonomy and Return Home (*“Autonomy and Return Home”*) - a train can still be sent by hand.  What was left to settle above: the pause belongs to the configuration, which lists its paused trains with its settings and sets every train paused or not as it loads; a paused train taken off the diagram stays paused in that configuration.  And on his later word, *“Make sure the log shows what locomotive are paused when the autonomy import happens”*, the log names the paused trains whenever a configuration loads, an import's included.
 
+### OB-328 - 2026-10-09 - A track diagram window or editor that is maximised is not brought to the front when its button is clicked
+
+**Kind:** bug  
+**Raised from:** MT-705  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09, running MT-705: *“When a track diagram popup is maximized, it will not appear on top of the window (or any other windows) after the button is clicked.  It should appear and then the main window should go back on top of it. same for the editor.  Both work when the window is not previously maximized.”*
+
+Clicking the button that opens a page in its own window (Small or Large on the Layout tab), or the button that opens the editor, when that window is already open and maximised, leaves it where it is - behind the main window and every other program.  Not maximised, it comes up.  It should come up in front, and with Window Always on Top ticked the main window should then be back on top of it.
+
+### OB-329 - 2026-10-09 - The white halo round a locomotive's icon is a little too wide at the large size
+
+**Kind:** bug  
+**Raised from:** MT-707  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09, running MT-707: *“reduce the size of halos around the locomotive slightly in 60px mode.  rest looks good”*
+
+The halo round the train's icon (round 95) grows with the icon, so at 60 pixels it is twice as wide as at 30.  Make it slightly narrower at the large size, leaving the small size as it is.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
