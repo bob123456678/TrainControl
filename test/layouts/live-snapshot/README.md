@@ -158,3 +158,4 @@ not fix it. Name the square.
 - `regression.testDeleteAsksWhichConfiguration`
 - `core.testAStopRouteStandsAlone`
 - `core.testTheFindingsAreWorkedOutOncePerEvent`
+- `ui.testTheActiveTickPausesATrain`

@@ -13256,6 +13256,12 @@ public class Layout
             }
         }
 
+        // AND EACH PAUSED TRAIN IT LEAVES AWAY FROM ITS HOME (FR-117), which is not a reason the plan failed
+        for (Locomotive paused : staging.getPausedAwayFromHome())
+        {
+            this.control.logf("autolayout.infoReturnToHomePaused", paused.getName());
+        }
+
         return plan;
     }
 
@@ -13657,6 +13663,24 @@ public class Layout
         jsonObj.put("activateRoutes", this.isActivateRoutes());
         jsonObj.put("activateRouteIDs", new JSONArray(this.activateRouteIDs));
 
+        // THE TRAINS PAUSED (FR-117; Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused status of
+        // locomotives, as designated on the autonomy locomotive controls tab"): every train the database has paused, by
+        // name and sorted, so the file is the same file when nothing has changed.  Written only while it names somebody,
+        // as `simulate` is, so an ordinary layout's file does not grow a key that means nothing to it.
+        List<String> paused = new ArrayList<>();
+
+        for (Locomotive l : this.control == null ? Collections.<Locomotive>emptyList() : this.control.getLocomotives())
+        {
+            if (l != null && l.getName() != null && l.isAutonomyPaused()) paused.add(l.getName());
+        }
+
+        if (!paused.isEmpty())
+        {
+            Collections.sort(paused);
+
+            jsonObj.put(PAUSED_LOCOMOTIVES, new JSONArray(paused));
+        }
+
         if (this.simulate)
         {
             jsonObj.put("simulate", true);
@@ -13665,6 +13689,12 @@ public class Layout
         return jsonObj.toString(4);
     }
     
+    /**
+     * The key a configuration lists its paused trains under (FR-117), by name: written by `toJSON`, read by `fromJSON`,
+     * and kept by the setup with the rest of a configuration's settings.
+     */
+    public static final String PAUSED_LOCOMOTIVES = "pausedLocomotives";
+
     /**
      * Parses TrainControl's autonomous operation configuration file
      * @param config 
@@ -13877,6 +13907,42 @@ public class Layout
                 "autolayout.warnSimulation",
                 e.getMessage()
             );
+        }
+
+        // WHICH TRAINS ARE PAUSED (FR-117), and every train the database has is told yes or no: the pause lives on the
+        // locomotive, which outlives this railway, so a train paused under the last configuration and not under this one
+        // runs again.  A list that will not read pauses nobody - not worth refusing the setup over.  And NAMED IN THE LOG
+        // (Adam, 2026-10-09: "Make sure the log shows what locomotive are paused when the autonomy import happens"): an
+        // import, a start-up and a rebuild all load through here.  The trains the database has, as the file is written.
+        java.util.Set<String> pausedNames = new java.util.HashSet<>();
+
+        JSONArray pausedList = o.optJSONArray(PAUSED_LOCOMOTIVES);
+
+        for (int i = 0; pausedList != null && i < pausedList.length(); i++)
+        {
+            Object name = pausedList.opt(i);
+
+            if (name instanceof String) pausedNames.add((String) name);
+        }
+
+        List<String> nowPaused = new ArrayList<>();
+
+        for (Locomotive l : control.getLocomotives())
+        {
+            if (l == null || l.getName() == null) continue;
+
+            boolean paused = pausedNames.contains(l.getName());
+
+            l.setAutonomyPaused(paused);
+
+            if (paused) nowPaused.add(l.getName());
+        }
+
+        if (!nowPaused.isEmpty())
+        {
+            Collections.sort(nowPaused);
+
+            control.logf("autolayout.infoPausedLocomotives", String.join(", ", nowPaused));
         }
         
         if (o.has("atomicRoutes"))

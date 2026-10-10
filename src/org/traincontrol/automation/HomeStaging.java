@@ -289,8 +289,53 @@ public final class HomeStaging
             }
         }
 
-        return new HomeStaging(layout, occupancy, homes, stations,
+        // A PAUSED TRAIN STAYS WHERE IT STANDS (FR-117; Adam, 2026-10-09, asked what a paused train is kept out of:
+        // "Autonomy and Return Home").  For this plan its home is where it stands - so it is home already, nothing is
+        // planned for it, and the check after a run counts it home - and the search never moves it out of another's way
+        // (`paused`).  Read once, with the rest of the starting state; one away from a home of its own is named in the log
+        // (`getPausedAwayFromHome`).
+        Set<Locomotive> paused = new HashSet<>();
+        List<Locomotive> pausedAway = new ArrayList<>();
+
+        for (Locomotive l : new java.util.LinkedHashSet<>(occupancy.values()))
+        {
+            if (!l.isAutonomyPaused()) continue;
+
+            paused.add(l);
+
+            Point at = locationOf(occupancy, l);
+            Point home = homes.get(l);
+
+            if (home == null) continue;
+
+            if (!atHome(home, at)) pausedAway.add(l);
+
+            homes.put(l, at);
+        }
+
+        HomeStaging staging = new HomeStaging(layout, occupancy, homes, stations,
             sensorsSet, pointsBySensor, launchPads);
+
+        staging.paused = paused;
+        staging.pausedAway = pausedAway;
+
+        return staging;
+    }
+
+    /** The trains paused when the snapshot was taken, which no plan moves (FR-117). */
+    private Set<Locomotive> paused = Collections.emptySet();
+
+    /** Those of them standing away from a home of their own, which the plan leaves there (FR-117). */
+    private List<Locomotive> pausedAway = Collections.emptyList();
+
+    /**
+     * The paused trains standing away from their homes, which the plan leaves where they stand (FR-117), for the log.
+     *
+     * @return the trains, in the order they stand
+     */
+    public List<Locomotive> getPausedAwayFromHome()
+    {
+        return Collections.unmodifiableList(pausedAway);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -1012,6 +1057,9 @@ public final class HomeStaging
             for (Locomotive l : new ArrayList<>(current.values()))
             {
                 Point at = locationOf(current, l);
+
+                // NOR A PAUSED TRAIN (FR-117): it stays where it stands, in somebody's way or not
+                if (this.paused.contains(l)) continue;
 
                 // A locomotive standing on a launch pad stays there unless its assigned home lies
                 // elsewhere.  Free agents exist to break deadlocks, and the expansion would happily

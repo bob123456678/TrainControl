@@ -1446,6 +1446,17 @@ public class AutonomyEditorPanel extends JPanel
                     }));
             }
 
+            // WHETHER IT RUNS (FR-117; Adam, 2026-10-09: "add an 'active' checkbox to the right click autonomy menu (also
+            // accessible via track diagram).  Show it if there is a locomotive at that station").  Read off the setup,
+            // which is what this menu is about, and written to the train and the setup together.  Not in the deep menu,
+            // whose train items are on the track diagram's own menu one level up; and only at rest, as he answered.
+            if (standing != null && !menuOnly && (parentWindow() == null || !parentWindow().isAutonomyBusy()))
+            {
+                menu.add(toggle(I18n.f("autolayout.ui.menuLocomotiveActive", standing),
+                    "autolayout.ui.hintLocomotiveActive", !session.getPausedLocomotives().contains(standing),
+                    on -> setActive(standing, on)));
+            }
+
             if (isStation)
             {
                 // "Move a Locomotive to This Station..." used to sit here (OB-009).
@@ -5695,6 +5706,40 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     private TrainControlUI mainWindow;
+
+    /**
+     * The Is Active tick (FR-117): the train and the setup together, through the window's door where there is a window
+     * and a train of that name, and the setup alone where there is not - then the railway is told, as every setup door
+     * tells it.
+     *
+     * @param name the train standing on the square
+     * @param active whether autonomy may run it
+     */
+    private void setActive(String name, boolean active)
+    {
+        TrainControlUI window = parentWindow();
+
+        org.traincontrol.base.Locomotive train = window == null || window.getModel() == null ? null
+            : window.getModel().getLocByName(name);
+
+        if (window != null && train != null)
+        {
+            window.setLocomotiveActive(session, train, active);
+        }
+        else
+        {
+            try
+            {
+                session.setLocomotivePaused(name, !active);
+            }
+            catch (java.io.IOException cannotSave)
+            {
+                throw new IllegalStateException(cannotSave.getMessage(), cannotSave);
+            }
+        }
+
+        setupChanged();
+    }
 
     private String locomotiveAt(TileKey tile)
     {

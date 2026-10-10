@@ -153,6 +153,17 @@ public class DiagramMonitorDriver
     }
 
     /**
+     * Draws the trains again: a train paused or set going changes its icon (FR-117) and nothing the railway reports, so
+     * nothing else would.
+     */
+    public void trainsPausedChanged()
+    {
+        DiagramMonitor current = monitor;
+
+        if (current != null) current.markDirty();
+    }
+
+    /**
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
      * a single copy's only way out where it has one (Adam, 2026-10-01 - the icon of a parked train turns to it).
      *

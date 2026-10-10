@@ -889,6 +889,25 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem);
                     }
 
+                    // WHETHER IT RUNS (FR-117; Adam, 2026-10-09: "add an 'active' checkbox to the right click autonomy menu
+                    // (also accessible via track diagram).  Show it if there is a locomotive at that station").  Only at
+                    // rest, as he answered when asked; while trains run the Auto tab's pause button says the same.  Read off
+                    // the train, which is what autonomy and Return Home read.
+                    if (locomotive != null && !ui.isAutonomyBusy())
+                    {
+                        final Locomotive standing = locomotive;
+
+                        final javax.swing.JCheckBoxMenuItem active = new javax.swing.JCheckBoxMenuItem(
+                            I18n.f("autolayout.ui.menuLocomotiveActive", standing.getName()),
+                            !standing.isAutonomyPaused());
+
+                        active.setToolTipText(I18n.t("autolayout.ui.hintLocomotiveActive"));
+
+                        active.addActionListener(event -> setActive(standing, active.isSelected()));
+
+                        add(active);
+                    }
+
                     // Which locomotive belongs here used to be offered from this menu AND from inside
                     // Autonomy Setup, so a square asked the same question twice under two labels.  It
                     // belongs with the rest of the setup, and that is the copy that was kept.
@@ -1458,6 +1477,20 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         item.addActionListener(event -> ui.sendATrainByHand(railway, path, locomotive));
 
         return item;
+    }
+
+    /**
+     * The Is Active tick (FR-117), asked again at the click as Edit Locomotive is: a run may have started since the menu
+     * opened.
+     *
+     * @param train the train standing here
+     * @param active whether autonomy may run it
+     */
+    private void setActive(Locomotive train, boolean active)
+    {
+        if (refusedWhileRunning()) return;
+
+        ui.setLocomotiveActive(session, train, active);
     }
 
     /**

@@ -4532,6 +4532,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private org.json.JSONObject settingsAsBuilt;
 
     /**
+     * Pauses a train or sets it going (FR-117), for the Is Active tick on the track diagram's right-click menu and the
+     * autonomy editor's: the train, which autonomy and Return Home read, and the setup's record of it, saved - then the
+     * diagram's icon and the Auto tab's pause button.
+     *
+     * @param setup the setup the tick belongs to, or null where there is none: the train alone
+     * @param train the train
+     * @param active whether autonomy may run it
+     */
+    public void setLocomotiveActive(org.traincontrol.automationui.AutonomySession setup, Locomotive train, boolean active)
+    {
+        if (train == null) return;
+
+        if (setup == null)
+        {
+            train.setAutonomyPaused(!active);
+        }
+        else
+        {
+            try
+            {
+                setup.setActive(train, active);
+            }
+            catch (java.io.IOException cannotSave)
+            {
+                // The train and the setup in memory have it; the file did not take it, and the next save writes it
+                this.model.log(cannotSave);
+            }
+        }
+
+        trainsPausedChanged();
+
+        repaintAutoLocList(false);
+    }
+
+    /**
+     * Redraws the trains' icons on the diagram, for a train paused or set going (FR-117): the Is Active tick, and the Auto
+     * tab's pause button, which changes the train alone.
+     */
+    public void trainsPausedChanged()
+    {
+        if (diagramMonitorDriver != null) diagramMonitorDriver.trainsPausedChanged();
+    }
+
+    /**
      * Reads the railway just built's settings and timetable, for the folds to compare against (RSA20-B1).  Called by the
      * one door that builds a railway, straight after it.
      */

@@ -6775,6 +6775,78 @@ public class AutonomySession
     }
 
     /**
+     * The trains this configuration pauses (FR-117; Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused
+     * status of locomotives, as designated on the autonomy locomotive controls tab"), by name and sorted.
+     *
+     * Kept with the configuration's settings, under the key the railway writes them under (`Layout.PAUSED_LOCOMOTIVES`),
+     * so the build carries them to the railway as it carries the rest, and the fold brings back a pause made there - the
+     * Auto tab's pause button, pressed while trains run, when the setup is not edited.
+     *
+     * @return the names; empty where no configuration is active or it pauses nobody
+     */
+    public java.util.Set<String> getPausedLocomotives()
+    {
+        java.util.Set<String> names = new java.util.TreeSet<>();
+
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        org.json.JSONObject globals = configuration == null ? null : configuration.optJSONObject("globals");
+
+        org.json.JSONArray list = globals == null ? null
+            : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        for (int i = 0; list != null && i < list.length(); i++)
+        {
+            Object name = list.opt(i);
+
+            if (name instanceof String && !((String) name).trim().isEmpty()) names.add((String) name);
+        }
+
+        return names;
+    }
+
+    /**
+     * Records a train paused, or set going, in the active configuration, and saves it (FR-117).  The list is written only
+     * while it names somebody, as the railway writes it, so a configuration that pauses nobody carries no key.
+     *
+     * @param name the train
+     * @param paused whether it is paused
+     * @return whether there was a configuration to write it to
+     * @throws IOException if the setup cannot be written
+     */
+    public boolean setLocomotivePaused(String name, boolean paused) throws IOException
+    {
+        if (name == null) return false;
+
+        java.util.Set<String> names = getPausedLocomotives();
+
+        if (paused) names.add(name);
+        else names.remove(name);
+
+        return setGlobal(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
+            names.isEmpty() ? null : new org.json.JSONArray(names));
+    }
+
+    /**
+     * Pauses a train or sets it going (FR-117): the train itself, which autonomy and Return Home read, and this
+     * configuration's record of it, saved - the two together, so a fold between them cannot take one for the other.
+     *
+     * @param train the train
+     * @param active whether autonomy may run it
+     * @throws IOException if the setup cannot be written
+     */
+    public void setActive(Locomotive train, boolean active) throws IOException
+    {
+        if (train == null) return;
+
+        train.setAutonomyPaused(!active);
+
+        setLocomotivePaused(train.getName(), !active);
+    }
+
+    /**
      * What the active configuration STORES for a global, or null (RC-A2).
      *
      * The counterpart setGlobal never had, and its absence is why a caller asked the wrong thing. The

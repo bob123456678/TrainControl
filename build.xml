@@ -472,6 +472,8 @@
         <test-one-class class="testReturnHomeFindsAPlanOnAFullRailway"/>
         <test-one-class class="testATrainComesHomeFacingTheWayItWasHomed"/>
         <test-one-class class="testPlaceAllAtTheirHomes"/>
+        <test-one-class class="testAPausedTrainStaysPaused"/>
+        <test-one-class class="testTheActiveTickPausesATrain"/>
         <test-one-class class="testRouteCapture"/>
         <test-one-class class="testRouteCommandParity"/>
         <test-one-class class="testRouteEditorLocked"/>
