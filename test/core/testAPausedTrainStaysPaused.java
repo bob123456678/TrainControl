@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -259,19 +260,27 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * A paused train standing on another's home is not moved out of its way.
+     * A paused train standing on another's home is not moved out of its way - one with no home of its own, which the
+     * search would otherwise move as it moves any train with nowhere to be.
+     *
+     * Control: set going, the same train is moved out of the way, or this claim could not tell.
      *
      * MUTATION: let the search move a paused train as it moves a train with nowhere to be, and this fails.
      */
     @Test
     public void testReturnHomeDoesNotMoveAPausedTrainOutOfTheWay()
     {
-        Layout layout = load(ring(ALPHA, BRAVO));
-
-        assertTrue(layout.moveLocomotive(BRAVO, "PT D", false), "precondition: " + BRAVO + " could not be moved to PT D");
-        assertTrue(layout.moveLocomotive(ALPHA, "PT B", false), "precondition: " + ALPHA + " could not be moved to PT B");
+        Layout layout = load(ring(null, BRAVO));
 
         MarklinLocomotive alpha = model.getLocByName(ALPHA);
+
+        assertTrue(layout.moveLocomotive(BRAVO, "PT D", false), "precondition: " + BRAVO + " could not be moved to PT D");
+
+        // ON BRAVO'S HOME, which is claimed, so ALPHA has no home of its own
+        assertTrue(layout.moveLocomotive(ALPHA, "PT B", false), "precondition: " + ALPHA + " could not be put on PT B");
+
+        assertNull(layout.getHomeStation(alpha), "precondition: " + ALPHA + " was given a home, so it is not the train"
+            + " with nowhere to be that the search moves out of the way");
 
         alpha.setAutonomyPaused(true);
 
@@ -282,6 +291,19 @@ public class testAPausedTrainStaysPaused
             assertFalse(move.getLocomotive().equals(alpha), "Return Home moves the paused " + ALPHA + " off "
                 + BRAVO + "'s home: " + move + " (" + plan.getOutcome() + ")");
         }
+
+        // CONTROL
+        alpha.setAutonomyPaused(false);
+
+        boolean moved = false;
+
+        for (HomeStaging.Move move : layout.planReturnToHome().getMoves())
+        {
+            if (move.getLocomotive().equals(alpha)) moved = true;
+        }
+
+        assertTrue(moved, "precondition: set going, " + ALPHA + " is not moved out of " + BRAVO + "'s way either, so"
+            + " this claim cannot tell a paused train from any other");
     }
 
     /**
