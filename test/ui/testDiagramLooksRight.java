@@ -306,6 +306,29 @@ public class testDiagramLooksRight
             //    is what "the trace stops halfway" would look like.
             java.util.List<String> blank = new java.util.ArrayList<>();
 
+            // A STATION'S SQUARE ANYWHERE ON THE RUN, as the run's ends below: its icon is painted over the line there
+            // (MT-076), and on a curve it is its full size since round 119 (Adam, 2026-10-10: "make the stations spill
+            // over onto adjacent tiles"), covering most of a curve's short chord.  Found in the picture with no run on it,
+            // by the station blue: a square showing it carries a station's icon.
+            java.util.Set<String> stations = new java.util.HashSet<>();
+
+            for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
+            {
+                int blue = 0;
+
+                for (int y = tile.getY() * 60; y < tile.getY() * 60 + 60 && y < bare.getHeight(); y++)
+                {
+                    for (int x = tile.getX() * 60; x < tile.getX() * 60 + 60 && x < bare.getWidth(); x++)
+                    {
+                        int rgb = bare.getRGB(x, y);
+
+                        if ((rgb & 0xFF) > 150 && ((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90) blue++;
+                    }
+                }
+
+                if (blue >= 20) stations.add(tile.getX() + "," + tile.getY());
+            }
+
             for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
             {
                 String square = tile.getX() + "," + tile.getY();
@@ -313,6 +336,8 @@ public class testDiagramLooksRight
                 // The two ENDS are allowed to be hidden: a run stops at a station, and the station's badge
                 // is painted OVER the line there (MT-076), so the stub can be entirely covered.
                 if (tile.equals(run.get(0)) || tile.equals(run.get(run.size() - 1))) continue;
+
+                if (stations.contains(square)) continue;
 
                 Integer here = inkPerSquare.get(square);
 
@@ -3780,6 +3805,173 @@ public class testDiagramLooksRight
         assertTrue(CountingAddress.painted <= 2, "a repaint of one corner of the diagram painted addresses "
             + CountingAddress.painted + " times, where one address lies in it - the pass over the trains painted every"
             + " address on the page (RSA60-C1)");
+    }
+
+    /**
+     * A station on a curve spills onto the squares beside it on the diagram itself: drawn once every square is drawn,
+     * over squares that paint their own white (Adam, 2026-10-10: *"can we instead make the stations spill over onto
+     * adjacent tiles?"*).  Nine squares of 30 pixels in the diagram's own container, a station on an E-S curve in the
+     * middle: its blue reaches the squares to its right and below, which were painted after it.
+     *
+     * MUTATION: take the spill pass out of `LayoutGrid.newDiagramContainer`, and this fails.
+     */
+    @Test
+    public void testAStationOnACurveSpillsOntoTheSquaresBesideIt()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        final int size = 30;
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        org.traincontrol.gui.LayoutLabel station = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        station.setBounds(size, size, size, size);
+        station.setAutonomyAnnotation(aCurvedStation());
+
+        grid.add(station);
+
+        for (int i = 0; i < 9; i++)
+        {
+            if (i == 4) continue;
+
+            org.traincontrol.gui.LayoutLabel beside = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+            beside.setOpaque(true);
+            beside.setBackground(java.awt.Color.WHITE);
+            beside.setBounds((i % 3) * size, (i / 3) * size, size, size);
+
+            // painted after the station, as a later square on the page is
+            grid.add(beside, 0);
+        }
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int inside = 0, beside = 0;
+
+        for (int x = 0; x < size * 3; x++)
+        {
+            for (int y = 0; y < size * 3; y++)
+            {
+                int rgb = shot.getRGB(x, y);
+
+                if ((rgb & 0xFF) > 150 && ((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90)
+                {
+                    if (x >= size && x < 2 * size && y >= size && y < 2 * size) inside++;
+                    else beside++;
+                }
+            }
+        }
+
+        assertTrue(inside > 0, "precondition: the station's square drew no blue");
+
+        assertTrue(beside > 0, "a station on a curve drew nothing on the squares beside it - its icon is cut off at its"
+            + " square's edges, where Adam asked: \"make the stations spill over onto adjacent tiles\"");
+    }
+
+    /**
+     * And a station that spills repaints what it spills onto: when its square is repainted, or its icon is taken away, the
+     * diagram is asked to repaint the squares around it too - the diagram paints a square's neighbours only where it is
+     * asked to, and the old spill would stay there.  Asked of Swing's repaint queue.
+     *
+     * MUTATION: repaint only the square itself again, and this fails.
+     */
+    @Test
+    public void testAStationThatSpillsRepaintsWhatItSpillsOnto() throws Exception
+    {
+        final int size = 30;
+
+        final java.util.List<java.awt.Rectangle> asked = new java.util.ArrayList<>();
+
+        final java.util.List<java.awt.Rectangle> onRepaint = new java.util.ArrayList<>(), onRemoval = new java.util.ArrayList<>();
+
+        final javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.RepaintManager was = javax.swing.RepaintManager.currentManager(grid);
+
+            javax.swing.RepaintManager.setCurrentManager(new javax.swing.RepaintManager()
+            {
+                @Override
+                public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+                {
+                    if (c == grid) asked.add(new java.awt.Rectangle(x, y, w, h));
+                }
+            });
+
+            try
+            {
+                grid.setLayout(null);
+                grid.setSize(size * 3, size * 3);
+
+                org.traincontrol.gui.LayoutLabel station =
+                    new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+                station.setBounds(size, size, size, size);
+
+                grid.add(station);
+
+                station.setAutonomyAnnotation(aCurvedStation());
+
+                asked.clear();
+
+                station.repaint();
+
+                onRepaint.addAll(asked);
+
+                asked.clear();
+
+                station.setAutonomyAnnotation(null);
+
+                onRemoval.addAll(asked);
+            }
+            finally
+            {
+                javax.swing.RepaintManager.setCurrentManager(was);
+            }
+        });
+
+        java.awt.Rectangle around = new java.awt.Rectangle(size / 2, size / 2, size * 2, size * 2);
+
+        assertTrue(onRepaint.stream().anyMatch(r -> r.contains(around)), "a station that spills was repainted alone - what"
+            + " it drew on the squares beside it was not asked to be redrawn: " + onRepaint);
+
+        assertTrue(onRemoval.stream().anyMatch(r -> r.contains(around)), "a station that spilled was taken away and only"
+            + " its own square repainted - its spill stays on the squares beside it: " + onRemoval);
+    }
+
+    /** A named station on an E-S curve, as the diagram builds one. */
+    private static org.traincontrol.automationui.TileAnnotation aCurvedStation()
+    {
+        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
+        org.traincontrol.automationui.TilePorts.Side s = org.traincontrol.automationui.TilePorts.Side.S;
+
+        return new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+            new org.traincontrol.automationui.TileAnnotation.Mark(e, s, null)), -1, false,
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, null),
+            false, false, false, null, true, null);
     }
 
     /**

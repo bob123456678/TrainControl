@@ -863,7 +863,8 @@ public class LayoutGrid
      * Public and static so a test can build one out of plain components and look at what comes out -
      * which is the whole of what this has to get right and needs no railway to establish.
      *
-     * @return a panel that draws its tiles, then its captions, then its trains, then its addresses
+     * @return a panel that draws its tiles, then its captions, then what its curves' stations spill onto the squares
+     *     beside them, then its trains, then its addresses
      */
     public static JPanel newDiagramContainer()
     {
@@ -873,6 +874,19 @@ public class LayoutGrid
             protected void paintChildren(java.awt.Graphics g)
             {
                 super.paintChildren(g);
+
+                // A STATION ON A CURVE SPILLS ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead make the
+                // stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."),
+                // drawn here, once every square is drawn: its own square cuts it off at its edges, and a square painted
+                // after it would paint its white over what reached that far.  Under the trains and the addresses, as the
+                // icon on its own square is.
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof LayoutLabel)
+                    {
+                        ((LayoutLabel) child).paintStationSpill(g);
+                    }
+                }
 
                 for (java.awt.Component child : getComponents())
                 {

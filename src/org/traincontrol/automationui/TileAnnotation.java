@@ -2162,10 +2162,11 @@ public class TileAnnotation
      *
      * Along the road from side a to side b, turned so the terminus's flat end is on its dead-end side.  On straight track
      * the sensor's contact is covered first (*"make sure the white would cover an s88 circle"*) - `cover`.  On a bend the
-     * icon lies along the chord between the road's two sides, on its rails, made smaller until all of it is inside its
-     * square, and the contact is covered there too (Adam, 2026-10-10: *"You will need to make their icons smaller.  Make
-     * sure all types fit."*); in the editor it sits off the rails where the bend's badge always has (`CORNER_INSET`),
-     * clear of the arrows at the sides, and no longer than that badge was across.  The
+     * icon lies along the chord between the road's two sides, on its rails, its full size, and the contact is covered
+     * there too; what falls outside the square spills onto the squares beside it (Adam, 2026-10-10: *"can we instead make
+     * the stations spill over onto adjacent tiles?"*) - `paintSpill`; in the editor it sits off the rails where the
+     * bend's badge always has (`CORNER_INSET`), clear of the arrows at the sides, and no longer than that badge was
+     * across.  The
      * proportions are the page's, which drew them on the real 30 and 60 pixel tiles.
      *
      * @param g the tile's graphics
@@ -2236,28 +2237,28 @@ public class TileAnnotation
         // nothing that badge did not
         if (editing && known && bends) scale = Math.min(1, Math.max(11, tile / 2) / stroked.getBounds2D().getWidth());
 
-        // ON A BEND, SMALLER WHERE IT STANDS (Adam, 2026-10-10: "Stations still clip on curved tracks.  You will need to
-        // make their icons smaller.  Make sure all types fit.").  A square's paint is cut off at its edges, and a curve's
-        // chord runs across a corner, so an icon its full size on the middle of it ran over two edges and lost its ends
-        // (MT-710).  Round 112 kept it full size and moved it in towards the middle of the square: inside, but off its
-        // rails, over the white beside them.  Now it stays on the middle of the chord and is made as much smaller as all
-        // of it needs to be inside the square - each kind its own size, as each is its own shape: a pointed end fits a
-        // corner a rounded block does not.  The editor's bend is off the rails already, in the corner (above).
-        if (!editing && known && bends) scale = Math.min(scale, largestThatFits(needs, centre[0], centre[1], width, height));
+        // ON A BEND, ITS FULL SIZE ON ITS RAILS, SPILLING ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead
+        // make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the
+        // size.").  A curve's chord runs across a corner, so an icon its full size on the middle of it reaches past two
+        // edges, and a square's paint is cut off at its edges - the ends were lost (MT-710).  Round 112 moved it in off its
+        // rails; round 118 made it smaller.  Now the square draws what falls inside it, cut off cleanly at its edges, and
+        // `paintSpill`, asked by the diagram once every square is drawn, draws the rest over the squares beside it.  The
+        // editor's bend is off the rails, in the corner (above), and inside its square.
+        boolean spills = !editing && known && bends;
 
-        // AND WHOLLY INSIDE ITS SQUARE whatever else is asked of it (MT-710): moved in towards the middle of the square
-        // as far as it needs, and made smaller only where even there it would not fit.  On straight track, and on a
-        // bend at the size above, every icon fits where it is.
-        double[] at = fitInside(needs, scale, centre[0], centre[1], width, height);
+        // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved in towards the middle of the square as far as it
+        // needs, and made smaller only where even there it would not fit.  On straight track every icon fits where it is.
+        double[] at = spills ? new double[] {centre[0], centre[1], scale}
+            : fitInside(needs, scale, centre[0], centre[1], width, height);
 
         scale = at[2];
 
         badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
 
-        // THE CONTACT COVERED ON A BEND TOO, as on straight track below - an icon made smaller on a curve sat inside the
-        // contact's ring.  On the chord's middle, where the curved sensor's art draws it, turned along the chord - and
-        // kept inside the square, which turned it overhangs at two edges.
-        if (!editing && known && bends)
+        // THE CONTACT COVERED ON A BEND TOO, as on straight track below - the icon is no taller than the contact, whose
+        // ring showed round it.  On the chord's middle, where the curved sensor's art draws it, turned along the chord -
+        // and kept inside the square, which turned it overhangs at two edges.  Once: not again with the spill.
+        if (spills && !spilling)
         {
             Graphics2D c = (Graphics2D) g.create();
 
@@ -2281,6 +2282,10 @@ public class TileAnnotation
 
         try
         {
+            // WHERE IT SPILLS, CUT AT THE SQUARE'S EDGES - the square's own part inside them, the spill's outside them, so
+            // no pixel is drawn twice and no soft edge darkens where the two meet
+            if (spills) s.clip(spilling ? outside(width, height) : new java.awt.Rectangle(0, 0, width, height));
+
             s.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             // PURE, as the page drew them: the default stroke control moves an outline by up to half a pixel to sit it
@@ -2305,6 +2310,8 @@ public class TileAnnotation
 
                 try
                 {
+                    if (spills) x.clip(spilling ? outside(width, height) : new java.awt.Rectangle(0, 0, width, height));
+
                     x.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     x.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
                     x.translate(at[0], at[1]);
@@ -2345,6 +2352,51 @@ public class TileAnnotation
     }
 
     /**
+     * Whether this square's station icon reaches past the square onto the ones beside it - a station on a curve, on the
+     * diagram, where it is drawn its full size on the middle of its rails (Adam, 2026-10-10: *"can we instead make the
+     * stations spill over onto adjacent tiles?"*).  The square draws what falls inside it and `paintSpill`, asked by the
+     * diagram once every square is drawn, the rest.
+     *
+     * @return true where the icon spills
+     */
+    public boolean spillsOverItsSquare()
+    {
+        return badge != null && badge.isStation() && !editing && badge.getA() != null && badge.getB() != null
+            && badge.getA() != badge.getB() && trackBends();
+    }
+
+    /**
+     * What of this square's station icon falls outside the square, drawn over the squares beside it - nothing where it
+     * does not spill (`spillsOverItsSquare`).
+     *
+     * @param g graphics at this square's origin, not cut off at its edges
+     * @param width the square's width
+     * @param height the square's height
+     */
+    public void paintSpill(Graphics2D g, int width, int height)
+    {
+        if (!spillsOverItsSquare()) return;
+
+        Graphics2D s = (Graphics2D) g.create();
+
+        try
+        {
+            spilling = true;
+
+            paintBadge(s, width, height);
+        }
+        finally
+        {
+            spilling = false;
+
+            s.dispose();
+        }
+    }
+
+    /** Whether `paintSpill` is drawing - the station's part outside its square, without the contact's cover. */
+    private boolean spilling;
+
+    /**
      * The sensor's contact covered, under a station's icon on straight track (FR-118; Adam: *"make sure the white would
      * cover an s88 circle"*).  The contact is 14 pixels across at 30 and 26 at 60: white a pixel wider all round, and the
      * track's black band, `tile` * 8 / 30 across, drawn back over it.  The icons are no taller than the contact, so they
@@ -2380,27 +2432,14 @@ public class TileAnnotation
         return new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
     }
 
-    /**
-     * The largest scale, no more than 1, at which an icon centred here is all inside its square - a pixel's half to spare at
-     * each edge, as `fitInside` keeps (Adam, 2026-10-10: on a curve, *"make their icons smaller"*).
-     *
-     * @param needs what the icon covers at scale 1, about its centre, turned as it is drawn
-     * @param x where its centre is
-     * @param y where its centre is
-     * @param width the square's width
-     * @param height the square's height
-     * @return the scale
-     */
-    private static double largestThatFits(java.awt.geom.Rectangle2D needs, double x, double y, int width, int height)
+    /** Around a square to a square's depth, but not the square: where its spill is drawn. */
+    private static java.awt.Shape outside(int width, int height)
     {
-        double scale = 1;
+        java.awt.geom.Area around = new java.awt.geom.Area(new java.awt.Rectangle(-width, -height, 3 * width, 3 * height));
 
-        if (needs.getMinX() < 0) scale = Math.min(scale, (x - 0.5) / -needs.getMinX());
-        if (needs.getMaxX() > 0) scale = Math.min(scale, (width - 0.5 - x) / needs.getMaxX());
-        if (needs.getMinY() < 0) scale = Math.min(scale, (y - 0.5) / -needs.getMinY());
-        if (needs.getMaxY() > 0) scale = Math.min(scale, (height - 0.5 - y) / needs.getMaxY());
+        around.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
 
-        return Math.max(0.1, scale);
+        return around;
     }
 
     /**

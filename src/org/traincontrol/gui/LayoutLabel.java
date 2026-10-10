@@ -1383,6 +1383,9 @@ public final class LayoutLabel extends JLabel
         if (effective == null ? autonomyAnnotation == null
             : effective.equals(autonomyAnnotation)) return;
 
+        // AND A STATION THAT SPILLED, which this may take away: its spill is on the squares around (Adam, 2026-10-10)
+        boolean spilled = spills(autonomyAnnotation);
+
         autonomyAnnotation = effective;
 
         // AND THE TILES AROUND IT WHERE A TRAIN STANDS (RSA23-C1): the annotation can say where the icon goes, and the
@@ -1391,7 +1394,7 @@ public final class LayoutLabel extends JLabel
 
         TileOverlay train = autonomyOverlay;
 
-        if (around != null && train != null && train.hasTrain())
+        if (around != null && (spilled || train != null && train.hasTrain()))
         {
             around.repaint(getX() - getWidth(), getY() - getHeight(), 3 * getWidth(), 3 * getHeight());
         }
@@ -2220,6 +2223,70 @@ public final class LayoutLabel extends JLabel
         {
             g2.dispose();
         }
+    }
+
+    /**
+     * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square is
+     * drawn (Adam, 2026-10-10: *"make the stations spill over onto adjacent tiles"*) - `TileAnnotation.paintSpill`.
+     *
+     * @param g the diagram's graphics
+     */
+    public void paintStationSpill(java.awt.Graphics g)
+    {
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
+
+        if (!spills(annotation) || !isVisible()) return;
+
+        java.awt.Rectangle clip = g.getClipBounds();
+
+        if (clip != null && !clip.intersects(spillReach())) return;
+
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+        try
+        {
+            g2.translate(getX(), getY());
+
+            annotation.paintSpill(g2, getWidth(), getHeight());
+        }
+        finally
+        {
+            g2.dispose();
+        }
+    }
+
+    /**
+     * And the squares around it, where this square's station spills onto them (Adam, 2026-10-10: *"make the stations spill
+     * over onto adjacent tiles"*): the diagram paints a square's neighbours only where it is asked to, so repainting this
+     * square alone left the old spill on them - a station turned grey, still blue past its edges.
+     */
+    @Override
+    public void repaint(long tm, int x, int y, int width, int height)
+    {
+        java.awt.Container around = getParent();
+
+        if (around != null && spills(autonomyAnnotation))
+        {
+            java.awt.Rectangle reach = spillReach();
+
+            around.repaint(tm, reach.x, reach.y, reach.width, reach.height);
+
+            return;
+        }
+
+        super.repaint(tm, x, y, width, height);
+    }
+
+    /** Whether an annotation's station spills past its square (`TileAnnotation.spillsOverItsSquare`). */
+    private static boolean spills(org.traincontrol.automationui.TileAnnotation annotation)
+    {
+        return annotation != null && annotation.spillsOverItsSquare();
+    }
+
+    /** As far as a spill reaches, in the diagram's coordinates: half a square past each edge - a curve's icon less. */
+    private java.awt.Rectangle spillReach()
+    {
+        return new java.awt.Rectangle(getX() - getWidth() / 2, getY() - getHeight() / 2, 2 * getWidth(), 2 * getHeight());
     }
 
     /**

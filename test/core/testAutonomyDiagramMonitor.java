@@ -2201,7 +2201,8 @@ public class testAutonomyDiagramMonitor
      * loses: painted here with nothing to cut it, on a canvas three squares across, nothing may land outside the
      * middle one.  On straight track too.
      *
-     * MUTATION: draw a curve's icon at full size on the middle of its chord again, and this fails.
+     * MUTATION: let the square's own paint of a curve's icon run past its edges - not cut off there, where the spill
+     * draws the rest - and this fails.
      */
     @Test
     public void testAStationOnACurveIsWhollyInsideItsSquare()
@@ -2267,23 +2268,24 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A station's icon on a curve is made smaller where it stands - on its rails, across the middle of the curve's chord -
-     * rather than moved off them, every kind, at both sizes, whichever way the curve turns (Adam, 2026-10-10: *"Stations
-     * still clip on curved tracks.  You will need to make their icons smaller.  Make sure all types fit."*).  Round 112
-     * kept each icon its full size and moved it in towards the middle of the square until it fitted: off the rails, over
-     * the white beside them.
+     * A station's icon on a curve is its full size on its rails, across the middle of the curve's chord, every kind, at both
+     * sizes, whichever way the curve turns: the square draws what falls inside it and the rest spills onto the squares
+     * beside it (Adam, 2026-10-10: *"can we instead make the stations spill over onto adjacent tiles?  This would look
+     * much better than trying to reduce the size."*).  Round 118 made it smaller until it fitted; round 112 moved it in
+     * off its rails.
      *
-     * Painted over the curved sensor's own art, as the diagram paints it: the middle of the icon's colour lies on the
-     * chord, within a pixel at 30 and a pixel and a half at 60 - along the chord a terminus's weight may lean to its flat
-     * end; across it nothing may - and there is less of that colour than the same kind shows on straight track.  That it
-     * is wholly inside its square is `testAStationOnACurveIsWhollyInsideItsSquare`'s.
+     * Painted as the diagram paints it: the square's own paint cut off at its edges, over the curved sensor's art, then
+     * the spill over the squares around it.  The middle of the icon's colour lies on the chord, within a pixel at 30 and
+     * a pixel and a half at 60 - along the chord a terminus's weight may lean to its flat end; across it nothing may - and
+     * there is as much of that colour as the same kind shows on straight track, give or take what drawing it on the
+     * slant softens: at least 85%.
      *
-     * MUTATION: keep a curve's icon full size and move it in off its rails again, and this fails.
+     * MUTATION: make a curve's icon smaller to fit again, or move it in off its rails, and this fails.
      *
      * @throws Exception from reading the art
      */
     @Test
-    public void testAStationOnACurveIsSmallerOnItsRails() throws Exception
+    public void testAStationOnACurveIsFullSizeOnItsRails() throws Exception
     {
         Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
 
@@ -2298,27 +2300,132 @@ public class testAutonomyDiagramMonitor
                 {
                     java.util.function.IntPredicate colour = k == 5 ? GREY : k == 6 ? GREY.or(ORANGE) : BLUE;
 
-                    java.awt.image.BufferedImage onTheCurve = overTheArt(kinds[k], road, size);
-
-                    double[] middle = middleOf(onTheCurve, colour);
+                    double[] middle = middleOf(withItsSpill(kinds[k], road, size), colour);
 
                     assertTrue(middle[2] > 0, "precondition: " + kinds[k] + " on a curve " + road[0] + "-" + road[1]
                         + " at " + size + " pixels painted nothing of its colour");
 
-                    double across = acrossTheChord(middle, road, size);
+                    double across = acrossTheChord(new double[] {middle[0] - size, middle[1] - size}, road, size);
 
                     assertTrue(across <= (size >= 60 ? 1.5 : 1.0), kinds[k] + " on a curve " + road[0] + "-" + road[1]
-                        + " at " + size + " pixels sits " + across + " pixels off the middle of its rails - moved off them"
-                        + " to fit, where Adam asked: \"You will need to make their icons smaller\"");
+                        + " at " + size + " pixels sits " + across + " pixels off the middle of its rails - moved off them,"
+                        + " where Adam asked for it to spill over onto the squares beside it");
 
-                    double flat = middleOf(overTheArt(straight[k], new Side[] {Side.W, Side.E}, size), colour)[2];
+                    double flat = middleOf(withItsSpill(straight[k], new Side[] {Side.W, Side.E}, size), colour)[2];
 
-                    assertTrue(middle[2] < 0.75 * flat, kinds[k] + " on a curve " + road[0] + "-" + road[1] + " at "
+                    assertTrue(middle[2] >= 0.85 * flat, kinds[k] + " on a curve " + road[0] + "-" + road[1] + " at "
                         + size + " pixels shows " + (int) middle[2] + " pixels of its colour against " + (int) flat
-                        + " on straight track - not made smaller to fit (Adam: \"Make sure all types fit\")");
+                        + " on straight track - made smaller, where Adam asked: \"make the stations spill over onto"
+                        + " adjacent tiles ... much better than trying to reduce the size\"");
                 }
             }
         }
+    }
+
+    /**
+     * The spill is only what falls outside the square: the square's own paint has drawn the rest, and drawn twice its
+     * soft edges would darken.  Every kind on every curve at both sizes: nothing inside the square, and something outside
+     * it for the plain station, whose block reaches past two edges.  Nothing at all on straight track, or in the editor,
+     * where a curve's icon stands in the corner inside its square.
+     *
+     * MUTATION: let the spill draw inside the square too, and this fails.
+     */
+    @Test
+    public void testTheSpillIsOnlyWhatFallsOutsideTheSquare()
+    {
+        Side[][] roads = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}, {Side.W, Side.E}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : roads)
+            {
+                boolean curve = !(road[0] == Side.W && road[1] == Side.E);
+
+                TileAnnotation.Badge[] kinds = everyKind(road[0], road[1]);
+
+                for (int k = 0; k < kinds.length; k++)
+                {
+                    for (boolean editor : new boolean[] {false, true})
+                    {
+                        java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
+                            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                        java.awt.Graphics2D g = canvas.createGraphics();
+
+                        try
+                        {
+                            g.translate(size, size);
+
+                            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
+                                road[1], null)), -1, false, kinds[k], false, false, false, null, true, null);
+
+                            (editor ? annotation.inTheEditor() : annotation).paintSpill(g, size, size);
+                        }
+                        finally
+                        {
+                            g.dispose();
+                        }
+
+                        int inside = 0, outside = 0;
+
+                        for (int x = 0; x < canvas.getWidth(); x++)
+                        {
+                            for (int y = 0; y < canvas.getHeight(); y++)
+                            {
+                                if ((canvas.getRGB(x, y) >>> 24) == 0) continue;
+
+                                if (x >= size && x < 2 * size && y >= size && y < 2 * size) inside++;
+                                else outside++;
+                            }
+                        }
+
+                        String what = kinds[k] + " on a road " + road[0] + "-" + road[1] + " at " + size + " pixels"
+                            + (editor ? " in the editor" : "");
+
+                        assertEquals(inside, 0, what + ": its spill drew " + inside + " pixels inside its own square,"
+                            + " which the square has drawn already");
+
+                        if (!curve || editor) assertEquals(outside, 0, what + " spilled " + outside + " pixels, where it"
+                            + " is drawn inside its square");
+                        else if (k == 0) assertTrue(outside > 0, what + " spilled nothing - its block reaches past two"
+                            + " edges of the square, and the spill is what draws that part (Adam: \"make the stations"
+                            + " spill over onto adjacent tiles\")");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * A badge painted as the diagram paints it, on a canvas three squares across with the square in the middle: the
+     * square's own paint over its sensor's art, cut off at the square's edges, then its spill over the squares around.
+     */
+    private static java.awt.image.BufferedImage withItsSpill(TileAnnotation.Badge badge, Side[] road, int size)
+        throws Exception
+    {
+        java.awt.image.BufferedImage square = overTheArt(badge, road, size);
+
+        java.awt.image.BufferedImage canvas =
+            new java.awt.image.BufferedImage(size * 3, size * 3, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = canvas.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+            g.drawImage(square, size, size, null);
+            g.translate(size, size);
+
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1], null)), -1, false, badge, false,
+                false, false, null, true, null).paintSpill(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return canvas;
     }
 
     /**
