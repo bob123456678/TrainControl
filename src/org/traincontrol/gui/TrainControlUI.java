@@ -21639,9 +21639,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Keyed off the message the route would have logged, so the two can never drift apart: there
         // is one place that decides what kind of conflict this is, and it is not here.
-        String question = "route.refusedSignalProtectingOccupiedPlatform".equals(
-            why == null ? null : why[1])
-                ? "layout.ui.confirmRouteProtectingSignal" : "layout.ui.confirmRouteActiveRoute";
+        String reason = why == null ? null : why[1];
+
+        // AND A PLATFORM ONLY RESERVED, asked about as that (GSR-C2): a locked path holds its destination for a train still
+        // on its way there, and the question said a train was standing at it.
+        String question = "route.refusedSignalProtectingOccupiedPlatform".equals(reason)
+            ? "layout.ui.confirmRouteProtectingSignal"
+            : "route.refusedSignalProtectingReservedPlatform".equals(reason)
+                ? "layout.ui.confirmRouteProtectingReservedSignal" : "layout.ui.confirmRouteActiveRoute";
 
         Runnable ask = () -> choice[0] = JOptionPane.showOptionDialog(
             over == null ? this : over,
@@ -22246,6 +22251,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         return;
                     }
                 }
+
+                // ASKED AGAIN AFTER THE DIALOG, BEFORE ANYTHING IS WRITTEN (GSR-B6).  The question above was put before
+                // the dialog opened, an s88 trigger can start a route that drives this locomotive while it is open, and
+                // both writes below rewrite what that route is reading.  The multi-unit dialog and the Central Station's
+                // name proposal already ask after theirs.
+                if (result == JOptionPane.OK_OPTION && refuseWhileARouteDrivesIt(source, l.getName())) return;
 
                 String newAddress = edit.getAddress();
                 decoderType newDecoderType = edit.getDecoderType();
@@ -23129,6 +23140,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 YES_NO_OPTS[1]
             ))
         {
+            // ASKED AGAIN AT YES, BEFORE ANYTHING IS WRITTEN (GSR-B6): the question at the top was put before this
+            // confirmation opened, and an s88 trigger can start a route that drives the locomotive while it is open.
+            if (refuseWhileARouteDrivesIt(source, value)) return;
+
             Locomotive l = this.model.getLocByName(value);
 
             if (l != null)

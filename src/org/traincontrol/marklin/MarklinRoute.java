@@ -643,8 +643,11 @@ public class MarklinRoute extends Route
         // green by hand was not.  One rule now, in the one place both can reach.
         if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory))
         {
-            return new String[] {accessory.getName(),
-                "route.refusedSignalProtectingOccupiedPlatform"};
+            // STANDING, OR ONLY RESERVED (GSR-C2).  A locked path reserves every point along it for its train, its
+            // destination included, so a platform holds this signal red before any train is at it - and "a train is
+            // standing" sent the operator looking for one.  The refusal is the same either way; only what it says differs.
+            return new String[] {accessory.getName(), railway.protectsAStandingTrain(accessory)
+                ? "route.refusedSignalProtectingOccupiedPlatform" : "route.refusedSignalProtectingReservedPlatform"};
         }
 
         return null;

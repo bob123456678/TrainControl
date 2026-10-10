@@ -286,6 +286,96 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
+     * The two locomotive doors that ask a modal question ask again after it, before they write (GSR-B6).
+     *
+     * `refuseWhileARouteDrivesIt` is asked as each door opens, and the edit dialog and the delete confirmation then wait
+     * for as long as somebody takes - long enough for an s88 trigger to start a route that drives the locomotive.  The
+     * Central Station's name proposal and the multi-unit dialog already ask again after theirs; renaming or
+     * re-addressing, and deleting, asked only first and then wrote.  Read from the source, as this class reads its other
+     * doors: a behavioural test would have to hold a modal dialog open while a route starts.
+     *
+     * MUTATION: take the second `refuseWhileARouteDrivesIt` out of either door, and this fails naming it.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheRouteRefusalIsAskedAgainAfterTheDialog() throws Exception
+    {
+        String source = withoutComments(read(WINDOW));
+
+        // The door, what it is for, and what it writes
+        String[][] doors =
+        {
+            {"public void changeLocAddress(Locomotive l, MouseEvent evt)", "renaming or re-addressing a locomotive",
+                "this.model.changeLocAddress(", "this.model.renameLoc("},
+            {"public void deleteLoc(String value, MouseEvent evt)", "deleting a locomotive",
+                "this.activeLoc = null;", "this.cutLocomotive = null;", "this.model.deleteLoc("},
+        };
+
+        List<String> wrong = new ArrayList<>();
+
+        for (String[] door : doors)
+        {
+            String body = bodyAt(source, door[0]);
+
+            assertFalse(body.isEmpty(), "cannot find " + door[0] + " in " + WINDOW + " - if it was renamed, rename it here too");
+
+            int firstWrite = body.length();
+
+            for (int w = 2; w < door.length; w++)
+            {
+                int at = body.indexOf(door[w]);
+
+                assertTrue(at >= 0, "precondition: " + door[0] + " no longer writes " + door[w] + ", so this would check"
+                    + " the wrong place");
+
+                firstWrite = Math.min(firstWrite, at);
+            }
+
+            int dialog = body.lastIndexOf("showOptionDialog(", firstWrite);
+
+            assertTrue(dialog >= 0, "precondition: " + door[0] + " no longer asks its question before it writes");
+
+            // THE LAST TIME IT ASKS BEFORE IT WRITES, which has to be after the question
+            int asked = body.lastIndexOf("refuseWhileARouteDrivesIt(", firstWrite);
+
+            if (asked < dialog) wrong.add(door[1] + " (" + door[0] + ")");
+        }
+
+        assertEquals(wrong.toString(), "[]", "these doors ask whether a running route drives the locomotive only before"
+            + " their dialog, and write after it - so a route an s88 trigger starts while the dialog is open is not refused"
+            + " (GSR-B6): " + wrong);
+    }
+
+    /**
+     * A method's body by its whole declaration, brace-matched - for a method with an overload, where `bodyOf` finds the
+     * first declaration of the name.
+     *
+     * @param source the source, comments out
+     * @param declaration the declaration as written, up to its closing bracket
+     * @return the body, or "" when the declaration is not there
+     */
+    private static String bodyAt(String source, String declaration)
+    {
+        int at = source.indexOf(declaration);
+
+        if (at < 0) return "";
+
+        int open = source.indexOf('{', at);
+
+        int depth = 0;
+
+        for (int i = open; i >= 0 && i < source.length(); i++)
+        {
+            if (source.charAt(i) == '{') depth++;
+
+            if (source.charAt(i) == '}' && --depth == 0) return source.substring(open, i + 1);
+        }
+
+        return "";
+    }
+
+    /**
      * And no door has quietly appeared that asks nothing.
      *
      * **A ratchet, and it runs LAST on purpose** (REG9-B1): a staleness detector that pre-empts a

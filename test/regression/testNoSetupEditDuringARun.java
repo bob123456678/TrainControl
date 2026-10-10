@@ -19,8 +19,10 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static regression.testTheImportDoorReadsAnOldFile.answeringYes;
+import static regression.testTheImportDoorReadsAnOldFile.before;
 import static regression.testTheImportDoorReadsAnOldFile.closeTheEditor;
 import static regression.testTheImportDoorReadsAnOldFile.dispatchATrain;
+import static regression.testTheImportDoorReadsAnOldFile.importFromTheMenu;
 import static regression.testTheImportDoorReadsAnOldFile.itemCalled;
 import static regression.testTheImportDoorReadsAnOldFile.logged;
 import static regression.testTheImportDoorReadsAnOldFile.openTheEditorFor;
@@ -42,6 +44,125 @@ import static regression.testTheImportDoorReadsAnOldFile.startAnsweringYes;
  */
 public class testNoSetupEditDuringARun
 {
+    /**
+     * The pages an old-file import says it left out stay out when the import then fails (OB-302).
+     *
+     * The import shuts a page whose sensors repeat an earlier page's, and says so, before it reads the file.  Its rollback
+     * snapshot was taken BEFORE that, so a file that then failed put the setup back as it was before the exclusion too:
+     * the page came back into autonomy, and the message about leaving it out was the last word anybody was given.  The
+     * exclusion is the setup's shared half, not the configuration being imported, so it is not the import's to undo.
+     *
+     * "4 - Combined" repeats "1 - Main"'s sensors, and the frozen railway has it out; it is put back in here as a page
+     * nobody has decided about - neither out nor turned back on (TST-B15) - which is the state the import acts on.  The
+     * file is his own with a timetable that is not a list, broken as `testAFileItCannotReadLeavesTheSetupAsItWas` breaks
+     * it.  Here rather than beside that claim, because the import door's class holds as many windows as its heap does.
+     *
+     * MUTATION: take the snapshot before the exclusion again, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testAPageTheImportLeftOutStaysOutWhenTheFileFails() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        final java.io.File mt491 = new java.io.File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json");
+
+        assertTrue(mt491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+
+        final String combined = "4 - Combined";
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.io.File broken = java.io.File.createTempFile("tc-broken-autonomy", ".json");
+
+        org.json.JSONObject file = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(mt491.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        file.put("timetable", new org.json.JSONObject());
+
+        java.nio.file.Files.write(broken.toPath(), file.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession opened = ui[0].getAutonomySession();
+
+            assertTrue(opened.getStore().getExcludedPages().contains(combined), "precondition: the frozen railway does not"
+                + " leave " + combined + " out: " + opened.getStore().getExcludedPages());
+
+            final java.util.Set<String> kept = keptDespiteRepeats(opened);
+
+            // BACK IN, AND UNDECIDED: turned on, then the record that somebody turned it on taken away again
+            SwingUtilities.invokeAndWait(() ->
+            {
+                opened.setPageExcluded(combined, false);
+
+                kept.remove(combined);
+            });
+
+            assertFalse(opened.getStore().getExcludedPages().contains(combined)
+                || opened.getStore().getPagesKeptDespiteRepeats().contains(combined),
+                "precondition: " + combined + " is not a page nobody has decided about");
+
+            List<String> said = importFromTheMenu(ui[0], broken, "OB-302 broken");
+
+            assertTrue(said.contains(I18n.f("autosetup.ui.infoPagesExcludedForSensors", 1, combined)),
+                "precondition: the import did not say it left " + combined + " out: " + said);
+
+            String unreadable = before(I18n.t("autosetup.ui.errorImportUnreadable"), "{0}");
+
+            assertTrue(said.stream().anyMatch(message -> message.startsWith(unreadable)),
+                "precondition: the import did not fail after the exclusion: " + said);
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            assertTrue(session.getStore().getExcludedPages().contains(combined), "the import said it left " + combined
+                + " out of autonomy and then, failing, put it back in without a word (OB-302): "
+                + session.getStore().getExcludedPages());
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+
+            if (!broken.delete()) broken.deleteOnExit();
+        }
+    }
+
+    /**
+     * The store's own record of the pages somebody turned back on, which has no door to take a page off it - for a test
+     * that needs a page nobody has decided about (OB-302).
+     *
+     * @param session the session
+     * @return the live set
+     * @throws Exception from the reflection
+     */
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> keptDespiteRepeats(AutonomySession session) throws Exception
+    {
+        java.lang.reflect.Field kept = session.getStore().getClass().getDeclaredField("keptDespiteRepeats");
+
+        kept.setAccessible(true);
+
+        return (java.util.Set<String>) kept.get(session.getStore());
+    }
+
     /**
      * No train is sent from the Auto tab while the editor is open (RLV12-B1).  Start, Execute Timetable, Return Home and
      * the diagram's menu refuse while an editor holds the diagram, and the rule that no setup edit is made during a run

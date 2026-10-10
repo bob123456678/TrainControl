@@ -4731,7 +4731,7 @@ public class testTheImportDoorReadsAnOldFile
      * Presses Import on the Autonomy menu's panel and answers everything it asks: the file, the name, Yes to the question
      * about a configuration of that name, and OK to every message - whose texts are returned, in order.
      */
-    private static List<String> importFromTheMenu(TrainControlUI ui, File file, String name) throws Exception
+    static List<String> importFromTheMenu(TrainControlUI ui, File file, String name) throws Exception
     {
         return importFromTheMenu(ui, file, name, Collections.<String>emptySet());
     }
@@ -5004,7 +5004,7 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /** The text of a sentence before a placeholder. */
-    private static String before(String sentence, String placeholder)
+    static String before(String sentence, String placeholder)
     {
         return sentence.substring(0, sentence.indexOf(placeholder)).trim();
     }

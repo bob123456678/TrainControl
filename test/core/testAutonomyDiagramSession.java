@@ -4911,6 +4911,56 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A legacy label naming a station the setup already shows somewhere does not show it twice (OB-256).
+     *
+     * One station, one caption: `setCaption` takes a station's caption off wherever it was, and the old-file import
+     * captions a station only where it has none.  The migration of `Point:` labels wrote through the store's own door,
+     * which does neither, so a station the setup already captioned gained a second caption on the label's square.  The
+     * setup's caption is the one somebody chose, so it is kept; the label still leaves the page, or the migration would
+     * find it again at every open.
+     *
+     * MUTATION: caption the label's square whether or not the station has a caption, as before, and this fails.
+     *
+     * @throws Exception from the session or the page file
+     */
+    @Test
+    public void testALegacyLabelDoesNotCaptionAStationTwice() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey kept = new TileKey("main", 3, 2);
+        TileKey labelled = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(kept, station);
+        session.save();
+
+        // and the diagram still carries an old-style label naming it, on another square
+        page.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "Bahnhof");
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(page));
+
+        assertTrue(reopened.getMigrationFailures().isEmpty(),
+            "precondition: the page should have been written: " + reopened.getMigrationFailures());
+
+        assertEquals(reopened.captionsFor(station).size(), 1, "the station is captioned on "
+            + reopened.captionsFor(station) + ": the migration added a caption beside the one the setup had (OB-256)");
+
+        assertEquals(reopened.getCaptionTarget(kept), station, "the setup's own caption was not the one kept");
+
+        assertNull(reopened.getCaptionTarget(labelled), "the label's square was captioned as well");
+
+        assertEquals(page.getComponent(1, 2).getLabel(), "",
+            "the old label was left on the page, so the migration finds it again at every open");
+    }
+
+    /**
      * The session says which pages the migration rewrote, and how many names it took (RGN-B1).
      *
      * The migration edits files the user owns. A `Point:` name typed onto their own track diagram is

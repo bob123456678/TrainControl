@@ -3923,7 +3923,13 @@ public class AutonomySession
 
                 if (station != null)
                 {
-                    store.setCaption(where, station);
+                    // ONE STATION, ONE CAPTION, AS AT EVERY OTHER DOOR (OB-256).  `setCaption` takes a station's caption
+                    // off wherever it was, and the old-file import captions a station only where it has none; this wrote
+                    // through the store's own door, which does neither, so a station the setup already showed somewhere
+                    // gained a second caption on the label's square.  The setup's caption is the one somebody chose, so it
+                    // stays - and the label still leaves the page below: it names a station the setup already shows, and
+                    // left there it would be found again at every open.
+                    if (store.captionsFor(station).isEmpty()) store.setCaption(where, station);
 
                     migrated = true;
 

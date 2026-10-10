@@ -476,6 +476,66 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A name that would share another configuration's file is refused as that, naming the other - not as a name already
+     * in use (VD17-C6).
+     *
+     * All three doors refused the pair with `ERROR_NAME_IN_USE`, which the window says as "a configuration called Night_
+     * Yard already exists" - the one configuration that does not.  What exists is Night: Yard, and the two names are one
+     * file because a file name cannot hold a colon.  The exact name already taken is still a name in use.
+     *
+     * MUTATION: have the doors throw `ERROR_NAME_IN_USE` for a shared file again, and this fails.
+     *
+     * @throws IOException creating the configurations
+     */
+    @Test
+    public void testANameSharingAFileIsRefusedAsThat() throws IOException
+    {
+        store.createConfiguration("Night: Yard", null);
+
+        store.createConfiguration("Depot", null);
+
+        // THE IMPORT DOOR, where the finding was read, and the other two
+        for (String door : new String[] {"import", "create", "rename"})
+        {
+            try
+            {
+                if ("import".equals(door)) store.importConfiguration("Night_ Yard", new org.json.JSONObject());
+                else if ("create".equals(door)) store.createConfiguration("Night_ Yard", null);
+                else store.renameConfiguration("Depot", "Night_ Yard");
+
+                fail("the " + door + " door put two configurations in one file");
+            }
+            catch (AutonomyCompanionStore.NameSharesAFile refused)
+            {
+                assertEquals(refused.getMessage(), AutonomyCompanionStore.ERROR_NAME_SHARES_A_FILE);
+
+                assertEquals(refused.getSharedWith(), "Night: Yard", "the " + door + " door's refusal does not name the"
+                    + " configuration whose file it is");
+            }
+            catch (IOException refused)
+            {
+                fail("the " + door + " door refused a name that shares a file as " + refused.getMessage() + ", and the"
+                    + " window then says a configuration called Night_ Yard exists - one that does not (VD17-C6)");
+            }
+        }
+
+        // AND THE EXACT NAME TAKEN IS STILL A NAME IN USE
+        try
+        {
+            store.createConfiguration("Night: Yard", null);
+
+            fail("a second configuration of one name was created");
+        }
+        catch (IOException refused)
+        {
+            assertEquals(refused.getMessage(), AutonomyCompanionStore.ERROR_NAME_IN_USE,
+                "the exact name taken is no longer refused as a name in use");
+        }
+
+        assertEquals(store.getConfigurationNames().size(), 2, "a refused name changed the store anyway");
+    }
+
+    /**
      * An import that cannot be read leaves the setup exactly as it was.
      *
      * The shared half used to be emptied BEFORE the merged object was parsed, and the parse uses the

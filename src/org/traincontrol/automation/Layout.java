@@ -11783,18 +11783,66 @@ public class Layout
 
         for (Point point : this.getPoints())
         {
-            if (point.getCurrentLocomotive() == null) continue;
+            if (point.getCurrentLocomotive() != null && this.isProtectedBy(point, accessory)) return true;
+        }
 
-            for (String name : point.getProtectingSignals())
-            {
-                if (name == null) continue;
+        return false;
+    }
 
-                if (name.equals(accessory.getName())) return true;
+    /**
+     * Whether a train STANDS at a platform this signal protects, rather than a locked path only having reserved it for a
+     * train still on its way there (GSR-C2).
+     *
+     * `protectsAnOccupiedSquare` asks whether any platform the signal protects holds a locomotive, and a locked path holds
+     * every point along it for its train (`Point.reserve`), its destination included, from the moment it is locked.  The
+     * refusal is right either way - the platform is spoken for.  What it SAYS is not: "a train is standing" about a
+     * platform nobody has reached sends the operator looking for a train that is somewhere else.  So the sentence is
+     * chosen by this, and a platform is a standing train's only where `whereTheTrainIs` says that train is.
+     *
+     * Not synchronized, for `protectsAnOccupiedSquare`'s reason: it is asked where that is, the event thread among them.
+     *
+     * @param accessory the signal, or null
+     * @return true when a train stands at a platform it protects; false when none does, every platform it protects that
+     *         is held being held only by a reservation
+     */
+    public boolean protectsAStandingTrain(Accessory accessory)
+    {
+        if (accessory == null || this.control == null) return false;
 
-                Accessory named = this.control.getAccessoryByName(name);
+        for (Point point : this.getPoints())
+        {
+            Locomotive holding = point.getCurrentLocomotive();
 
-                if (named != null && named.equals(accessory)) return true;
-            }
+            if (holding == null || !this.isProtectedBy(point, accessory)) continue;
+
+            if (point.isSamePlaceAs(this.whereTheTrainIs(holding))) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether this signal is one of a point's protecting signals, by its name or by the accessory a name resolves to - the
+     * one reading `protectsAnOccupiedSquare` and `protectsAStandingTrain` both ask (GSR-C2).
+     *
+     * By resolving the names rather than comparing the strings alone, for the reason `protectsAnOccupiedSquare` gives: a
+     * configuration says "Signal 12" or "Switch 12" and the accessory database is keyed by one of those.
+     *
+     * @param point the platform
+     * @param accessory the signal
+     * @return true when it protects the point
+     */
+    private boolean isProtectedBy(Point point, Accessory accessory)
+    {
+        for (String name : point.getProtectingSignals())
+        {
+            if (name == null) continue;
+
+            if (name.equals(accessory.getName())) return true;
+
+            Accessory named = this.control.getAccessoryByName(name);
+
+            if (named != null && named.equals(accessory)) return true;
         }
 
         return false;

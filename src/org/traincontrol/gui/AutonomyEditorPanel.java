@@ -3485,6 +3485,57 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * The answer the question about taking another station's only name off a station square is given without asking, for
+     * a test that is not about the dialog; null to ask (GSE-C5).
+     */
+    private static volatile Boolean takeAnotherNameAnswerForTests;
+
+    /**
+     * @param answer true for Yes or false for No, to answer the question about taking another station's only name off a
+     *        station square without asking it (GSE-C5), or null to ask it again
+     */
+    public static void answerTakeAnotherNameForTests(Boolean answer)
+    {
+        takeAnotherNameAnswerForTests = answer;
+    }
+
+    /**
+     * Whether a station square may show its own name where it now shows the only caption of ANOTHER station - asked of
+     * the operator, naming both, and true without a question where nothing would be lost (GSE-C5).
+     *
+     * A drag can leave a station square showing another station's caption, and captioning the square with itself takes
+     * that caption away: the other station is then named nowhere on the diagram, which `AutonomyChecks.checkStationLabels`
+     * reports as an error.  The drop refuses the same loss outright (`refuseCaptionDrop`).  "Show a Station Name Here" is
+     * live on such a square on purpose (SVV-C6, SVX-B2), so this asks rather than refuses.
+     *
+     * @param tile the station square
+     * @return whether to go on
+     */
+    private boolean mayTakeAnotherStationsOnlyName(TileKey tile)
+    {
+        TileKey other = session.getCaptionTarget(tile);
+
+        if (other == null || other.equals(tile) || !session.getStore().isStation(other)) return true;
+
+        java.util.Set<TileKey> elsewhere = new java.util.LinkedHashSet<>(session.captionsFor(other));
+
+        elsewhere.remove(tile);
+
+        if (!elsewhere.isEmpty()) return true;
+
+        Boolean given = takeAnotherNameAnswerForTests;
+
+        if (given != null) return given;
+
+        // TrainControl's own buttons, as the question about replacing text asks, and No the default: Yes takes a name off
+        // the diagram.  An INDEX comes back, where 0 is Yes.
+        return JOptionPane.showOptionDialog(owner(),
+            I18n.f("autosetup.ui.confirmTakeAnotherStationsName", describeTile(other), describeTile(tile)),
+            I18n.t("autosetup.ui.titleStationLabel"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
+    }
+
+    /**
      * Asks which station this square should show.
      */
     private void promptStationLabel(TileKey tile, LayoutDiagramComponent component)
@@ -3516,6 +3567,9 @@ public class AutonomyEditorPanel extends JPanel
         // known - and getting it wrong would put another platform's name on this platform.
         if (session.getStore().isStation(tile))
         {
+            // NOT ANOTHER STATION'S ONLY NAME WITHOUT ASKING (GSE-C5) - see `mayTakeAnotherStationsOnlyName`
+            if (!mayTakeAnotherStationsOnlyName(tile)) return;
+
             applyCaption(tile, tile);
             return;
         }

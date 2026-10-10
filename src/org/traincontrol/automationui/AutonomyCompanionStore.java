@@ -66,6 +66,41 @@ public class AutonomyCompanionStore
     public static final String ERROR_NOT_LOCAL = "autosetup.ui.errorAutonomyNeedsLocalLayout";
     public static final String ERROR_NAME_IN_USE = "autosetup.ui.errorNameInUse";
 
+    /** A name refused because it would be saved in another configuration's file (VD17-C6) - see `NameSharesAFile`. */
+    public static final String ERROR_NAME_SHARES_A_FILE = "autosetup.ui.errorNameSharesAFile";
+
+    /**
+     * A configuration name refused because it would be saved in another configuration's file (VD17-C6).
+     *
+     * A configuration's file is named after it, and the sanitising is many to one, so "Night: Yard" and "Night_ Yard" are
+     * two names for one file.  Its message is a key, as every refusal of this store's is; the configuration it collides
+     * with travels beside it, because the sentence names both and a key cannot carry a name.
+     */
+    public static final class NameSharesAFile extends IOException
+    {
+        private static final long serialVersionUID = 1L;
+
+        private final String sharedWith;
+
+        /**
+         * @param sharedWith the configuration already saved in that file
+         */
+        public NameSharesAFile(String sharedWith)
+        {
+            super(ERROR_NAME_SHARES_A_FILE);
+
+            this.sharedWith = sharedWith;
+        }
+
+        /**
+         * @return the configuration already saved in the file the refused name would have been saved in
+         */
+        public String getSharedWith()
+        {
+            return sharedWith;
+        }
+    }
+
     private static final String FOLDER = "config/autonomy";
     private static final String SETUP_FILE = "setup.json";
     private static final String CONFIGURATION_PREFIX = "configuration-";
@@ -2616,7 +2651,8 @@ public class AutonomyCompanionStore
         // Same reason as renameConfiguration: duplicating onto an existing name replaced it silently.
         if (configurations.containsKey(name)) throw new IOException(ERROR_NAME_IN_USE);
 
-        if (fileNameTaken(name, null)) throw new IOException(ERROR_NAME_IN_USE);
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        refuseASharedFile(name, null);
 
         JSONObject source = copyFrom == null ? null : configurations.get(copyFrom);
 
@@ -2689,7 +2725,8 @@ public class AutonomyCompanionStore
      */
     public void importConfiguration(String name, JSONObject configuration) throws IOException
     {
-        if (fileNameTaken(name, null)) throw new IOException(ERROR_NAME_IN_USE);
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        refuseASharedFile(name, null);
 
         JSONObject imported = new JSONObject(configuration.toString());
 
@@ -2731,10 +2768,8 @@ public class AutonomyCompanionStore
             throw new IOException(ERROR_NAME_IN_USE);
         }
 
-        if (!from.equals(to) && fileNameTaken(to, from))
-        {
-            throw new IOException(ERROR_NAME_IN_USE);
-        }
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        if (!from.equals(to)) refuseASharedFile(to, from);
 
         JSONObject configuration = configurations.remove(from);
 
@@ -5561,9 +5596,10 @@ public class AutonomyCompanionStore
      *
      * @param name the name being taken
      * @param except a name that may share the file - the one being renamed away from
-     * @return whether some other configuration already owns that file
+     * @return the configuration that already owns that file, or null when none does - named, so the refusal can say which
+     *         (VD17-C6)
      */
-    private boolean fileNameTaken(String name, String except)
+    private String fileNameTaken(String name, String except)
     {
         File wanted = configurationFile(name);
 
@@ -5571,10 +5607,28 @@ public class AutonomyCompanionStore
         {
             if (existing.equals(name) || existing.equals(except)) continue;
 
-            if (configurationFile(existing).equals(wanted)) return true;
+            if (configurationFile(existing).equals(wanted)) return existing;
         }
 
-        return false;
+        return null;
+    }
+
+    /**
+     * Refuses a name that would be saved in another configuration's file, naming that configuration (VD17-C6).
+     *
+     * Its own refusal rather than `ERROR_NAME_IN_USE`, which the window says as "a configuration called X already exists" -
+     * and X, the name typed, is exactly the one that does not.  Asked at the three doors a name comes in by: create, import
+     * and rename.
+     *
+     * @param name the name being taken
+     * @param except a name that may share the file - the one being renamed away from
+     * @throws IOException a `NameSharesAFile`, naming the configuration that already owns that file
+     */
+    private void refuseASharedFile(String name, String except) throws IOException
+    {
+        String owner = fileNameTaken(name, except);
+
+        if (owner != null) throw new NameSharesAFile(owner);
     }
 
     private void writeJson(File target, final JSONObject json) throws IOException
