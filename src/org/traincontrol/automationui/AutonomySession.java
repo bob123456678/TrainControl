@@ -11726,8 +11726,8 @@ public class AutonomySession
      *    been deleted. `CS2File` skips a page whose file will not parse or is not there, and this
      *    layout lives in OneDrive, where an unhydrated placeholder is an ordinary Tuesday;
      *  - the numbering is suspect, meaning a renumber has happened and nothing has re-keyed the setup
-     *    yet - so every entry is name-keyed to the WRONG page and "this square does not exist" is
-     *    being asked about coordinates that were never on that page.
+     *    yet - so an id cannot be trusted to say a square is gone, though `resolvePage` still files each
+     *    entry under the page its recorded name is on (VD17-C4).
      *
      * Either way the remedy is the same and it is the one OB-068 established: save, but do not prune.
      *

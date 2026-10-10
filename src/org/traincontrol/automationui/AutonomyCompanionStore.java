@@ -808,10 +808,12 @@ public class AutonomyCompanionStore
      * Whether this setup's keys can be trusted to mean the pages they name.
      *
      * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map
-     * the file carries.  When a renumber has happened that map is wrong, so every entry is name-keyed
-     * to the wrong page - and the coordinates of a page of settings do not exist on whatever page now
-     * holds its old id.  Anything that deletes on the strength of "this square does not exist" is then
-     * deleting on the strength of a lie.
+     * the file carries.  When a renumber has happened, an id no longer says for certain which page it
+     * meant.  The entries still land where they belong - `resolvePage` files an entry under the page its
+     * recorded name is on while the index has that name - but "this square does not exist" can no
+     * longer be concluded from an id, and anything that deletes on the strength of it would be deleting
+     * on a guess.  (This said every entry was name-keyed to the wrong page, which `resolvePage` does not
+     * do - VD17-C4.)
      *
      * @return true while a renumber is outstanding and nothing has re-keyed the setup
      */
@@ -5536,7 +5538,8 @@ public class AutonomyCompanionStore
      * over the first, and the next load - which rebuilds the list by scanning the folder - came back
      * with one of them simply gone.  Deleting or renaming either took the other's data with it.
      *
-     * Checked at the two doors a name comes in by, rather than at save time, so the answer arrives
+     * Checked at the three doors a name comes in by - create, import and rename (GSP-C3) - rather than at save time, so
+     * the answer arrives
      * while the user is still looking at the name they typed.
      *
      * @param name the name being taken

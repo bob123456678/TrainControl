@@ -1214,6 +1214,13 @@ public class MarklinRoute extends Route
                     this.updateTiles();
                 }
             }
+            else
+            {
+                // STARTED AGAIN WHILE IT RUNS (GSR-C4) - a sensor that triggers the route firing again before it has
+                // finished.  Dropped, as it always was, and now said: the window's own doors say so, and this door - the
+                // one a sensor uses - said nothing.
+                this.network.logf("route.ui.infoAlreadyRunning", this.getName());
+            }
         }).start();
     }
     

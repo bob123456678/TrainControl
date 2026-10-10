@@ -887,6 +887,82 @@ public class testAdvancedRoutes
     }
 
     /**
+     * A route started again while it runs says so in the log (GSR-C4).  The sensor that triggers a route can fire again
+     * before the route has finished; the second start is dropped, as it always was, and said nothing - the window's own
+     * doors say a route is already running (`route.ui.infoAlreadyRunning`), and this door, the one a sensor uses, did not.
+     *
+     * MUTATION: drop the line and this fails.
+     *
+     * @throws Exception from the route thread
+     */
+    @Test
+    public void testARouteStartedWhileItRunsSaysSo() throws Exception
+    {
+        final String routeName = "GSR-C4 route";
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++)
+        {
+            commands.add(RouteCommand.RouteCommandAccessory(110 + i, Accessory.accessoryDecoderType.MM2, true));
+        }
+
+        model.newRoute(routeName, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                said.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
+
+        try
+        {
+            new Thread(() -> model.execRoute(routeName)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < armed) Thread.sleep(20);
+
+            assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
+
+            // THE SECOND START, while the first is part-way along
+            new Thread(() -> model.execRoute(routeName)).start();
+
+            String expected = org.traincontrol.util.I18n.f("route.ui.infoAlreadyRunning", routeName);
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!said.contains(expected) && System.currentTimeMillis() < until) Thread.sleep(20);
+
+            assertTrue(said.contains(expected), "a route started again while it ran was dropped with nothing in the log"
+                + " (GSR-C4): " + said);
+
+            long giveUp = System.currentTimeMillis() + 15000;
+
+            while (model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+        }
+        finally
+        {
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+            try { model.deleteRoute(routeName); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
      * A route finishes its commands even if the locomotive it names is deleted while it runs (CS3-B1).
      *
      * `deleteLoc` takes every command that drives that locomotive out of every route, through `Iterator.remove()`,

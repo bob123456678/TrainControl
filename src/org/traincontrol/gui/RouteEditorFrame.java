@@ -25,7 +25,6 @@ import javax.swing.table.TableColumn;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
 import org.traincontrol.base.ConditionOutline;
-import org.traincontrol.base.ConditionRows;
 import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
@@ -42,7 +41,7 @@ import org.traincontrol.util.I18n;
  *
  * This shows the same route as two tables of dropdowns. Every command is the same three questions -
  * what kind, which one, what to do - and every condition is a term with an AND or OR joining it to what
- * follows. The conversions live in CommandRow and ConditionRows, are tested on their own, and are what
+ * follows. The conversions live in CommandRow and ConditionOutline, are tested on their own, and are what
  * makes opening a route here safe: a route loaded and saved unchanged is unchanged.
  *
  * WHAT IT REFUSES TO TOUCH, which is the important part. A command of a kind with no controls yet, and
@@ -2893,6 +2892,13 @@ public class RouteEditorFrame extends JFrame
                     wrong.add(I18n.f("route.ui.frameNameNotUsable", target));
                 }
 
+                // AND THE SENSOR an "is at" condition watches, its setting (GSR-C1): saved as 0 or nothing, the condition
+                // can never be true and the route never fires - FEEDBACK's own check, below
+                if (row.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE && numberOr(row.getSetting(), 0) <= 0)
+                {
+                    wrong.add(I18n.f("route.ui.frameNotASensor", row.getSetting() == null ? "" : row.getSetting()));
+                }
+
                 break;
 
             // A route that calls a route that is not there does nothing, and says nothing either
@@ -4117,8 +4123,14 @@ public class RouteEditorFrame extends JFrame
 
                 if (kind == CommandRow.Kind.ROUTE)
                 {
-                    return chooseFrom(withTheCellsOwn(parent.getModel().getRouteList(),
-                        rows.get(row).getRow().getTarget()));
+                    // NOT THIS ROUTE (GSR-C3): Save refuses a route that calls itself (`frameRouteCallsItself`), so
+                    // offering it was offering a mistake.  A cell already holding it keeps it (`withTheCellsOwn`), so it
+                    // is still shown and the gate still names it.
+                    java.util.List<String> others = new ArrayList<>(parent.getModel().getRouteList());
+
+                    others.remove(originalName);
+
+                    return chooseFrom(withTheCellsOwn(others, rows.get(row).getRow().getTarget()));
                 }
 
                 if (kind == CommandRow.Kind.LOCOMOTIVE_SPEED
@@ -4715,7 +4727,7 @@ public class RouteEditorFrame extends JFrame
          * which is not what removing a requirement means.
          *
          * AND A WORD TAKEN OUT TAKES THE TERM IT JOINS ON (OB-240, from Adam's note on MT-469,
-         * 2026-09-21: *"we can remove operators (like and) without deleting the conditions they are
+         * 2026-09-21: *"we can review [remove] operators (like and) without deleting the conditions they are
          * linked to.  This permanently leaves an orphan entry.  Any linked entries should also be
          * deleted."*).
          *

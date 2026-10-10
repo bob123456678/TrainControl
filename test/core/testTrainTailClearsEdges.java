@@ -592,6 +592,55 @@ public class testTrainTailClearsEdges
     }
 
     /**
+     * The rest of the state a driving thread reads while the event thread or the network writes it is volatile too
+     * (GST-C1): whether the layout is valid, a locomotive's speed, direction, length and reversibility, and a sensor's
+     * state.  Without it a thread may go on reading what it cached - a train driving on a layout declared invalid, a
+     * length changed on the event thread unseen by the train it describes.
+     *
+     * MUTATION: take `volatile` off any one, and this names it.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    public void testTheStateADrivingThreadReadsIsVolatile() throws Exception
+    {
+        Object[][] fields = {{Layout.class, "isValid"}, {Locomotive.class, "speed"}, {Locomotive.class, "direction"},
+            {Locomotive.class, "trainLength"}, {Locomotive.class, "reversible"},
+            {org.traincontrol.base.Feedback.class, "set"}};
+
+        for (Object[] field : fields)
+        {
+            java.lang.reflect.Field f = ((Class<?>) field[0]).getDeclaredField((String) field[1]);
+
+            assertTrue(java.lang.reflect.Modifier.isVolatile(f.getModifiers()), ((Class<?>) field[0]).getSimpleName()
+                + "." + field[1] + " is not volatile, though a driving thread reads it while another writes it (GST-C1)");
+        }
+    }
+
+    /**
+     * The two doors that add to the graph take the layout's monitor, as the doors that take from it do (GST-C5):
+     * `createPoint` and `createEdge` beside `deletePoint`, `deleteEdge`, `renamePoint` and `copyEdge`.  Today they are
+     * called while a layout is being built, before anything else holds it; the monitor is what keeps that true of a
+     * caller added later.
+     *
+     * MUTATION: take `synchronized` off either, and this names it.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    public void testTheDoorsThatAddToTheGraphTakeTheMonitor() throws Exception
+    {
+        java.lang.reflect.Method point = Layout.class.getMethod("createPoint", String.class, boolean.class, String.class);
+        java.lang.reflect.Method edge = Layout.class.getMethod("createEdge", String.class, String.class);
+
+        for (java.lang.reflect.Method door : new java.lang.reflect.Method[] {point, edge})
+        {
+            assertTrue(java.lang.reflect.Modifier.isSynchronized(door.getModifiers()), "Layout." + door.getName()
+                + " does not take the layout's monitor, which the doors that take from the graph do (GST-C5)");
+        }
+    }
+
+    /**
      * A 4-unit train sent over three measured rails of 1, 1 and 4 units on a non-atomic railway, beside a road that
      * shares the first rail's metal.  After its first sensor its length is set to 0, or left alone; at its second sensor -
      * the head one unit past the end of the first rail - the first rail is read.

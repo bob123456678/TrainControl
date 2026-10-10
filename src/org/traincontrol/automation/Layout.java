@@ -606,8 +606,9 @@ public class Layout
      */
     private final Object stopLock = new Object();
     
-    // Is the layout state valid?
-    private boolean isValid = true;
+    // Is the layout state valid?  Volatile: set on the thread that loads or invalidates, read by every driving thread
+    // (GST-C1)
+    private volatile boolean isValid = true;
        
     private final ViewListener control;
     private final Map<String, Edge> edges;
@@ -822,8 +823,8 @@ public class Layout
     // once, by whichever thread loads a layout, and read by every driving thread at six points in its
     // loop and by both timetable waits.  Without it a locomotive can keep reading the value it cached
     // before the reload and drive a whole path against a graph that has been retired.  Every other
-    // piece of cross-thread state in this class - running, stagingInProgress, timetableExecuting - is
-    // already volatile; this one was missed.
+    // piece of cross-thread state in this class - running, stagingInProgress, timetableExecuting, and
+    // isValid since GST-C1 - is volatile; this one was missed.
     private static volatile int layoutVersion = 0;
 
     // Whether a staging flow owns this Layout - set at the commit point and cleared when the flow
@@ -910,7 +911,10 @@ public class Layout
         // route guard without a lock.
         this.clearedEdges = new ConcurrentHashMap<>();
         this.releasedEarly = new ConcurrentHashMap<>();
-        this.timetable = new LinkedList<>();
+        // COPY ON WRITE (GST-C3): `getTimetable` hands out the list itself, the event thread reads it - the timetable
+        // window and its menus - and a running train's capture appends to it from that train's thread.  A reader sees the
+        // list as it stood when it began, and nothing is thrown.  The list is small and written rarely.
+        this.timetable = new java.util.concurrent.CopyOnWriteArrayList<>();
         this.homeStations = new LinkedHashMap<>();
         this.locomotivePendingS88 = new ConcurrentHashMap<>();
         this.activateRouteIDs = new LinkedList<>();
@@ -1205,10 +1209,7 @@ public class Layout
         // And every timetable entry that would run it.  TimetablePath holds the locomotive itself, so
         // executing the timetable afterwards drives something that is not in the database - and the
         // entry is written back out on every save, naming a locomotive the next load cannot resolve.
-        for (java.util.Iterator<TimetablePath> entries = this.timetable.iterator(); entries.hasNext();)
-        {
-            if (l.equals(entries.next().getLoc())) entries.remove();
-        }
+        this.timetable.removeIf(entry -> l.equals(entry.getLoc()));
 
         // The record that this train is standing where the railway turned it, which is keyed by NAME (RTX-C3).
         // Left behind, a locomotive later given the same name inherits it and is believed to be facing the way the
@@ -2671,13 +2672,18 @@ public class Layout
         
     /**
      * Creates a new point (i.e., a station or other landmark on your layout)
+     *
+     * Synchronized as the doors that take from the graph are - `deletePoint`, `deleteEdge`, `renamePoint`, `copyEdge`
+     * (GST-C5).  Today it is called while a layout is built, before anything else holds it; the monitor keeps that true
+     * of a caller added later, and `createEdge` likewise.
+     *
      * @param name a unique identifier for the point
      * @param isDest are trains allowed to stop at this point?  Requires s88 feedback to work properly.
      * @param feedback address of the corresponding feedback module, or null if none
      * @return
      * @throws Exception
      */
-    public Point createPoint(String name, boolean isDest, String feedback) throws Exception
+    synchronized public Point createPoint(String name, boolean isDest, String feedback) throws Exception
     {        
         if (feedback != null && !this.control.isFeedbackSet(feedback))
         {
@@ -2717,7 +2723,7 @@ public class Layout
      * @return 
      * @throws java.lang.Exception 
      */
-    public Edge createEdge(String startPoint, String endPoint) throws Exception
+    synchronized public Edge createEdge(String startPoint, String endPoint) throws Exception
     {
         if (!this.points.containsKey(startPoint) || !this.points.containsKey(endPoint))
         {
@@ -7249,10 +7255,9 @@ public class Layout
     /**
      * The timetable as it stands right now, for readers that only look at it.
      *
-     * A copy taken under the monitor.  getTimetable hands back the field itself and has to keep doing
-     * so - deleteTimetableEntry removes from the list it returns - so the safe read is a second
-     * accessor rather than a change to that one.  Locomotive threads append here whenever capture is on
-     * during a run, and the readers are on the EDT holding nothing.
+     * A copy taken under the monitor.  getTimetable hands back the field itself, which is a copy-on-write list since
+     * GST-C3, so a reader iterating it no longer throws when a train's capture appends; this copy is kept for the
+     * readers that want the timetable as one consistent list, taken with the monitor's other writers held off.
      *
      * @return
      */

@@ -6778,7 +6778,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * How much drivable track has no length - THE question, asked by all three doors (VD13-B1, B2, B3).
+     * How much drivable track has no length - THE question, asked by the checkbox (`whyNonAtomicRoutesAreRefused`) and by
+     * the gate `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`, which every load and dispatch door calls (VD13-B1,
+     * B2, B3; VD17-R11).
      *
      * **This asked the EDITOR first, and that was wrong twice over.**  `squaresNeedingALength` is
      * non-empty whenever one switch square is unmeasured on a railway whose every edge is measured -
@@ -6874,8 +6876,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // This door used to ask the editor and fall back to the railway's edges only when there was no
         // session, which put the discriminator on "is there a diagram" rather than on the hazard - and
         // left the checkbox blind on the legacy railway this fallback was added for.  One question,
-        // three doors: `Layout.unmeasuredTrackThatCouldBeReleased`, and `Layout.trainsWithNoLength`
-        // beside it (VD14-B1).
+        // asked by the checkbox and by this gate, which every load and dispatch door calls:
+        // `Layout.unmeasuredTrackThatCouldBeReleased`, and `Layout.trainsWithNoLength` beside it (VD14-B1;
+        // VD17-R11).
         //
         // Adam's instruction for this case was *"just force the checkbox checked as well"*.  It asks
         // first, because a railway that IS measured end to end would otherwise lose non-atomic mode at
@@ -22198,10 +22201,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         return;
                     }
 
-                    // Routes store locomotives by name, in a comma-separated text format whose parser
-                    // also treats brackets as grouping - so renaming into one of those characters
-                    // rewrites every existing command and condition into something that re-parses as a
-                    // different locomotive, or does not parse at all.  The route editor refuses these
+                    // Routes store locomotives by name, in a comma-separated text format - so renaming
+                    // into a name with a comma rewrites every existing command and condition into
+                    // something that re-parses as a different locomotive, or does not parse at all.
+                    // (Brackets are allowed since Adam's ruling of 2026-09-04; this said both - GSB-C1.)  The route editor refuses these
                     // names at both of its own doors; this is the third way in, and the one that turns
                     // commands that were legal when written into commands that are not.
                     if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
@@ -31622,11 +31625,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Layout is the order the completion block already establishes.  Idle callers take it
         // uncontended and hand the EDT a finished copy.
         // The UI callers were left alone on the argument that their busy guard means the monitor is
-        // free by the time they run.  That argument is wrong: configureAndLockPath runs *before* the
-        // locomotive is put into activeLocomotives, and a hand-launched path never sets running - so
-        // for the whole configuration window isRunning(), and with it isAutonomyBusy(), answers false.
-        // Three of those callers hold a modal dialog open between the check and the snapshot, so the
-        // window is as wide as the operator leaves it.
+        // free by the time they run.  It does not hold for them: three hold a modal dialog open between
+        // the check and the snapshot, and a dispatch started meanwhile takes the monitor in
+        // configureAndLockPath.  isRunning() is true from the moment `Layout.executePath` counts the
+        // train's thread (`locomotiveThreads`), but the guard was asked before that - so the window is
+        // as wide as the operator leaves it.  (This said a hand-launched path never sets running, which
+        // the count contradicts - GST-C4; the conclusion stands.)
         //
         // Bouncing off the EDT costs one short-lived thread on a user action and asks nothing of the
         // callers, which still marshal their own work through the invokeLater below.

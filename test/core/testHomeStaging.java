@@ -2477,6 +2477,77 @@ public class testHomeStaging
             "an idle layout refused to delete a point with nothing left attached to it");
     }
     /**
+     * And while a run is going (OB-264, gap 1): the same three edits refused with `isRunning()` true and staging off -
+     * the other half of the OR the guards are written as, which `testTheGraphCannotBeEditedWhileTheRailwayIsUsingIt`
+     * never set.  The running flag set as `executeTimetable` sets it, by reflection: what is under test is the guard,
+     * not a dispatch.  Then idle, and the same edits go through.
+     *
+     * MUTATION: drop `isRunning() ||` from any of the three guards and this fails.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testTheGraphCannotBeEditedWhileARunIsGoing() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        assertFalse(layout.isRunning() || layout.isStagingInProgress(), "precondition: the layout must start idle");
+
+        Edge victim = new ArrayList<>(layout.getEdges()).get(0);
+        String from = victim.getStart().getName();
+        String to = victim.getEnd().getName();
+        String point = layout.getPoints().iterator().next().getName();
+
+        Field running = Layout.class.getDeclaredField("running");
+
+        running.setAccessible(true);
+
+        running.set(layout, true);
+
+        try
+        {
+            assertTrue(layout.isRunning() && !layout.isStagingInProgress(), "precondition: the run is not seen");
+
+            try
+            {
+                layout.renamePoint(point, point + " renamed");
+                fail("renamePoint let a rename through while a run was going (OB-264)");
+            }
+            catch (Exception expected)
+            {
+            }
+
+            try
+            {
+                layout.deleteEdge(from, to);
+                fail("deleteEdge removed " + from + " -> " + to + " while a run was going (OB-264)");
+            }
+            catch (Exception expected)
+            {
+            }
+
+            try
+            {
+                layout.deletePoint(point);
+                fail("deletePoint removed " + point + " while a run was going (OB-264)");
+            }
+            catch (Exception expected)
+            {
+            }
+        }
+        finally
+        {
+            running.set(layout, false);
+        }
+
+        assertNotNull(layout.getPoint(point), "the point was deleted after all");
+
+        layout.deleteEdge(from, to);
+
+        assertNull(layout.getEdge(from, to), "the guard refuses an idle layout too");
+    }
+
+    /**
      * The model can see a staging flow, not merely a dispatched run.
      *
      * Six guards ask the *model* whether autonomy is busy - locomotive delete, rename, address change,

@@ -88,11 +88,14 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
     }
 
     /**
-     * A reversing copy can be left by a side other than the one it is entered by.
-     *
-     * Which is what makes a geometric test for "does the next leg need the turn" wrong: it would read
-     * such a copy as a straight run and stop turning there. The copies are listed when this fails, so
-     * whoever proposes the narrowing again sees the counter-examples rather than the idea.
+     * A reversing copy can be left by a side other than the one it is entered by - MEASURED BY THE COMPASS: the side
+     * a copy is left by is read here as `entrySideOf(leaving, copy)`, which for an edge that STARTS at the copy falls to
+     * `sideTowards`, the neighbour's compass position (OB-268).  So what this shows is that the compass does not say which
+     * side a reversing copy is left by, and that is what it blocks: a geometric test for "does the next leg need the
+     * turn" would read such a copy as a straight run and stop turning there.  It is not a refutation of section 3's
+     * sentence that a turning copy's only outgoing edges leave by the side the train arrived from, which the builder
+     * guarantees in the metal and this ruler cannot see.  The copies are listed when this fails, so whoever proposes the
+     * narrowing again sees the counter-examples rather than the idea.
      *
      * @throws Exception on a failure to read the built graph
      */
@@ -157,7 +160,7 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
         assertTrue(wouldChange.size() > 0,
             "every reversing copy on this railway is now left by the side it is entered by. That was"
             + " NOT true on 2026-09-08 - BottomMainB (westbound, reverse) went in by E and out by N -"
-            + " so either the layout or the builder has changed. The narrowing this test blocked may"
-            + " now be safe: re-measure before assuming either way");
+            + " so either the layout or the builder has changed.  Do not measure the side a copy is left by with"
+            + " entrySideOf - it falls to the compass for an edge that starts at the copy (OB-268)");
     }
 }

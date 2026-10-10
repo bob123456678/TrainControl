@@ -471,6 +471,92 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     }
 
     /**
+     * A condition that a locomotive is at a sensor names a sensor (GSR-C1): saved with the sensor 0, the route could
+     * never fire, and nothing said so - a sensor condition is refused it (`frameNotASensor`), this one was not.
+     *
+     * MUTATION: drop the sensor check and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAnAutoLocomotiveConditionNeedsASensor() throws Exception
+    {
+        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+
+        final java.util.List<String> good = new java.util.ArrayList<>(), bad = new java.util.ArrayList<>();
+
+        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, null, null));
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                frame[0].setConditionRowsForTest(java.util.Arrays.asList(org.traincontrol.base.ConditionOutline.Row
+                    .condition(1, RouteCommand.RouteCommandAutoLocomotive(LOC, 8851))));
+
+                good.addAll(frame[0].problemsForTest());
+
+                frame[0].setConditionRowsForTest(java.util.Arrays.asList(org.traincontrol.base.ConditionOutline.Row
+                    .condition(1, RouteCommand.RouteCommandAutoLocomotive(LOC, 0))));
+
+                bad.addAll(frame[0].problemsForTest());
+            });
+
+            assertFalse(good.stream().anyMatch(p -> p.contains("8851")), "control: a condition on sensor 8851 is"
+                + " refused: " + good);
+
+            assertTrue(bad.size() > good.size() && bad.stream().anyMatch(p -> p.contains("0")), "a condition that "
+                + LOC + " is at sensor 0 saves, though no sensor is 0 and the route can never fire (GSR-C1): " + bad);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+        }
+    }
+
+    /**
+     * A route is not offered as a route it can call (GSR-C3): Save refuses a route that calls itself
+     * (`frameRouteCallsItself`), and the ROUTE column's dropdown offered it, so the editor offered a choice it would then
+     * refuse.
+     *
+     * MUTATION: offer the database's whole list again and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testARouteIsNotOfferedToItself() throws Exception
+    {
+        final String name = "GSR-C3 route";
+
+        java.util.List<RouteCommand> commands = new java.util.ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandRoute("GSR-C3 elsewhere"));
+
+        assertTrue(model.newRoute(name, commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+            false, null), "precondition: the route could not be made");
+
+        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, name));
+
+            java.util.List<String> offered = frame[0].targetChoicesForTest(0);
+
+            assertTrue(model.getRouteList().contains(name), "precondition: the database has no route " + name);
+
+            assertFalse(offered.contains(name), "editing " + name + ", its ROUTE column offers " + name + " itself,"
+                + " which Save then refuses as a route calling itself (GSR-C3): " + offered);
+        }
+        finally
+        {
+            if (frame[0] != null) SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
      * A name with a space at either end stays in its cell as it stands (RSA56-C3).  GSR-B5's cells offered the name
      * trimmed, and a combo box cannot select a value it has not got, so one click into a command naming " X " and one away
      * still wrote the first locomotive in the list.  Only a routes file edited by hand carries such a name.

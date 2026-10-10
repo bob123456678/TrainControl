@@ -280,7 +280,7 @@ def load_findings(conn, rows, force=False):
     :return: how many were stored
     """
     # A LOAD MUST NOT BE ABLE TO EMPTY THIS TABLE. Once docs/reviews/ is deleted the scanner finds
-    # nothing, and a wholesale replace would take the only remaining copy of 2,269 findings with it -
+    # nothing, and a wholesale replace would take the only remaining copy of thousands of findings with it -
     # by way of a script that had always been safe to run. Below half is a collapse, not an edit.
     held = conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0]
 
@@ -319,7 +319,7 @@ def add_findings(conn, rows):
     """Merges findings into the catalogue without touching the rest of it.
 
     `load_findings` REPLACES, which is right for a sweep of the whole folder and fatal for anything
-    less. A review written after 2026-09-08 is a handful of documents beside a catalogue of 2,265
+    less. A review written after 2026-09-08 is a handful of documents beside a catalogue of thousands of
     findings from documents that no longer exist, so it has to be added rather than loaded.
 
     A row is identified by (ref, document), so re-running over the same review updates its findings in
@@ -471,7 +471,7 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
     person who has just found `RC-A1` in a comment wants one grep, not a query.
 
     The reviews folder was deleted on 2026-09-08, so this file and the store are the only copies of what
-    2,265 findings were about. Keep both in git.
+    thousands of findings were about. Keep both in git.
 
     :param conn: an open connection
     :param path: where to write it
@@ -507,7 +507,7 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
 
     # IT WILL NOT EMPTY A FULL MIRROR (VD15-T3, second attempt).
     #
-    # This file and the `finding` table are the only record of what 3,474 findings were about, and
+    # This file and the `finding` table are the only record of what thousands of findings were about, and
     # this function will write a header and nothing else from a store that holds none - which is
     # exactly the store the CLI hands every command: `connect(":memory:")`, built from the markdown,
     # which has the tests and the issues and no findings at all.  The first version of the mirror

@@ -1403,6 +1403,10 @@ public class testAutoLayout
         // replaces the layout every other test in this class reads.
         String was = before.toJSON().toString();
 
+        // AND ITS VISITS, which the re-parse below carries forward: put back as they were, not with this test's arrival in
+        // them (OB-267)
+        java.util.Map<String, Long> visitsWere = new java.util.HashMap<>(before.getVisitHistory());
+
         try
         {
             String visited = before.getPoints().iterator().next().getName();
@@ -1430,6 +1434,16 @@ public class testAutoLayout
         finally
         {
             model.parseAuto(was);
+
+            Layout restored = model.getAutoLayout();
+
+            java.lang.reflect.Field visits = Layout.class.getDeclaredField("lastArrival");
+
+            visits.setAccessible(true);
+
+            ((java.util.Map<?, ?>) visits.get(restored)).clear();
+
+            restored.restoreVisitHistory(visitsWere);
         }
     }
 

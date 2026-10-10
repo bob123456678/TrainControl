@@ -540,6 +540,10 @@ public class Edge
 
     /**
      * @return whether this edge crosses a switch, and so bounds where a train may come to rest
+     *
+     * **"A switch" in the room rule** is what bounds a berth's room (`GraphReducer.boundsTheRoom`): a switch, or a
+     * turnout drawn permanent (FR-097) - and not either square of a crossing made of two permanent Ys (OB-320).  Every
+     * statement of the rule that says "switch" means this (VD18-C4).
      */
     public boolean crossesASwitch()
     {

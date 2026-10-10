@@ -440,7 +440,9 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
-     * AND THE START BUTTON ASKS THE SAME QUESTION, WHICH IS THE DOOR THAT MATTERS (VD16-B2).
+     * AND THE START BUTTON ASKS THE SAME QUESTION (VD16-B2) - one of the doors `testEveryDispatchDoorAsksTheGate`
+     * lists, kept for the reason only it gives: why the file door cannot stand in for Start (VD17-T8; this called Start
+     * the door that matters, which the claim below shows it is not).
      *
      * The other two doors cannot cover it.  An edge length is only ever written by `parseAuto`, and
      * the file door re-asks afterwards - but a TRAIN length is written on the live layout by

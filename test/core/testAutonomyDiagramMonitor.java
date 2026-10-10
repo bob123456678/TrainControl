@@ -2289,25 +2289,29 @@ public class testAutonomyDiagramMonitor
             {
                 for (boolean editor : new boolean[] {false, true})
                 {
-                    int bare = arrowInk(null, size, editor), over = arrowInk(badge, size, editor);
+                    // the square alone - the editor, a diagram at rest - and then with the icon drawn again over a run
+                    for (boolean overRun : new boolean[] {false, true})
+                    {
+                        int bare = arrowInk(null, size, editor, overRun), over = arrowInk(badge, size, editor, overRun);
 
-                    assertTrue(bare > 0, "precondition: no arrows drawn at " + size + " pixels");
+                        assertTrue(bare > 0, "precondition: no arrows drawn at " + size + " pixels");
 
-                    assertTrue(over >= bare * 0.95, badge + " at " + size + " pixels" + (editor ? " in the editor" : "")
-                        + " leaves " + over + " of the arrows' " + bare + " pixels showing - Adam: \"render red arrows on"
-                        + " top of stations\"");
+                        assertTrue(over >= bare * 0.95, badge + " at " + size + " pixels" + (editor ? " in the editor" : "")
+                            + (overRun ? " over a run" : "") + " leaves " + over + " of the arrows' " + bare + " pixels"
+                            + " showing - Adam: \"render red arrows on top of stations\"");
+                    }
                 }
             }
         }
     }
 
     /**
-     * How many of a square's pixels are its arrows' red or green, painted as the diagram paints it - the square, then the
-     * icon again over a running train's line - with a one-way road from W to E.
+     * How many of a square's pixels are its arrows' red or green, painted as the diagram paints it - the square, and with
+     * `overRun` the icon again over a running train's line - with a one-way road from W to E.
      *
      * @param badge the station, or null for none
      */
-    private static int arrowInk(TileAnnotation.Badge badge, int size, boolean editor)
+    private static int arrowInk(TileAnnotation.Badge badge, int size, boolean editor, boolean overRun)
     {
         java.awt.image.BufferedImage image =
             new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
@@ -2326,7 +2330,8 @@ public class testAutonomyDiagramMonitor
             if (editor) annotation = annotation.inTheEditor();
 
             annotation.paint(g, size, size);
-            annotation.paintBadgeOverRun(g, size, size);
+
+            if (overRun) annotation.paintBadgeOverRun(g, size, size);
         }
         finally
         {
