@@ -908,6 +908,66 @@ def verify(conn, tests_path=TESTS_FILE):
                    % (len(on_disk), len(rendered)))
 
 
+# WHERE A FINDING'S STATUS NOTE SAYS ITS WORK LIVES (GSB-C3).  "Now tracked as OB-253 in the Inbox", "In the Inbox as
+# OB-237", "filed as OB-300", "deferred as OB-306": each names an Inbox item, and the Inbox is append-only - an item
+# stays in it for life, see triage.IssuesDoc.load - so the OB it names has to be a `### OB-n` heading there, today and
+# from then on.  A mention in passing ("Adam, 2026-09-22, on OB-248: ...") claims nothing and is not read.
+INBOX_CLAIM_RE = re.compile(r"\b(?:[Tt]racked as|[Ii]n the Inbox as|filed as|deferred as)\s+(OB-\d+)\b")
+
+
+def verify_inbox_claims(store_path=DB_FILE, issues_path=ISSUES_FILE):
+    """Whether every OB a finding's status note says it is tracked as is an item in the Inbox (GSB-C3).
+
+    Nothing checked these.  A status note is the store's own answer, kept through every reload of the catalogue, and
+    "tracked as OB-n" is all it says about where the work went - so a note naming an OB that was never filed, or a
+    slip of the keyboard, sends its reader to nothing.  Java cannot catch it: there is no SQLite driver on the
+    classpath, and `findings.tsv` does not carry the note.
+
+    Read from the file directly, not through `connect`, which would create a store that is not there and migrate one
+    that is: this only reads.
+
+    :param store_path: the findings store - the default one, or a copy
+    :param issues_path: issues.md, whose Inbox headings are the items
+    :return: (ok, message, offenders), offenders as (ref, document, OB) for each claim that names no Inbox item
+    """
+    if not os.path.exists(store_path):
+        return False, store_path + " is not there, and the status notes live only in it", []
+
+    text, _ = triage.read_text(issues_path)
+
+    span = triage.inbox_span(text)
+
+    section = text[span[0]:span[1]] if span else ""
+
+    # The one parser's headings, not a second regular expression written for the occasion (see the module docstring)
+    inbox = set(m.group(1) for m in triage.ISSUE_ITEM_RE.finditer(section))
+
+    conn = sqlite3.connect(store_path)
+
+    try:
+        rows = conn.execute("SELECT ref, document, status_note FROM finding"
+                            " WHERE status_note LIKE '%OB-%' ORDER BY ref, document").fetchall()
+    finally:
+        conn.close()
+
+    claims = 0
+    offenders = []
+
+    for ref, document, note in rows:
+        for m in INBOX_CLAIM_RE.finditer(note):
+            claims += 1
+
+            if m.group(1) not in inbox:
+                offenders.append((ref, document, m.group(1)))
+
+    if offenders:
+        return False, ("%d of %d status-note claims name an OB that is not an item in the Inbox of %s:"
+                       % (len(offenders), claims, issues_path)), offenders
+
+    return True, ("all %d status-note claims name an item in the Inbox (%d OB items there)"
+                  % (claims, sum(1 for ref in inbox if ref.startswith("OB-")))), []
+
+
 # --------------------------------------------------------------------------------------------
 # the API: check, update, file
 # --------------------------------------------------------------------------------------------
@@ -1444,7 +1504,10 @@ def main(argv=None):
     sub.add_parser("sync", help="rebuild the store from the markdown and verify it renders back")
     sub.add_parser("regenerate-ledger",
                    help="rewrite the Ledger table in tests.md from the store")
-    sub.add_parser("verify", help="prove the store renders the markdown byte for byte")
+    p = sub.add_parser("verify", help="prove the store renders the markdown byte for byte, and that every OB a"
+                                      " finding's status note says it is tracked as is in the Inbox")
+    p.add_argument("--store", default=DB_FILE,
+                   help="the findings store whose status notes are checked - a copy, to see the check fail")
     sub.add_parser("selftest", help="exercise the whole store against copies of the real record")
 
     p = sub.add_parser("check", help="query the tests")
@@ -1533,7 +1596,17 @@ def main(argv=None):
     if args.command == "verify":
         ok, message = verify(conn)
         print(message)
-        return 0 if ok else 1
+
+        # AND EVERY OB A FINDING SAYS IT IS TRACKED AS IS IN THE INBOX (GSB-C3).  From the file store, never this
+        # command's own: `conn` was built from the markdown and holds no findings.
+        claims_ok, claims_message, offenders = verify_inbox_claims(args.store)
+
+        print(claims_message)
+
+        for ref, document, ob in offenders:
+            print("  %s (%s) says %s" % (ref, document, ob))
+
+        return 0 if ok and claims_ok else 1
 
     if args.command == "check":
         rows = check(conn,

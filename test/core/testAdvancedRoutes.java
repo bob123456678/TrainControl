@@ -1219,6 +1219,136 @@ public class testAdvancedRoutes
     }
 
     /**
+     * A Central Station sync does not replace a route while it runs, so afterwards it is still running and still
+     * drives what it drove (GSR-B3, in the sync).
+     *
+     * Where the station's definition of a route differs from the one held, the sync deletes the held route and adds
+     * the station's as a new object under the same id - the delete-and-add `editRoute` does, which round 115 made
+     * refuse while the route runs, because what a route is doing lives on its object.  The sync went on replacing it:
+     * the new object read idle while the old one's thread went on sending its commands, so `runningRouteDriving` lost
+     * it, and every door that refuses to edit or delete a locomotive a running route drives stood open.
+     *
+     * The sync's per-route step is asked directly, with the station's description of the same route carrying one
+     * more command, because the whole sync needs a station on the network.  The flag is set as `MarklinRoute.execRoute`
+     * sets it, with no thread, so nothing is sent and nothing is waited for.
+     *
+     * MUTATION: take the running-route refusal out of `MarklinControlStation.adoptCentralStationRoute`, and this
+     * fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncDoesNotReplaceARunningRoute() throws Exception
+    {
+        final String loc = "ProbeGSR3S loc";
+        final String name = "ProbeGSR3S route";
+
+        model.newMM2Locomotive(loc, 66);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        MarklinRoute running = model.getRoute(name);
+
+        try
+        {
+            assertTrue(running.setExecuting(), "precondition: the route was marked running already");
+
+            assertNotNull(model.runningRouteDriving(loc), "precondition: the model does not see the running route drive "
+                + loc + ", so there is nothing for a sync to forget");
+
+            // THE CENTRAL STATION'S DESCRIPTION: the same route, under the same id, with one more command
+            List<RouteCommand> changed = new ArrayList<>(commands);
+
+            changed.add(RouteCommand.RouteCommandFunction(loc, 2, true));
+
+            MarklinRoute fromTheStation = new MarklinRoute(model, name, running.getId(), changed, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            model.adoptCentralStationRoute(fromTheStation);
+
+            assertSame(model.getRoute(name), running, "a Central Station sync replaced a running route with a new"
+                + " object, which reads idle while the old one's thread goes on sending its commands (GSR-B3)");
+
+            assertNotNull(model.runningRouteDriving(loc), "a sync of a running route forgot it was running, so every"
+                + " door that refuses to edit or delete " + loc + " while a route drives it stands open (GSR-B3)");
+
+            assertTrue(model.getRoute(name).isLocked(), "the running route the sync left was not locked, so its menu"
+                + " offers Delete and Change Route ID on a Central Station route");
+        }
+        finally
+        {
+            running.stopExecuting();
+
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * Nor where the station has a route of the same NAME under another id (GSR-B3, in the sync): the held route is
+     * deleted to make room for it, and a running one is not - the station's waits for the next sync.
+     *
+     * The sync's other replacing branch.  The station's route cannot be added beside the running one under the same
+     * name, so the step adds nothing, and the running route is still the one the model holds by that name.
+     *
+     * MUTATION: take the running-route refusal out of the same-name branch of
+     * `MarklinControlStation.adoptCentralStationRoute`, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncDoesNotReplaceARunningRouteOfTheSameName() throws Exception
+    {
+        final String loc = "ProbeGSR3N loc";
+        final String name = "ProbeGSR3N route";
+
+        model.newMM2Locomotive(loc, 67);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        MarklinRoute running = model.getRoute(name);
+
+        try
+        {
+            assertTrue(running.setExecuting(), "precondition: the route was marked running already");
+
+            // THE CENTRAL STATION'S ROUTE OF THE SAME NAME, under an id nothing here holds
+            int other = running.getId() + 1;
+
+            while (model.getRoute(other) != null) other++;
+
+            MarklinRoute fromTheStation = new MarklinRoute(model, name, other, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            assertFalse(model.adoptCentralStationRoute(fromTheStation), "the sync counted a route it added beside a"
+                + " running route of the same name");
+
+            assertSame(model.getRoute(name), running, "a Central Station sync deleted a running route to make room for"
+                + " the station's route of the same name, so the model forgot it was running (GSR-B3)");
+
+            assertNotNull(model.runningRouteDriving(loc), "a sync of a running route forgot it was running, so every"
+                + " door that refuses to edit or delete " + loc + " while a route drives it stands open (GSR-B3)");
+
+            assertNull(model.getRoute(other), "the station's route was added under its own id beside the running one");
+        }
+        finally
+        {
+            running.stopExecuting();
+
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
      * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them
      * (GSR-B4).
      *

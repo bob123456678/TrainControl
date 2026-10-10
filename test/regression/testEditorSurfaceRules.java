@@ -4267,100 +4267,14 @@ public class testEditorSurfaceRules
         String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        String[] lines = source.split("\r?\n", -1);
+        java.util.List<String> examined = new java.util.ArrayList<>();
 
-        java.util.List<String> writers = writers();
+        // ASKED OF THE SOURCE AS TEXT (GSE-C1), so that a fixture can be asked the same question - see silentWriters.
+        java.util.List<String> silent = silentWriters(source, writers(), examined);
 
-        java.util.List<String> silent = new java.util.ArrayList<>();
+        int checked = examined.size();
 
-        int checked = 0;
-
-        for (int i = 0; i < lines.length; i++)
-        {
-            // EVERY WRITER, not two of them (VD10-B2).
-            //
-            // The first version of this named setPointProperty and setHome, which are what MT-246
-            // happened to be about - and four more doors wrote the setup through setTileLength,
-            // setPointName, setLinkName and clearEveryHome, and were invisible to the rule written to
-            // catch exactly them.  A guard that lists the cases it knows about finds the cases it
-            // knows about.
-            boolean writes = false;
-
-            for (String setter : writers)
-            {
-                if (lines[i].contains(setter)) { writes = true; break; }
-            }
-
-            if (!writes) continue;
-
-            // The enclosing method: back to the nearest declaration at class indent.
-            int start = i;
-
-            while (start > 0 && !(lines[start].startsWith("    private ")
-                || lines[start].startsWith("    public ")
-                || lines[start].startsWith("    protected "))) start--;
-
-            // and forward to its closing brace
-            int depth = 0;
-            boolean open = false;
-            int end = lines.length - 1;
-
-            for (int j = start; j < lines.length; j++)
-            {
-                for (char c : lines[j].toCharArray())
-                {
-                    if (c == '{') { depth++; open = true; }
-                    else if (c == '}') depth--;
-                }
-
-                if (open && depth <= 0) { end = j; break; }
-            }
-
-            StringBuilder body = new StringBuilder();
-
-            for (int j = start; j <= end; j++) body.append(lines[j]).append('\n');
-
-            String name = lines[start].trim();
-
-            checked++;
-
-            // setupChanged is itself allowed to write nothing and announce nothing.  So is the
-            // LIGHT door beside it, which is the same announcement without the grid rebuild.
-            if (name.contains("setupChanged") || name.contains("annotationsChanged")) continue;
-
-            // placementChanged() counts: it ends in setupChanged(), and a door that goes through it
-            // has announced the change exactly as one that calls it directly has.
-            //
-            // AND annotationsChanged() COUNTS, which is what this rule is actually about (MT-334).
-            //
-            // The rule is "the running layout is told", not "one particular method is called": the
-            // light door does that half through `rebuildRunningLayoutSoon`, exactly as setupChanged
-            // does, and falls back to setupChanged outright when there is no annotation door to use.
-            // What it leaves out is the GRID REBUILD, which is not an announcement and is the flicker
-            // Adam reported - so a guard that named the heavy door by spelling would have forced the
-            // four direction doors to keep redrawing every tile on the page in order to stay green.
-            boolean announces = body.toString().contains("setupChanged()")
-                || body.toString().contains("placementChanged(")
-                || body.toString().contains("annotationsChanged()")
-
-                // AND ONE HELPER THAT ANNOUNCES FOR ITS CALLER (VD11-A1).
-                //
-                // `radio(...)` runs the action it is given and then calls `placementChanged()` itself,
-                // deliberately - its comment says the redraw belongs there "where every radio gets it,
-                // rather than in whichever lambda somebody reported".  So an expression lambda passed
-                // to it is announced, and nothing lexical in the enclosing method can show that.
-                //
-                // One helper, named, and checked below - not a list of writers, which is the thing
-                // this rule keeps being caught by.
-                || inARadioCall(lines, i);
-
-            if (!announces && !silent.contains(name))
-            {
-                silent.add(name);
-            }
-        }
-
-        // The exemption above is only sound while `radio` really does announce.
+        // The radio exemption in silentWriters is only sound while `radio` really does announce.
         assertTrue(source.contains("placementChanged(null)"),
             "AutonomyEditorPanel no longer calls placementChanged anywhere, so the `radio(` "
             + "exemption below is exempting doors that announce nothing (VD11-A1)");
@@ -4373,6 +4287,15 @@ public class testEditorSurfaceRules
             && source.indexOf("placementChanged(null)", radioAt) < radioAt + 2000,
             "radio() no longer announces, so every radio door on this menu is silent and the "
             + "exemption is hiding them (VD11-A1)");
+
+        // AND `toggle`, WHICH THE SCAN EXEMPTS THE SAME WAY (GSE-C1).  Each write is asked about its own lambda now,
+        // and a checkbox's lambda says nothing: `toggle` announces after the action, for every checkbox on these
+        // menus - so the exemption is only sound while the helper's own body still does.
+        assertTrue(bodyOf(codeOnly(source),
+            "private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey,")
+            .contains("placementChanged(null)"),
+            "toggle() no longer announces, so every checkbox door on these menus is silent and the exemption is "
+            + "hiding them (GSE-C1)");
 
         // AND THE LIGHT DOOR'S EXEMPTION IS ONLY SOUND WHILE IT ANNOUNCES (MT-334).
         //
@@ -4397,28 +4320,371 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * Whether a write sits inside a `radio(...)` call, which announces for it (VD11-A1).
+     * A lambda that writes the setup is not announced by another lambda's `setupChanged()` (GSE-C1).
      *
-     * The write is the lambda argument, several lines below the call's own line, so the line the write
-     * is on says nothing.  This walks back to the start of the statement - the previous `;` or block
-     * brace - and asks whether the call is in it.
+     * The rule above took each write's enclosing METHOD and asked whether that method announced anything.
+     * `buildTileMenu` is one method that builds a whole menu, and several of its items call `setupChanged()` - so every
+     * item on it passed on its neighbours' announcement, and an item whose own lambda wrote the setup and said nothing
+     * would have passed too.  A lambda runs when its item is clicked, not when the menu is built.
+     *
+     * A fixture, because the real menu has no silent item to find.  One method with four items: a block lambda that
+     * announces, one that does not, an expression lambda handed to `toggle` - which announces for whatever it runs -
+     * and one handed to `item`, which does not.  And a second method whose write sits in an `if` with the announcement
+     * after it, at the method's own level, which must still pass: a lambda is a scope, a branch is not.
+     *
+     * MUTATION: in `silentWriters`, ask the enclosing method instead of the write's own lambda, and this fails.
+     *
+     * @throws Exception never
      */
-    private static boolean inARadioCall(String[] lines, int at)
+    @Test
+    public void testASilentLambdaIsNotCoveredByItsNeighboursAnnouncement() throws Exception
     {
-        for (int i = at; i >= 0 && i > at - 12; i--)
+        String fixture = String.join("\n",
+            "public class Fixture",
+            "{",
+            "    public javax.swing.JPopupMenu buildTileMenu(TileKey target)",
+            "    {",
+            "        menu.add(item(\"Announced\", () ->",
+            "        {",
+            "            session.setHome(target, null, null);",
+            "",
+            "            setupChanged();",
+            "        }));",
+            "",
+            "        menu.add(item(\"Silent\", () ->",
+            "        {",
+            "            session.setPointName(target, \"x\");",
+            "        }));",
+            "",
+            "        menu.add(toggle(\"Announced by the helper\", \"hint\", true,",
+            "            on -> session.setAutoDestination(target, on)));",
+            "",
+            "        menu.add(item(\"Silent too\", () -> session.setLinkName(target, \"y\")));",
+            "",
+            "        return menu;",
+            "    }",
+            "",
+            "    private void promptLength(TileKey tile)",
+            "    {",
+            "        if (tile != null)",
+            "        {",
+            "            session.setTileLength(tile, 3);",
+            "        }",
+            "",
+            "        setupChanged();",
+            "    }",
+            "}",
+            "");
+
+        java.util.List<String> examined = new java.util.ArrayList<>();
+
+        java.util.List<String> silent = silentWriters(fixture, java.util.Arrays.asList("session.setHome(",
+            "session.setPointName(", "session.setAutoDestination(", "session.setLinkName(", "session.setTileLength("),
+            examined);
+
+        assertEquals(examined.size(), 5, "the scan did not find the fixture's five writes, so whatever it reports says"
+            + " nothing about how it judged them: " + examined);
+
+        assertEquals(silent.size(), 2, "a lambda that writes the setup and announces nothing passed, because ANOTHER"
+            + " lambda in the same method calls setupChanged() - the scan reads the enclosing method, so every item on"
+            + " buildTileMenu passes on its neighbours' announcement (GSE-C1).  Reported: " + silent);
+
+        assertTrue(silent.get(0).contains("session.setPointName(") && silent.get(1).contains("session.setLinkName("),
+            "the two silent writes are not the ones reported: " + silent);
+    }
+
+    /**
+     * Every write of the setup in a source that nothing announces, one entry per write (MT-246, VD10-B2, VD11-A1,
+     * GSE-C1).
+     *
+     * **Asked of the write's own lambda, not of the method it is in (GSE-C1).**  The first version took each write's
+     * enclosing method and asked whether it announced anything.  `buildTileMenu` is one method that builds a whole
+     * menu, and several of its items call `setupChanged()` - so every item on it passed on its neighbours'
+     * announcement, and one whose own lambda wrote the setup and said nothing would have passed too.  A lambda runs
+     * when its item is clicked, not when the menu is built, so it is the lambda that has to announce.
+     *
+     * So the scope of a write is the innermost lambda that runs it - a block lambda's braces, or an expression
+     * lambda's expression - and its method only where no lambda does.  An `if` or a `try` is not a scope: their braces
+     * are walked out of, so a door that writes inside a branch and announces after it still passes.
+     *
+     * **Two helpers announce for their caller (VD11-A1).**  `radio(...)` and `toggle(...)` run the action they are
+     * given and then call `placementChanged(null)` themselves, so a lambda handed to either is announced whatever its
+     * own body says.  Named here, not a list of writers - which is the thing this rule kept being caught by - and each
+     * is asserted to still announce by the rule that calls this.
+     *
+     * Read with comments and literals blanked and every offset kept, so a brace in a comment or an arrow in a string
+     * is not code.
+     *
+     * @param source the Java source
+     * @param writers the `session.name(` fragments that write the setup
+     * @param examined filled with the door of every write looked at, so a caller can tell a scan that found nothing
+     *        silent from one that found nothing at all
+     * @return each write nothing announces, as its door, its line and the line's text
+     */
+    private static java.util.List<String> silentWriters(String source, java.util.List<String> writers,
+        java.util.List<String> examined)
+    {
+        source = source.replace("\r\n", "\n");
+
+        String code = blankedLiterals(source);
+
+        String[] lines = source.split("\n", -1);
+
+        java.util.List<String> helpers = java.util.Arrays.asList("radio", "toggle");
+
+        // EVERY WRITER, not two of them (VD10-B2), in the order the file has them
+        java.util.TreeSet<Integer> writes = new java.util.TreeSet<>();
+
+        for (String setter : writers)
         {
-            if (lines[i].contains("radio(")) return true;
+            for (int at = code.indexOf(setter); at >= 0; at = code.indexOf(setter, at + 1)) writes.add(at);
+        }
 
-            String trimmed = lines[i].trim();
+        java.util.List<String> silent = new java.util.ArrayList<>();
 
-            // the start of the statement this write belongs to
-            if (i < at && (trimmed.endsWith(";") || trimmed.endsWith("{") || trimmed.endsWith("}")))
+        for (int write : writes)
+        {
+            int line = 0;
+
+            for (int i = 0; i < write; i++) if (code.charAt(i) == '\n') line++;
+
+            // The enclosing method: back to the nearest declaration at class indent.
+            int start = line;
+
+            while (start > 0 && !(lines[start].startsWith("    private ")
+                || lines[start].startsWith("    public ")
+                || lines[start].startsWith("    protected "))) start--;
+
+            String name = lines[start].trim();
+
+            examined.add(name);
+
+            // setupChanged is itself allowed to write nothing and announce nothing.  So is the
+            // LIGHT door beside it, which is the same announcement without the grid rebuild.
+            if (name.contains("setupChanged") || name.contains("annotationsChanged")) continue;
+
+            int declared = 0;
+
+            for (int i = 0; i < start; i++) declared += lines[i].length() + 1;
+
+            int body = code.indexOf('{', declared);
+
+            String scope = null;
+            String call = "";
+
+            // AN EXPRESSION LAMBDA: an arrow earlier in the write's own statement, whose expression reaches the write.
+            int statement = write;
+
+            while (statement > 0 && ";{}".indexOf(code.charAt(statement - 1)) < 0) statement--;
+
+            for (int arrow = code.lastIndexOf("->", write); scope == null && arrow >= statement;
+                arrow = code.lastIndexOf("->", arrow - 1))
             {
-                return false;
+                int end = expressionEnd(code, arrow);
+
+                if (end > write)
+                {
+                    scope = code.substring(arrow, end);
+                    call = receivingCall(code, arrow);
+                }
+            }
+
+            // A BLOCK LAMBDA: the nearest enclosing brace with an arrow in front of it.  The braces of an if, a loop
+            // or a try are walked out of.
+            for (int i = write - 1, depth = 0; scope == null && i > body; i--)
+            {
+                char c = code.charAt(i);
+
+                if (c == '}')
+                {
+                    depth++;
+                }
+                else if (c == '{' && depth > 0)
+                {
+                    depth--;
+                }
+                else if (c == '{')
+                {
+                    int before = i - 1;
+
+                    while (before > 0 && Character.isWhitespace(code.charAt(before))) before--;
+
+                    if (before > 0 && code.charAt(before) == '>' && code.charAt(before - 1) == '-')
+                    {
+                        scope = code.substring(i, closingBrace(code, i) + 1);
+                        call = receivingCall(code, before - 1);
+                    }
+                }
+            }
+
+            // AND THE METHOD, where no lambda runs the write
+            if (scope == null) scope = code.substring(declared, closingBrace(code, body) + 1);
+
+            // placementChanged() counts: it ends in setupChanged().  And annotationsChanged() counts (MT-334): the
+            // rule is "the running layout is told", and the light door tells it through rebuildRunningLayoutSoon,
+            // without the grid rebuild that was the flicker Adam reported.
+            boolean announces = scope.contains("setupChanged()")
+                || scope.contains("placementChanged(")
+                || scope.contains("annotationsChanged()")
+                || helpers.contains(call);
+
+            if (!announces) silent.add(name + " - line " + (line + 1) + ": " + lines[line].trim());
+        }
+
+        return silent;
+    }
+
+    /**
+     * Java source with its comments and its string and character literals blanked to spaces, every newline and
+     * offset kept (GSE-C1).
+     *
+     * @param source the source, with LF line endings
+     * @return text of the same length that is code only
+     */
+    private static String blankedLiterals(String source)
+    {
+        char[] out = source.toCharArray();
+
+        for (int i = 0; i < out.length; i++)
+        {
+            char c = source.charAt(i);
+
+            if (c == '/' && i + 1 < out.length && source.charAt(i + 1) == '/')
+            {
+                while (i < out.length && source.charAt(i) != '\n') out[i++] = ' ';
+            }
+            else if (c == '/' && i + 1 < out.length && source.charAt(i + 1) == '*')
+            {
+                int end = source.indexOf("*/", i + 2);
+
+                end = end < 0 ? out.length : end + 2;
+
+                for (; i < end; i++) if (out[i] != '\n') out[i] = ' ';
+
+                i--;
+            }
+            else if (c == '"' || c == '\'')
+            {
+                for (i++; i < out.length && source.charAt(i) != c && source.charAt(i) != '\n'; i++)
+                {
+                    if (source.charAt(i) == '\\' && i + 1 < out.length) out[i++] = ' ';
+
+                    out[i] = ' ';
+                }
             }
         }
 
-        return false;
+        return new String(out);
+    }
+
+    /**
+     * Where the brace that closes the one at `open` is (GSE-C1).
+     *
+     * @param code source with its literals blanked
+     * @param open the offset of an opening brace
+     * @return the offset of the brace that closes it, or the last offset where none does
+     */
+    private static int closingBrace(String code, int open)
+    {
+        int depth = 0;
+
+        for (int i = open; i < code.length(); i++)
+        {
+            if (code.charAt(i) == '{') depth++;
+            else if (code.charAt(i) == '}' && --depth == 0) return i;
+        }
+
+        return code.length() - 1;
+    }
+
+    /**
+     * Where an expression lambda's expression ends: the comma, semicolon or bracket that closes the argument it is
+     * (GSE-C1).
+     *
+     * @param code source with its literals blanked
+     * @param arrow the offset of the lambda's arrow
+     * @return the offset just past the expression
+     */
+    private static int expressionEnd(String code, int arrow)
+    {
+        int depth = 0;
+
+        for (int i = arrow + 2; i < code.length(); i++)
+        {
+            char c = code.charAt(i);
+
+            if (c == '(' || c == '{' || c == '[')
+            {
+                depth++;
+            }
+            else if (c == ')' || c == '}' || c == ']')
+            {
+                if (depth-- == 0) return i;
+            }
+            else if (depth == 0 && (c == ',' || c == ';'))
+            {
+                return i;
+            }
+        }
+
+        return code.length();
+    }
+
+    /**
+     * The method a lambda is handed to: the name before the bracket that holds it, or nothing where it is not an
+     * argument (GSE-C1).
+     *
+     * @param code source with its literals blanked
+     * @param from the offset of the lambda's arrow
+     * @return the method's name, or ""
+     */
+    private static String receivingCall(String code, int from)
+    {
+        int parens = 0;
+        int braces = 0;
+
+        for (int i = from - 1; i >= 0; i--)
+        {
+            char c = code.charAt(i);
+
+            if (c == '}')
+            {
+                braces++;
+            }
+            else if (c == '{')
+            {
+                if (braces == 0) return "";
+
+                braces--;
+            }
+            else if (braces > 0)
+            {
+                continue;
+            }
+            else if (c == ';')
+            {
+                return "";
+            }
+            else if (c == ')')
+            {
+                parens++;
+            }
+            else if (c == '(')
+            {
+                if (parens == 0)
+                {
+                    int end = i;
+
+                    while (i > 0 && Character.isJavaIdentifierPart(code.charAt(i - 1))) i--;
+
+                    return code.substring(i, end);
+                }
+
+                parens--;
+            }
+        }
+
+        return "";
     }
 
     /**

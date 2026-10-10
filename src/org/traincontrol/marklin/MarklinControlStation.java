@@ -1574,60 +1574,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 r.setLocked(false);
             }
             
-            // Import routes
+            // Import routes, one step each - see adoptCentralStationRoute
             for (MarklinRoute r : parsedRoutes)
             {
-                // Set only where this loop deletes the same route to re-read it; a route arriving for
-                // the first time was never in the selection and must not be put into it.
-                boolean wasActivated = false;
-
-                // Other existing route with same name but different ID
-                if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
-                {
-                    this.logf("route.deletingDuplicateName", r.getName());
-                    
-                    this.deleteRoute(r.getName());
-                }
-                
-                // Delete route if it has changed
-                if (this.routeDB.hasId(r.getId()) 
-                        && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()) 
-                            || r.getS88() != this.routeDB.getById(r.getId()).getS88()
-                            || r.getTriggerType() != this.routeDB.getById(r.getId()).getTriggerType()
-                            || !Objects.equals(r.getConditions(), this.routeDB.getById(r.getId()).getConditions())
-                        ) 
-                )
-                {   
-                    this.logf("route.deletingDuplicateId", this.routeDB.getById(r.getId()).getName());
-
-                    // The SAME route, re-read from the Central Station because something about it
-                    // changed - so the operator's autonomy selection survives it (AC2-A1).
-                    wasActivated = this.isRouteActivatedByAutonomy(r.getId());
-
-                    this.deleteRoute(this.routeDB.getById(r.getId()).getName());
-                }
-                
-                if (!this.routeDB.hasId(r.getId()))
-                {
-                    // Only report and count the route if it was actually added
-                    if (newRoute(r))
-                    {
-                        this.restoreRouteActivation(r.getId(), wasActivated);
-
-                        this.logf("route.added", r.getName());
-                        num++;
-                    }
-                    else
-                    {
-                        this.logf("route.notAdded", r.getName());
-                    }
-                }
-                
-                // Routes from the Central Station are not editable
-                if (this.routeDB.getById(r.getId()) != null)
-                {
-                    this.routeDB.getById(r.getId()).setLocked(true);
-                }
+                if (this.adoptCentralStationRoute(r)) num++;
             }
             
             // Import locomotives
@@ -1783,6 +1733,103 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
+    /**
+     * Takes one route the Central Station describes into this database: added where it is new, replaced where its
+     * definition has changed, and locked either way - except that a route running now is left as it is, for the
+     * next sync to change (GSR-B3).
+     *
+     * One step of `syncWithCS2`'s route pass, in a method of its own so the decision can be asked without a station
+     * on the network, as `adoptCentralStationAddress` is for the locomotive pass (GSR-B2).
+     *
+     * @param r the route as the Central Station describes it
+     * @return true where a route was added, new or replaced, so the sync counts it
+     */
+    public boolean adoptCentralStationRoute(MarklinRoute r)
+    {
+        // Set only where this step deletes the same route to re-read it; a route arriving for
+        // the first time was never in the selection and must not be put into it.
+        boolean wasActivated = false;
+
+        // Other existing route with same name but different ID
+        if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
+        {
+            // NOT WHILE IT RUNS - see below.  The station's route cannot be added beside it under the same name, so
+            // it waits for the next sync as well.
+            if (this.routeDB.getByName(r.getName()).isExecuting())
+            {
+                this.logf("route.syncLeftRunningRoute", r.getName());
+
+                return false;
+            }
+
+            this.logf("route.deletingDuplicateName", r.getName());
+
+            this.deleteRoute(r.getName());
+        }
+
+        // Delete route if it has changed
+        if (this.routeDB.hasId(r.getId())
+                && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute())
+                    || r.getS88() != this.routeDB.getById(r.getId()).getS88()
+                    || r.getTriggerType() != this.routeDB.getById(r.getId()).getTriggerType()
+                    || !Objects.equals(r.getConditions(), this.routeDB.getById(r.getId()).getConditions())
+                )
+        )
+        {
+            // NOT WHILE IT RUNS (GSR-B3, in the sync).
+            //
+            // This replaces by deleting the route and adding the station's as a new object under the same id - the
+            // delete-and-add `editRoute` refuses while the route runs, for the reason it gives there: what a route is
+            // doing lives on its object.  `isExecuting` is what `runningRouteDriving` asks before any door edits or
+            // deletes a locomotive the route drives, what the route tile draws as running, and the route's own guard
+            // against being started again on top of itself - and the new object read idle while the old one's thread
+            // went on sending its commands.  The sync runs by itself, so there is nobody to ask to wait: the route is
+            // left as it is, still locked below, and the log says so.  Nothing is lost - the next sync finds the same
+            // difference and makes the same change, once the route has finished.
+            if (this.routeDB.getById(r.getId()).isExecuting())
+            {
+                this.logf("route.syncLeftRunningRoute", this.routeDB.getById(r.getId()).getName());
+            }
+            else
+            {
+                this.logf("route.deletingDuplicateId", this.routeDB.getById(r.getId()).getName());
+
+                // The SAME route, re-read from the Central Station because something about it
+                // changed - so the operator's autonomy selection survives it (AC2-A1).
+                wasActivated = this.isRouteActivatedByAutonomy(r.getId());
+
+                this.deleteRoute(this.routeDB.getById(r.getId()).getName());
+            }
+        }
+
+        boolean added = false;
+
+        if (!this.routeDB.hasId(r.getId()))
+        {
+            // Only report and count the route if it was actually added
+            if (newRoute(r))
+            {
+                this.restoreRouteActivation(r.getId(), wasActivated);
+
+                this.logf("route.added", r.getName());
+
+                added = true;
+            }
+            else
+            {
+                this.logf("route.notAdded", r.getName());
+            }
+        }
+
+        // Routes from the Central Station are not editable
+        if (this.routeDB.getById(r.getId()) != null)
+        {
+            this.routeDB.getById(r.getId()).setLocked(true);
+        }
+
+        return added;
+    }
+
     /**
      * Gives a locomotive this database already has the address the Central Station reports for it.
      *
