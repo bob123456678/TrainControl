@@ -1751,6 +1751,16 @@ Adam, 2026-10-09, running MT-707: *“reduce the size of halos around the locomo
 
 The halo round the train's icon (round 95) grows with the icon, so at 60 pixels it is twice as wide as at 30.  Make it slightly narrower at the large size, leaving the small size as it is.
 
+### FR-118 - 2026-10-09 - Captions stood on end back to full size, with a redesign of the station icons
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-09  
+**Filed:** 2026-10-09  
+
+Adam, 2026-10-09: *“the small font on the vertical labels is really hard to read.  Add an FR to revert their size, paired with a redesign of station icons, but for later.”*
+
+**Not to be built yet**, on Adam's word.  OB-327 (round 104) made a caption stood on end beside a vertical track 15% smaller, and its pill only as thick as its letters, so that it clears the station badge or buffer stop on the next square; the smaller letters are hard to read.  Put them back to full size - and redesign the station icons with them, so that a full-size caption on end still has room beside the station and whatever stands next to it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
