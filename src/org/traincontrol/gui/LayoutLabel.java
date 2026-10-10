@@ -1383,6 +1383,9 @@ public final class LayoutLabel extends JLabel
         if (effective == null ? autonomyAnnotation == null
             : effective.equals(autonomyAnnotation)) return;
 
+        // AND A STATION THAT SPILLED, which this may take away: its spill is on the squares around (Adam, 2026-10-10)
+        boolean spilled = spills(autonomyAnnotation);
+
         autonomyAnnotation = effective;
 
         // AND THE TILES AROUND IT WHERE A TRAIN STANDS (RSA23-C1): the annotation can say where the icon goes, and the
@@ -1391,7 +1394,7 @@ public final class LayoutLabel extends JLabel
 
         TileOverlay train = autonomyOverlay;
 
-        if (around != null && train != null && train.hasTrain())
+        if (around != null && (spilled || train != null && train.hasTrain()))
         {
             around.repaint(getX() - getWidth(), getY() - getHeight(), 3 * getWidth(), 3 * getHeight());
         }
@@ -1743,6 +1746,48 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
+     * How a train's line ends where the train ends.
+     */
+    public enum TailEnds
+    {
+        /**
+         * Rounded, stopped short of the square's edge so the round cap lies inside it (round 108; Adam, 2026-10-09: "Can
+         * we make the end of a train (orange line) rounded, not a straight jagged edge?").
+         */
+        ROUNDED,
+
+        /** Run to the square's edge and cut off flat there, as before round 108. */
+        SQUARE
+    }
+
+    /**
+     * How a train's line ends: rounded.  `TailEnds.SQUARE` goes back to the line cut off flat on the square's edge -
+     * Adam, 2026-10-10: "make it easy to revert to the old, non rounded orange train tails" - one word here, or
+     * `setTailEnds` for a preference.
+     */
+    private static volatile TailEnds tailEnds = TailEnds.ROUNDED;
+
+    /**
+     * How a train's line ends, asked in ONE place as `tailStyle` and `tailColour` are.
+     *
+     * @return how the line ends where the train ends
+     */
+    public static TailEnds tailEnds()
+    {
+        return tailEnds;
+    }
+
+    /**
+     * Chooses how a train's line ends from now on - for a preference, and for a test.
+     *
+     * @param ends how, null for the default
+     */
+    public static void setTailEnds(TailEnds ends)
+    {
+        tailEnds = ends == null ? TailEnds.ROUNDED : ends;
+    }
+
+    /**
      * The colour a train's body is drawn in.
      */
     public enum TailColour
@@ -1889,8 +1934,12 @@ public final class LayoutLabel extends JLabel
                 // round cap at the train's last side was cut off flat on the square's edge.  At a side the train goes no
                 // further than, the line stops as far short as its cap needs to lie inside the square; between squares it
                 // still runs to the edge, since two see-through caps laid over each other would show.
-                double[] from = endOf(a, b, road.getA(), width / 2);
-                double[] to = endOf(b, a, road.getB(), width / 2);
+                //
+                // Or SQUARE, edge to edge as before, where the switch says so (`tailEnds`)
+                boolean round = tailEnds() == TailEnds.ROUNDED;
+
+                double[] from = round ? endOf(a, b, road.getA(), width / 2) : new double[] {a[0], a[1]};
+                double[] to = round ? endOf(b, a, road.getB(), width / 2) : new double[] {b[0], b[1]};
 
                 body.append(new java.awt.geom.Line2D.Double(from[0], from[1], to[0], to[1]), false);
             }
@@ -2174,6 +2223,114 @@ public final class LayoutLabel extends JLabel
         {
             g2.dispose();
         }
+    }
+
+    /**
+     * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square is
+     * drawn (Adam, 2026-10-10: *"make the stations spill over onto adjacent tiles"*) - `TileAnnotation.paintSpill`.
+     *
+     * @param g the diagram's graphics
+     * @return whether anything was drawn: a spill reaching what is being repainted
+     */
+    public boolean paintStationSpill(java.awt.Graphics g)
+    {
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
+
+        if (!spills(annotation) || !isVisible()) return false;
+
+        java.awt.Rectangle clip = g.getClipBounds();
+
+        if (clip != null && !clip.intersects(spillReach())) return false;
+
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+        try
+        {
+            g2.translate(getX(), getY());
+
+            annotation.paintSpill(g2, getWidth(), getHeight());
+        }
+        finally
+        {
+            g2.dispose();
+        }
+
+        return true;
+    }
+
+    /**
+     * This square's arrows back over a neighbour's station that spilled onto it (Adam, 2026-10-10: *"make sure that the
+     * optional ingress/egress arrows remain visible, especially on curves"*) - `TileAnnotation.paintArrowsAgain`, asked by
+     * the diagram once the spills are drawn.  Only where another square's spill reaches this one.
+     *
+     * @param g the diagram's graphics
+     * @param spilt the squares that spilled, and how far
+     */
+    void paintArrowsOverSpill(java.awt.Graphics g, java.util.Map<LayoutLabel, java.awt.Rectangle> spilt)
+    {
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
+
+        if (annotation == null || !isVisible()) return;
+
+        java.awt.Rectangle mine = getBounds();
+
+        java.awt.Rectangle clip = g.getClipBounds();
+
+        if (clip != null && !clip.intersects(mine)) return;
+
+        boolean under = false;
+
+        for (java.util.Map.Entry<LayoutLabel, java.awt.Rectangle> spill : spilt.entrySet())
+        {
+            if (spill.getKey() != this && spill.getValue().intersects(mine)) under = true;
+        }
+
+        if (!under) return;
+
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create(getX(), getY(), getWidth(), getHeight());
+
+        try
+        {
+            annotation.paintArrowsAgain(g2, getWidth(), getHeight());
+        }
+        finally
+        {
+            g2.dispose();
+        }
+    }
+
+    /**
+     * And the squares around it, where this square's station spills onto them (Adam, 2026-10-10: *"make the stations spill
+     * over onto adjacent tiles"*): the diagram paints a square's neighbours only where it is asked to, so repainting this
+     * square alone left the old spill on them - a station turned grey, still blue past its edges.
+     */
+    @Override
+    public void repaint(long tm, int x, int y, int width, int height)
+    {
+        java.awt.Container around = getParent();
+
+        if (around != null && spills(autonomyAnnotation))
+        {
+            java.awt.Rectangle reach = spillReach();
+
+            around.repaint(tm, reach.x, reach.y, reach.width, reach.height);
+
+            return;
+        }
+
+        super.repaint(tm, x, y, width, height);
+    }
+
+    /** Whether an annotation's station spills past its square (`TileAnnotation.spillsOverItsSquare`). */
+    private static boolean spills(org.traincontrol.automationui.TileAnnotation annotation)
+    {
+        return annotation != null && annotation.spillsOverItsSquare();
+    }
+
+    /** As far as a spill reaches, in the diagram's coordinates: half a square past each edge - a curve's icon less. */
+    java.awt.Rectangle spillReach()
+    {
+        return new java.awt.Rectangle(getX() - getWidth() / 2, getY() - getHeight() / 2, 2 * getWidth(), 2 * getHeight());
     }
 
     /**

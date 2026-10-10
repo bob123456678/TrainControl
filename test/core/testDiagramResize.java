@@ -193,6 +193,90 @@ public class testDiagramResize
     }
 
     /**
+     * A shift moves what this build cannot draw along with the track, by the rule it moves a tile by (GSP-C2).
+     *
+     * An element whose type TrainControl does not know is kept as the file had it and written back on save - id and
+     * all, and its id IS its square, x + (y << 8).  The four shifts moved every tile and left these on their old ids, so
+     * the next save put scenery the Central Station draws onto squares the track had moved away from.
+     *
+     * One element at 3,2 and one shift at column or row 1: right and down move it one on, left and up one back.  And one
+     * ON the column or row a left or up shift takes out stays where it is, on what moved into its place, rather than
+     * being deleted unseen.
+     *
+     * MUTATION: leave the elements out of `shiftRight`, and this fails on its first assertion.
+     *
+     * @throws Exception from the export
+     */
+    @Test
+    public void testAShiftMovesTheElementsItCannotDraw() throws Exception
+    {
+        assertEquals(idAfter("right", 3, 2), "0x204", "shiftRight(1) moved the track and left an element this build"
+            + " cannot draw on its old square (GSP-C2)");
+
+        assertEquals(idAfter("down", 3, 2), "0x303", "shiftDown(1) left an element this build cannot draw on its old"
+            + " square (GSP-C2)");
+
+        assertEquals(idAfter("left", 3, 2), "0x202", "shiftLeft(1) left an element this build cannot draw on its old"
+            + " square (GSP-C2)");
+
+        assertEquals(idAfter("up", 3, 2), "0x103", "shiftUp(1) left an element this build cannot draw on its old square"
+            + " (GSP-C2)");
+
+        assertEquals(idAfter("left", 1, 2), "0x201", "an element on the column shiftLeft(1) takes out was moved or dropped"
+            + " rather than kept where it is (GSP-C2)");
+
+        assertEquals(idAfter("up", 3, 1), "0x103", "an element on the row shiftUp(1) takes out was moved or dropped"
+            + " rather than kept where it is (GSP-C2)");
+    }
+
+    /**
+     * The id one element this build cannot draw is written back with, after one shift at column or row 1 of a page
+     * carrying a straight at 3,3 (GSP-C2).
+     *
+     * @param shift "right", "down", "left" or "up"
+     * @param x the element's column before the shift
+     * @param y its row
+     * @return the id the export writes for it, or null when it is written with none
+     * @throws Exception from the shift or the export
+     */
+    private static String idAfter(String shift, int x, int y) throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("test", 6, 6, null, null);
+
+        page.addComponent(new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.STRAIGHT, 3, 3, 0, 0, 12, 11,
+            Accessory.accessoryDecoderType.MM2), 3, 3);
+
+        // As testGrowingAndShrinkingAreMirrors says: the constructor's bounds are one too large until this has run
+        page.checkBounds();
+
+        java.util.Map<String, String> element = new java.util.LinkedHashMap<>();
+
+        element.put("id", "0x" + Integer.toHexString(x + (y << 8)));
+        element.put("typ", "gspc2scenery");
+
+        page.addUnmodelledElement(element);
+
+        if ("right".equals(shift)) page.shiftRight(1);
+        if ("down".equals(shift)) page.shiftDown(1);
+        if ("left".equals(shift)) page.shiftLeft(1);
+        if ("up".equals(shift)) page.shiftUp(1);
+
+        String written = page.exportToCS2TextFormat();
+
+        int typ = written.indexOf(" .typ=gspc2scenery");
+
+        assertTrue(typ > 0, "the element was not written at all after shift " + shift + ": " + written);
+
+        int id = written.lastIndexOf(" .id=", typ);
+
+        // ITS OWN id: the line before its typ, inside the same element
+        if (id < 0 || written.substring(id, typ).contains("element")) return null;
+
+        return written.substring(id + " .id=".length(), typ).trim();
+    }
+
+    /**
      * And a page with everything in one row is not mistaken for an empty one.
      */
     @Test

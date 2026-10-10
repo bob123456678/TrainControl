@@ -972,10 +972,7 @@ public class AutonomyViewerPanel extends JPanel
             // Only a name collision is reported as one.  initialize() also SAVES, so a full disk or a
             // read-only folder used to be announced as "that name is already in use" - and the user
             // would try another name, and another, none of which was ever the problem.
-            JOptionPane.showMessageDialog(ui,
-                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
-                    ? I18n.f("autosetup.ui.errorNameInUse", name.trim())
-                    : String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
             return;
         }
 
@@ -1243,14 +1240,42 @@ public class AutonomyViewerPanel extends JPanel
             // message keys - `createConfiguration` and `renameConfiguration` both translate them
             // here, with a comment saying a user should not be told "autosetup.ui.errorNameInUse" -
             // and this door wrapped every one of them in "the file could not be read", which named
-            // neither the fault nor a remedy for the one refusal an import can actually hit.
-            JOptionPane.showMessageDialog(ui,
-                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
-                    ? I18n.f("autosetup.ui.errorNameInUse", name == null ? "" : name.trim())
-                    : I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+            // neither the fault nor a remedy for the one refusal an import can actually hit - which is a name sharing
+            // another configuration's file, said as that (VD17-C6).
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage()))));
         }
 
         refresh();
+    }
+
+    /**
+     * What to tell somebody whose configuration name the store refused - or `otherwise`, for any other failure (GSP-B1,
+     * VD17-C6).
+     *
+     * The store reports its refusals as message keys, so they are translated here rather than shown raw: a user should not
+     * be told "autosetup.ui.errorNameInUse".  There are two, and they are different faults: a name another configuration
+     * already HAS, and a name that would be saved in another configuration's FILE - "Night_ Yard" beside "Night: Yard",
+     * since a file name holds no colon.  The second was said as the first, which names as existing the one configuration
+     * that does not.  One method for the five doors that take a configuration's name, so they cannot say different things.
+     *
+     * @param e what was thrown
+     * @param name the name that was typed, or null
+     * @param otherwise what to say for anything else
+     * @return the sentence
+     */
+    private static String nameRefused(Exception e, String name, String otherwise)
+    {
+        String typed = name == null ? "" : name.trim();
+
+        if (e instanceof AutonomyCompanionStore.NameSharesAFile)
+        {
+            return I18n.f("autosetup.ui.errorNameSharesAFile", typed,
+                ((AutonomyCompanionStore.NameSharesAFile) e).getSharedWith());
+        }
+
+        return AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
+            ? I18n.f("autosetup.ui.errorNameInUse", typed) : otherwise;
     }
 
     /** A blank line between two paragraphs of a dialog, as a constant so no script has to escape it. */
@@ -1335,6 +1360,27 @@ public class AutonomyViewerPanel extends JPanel
      */
     private void importLegacyGraph(org.json.JSONObject file, String name)
     {
+        // First, because an s88 on two squares is what stops an import deciding anything: those points
+        // are refused and listed, and the user is left to work out that a repeated page is the reason.
+        // Shutting the repeats before reading the file is what makes the import unambiguous instead.
+        //
+        // Here as well as at setup creation, because a setup made before this existed - or one whose
+        // pages have been redrawn since - has never had it applied, and importing is exactly when it
+        // matters.
+        //
+        // AND BEFORE THE SNAPSHOT BELOW (OB-302).  The pages it shuts are announced at once, and an exclusion is the
+        // setup's shared half rather than the configuration being imported - so a failure later in the import is no
+        // reason to take it back.  Taken after it, the snapshot put a file that failed back as it was before the
+        // exclusion too, and the pages came back into autonomy with that message the last word on them.  A name the store
+        // refuses below leaves them out as well, for the same reason.
+        List<String> shut = session().excludeRepeatedSensorPages();
+
+        if (!shut.isEmpty())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
+                shut.size(), String.join(", ", shut)));
+        }
+
         // EVERYTHING AS IT WAS, for an import that fails part way (RLA-C3, RLU-C1).  The configuration is created and
         // chosen before the file is read, and importLegacy writes as it reads; its sibling, the bundle import, puts all of
         // that back when it fails, and this did not - the new configuration stayed chosen, and the next save made it the
@@ -1367,27 +1413,11 @@ public class AutonomyViewerPanel extends JPanel
         catch (java.io.IOException e)
         {
             // A NAME IN USE IS NOT AN UNREADABLE FILE (GSP-B1): a configuration file of that name already sits beside
-            // the setup.
-            JOptionPane.showMessageDialog(ui, AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
-                ? I18n.f("autosetup.ui.errorNameInUse", name == null ? "" : name.trim())
-                : I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+            // the setup, under another name that shares its file (VD17-C6).
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage()))));
 
             return;
-        }
-
-        // First, because an s88 on two squares is what stops an import deciding anything: those points
-        // are refused and listed, and the user is left to work out that a repeated page is the reason.
-        // Shutting the repeats before reading the file is what makes the import unambiguous instead.
-        //
-        // Here as well as at setup creation, because a setup made before this existed - or one whose
-        // pages have been redrawn since - has never had it applied, and importing is exactly when it
-        // matters.
-        List<String> shut = session().excludeRepeatedSensorPages();
-
-        if (!shut.isEmpty())
-        {
-            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
-                shut.size(), String.join(", ", shut)));
         }
 
         // Whether the import reached the save, after which a failure is not rolled back: what was saved stays.
@@ -1476,6 +1506,26 @@ public class AutonomyViewerPanel extends JPanel
             if (!result.homesKept.isEmpty())
             {
                 unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomesKept", String.join(", ", result.homesKept));
+            }
+
+            // AND WHAT IT LEFT ON A SQUARE ALREADY TAKEN, and the homes it named twice (OB-304): each a choice the
+            // import made for the operator - the train or the home already there kept, the first home named kept - and
+            // skipped or counted without a word until now.
+            if (!result.squareTaken.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacySquareTaken",
+                    String.join(", ", result.squareTaken));
+            }
+
+            if (!result.homeSquareTaken.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomeSquareTaken",
+                    String.join(", ", result.homeSquareTaken));
+            }
+
+            if (result.duplicateHomes > 0)
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateHomes", result.duplicateHomes);
             }
 
             // And the trains it did not place, into the configuration running (RLD3-C1)
@@ -1662,10 +1712,7 @@ public class AutonomyViewerPanel extends JPanel
         catch (IOException e)
         {
             // As in initialize: a collision is a collision, and anything else is reported as itself
-            JOptionPane.showMessageDialog(ui,
-                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
-                    ? I18n.f("autosetup.ui.errorNameInUse", name.trim())
-                    : String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
             return;
         }
 
@@ -1749,10 +1796,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             // The store reports its refusals as message KEYS, so they are translated here rather than
             // shown raw - a user should not be told "autosetup.ui.errorNameInUse".
-            JOptionPane.showMessageDialog(ui,
-                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
-                    ? I18n.f("autosetup.ui.errorNameInUse", name.trim())
-                    : String.valueOf(e.getMessage()));
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
         }
 
         refresh();

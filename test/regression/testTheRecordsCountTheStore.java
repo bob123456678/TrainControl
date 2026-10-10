@@ -35,7 +35,8 @@ import org.testng.annotations.Test;
  * judgement no test can make; how the stated numbers relate is arithmetic, and that is where it went
  * wrong, twice.
  *
- * MUTATION: change any number in any of the three documents by one and the matching claim names it.
+ * MUTATION: change by one any number a claim below reads, and the matching claim names it (VD17-T6: this said any number
+ * in the three documents, and the README's split of the second round was read by none until then).
  * For the spelled-out total, the edit is the WORDS - "Two hundred and eight" to "Two hundred and
  * nine" - because every edit to the digits is caught by an earlier claim first: change `143` and `65`
  * together and the file total fails at 211 against 210; change `143` alone and the for-Adam
@@ -178,7 +179,19 @@ public class testTheRecordsCountTheStore
 
         assertEquals(Integer.parseInt(halves.group(2)), second,
             "the README gives two different numbers for the 2026-09-21 round - " + second + " reviews"
-            + " and " + halves.group(2) + " files - without saying what the difference is");
+            + " and " + halves.group(2) + " files - and for that round they must be equal: no for-Adam note was"
+            + " deleted that day (VD18-T9)");
+
+        // AND THE SECOND ROUND'S TWO PLACES (VD17-T6): "(44 in `docs/reviews/` itself and 21 in three dated folders
+        // beside it)" was read by nothing, so 44 could become 43 with every claim here green
+        Matcher places = Pattern.compile("([0-9]+) in .docs/reviews/. itself and ([0-9]+) in").matcher(said);
+
+        assertTrue(places.find(), "docs/reviews/README.md no longer says where the 2026-09-21 round's files were, so the"
+            + " split beside the total is unchecked");
+
+        assertEquals(Integer.parseInt(places.group(1)) + Integer.parseInt(places.group(2)), second, "the README puts "
+            + places.group(1) + " of the 2026-09-21 round's files in docs/reviews/ and " + places.group(2) + " in the"
+            + " dated folders, which is not the " + second + " it says that round deleted");
 
         Matcher total = Pattern.compile("[*][*]([0-9]+) files[*][*] deleted from the review folders")
             .matcher(said);

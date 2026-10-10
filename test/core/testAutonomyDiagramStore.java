@@ -476,6 +476,66 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A name that would share another configuration's file is refused as that, naming the other - not as a name already
+     * in use (VD17-C6).
+     *
+     * All three doors refused the pair with `ERROR_NAME_IN_USE`, which the window says as "a configuration called Night_
+     * Yard already exists" - the one configuration that does not.  What exists is Night: Yard, and the two names are one
+     * file because a file name cannot hold a colon.  The exact name already taken is still a name in use.
+     *
+     * MUTATION: have the doors throw `ERROR_NAME_IN_USE` for a shared file again, and this fails.
+     *
+     * @throws IOException creating the configurations
+     */
+    @Test
+    public void testANameSharingAFileIsRefusedAsThat() throws IOException
+    {
+        store.createConfiguration("Night: Yard", null);
+
+        store.createConfiguration("Depot", null);
+
+        // THE IMPORT DOOR, where the finding was read, and the other two
+        for (String door : new String[] {"import", "create", "rename"})
+        {
+            try
+            {
+                if ("import".equals(door)) store.importConfiguration("Night_ Yard", new org.json.JSONObject());
+                else if ("create".equals(door)) store.createConfiguration("Night_ Yard", null);
+                else store.renameConfiguration("Depot", "Night_ Yard");
+
+                fail("the " + door + " door put two configurations in one file");
+            }
+            catch (AutonomyCompanionStore.NameSharesAFile refused)
+            {
+                assertEquals(refused.getMessage(), AutonomyCompanionStore.ERROR_NAME_SHARES_A_FILE);
+
+                assertEquals(refused.getSharedWith(), "Night: Yard", "the " + door + " door's refusal does not name the"
+                    + " configuration whose file it is");
+            }
+            catch (IOException refused)
+            {
+                fail("the " + door + " door refused a name that shares a file as " + refused.getMessage() + ", and the"
+                    + " window then says a configuration called Night_ Yard exists - one that does not (VD17-C6)");
+            }
+        }
+
+        // AND THE EXACT NAME TAKEN IS STILL A NAME IN USE
+        try
+        {
+            store.createConfiguration("Night: Yard", null);
+
+            fail("a second configuration of one name was created");
+        }
+        catch (IOException refused)
+        {
+            assertEquals(refused.getMessage(), AutonomyCompanionStore.ERROR_NAME_IN_USE,
+                "the exact name taken is no longer refused as a name in use");
+        }
+
+        assertEquals(store.getConfigurationNames().size(), 2, "a refused name changed the store anyway");
+    }
+
+    /**
      * An import that cannot be read leaves the setup exactly as it was.
      *
      * The shared half used to be emptied BEFORE the merged object was parsed, and the parse uses the
@@ -604,6 +664,89 @@ public class testAutonomyDiagramStore
         assertEquals(reloaded.getTileDirection(renamed, new RouteId(0, 0)), Direction.TOWARD_B);
 
         assertTrue(reloaded.getPageIdConflicts().isEmpty(), "a rename is not a conflict");
+    }
+
+    /**
+     * A page renamed outside TrainControl is still a page that is loaded (GSE-C2).
+     *
+     * `pagesNotLoaded` is the question every save asks before it tidies the setup, and it compared the NAMES the setup
+     * recorded with the names of the pages loaded.  A page renamed on the Central Station, or in its file, keeps its id
+     * and changes its name - the case page ids exist for, and the test above pins that the settings follow it.  The
+     * question did not follow it: the renamed page read as missing for as long as the layout was open, so no save
+     * tidied anything and every save warned about a page that was on the screen.
+     *
+     * MUTATION: delete `if (nowCalled != null && loaded.contains(nowCalled)) continue;` from `pagesNotLoaded`, and this
+     * fails.
+     *
+     * @throws IOException from the temporary folder
+     */
+    @Test
+    public void testAPageRenamedElsewhereIsNotMissing() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Old Name", "2");
+
+        store.setPageIds(before);
+        store.setPointName(new TileKey("Old Name", 4, 7), "Yard throat");
+        store.createConfiguration("Default", null);
+        store.save();
+
+        // the same page, renamed somewhere else: same id, new name
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("New Name", "2");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertEquals(reloaded.getPointName(new TileKey("New Name", 4, 7)), "Yard throat",
+            "precondition: the renamed page did not keep its settings, so this is not the rename case");
+
+        assertEquals(reloaded.pagesNotLoaded(after.keySet()), java.util.Collections.<String>emptyList(),
+            "a page renamed outside TrainControl is loaded and on the screen, and the setup reports it as a page it "
+            + "cannot see - so no save tidies the setup while that layout is open, and every save warns about a page "
+            + "that is there (GSE-C2)");
+    }
+
+    /**
+     * A page RENUMBERED, whose page did not load, is still reported as not loaded (GSE-C2).
+     *
+     * The guard on the fix above: the id is believed only where `resolvePage` believes it.  Here id 2 belonged to
+     * "Yard" and now belongs to "Main Line", while "Yard" is still in the index under another id and did not load -
+     * the shape an unreadable page's stand-in gives (FV3-A1).  Asked by id alone, the question finds "Main Line"
+     * loaded and calls "Yard" present, the save tidies against a picture without it, and a page of settings goes,
+     * which is the MT-135 loss.  Green before the fix and after it; it is here to catch the fix done the short way.
+     *
+     * MUTATION: ask `pageIdToName.get(written.getKey())` in `pagesNotLoaded` instead of
+     * `resolvePage(written.getKey())`, and this fails.
+     *
+     * @throws IOException from the temporary folder
+     */
+    @Test
+    public void testARenumberedPageThatDidNotLoadIsStillMissing() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Yard", "2");
+
+        store.setPageIds(before);
+        store.setPointName(new TileKey("Yard", 1, 1), "Yard throat");
+        store.createConfiguration("Default", null);
+        store.save();
+
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Main Line", "2");
+        after.put("Yard", "3");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertFalse(reloaded.getPageIdConflicts().isEmpty(), "precondition: the renumber was not read as one");
+
+        assertEquals(reloaded.pagesNotLoaded(java.util.Collections.singletonList("Main Line")),
+            java.util.Collections.singletonList("Yard"),
+            "Yard did not load, and the setup no longer says so because another page holds its old number - the save "
+            + "would tidy against a picture without Yard and drop its settings (GSE-C2, FV3-A1, MT-135)");
     }
 
     /**
@@ -2901,5 +3044,48 @@ public class testAutonomyDiagramStore
 
         assertTrue(written.contains("\"2:3,3\""),
             "the square on \"Yard: Upper\" was not stored under that page's own id (2): " + written);
+    }
+
+    /**
+     * A rename reaches every configuration's list of paused trains, and a deletion takes the train off it (RSA60-C2): the
+     * list is a holder of a locomotive's name like the placements, homes, exclusions and timetable, and a train paused in
+     * a configuration not loaded ran again after a rename.
+     *
+     * MUTATION: leave the paused list out of the rename's repair, and this fails.
+     *
+     * @throws IOException from the store
+     */
+    @Test
+    public void testARenameReachesThePausedTrains() throws IOException
+    {
+        store.createConfiguration("Running", null);
+        store.createConfiguration("Other", null);
+        store.setActiveConfiguration("Running");
+
+        org.json.JSONObject other = store.getConfiguration("Other");
+
+        if (!other.has("globals")) other.put("globals", new org.json.JSONObject());
+
+        other.getJSONObject("globals").put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
+            new org.json.JSONArray(java.util.Arrays.asList("Another", "Old Name")));
+
+        store.locomotiveRenamed("Old Name", "New Name");
+
+        org.json.JSONArray paused = store.getConfiguration("Other").getJSONObject("globals")
+            .getJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        java.util.List<Object> names = paused.toList();
+
+        assertTrue(names.contains("New Name") && !names.contains("Old Name"), "a rename did not reach the paused trains of a"
+            + " configuration not loaded: " + names + " - the renamed train runs there again (RSA60-C2)");
+
+        store.locomotiveDeleted("Another");
+        store.locomotiveDeleted("New Name");
+
+        org.json.JSONObject globals = store.getConfiguration("Other").getJSONObject("globals");
+
+        assertFalse(globals.has(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES), "trains deleted are still listed as"
+            + " paused: " + globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES) + " - a new train given one"
+            + " of their names would start paused");
     }
 }

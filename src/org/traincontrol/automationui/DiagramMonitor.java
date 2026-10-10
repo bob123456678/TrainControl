@@ -132,11 +132,29 @@ public class DiagramMonitor
      *
      * @param trains square to the way the train faces
      */
+    public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains,
+        java.util.Set<TileKey> paused)
+    {
+        setTrainsOnNoPoint(trains);
+
+        this.pausedOnNoPoint = paused == null ? Collections.<TileKey>emptySet() : new java.util.HashSet<>(paused);
+    }
+
+    /**
+     * The same, none of them paused.
+     *
+     * @param trains square to the way the train faces
+     */
     public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains)
     {
         this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, org.traincontrol.automationui.TilePorts.Side>()
             : new LinkedHashMap<>(trains);
+
+        this.pausedOnNoPoint = Collections.emptySet();
     }
+
+    /** The squares among the trains on no Point whose train is paused, drawn grey (RSA60-C5). */
+    private volatile java.util.Set<TileKey> pausedOnNoPoint = Collections.emptySet();
 
     /**
      * Forgets what was last published, so the next refresh publishes even an identical picture.
@@ -530,7 +548,8 @@ public class DiagramMonitor
         // AND THOSE ON NO POINT, where the setup says they stand (RSA17-C2)
         for (Map.Entry<TileKey, org.traincontrol.automationui.TilePorts.Side> train : onNoPoint.entrySet())
         {
-            TileOverlay mark = TileOverlay.parked(train.getValue());
+            // GREY WHERE IT IS PAUSED (RSA60-C5), as every other train is
+            TileOverlay mark = TileOverlay.parked(train.getValue()).withPaused(pausedOnNoPoint.contains(train.getKey()));
 
             TileOverlay existing = into.get(train.getKey());
 

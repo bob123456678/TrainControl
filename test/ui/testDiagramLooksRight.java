@@ -306,6 +306,29 @@ public class testDiagramLooksRight
             //    is what "the trace stops halfway" would look like.
             java.util.List<String> blank = new java.util.ArrayList<>();
 
+            // A STATION'S SQUARE ANYWHERE ON THE RUN, as the run's ends below: its icon is painted over the line there
+            // (MT-076), and on a curve it is its full size since round 119 (Adam, 2026-10-10: "make the stations spill
+            // over onto adjacent tiles"), covering most of a curve's short chord.  Found in the picture with no run on it,
+            // by the station blue: a square showing it carries a station's icon.
+            java.util.Set<String> stations = new java.util.HashSet<>();
+
+            for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
+            {
+                int blue = 0;
+
+                for (int y = tile.getY() * 60; y < tile.getY() * 60 + 60 && y < bare.getHeight(); y++)
+                {
+                    for (int x = tile.getX() * 60; x < tile.getX() * 60 + 60 && x < bare.getWidth(); x++)
+                    {
+                        int rgb = bare.getRGB(x, y);
+
+                        if ((rgb & 0xFF) > 150 && ((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90) blue++;
+                    }
+                }
+
+                if (blue >= 20) stations.add(tile.getX() + "," + tile.getY());
+            }
+
             for (org.traincontrol.automationui.TileGraph.TileKey tile : run)
             {
                 String square = tile.getX() + "," + tile.getY();
@@ -313,6 +336,8 @@ public class testDiagramLooksRight
                 // The two ENDS are allowed to be hidden: a run stops at a station, and the station's badge
                 // is painted OVER the line there (MT-076), so the stub can be entirely covered.
                 if (tile.equals(run.get(0)) || tile.equals(run.get(run.size() - 1))) continue;
+
+                if (stations.contains(square)) continue;
 
                 Integer here = inkPerSquare.get(square);
 
@@ -3711,5 +3736,514 @@ public class testDiagramLooksRight
         assertEquals(Integer.toHexString(commonest), Integer.toHexString(expected), "a destination's pill painted on white"
             + " is mostly rgb(" + ((commonest >> 16) & 0xFF) + "," + ((commonest >> 8) & 0xFF) + "," + (commonest & 0xFF)
             + "), not the train's line as it shows on white");
+    }
+
+    /** An address that counts its paints. */
+    public static final class CountingAddress extends org.traincontrol.gui.AddressLabel
+    {
+        static int painted;
+
+        @Override
+        protected void paintComponent(java.awt.Graphics g)
+        {
+            painted++;
+
+            super.paintComponent(g);
+        }
+    }
+
+    /**
+     * A repaint of a corner of the diagram paints the addresses in that corner and no others (RSA60-C1): the pass that
+     * draws the addresses over the trains took every one on the page, whatever was being repainted - with Show Addresses
+     * on, a hover's 3 x 3 repaint cost a pass over all 112 on Adam's main page.
+     *
+     * Forty addresses across a diagram, a repaint clipped to the first one's corner: it is painted, by the ordinary pass
+     * and the one over the trains, and nothing else is.
+     *
+     * MUTATION: paint every address in the pass over the trains, whatever the clip, and this fails.
+     */
+    @Test
+    public void testASmallRepaintPaintsOnlyTheAddressesInIt()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("painting a diagram needs a display");
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(1200, 1200);
+
+        for (int i = 0; i < 40; i++)
+        {
+            CountingAddress address = new CountingAddress();
+
+            address.setForeground(java.awt.Color.RED);
+            address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
+            address.setLines(String.valueOf(100 + i));
+
+            java.awt.Dimension d = address.getPreferredSize();
+
+            address.setBounds((i % 8) * 150, (i / 8) * 150, d.width, d.height);
+
+            grid.add(address);
+        }
+
+        CountingAddress.painted = 0;
+
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(1200, 1200,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        g.setClip(0, 0, 60, 60);
+
+        grid.paint(g);
+
+        g.dispose();
+
+        assertTrue(CountingAddress.painted >= 1, "precondition: the address in the corner repainted was not painted");
+
+        assertTrue(CountingAddress.painted <= 2, "a repaint of one corner of the diagram painted addresses "
+            + CountingAddress.painted + " times, where one address lies in it - the pass over the trains painted every"
+            + " address on the page (RSA60-C1)");
+    }
+
+    /**
+     * A station on a curve spills onto the squares beside it on the diagram itself: drawn once every square is drawn,
+     * over squares that paint their own white (Adam, 2026-10-10: *"can we instead make the stations spill over onto
+     * adjacent tiles?"*).  Nine squares of 30 pixels in the diagram's own container, a station on an E-S curve in the
+     * middle: its blue reaches the squares to its right and below, which were painted after it.
+     *
+     * MUTATION: take the spill pass out of `LayoutGrid.newDiagramContainer`, and this fails.
+     */
+    @Test
+    public void testAStationOnACurveSpillsOntoTheSquaresBesideIt()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        final int size = 30;
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        org.traincontrol.gui.LayoutLabel station = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        station.setBounds(size, size, size, size);
+        station.setAutonomyAnnotation(aCurvedStation());
+
+        grid.add(station);
+
+        for (int i = 0; i < 9; i++)
+        {
+            if (i == 4) continue;
+
+            org.traincontrol.gui.LayoutLabel beside = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+            beside.setOpaque(true);
+            beside.setBackground(java.awt.Color.WHITE);
+            beside.setBounds((i % 3) * size, (i / 3) * size, size, size);
+
+            // painted after the station, as a later square on the page is
+            grid.add(beside, 0);
+        }
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int inside = 0, beside = 0;
+
+        for (int x = 0; x < size * 3; x++)
+        {
+            for (int y = 0; y < size * 3; y++)
+            {
+                int rgb = shot.getRGB(x, y);
+
+                if ((rgb & 0xFF) > 150 && ((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90)
+                {
+                    if (x >= size && x < 2 * size && y >= size && y < 2 * size) inside++;
+                    else beside++;
+                }
+            }
+        }
+
+        assertTrue(inside > 0, "precondition: the station's square drew no blue");
+
+        assertTrue(beside > 0, "a station on a curve drew nothing on the squares beside it - its icon is cut off at its"
+            + " square's edges, where Adam asked: \"make the stations spill over onto adjacent tiles\"");
+    }
+
+    /**
+     * And a station that spills repaints what it spills onto: when its square is repainted, or its icon is taken away, the
+     * diagram is asked to repaint the squares around it too - the diagram paints a square's neighbours only where it is
+     * asked to, and the old spill would stay there.  Asked of Swing's repaint queue.
+     *
+     * MUTATION: repaint only the square itself again, and this fails.
+     */
+    @Test
+    public void testAStationThatSpillsRepaintsWhatItSpillsOnto() throws Exception
+    {
+        final int size = 30;
+
+        final java.util.List<java.awt.Rectangle> asked = new java.util.ArrayList<>();
+
+        final java.util.List<java.awt.Rectangle> onRepaint = new java.util.ArrayList<>(), onRemoval = new java.util.ArrayList<>();
+
+        final javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.RepaintManager was = javax.swing.RepaintManager.currentManager(grid);
+
+            javax.swing.RepaintManager.setCurrentManager(new javax.swing.RepaintManager()
+            {
+                @Override
+                public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+                {
+                    if (c == grid) asked.add(new java.awt.Rectangle(x, y, w, h));
+                }
+            });
+
+            try
+            {
+                grid.setLayout(null);
+                grid.setSize(size * 3, size * 3);
+
+                org.traincontrol.gui.LayoutLabel station =
+                    new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+                station.setBounds(size, size, size, size);
+
+                grid.add(station);
+
+                station.setAutonomyAnnotation(aCurvedStation());
+
+                asked.clear();
+
+                station.repaint();
+
+                onRepaint.addAll(asked);
+
+                asked.clear();
+
+                station.setAutonomyAnnotation(null);
+
+                onRemoval.addAll(asked);
+            }
+            finally
+            {
+                javax.swing.RepaintManager.setCurrentManager(was);
+            }
+        });
+
+        java.awt.Rectangle around = new java.awt.Rectangle(size / 2, size / 2, size * 2, size * 2);
+
+        assertTrue(onRepaint.stream().anyMatch(r -> r.contains(around)), "a station that spills was repainted alone - what"
+            + " it drew on the squares beside it was not asked to be redrawn: " + onRepaint);
+
+        assertTrue(onRemoval.stream().anyMatch(r -> r.contains(around)), "a station that spilled was taken away and only"
+            + " its own square repainted - its spill stays on the squares beside it: " + onRemoval);
+    }
+
+    /**
+     * A curve's station spills onto the squares beside it at the middle of their edges, which is where their arrows are
+     * (Adam, 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*).  The
+     * arrows of a square a spill reaches are drawn back over it.  Nine squares in the diagram's own container, a station
+     * on an E-S curve in the middle, every kind - the may-turn and must-turn icons and a terminus are longer than the
+     * curve's chord - and the square to its right a one-way road from W to E, or the square below from N to S, at 30 and
+     * 60 pixels: that square's arrows have all their pixels with the station beside it as without.
+     *
+     * MUTATION: take the arrows' pass over the spill out of `LayoutGrid.newDiagramContainer`, and this fails.
+     */
+    @Test
+    public void testANeighboursArrowsAreDrawnOverASpill()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        for (int size : new int[] {30, 60})
+        {
+            for (boolean below : new boolean[] {false, true})
+            {
+                int alone = arrowsBesideACurvedStation(size, below, null);
+
+                assertTrue(alone > 0, "precondition: the square " + (below ? "below" : "beside") + " the station drew no"
+                    + " arrows at " + size + " pixels");
+
+                for (org.traincontrol.automationui.TileAnnotation station : curvedStationsOfEveryKind())
+                {
+                    int beside = arrowsBesideACurvedStation(size, below, station);
+
+                    assertTrue(beside >= alone * 0.95, "the curve's " + station + " spilled over the arrows of the square "
+                        + (below ? "below" : "beside") + " it at " + size + " pixels: " + beside + " of their " + alone
+                        + " pixels showing - Adam: \"make sure that the optional ingress/egress arrows remain visible,"
+                        + " especially on curves\"");
+                }
+            }
+        }
+    }
+
+    /** A named station on an E-S curve of every kind: plain, may turn, must turn, a terminus each way. */
+    private static java.util.List<org.traincontrol.automationui.TileAnnotation> curvedStationsOfEveryKind()
+    {
+        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
+        org.traincontrol.automationui.TilePorts.Side s = org.traincontrol.automationui.TilePorts.Side.S;
+
+        java.util.List<org.traincontrol.automationui.TileAnnotation> kinds = new java.util.ArrayList<>();
+
+        for (org.traincontrol.automationui.TileAnnotation.Badge badge : new org.traincontrol.automationui.TileAnnotation.Badge[] {
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, null),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, true, false, false, true, e, s, true, false, null),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, true, false, false, true, e, s, false, false, null),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, e),
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, s)})
+        {
+            kinds.add(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+                new org.traincontrol.automationui.TileAnnotation.Mark(e, s, null)), -1, false, badge, false, false, false,
+                null, true, null));
+        }
+
+        return kinds;
+    }
+
+    /**
+     * The red and green pixels of the arrows on the square to the right of the middle one - or below it, a road from N to
+     * S - in the diagram's own container, with a station on an E-S curve in the middle, or none.
+     */
+    private static int arrowsBesideACurvedStation(int size, boolean below,
+        org.traincontrol.automationui.TileAnnotation station)
+    {
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        middle.setBounds(size, size, size, size);
+
+        if (station != null) middle.setAutonomyAnnotation(station);
+
+        grid.add(middle);
+
+        org.traincontrol.gui.LayoutLabel right = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        right.setOpaque(true);
+        right.setBackground(java.awt.Color.WHITE);
+        right.setBounds(below ? size : 2 * size, below ? 2 * size : size, size, size);
+        right.setAutonomyAnnotation(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+            new org.traincontrol.automationui.TileAnnotation.Mark(
+                below ? org.traincontrol.automationui.TilePorts.Side.N : org.traincontrol.automationui.TilePorts.Side.W,
+                below ? org.traincontrol.automationui.TilePorts.Side.S : org.traincontrol.automationui.TilePorts.Side.E,
+                org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)),
+            -1, false, null, false, false, false, null, true, null));
+
+        // painted after the station, as a later square on the page is
+        grid.add(right, 0);
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int n = 0;
+
+        for (int x = right.getX(); x < right.getX() + size; x++)
+        {
+            for (int y = right.getY(); y < right.getY() + size; y++)
+            {
+                int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                // the arrows' own red and green, solid
+                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30 && Math.abs(gr - 205) < 30
+                    && Math.abs(b - 90) < 30)) n++;
+            }
+        }
+
+        return n;
+    }
+
+    /**
+     * Writing of the user's own on the diagram has a white halo round its letters, as an address has, so it can be read
+     * where it lies over black track (Adam, 2026-10-10: *"Give regular text labels on the track diagram (.text) the same
+     * halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like
+     * tracks."*).  A label as the grid builds one - black, the diagram's font at half the square - painted over black: with
+     * its halo it shows white round its letters, at 30 and 60 pixels; and the halo is thinner than an address's, as he
+     * allowed - no wider round the letters than a sixth of their size.
+     *
+     * MUTATION: draw the label without its halo, and this fails.
+     */
+    @Test
+    public void testTheDiagramsOwnWritingHasAHalo()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            org.traincontrol.gui.StationCaption text = new org.traincontrol.gui.StationCaption();
+
+            text.setText("Yard");
+            text.setForeground(java.awt.Color.BLACK);
+            text.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, size / 2));
+            text.setHalo(true);
+            text.setSize(text.getPreferredSize());
+
+            BufferedImage shot = new BufferedImage(text.getWidth(), text.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            try
+            {
+                g.setColor(java.awt.Color.BLACK);
+                g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
+
+                text.paint(g);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            int white = 0, widest = 0;
+
+            for (int y = 0; y < shot.getHeight(); y++)
+            {
+                int run = 0;
+
+                for (int x = 0; x < shot.getWidth(); x++)
+                {
+                    int rgb = shot.getRGB(x, y);
+
+                    boolean light = ((rgb >> 16) & 0xFF) > 200 && ((rgb >> 8) & 0xFF) > 200 && (rgb & 0xFF) > 200;
+
+                    if (light) white++;
+
+                    run = light ? run + 1 : 0;
+                    widest = Math.max(widest, run);
+                }
+            }
+
+            assertTrue(white > 20, "the diagram's own writing at " + size + " pixels showed " + white + " pixels of white"
+                + " over black - no halo, so it cannot be read over track (Adam: \"Give regular text labels on the track"
+                + " diagram (.text) the same halo as address labels\")");
+
+            // a halo stroke round a letter: its two sides and the thickness between - well under a whole word's width
+            assertTrue(widest < text.getWidth() / 2, "the halo at " + size + " pixels ran " + widest + " pixels across in"
+                + " one row - a box behind the writing rather than a halo round its letters");
+        }
+    }
+
+    /**
+     * And the grid gives it to every label it does not make a pill - the user's own writing, and an old file's station
+     * label autonomy cannot act on - and to no pill, which has its own fill.  Asked of the grid's source, where every
+     * label on the diagram is built.
+     *
+     * MUTATION: build the labels without the halo, and this fails.
+     *
+     * @throws Exception from reading the source
+     */
+    @Test
+    public void testTheGridGivesEveryLabelThatIsNotAPillAHalo() throws Exception
+    {
+        String grid = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutGrid.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(grid.contains("text.setHalo(!text.isPill());"), "the grid builds its labels without a halo - Adam:"
+            + " \"Give regular text labels on the track diagram (.text) the same halo as address labels\"");
+    }
+
+    /** A named station on an E-S curve, as the diagram builds one. */
+    private static org.traincontrol.automationui.TileAnnotation aCurvedStation()
+    {
+        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
+        org.traincontrol.automationui.TilePorts.Side s = org.traincontrol.automationui.TilePorts.Side.S;
+
+        return new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+            new org.traincontrol.automationui.TileAnnotation.Mark(e, s, null)), -1, false,
+            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, null),
+            false, false, false, null, true, null);
+    }
+
+    /**
+     * The tunnel portal's light grey wall is a pixel wider each side at 30 and two at 60 - two pixels and five - and the
+     * arch between the walls is still the track's width, 8 and 16 (Adam, 2026-10-10: *"make the light gray tunnel wall on
+     * tunnel icons about 1px wider on each side in the 30px version, and correspondingly"* at 60).  The wall grew
+     * outward: the track through the arch is where it was.
+     *
+     * Read across the portal below the arch's curve - row 12 at 30, row 25 at 60.
+     *
+     * MUTATION: put the old tunnel art back, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testTheTunnelsWallIsWider() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            BufferedImage art = icon(size, "tunnel");
+
+            int row = size >= 60 ? 25 : 12, wall = size >= 60 ? 5 : 2, arch = size >= 60 ? 16 : 8;
+
+            java.util.List<int[]> runs = new java.util.ArrayList<>();
+
+            for (int x = 0; x < size; x++)
+            {
+                int kind = (art.getRGB(x, row) & 0xFFFFFF) == 0xBBBBBB ? 1 : (art.getRGB(x, row) & 0xFFFFFF) == 0 ? 2 : 0;
+
+                if (!runs.isEmpty() && runs.get(runs.size() - 1)[0] == kind) runs.get(runs.size() - 1)[1]++;
+                else runs.add(new int[] {kind, 1});
+            }
+
+            StringBuilder said = new StringBuilder();
+
+            for (int[] run : runs) said.append(run[0] == 1 ? "L" : run[0] == 2 ? "#" : ".").append(run[1]).append(' ');
+
+            java.util.List<Integer> walls = new java.util.ArrayList<>();
+
+            for (int[] run : runs) if (run[0] == 1) walls.add(run[1]);
+
+            assertEquals(walls, java.util.Arrays.asList(wall, wall), "the tunnel's wall at " + size + " pixels, across row "
+                + row + ": " + said + "- Adam asked for it a pixel wider each side at 30, correspondingly at 60");
+
+            int between = 0;
+
+            for (int i = 0; i < runs.size(); i++)
+            {
+                if (runs.get(i)[0] == 1 && i + 2 < runs.size() && runs.get(i + 2)[0] == 1) between = runs.get(i + 1)[1];
+            }
+
+            assertEquals(between, arch, "the tunnel's arch at " + size + " pixels is no longer the track's width: " + said);
+        }
     }
 }

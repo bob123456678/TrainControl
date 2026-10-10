@@ -267,6 +267,43 @@ public class testRouteEditorValidation
         close(frame);
     }
 
+    /**
+     * The two messages that refuse a name say what is refused: a comma, and only a comma (GSB-C1).  Brackets have been
+     * allowed since Adam's ruling of 2026-09-04 (*"bracketed loc names should just be allowed"*) and `isNameUsable`
+     * refuses only the comma, but both messages went on saying a name "cannot contain a comma or a bracket" - telling an
+     * operator renaming "SBB 460 (2)" a rule the program does not have.  Read from the English bundle.
+     *
+     * MUTATION: put "or a bracket" back in either and this fails.
+     *
+     * @throws Exception from reading the bundle
+     */
+    @Test
+    public void testTheNameRulesSayOnlyWhatIsRefused() throws Exception
+    {
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = org.traincontrol.gui.RouteEditorFrame.class
+            .getResourceAsStream("/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        for (String key : new String[] {"route.ui.frameNameNotUsable", "loc.ui.errorLocomotiveNameUnusable"})
+        {
+            String said = english.getProperty(key);
+
+            assertNotNull(said, "precondition: the bundle has no " + key);
+
+            assertTrue(said.contains("comma"), key + " no longer says a comma is refused: " + said);
+
+            assertFalse(said.toLowerCase().contains("bracket"), key + " says a name cannot hold a bracket, which"
+                + " `RouteCommand.isNameUsable` allows (Adam, 2026-09-04): " + said);
+        }
+
+        assertTrue(org.traincontrol.base.RouteCommand.isNameUsable("SBB 460 (2)")
+            && !org.traincontrol.base.RouteCommand.isNameUsable("A, B"), "control: the rule itself has changed");
+    }
+
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
     {
         final org.traincontrol.gui.RouteEditorFrame[] frame =
@@ -437,7 +474,7 @@ public class testRouteEditorValidation
     /**
      * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).
      *
-     * Adam's note on MT-469, 2026-09-21: *"in the layout view, we can remove operators (like and)
+     * Adam's note on MT-469, 2026-09-21: *"in the layout view, we can review [remove] operators (like and)
      * without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any
      * linked entries should also be deleted."*
      *

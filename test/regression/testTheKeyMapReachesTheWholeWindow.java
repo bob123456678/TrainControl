@@ -232,6 +232,10 @@ public class testTheKeyMapReachesTheWholeWindow
     {
         int wasOn = tabs().getSelectedIndex();
 
+        // THE TAB GOES BACK EVEN ON A FAILURE (OB-267): a failure left a different tab showing for whatever ran next in
+        // this JVM, where the same keystroke means something else
+        try
+        {
         javax.swing.text.JTextComponent typing = findSomewhereToType();
 
         assertNotNull(typing,
@@ -263,12 +267,16 @@ public class testTheKeyMapReachesTheWholeWindow
             + " either, so the claim above is about a window that routes no keys at all rather than "
             + "about typing being left alone");
 
-        // The tab goes back, so this test cannot decide what the others are looking at.
-        final int back = wasOn;
+        }
+        finally
+        {
+            // The tab goes back, so this test cannot decide what the others are looking at.
+            final int back = wasOn;
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(back));
+            javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(back));
 
-        settle();
+            settle();
+        }
     }
 
     /**

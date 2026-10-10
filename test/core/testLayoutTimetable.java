@@ -155,6 +155,43 @@ public class testLayoutTimetable
     }
 
     /**
+     * The timetable can be read while it is written (GST-C3).  `getTimetable` hands out the list itself, the event thread
+     * reads it - the timetable window, its menus - and a running train's capture appends to it from that train's own
+     * thread.  A reader part-way along the list when an entry is captured sees the list as it stood when it began, and
+     * nothing is thrown.
+     *
+     * MUTATION: make it a LinkedList again and the read throws ConcurrentModificationException.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testTheTimetableCanBeReadWhileItIsWritten() throws Exception
+    {
+        Layout layout = layoutWithOnePath();
+        layout.setTimetableCapture(true);
+
+        Locomotive loc = dummyLoc();
+        List<Edge> path = path(layout);
+
+        assertTrue(capture(layout, loc, path, 1000000L));
+        assertTrue(capture(layout, loc, path, 1001000L));
+
+        int read = 0;
+
+        for (TimetablePath entry : layout.getTimetable())
+        {
+            assertNotNull(entry);
+
+            // a train captured while the window is part-way along the list
+            if (read++ == 0) assertTrue(capture(layout, loc, path, 1002000L));
+        }
+
+        assertEquals(read, 2, "the read did not see the timetable as it stood when it began");
+
+        assertEquals(layout.getTimetable().size(), 3, "the entry captured during the read was lost");
+    }
+
+    /**
      * A single captured entry has no gap to record.
      */
     @Test

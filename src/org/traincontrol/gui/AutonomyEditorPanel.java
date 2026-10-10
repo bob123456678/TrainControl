@@ -3485,6 +3485,57 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * The answer the question about taking another station's only name off a station square is given without asking, for
+     * a test that is not about the dialog; null to ask (GSE-C5).
+     */
+    private static volatile Boolean takeAnotherNameAnswerForTests;
+
+    /**
+     * @param answer true for Yes or false for No, to answer the question about taking another station's only name off a
+     *        station square without asking it (GSE-C5), or null to ask it again
+     */
+    public static void answerTakeAnotherNameForTests(Boolean answer)
+    {
+        takeAnotherNameAnswerForTests = answer;
+    }
+
+    /**
+     * Whether a station square may show its own name where it now shows the only caption of ANOTHER station - asked of
+     * the operator, naming both, and true without a question where nothing would be lost (GSE-C5).
+     *
+     * A drag can leave a station square showing another station's caption, and captioning the square with itself takes
+     * that caption away: the other station is then named nowhere on the diagram, which `AutonomyChecks.checkStationLabels`
+     * reports as an error.  The drop refuses the same loss outright (`refuseCaptionDrop`).  "Show a Station Name Here" is
+     * live on such a square on purpose (SVV-C6, SVX-B2), so this asks rather than refuses.
+     *
+     * @param tile the station square
+     * @return whether to go on
+     */
+    private boolean mayTakeAnotherStationsOnlyName(TileKey tile)
+    {
+        TileKey other = session.getCaptionTarget(tile);
+
+        if (other == null || other.equals(tile) || !session.getStore().isStation(other)) return true;
+
+        java.util.Set<TileKey> elsewhere = new java.util.LinkedHashSet<>(session.captionsFor(other));
+
+        elsewhere.remove(tile);
+
+        if (!elsewhere.isEmpty()) return true;
+
+        Boolean given = takeAnotherNameAnswerForTests;
+
+        if (given != null) return given;
+
+        // TrainControl's own buttons, as the question about replacing text asks, and No the default: Yes takes a name off
+        // the diagram.  An INDEX comes back, where 0 is Yes.
+        return JOptionPane.showOptionDialog(owner(),
+            I18n.f("autosetup.ui.confirmTakeAnotherStationsName", describeTile(other), describeTile(tile)),
+            I18n.t("autosetup.ui.titleStationLabel"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
+    }
+
+    /**
      * Asks which station this square should show.
      */
     private void promptStationLabel(TileKey tile, LayoutDiagramComponent component)
@@ -3516,6 +3567,9 @@ public class AutonomyEditorPanel extends JPanel
         // known - and getting it wrong would put another platform's name on this platform.
         if (session.getStore().isStation(tile))
         {
+            // NOT ANOTHER STATION'S ONLY NAME WITHOUT ASKING (GSE-C5) - see `mayTakeAnotherStationsOnlyName`
+            if (!mayTakeAnotherStationsOnlyName(tile)) return;
+
             applyCaption(tile, tile);
             return;
         }
@@ -4522,14 +4576,15 @@ public class AutonomyEditorPanel extends JPanel
         // from being vertical (correct) to being horizontal (wrong) and back again."*
         if (on && !session.getLabelledStationTiles().contains(tile)) placeLabelFor(tile);
 
-        // A sensor demoted back to a plain point keeps no designation nobody can see any more.
+        // A SENSOR DEMOTED TO A PLAIN POINT KEEPS ITS OLD "terminus" FLAG (GSE-C4), with the rest of what it had as a
+        // station - Adam, 2026-10-10, asked: keep them, ignored while not a station.  It is how setups written before the
+        // three switches said "a station where trains turn round", and `AutonomySession.isTurnAround` and the checks read
+        // it of a station only, so on a plain point it turns nothing round, and it is there again when the square is
+        // promoted.
         //
-        // Active is NOT cleared with it.  It applies to any point, station or not - the graph menu
-        // offered it on all of them - so clearing it here would silently re-enable a point somebody had
-        // switched off, on a gesture that says nothing about that.
-        // Active is not cleared here any more: what a square is and whether it is open are the same
-        // three-way choice now, and setUsage sets both together.
-        if (!on) session.setPointProperty(tile, "terminus", null);
+        // Active is not cleared either.  It applies to any point, station or not, so clearing it here would silently
+        // re-enable a point somebody had switched off, on a gesture that says nothing about that; what a square is and
+        // whether it is open are one three-way choice now, and setUsage sets both together.
 
         // Persisted, and the running layout told (MT-246).
         setupChanged();
@@ -7999,6 +8054,11 @@ public class AutonomyEditorPanel extends JPanel
         // and a fifth click carries on into the combinations that are only occasionally wanted.
         java.util.List<Integer> states = cycleStates(routes, sides);
 
+        // COUNTED FROM WHAT IS IN FORCE (VD18-C2), the state the arrows and the boxes show.  Safe because every state
+        // the list holds stores answers the hardware allows (`cycleStates`), and each reads back in force as itself.
+        // Counted from what was stored, a closure an earlier build stored on a permanent turnout as an arm toward its
+        // fork matched no state, and the click went back to the list's first - closed - with nothing on screen
+        // changing.
         int current = armMask(target, routes, sides);
 
         int at = states.indexOf(current);
@@ -8149,14 +8209,7 @@ public class AutonomyEditorPanel extends JPanel
         for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
             : routes.entrySet())
         {
-            org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
-
-            boolean openA = (mask & (1 << sides.indexOf(route.getA()))) != 0;
-            boolean openB = (mask & (1 << sides.indexOf(route.getB()))) != 0;
-
-            wanted.put(entry.getKey(), openA && openB ? Direction.BOTH
-                : openA ? Direction.TOWARD_A
-                : openB ? Direction.TOWARD_B : Direction.NONE);
+            wanted.put(entry.getKey(), answerFor(entry.getValue(), sides, mask));
         }
 
         // One re-derivation for the tile, not one per branch
@@ -8192,6 +8245,46 @@ public class AutonomyEditorPanel extends JPanel
         int mask = armMask(target, routes, sides);
 
         applyArmMask(target, routes, sides, open ? mask | (1 << at) : mask & ~(1 << at));
+    }
+
+    /**
+     * The direction one route stores for a set of open arms: both its arms open is both ways, one open is one way
+     * toward it, neither is closed.  `applyArmMask`'s translation, and the one the click's states are checked by
+     * (VD18-C2), so the two cannot differ.
+     *
+     * @param route the route
+     * @param sides the tile's arms, as `armsOf` orders them
+     * @param mask the open arms
+     * @return the direction
+     */
+    private static Direction answerFor(org.traincontrol.automationui.TilePorts.Route route,
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
+    {
+        boolean openA = (mask & (1 << sides.indexOf(route.getA()))) != 0;
+        boolean openB = (mask & (1 << sides.indexOf(route.getB()))) != 0;
+
+        return openA && openB ? Direction.BOTH : openA ? Direction.TOWARD_A
+            : openB ? Direction.TOWARD_B : Direction.NONE;
+    }
+
+    /**
+     * Whether every route's answer for these open arms is one the hardware leaves a meaning (VD18-C2) - see
+     * `cycleStates`.
+     *
+     * @param routes the tile's routes
+     * @param sides its arms
+     * @param mask the open arms
+     * @return true when the click may store it
+     */
+    private static boolean everyAnswerIsPossible(Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
+    {
+        for (org.traincontrol.automationui.TilePorts.Route route : routes.values())
+        {
+            if (!TileGraph.directionIsPossible(answerFor(route, sides, mask), route)) return false;
+        }
+
+        return true;
     }
 
     /**
@@ -8234,6 +8327,14 @@ public class AutonomyEditorPanel extends JPanel
             if (!states.contains(mask)) states.add(mask);
         }
 
+        // ONLY THE STATES THE CLICK STORES AS IT MEANS THEM (VD18-C2).  On a permanent turnout every route is directed
+        // at the toe, so a combination opening any other arm stores `BOTH` or the way toward the fork - answers
+        // `TileGraph.directionIsPossible` says the editor must not offer, and which read back in force as the toe-ward
+        // way or as closed: the click stored answers the menus refuse, and read in force it could step from closed to
+        // closed for ever.  Every combination on an ordinary switch or a crossing is possible, so this takes nothing
+        // from them; and everything shut always is, so the list is never empty.
+        states.removeIf(state -> !everyAnswerIsPossible(routes, sides, state));
+
         return states;
     }
 
@@ -8262,10 +8363,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Which arms are currently open, as a bitmask over armsOf().
+     * Which arms are open IN FORCE, as a bitmask over armsOf() (VD18-C2).
      *
      * Read the way the arrows are drawn - an arm is open if ANY branch through it lets a train out -
-     * so the number the counter advances from is the state the user can see.
+     * so the number the counter advances from, and the boxes the menu ticks, are the state the user can see.
+     *
+     * In force rather than stored (`inForce`): a permanent turnout's routes are all directed at its toe, and its
+     * untouched default `BOTH` read raw opened every arm - the boxes ticked arms no train leaves by, while the branch
+     * submenus beside them ticked the one way there is.
      */
     private int armMask(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
@@ -8278,7 +8383,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
 
-            Direction direction = session.getGraph().getDirection(target, entry.getKey());
+            Direction direction = inForce(session.getGraph().getDirection(target, entry.getKey()), route);
 
             if (direction == Direction.BOTH || direction == Direction.TOWARD_A)
             {
@@ -8409,6 +8514,12 @@ public class AutonomyEditorPanel extends JPanel
         // the setup rather than to whichever reader asks first.
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
+        // AND WHAT THE SETUP SAYS ABOUT TURNING, ARRIVALS AND CLOSED SQUARES, captured here for the index's reason
+        // (GSE-C3).  They are the setup's live collections, which the event thread edits; read by the worker as it
+        // went, a click on the diagram while the answer was being worked out changed them under a walk that was
+        // iterating them.
+        final WhySetup setup = new WhySetup(session);
+
         // WHICH TIER IT ANSWERS FOR (MT-434), read with the radio here on the event thread, and the square remembered so
         // switching Path Type can ask it again.  Adam, 2026-09-15: *"in manual mode, I still get reasons like
         // 'tunnellongpark will never be chosen in autonomy'"*.
@@ -8431,7 +8542,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, tile, byHand));
+            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
         }
         catch (RuntimeException refused)
         {
@@ -8454,11 +8565,12 @@ public class AutonomyEditorPanel extends JPanel
      * @param asked which ask this is, so a stale answer can be discarded
      * @param layout the railway, captured on the event thread
      * @param index the square-to-Point translation, captured with it
+     * @param setup the setup's turn squares, barred sides, closed squares and reduction, captured with it
      * @param tile the square that was clicked
      * @param byHand true when Path Type is Manual
      */
     private void workOutWhy(long asked, org.traincontrol.automation.Layout layout,
-        org.traincontrol.automationui.StationIndex index, TileKey tile, boolean byHand)
+        org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
     {
         try
         {
@@ -8466,7 +8578,7 @@ public class AutonomyEditorPanel extends JPanel
 
             try
             {
-                answer = composeWhy(layout, index, tile, byHand);
+                answer = composeWhy(layout, index, setup, tile, byHand);
             }
             catch (RuntimeException failed)
             {
@@ -8501,12 +8613,13 @@ public class AutonomyEditorPanel extends JPanel
      *
      * @param layout the railway
      * @param index the square-to-Point translation
+     * @param setup what the setup says about turning, arrivals and closed squares, read on the event thread (GSE-C3)
      * @param tile the square that was clicked
      * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
      */
     private WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
-        org.traincontrol.automationui.StationIndex index, TileKey tile, boolean byHand)
+        org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
     {
         // Which train is standing here.  Asked of the LAYOUT rather than of the setup, because it is
         // the layout's opinion of where trains are that decides what runs.
@@ -8588,15 +8701,15 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
         java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
 
-        java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
-        java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
+        // FROM THE EVENT THREAD'S COPIES, and never from the session: this runs on WhyRenderer (GSE-C3).
+        java.util.Set<TileKey> mustTurn = setup.mustTurn;
+        java.util.Set<TileKey> mayTurn = setup.mayTurn;
 
         // The red arrows, so the routes drawn here are routes a train would actually be offered
         // (OB-120).  This tool answers "where could it go"; drawing a run into a station that refuses
         // arrivals from that side answers it wrongly, and in the direction that wastes the most time -
         // the user goes looking for why the railway will not do something it was never going to do.
-        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred =
-            session.barredArrivals();
+        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred = setup.barred;
 
         // Collapsed to STATIONS, the way the locomotive panel's tooltip does.  The reasons come back
         // keyed by the running graph's Points, and a square is several of those - so a derived-graph
@@ -8624,12 +8737,12 @@ public class AutonomyEditorPanel extends JPanel
                 if (!available.add(station)) continue;
 
                 // Drawn, so "where can it go" is read off the track rather than out of a list
-                if (where != null && session.getReducer() != null)
+                if (where != null && setup.reducer != null)
                 {
                     // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway
                     // (DIR-B1).
-                    trace(drawn, session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred,
-                        session.shutTiles()), tile, true, where);
+                    trace(drawn, setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred,
+                        setup.shut), tile, true, where);
                 }
             }
             else
@@ -8789,6 +8902,48 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return true;
+    }
+
+    /**
+     * What the setup says about turning, arrivals and closed squares, read for one "why is this train not moving" ask
+     * on the event thread (GSE-C3).
+     *
+     * The answer is composed on `WhyRenderer`, and these are the setup's live collections, which the event thread
+     * edits - so the worker is handed copies taken on the thread that owns them, as it is handed the railway and the
+     * station index.  The session's own methods build each of the four collections fresh, so holding them is holding
+     * copies.  The reduction is held by reference: a rebuild replaces it rather than editing it, so the one captured
+     * goes on describing the setup the copies came from.
+     */
+    private static final class WhySetup
+    {
+        /** The squares where a run must turn round. */
+        private final java.util.Set<TileKey> mustTurn;
+
+        /** The squares where a run may turn round, less the ones where it must. */
+        private final java.util.Set<TileKey> mayTurn;
+
+        /** The sides each station refuses arrivals by. */
+        private final java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred;
+
+        /** The squares switched off. */
+        private final java.util.Set<TileKey> shut;
+
+        /** The reduction the routes are walked on, or null when there is none. */
+        private final org.traincontrol.automationui.GraphReducer reducer;
+
+        /**
+         * Reads all five from the session, on the caller's thread - which has to be the event thread.
+         *
+         * @param session the setup being edited
+         */
+        private WhySetup(AutonomySession session)
+        {
+            this.mustTurn = session.mandatoryTurnTiles();
+            this.mayTurn = session.mayTurnTiles();
+            this.barred = session.barredArrivals();
+            this.shut = session.shutTiles();
+            this.reducer = session.getReducer();
+        }
     }
 
     /**
@@ -9647,18 +9802,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
 
-        Direction current = session.getGraph().getDirection(tile, routeId);
-
-        // WHAT IS IN FORCE HAS TWO CASES, NOT ONE (VD18-B1).  A stored answer this menu no longer
-        // offers is either the default `BOTH` - which the blades narrow to the one open road - or an
-        // answer that permits only an entry the blades refuse, which is a CLOSURE.  Ticking "the
-        // possible one" for both of those would show a shut road as open.
-        if (!TileGraph.directionIsPossible(current, route))
-        {
-            current = !TileGraph.isPassable(current, route) ? Direction.NONE
-                : TileGraph.directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
-                : Direction.TOWARD_B;
-        }
+        // WHAT IS IN FORCE, not what is stored (VD18-B1) - `inForce`, which the arm boxes beside these submenus ask
+        // too (VD18-C2), so the two cannot tick different ways.
+        Direction current = inForce(session.getGraph().getDirection(tile, routeId), route);
 
         if (TileGraph.directionIsPossible(Direction.BOTH, route))
         {
@@ -9682,6 +9828,31 @@ public class AutonomyEditorPanel extends JPanel
             I18n.t("autosetup.ui.menuRouteNone"), current));
 
         return items;
+    }
+
+    /**
+     * The answer in force on a route: what is stored, narrowed by the hardware (VD18-B1, VD18-C2).
+     *
+     * **TWO CASES, NOT ONE.**  A stored answer the editor does not offer on this route
+     * (`TileGraph.directionIsPossible`) is either the default `BOTH` on a permanent turnout - whose routes are all
+     * directed at the toe, so the blades narrow it to the one road there is - or an answer that permits only an entry
+     * the blades refuse, which is a CLOSURE.  Reading "the possible way" for both would show a shut road as open.  Every
+     * answer an ordinary switch or plain track stores is possible there, so this changes nothing on them.
+     *
+     * One answer for the branch submenus' tick and the arm boxes' (VD18-C2): the boxes read the stored direction, and
+     * on an untouched permanent turnout ticked every arm while the submenus ticked the toe-ward way alone.
+     *
+     * @param stored what `TileGraph.getDirection` answers - the authored direction, or the default
+     * @param route the route
+     * @return the direction trains actually have on it
+     */
+    private static Direction inForce(Direction stored, org.traincontrol.automationui.TilePorts.Route route)
+    {
+        if (TileGraph.directionIsPossible(stored, route)) return stored;
+
+        return !TileGraph.isPassable(stored, route) ? Direction.NONE
+            : TileGraph.directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
+            : Direction.TOWARD_B;
     }
 
     private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,

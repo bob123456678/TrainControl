@@ -863,7 +863,8 @@ public class LayoutGrid
      * Public and static so a test can build one out of plain components and look at what comes out -
      * which is the whole of what this has to get right and needs no railway to establish.
      *
-     * @return a panel that draws its tiles, then its captions, then its trains, then its addresses
+     * @return a panel that draws its tiles, then its captions, then what its curves' stations spill onto the squares
+     *     beside them and those squares' arrows back over it, then its trains, then its addresses
      */
     public static JPanel newDiagramContainer()
     {
@@ -873,6 +874,36 @@ public class LayoutGrid
             protected void paintChildren(java.awt.Graphics g)
             {
                 super.paintChildren(g);
+
+                // A STATION ON A CURVE SPILLS ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead make the
+                // stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."),
+                // drawn here, once every square is drawn: its own square cuts it off at its edges, and a square painted
+                // after it would paint its white over what reached that far.  Under the trains and the addresses, as the
+                // icon on its own square is.
+                java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
+
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof LayoutLabel && ((LayoutLabel) child).paintStationSpill(g))
+                    {
+                        spilt.put((LayoutLabel) child, ((LayoutLabel) child).spillReach());
+                    }
+                }
+
+                // AND THE ARROWS OF THE SQUARES A SPILL REACHED, BACK OVER IT (Adam, 2026-10-10: "make sure that the
+                // optional ingress/egress arrows remain visible, especially on curves").  A square's arrows sit at the
+                // middle of its edges, and a curve's station reaches its neighbours at exactly those two places - so the
+                // spill drew over the arrows that say which way a train may enter or leave the square beside it.
+                if (!spilt.isEmpty())
+                {
+                    for (java.awt.Component child : getComponents())
+                    {
+                        if (child instanceof LayoutLabel)
+                        {
+                            ((LayoutLabel) child).paintArrowsOverSpill(g, spilt);
+                        }
+                    }
+                }
 
                 for (java.awt.Component child : getComponents())
                 {
@@ -886,9 +917,15 @@ public class LayoutGrid
                 // sure they are rendered on top of the autonomy locomotive icons").  An address is what the operator
                 // turned Show Addresses on to read, and the pass above drew every icon over it.  Since round 102 it
                 // covers only its letters and their halo, so drawn last it hides nothing of the icon but the number.
+                // ONLY THOSE IN WHAT IS BEING REPAINTED (RSA60-C1): a hover repaints three squares by three, and with Show
+                // Addresses on this pass painted every address on the page each time, clipped to nothing - about eighteen
+                // times the cost on Adam's main page.  The pass above already skips what the clip misses.
+                java.awt.Rectangle clip = g.getClipBounds();
+
                 for (java.awt.Component child : getComponents())
                 {
-                    if (child instanceof AddressLabel && child.isVisible())
+                    if (child instanceof AddressLabel && child.isVisible()
+                        && (clip == null || clip.intersects(child.getBounds())))
                     {
                         java.awt.Graphics over = g.create(child.getX(), child.getY(), child.getWidth(), child.getHeight());
 
@@ -1674,6 +1711,12 @@ public class LayoutGrid
                         text.setFont(text.getFont().deriveFont(
                             text.getFont().getSize2D() * StationCaption.FONT_SCALE));
                     }
+
+                    // AND A HALO ROUND EVERY LABEL THAT IS NOT A PILL (Adam, 2026-10-10: "Give regular text labels on
+                    // the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that
+                    // labels are visible against black backgrounds like tracks.") - the user's own writing, and an old
+                    // file's station label; a pill has its own fill.
+                    text.setHalo(!text.isPill());
 
                     // The one label drawn ON something rather than beside it.  Opaque, so the name
                     // reads over the tile art; translucent, so the tile art still shows through.  It

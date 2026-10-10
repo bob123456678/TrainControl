@@ -810,6 +810,84 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
+     * The train's line can end square again, run to the edge and cut off flat as before round 108, with one switch
+     * (`LayoutLabel.TailEnds`; Adam, 2026-10-10: *"make it easy to revert to the old, non rounded orange train tails"*);
+     * rounded is the default.  With the switch set to SQUARE, an end square's line lays its width on the edge it stops at.
+     *
+     * MUTATION: let the line ignore the switch and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheTrainsEndsCanBeSquareAgain() throws Exception
+    {
+        assertEquals(org.traincontrol.gui.LayoutLabel.tailEnds(), org.traincontrol.gui.LayoutLabel.TailEnds.ROUNDED,
+            "a train's line does not end rounded by default");
+
+        try
+        {
+            org.traincontrol.gui.LayoutLabel.setTailEnds(org.traincontrol.gui.LayoutLabel.TailEnds.SQUARE);
+
+            train.setTrainLength(4);
+
+            refreshCoveredTrack();
+
+            int flat = 0, ends = 0;
+
+            for (TileKey square : everyTile())
+            {
+                if (!ui.isTrackCovered(square)) continue;
+
+                java.util.List<org.traincontrol.automationui.TilePorts.Side> open = new java.util.ArrayList<>();
+
+                boolean runsOn = false;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    TileKey beside = besideOn(square, side);
+
+                    if (beside == null) continue;
+
+                    if (ui.isTrackCovered(beside)) runsOn = true;
+                    else open.add(side);
+                }
+
+                if (!runsOn || open.isEmpty()) continue;
+
+                org.traincontrol.base.LayoutDiagram page = model.getLayout(square.getPage());
+
+                LayoutDiagramComponent component = page == null ? null : page.getComponent(square.getX(), square.getY());
+
+                if (component == null || component.isText()) continue;
+
+                BufferedImage shot = paintAt(drawnTileFor(square, LARGE), LARGE);
+
+                if (orangePixels(shot) == 0) continue;
+
+                ends++;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : open)
+                {
+                    if (orangeOnTheEdge(shot, side) > LARGE / 30) flat++;
+                }
+            }
+
+            assertTrue(ends > 0, "precondition: the train has no end square with a line on it to look at");
+
+            assertTrue(flat > 0, "with the train's ends set SQUARE, no end square's line reaches the edge it stops at - the"
+                + " switch back to the old tails does nothing");
+        }
+        finally
+        {
+            org.traincontrol.gui.LayoutLabel.setTailEnds(null);
+
+            train.setTrainLength(0);
+
+            refreshCoveredTrack();
+        }
+    }
+
+    /**
      * A square whose own line did not change is redrawn when the square beside it changed: the train's last square ends
      * rounded only while the train goes no further, so a train grown by a square has to redraw the square that was its
      * last (the rounded end).

@@ -264,6 +264,87 @@ public class StationCaption extends JLabel
     }
 
     /**
+     * Whether this label's letters are drawn with a white halo round them, as an address's are, so writing laid over black
+     * track can be read (Adam, 2026-10-10: *"Give regular text labels on the track diagram (.text) the same halo as
+     * address labels (possibly a smaller outline)"*).  For text that is not a pill: a pill has its own fill.
+     *
+     * @param on whether to draw the halo
+     */
+    public void setHalo(boolean on)
+    {
+        this.halo = on;
+
+        repaint();
+    }
+
+    /** Whether the letters are drawn with a halo (`setHalo`). */
+    private boolean halo = false;
+
+    /**
+     * How wide the halo's stroke is: a sixth of the letters' size, and never under two pixels - thinner than an
+     * address's two-sevenths (Adam: *"possibly a smaller outline"*): the diagram's own writing is larger, at half the
+     * square.  Half of it lies outside the letters - a pixel and a quarter at 30 pixels, two and a half at 60.
+     */
+    private float haloWidth()
+    {
+        return Math.max(2f, getFont().getSize2D() / 6f);
+    }
+
+    /**
+     * The halo round the letters, where the label's own painter will draw them: the white of an address's, a round-joined
+     * stroke round each letter's outline, so it follows the letters rather than boxing them.  Inside the label's bounds -
+     * its size and its place on the diagram are as they were, so no row of the diagram moves (OB-115) - which the letters'
+     * own side room leaves space for.
+     *
+     * @param g the label's graphics
+     */
+    private void paintHalo(Graphics g)
+    {
+        String text = getText();
+
+        if (text == null || text.isEmpty() || getFont() == null || javax.swing.plaf.basic.BasicHTML.isHTMLString(text))
+        {
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        try
+        {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+            java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
+
+            java.awt.Insets in = getInsets();
+
+            java.awt.Rectangle view = new java.awt.Rectangle(in.left, in.top, getWidth() - in.left - in.right,
+                getHeight() - in.top - in.bottom);
+
+            java.awt.Rectangle icon = new java.awt.Rectangle(), place = new java.awt.Rectangle();
+
+            // where JLabel's own painter puts the text, and what of it fits
+            String shown = javax.swing.SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
+                getHorizontalAlignment(), getVerticalTextPosition(), getHorizontalTextPosition(), view, icon, place,
+                getIconTextGap());
+
+            if (shown == null || shown.isEmpty()) return;
+
+            java.awt.Shape letters = new java.awt.font.TextLayout(shown, getFont(), g2.getFontRenderContext())
+                .getOutline(java.awt.geom.AffineTransform.getTranslateInstance(place.x, place.y + fm.getAscent()));
+
+            g2.setColor(AddressLabel.HALO);
+            g2.setStroke(new java.awt.BasicStroke(haloWidth(), java.awt.BasicStroke.CAP_ROUND,
+                java.awt.BasicStroke.JOIN_ROUND));
+            g2.draw(letters);
+        }
+        finally
+        {
+            g2.dispose();
+        }
+    }
+
+    /**
      * Stands this caption on end, or lays it flat again (Adam, 2026-08-27).
      *
      * @param on whether the caption reads upwards, for track that runs up the square
@@ -1029,6 +1110,11 @@ public class StationCaption extends JLabel
 
             return;
         }
+
+        // THE DIAGRAM'S OWN WRITING WITH A HALO (Adam, 2026-10-10: "Give regular text labels on the track diagram (.text)
+        // the same halo as address labels (possibly a smaller outline) so that labels are visible against black
+        // backgrounds like tracks."): white round the letters first, then the label draws them over it as it always has.
+        if (halo) paintHalo(g);
 
         super.paintComponent(g);
     }

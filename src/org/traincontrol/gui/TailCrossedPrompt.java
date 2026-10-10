@@ -224,6 +224,47 @@ public class TailCrossedPrompt
     }
 
     /**
+     * Saves what a placement door has written before its tail question waits, and answers what the save reconciled - or
+     * null where it did not save (OB-305).
+     *
+     * Every placement door writes the train, its facing and its side into the setup in memory, puts this question, and
+     * saved only once it was answered.  Since FR-100 the question waits on the diagram for as long as the operator
+     * likes, with the window live, so a crash in that wait started the next session without the train where it stands.
+     * So the door saves first: only where the question will be put (`wouldAsk`), since elsewhere the door's own save
+     * follows at once; and not while an editor is open or on its way, since the editor holds a copy of the setup and
+     * its own save or Cancel speaks for it (RLU-C9).  What a door does with a late answer is unchanged: a setup the
+     * window has let go in the wait is not saved again (TDU4-C2).
+     *
+     * @param session the setup the door wrote to
+     * @param layout the running railway
+     * @param at the copy the train was put on
+     * @param arrivedFrom the side it came in by, or null
+     * @param trainLength its length, or null
+     * @param window the main window, which knows whether an editor holds the setup, and where the log goes
+     * @return what the save reconciled, for the door to report as it reports its own save; null when nothing was saved
+     */
+    public static org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation saveBeforeAsking(
+        org.traincontrol.automationui.AutonomySession session, Layout layout, Point at, String arrivedFrom,
+        Integer trainLength, TrainControlUI window)
+    {
+        if (session == null || at == null || !wouldAsk(layout, at, arrivedFrom, trainLength)) return null;
+
+        if (window != null && window.anEditorIsOpenOrOnItsWay()) return null;
+
+        try
+        {
+            return session.save();
+        }
+        catch (java.io.IOException cannotSave)
+        {
+            // The placement stands either way, and the door's own save after the answer tries again
+            if (window != null && window.getModel() != null) window.getModel().log(cannotSave);
+
+            return null;
+        }
+    }
+
+    /**
      * Puts the question: a list of the sensors, and Not Known.
      *
      * A closed dialog is no answer and a choice of nothing (TLW-C2).  Unlike the side question it does not refuse the

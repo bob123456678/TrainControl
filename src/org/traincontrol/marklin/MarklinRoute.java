@@ -643,8 +643,11 @@ public class MarklinRoute extends Route
         // green by hand was not.  One rule now, in the one place both can reach.
         if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory))
         {
-            return new String[] {accessory.getName(),
-                "route.refusedSignalProtectingOccupiedPlatform"};
+            // STANDING, OR ONLY RESERVED (GSR-C2).  A locked path reserves every point along it for its train, its
+            // destination included, so a platform holds this signal red before any train is at it - and "a train is
+            // standing" sent the operator looking for one.  The refusal is the same either way; only what it says differs.
+            return new String[] {accessory.getName(), railway.protectsAStandingTrain(accessory)
+                ? "route.refusedSignalProtectingOccupiedPlatform" : "route.refusedSignalProtectingReservedPlatform"};
         }
 
         return null;
@@ -1213,6 +1216,13 @@ public class MarklinRoute extends Route
 
                     this.updateTiles();
                 }
+            }
+            else
+            {
+                // STARTED AGAIN WHILE IT RUNS (GSR-C4) - a sensor that triggers the route firing again before it has
+                // finished.  Dropped, as it always was, and now said: the window's own doors say so, and this door - the
+                // one a sensor uses - said nothing.
+                this.network.logf("route.ui.infoAlreadyRunning", this.getName());
             }
         }).start();
     }

@@ -1356,6 +1356,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
         boolean setupStands = true;
 
+        // What the save before the tail question reconciled, shown with this door's own save (OB-305).
+        org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation savedEarly = null;
+
         if (session != null)
         {
             // The CONFIGURATION as well as the running layout.  Moving a train in the layout leaves
@@ -1384,6 +1387,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 final org.traincontrol.base.Locomotive placed = landing == null ? null : landing.getCurrentLocomotive();
                 final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion =
                     landing == null ? null : landing.getArrivedAlong();
+
+                // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and
+                // the question below can wait as long as the operator likes - a crash in that wait lost them.  See
+                // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled is shown with this door's own save, below.
+                savedEarly = org.traincontrol.gui.TailCrossedPrompt.saveBeforeAsking(session, running, landing, tail,
+                    landing == null || landing.getCurrentLocomotive() == null
+                        ? null : landing.getCurrentLocomotive().getTrainLength(), ui);
 
                 org.traincontrol.gui.TailCrossedPrompt.Answer answer =
                     org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
@@ -1419,6 +1429,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 }
             }
         }
+
+        // WHAT THE SAVE BEFORE THE TAIL QUESTION RECONCILED (OB-305, DR-B10), shown here rather than in front of the
+        // question, and once: the save below then finds nothing more, and a refusal over missing pages is said once for
+        // each set of them (MT-380).
+        AutonomyReport.show(ui, savedEarly);
 
         // Not a setup the window has let go in the wait (TDU4-C2), which the reset that replaced it already wrote.
         if (facing != null && session != null && setupStands)

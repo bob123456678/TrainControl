@@ -493,10 +493,13 @@ public class Edge
      * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose - measured track of
      * no length (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*; and Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
      *
-     * **The question every length rule but one asks** of a leg with no length - the own-tail rule judges a way round
-     * only once it has run some length, filed as OB-300 (RLA-C6): the Atomic Routes gate
+     * **The question every length rule asks** of a leg with no length: the Atomic Routes gate
      * (`Layout.unmeasuredTrackThatCouldBeReleased`) and the release escape it stands for (`Layout.pathIsUnmeasured`), the
-     * route in, the room walk, the walk that claims a standing train's tail, the berth rule and the tail question.  An
+     * route in, the room walk, the walk that claims a standing train's tail, the berth rule and the tail question - and
+     * the own-tail rule, which asks it of the places on a way round, since a way round begins and ends inside a leg: a
+     * return is judged once the way round has a length on it or every place on it answered (`Layout.measuredThroughout`;
+     * OB-300, RLA-C6; Adam, 2026-10-10, asked: into 3.0.0 - until then it judged only a way round that had run some
+     * length, and let a train round a loop answered 0 into its own body).  An
      * answered leg is counted, adding nothing, and walked on over; a leg nobody answered still ends each of them.  They
      * ask it together because they must agree: a route in that counted on past an answered 0 while the tail walk stopped
      * there admitted a train whose tail lay on track nothing claimed (ADA-A1, before the tail walk asked it too).  Every
@@ -540,6 +543,10 @@ public class Edge
 
     /**
      * @return whether this edge crosses a switch, and so bounds where a train may come to rest
+     *
+     * **"A switch" in the room rule** is what bounds a berth's room (`GraphReducer.boundsTheRoom`): a switch, or a
+     * turnout drawn permanent (FR-097) - and not either square of a crossing made of two permanent Ys (OB-320).  Every
+     * statement of the rule that says "switch" means this (VD18-C4).
      */
     public boolean crossesASwitch()
     {

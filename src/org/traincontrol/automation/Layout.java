@@ -364,8 +364,8 @@ public class Layout
      * become a floor proportional to the measured ones rather than a flat 1.
      *
      * AN EDGE ANSWERED 0 COUNTS 0 (Adam, 2026-09-25: *"Yes, count answered 0 as 0"*).  The floor is for
-     * track nobody has measured; an answered 0 is a measurement (`Edge.isMeasured`), as every length rule but the own-tail one (OB-300)
-     * reads it, and counted as 1 it made a route through sensors side by side look longer than it is.
+     * track nobody has measured; an answered 0 is a measurement (`Edge.isMeasured`), as every length rule reads it - the
+     * own-tail one since OB-300 - and counted as 1 it made a route through sensors side by side look longer than it is.
      */
     private int lengthOf(List<Edge> path)
     {
@@ -606,8 +606,9 @@ public class Layout
      */
     private final Object stopLock = new Object();
     
-    // Is the layout state valid?
-    private boolean isValid = true;
+    // Is the layout state valid?  Volatile: set on the thread that loads or invalidates, read by every driving thread
+    // (GST-C1)
+    private volatile boolean isValid = true;
        
     private final ViewListener control;
     private final Map<String, Edge> edges;
@@ -822,8 +823,8 @@ public class Layout
     // once, by whichever thread loads a layout, and read by every driving thread at six points in its
     // loop and by both timetable waits.  Without it a locomotive can keep reading the value it cached
     // before the reload and drive a whole path against a graph that has been retired.  Every other
-    // piece of cross-thread state in this class - running, stagingInProgress, timetableExecuting - is
-    // already volatile; this one was missed.
+    // piece of cross-thread state in this class - running, stagingInProgress, timetableExecuting, and
+    // isValid since GST-C1 - is volatile; this one was missed.
     private static volatile int layoutVersion = 0;
 
     // Whether a staging flow owns this Layout - set at the commit point and cleared when the flow
@@ -910,7 +911,10 @@ public class Layout
         // route guard without a lock.
         this.clearedEdges = new ConcurrentHashMap<>();
         this.releasedEarly = new ConcurrentHashMap<>();
-        this.timetable = new LinkedList<>();
+        // COPY ON WRITE (GST-C3): `getTimetable` hands out the list itself, the event thread reads it - the timetable
+        // window and its menus - and a running train's capture appends to it from that train's thread.  A reader sees the
+        // list as it stood when it began, and nothing is thrown.  The list is small and written rarely.
+        this.timetable = new java.util.concurrent.CopyOnWriteArrayList<>();
         this.homeStations = new LinkedHashMap<>();
         this.locomotivePendingS88 = new ConcurrentHashMap<>();
         this.activateRouteIDs = new LinkedList<>();
@@ -1205,10 +1209,7 @@ public class Layout
         // And every timetable entry that would run it.  TimetablePath holds the locomotive itself, so
         // executing the timetable afterwards drives something that is not in the database - and the
         // entry is written back out on every save, naming a locomotive the next load cannot resolve.
-        for (java.util.Iterator<TimetablePath> entries = this.timetable.iterator(); entries.hasNext();)
-        {
-            if (l.equals(entries.next().getLoc())) entries.remove();
-        }
+        this.timetable.removeIf(entry -> l.equals(entry.getLoc()));
 
         // The record that this train is standing where the railway turned it, which is keyed by NAME (RTX-C3).
         // Left behind, a locomotive later given the same name inherits it and is believed to be facing the way the
@@ -2425,6 +2426,70 @@ public class Layout
     }
 
     /**
+     * Whether this railway's sends are waiting for the track power (GST-B1): set by whichever train finds it off first, so
+     * the wait is said once however many trains wait, and cleared once the power reads on again.
+     */
+    private final java.util.concurrent.atomic.AtomicBoolean waitingForThePower =
+        new java.util.concurrent.atomic.AtomicBoolean();
+
+    /**
+     * Waits while the track power is off, before a run chooses or sends a train (GST-B1; Adam, 2026-10-10, asked: into
+     * 3.0.0).
+     *
+     * Nothing in this package read the power, so with it cut - from the window, by the Central Station, or by a route -
+     * autonomy went on choosing journeys and setting their routes: switches commanded on a railway with no power to move
+     * them, and trains given speeds that took effect all at once when the power came back.  Autonomy's loop, a timetable's
+     * entries and Return Home, whose plan runs as a timetable, wait here instead - not failing and not stopping: the run
+     * goes on, and sends again once the power reads on.  A journey already under way is not touched.
+     *
+     * The flag is the last GO or STOP echo heard (`MarklinControlStation.getPowerState`), and it reads on until one is
+     * heard - at start-up, and always in a simulation without Echo Sent Commands - so a state nobody has reported never
+     * holds a run.  A lost GO would hold it, as it already refuses Start: the window then shows the power off, the log says
+     * why the trains wait, and turning the power on is heard.  Instant Stop is a halt, not a power cut, and leaves the flag
+     * alone - autonomy runs on through it, as Adam ruled (OB-251: *"Instant stop is unrelated to autonomy"*).  A hand send
+     * is not waited for here: the send gate refuses it while the power is off (`TrainControlUI.whyNoTrainMayBeSent`), as it
+     * refuses every door's press.
+     *
+     * It sleeps, so it is never called holding the railway's monitor or `activeLocomotives`.  A stop - graceful, or the
+     * reload's Yes - and a retired railway end it within one poll.
+     *
+     * @return whether it waited at all, so the caller asks again whether its run still goes before it sends anything
+     */
+    private boolean waitWhileThePowerIsOff()
+    {
+        boolean waited = false;
+        boolean interrupted = false;
+
+        while (this.running && this.isCurrentLayout() && !this.control.getPowerState())
+        {
+            // SAID ONCE, by whichever train finds the power off first
+            if (this.waitingForThePower.compareAndSet(false, true))
+            {
+                this.control.logf("autolayout.infoWaitingForTrackPower");
+            }
+
+            waited = true;
+
+            try
+            {
+                Thread.sleep(COMPLETION_POLL);
+            }
+            catch (InterruptedException e)
+            {
+                // Remembered and put back on the way out: re-armed here, the next sleep would throw at once, and this
+                // would spin for as long as the power stayed off
+                interrupted = true;
+            }
+        }
+
+        if (this.control.getPowerState()) this.waitingForThePower.set(false);
+
+        if (interrupted) Thread.currentThread().interrupt();
+
+        return waited;
+    }
+
+    /**
      * A timetable's pause between refusals, which any stop cuts short (RSA3-C5).  It paused through the operator's delays
      * - seconds - with nothing to end it, so an entry the Yes had found refusing woke only after its run was over.
      *
@@ -2671,13 +2736,18 @@ public class Layout
         
     /**
      * Creates a new point (i.e., a station or other landmark on your layout)
+     *
+     * Synchronized as the doors that take from the graph are - `deletePoint`, `deleteEdge`, `renamePoint`, `copyEdge`
+     * (GST-C5).  Today it is called while a layout is built, before anything else holds it; the monitor keeps that true
+     * of a caller added later, and `createEdge` likewise.
+     *
      * @param name a unique identifier for the point
      * @param isDest are trains allowed to stop at this point?  Requires s88 feedback to work properly.
      * @param feedback address of the corresponding feedback module, or null if none
      * @return
      * @throws Exception
      */
-    public Point createPoint(String name, boolean isDest, String feedback) throws Exception
+    synchronized public Point createPoint(String name, boolean isDest, String feedback) throws Exception
     {        
         if (feedback != null && !this.control.isFeedbackSet(feedback))
         {
@@ -2717,7 +2787,7 @@ public class Layout
      * @return 
      * @throws java.lang.Exception 
      */
-    public Edge createEdge(String startPoint, String endPoint) throws Exception
+    synchronized public Edge createEdge(String startPoint, String endPoint) throws Exception
     {
         if (!this.points.containsKey(startPoint) || !this.points.containsKey(endPoint))
         {
@@ -5564,6 +5634,10 @@ public class Layout
             {
             while(running)
             {                
+                // NOTHING CHOSEN, NOTHING SENT, WHILE THE TRACK POWER IS OFF (GST-B1; Adam, 2026-10-10, asked: into
+                // 3.0.0): the loop waits, and once the power is back asks again whether the run still goes before it chooses.
+                if (this.waitWhileThePowerIsOff()) continue;
+
                 // THE STOPS COUNTED BEFORE THE CHOICE, carried to the journey (RSA2-C2): `running` is asked again once
                 // the choice is made, and a Yes landing after that question is one the journey still obeys
                 final int stopsAtChoice = this.stopsOrdered.get();
@@ -5927,6 +6001,26 @@ public class Layout
         return null;
     }
     
+    /**
+     * The length of the square an edge arrives on - its end Point's sensor square - which that sensor reports the head
+     * ENTERING, so which is not yet known to be behind the head when it answers (GS-B3).  The last of the edge's places,
+     * which is `GraphReducer.placesAlong`'s shape: the steps, then the square arrived at.  0 where the edge records no
+     * places (a hand-written configuration), and never more than the edge itself.
+     *
+     * @param edge the edge
+     * @return the arriving square's length
+     */
+    private static int arrivingSquare(Edge edge)
+    {
+        List<Integer> lengths = edge == null ? null : edge.getPlaceLengths();
+
+        if (lengths == null || lengths.isEmpty()) return 0;
+
+        Integer last = lengths.get(lengths.size() - 1);
+
+        return last == null ? 0 : Math.max(0, Math.min(last, edge.getLength()));
+    }
+
     /**
      * Whether an edge the head has passed may be handed back - reported clear, and unlocked.
      *
@@ -7249,10 +7343,9 @@ public class Layout
     /**
      * The timetable as it stands right now, for readers that only look at it.
      *
-     * A copy taken under the monitor.  getTimetable hands back the field itself and has to keep doing
-     * so - deleteTimetableEntry removes from the list it returns - so the safe read is a second
-     * accessor rather than a change to that one.  Locomotive threads append here whenever capture is on
-     * during a run, and the readers are on the EDT holding nothing.
+     * A copy taken under the monitor.  getTimetable hands back the field itself, which is a copy-on-write list since
+     * GST-C3, so a reader iterating it no longer throws when a train's capture appends; this copy is kept for the
+     * readers that want the timetable as one consistent list, taken with the monitor's other writers held off.
      *
      * @return
      */
@@ -7443,6 +7536,10 @@ public class Layout
             // same question asked at the point that actually spins.
             while (this.running && this.isCurrentLayout())
             {
+                // NO ENTRY STARTED WHILE THE TRACK POWER IS OFF (GST-B1) - Execute Timetable and Return Home, whose plan runs
+                // as a timetable, alike: the run waits, and asks again once the power is back.
+                if (this.waitWhileThePowerIsOff()) continue;
+
                 if (i > startIndex && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
                 {
                     this.control.logf(
@@ -7613,6 +7710,10 @@ public class Layout
                                     Thread.currentThread().interrupt();
                                     break;
                                 }
+
+                                // NOR TRIED AGAIN ON A RAILWAY WITH ITS POWER OFF (GST-B1): the next attempt waits for the
+                                // power, and the wait is not refusing - a parallel run's clock for giving up starts again.
+                                if (this.waitWhileThePowerIsOff()) refusingSince = 0;
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
@@ -8620,8 +8721,11 @@ public class Layout
         // A train has one body in one place.  For a running locomotive that place is its last
         // MILESTONE, and the road behind it is the part of its path it has already driven - both of
         // which the run is keeping anyway.  The walk then spends the train's length back along that
-        // road and stops, which is his "unlock the rest once the tail is far enough away" and the same
-        // arithmetic `tailHasProvablyPassed` uses to hand an edge back.
+        // road and stops, which is his "unlock the rest once the tail is far enough away" and the
+        // arithmetic `tailHasProvablyPassed` uses to hand an edge back - read generously here, the head at
+        // the far end of its milestone's square, where the release does not count that square until the
+        // next sensor answers (GS-B3).  So the release is never ahead of this walk: what the walk stops
+        // claiming may still be held for one square, never the other way round.
         Set<Locomotive> alreadyWalked = new LinkedHashSet<>();
 
         for (Point standing : this.points.values())
@@ -10103,12 +10207,22 @@ public class Layout
         // by it, and a length changed while the train runs - which no door allows - must not shorten what it holds.
         final Integer lengthAtDispatch = loc.getTrainLength();
 
+        // WHERE THE ROUTE HAS RUN TO, AND WHERE THE HEAD HAS BEEN SEEN (GS-B3): distances from the start of the path - to
+        // the far end of the edge this loop has reached, and to the far end of the last edge whose end Point's sensor
+        // answered.  An edge's distance behind the head is the second less where that edge ends.  At the first Point
+        // nothing is behind the head yet, so `headSeenAt` starts at nothing.
+        int pathRunTo = path.get(0).getLength();
+        int headSeenAt = 0;
+
         for (int i = 0; i < path.size(); i++)
         {
             Point current = path.get(i).getEnd();
 
             // Recorded when its sensor answers, and so not again at the end of this step (RSA30-C4)
             boolean recordedAlready = false;
+
+            // WHETHER THIS POINT'S SENSOR ANSWERED FOR THE HEAD (GS-B3), the only proof of where the head is
+            boolean seenHere = false;
             
             if (i != path.size() - 1)
             {
@@ -10152,6 +10266,9 @@ public class Layout
                     // long as the layout runs.
                     loc.waitForOccupiedFeedback(current.getS88(),
                         Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS, this.retiredRailway);
+
+                    // SEEN HERE (GS-B3) - unless the wait was given up for a retired railway, which goes no further
+                    seenHere = this.isCurrentLayout();
                     
                     if (this.simulate)
                     {            
@@ -10290,24 +10407,48 @@ public class Layout
                 {
                     if (i > 0)
                     {       
-                        // The head has just finished edge i-1, so everything already waiting is one
-                        // edge further behind, and edge i-1 joins the queue with the head still on
-                        // top of its far end.
-                        int justTravelled = path.get(i - 1).getLength();
+                        // THE HEAD HAS FINISHED EDGE i, NOT EDGE i-1 (GS-B3; Adam, 2026-10-10, asked: into 3.0.0).
+                        //
+                        // `current` is `path.get(i).getEnd()`: once its sensor has answered, the head is at the far end
+                        // of edge i, so edge i-1 - which ended where edge i begins - is edge i's length behind it, and
+                        // every edge before that is further back by the same.  This used to add edge i-1's length and
+                        // queue edge i-1 with nothing behind it, where the head stood one sensor earlier: every edge was
+                        // short by the edge just driven, and on a path of three edges or fewer the first edge was held to
+                        // the end of the route whatever the train's length - late, never early, but holding the track and
+                        // turnouts behind the train against every other route.  The claims' worked examples already read
+                        // it this way (`core.testTrainTailClearsEdges`: edges of 100, 100 and 0 and a train of 250, "edge
+                        // 0 has 100 behind it" when the head finishes the third).
+                        //
+                        // BUT NOT THE SENSOR'S OWN SQUARE.  A sensor answers when the head ENTERS its square, so all that
+                        // is known to be behind the head is the edge up to that square: the square is credited when the
+                        // next sensor answers (`arrivingSquare`).  Crediting it at once - the head at the square's far end,
+                        // as the walk that claims a running train's body reads a milestone - could hand an edge back with
+                        // the tail still on it by up to that square's length; a release must never be early (the fix
+                        // was put to Adam as releasing track "earlier, never unsafe", and he chose it).  The walk's reading
+                        // is the generous one for a claim; this one is the safe one for a release.
+                        //
+                        // ONLY AS FAR AS A SENSOR HAS SEEN THE HEAD.  A Point with no sensor - a hand-written configuration
+                        // may have one; every Point the builder makes carries one - is passed without waiting, and nothing
+                        // says the head is there: `headSeenAt` moves only where a sensor answered, and the track to a Point
+                        // nobody saw is counted when the next sensor answers.  Counting it at once, as the one-line fix
+                        // first filed for this did, hands an edge back with the tail on it.  The edge still joins the
+                        // queue here, so the unmeasured escape and a train with no length hand it back as they always did.
+                        //
+                        // Distance behind the head: where it was seen less where the edge ends, both from the path's
+                        // start - the third slot.  (VAL-C1 dropped an earlier third slot, how many edges ago each entry
+                        // was queued, once nothing read it; this one is read on the next lines.)
+                        int edgeLeftEndsAt = pathRunTo;
 
-                        // Distance behind the head. (VAL-C1: this used to also count how many edges
-                        // ago each entry was queued, in a third slot - that answered which of two
-                        // standards of proof applied, back when clearing and unlocking asked different
-                        // questions. WK-B1/VAL-A1 settled both onto tailHasProvablyPassed, which reads
-                        // only the distance and whether the path is unmeasured, so the edge count had
-                        // no reader left. Dropped with it rather than kept as an unread slot for the
-                        // next reader to reconstruct a rule from.)
+                        pathRunTo += path.get(i).getLength();
+
+                        if (seenHere) headSeenAt = pathRunTo - arrivingSquare(path.get(i));
+
+                        waitingToClear.add(new int[] { i - 1, 0, edgeLeftEndsAt });
+
                         for (int[] waiting : waitingToClear)
                         {
-                            waiting[1] += justTravelled;
+                            waiting[1] = Math.max(0, headSeenAt - waiting[2]);
                         }
-
-                        waitingToClear.add(new int[] { i - 1, 0 });
 
                         for (java.util.Iterator<int[]> pending = waitingToClear.iterator();
                             pending.hasNext();)
@@ -11778,18 +11919,66 @@ public class Layout
 
         for (Point point : this.getPoints())
         {
-            if (point.getCurrentLocomotive() == null) continue;
+            if (point.getCurrentLocomotive() != null && this.isProtectedBy(point, accessory)) return true;
+        }
 
-            for (String name : point.getProtectingSignals())
-            {
-                if (name == null) continue;
+        return false;
+    }
 
-                if (name.equals(accessory.getName())) return true;
+    /**
+     * Whether a train STANDS at a platform this signal protects, rather than a locked path only having reserved it for a
+     * train still on its way there (GSR-C2).
+     *
+     * `protectsAnOccupiedSquare` asks whether any platform the signal protects holds a locomotive, and a locked path holds
+     * every point along it for its train (`Point.reserve`), its destination included, from the moment it is locked.  The
+     * refusal is right either way - the platform is spoken for.  What it SAYS is not: "a train is standing" about a
+     * platform nobody has reached sends the operator looking for a train that is somewhere else.  So the sentence is
+     * chosen by this, and a platform is a standing train's only where `whereTheTrainIs` says that train is.
+     *
+     * Not synchronized, for `protectsAnOccupiedSquare`'s reason: it is asked where that is, the event thread among them.
+     *
+     * @param accessory the signal, or null
+     * @return true when a train stands at a platform it protects; false when none does, every platform it protects that
+     *         is held being held only by a reservation
+     */
+    public boolean protectsAStandingTrain(Accessory accessory)
+    {
+        if (accessory == null || this.control == null) return false;
 
-                Accessory named = this.control.getAccessoryByName(name);
+        for (Point point : this.getPoints())
+        {
+            Locomotive holding = point.getCurrentLocomotive();
 
-                if (named != null && named.equals(accessory)) return true;
-            }
+            if (holding == null || !this.isProtectedBy(point, accessory)) continue;
+
+            if (point.isSamePlaceAs(this.whereTheTrainIs(holding))) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether this signal is one of a point's protecting signals, by its name or by the accessory a name resolves to - the
+     * one reading `protectsAnOccupiedSquare` and `protectsAStandingTrain` both ask (GSR-C2).
+     *
+     * By resolving the names rather than comparing the strings alone, for the reason `protectsAnOccupiedSquare` gives: a
+     * configuration says "Signal 12" or "Switch 12" and the accessory database is keyed by one of those.
+     *
+     * @param point the platform
+     * @param accessory the signal
+     * @return true when it protects the point
+     */
+    private boolean isProtectedBy(Point point, Accessory accessory)
+    {
+        for (String name : point.getProtectingSignals())
+        {
+            if (name == null) continue;
+
+            if (name.equals(accessory.getName())) return true;
+
+            Accessory named = this.control.getAccessoryByName(name);
+
+            if (named != null && named.equals(accessory)) return true;
         }
 
         return false;
@@ -12172,7 +12361,12 @@ public class Layout
      * with no length counts nothing, and a return with nothing measured on the way round is not judged - THE WAY ROUND
      * being the route the head drives between leaving the place and coming back to it, not the body in front of it
      * (TDA-B1: judged by the body, a loop with no length on it was refused at every length, though it may be thirty
-     * units long).  Unmeasured squares within a measured way round make it shorter than it is, which refuses rather than
+     * units long).  MEASURED as every length rule reads it: a length on it, or every place on it answered 0 on purpose -
+     * measured track of no length (OB-300, RLA-C6; Adam, 2026-10-10, asked: into 3.0.0).  A loop answered 0 all the way
+     * round used to go unjudged, since nothing on it adds a length, and a train of any length went round it into itself -
+     * the one length rule that erred towards letting through.  Asked place by place (`measuredThroughout`), since a way
+     * round begins and ends inside a leg; a square nobody answered, a switch included, still leaves it unmeasured.
+     * Unmeasured squares within a measured way round make it shorter than it is, which refuses rather than
      * permits - so the refusal says how many things Mass Assign Lengths would ask a length for on the way round, and that
      * measuring them is the way past: the pieces, switches and shared squares the build marks as still wanting one, over
      * the places the head runs between leaving the place and coming back to it (OB-297, ADA-C1).  Its list and the note's
@@ -12230,6 +12424,9 @@ public class Layout
         // Where each edge's places start in that list.
         List<Integer> startsAt = new ArrayList<>();
 
+        // AND WHETHER EACH PLACE IS MEASURED (OB-300), in the same order: a length, or answered 0 on purpose.
+        List<Boolean> measuredAlong = new ArrayList<>();
+
         // LEAVING OVER ITS OWN BODY: the first place the route goes to, other than the square the train stands on, is
         // one its body lies on - a train turned where it stands.  The first place only: a route that comes back round a
         // loop within one edge would otherwise be taken for one leaving over its body.
@@ -12283,6 +12480,11 @@ public class Layout
 
             for (int at = 0; at < ids.size(); at++)
             {
+                measuredAlong.add((spans.get(at) != null && spans.get(at) > 0) || edge.isPlaceAnswered(ids.get(at)));
+            }
+
+            for (int at = 0; at < ids.size(); at++)
+            {
                 String place = ids.get(at);
 
                 // The same square twice in a row is one hop ending where the next begins, not a return to it.
@@ -12292,8 +12494,12 @@ public class Layout
 
                 Integer free = freeOnceTheTailPasses.get(place);
 
-                // Judged only where the route has measured something since it left the place (TDA-B1).
-                if (free != null && travelled - routeRunWhenLeft.get(place) > 0)
+                // JUDGED WHERE THE WAY ROUND IS MEASURED (TDA-B1, OB-300): some length run on it since the head left the
+                // place, or every place on it answered 0 on purpose - a loop answered 0 all the way round is measured track
+                // of no length, and refused to any train lying on it.  A way round nobody measured is still not judged.
+                if (free != null && (travelled - routeRunWhenLeft.get(place) > 0
+                    || measuredThroughout(measuredAlong, edgeWhenLeft.get(place) < 0 ? -1
+                        : startsAt.get(edgeWhenLeft.get(place)) + leftAt.get(place), startsAt.get(i) + at)))
                 {
                     int wayRound = travelled - free;
 
@@ -12364,7 +12570,9 @@ public class Layout
     {
         if (edge.knowsPiecesToMeasure()) return edge.pieceToMeasure(edge.getPlaceIds().get(at));
 
-        if (edge.getLength() > 0) return null;
+        // NOR ON A LEG ANSWERED THROUGHOUT (OB-300): measured track of no length, which a refusal must not send the operator
+        // to measure again (Adam, 2026-09-23: *"stop listing answered zeros as missing"*).  A length still says so too.
+        if (edge.isMeasured()) return null;
 
         for (Integer span : edge.getPlaceLengths())
         {
@@ -12372,6 +12580,30 @@ public class Layout
         }
 
         return "edge " + index;
+    }
+
+    /**
+     * Whether the way round between two points of the route is measured throughout (OB-300): at least one place strictly
+     * between them, and every one with a length or answered 0 on purpose - `Edge.isMeasured`'s question, asked of places
+     * because a way round begins and ends inside a leg.
+     *
+     * @param measuredAlong whether each place along the route is measured, in route order
+     * @param left where the place was left, -1 for before the journey began
+     * @param back where the route comes back to it
+     * @return true when the way round has places and every one of them is measured
+     */
+    static boolean measuredThroughout(List<Boolean> measuredAlong, int left, int back)
+    {
+        int from = Math.max(0, left + 1);
+
+        if (from >= back) return false;
+
+        for (int g = from; g < back; g++)
+        {
+            if (g >= measuredAlong.size() || !measuredAlong.get(g)) return false;
+        }
+
+        return true;
     }
 
     /**
@@ -13667,19 +13899,9 @@ public class Layout
         // locomotives, as designated on the autonomy locomotive controls tab"): every train the database has paused, by
         // name and sorted, so the file is the same file when nothing has changed.  Written only while it names somebody,
         // as `simulate` is, so an ordinary layout's file does not grow a key that means nothing to it.
-        List<String> paused = new ArrayList<>();
+        List<String> paused = pausedNamesOf(this.control);
 
-        for (Locomotive l : this.control == null ? Collections.<Locomotive>emptyList() : this.control.getLocomotives())
-        {
-            if (l != null && l.getName() != null && l.isAutonomyPaused()) paused.add(l.getName());
-        }
-
-        if (!paused.isEmpty())
-        {
-            Collections.sort(paused);
-
-            jsonObj.put(PAUSED_LOCOMOTIVES, new JSONArray(paused));
-        }
+        if (!paused.isEmpty()) jsonObj.put(PAUSED_LOCOMOTIVES, new JSONArray(paused));
 
         if (this.simulate)
         {
@@ -13694,6 +13916,27 @@ public class Layout
      * and kept by the setup with the rest of a configuration's settings.
      */
     public static final String PAUSED_LOCOMOTIVES = "pausedLocomotives";
+
+    /**
+     * Every train the database has paused, by name and sorted (FR-117): the list `toJSON` writes under
+     * `PAUSED_LOCOMOTIVES`, and the window's settings as built take (RSA60-B1) - one answer for both.
+     *
+     * @param control the model, or null for none
+     * @return the names, possibly none
+     */
+    public static List<String> pausedNamesOf(ViewListener control)
+    {
+        List<String> paused = new ArrayList<>();
+
+        for (Locomotive l : control == null ? Collections.<Locomotive>emptyList() : control.getLocomotives())
+        {
+            if (l != null && l.getName() != null && l.isAutonomyPaused()) paused.add(l.getName());
+        }
+
+        Collections.sort(paused);
+
+        return paused;
+    }
 
     /**
      * Parses TrainControl's autonomous operation configuration file

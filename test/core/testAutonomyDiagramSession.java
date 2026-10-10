@@ -4911,6 +4911,56 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A legacy label naming a station the setup already shows somewhere does not show it twice (OB-256).
+     *
+     * One station, one caption: `setCaption` takes a station's caption off wherever it was, and the old-file import
+     * captions a station only where it has none.  The migration of `Point:` labels wrote through the store's own door,
+     * which does neither, so a station the setup already captioned gained a second caption on the label's square.  The
+     * setup's caption is the one somebody chose, so it is kept; the label still leaves the page, or the migration would
+     * find it again at every open.
+     *
+     * MUTATION: caption the label's square whether or not the station has a caption, as before, and this fails.
+     *
+     * @throws Exception from the session or the page file
+     */
+    @Test
+    public void testALegacyLabelDoesNotCaptionAStationTwice() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey kept = new TileKey("main", 3, 2);
+        TileKey labelled = new TileKey("main", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(kept, station);
+        session.save();
+
+        // and the diagram still carries an old-style label naming it, on another square
+        page.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "Bahnhof");
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(page));
+
+        assertTrue(reopened.getMigrationFailures().isEmpty(),
+            "precondition: the page should have been written: " + reopened.getMigrationFailures());
+
+        assertEquals(reopened.captionsFor(station).size(), 1, "the station is captioned on "
+            + reopened.captionsFor(station) + ": the migration added a caption beside the one the setup had (OB-256)");
+
+        assertEquals(reopened.getCaptionTarget(kept), station, "the setup's own caption was not the one kept");
+
+        assertNull(reopened.getCaptionTarget(labelled), "the label's square was captioned as well");
+
+        assertEquals(page.getComponent(1, 2).getLabel(), "",
+            "the old label was left on the page, so the migration finds it again at every open");
+    }
+
+    /**
      * The session says which pages the migration rewrote, and how many names it took (RGN-B1).
      *
      * The migration edits files the user owns. A `Point:` name typed onto their own track diagram is
@@ -9439,28 +9489,148 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * Demoting a station forgets how trains were allowed to arrive at it.
+     * A station demoted and promoted again has every setting it had as a station (GSE-C4).
      *
-     * Inert while it is not a station, so leaving it costs nothing today - and everything the day
-     * somebody makes the square a station again and finds it refusing trains for a reason recorded
-     * months earlier.  Symmetrical with the caption rule.
+     * Adam, 2026-10-10, asked: keep them, ignored while not a station - as its maximum train length (OB-291) and its
+     * blockers (AMS-B2) already were.  Demoting cleared five, with no warning, from the editor and from the track
+     * diagram's own menu: the caption, the sides it bars arrivals by, its exit guard, its entry guards, and the turn flag
+     * older setups spell "terminus".  This claim replaces one that said it forgot its arrival restriction - the rule his
+     * ruling reverses.
+     *
+     * Through the editor's own answer to the station menu, `setUsage`, because the turn flag was cleared there and the
+     * other four in the session.  The caption sits two squares below the platform, where the placer never puts one, so a
+     * caption placed afresh on promotion cannot pass for the one kept.
+     *
+     * MUTATION: clear any of the five on demotion again, and this fails naming it.
+     *
+     * @throws Exception from the panel
      */
     @Test
-    public void testDemotingAStationForgetsItsArrivalRestriction() throws Exception
+    public void testADemotedStationHasItsSettingsBackWhenItIsAStationAgain() throws Exception
     {
-        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        org.traincontrol.gui.AutonomyEditorPanel panel = aStationWithEverySetting();
 
         TileKey station = new TileKey("main", 3, 1);
 
-        session.setStation(station, true);
-        session.setBarredArrivals(station,
-            new java.util.LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
+        Set<Side> barred = session.getBarredArrivals(station);
 
-        session.setStation(station, false);
-        session.setStation(station, true);
+        answerTheStationMenu(panel, station, false);
+        answerTheStationMenu(panel, station, true);
 
-        assertTrue(session.getBarredArrivals(station).isEmpty(),
-            "a restriction nobody remembers setting came back with the station");
+        assertTrue(session.getStore().isStation(station), "precondition: the square is not a station again");
+
+        assertEquals(session.getCaptionTarget(new TileKey("main", 3, 3)), station, "the station's caption did not come"
+            + " back with it (GSE-C4)");
+
+        assertEquals(session.getBarredArrivals(station), barred, "the sides the station barred arrivals by did not come"
+            + " back with it (GSE-C4)");
+
+        assertEquals(session.getProtectingSignals(station), Arrays.asList(new TileKey("main", 2, 1)), "the station's"
+            + " exit guard did not come back with it (GSE-C4)");
+
+        assertEquals(session.getEntrySignals(station), Arrays.asList(new TileKey("main", 4, 1)), "the station's entry"
+            + " guard did not come back with it (GSE-C4)");
+
+        assertEquals(session.getPointProperty(station, "terminus"), Boolean.TRUE, "the station's turn flag did not come"
+            + " back with it (GSE-C4)");
+    }
+
+    /**
+     * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not
+     * (GSE-C4): the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
+     * (address 22) on the track either side, wired as parsing a real layout wires them.
+     *
+     * @return the page, its file written
+     * @throws IOException if the page file cannot be written
+     */
+    private LayoutDiagram pageWithAGuardedTwoEndedStation() throws IOException
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        page.addComponent(componentType.SIGNAL, 2, 1, 0, 0, 21, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SIGNAL, 4, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
+
+        wire(page, 2, 1, 21);
+        wire(page, 4, 1, 22);
+
+        return page;
+    }
+
+    /**
+     * Opens that page, makes 3,1 a station and gives it every setting a plain point does not have (GSE-C4): a caption
+     * two squares below it at 3,3, its first arrival side barred, the signal at 2,1 as its exit guard, the one at 4,1 as
+     * its entry guard, and the turn flag older setups spell "terminus".  Each is asserted as set before anything is
+     * demoted.
+     *
+     * @return an editor over the page, to answer the station menu through
+     * @throws Exception from the session or the panel
+     */
+    private org.traincontrol.gui.AutonomyEditorPanel aStationWithEverySetting() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardedTwoEndedStation()));
+        session.initialize("Default");
+
+        TileKey station = new TileKey("main", 3, 1);
+        TileKey caption = new TileKey("main", 3, 3);
+        TileKey exit = new TileKey("main", 2, 1);
+        TileKey entry = new TileKey("main", 4, 1);
+
+        session.setStation(station, true);
+        session.setCaption(caption, station);
+        session.setBarredArrivals(station, new LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
+        session.setProtectingSignal(station, exit);
+        session.setEntrySignals(station, Arrays.asList(entry));
+        session.setPointProperty(station, "terminus", Boolean.TRUE);
+
+        assertEquals(session.getCaptionTarget(caption), station, "precondition: the caption was not set");
+
+        assertFalse(session.getBarredArrivals(station).isEmpty(), "precondition: no arrival side was barred");
+
+        assertEquals(session.getProtectingSignals(station), Arrays.asList(exit), "precondition: the exit guard was not"
+            + " paired");
+
+        assertEquals(session.getEntrySignals(station), Arrays.asList(entry), "precondition: the entry guard was not"
+            + " paired");
+
+        assertEquals(session.getPointProperty(station, "terminus"), Boolean.TRUE, "precondition: the turn flag was not"
+            + " set");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        return panel[0];
+    }
+
+    /**
+     * Answers the station menu over a square as the operator does - Yes, or No - Trains Can Only Pass Through - through
+     * the editor's own `setUsage`, on the event thread (GSE-C4).
+     *
+     * @param panel the editor
+     * @param square the square
+     * @param station true to make it a station, false for a square trains only pass through
+     * @throws Exception from the event thread or the reflection
+     */
+    private static void answerTheStationMenu(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square,
+        final boolean station) throws Exception
+    {
+        final java.lang.reflect.Method usage = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("setUsage",
+            TileKey.class, boolean.class, boolean.class);
+
+        usage.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                usage.invoke(panel, square, station, true);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
     }
 
     /**
@@ -9661,7 +9831,8 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A station's protecting signal survives a save, and goes when the station does.
+     * A station's protecting signal survives a save, and is not read while the square is not a station - it is kept for
+     * when it is one again (GSE-C4, `testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`).
      *
      * Kept with the captions and the arrival restrictions rather than beside the running state: it is a
      * fact about the railway, not about today's traffic.
@@ -10011,8 +10182,8 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A station's entry guard survives a save, is kept apart from its protecting signals, and goes when the station
-     * does (FR-096).
+     * A station's entry guard survives a save, is kept apart from its protecting signals, and is not read while the
+     * square is not a station (FR-096; kept for when it is one again, GSE-C4).
      */
     @Test
     public void testAnEntryGuardIsKeptApartAndForgottenWithTheStation() throws Exception
@@ -10637,47 +10808,113 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * Demoting a station takes its name plaque with it.
+     * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws them
+     * (GSE-C4).
      *
-     * The two used to be independent, so a demoted square kept a caption pointing at it - and a caption
-     * is not inert: it is a registered label that fills in the moment anything stands on the square.  A
-     * reversing point that was once a station therefore announced itself as one the first time a train
-     * touched it, on a square drawn as a plain point.  The diagram contradicted itself and neither half
-     * was wrong on its own.
+     * Each was cleared on demotion for a reason that still holds of a plain point: a caption is drawn, and lights a
+     * station's name up when a train reverses there; a guard is thrown red over a square nothing is sent to; the old turn
+     * flag turns every train round.  They are kept now, at Adam's ruling of 2026-10-10 ("keep them, ignored while not a
+     * station"), so the readers ask whether the square is a station: the caption the diagram draws by, the labelled
+     * stations the checks count, the barred sides, the guards and the accessory names the build is given, whether trains
+     * turn there - and the built railway itself.  This claim replaces one that said demoting took the caption away.
+     *
+     * MUTATION: hand the build every square's exit guards again, station or not, and this fails.
+     *
+     * @throws Exception from the panel or the build
      */
     @Test
-    public void testDemotingAStationTakesItsCaptionWithIt() throws Exception
+    public void testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        org.traincontrol.gui.AutonomyEditorPanel panel = aStationWithEverySetting();
 
-        session.open(Arrays.asList(page));
+        TileKey station = new TileKey("main", 3, 1);
+        TileKey caption = new TileKey("main", 3, 3);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
+        answerTheStationMenu(panel, station, false);
 
-        session.setStation(station, true);
-        session.setCaption(caption, station);
+        session.rebuild();
 
-        assertEquals(session.getCaptionTarget(caption), station, "precondition: the plaque is up");
+        assertFalse(session.getStore().isStation(station), "precondition: the square is still a station");
 
-        session.setStation(station, false);
+        // KEPT, or there is nothing to ignore
+        assertEquals(session.getStore().getCaptionTarget(caption), station, "precondition: demoting the station took its"
+            + " caption, so nothing below asks whether a kept one is ignored (GSE-C4)");
 
-        assertNull(session.getCaptionTarget(caption),
-            "the name plaque outlived the station it names");
+        assertFalse(session.getStore().getBarredArrivals(station).isEmpty(), "precondition: demoting the station took"
+            + " its arrival restriction (GSE-C4)");
 
-        assertTrue(session.captionsFor(station).isEmpty(),
-            "and the station still believes it is captioned somewhere");
+        assertFalse(session.getStore().getProtectingSignals(station).isEmpty(), "precondition: demoting the station took"
+            + " its exit guard (GSE-C4)");
+
+        assertFalse(session.getStore().getEntrySignals(station).isEmpty(), "precondition: demoting the station took its"
+            + " entry guard (GSE-C4)");
+
+        assertEquals(session.getPointProperty(station, "terminus"), Boolean.TRUE, "precondition: demoting the station"
+            + " took its turn flag (GSE-C4)");
+
+        // AND IGNORED
+        assertNull(session.getCaptionTarget(caption), "a plain point's kept caption is drawn - the diagram asks this -"
+            + " and lights a station name up when a train reverses there");
+
+        assertFalse(session.getLabelledStationTiles().contains(station), "a plain point counts as a labelled station");
+
+        assertTrue(session.getBarredArrivals(station).isEmpty(), "a plain point bars arrivals by its kept restriction");
+
+        assertFalse(session.barredArrivals().containsKey(station), "the build and the checks are given a plain point's"
+            + " kept arrival restriction");
+
+        assertNull(session.getProtectingSignal(station), "a plain point has an exit guard");
+
+        assertTrue(session.getEntrySignals(station).isEmpty(), "a plain point has an entry guard");
+
+        assertFalse(session.protectingSignalNames().containsKey(station), "the build is given a plain point's kept exit"
+            + " guard, and throws it red");
+
+        assertFalse(session.entrySignalNames().containsKey(station), "the build is given a plain point's kept entry"
+            + " guard, and throws it red");
+
+        assertFalse(session.isTurnAround(station), "a plain point's kept turn flag turns trains round there");
+
+        org.json.JSONArray points = new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points");
+
+        int copies = 0;
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            if (!station.toString().equals(point.optString("square"))) continue;
+
+            copies++;
+
+            assertFalse(point.has("protectingSignal") || point.has("entrySignal"), "the built railway throws a kept guard"
+                + " for a square that is not a station: " + point);
+
+            assertFalse(point.optBoolean("terminus", false) || point.optBoolean("reversing", false), "the built railway"
+                + " turns trains round on a plain point by its kept turn flag: " + point);
+        }
+
+        assertTrue(copies > 0, "precondition: the built railway has no point for " + station + ", so nothing above read"
+            + " it");
     }
 
     /**
-     * A setup written before that rule is cleaned up when it is opened.
+     * A caption kept for a square that is not a station now survives the setup being opened, undrawn, and is drawn again
+     * once the square is a station (GSE-C4).
      *
-     * The rule stops new ones appearing; it cannot touch the ones already on disk, and the setup that
-     * showed this fault has one.  Nothing here is a user's to fix - the plaque comes back the moment
-     * the square is made a station again - so it is cleared silently.
+     * Opening used to forget every caption naming a square that is not a station - a clean-up for setups written before
+     * demoting took the caption with it.  Adam, 2026-10-10, asked for the opposite rule: keep them, ignored while not a
+     * station - so that clean-up would throw away, at the next start, what demoting now keeps.  This claim replaces the
+     * one that said opening forgot them.
+     *
+     * The square is demoted behind the session's back, as a setup written by another build would arrive.
+     *
+     * MUTATION: forget non-stations' captions in `open` again, and this fails.
+     *
+     * @throws Exception from the files
      */
     @Test
-    public void testOpeningForgetsPlaquesForSquaresThatAreNoLongerStations() throws Exception
+    public void testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow() throws Exception
     {
         LayoutDiagram page = pageOnDisk();
 
@@ -10689,15 +10926,21 @@ public class testAutonomyDiagramSession
         session.setStation(station, true);
         session.setCaption(caption, station);
 
-        // behind the session's back, exactly as a setup written by an older build would look
         session.getStore().setStation(station, false);
         session.save();
 
         AutonomySession reopened = new AutonomySession(layout);
         reopened.open(Arrays.asList(pageOnDisk()));
 
-        assertNull(reopened.getCaptionTarget(caption),
-            "the stale plaque survived being opened and will light up again");
+        assertNull(reopened.getCaptionTarget(caption), "a caption kept for a square that is not a station is drawn");
+
+        assertEquals(reopened.getStore().getCaptionTarget(caption), station, "opening the setup forgot the caption of a"
+            + " square that is not a station now, which is kept for when it is one again (GSE-C4)");
+
+        reopened.setStation(station, true);
+
+        assertEquals(reopened.getCaptionTarget(caption), station, "the square is a station again and its caption is not"
+            + " drawn (GSE-C4)");
     }
 
     /**
@@ -11128,6 +11371,184 @@ public class testAutonomyDiagramSession
             "the import cleared a home without counting it, so nothing can tell the user that a "
             + "choice was made on their behalf");
     }
+
+    /**
+     * An import says what it left on a square already taken: a placement onto a square another train stands on, and a
+     * home onto a square that is already another train's home (OB-304).
+     *
+     * Both were skipped without a word - the square keeps its train and its home, which is right, and the operator was
+     * told nothing about the train the file put there.  The same train already on its own square, which is what a file
+     * imported a second time meets, is nothing to say.
+     *
+     * MUTATION: skip either silently again, or name the train already there as another, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAnImportSaysWhatItLeftOnATakenSquare() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey west = new TileKey("main", 1, 1);
+        TileKey east = new TileKey("main", 4, 1);
+
+        session.placeLocomotive(west, "BR 01");
+        session.setHome(east, "BR 01");
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        // ANOTHER TRAIN onto the square BR 01 stands on (sensor 11), and another home onto the square that is BR 01's
+        points.put(new org.json.JSONObject().put("name", "Hauptbahnhof").put("s88", 11)
+            .put("loc", new org.json.JSONObject().put("name", "BR 02")));
+        points.put(new org.json.JSONObject().put("name", "Nebenbahnhof").put("s88", 12).put("home", "BR 03"));
+
+        // AND THE SAME TRAIN onto its own square, from a second old point on that sensor: nothing to say
+        points.put(new org.json.JSONObject().put("name", "Hauptbahnhof Einfahrt").put("s88", 11)
+            .put("loc", new org.json.JSONObject().put("name", "BR 01")));
+
+        AutonomySession.LegacyImport result = session.importLegacy(new org.json.JSONObject().put("points", points));
+
+        assertEquals(result.squareTaken, Arrays.asList("BR 02"), "a placement onto a square another train stands on was"
+            + " skipped without a word, or the train already standing there was named as another (OB-304)");
+
+        assertEquals(result.homeSquareTaken, Arrays.asList("BR 03"), "a home onto a square already home to another"
+            + " train was skipped without a word (OB-304)");
+
+        // AND THE SQUARES KEPT WHAT THEY HAD
+        Object standing = session.getPointProperty(west, "loc");
+
+        assertTrue(standing instanceof org.json.JSONObject
+            && "BR 01".equals(((org.json.JSONObject) standing).optString("name")), "the import put another train on a"
+            + " square that had one: " + standing);
+
+        assertEquals(session.getPointProperty(east, "home"), "BR 01", "the import took a square's home away for another"
+            + " train");
+    }
+
+    /**
+     * A facing the square records is kept by an import only where trains may arrive that way, and counted as the guess
+     * it is (OB-304).
+     *
+     * Where the old file cannot say which way a placed train faces, the facing the square last recorded was kept as it
+     * stood (RLA2-B3) - unchecked against the ways trains may arrive, though the guess made in its place prefers one of
+     * those (REG3-C1), and uncounted, so the log said no facing was guessed.  Here the middle square of a line, with
+     * arrivals from the east barred, records the barred way; the file places a train there with no edges to say.  Then,
+     * the bar lifted, the same way is one trains may arrive in, and is kept - and counted.
+     *
+     * MUTATION: keep any recorded facing again, or keep one without counting it, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAnImportKeepsARecordedFacingOnlyWhereTrainsMayArrive() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        session.getStore().createConfiguration("Barred", null);
+        session.getStore().setActiveConfiguration("Barred");
+
+        TileKey middle = new TileKey("main", 3, 1);
+
+        // A STATION, whose barred sides are read - a square that is not one has them ignored (GSE-C4)
+        session.setStation(middle, true);
+        session.setBarredArrivals(middle, java.util.EnumSet.of(Side.E));
+        session.rebuild();
+
+        Set<Side> mayArrive = session.homeFacingsFor(middle);
+
+        Side barredWay = null;
+
+        for (Side way : session.facingsFor(middle).values())
+        {
+            if (!mayArrive.contains(way)) barredWay = way;
+        }
+
+        assertFalse(mayArrive.isEmpty(), "precondition: no copy of the middle square is one trains may arrive at");
+        assertNotNull(barredWay, "precondition: no copy of the middle square faces a way trains may not arrive in: "
+            + session.facingsFor(middle) + ", " + mayArrive);
+
+        // THE LAST OCCUPANT'S FACING: the barred way
+        session.setFacing(middle, barredWay);
+
+        org.json.JSONObject legacy = new org.json.JSONObject().put("points", new org.json.JSONArray().put(
+            new org.json.JSONObject().put("name", "Mitte").put("s88", 12)
+                .put("loc", new org.json.JSONObject().put("name", "BR 50"))));
+
+        AutonomySession.LegacyImport barred = session.importLegacy(legacy);
+
+        assertTrue(session.homeFacingsFor(middle).contains(session.getFacing(middle)), "the import kept the facing the"
+            + " square recorded, " + session.getFacing(middle) + ", a way trains may not arrive in - the train stands"
+            + " where autonomy will not start it, though the guess made in its place prefers a way trains may arrive"
+            + " (REG3-C1, OB-304)");
+
+        assertEquals(barred.facingsInvented, 1, "the facing the import chose for the train is not counted as a guess");
+
+        // THE BAR LIFTED, in a configuration of its own: the same way is now one trains may arrive in, and stays
+        session.setBarredArrivals(middle, java.util.EnumSet.noneOf(Side.class));
+
+        session.getStore().createConfiguration("Open", null);
+        session.getStore().setActiveConfiguration("Open");
+        session.rebuild();
+
+        assertTrue(session.homeFacingsFor(middle).contains(barredWay), "precondition: with the bar lifted, " + barredWay
+            + " is still not a way trains may arrive at the middle square");
+
+        session.setFacing(middle, barredWay);
+
+        AutonomySession.LegacyImport lifted = session.importLegacy(legacy);
+
+        assertEquals(session.getFacing(middle), barredWay, "the import did not keep a recorded facing trains may arrive"
+            + " in (RLA2-B3)");
+
+        assertEquals(lifted.facingsInvented, 1, "the import kept the facing the square recorded, which is no evidence"
+            + " about the train the file puts there, and did not count it as a guess - the log says nothing was guessed"
+            + " (OB-304)");
+    }
+
+    /**
+     * The import's message names every skip it counts or lists (OB-304): the trains and homes left on a taken square,
+     * and the homes the file named twice - each read by the viewer's import door into the message, through its own
+     * sentence in the English bundle.
+     *
+     * MUTATION: leave any of the three out of the message, and this fails naming it.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testTheImportMessageNamesEverySkip() throws Exception
+    {
+        String door = new String(Files.readAllBytes(
+            new File("src/org/traincontrol/gui/AutonomyViewerPanel.java").toPath()), StandardCharsets.UTF_8);
+
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = AutonomySession.class.getResourceAsStream(
+            "/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        for (String[] skip : new String[][] {
+            {"result.squareTaken", "autosetup.ui.infoLegacySquareTaken"},
+            {"result.homeSquareTaken", "autosetup.ui.infoLegacyHomeSquareTaken"},
+            {"result.duplicateHomes", "autosetup.ui.infoLegacyDuplicateHomes"}})
+        {
+            int read = door.indexOf(skip[0]);
+
+            assertTrue(read > 0, "the import door never reads " + skip[0] + ", so the operator is not told (OB-304)");
+
+            int said = door.indexOf(skip[1], read);
+
+            assertTrue(said > read && said - read < 300, "the import door reads " + skip[0] + " and does not say it"
+                + " through " + skip[1] + " (OB-304)");
+
+            assertNotNull(english.getProperty(skip[1]), "the English bundle has no " + skip[1]);
+        }
+    }
+
     /**
      * The bulk clear touches exactly the squares the findings call homes (WK3-C3).
      *

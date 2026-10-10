@@ -1,6 +1,7 @@
 package regression;
 
 import java.util.Arrays;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -165,6 +166,73 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * A station square showing another station's only name asks before it shows its own, and No leaves that name where it
+     * is (GSE-C5); Yes still shows its own, the item being live there since SVV-C6 and SVX-B2.
+     *
+     * A drag can leave a station square showing ANOTHER station's caption, and "Show a Station Name Here" on it captioned
+     * the square with itself and asked nothing - so the other station was then named nowhere on the diagram, which the
+     * setup's checks call an error (`AutonomyChecks.checkStationLabels`).  The drop refuses the same loss outright
+     * (`refuseCaptionDrop`).  Driven through Control+N, which opens what the menu item opens, and answered through
+     * `answerTakeAnotherNameForTests`, so no dialog is put on screen.
+     *
+     * MUTATION: drop the question from `promptStationLabel`'s station branch, and the No half fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationSquareAsksBeforeTakingAnotherStationsOnlyName() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-other").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            TileKey here = new TileKey("main", 1, 1);
+            TileKey other = new TileKey("main", 6, 1);
+
+            session.setStation(here, true);
+            session.setStation(other, true);
+
+            // THE OTHER STATION'S NAME ON THIS STATION'S SQUARE, and nowhere else - as a drag leaves it
+            session.setCaption(here, other);
+
+            assertEquals(session.captionsFor(other), java.util.Collections.singleton(here),
+                "precondition: the other station is not named on this square alone: " + session.captionsFor(other));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            assertTrue(panel.offersAStationName(here), "precondition: the menu offers no live Show a Station Name Here on a"
+                + " station square showing another station's name, which SVV-C6 and SVX-B2 made live");
+
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(false);
+
+            panel.showStationNameFor(here);
+
+            assertEquals(session.getCaptionTarget(here), other, "Show a Station Name Here took the only name another"
+                + " station had off the diagram without asking, or after being answered No (GSE-C5)");
+
+            // AND YES STILL SHOWS ITS OWN: the item is live, and asking is not refusing
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(true);
+
+            panel.showStationNameFor(here);
+
+            assertEquals(session.getCaptionTarget(here), here, "answered Yes, the station square still does not show its"
+                + " own name - the question became a refusal, which SVV-C6 and SVX-B2 ruled out");
+        }
+        finally
+        {
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
+
             deleteRecursively(folder);
         }
     }

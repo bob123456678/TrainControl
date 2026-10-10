@@ -167,6 +167,22 @@ station that excludes this train; and a route to it is used only
 if it turns the train nowhere on the way and `isPathClear` passes it. No routing rule can admit a
 journey any of that refuses.
 
+**A paused train is left where it stands** (FR-117; Adam, 2026-10-09: *"in autonomy configs, track the paused/unpaused
+status of locomotives, as designated on the autonomy locomotive controls tab"*, and, asked what a pause keeps a train out
+of, *"Autonomy and Return Home"*). Autonomy never chooses a journey for it (`Layout.pickPath`), and Why Not Moving? says
+it is paused; Return Home leaves it too (section 6). A hand send still takes it, and so does Execute Timetable (Adam,
+2026-10-09, asked: *"Timetable can run paused trains"*; RSA60-C4). **The pause belongs to the configuration**: it is listed with the
+configuration's settings (`pausedLocomotives`, written only while it names somebody), every train is set paused or not
+as a configuration loads - start-up, a load, an import, a rebuild - and the log names the paused ones (*"Make sure the
+log shows what locomotive are paused when the autonomy import happens"*). Three doors set it: the Auto tab's pause
+button, which changes the train alone while trains run and is taken into the setup by the next fold, as the tab's other
+settings are; and the **... Is Active** tick on the track diagram's right-click menu and the autonomy editor's, offered
+where a train stands and only while autonomy is stopped, which changes the train and the setup together (and the
+railway's settings as built, so a press of the pause button afterwards is not undone by a rebuild - RSA60-B1). A rename
+of a train is carried into every configuration's list, and a deletion takes it off (RSA60-C2). On the diagram a paused
+train's icon is grey. `core.testAPausedTrainStaysPaused`, `ui.testTheActiveTickPausesATrain`,
+`core.testAutonomyDiagramMonitor.testAPausedTrainIsDrawnGrey`.
+
 **Station priority is absolute, and it is the default behaviour.** Every station has a whole-number
 priority, 0 unless set - clearing the box means 0. The candidates are shuffled and then sorted highest
 priority first, and the sort keeps the shuffle within a priority, so equals are chosen between at
@@ -226,6 +242,22 @@ An inactive square is refused as a **destination** and as an **intermediate** po
 **The square a train is already standing on is exempt.** Switching a square off around a train is how
 you take it out of service; the train then has to be driven off it by hand, and a rule that refused
 that would strand it.
+
+### 2a. A square that stops being a station keeps what it had
+
+Adam, 2026-10-10, asked what setting a station to `No - Trains Cannot Stop Here` should do with its settings: *keep
+them, ignored while it is not a station* (GSE-C4).  A square demoted keeps its caption, the sides trains may not arrive
+by, its exit and entry guard signals and its turn setting, as it already kept its longest train (OB-291) and what blocks
+it (AMS-B2).  While it is not a station none of them is read: no caption is drawn for it, no guard is built for it, no
+side of it is barred.  Made a station again, it has them all back.  They used to be cleared on demotion, with nothing
+said and no way back.  `core.testAutonomyDiagramSession.testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`,
+`testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation`, `testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow`.
+
+**And a route deleted takes the calls to it with it** (GSR-B4; Adam, 2026-10-10, asked: remove the calls).  The
+question before deleting a route names the routes that run it; deleting it takes those "run this route" commands out of
+them, each logged, as deleting a locomotive takes the commands that drive it - so a new route given the old name does not
+inherit them.  At the window's door only: editing a route deletes and remakes it inside the model, and must not.
+`core.testAdvancedRoutes.testADeletedRouteIsNotRunByTheRoutesThatCalledIt`.
 
 ---
 
@@ -884,11 +916,17 @@ correct?"*: yes).  It is drawn flat against that side whatever its turning setti
 station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
 its own shape.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
 
-On a curve the icon lies along the line between the curve's two ends, made smaller where it would not fit; in the editor
-a station on a curve sits off the rails, clear of the direction arrows, as its badge always has.  The icons:
+On a curve the icon lies along the line between the curve's two ends, moved in off the corner until all of it is inside
+its square, smaller only where even in the middle it would not fit (MT-710: *"On curves, regular stations are now cut off
+in the corners"*); in the editor a station on a curve sits off the rails, clear of the direction arrows, as its badge
+always has.  The red and green arrows are drawn over the icon, on the diagram and in the editor (MT-710: *"We need to
+render red arrows on top of stations"*).  A may-turn hexagon is 24 pixels long at the small size and 47 at the large, a
+terminus 24 and 48, and the must-turn pair, both halves and the gap, no longer than the may-turn (MT-710).  The icons:
 `core.testAutonomyDiagramMonitor` - `testAStationIsARoundedBlock`, `testWhereTrainsMayTurnIsTheHexagon`,
 `testWhereTrainsMustTurnIsTwoTerminiBackToBack`, `testAStationAtADeadEndIsATerminusFacingIt`,
-`testParkingIsGreyInItsOwnShape`, `testAStationOutOfServiceIsTheXOverAGreyBlock`, `testAStationCoversTheSensorsContact`;
+`testParkingIsGreyInItsOwnShape`, `testAStationOutOfServiceIsTheXOverAGreyBlock`, `testAStationCoversTheSensorsContact`,
+`testTheTurningIconsAreTheLengthsAdamAskedFor`, `testAStationOnACurveIsWhollyInsideItsSquare`,
+`testTheArrowsAreDrawnOverAStationsIcon`;
 the caption, `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` and `testAPillOnEndClearsTheStationsBesideIt`.
 
 ## 5. Length: will the train fit?
@@ -1111,13 +1149,16 @@ beside it along the road it carries - plain track before a switch - so every tot
 **A deliberate 0 is an answer** (Adam, 2026-09-23, OB-274: *"we need to allow a length of 0 as a length
 that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow
 everything to get assigned without what appears to be a skip."*). So the walks accept 0, and the piece is
-recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule
-but one** - the own-tail rule, which judges a way round only where it has run some length, is filed as OB-300 (RLA-C6)
+recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule**
 (Adam, 2026-09-25, ADU-C7: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*).  The route in, the room walk, the
 walk that claims a standing train's tail, the berth rule and the tail question count it, adding nothing, and walk on
 over it - so a train is let in wherever the measured track holds it in total, and a train standing there is claimed over
 the 0 and the track behind it.  They all ask one question, `Edge.isMeasured` - a length, or every place answered - so
-what the route in admits the tail walk claims.  **A leg with any square nobody answered still ends every walk** - a switch
+what the route in admits the tail walk claims.  **The own-tail rule asks it too, of the way round** (OB-300, RLA-C6;
+Adam, 2026-10-10, asked: into 3.0.0) - place by place, since a way round begins and ends inside a leg - so a loop
+answered 0 all the way round is judged as track of no length, and no train lying on it is let round into its own body
+(§5c).  Until then it judged a way round only where the route had run some length, and was the one length rule that
+erred towards letting through.  **A leg with any square nobody answered still ends every walk** - a switch
 or crossing on it included, which Mass Assign Lengths still asks for.  On the frozen railway's Tunnel: with BottomSecondary
 -> TunnelPre answered 0 throughout, a train of 5 from RampDown is admitted over the 8 measured end to end, where it was
 refused quoting 4.  Until then an answered 0 read as a stretch nobody measured (confirmed by Adam on 2026-09-23), but for
@@ -1298,8 +1339,10 @@ The editor notice about turn-round squares with no length is a different questio
   track the head runs before it comes back there plus the body in front of that place; for a place the route ran
   over, the measured track run since the head left it. A longer train is refused, and the refusal names the tightest
   such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a return is judged
-  only where the route itself - not the body in front of the place - has measured something since the head left it,
-  and where some of it has no length the refusal says how many things Mass Assign Lengths would ask a length for on
+  only where the way round - the route itself, not the body in front of the place - is measured since the head left
+  it: some length run on it, or every place on it answered 0 (OB-300 - a loop answered 0 throughout is track of no
+  length, and refused to any train lying on it); a way round nobody measured is not judged.  Where some of it has no
+  length the refusal says how many things Mass Assign Lengths would ask a length for on
   the way round, which is the other way past (TDA-B1).  The build marks, place by place, the piece, switch or shared
   square the editor still asks for, keyed by the answer it is asked in - its piece, or all of its page's switches, or
   all of its page's crossings, one length each (Adam, 2026-09-24, OB-297: *"Locations of switches are known."*;
@@ -1746,6 +1789,16 @@ waiting for it to arrive.  The question is only ever *has the tail passed this e
 `Layout.tailHasProvablyPassed` answers it from two facts: how far the head has travelled since the end
 of the edge, and how long the train is.
 
+**How far the head has travelled is counted to where the sensor that last answered saw it** (GS-B3; Adam,
+2026-10-10, asked: into 3.0.0 - put to him as releasing track earlier, never unsafely): the edge whose sensor answered,
+up to that sensor's own square.  A sensor answers when the head ENTERS its square, so the square is counted behind the head only when the next
+sensor answers - the safe reading for a release, where the walk that claims a running train's body takes the generous
+one (the head at the square's far end).  It was counted one sensor short, and on a path of three edges or fewer the
+first edge was held to the end of the run whatever the train's length.  A Point with no sensor - a hand-written
+configuration may have one; the builder's all carry one - is passed without waiting, so the track to it is counted only
+once the next sensor answers.  `core.testTrainTailClearsEdges.testAnEdgeIsHandedBackOnceTheTailHasPassedIt`,
+`testASensorsOwnSquareIsNotCountedBehindTheHeadYet`, `testAnEdgeIsNotHandedBackBeforeTheTailHasPassedIt`.
+
 **It is wrongly true in exactly two states, and both of them are ordinary.**
 
 - **A path with no measured edge anywhere on it.**  With nothing measured the honest answer to "how
@@ -1974,7 +2027,16 @@ not fight: the post-processor only ever sees what the focus owner did not want.
 
 ## 6. Parking and Return Home
 
-- Return Home stages every locomotive that has a home, as one plan.
+- Return Home stages every locomotive that has a home, as one plan - **but a paused one** (FR-117): for the plan its home
+  is where it stands, so it is home already and nothing is planned for it, the search never moves it out of another
+  train's way, and the log says it is paused and stays where it stands. The check after a run counts it home, so the
+  window does not report the run as stopped short. `core.testAPausedTrainStaysPaused`.
+- **Place All Trains at Their Homes** (FR-115, Bulk Tools; Adam, 2026-10-09: *"Teleports locomotives to their home stations,
+  facing the correct way, and clears all other locomotives from other stations (without actually moving anything)"*)
+  rewrites the setup only: every train with a home is put on it facing the way it was homed (a home with no recorded
+  facing takes the facing of the copy the running layout homes it on), every other train is taken off, and the running
+  layout is rebuilt from that, naming every train it moved so the rebuild puts none of them back. Nothing is sent to the
+  railway; a pause is kept; it is refused while trains run. `core.testPlaceAllAtTheirHomes`.
 - One locomotive has one home; assigning a home takes it away from wherever it was.
 - **A home has a facing, and Return Home brings the train back in it** (Adam, 2026-09-23, OB-282: *"yes, it should
   accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic on the
@@ -2771,6 +2833,17 @@ timetable's entries and its own loop count as running until they leave, and any 
 reads busy until the old timetable has gone and Start cannot come back into a run it would then join (RSA3-C5, RSA4-C1).
 The Yes waits for no lock a journey holds: it is answered on the window's own thread (RSA3-C4).
 `core.testATrainIsDispatchedOnce`.
+
+**Nothing is sent while the track power is off** (GST-B1; Adam, 2026-10-10, asked: into 3.0.0).  Autonomy, Execute
+Timetable and Return Home - whose plan runs as a timetable - wait before they choose a journey, start a timetable's entry
+or try a refused one again while the power reads off, cut from the window, by the Central Station or by a route, and go
+on when it reads on: the run is not stopped, and the log says once that it is waiting.  They used to go on choosing and
+setting routes, commanding switches on a railway with no power to move them.  A journey already under way is not
+touched.  The power reads on until the Central Station says otherwise - at start-up, and always in a simulation without
+Echo Sent Commands - so a state nobody has reported never holds a run.  Instant Stop is a halt, not a power cut, and
+autonomy runs on through it (OB-251).  A hand send is not waited for: the send gate refuses it while the power is off, as
+it refuses every door's press.  `core.testATrainIsDispatchedOnce.testAutonomySendsNothingWhileThePowerIsOff`,
+`testATimetableStartsNothingWhileThePowerIsOff`.
 
 **An old autonomy.json goes into the configuration named at the Import prompt** (Adam, 2026-09-25, choosing
 between honouring the name typed and not asking for one: *"(a)"*), created where there is none of that name.  It is

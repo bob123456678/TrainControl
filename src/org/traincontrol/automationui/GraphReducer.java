@@ -1256,6 +1256,9 @@ public class GraphReducer
      * The switch tile itself is NOT counted.  The whole point of the rule is that the train comes to
      * rest clear of the points; track the train would be standing on while fouling them is not room.
      *
+     * "A switch" here is what `boundsTheRoom` says: a switch or a permanent turnout, and not a two-square
+     * crossing - `Edge.crossesASwitch` (VD18-C4).
+     *
      * Walks backwards and stops at the first switch, because that is the binding one: a train that
      * fits between the last switch and the station also fits between any earlier switch and it.
      *

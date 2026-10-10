@@ -248,6 +248,57 @@ public class testControlStationFaults
     }
 
     /**
+     * A database file that reads, and holds something other than a locomotive list, is unreadable too (GSP-C1).
+     *
+     * `restoreState` took the list when the file held one and logged success either way, so a file that deserialized
+     * to anything else - written by another program, or swapped in by hand - left the mark that guards the exit save
+     * clear.  The application then ran with an empty database, said it had loaded one, and the save on the way out
+     * wrote that emptiness over the file with no copy kept: the loss `isDatabaseLoadFailed` exists to prevent, by a
+     * third road past it.
+     *
+     * Written to a temporary file this test owns; the live database is neither read nor written.
+     *
+     * MUTATION: drop `this.databaseLoadFailed = true;` from `restoreState`'s branch for an object that is not a List,
+     * and this fails.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testADatabaseFileHoldingSomethingElseIsUnreadable() throws Exception
+    {
+        java.io.File stranger = java.io.File.createTempFile("tc-not-a-list", ".data");
+
+        java.io.File missing = java.io.File.createTempFile("tc-absent", ".data");
+
+        assertTrue(missing.delete(), "the reset below needs a file that is not there");
+
+        try
+        {
+            try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(
+                new java.io.FileOutputStream(stranger)))
+            {
+                out.writeObject("a perfectly good object, and not a locomotive database");
+            }
+
+            java.util.List<?> restored = model.restoreState(stranger.getAbsolutePath());
+
+            assertTrue(restored.isEmpty(), "precondition: a file holding no locomotives restored some");
+
+            assertTrue(model.isDatabaseLoadFailed(), "a database file that is THERE and holds something other than a"
+                + " locomotive list was taken as a good load.  The application runs with an empty database, and the"
+                + " save on the way out writes that over the file with no copy kept - every locomotive customization"
+                + " gone (GSP-C1)");
+        }
+        finally
+        {
+            stranger.delete();
+
+            // The mark is state on the model every test here shares
+            model.restoreState(missing.getAbsolutePath());
+        }
+    }
+
+    /**
      * A timetable that has to run one entry at a time still does after being saved and loaded.
      *
      * The flag exists because a staging plan's moves contend: dispatched in parallel, the second

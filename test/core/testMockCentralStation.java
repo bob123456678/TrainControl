@@ -507,6 +507,230 @@ public class testMockCentralStation
         }
     }
 
+    /** The Central Station multi-unit `test/lokomotive.cs2` serves, with two members (OB-303). */
+    private static final String SERVED_MULTI_UNIT = "OBB 1043";
+
+    /** A served multi-unit standing on the graph, and a member of it its database copy does not have (OB-303). */
+    private static final class StandingMultiUnit
+    {
+        org.traincontrol.automation.Layout layout;
+        MarklinLocomotive multiUnit;
+        MarklinLocomotive member;
+    }
+
+    /**
+     * Stands the Central Station's OBB 1043 on one point and the member its database copy does not have on another
+     * (OB-303; and RLA4-C7: the database's copy of OBB 1043 given one member before the sync, with the other standing).
+     *
+     * A first sync brings OBB 1043 in with the two members `test/lokomotive.cs2` gives it; each member is made a
+     * locomotive of the name the file gives it, where this database has none; then the database's copy is cut back to
+     * the first member, as it was before somebody added the second on the Central Station's own screen.
+     *
+     * @param made filled with the names of the locomotives this makes, for the caller to delete
+     * @return the multi-unit, the member, and the railway they stand on
+     * @throws Exception from the model or the station
+     */
+    private static StandingMultiUnit aMultiUnitAndAMemberStanding(List<String> made) throws Exception
+    {
+        TestStationAddress.set(address);
+
+        MarklinLocomotive served = null;
+
+        for (MarklinLocomotive each : mockStation().parseLocomotives())
+        {
+            if (SERVED_MULTI_UNIT.equals(each.getName())) served = each;
+        }
+
+        assertNotNull(served, "precondition: the mock station no longer serves " + SERVED_MULTI_UNIT);
+
+        assertTrue(model.syncWithCS2() >= 0, "precondition: the sync that brings " + SERVED_MULTI_UNIT + " in failed");
+
+        StandingMultiUnit out = new StandingMultiUnit();
+
+        out.multiUnit = model.getLocByName(SERVED_MULTI_UNIT);
+
+        assertTrue(out.multiUnit != null && out.multiUnit.getDecoderType() == MarklinLocomotive.decoderType.MULTI_UNIT
+            && java.util.Objects.equals(out.multiUnit.getUID(), served.getUID()), "precondition: this database does not"
+            + " hold " + SERVED_MULTI_UNIT + " as the multi-unit the station serves, so the sync does not set its"
+            + " members: " + out.multiUnit);
+
+        java.util.Map<String, Double> members = out.multiUnit.getModelMultiUnitLocomotiveNames();
+
+        assertTrue(members != null && members.size() == 2, "precondition: the served " + SERVED_MULTI_UNIT
+            + " does not have two members: " + members);
+
+        List<String> names = new java.util.ArrayList<>(new java.util.TreeSet<>(members.keySet()));
+
+        int free = 72;
+
+        for (String name : names)
+        {
+            if (model.getLocByName(name) == null)
+            {
+                assertNotNull(model.newMM2Locomotive(name, free++), "precondition: could not make the member " + name);
+
+                made.add(name);
+            }
+        }
+
+        // THE DATABASE'S COPY GIVEN THE FIRST MEMBER ONLY
+        java.util.Map<String, Double> first = new java.util.HashMap<>();
+
+        first.put(names.get(0), 1.0);
+
+        out.multiUnit.setModelMultiUnitLocomotives(first);
+
+        out.member = model.getLocByName(names.get(1));
+
+        out.layout = model.getAutoLayout();
+
+        org.traincontrol.marklin.MarklinFeedback one = model.newFeedback(8403, null);
+        org.traincontrol.marklin.MarklinFeedback two = model.newFeedback(8404, null);
+
+        model.setFeedbackState(one.getName(), false);
+        model.setFeedbackState(two.getName(), false);
+
+        out.layout.createPoint("OB303 A", true, one.getName());
+        out.layout.createPoint("OB303 B", true, two.getName());
+        out.layout.createEdge("OB303 A", "OB303 B");
+
+        out.layout.getPoint("OB303 A").setLocomotive(out.multiUnit);
+        out.layout.getPoint("OB303 B").setLocomotive(out.member);
+
+        assertTrue(out.multiUnit.isSimultaneousMultiUnitCompatible(out.member)
+            && out.member.isSimultaneousMultiUnitCompatible(out.multiUnit), "precondition: with one member in its"
+            + " copy, " + SERVED_MULTI_UNIT + " already conflicts with " + out.member.getName() + ", so a sweep would"
+            + " take it off whatever the sync changed");
+
+        return out;
+    }
+
+    /**
+     * A sync that gives a standing Central Station multi-unit a member standing on the graph takes that member off, and
+     * redraws the railway (OB-303).
+     *
+     * The sync is the only door a Central Station multi-unit's members come in by, and since RLA2-B2 it sweeps a
+     * multi-unit whose members it changed - but only the address half had a claim, and the sweep redrew nothing: the
+     * window's own doors call the layout's refresh after the same sweep, and the autonomy panels went on drawing the
+     * member standing.  Here the served OBB 1043, its database copy short of one member, stands on one point and that
+     * member on another.
+     *
+     * MUTATION: sweep nothing after the sync's member pass, or redraw nothing after it, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncThatAddsAStandingMemberTakesItOffAndRedraws() throws Exception
+    {
+        String was = TestStationAddress.get();
+
+        List<String> made = new LinkedList<>();
+
+        try
+        {
+            StandingMultiUnit standing = aMultiUnitAndAMemberStanding(made);
+
+            final AtomicInteger redrawn = new AtomicInteger();
+
+            standing.layout.setCallback("OB-303 probe", (edges, loc, flag) ->
+            {
+                redrawn.incrementAndGet();
+
+                return null;
+            });
+
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the sync against the mock station failed");
+
+            assertNotNull(standing.layout.getLocomotiveLocation(standing.multiUnit), "the sync took the multi-unit off"
+                + " its own station");
+
+            assertNull(standing.layout.getLocomotiveLocation(standing.member), "the sync gave the standing "
+                + SERVED_MULTI_UNIT + " the member standing beside it, and both still stand - autonomy would run that"
+                + " member as a train of its own while every command to the multi-unit moves it (RLA2-B2, OB-303)");
+
+            assertTrue(redrawn.get() > 0, "the sync took " + standing.member.getName() + " off the graph and redrew"
+                + " nothing, so the autonomy panels go on drawing it standing (OB-303)");
+        }
+        finally
+        {
+            TestStationAddress.set(was);
+
+            model.clearAutoLayout();
+
+            for (String name : made)
+            {
+                try { model.deleteLoc(name); } catch (Exception ignored) { }
+            }
+        }
+    }
+
+    /**
+     * A member a Central Station multi-unit is given while autonomy runs is taken off by the first sync after the run,
+     * not left standing until the next load (OB-303).
+     *
+     * The sweep is not made while autonomy runs, as the window's edit doors make none - but the members are taken at
+     * once, so the next sync saw no change and swept nothing, and a train standing as a member of a standing multi-unit
+     * stayed on the graph: autonomy could run it as a train of its own while the multi-unit's commands moved it.  Here
+     * the run is the railway's own flag, set by reflection, so nothing moves.
+     *
+     * MUTATION: forget what a sync held back while autonomy ran, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testAMemberAddedDuringARunIsTakenOffByTheNextSync() throws Exception
+    {
+        String was = TestStationAddress.get();
+
+        List<String> made = new LinkedList<>();
+
+        java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
+
+        running.setAccessible(true);
+
+        StandingMultiUnit standing = null;
+
+        try
+        {
+            standing = aMultiUnitAndAMemberStanding(made);
+
+            running.set(standing.layout, true);
+
+            assertTrue(model.isAutonomyRunning(), "precondition: autonomy does not read as running");
+
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the sync while autonomy ran failed");
+
+            assertEquals(standing.multiUnit.getModelMultiUnitLocomotiveNames().size(), 2, "precondition: the sync"
+                + " while autonomy ran did not take the new member in");
+
+            assertNotNull(standing.layout.getLocomotiveLocation(standing.member), "a sync while autonomy runs took a"
+                + " train off the graph, which the window's own doors do not do mid-run (RLA2-B2)");
+
+            running.set(standing.layout, false);
+
+            assertFalse(model.isAutonomyRunning(), "precondition: autonomy still reads as running");
+
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the sync after the run failed");
+
+            assertNull(standing.layout.getLocomotiveLocation(standing.member), "the member " + SERVED_MULTI_UNIT
+                + " was given while autonomy ran still stands after the first sync with the run stopped - nothing"
+                + " remembered that its sweep was held back, so it stands until the next load or Place (OB-303)");
+        }
+        finally
+        {
+            if (standing != null) running.set(standing.layout, false);
+
+            TestStationAddress.set(was);
+
+            model.clearAutoLayout();
+
+            for (String name : made)
+            {
+                try { model.deleteLoc(name); } catch (Exception ignored) { }
+            }
+        }
+    }
+
     /**
      * A full sync against the mock station, reconciliation and all.
      *

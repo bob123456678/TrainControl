@@ -1476,6 +1476,39 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * The locomotives a Central Station sync changed while autonomy ran, by name, swept by the first sync that finds it
+     * stopped (OB-303).
+     *
+     * A sync asks the railway what each locomotive it re-addressed or re-linked now conflicts with, as the window's
+     * edit doors do - and not while autonomy runs, as they do not (RLA2-B2).  An address change is held back until the
+     * run has stopped, so the sync that applies it sweeps it; but a Central Station multi-unit's new members are taken
+     * at once, and every later sync saw no change to sweep for.  So a train standing as a member of a standing
+     * multi-unit stayed on the graph until the next load or Place, and autonomy could run it as a train of its own
+     * while every command to the multi-unit moved it.  By name, as the database holds them: a locomotive renamed or
+     * deleted since is not swept here, since the rename and delete doors sweep their own.
+     */
+    private final java.util.Set<String> sweepsHeldBackByARun =
+        java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
+
+    /**
+     * How many of a railway's points hold a train, so a sweep can tell whether it took one off (OB-303).
+     *
+     * @param layout the railway
+     * @return the points with a locomotive on them
+     */
+    private static int trainsStandingOn(Layout layout)
+    {
+        int standing = 0;
+
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null) standing++;
+        }
+
+        return standing;
+    }
+
+    /**
      * Synchronizes CS2 state
      * @return 
      */
@@ -1541,60 +1574,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 r.setLocked(false);
             }
             
-            // Import routes
+            // Import routes, one step each - see adoptCentralStationRoute
             for (MarklinRoute r : parsedRoutes)
             {
-                // Set only where this loop deletes the same route to re-read it; a route arriving for
-                // the first time was never in the selection and must not be put into it.
-                boolean wasActivated = false;
-
-                // Other existing route with same name but different ID
-                if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
-                {
-                    this.logf("route.deletingDuplicateName", r.getName());
-                    
-                    this.deleteRoute(r.getName());
-                }
-                
-                // Delete route if it has changed
-                if (this.routeDB.hasId(r.getId()) 
-                        && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute()) 
-                            || r.getS88() != this.routeDB.getById(r.getId()).getS88()
-                            || r.getTriggerType() != this.routeDB.getById(r.getId()).getTriggerType()
-                            || !Objects.equals(r.getConditions(), this.routeDB.getById(r.getId()).getConditions())
-                        ) 
-                )
-                {   
-                    this.logf("route.deletingDuplicateId", this.routeDB.getById(r.getId()).getName());
-
-                    // The SAME route, re-read from the Central Station because something about it
-                    // changed - so the operator's autonomy selection survives it (AC2-A1).
-                    wasActivated = this.isRouteActivatedByAutonomy(r.getId());
-
-                    this.deleteRoute(this.routeDB.getById(r.getId()).getName());
-                }
-                
-                if (!this.routeDB.hasId(r.getId()))
-                {
-                    // Only report and count the route if it was actually added
-                    if (newRoute(r))
-                    {
-                        this.restoreRouteActivation(r.getId(), wasActivated);
-
-                        this.logf("route.added", r.getName());
-                        num++;
-                    }
-                    else
-                    {
-                        this.logf("route.notAdded", r.getName());
-                    }
-                }
-                
-                // Routes from the Central Station are not editable
-                if (this.routeDB.getById(r.getId()) != null)
-                {
-                    this.routeDB.getById(r.getId()).setLocked(true);
-                }
+                if (this.adoptCentralStationRoute(r)) num++;
             }
             
             // Import locomotives
@@ -1633,63 +1616,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 
                 // We already have this locomotive, with the same decoder type, but different address.  Update the address and UID in database
-                if (this.locDB.getByName(l.getName()) != null 
-                    && this.locDB.getByName(l.getName()).getAddress() != l.getAddress()
-                    && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
-                )
-                {
-                    // Deferred while anything is running.  setAddress changes which decoder this
-                    // locomotive commands, so applying it mid-run sends every subsequent speed and
-                    // function command to a different engine while the graph goes on tracking this one
-                    // - and the train already moving keeps moving, now unaddressable.  A rename and a
-                    // manual address change are both refused while running; a sync had no such guard
-                    // and is triggered automatically from a dozen places, so the check belongs here.
-                    //
-                    // This used to cite hash drift as the reason as well.  That reason is gone: a
-                    // locomotive hashes by identity, so no mutation moves it out of the collections
-                    // holding it - see the note on MarklinLocomotive.hashCode.  Do not re-add repair
-                    // machinery here to satisfy it.
-                    if (this.isAutonomyRunning())
-                    {
-                        this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
-                    }
-                    else
-                    {
-                        String oldAddr = this.getLocAddress(l.getName());
-                        this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
-
-                        // Update DB entry
-                        MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
-                        this.locDB.delete(l.getName());
-                        this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
-
-                        // AND THE CACHE FOLLOWS THE NEW UID AT ONCE (MKR-C2).  The rebuild at the end of the sync
-                        // is on the success path only, and until it runs every echo for this locomotive resolves
-                        // to nothing - the address it now answers to is not in the cache, and the one it used to
-                        // answer to names a locomotive the database no longer has under that key.
-                        this.rebuildLocIdCache();
-
-                        this.logf("loc.addressUpdated",
-                            existingLoc.getName(),
-                            oldAddr,
-                            this.getLocAddress(existingLoc.getName()));
-
-                        sweptAfterTheSync.add(existingLoc);
-
-                        // The same repair changeLocAddress performs, for the same reason
-                        for (Locomotive other : getLocomotives())
-                        {
-                            if (other.hasLinkedLocomotives())
-                            {
-                                // ONE CALL (NSV-B2).  The two-call form stages on an instance
-                                // field, and this loop runs off the event thread inside syncWithCS2
-                                // while the multi-unit dialog can be staging on the event thread -
-                                // so a consist could be rebuilt from the other thread's list.
-                                other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
-                            }
-                        }
-                    }
-                }
+                this.adoptCentralStationAddress(l, sweptAfterTheSync);
                 
                 // Update function types if they have changed
                 if (this.locDB.hasId(l.getUID()) &&
@@ -1751,19 +1678,54 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // autonomy would run the second as a train of its own while the multi-unit's commands moved it.  Asked as the
         // window's edit doors ask it, of each locomotive the sync changed; not while autonomy runs, as they are not.  An
         // address change is held back until the run has stopped, and swept by the sync that makes it; new members of a
-        // Central Station multi-unit are taken at once, and one that arrives during a run is swept by the next load or
-        // Place (OB-303).
+        // Central Station multi-unit are taken at once, and one that arrives during a run is remembered and swept by
+        // the first sync after it (`sweepsHeldBackByARun`), and the railway redrawn where a sweep took a train off
+        // (OB-303).
         // Asked once, not built (RLV11-C5): the event thread can clear the railway between two questions
         final Layout loadedNow = this.getAutoLayoutIfLoaded();
 
-        if (!sweptAfterTheSync.isEmpty() && loadedNow != null && !this.isAutonomyRunning())
+        if (this.isAutonomyRunning())
         {
-            Layout layout = loadedNow;
+            // HELD BACK, AND REMEMBERED (OB-303) - see `sweepsHeldBackByARun`
+            for (MarklinLocomotive changed : sweptAfterTheSync) this.sweepsHeldBackByARun.add(changed.getName());
+        }
+        else
+        {
+            // AND EVERY ONE A RUN HELD BACK, by the name the database has it under now (OB-303)
+            final List<MarklinLocomotive> toSweep = new ArrayList<>(sweptAfterTheSync);
 
-            synchronized (layout)
+            synchronized (this.sweepsHeldBackByARun)
             {
-                for (MarklinLocomotive changed : sweptAfterTheSync) layout.sanitizeMultiUnits(changed);
+                for (String name : this.sweepsHeldBackByARun)
+                {
+                    MarklinLocomotive held = this.locDB.getByName(name);
+
+                    if (held != null && !toSweep.contains(held)) toSweep.add(held);
+                }
+
+                this.sweepsHeldBackByARun.clear();
             }
+
+            boolean tookATrainOff = false;
+
+            if (!toSweep.isEmpty() && loadedNow != null)
+            {
+                Layout layout = loadedNow;
+
+                synchronized (layout)
+                {
+                    int standing = trainsStandingOn(layout);
+
+                    for (MarklinLocomotive changed : toSweep) layout.sanitizeMultiUnits(changed);
+
+                    tookATrainOff = trainsStandingOn(layout) < standing;
+                }
+            }
+
+            // AND REDRAWN WHERE IT TOOK A TRAIN OFF (OB-303), as the window's doors redraw after the same sweep: the
+            // autonomy panels went on drawing the train standing until something else repainted them.  Outside the
+            // railway's monitor, because the redraw runs every listener the railway has.
+            if (tookATrainOff) loadedNow.refreshUI();
         }
 
         this.logf("loc.syncCompleted");
@@ -1771,6 +1733,179 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
+    /**
+     * Takes one route the Central Station describes into this database: added where it is new, replaced where its
+     * definition has changed, and locked either way - except that a route running now is left as it is, for the
+     * next sync to change (GSR-B3).
+     *
+     * One step of `syncWithCS2`'s route pass, in a method of its own so the decision can be asked without a station
+     * on the network, as `adoptCentralStationAddress` is for the locomotive pass (GSR-B2).
+     *
+     * @param r the route as the Central Station describes it
+     * @return true where a route was added, new or replaced, so the sync counts it
+     */
+    public boolean adoptCentralStationRoute(MarklinRoute r)
+    {
+        // Set only where this step deletes the same route to re-read it; a route arriving for
+        // the first time was never in the selection and must not be put into it.
+        boolean wasActivated = false;
+
+        // Other existing route with same name but different ID
+        if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
+        {
+            // NOT WHILE IT RUNS - see below.  The station's route cannot be added beside it under the same name, so
+            // it waits for the next sync as well.
+            if (this.routeDB.getByName(r.getName()).isExecuting())
+            {
+                this.logf("route.syncLeftRunningRoute", r.getName());
+
+                return false;
+            }
+
+            this.logf("route.deletingDuplicateName", r.getName());
+
+            this.deleteRoute(r.getName());
+        }
+
+        // Delete route if it has changed
+        if (this.routeDB.hasId(r.getId())
+                && (!r.getRoute().equals(this.routeDB.getById(r.getId()).getRoute())
+                    || r.getS88() != this.routeDB.getById(r.getId()).getS88()
+                    || r.getTriggerType() != this.routeDB.getById(r.getId()).getTriggerType()
+                    || !Objects.equals(r.getConditions(), this.routeDB.getById(r.getId()).getConditions())
+                )
+        )
+        {
+            // NOT WHILE IT RUNS (GSR-B3, in the sync).
+            //
+            // This replaces by deleting the route and adding the station's as a new object under the same id - the
+            // delete-and-add `editRoute` refuses while the route runs, for the reason it gives there: what a route is
+            // doing lives on its object.  `isExecuting` is what `runningRouteDriving` asks before any door edits or
+            // deletes a locomotive the route drives, what the route tile draws as running, and the route's own guard
+            // against being started again on top of itself - and the new object read idle while the old one's thread
+            // went on sending its commands.  The sync runs by itself, so there is nobody to ask to wait: the route is
+            // left as it is, still locked below, and the log says so.  Nothing is lost - the next sync finds the same
+            // difference and makes the same change, once the route has finished.
+            if (this.routeDB.getById(r.getId()).isExecuting())
+            {
+                this.logf("route.syncLeftRunningRoute", this.routeDB.getById(r.getId()).getName());
+            }
+            else
+            {
+                this.logf("route.deletingDuplicateId", this.routeDB.getById(r.getId()).getName());
+
+                // The SAME route, re-read from the Central Station because something about it
+                // changed - so the operator's autonomy selection survives it (AC2-A1).
+                wasActivated = this.isRouteActivatedByAutonomy(r.getId());
+
+                this.deleteRoute(this.routeDB.getById(r.getId()).getName());
+            }
+        }
+
+        boolean added = false;
+
+        if (!this.routeDB.hasId(r.getId()))
+        {
+            // Only report and count the route if it was actually added
+            if (newRoute(r))
+            {
+                this.restoreRouteActivation(r.getId(), wasActivated);
+
+                this.logf("route.added", r.getName());
+
+                added = true;
+            }
+            else
+            {
+                this.logf("route.notAdded", r.getName());
+            }
+        }
+
+        // Routes from the Central Station are not editable
+        if (this.routeDB.getById(r.getId()) != null)
+        {
+            this.routeDB.getById(r.getId()).setLocked(true);
+        }
+
+        return added;
+    }
+
+    /**
+     * Gives a locomotive this database already has the address the Central Station reports for it.
+     *
+     * One step of `syncWithCS2`'s locomotive pass, in a method of its own so the decision can be asked without a
+     * station on the network (GSR-B2).  Nothing happens unless this database has a locomotive of that name, with the
+     * same decoder type, at a different address.
+     *
+     * @param l the locomotive as the Central Station describes it
+     * @param sweptAfterTheSync where a locomotive re-addressed here is recorded, for the sweep at the end of the sync
+     */
+    public void adoptCentralStationAddress(MarklinLocomotive l, List<MarklinLocomotive> sweptAfterTheSync)
+    {
+        if (this.locDB.getByName(l.getName()) != null
+            && this.locDB.getByName(l.getName()).getAddress() != l.getAddress()
+            && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
+        )
+        {
+            // Deferred while anything is running.  setAddress changes which decoder this
+            // locomotive commands, so applying it mid-run sends every subsequent speed and
+            // function command to a different engine while the graph goes on tracking this one
+            // - and the train already moving keeps moving, now unaddressable.  A rename and a
+            // manual address change are both refused while running; a sync had no such guard
+            // and is triggered automatically from a dozen places, so the check belongs here.
+            //
+            // This used to cite hash drift as the reason as well.  That reason is gone: a
+            // locomotive hashes by identity, so no mutation moves it out of the collections
+            // holding it - see the note on MarklinLocomotive.hashCode.  Do not re-add repair
+            // machinery here to satisfy it.
+            // AND WHILE A ROUTE DRIVES IT (GSR-B2).  A route sends its commands to a locomotive by name, one after
+            // another with delays between them, and each goes to whatever address the name has when its turn comes -
+            // so an address adopted part-way along sends the rest of the route to a different decoder.  The window's
+            // delete and edit doors refuse the same change while a route drives the locomotive (OB-287); this is the
+            // door that runs by itself.
+            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null)
+            {
+                this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
+            }
+            else
+            {
+                String oldAddr = this.getLocAddress(l.getName());
+                this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
+
+                // Update DB entry
+                MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
+                this.locDB.delete(l.getName());
+                this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+
+                // AND THE CACHE FOLLOWS THE NEW UID AT ONCE (MKR-C2).  The rebuild at the end of the sync
+                // is on the success path only, and until it runs every echo for this locomotive resolves
+                // to nothing - the address it now answers to is not in the cache, and the one it used to
+                // answer to names a locomotive the database no longer has under that key.
+                this.rebuildLocIdCache();
+
+                this.logf("loc.addressUpdated",
+                    existingLoc.getName(),
+                    oldAddr,
+                    this.getLocAddress(existingLoc.getName()));
+
+                sweptAfterTheSync.add(existingLoc);
+
+                // The same repair changeLocAddress performs, for the same reason
+                for (Locomotive other : getLocomotives())
+                {
+                    if (other.hasLinkedLocomotives())
+                    {
+                        // ONE CALL (NSV-B2).  The two-call form stages on an instance
+                        // field, and this loop runs off the event thread inside syncWithCS2
+                        // while the multi-unit dialog can be staging on the event thread -
+                        // so a consist could be rebuilt from the other thread's list.
+                        other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Deletes the current layout from the model
      *
@@ -2051,9 +2186,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 // Cast object
                 instance = (List<MarklinSimpleComponent>) obj;
-            }
 
-            this.logf("log.databaseLoadedFromFile");
+                this.logf("log.databaseLoadedFromFile");
+            }
+            else
+            {
+                // READ, AND NOT A DATABASE (GSP-C1).  A file that deserializes to something other than a list is as
+                // unreadable as one that will not deserialize at all, and it is marked the same way.  Unmarked, the
+                // application ran with an empty database, logged that it had loaded one, and the save on the way out
+                // wrote that emptiness over the file with no copy kept - see saveState.
+                this.databaseLoadFailed = true;
+
+                this.logf("log.databaseBadDataFile");
+            }
         }
         catch (IOException iex)
         {
@@ -2112,6 +2257,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (MarklinRoute.mixesAStop(route))
         {
             this.logf("route.errorStopAmongOtherCommands", name);
+            return false;
+        }
+
+        // NOT WHILE IT RUNS (GSR-B3), and refused before anything is deleted too.
+        //
+        // This edits by deleting the route and adding a new object under the same id, and what a route is doing lives on
+        // its object: `isExecuting`, which `runningRouteDriving` asks before any door edits or deletes a locomotive the
+        // route drives, which the route tile draws as running, and which is the route's own guard against being started
+        // again on top of itself.  The new object read idle while the old one's thread went on sending its commands, so
+        // all three forgot a running route.  Carrying the flag across would not mend that: the thread that clears it
+        // holds the OLD object, so the new one would read running for ever.
+        //
+        // Refused and said in the log, and each caller leaves the route as it was: the route editor's Save says the route
+        // could not be saved and keeps the window open, Enable/Disable and Bulk change nothing, and the stop split of a
+        // start or an import drops the stop route it made and tries again next time.  Nothing is lost by waiting - a
+        // route runs the commands it started with (`execRoute` takes a copy), so an edit lands on the next run either way.
+        if (existing.isExecuting())
+        {
+            this.logf("route.errorEditRouteWhileRunning", name);
             return false;
         }
 
@@ -3817,6 +3981,75 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }        
     }
     
+    /**
+     * Every other route with a command that runs this one, by name (GSR-B4).
+     *
+     * What the route delete door counts for its question, before anything is deleted - afterwards there is nothing left
+     * to count.  The route's own commands are not asked: a route that runs itself goes with it.
+     *
+     * @param name the route
+     * @return the routes that run it, empty when none does or there is no such route
+     */
+    @Override
+    public List<String> routesCalling(String name)
+    {
+        List<String> out = new ArrayList<>();
+
+        MarklinRoute called = name == null ? null : this.routeDB.getByName(name);
+
+        if (called == null) return out;
+
+        for (MarklinRoute r : this.getRoutes())
+        {
+            if (r != null && r != called && r.callsRoute(called.getName())) out.add(r.getName());
+        }
+
+        return out;
+    }
+
+    /**
+     * Deletes a route and takes every command that runs it out of every other route, logging each route that lost one
+     * (GSR-B4).
+     *
+     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' commands that run it, as deleting a
+     * locomotive removes the commands that drive it (`deleteLoc`, `Route.locomotiveDeleted`).  Left behind, such a
+     * command did nothing while the route was gone and then ran whatever route was next given the name - a route
+     * nobody put into the one running it.
+     *
+     * A door of its own, not `deleteRoute`: `editRoute` deletes and re-adds through that, and an edit - a rename
+     * included - keeps every call to the route, which `otherRouteRenamed` follows.  The sync and an import replace
+     * routes rather than delete them, and go through `deleteRoute` too.
+     *
+     * @param name the route
+     * @return how many routes lost a command that ran it
+     */
+    @Override
+    public int deleteRouteAndItsCalls(String name)
+    {
+        MarklinRoute deleted = name == null ? null : this.routeDB.getByName(name);
+
+        if (deleted == null) return 0;
+
+        String called = deleted.getName();
+
+        int stripped = 0;
+
+        for (MarklinRoute r : this.getRoutes())
+        {
+            // WHICH ROUTES LOSE COMMANDS, by name, as each loses them - as the locomotive delete says it
+            if (r != null && r != deleted && r.otherRouteDeleted(called))
+            {
+                stripped++;
+
+                this.logf("route.warnCommandsRemovedForDeletedRoute", r.getName(), called);
+            }
+        }
+
+        this.deleteRoute(called);
+
+        return stripped;
+    }
+
     /**
      * Returns a route ID, or 0 if not found
      * @param name

@@ -66,6 +66,41 @@ public class AutonomyCompanionStore
     public static final String ERROR_NOT_LOCAL = "autosetup.ui.errorAutonomyNeedsLocalLayout";
     public static final String ERROR_NAME_IN_USE = "autosetup.ui.errorNameInUse";
 
+    /** A name refused because it would be saved in another configuration's file (VD17-C6) - see `NameSharesAFile`. */
+    public static final String ERROR_NAME_SHARES_A_FILE = "autosetup.ui.errorNameSharesAFile";
+
+    /**
+     * A configuration name refused because it would be saved in another configuration's file (VD17-C6).
+     *
+     * A configuration's file is named after it, and the sanitising is many to one, so "Night: Yard" and "Night_ Yard" are
+     * two names for one file.  Its message is a key, as every refusal of this store's is; the configuration it collides
+     * with travels beside it, because the sentence names both and a key cannot carry a name.
+     */
+    public static final class NameSharesAFile extends IOException
+    {
+        private static final long serialVersionUID = 1L;
+
+        private final String sharedWith;
+
+        /**
+         * @param sharedWith the configuration already saved in that file
+         */
+        public NameSharesAFile(String sharedWith)
+        {
+            super(ERROR_NAME_SHARES_A_FILE);
+
+            this.sharedWith = sharedWith;
+        }
+
+        /**
+         * @return the configuration already saved in the file the refused name would have been saved in
+         */
+        public String getSharedWith()
+        {
+            return sharedWith;
+        }
+    }
+
     private static final String FOLDER = "config/autonomy";
     private static final String SETUP_FILE = "setup.json";
     private static final String CONFIGURATION_PREFIX = "configuration-";
@@ -665,9 +700,26 @@ public class AutonomyCompanionStore
 
         if (loaded == null) return missing;
 
-        for (String name : pageNamesWhenWritten.values())
+        for (Map.Entry<String, String> written : pageNamesWhenWritten.entrySet())
         {
-            if (name != null && !loaded.contains(name)) missing.add(name);
+            String name = written.getValue();
+
+            if (name == null || loaded.contains(name)) continue;
+
+            // A PAGE RENAMED OUTSIDE TRAINCONTROL IS STILL LOADED (GSE-C2).  This record is the name each id had when
+            // the setup was written, and a rename on the Central Station or in the page's file keeps the id and
+            // changes the name - the case page ids exist for.  Asked by name alone, the renamed page read as absent,
+            // so no save tidied anything while that layout was open and every save warned about a page on the screen.
+            //
+            // So the id is asked as well, by the rule `resolvePage` uses to tell a rename from a renumber: where the
+            // old name is still in the index the page IS that one, and it is not loaded; where it is not, the page the
+            // id names today is the one to look for.  Not `pageIsHere`, which answers from the index - and the index
+            // holds a stand-in for a page that would not read (FV3-A1, MT-135).
+            String nowCalled = resolvePage(written.getKey());
+
+            if (nowCalled != null && loaded.contains(nowCalled)) continue;
+
+            missing.add(name);
         }
 
         return missing;
@@ -808,10 +860,12 @@ public class AutonomyCompanionStore
      * Whether this setup's keys can be trusted to mean the pages they name.
      *
      * A setup is keyed by page ID, and readShared turns those ids into page NAMES using the "pages" map
-     * the file carries.  When a renumber has happened that map is wrong, so every entry is name-keyed
-     * to the wrong page - and the coordinates of a page of settings do not exist on whatever page now
-     * holds its old id.  Anything that deletes on the strength of "this square does not exist" is then
-     * deleting on the strength of a lie.
+     * the file carries.  When a renumber has happened, an id no longer says for certain which page it
+     * meant.  The entries still land where they belong - `resolvePage` files an entry under the page its
+     * recorded name is on while the index has that name - but "this square does not exist" can no
+     * longer be concluded from an id, and anything that deletes on the strength of it would be deleting
+     * on a guess.  (This said every entry was name-keyed to the wrong page, which `resolvePage` does not
+     * do - VD17-C4.)
      *
      * @return true while a renumber is outstanding and nothing has re-keyed the setup
      */
@@ -1752,6 +1806,51 @@ public class AutonomyCompanionStore
         }
 
         repairLocomotiveInTimetable(configuration, from, to);
+
+        repairLocomotiveInPausedTrains(configuration, from, to);
+    }
+
+    /**
+     * The fifth holder of a locomotive's name: the configuration's list of paused trains (FR-117; RSA60-C2), in "globals"
+     * with the timetable.  A rename carries across it, and a deletion takes the train off it - a name left there would
+     * start a new train given it paused.  Written back sorted, and not at all once it names nobody, as the railway writes
+     * it.
+     *
+     * @param configuration the configuration to repair, modified in place
+     * @param from the locomotive's name as it was
+     * @param to the new name, or null when the locomotive is being deleted
+     */
+    private static void repairLocomotiveInPausedTrains(JSONObject configuration, String from, String to)
+    {
+        JSONObject globals = configuration.optJSONObject("globals");
+
+        org.json.JSONArray list = globals == null ? null
+            : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        if (list == null) return;
+
+        java.util.Set<String> names = new java.util.TreeSet<>();
+
+        boolean named = false;
+
+        for (Object name : list)
+        {
+            if (from.equals(name))
+            {
+                named = true;
+
+                if (to != null) names.add(to);
+            }
+            else if (name instanceof String)
+            {
+                names.add((String) name);
+            }
+        }
+
+        if (!named) return;
+
+        if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
     }
 
     /**
@@ -2486,7 +2585,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Puts back everything snapshotSetup took.
+     * Puts back everything snapshotSetup took - or, when the snapshot will not read, leaves the setup exactly as it was
+     * and throws (GSP-C4).
      *
      * @param was a snapshot from snapshotSetup
      */
@@ -2494,6 +2594,38 @@ public class AutonomyCompanionStore
     {
         if (was == null) return;
 
+        // WHAT IS HERE NOW FIRST, so that a snapshot this build cannot read changes nothing (GSP-C4).
+        //
+        // The read below empties the store and then reads with the strict accessors, which is safe for what
+        // `snapshotSetup` hands back in memory and not for a snapshot that came off a disk.  The pre-edit note that
+        // `AutonomySession.revertUnfinishedEdit` applies is written by another run, possibly another build, and
+        // `unfinishedEdit` checks only its top-level shape - so a value of the wrong type inside `shared` threw part way
+        // through with the store already emptied, and nothing put it back.  `load()` keeps the same promise the same way:
+        // a read that fails leaves the setup as it was, and the failure is still thrown, for the caller to say so.
+        JSONObject wasThere = snapshotSetup();
+
+        try
+        {
+            readSnapshot(was);
+        }
+        catch (RuntimeException unreadable)
+        {
+            readSnapshot(wasThere);
+
+            throw unreadable;
+        }
+    }
+
+    /**
+     * Replaces the whole setup with a snapshot: the shared half, every configuration, and which one is chosen.
+     *
+     * What `restoreSetup` did on its own until GSP-C4, kept apart so that it can be run a second time over what was there
+     * when the first run threw.  It empties before it reads, so it is only safe beside a snapshot taken first.
+     *
+     * @param was a snapshot from snapshotSetup
+     */
+    private void readSnapshot(JSONObject was)
+    {
         clearShared();
         readShared(was.getJSONObject("shared"));
 
@@ -2552,7 +2684,8 @@ public class AutonomyCompanionStore
         // Same reason as renameConfiguration: duplicating onto an existing name replaced it silently.
         if (configurations.containsKey(name)) throw new IOException(ERROR_NAME_IN_USE);
 
-        if (fileNameTaken(name, null)) throw new IOException(ERROR_NAME_IN_USE);
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        refuseASharedFile(name, null);
 
         JSONObject source = copyFrom == null ? null : configurations.get(copyFrom);
 
@@ -2625,7 +2758,8 @@ public class AutonomyCompanionStore
      */
     public void importConfiguration(String name, JSONObject configuration) throws IOException
     {
-        if (fileNameTaken(name, null)) throw new IOException(ERROR_NAME_IN_USE);
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        refuseASharedFile(name, null);
 
         JSONObject imported = new JSONObject(configuration.toString());
 
@@ -2667,10 +2801,8 @@ public class AutonomyCompanionStore
             throw new IOException(ERROR_NAME_IN_USE);
         }
 
-        if (!from.equals(to) && fileNameTaken(to, from))
-        {
-            throw new IOException(ERROR_NAME_IN_USE);
-        }
+        // ANOTHER CONFIGURATION'S FILE, refused as that and naming it (VD17-C6)
+        if (!from.equals(to)) refuseASharedFile(to, from);
 
         JSONObject configuration = configurations.remove(from);
 
@@ -5491,14 +5623,16 @@ public class AutonomyCompanionStore
      * over the first, and the next load - which rebuilds the list by scanning the folder - came back
      * with one of them simply gone.  Deleting or renaming either took the other's data with it.
      *
-     * Checked at the two doors a name comes in by, rather than at save time, so the answer arrives
+     * Checked at the three doors a name comes in by - create, import and rename (GSP-C3) - rather than at save time, so
+     * the answer arrives
      * while the user is still looking at the name they typed.
      *
      * @param name the name being taken
      * @param except a name that may share the file - the one being renamed away from
-     * @return whether some other configuration already owns that file
+     * @return the configuration that already owns that file, or null when none does - named, so the refusal can say which
+     *         (VD17-C6)
      */
-    private boolean fileNameTaken(String name, String except)
+    private String fileNameTaken(String name, String except)
     {
         File wanted = configurationFile(name);
 
@@ -5506,10 +5640,28 @@ public class AutonomyCompanionStore
         {
             if (existing.equals(name) || existing.equals(except)) continue;
 
-            if (configurationFile(existing).equals(wanted)) return true;
+            if (configurationFile(existing).equals(wanted)) return existing;
         }
 
-        return false;
+        return null;
+    }
+
+    /**
+     * Refuses a name that would be saved in another configuration's file, naming that configuration (VD17-C6).
+     *
+     * Its own refusal rather than `ERROR_NAME_IN_USE`, which the window says as "a configuration called X already exists" -
+     * and X, the name typed, is exactly the one that does not.  Asked at the three doors a name comes in by: create, import
+     * and rename.
+     *
+     * @param name the name being taken
+     * @param except a name that may share the file - the one being renamed away from
+     * @throws IOException a `NameSharesAFile`, naming the configuration that already owns that file
+     */
+    private void refuseASharedFile(String name, String except) throws IOException
+    {
+        String owner = fileNameTaken(name, except);
+
+        if (owner != null) throw new NameSharesAFile(owner);
     }
 
     private void writeJson(File target, final JSONObject json) throws IOException

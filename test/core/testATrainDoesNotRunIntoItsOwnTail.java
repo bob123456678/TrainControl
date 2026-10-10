@@ -386,6 +386,118 @@ public class testATrainDoesNotRunIntoItsOwnTail
     }
 
     /**
+     * A loop answered 0 all the way round is judged, and a train lying on it is not let round into its own body (OB-300;
+     * Adam, 2026-10-10, asked: into 3.0.0).
+     *
+     * Every other length rule reads track answered 0 on purpose as measured track of no length (behaviour.md 5b), and errs
+     * towards refusing.  This one judged a return only where the route had run some length since it left the place, and
+     * added only lengths above 0 - so a loop answered 0 throughout was never judged, and a train of any length went round
+     * it into itself: the one length rule that erred towards letting through (RLA-C6).  A way round is judged now once it
+     * is measured: a length on it, or every place on it answered.  A loop nobody measured is still not judged - *"only
+     * apply if lengths are specified"* - and nor is one answered everywhere but one square, a switch nobody has given a
+     * length, which `Edge.isMeasured` would not count as measured either.
+     *
+     * Built by hand with the Points' and edges' own constructors, so the railway this class loaded stays the current one (a
+     * new `Layout` would retire it), and the rule asked directly with the body given: a train of 3 lying on A's square,
+     * where the loop begins and ends - out by B and C and back onto it, every place 0.  It comes back onto its own body
+     * after 0 units, so it is refused at any length, and the refusal asks for nothing to be measured: all of it was
+     * answered.
+     *
+     * MUTATION: judge a return only where the route has run some length again (drop the answered half of the test), and
+     * this fails; count a way round as answered where any place on it is, not every place, and the control with one square
+     * unanswered fails.
+     *
+     * @throws Exception from the rule
+     */
+    @Test
+    public void testALoopAnsweredZeroThroughoutIsJudged() throws Exception
+    {
+        java.lang.reflect.Method rule = Layout.class.getDeclaredMethod("whyItWouldMeetItsOwnTail", List.class,
+            Locomotive.class, Map.class);
+
+        rule.setAccessible(true);
+
+        Map<String, Integer> body = new java.util.LinkedHashMap<>();
+
+        body.put("OB300:A", 0);
+
+        List<String> everyPlace = Arrays.asList("OB300:1", "OB300:B", "OB300:2", "OB300:C", "OB300:3", "OB300:A");
+
+        Integer lengthWas = train.getTrainLength();
+
+        try
+        {
+            train.setTrainLength(3);
+
+            // THE CONTROL: nobody measured the loop, and it is not judged - as before
+            assertNull(rule.invoke(null, aLoopWithAnswered(new ArrayList<String>()), train, body), "a loop nobody measured"
+                + " was judged: a train of 3 was refused a way round that may be thirty units long - *\"only apply if"
+                + " lengths are specified\"* (TDA-B1)");
+
+            // AND ANSWERED EVERYWHERE BUT ONE SQUARE: still unmeasured, still not judged
+            List<String> allButTheSwitch = new ArrayList<>(everyPlace);
+
+            allButTheSwitch.remove("OB300:2");
+
+            assertNull(rule.invoke(null, aLoopWithAnswered(allButTheSwitch), train, body), "a loop answered everywhere but"
+                + " one square was judged as though all of it were measured - that square, a switch nobody has given a"
+                + " length, may be long (Edge.isMeasured: every place must be answered)");
+
+            // THE CASE
+            String said = (String) rule.invoke(null, aLoopWithAnswered(everyPlace), train, body);
+
+            assertNotNull(said, "a train of 3 lying on a loop answered 0 all the way round was let round it into its own"
+                + " body: the own-tail rule judged only a way round that had run some length, where every other length"
+                + " rule reads an answered 0 as measured track of no length (OB-300, RLA-C6)");
+
+            assertEquals(gapNamedBy(said), Integer.valueOf(0), "the loop measures 0 all the way round, and the refusal"
+                + " names another figure: " + said);
+
+            for (int n = 1; n <= 5; n++)
+            {
+                assertFalse(said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", n)), "the way round was"
+                    + " answered throughout, and the refusal asks for " + n + " length(s) on it to be given: " + said);
+            }
+        }
+        finally
+        {
+            train.setTrainLength(lengthWas);
+        }
+    }
+
+    /**
+     * A loop of three edges from A by B and C and back onto A's square, every place measuring 0 and the places named
+     * answered 0 on purpose - Points and edges from their own constructors, on no railway.
+     *
+     * @param answered the places answered
+     * @return the route round it, from A
+     * @throws Exception from a Point's constructor
+     */
+    private static List<Edge> aLoopWithAnswered(List<String> answered) throws Exception
+    {
+        Point a = new Point("OB300 A", false, null);
+        Point b = new Point("OB300 B", false, null);
+        Point c = new Point("OB300 C", false, null);
+
+        List<Edge> loop = Arrays.asList(new Edge(a, b), new Edge(b, c), new Edge(c, a));
+
+        loop.get(0).setPlaces(Arrays.asList("OB300:1", "OB300:B"), Arrays.asList(0, 0));
+        loop.get(1).setPlaces(Arrays.asList("OB300:2", "OB300:C"), Arrays.asList(0, 0));
+        loop.get(2).setPlaces(Arrays.asList("OB300:3", "OB300:A"), Arrays.asList(0, 0));
+
+        for (Edge edge : loop)
+        {
+            List<String> mine = new ArrayList<>(edge.getPlaceIds());
+
+            mine.retainAll(answered);
+
+            edge.setAnsweredPlaces(mine);
+        }
+
+        return loop;
+    }
+
+    /**
      * A train turned at Tunnel, its tail to the south, leaves south over its own body - which moves with it - and is not
      * refused for it.
      *

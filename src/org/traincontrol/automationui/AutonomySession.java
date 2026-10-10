@@ -353,7 +353,9 @@ public class AutonomySession
 
         migrationFailures = migrateStationLabels();
 
-        forgetCaptionsOfNonStations();
+        // NO CAPTION IS FORGOTTEN HERE FOR NAMING A SQUARE THAT IS NOT A STATION NOW (GSE-C4).  It was, to clean up setups
+        // written before demoting took the caption with it; demoting keeps it now (Adam, 2026-10-10: keep them, ignored
+        // while not a station), and `getCaptionTarget` leaves it undrawn until the square is a station again.
 
         dirty = false;
     }
@@ -500,28 +502,6 @@ public class AutonomySession
             {
                 store.setBarredArrivals(entry.getKey(), live);
             }
-        }
-    }
-
-    /**
-     * Drops name plaques belonging to squares that are no longer stations.
-     *
-     * The rule is enforced at the setter now, but setups written before it exists carry captions for
-     * squares that were demoted long ago - and one of them is what made a reversing point announce
-     * itself as a station the moment a train touched it.  Cleared at open, once, so nobody has to find
-     * and delete them by hand.
-     *
-     * Silent: there is nothing here a user could act on, and the plaque comes back the moment the
-     * square is made a station again.
-     */
-    private void forgetCaptionsOfNonStations()
-    {
-        for (Map.Entry<TileKey, TileKey> caption
-            : new LinkedHashMap<>(store.getCaptions()).entrySet())
-        {
-            if (caption.getValue() == null) continue;
-
-            if (!store.isStation(caption.getValue())) store.setCaption(caption.getKey(), null);
         }
     }
 
@@ -1171,7 +1151,8 @@ public class AutonomySession
          * The file states one where every edge from the train's point leaves the square by one side (REG4-A1).
          * Elsewhere a split square still needs one, so the import picks a way trains may arrive in.  It is a guess,
          * corrected in the autonomy editor and by the first real run's capture, and before ACC-C4 it was made silently
-         * AND at random.
+         * AND at random.  A facing the square already recorded, kept for the train, is counted too: it is no more
+         * evidence about the train the file puts there than a chosen one (OB-304).
          */
         public int facingsInvented;
 
@@ -1273,6 +1254,18 @@ public class AutonomySession
          * kept, and the message names them (RLA2-C3).
          */
         public final List<String> homesKept = new ArrayList<>();
+
+        /**
+         * Locomotives the file places on a square this configuration already has another train standing on.  Not
+         * placed: one square holds one train, and the one there stays (OB-304).
+         */
+        public final List<String> squareTaken = new ArrayList<>();
+
+        /**
+         * Locomotives the file gives a home on a square that is already another train's home.  Not homed there: a
+         * square is one train's home, and the one it has stays (OB-304).
+         */
+        public final List<String> homeSquareTaken = new ArrayList<>();
 
         /**
          * Locomotives the file places that were not placed because the configuration imported into is the one running:
@@ -1424,7 +1417,8 @@ public class AutonomySession
      * other way round from how the train drives.
      *
      * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS: the last occupant's is a guess as good as the first
-     * copy's, and a guess made by somebody standing a train there (RLA2-B3).
+     * copy's, and a guess made by somebody standing a train there (RLA2-B3).  Only one the guess itself could make - a
+     * way trains may arrive in, where the square has one - and counted with the guesses, which it is (OB-304).
      *
      * @param facingToFind the placed trains, by square and legacy point name
      * @param edgesLeadTo each legacy point's edges, by the square each ends on (null: not on this diagram)
@@ -1449,9 +1443,24 @@ public class AutonomySession
                 continue;
             }
 
-            if (ran == null && getFacing(tile) != null) continue;
-
             java.util.Set<Side> mayArrive = homeFacingsFor(tile);
+
+            // A FACING THE SQUARE RECORDS STAYS where the file cannot say (RLA2-B3) - only one the guess below could
+            // make, and counted with the guesses, which it is (OB-304).  It is the last occupant's, no evidence
+            // about the train the file puts there: kept unasked, a facing trains may not arrive in stood the imported
+            // train where autonomy will not start it (REG3-C1), and the log said nothing had been guessed.  Where no
+            // copy is one trains may arrive at, the guess takes the first copy, and the recorded one is as good.
+            Side recorded = ran == null ? getFacing(tile) : null;
+
+            boolean keepIt = recorded != null && ways.contains(recorded)
+                && (mayArrive.contains(recorded) || java.util.Collections.disjoint(ways, mayArrive));
+
+            if (keepIt)
+            {
+                result.facingsInvented++;
+
+                continue;
+            }
 
             Side guess = null;
 
@@ -1878,6 +1887,23 @@ public class AutonomySession
                         }
                     }
 
+                    // A SQUARE ANOTHER TRAIN STANDS ON keeps it, and the file's train is named (OB-304): one square
+                    // holds one train.  It was skipped without a word.  The same train already there - a file
+                    // imported a second time - is nothing to say.
+                    if (standing != null && extras.has(AutonomyBuilder.LOCOMOTIVE))
+                    {
+                        String locName = standing.optString("name", "").trim();
+
+                        org.json.JSONObject there = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+                        String standsThere = there == null ? "" : there.optString("name", "").trim();
+
+                        if (!locName.isEmpty() && !locName.equals(standsThere) && !result.squareTaken.contains(locName))
+                        {
+                            result.squareTaken.add(locName);
+                        }
+                    }
+
                     if (!home.trim().isEmpty() && !extras.has("home"))
                     {
                         if (homedInConfiguration.contains(home.trim()))
@@ -1892,6 +1918,15 @@ public class AutonomySession
                         {
                             result.duplicateHomes++;
                         }
+                    }
+
+                    // A SQUARE ALREADY HOME TO ANOTHER TRAIN keeps it, and the file's is named (OB-304): a square is
+                    // one train's home.  It was skipped without a word.
+                    if (!home.trim().isEmpty() && !extras.optString("home", "").trim().isEmpty()
+                        && !home.trim().equals(extras.optString("home", "").trim())
+                        && !result.homeSquareTaken.contains(home.trim()))
+                    {
+                        result.homeSquareTaken.add(home.trim());
                     }
 
                     for (String key : CARRIED_SETTINGS)
@@ -3221,26 +3256,44 @@ public class AutonomySession
      * All pages, including excluded ones: exclusion says autonomy will not route over a page, not that
      * the page has stopped being drawn, and a caption there is still on the user's screen.
      *
-     * @return the sensors that have a caption somewhere
+     * Stations only (GSE-C4): a caption kept for a square that is not a station now is not drawn, so it labels nothing.
+     *
+     * @return the stations that have a caption somewhere
      */
     public Set<TileKey> getLabelledStationTiles()
     {
-        return new LinkedHashSet<>(store.getCaptions().values());
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        for (TileKey station : store.getCaptions().values())
+        {
+            if (station != null && store.isStation(station)) out.add(station);
+        }
+
+        return out;
     }
 
     /**
      * The station a caption on this square is about.
      *
+     * A caption kept for a square that is not a station now is none (GSE-C4).  Demoting a station keeps its caption -
+     * Adam, 2026-10-10, asked: keep them, ignored while not a station - and this is what the diagram and the editor draw
+     * by (`TrainControlUI.autonomyCaptionAt`), so it answers null until the square is a station again.  Drawn, the label
+     * is registered on a plain point, and a train reversing there lights up a station name for a place that is no longer
+     * one.  The store and `captionsFor` still hold it, for the moves and deletes that have to carry or forget it.
+     *
      * @param captionTile the square the text sits on
-     * @return the sensor's square, or null when nothing is captioned there
+     * @return the sensor's square, or null when nothing is captioned there or the sensor is not a station now
      */
     public TileKey getCaptionTarget(TileKey captionTile)
     {
-        return store.getCaptionTarget(captionTile);
+        TileKey station = store.getCaptionTarget(captionTile);
+
+        return station != null && store.isStation(station) ? station : null;
     }
 
     /**
-     * Every square showing this station's name.
+     * Every caption this station has: drawn, or kept while the square is not a station (GSE-C4) - `getCaptionTarget` is
+     * the one that says what is drawn.
      *
      * @param stationTile
      * @return the caption squares, possibly none
@@ -3356,6 +3409,12 @@ public class AutonomySession
     }
 
     /**
+     * Whether `revertUnfinishedEdit` found a pre-edit note of the right shape that still would not read - a value of the
+     * wrong type inside it - so that `unusableEditNote` says so of it, as of a note refused on its shape (GSP-C4).
+     */
+    private boolean editNoteWouldNotRead;
+
+    /**
      * Whether a pre-edit note is on disk that this build could not use.
      *
      * Asked after `revertUnfinishedEdit` returns false, which by itself does not say whether there was
@@ -3365,7 +3424,7 @@ public class AutonomySession
      */
     public boolean unusableEditNote()
     {
-        return store.hasUnfinishedEditNote() && store.unfinishedEdit() == null;
+        return store.hasUnfinishedEditNote() && (editNoteWouldNotRead || store.unfinishedEdit() == null);
     }
 
     /**
@@ -3389,7 +3448,23 @@ public class AutonomySession
 
         if (was == null) return false;
 
-        restoreSetup(was);
+        // A NOTE OF THE RIGHT SHAPE THAT STILL WILL NOT READ is refused like one of the wrong shape (GSP-C4): kept, for
+        // the build that wrote it, and reported through `unusableEditNote`.
+        //
+        // `unfinishedEdit` checks the note's top level only, and a value of the wrong type inside it threw out of the
+        // read.  Out of here, it skipped the forget below and reached `TrainControlUI.getAutonomySession`, which catches
+        // it and builds no session - so autonomy stayed unopenable at every start, the note being still there to do it
+        // again.  The store's `restoreSetup` puts back what it had before it throws, so the setup is as it was.
+        try
+        {
+            restoreSetup(was);
+        }
+        catch (RuntimeException noteWillNotRead)
+        {
+            editNoteWouldNotRead = true;
+
+            return false;
+        }
 
         store.forgetBeforeEdit();
 
@@ -3923,7 +3998,13 @@ public class AutonomySession
 
                 if (station != null)
                 {
-                    store.setCaption(where, station);
+                    // ONE STATION, ONE CAPTION, AS AT EVERY OTHER DOOR (OB-256).  `setCaption` takes a station's caption
+                    // off wherever it was, and the old-file import captions a station only where it has none; this wrote
+                    // through the store's own door, which does neither, so a station the setup already showed somewhere
+                    // gained a second caption on the label's square.  The setup's caption is the one somebody chose, so it
+                    // stays - and the label still leaves the page below: it names a station the setup already shows, and
+                    // left there it would be found again at every open.
+                    if (store.captionsFor(station).isEmpty()) store.setCaption(where, station);
 
                     migrated = true;
 
@@ -4347,7 +4428,8 @@ public class AutonomySession
     }
 
     /**
-     * Every switch square on a leg autonomy uses.  A switch is in no piece - its share would sit where the room rule
+     * Every switch square on a leg autonomy uses - a switch or a permanent turnout, as `isSwitchSquare` says
+     * (VD18-B3).  A switch is in no piece - its share would sit where the room rule
      * does not count it - so switches are asked for on their own, one turnout length for a page (Adam, 2026-09-16:
      * "One length for all switches").
      *
@@ -4778,11 +4860,29 @@ public class AutonomySession
         return component != null && TilePorts.takesNoLength(component.getType());
     }
 
+    /**
+     * Whether a length rule's piece is cut at this square, and the square asked for with the switches: what
+     * `GraphReducer.boundsTheRoom` asks of the room walk - a switch or a permanent turnout, and not a square of a
+     * two-square crossing (VD18-B3).
+     *
+     * **A PERMANENT TURNOUT CUTS A PIECE AS A SWITCH DOES.**  The room walk stops at one (OB-233, Adam's ruling of
+     * 2026-09-22: a permanent turnout is still the last switch), so a piece that ran over it shared the operator's
+     * typed length onto the turnout and the track beyond it, and the room before the turnout came out short by that
+     * share.  Asked `isSwitch()` alone, which names the six throwable types and none of the five permanent ones, Mass
+     * Assign Lengths did exactly that wherever one leg ran over the turnout - two legs made it a shared square, which
+     * cut the piece by another rule.  A two-square crossing's squares are permanent turnouts drawn as one crossing,
+     * which ends no room (OB-320), so they stay track here.
+     *
+     * @param tile a square
+     * @return true where a piece ends and the square is asked for with the switches
+     */
     private boolean isSwitchSquare(TileKey tile)
     {
         org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
 
-        return component != null && component.isSwitch();
+        if (component == null || getGraph().crossingPartner(tile) != null) return false;
+
+        return component.isSwitch() || TileGraph.isPermanentTurnout(component.getType());
     }
 
     /**
@@ -5472,7 +5572,8 @@ public class AutonomySession
      */
     public TileKey getProtectingSignal(TileKey station)
     {
-        return store.getProtectingSignal(station);
+        // A STATION'S (GSE-C4): a square that is not one now keeps its guards for when it is, and they guard nothing
+        return store.isStation(station) ? store.getProtectingSignal(station) : null;
     }
 
     /**
@@ -5481,7 +5582,8 @@ public class AutonomySession
      */
     public List<TileKey> getProtectingSignals(TileKey station)
     {
-        return store.getProtectingSignals(station);
+        // A STATION'S (GSE-C4), as `getProtectingSignal`
+        return store.isStation(station) ? store.getProtectingSignals(station) : new ArrayList<TileKey>();
     }
 
     /**
@@ -5512,7 +5614,8 @@ public class AutonomySession
      */
     public List<TileKey> getEntrySignals(TileKey station)
     {
-        return store.getEntrySignals(station);
+        // A STATION'S (GSE-C4), as `getProtectingSignal`
+        return store.isStation(station) ? store.getEntrySignals(station) : new ArrayList<TileKey>();
     }
 
     /**
@@ -5558,7 +5661,7 @@ public class AutonomySession
      */
     public Map<TileKey, List<String>> protectingSignalNames()
     {
-        return signalNames(store.getProtectingSignals());
+        return signalNames(stationsOnly(store.getProtectingSignals()));
     }
 
     /**
@@ -5568,7 +5671,7 @@ public class AutonomySession
      */
     public Map<TileKey, List<String>> entrySignalNames()
     {
-        return signalNames(store.getEntrySignals());
+        return signalNames(stationsOnly(store.getEntrySignals()));
     }
 
     /**
@@ -5604,9 +5707,33 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * Only the entries about squares that are stations now (GSE-C4).
+     *
+     * A station that is demoted KEEPS its station settings - its caption, the sides it bars arrivals by, its exit and
+     * entry guards - and has them again when it is promoted.  Adam, 2026-10-10, asked: keep them, ignored while not a
+     * station, as its maximum train length (OB-291) and its blockers (AMS-B2) already were.  The store keeps them; the
+     * build, the checks and the editor read them through this, so a square that is not a station has none of them.
+     *
+     * @param bySquare a store map keyed by station square
+     * @param <V> what each square holds
+     * @return a copy holding the stations' entries only
+     */
+    private <V> Map<TileKey, V> stationsOnly(Map<TileKey, V> bySquare)
+    {
+        Map<TileKey, V> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, V> entry : bySquare.entrySet())
+        {
+            if (entry.getKey() != null && store.isStation(entry.getKey())) out.put(entry.getKey(), entry.getValue());
+        }
+
+        return out;
+    }
+
     public Map<TileKey, Set<Side>> barredArrivals()
     {
-        return store.getBarredArrivals();
+        return stationsOnly(store.getBarredArrivals());
     }
 
     /**
@@ -5615,7 +5742,8 @@ public class AutonomySession
      */
     public Set<Side> getBarredArrivals(TileKey tile)
     {
-        Set<Side> barred = store.getBarredArrivals(tile);
+        // A STATION'S (GSE-C4): a square that is not one now keeps the sides it barred, for when it is, and bars nothing
+        Set<Side> barred = store.isStation(tile) ? store.getBarredArrivals(tile) : new LinkedHashSet<Side>();
 
         if (barred.isEmpty()) return barred;
 
@@ -6090,8 +6218,10 @@ public class AutonomySession
 
         if (Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.CAN_REVERSE))) return true;
 
-        // a terminus was always "a station where trains turn round"
-        if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) return true;
+        // a terminus was always "a station where trains turn round" - so on a square that is not a station now it turns
+        // nothing round: demoting keeps the flag for when the square is promoted again (GSE-C4; Adam, 2026-10-10: keep
+        // them, ignored while not a station)
+        if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) return true;
 
         // a reversing point that is NOT a station was "somewhere trains turn round on the way past"
         return Boolean.TRUE.equals(getPointProperty(tile, "reversing")) && !store.isStation(tile);
@@ -7037,9 +7167,10 @@ public class AutonomySession
         //
         // BOTH GUARDS (FR-096): an entry-guard signal that has gone is dropped from the build the same way, and the
         // way into that station is then as unguarded as a platform whose protecting signal went.
-        Map<TileKey, List<TileKey>> both = new LinkedHashMap<>(store.getProtectingSignals());
+        // STATIONS' (GSE-C4): a square that is not one now keeps its guards, and nothing throws them
+        Map<TileKey, List<TileKey>> both = new LinkedHashMap<>(stationsOnly(store.getProtectingSignals()));
 
-        for (Map.Entry<TileKey, List<TileKey>> entry : store.getEntrySignals().entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
         {
             List<TileKey> merged = new ArrayList<>(both.containsKey(entry.getKey())
                 ? both.get(entry.getKey()) : java.util.Collections.<TileKey>emptyList());
@@ -7386,7 +7517,8 @@ public class AutonomySession
 
         for (TileKey tile : reducer.getPoints().keySet())
         {
-            if (Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
+            // A STATION'S, as `isTurnAround` reads the same flag (GSE-C4)
+            if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
         // "May turn round here" where no arriving train could do anything else (OB-123).
@@ -7462,6 +7594,9 @@ public class AutonomySession
 
         for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
         {
+            // NOT ONE KEPT FOR A SQUARE THAT IS NOT A STATION NOW (GSE-C4): it is not drawn, so nothing covers it
+            if (caption.getValue() == null || !store.isStation(caption.getValue())) continue;
+
             LayoutDiagram page = pageOf(caption.getKey());
 
             if (page == null) continue;
@@ -7586,9 +7721,10 @@ public class AutonomySession
 
         if (graph == null) return out;
 
-        Map<TileKey, List<TileKey>> exits = store.getProtectingSignals();
+        // STATIONS' (GSE-C4), as `signalsThatAreGone`
+        Map<TileKey, List<TileKey>> exits = stationsOnly(store.getProtectingSignals());
 
-        for (Map.Entry<TileKey, List<TileKey>> entry : store.getEntrySignals().entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
         {
             if (store.getExcludedPages().contains(entry.getKey().getPage()) || !exits.containsKey(entry.getKey())) continue;
 
@@ -7696,6 +7832,9 @@ public class AutonomySession
         for (TileKey station : stations)
         {
             if (store.getExcludedPages().contains(station.getPage())) continue;
+
+            // NOR ONE THAT IS NOT A STATION NOW (GSE-C4): it keeps its guards, and nothing throws them
+            if (!store.isStation(station)) continue;
 
             java.util.Set<Integer> in = waysAt(station, true, from, to, named, stops);
             java.util.Set<Integer> outOf = waysAt(station, false, from, to, named, stops);
@@ -7995,6 +8134,30 @@ public class AutonomySession
             String train = placed.get(square);
 
             if (train != null && !onTheRailway.contains(train)) out.put(square, getFacing(square));
+        }
+
+        return out;
+    }
+
+    /**
+     * The squares of `trainsOnNoPoint` whose train this configuration pauses (RSA60-C5), for the diagram to draw grey.
+     * The setup's list, not the train's flag: the railway does not have these trains, and the setup is what says.
+     *
+     * @return the squares
+     */
+    public java.util.Set<TileKey> pausedTrainsOnNoPoint()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        java.util.Set<String> paused = getPausedLocomotives();
+
+        if (paused.isEmpty()) return out;
+
+        Map<TileKey, String> placed = placedLocomotives();
+
+        for (TileKey square : trainsOnNoPoint().keySet())
+        {
+            if (paused.contains(placed.get(square))) out.add(square);
         }
 
         return out;
@@ -8425,27 +8588,17 @@ public class AutonomySession
         // here asks about stations - `tilesWithAMaxTrainLength` and `modelsAnyLength` included.
         store.setStation(tile, station);
 
-        // A caption names a station, so demoting one takes its name plaque with it.
+        // AND SO DOES EVERY OTHER STATION SETTING (GSE-C4): its caption, the sides it bars arrivals by, its exit guard and
+        // its entry guards - and the editor keeps the old "terminus" turn flag beside them.  Adam, 2026-10-10, asked:
+        // keep them, ignored while not a station - as the maximum train length above and the blockers below already are.
         //
-        // Left behind, the plaque outlives the thing it names: the square is drawn as a plain point
-        // and the label under it stays registered, so a train reversing there lights up a station
-        // name for a place that is no longer a station.  Which is exactly what happened, and read as
-        // the diagram contradicting itself.
-        //
-        // Promotion already places a caption, so the pair is symmetrical - and re-promoting gives the
-        // plaque back, on the square the placer picks.
-        if (!station) clearCaptions(tile, null);
-
-        // And so does any restriction on how trains may arrive at it.  It is inert while the square is
-        // not a station, so leaving it costs nothing today and everything the day somebody makes the
-        // square a station again and finds it refusing trains for a reason recorded months ago.
-        if (!station) store.setBarredArrivals(tile, null);
-
-        // And the signal that protected it: a plain point is not somewhere trains are held out of.
-        if (!station) store.setProtectingSignal(tile, null);
-
-        // And its entry guard (FR-096), for the same reason: nothing arrives at a plain point.
-        if (!station) store.setEntrySignals(tile, null);
+        // Each was taken off here for a reason that still holds of a plain point, and each reason is now answered where
+        // the setting is READ: a caption left drawn lit a station name up on a plain point when a train reversed there,
+        // and a guard would be thrown red over a square nothing is sent to.  So the session's views of them - the caption
+        // the diagram draws by (`getCaptionTarget`), `getLabelledStationTiles`, `barredArrivals` and `getBarredArrivals`,
+        // the guard getters, and the accessory names the build is given - leave out a square that is not a station now,
+        // and the checks are handed those views.  What the store keeps comes back when the square is promoted, which is
+        // the operator's own act, on the menu that shows every one of them.
 
         // NOT being unavailable while another square is occupied (Adam, 2026-09-24, reversing AMS-B2: "do allow
         // restrictions on non-stations, and let's not clear them when the type changes").  It stays in force on a square
@@ -8853,7 +9006,14 @@ public class AutonomySession
         // Grouped by TRAIN, because the walk below is a walk backwards from one train and the map the
         // railway hands back has thrown that away - it answers "is this edge covered", which is the
         // routing question rather than the drawing one.
-        Map<org.traincontrol.base.Locomotive, Set<TileKey>> reach = new LinkedHashMap<>();
+        //
+        // AND KEPT AS THE EDGES THEMSELVES (OB-239), each the reduction's own edge with its places (`reducedEdgeOf`).
+        // This kept only the two squares at each end and stepped between them along the first reduced edge joining the
+        // pair, either way round - so where two roads join one pair of sensors the line went down whichever the
+        // reduction listed first, and from the train's square to any covered square a reduced edge reached, though no
+        // covered edge ran there: track the railway would let another train onto, drawn as this one.  Painting each
+        // covered edge's own places, the line and the railway cannot name different roads.
+        Map<org.traincontrol.base.Locomotive, List<GraphReducer.ReducedEdge>> reach = new LinkedHashMap<>();
 
         for (Map.Entry<org.traincontrol.automation.Edge, org.traincontrol.base.Locomotive> covered
             : running.edgesCoveredByStandingTrains().entrySet())
@@ -8862,28 +9022,24 @@ public class AutonomySession
 
             if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
 
-            TileKey from = getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = getStationIndex().squareOf(edge.getEnd().getName());
+            GraphReducer.ReducedEdge rail = reducedEdgeOf(edge);
 
-            if (from == null || to == null) continue;
+            if (rail == null) continue;
 
-            Set<TileKey> squares = reach.get(covered.getValue());
+            List<GraphReducer.ReducedEdge> rails = reach.get(covered.getValue());
 
-            if (squares == null)
+            if (rails == null)
             {
-                squares = new LinkedHashSet<>();
+                rails = new ArrayList<>();
 
-                reach.put(covered.getValue(), squares);
+                reach.put(covered.getValue(), rails);
             }
 
-            // Both ends, so the chain below can be followed by SQUARE.  The railway records each rail
-            // twice, once per direction, and matching by square rather than by Edge identity makes the
-            // pair one hop rather than two.
-            squares.add(from);
-            squares.add(to);
+            // ONCE EACH: several of the railway's copies of a rail are one edge of the reduction
+            if (!rails.contains(rail)) rails.add(rail);
         }
 
-        for (Map.Entry<org.traincontrol.base.Locomotive, Set<TileKey>> train : reach.entrySet())
+        for (Map.Entry<org.traincontrol.base.Locomotive, List<GraphReducer.ReducedEdge>> train : reach.entrySet())
         {
             walkBackFrom(running, train.getKey(), train.getValue(), out);
         }
@@ -8947,7 +9103,7 @@ public class AutonomySession
 
                 if (tile == null) continue;
 
-                RouteId road = onTheWay ? path.get(at).getRouteId() : roadOfTheSensor(edge.getEnd(), edge.getStart());
+                RouteId road = onTheWay ? path.get(at).getRouteId() : roadOn(edge.getEnd(), edge.getEntrySide());
 
                 Set<RouteId> roads = seen.get(tile);
 
@@ -9086,9 +9242,8 @@ public class AutonomySession
      * Paints one train's own length back along the track it is covering (MT-309).
      *
      * Walks square by square from where the train stands, deducting each square's assigned length,
-     * and stops the moment the train has been used up.  Only squares the RAILWAY already holds
-     * covered are ever reached: the chain is followed through the endpoints of the covered edges, so
-     * this can only ever draw a subset of them.
+     * and stops the moment the train has been used up.  Only the edges the RAILWAY holds covered are
+     * walked, each along its own squares in order (OB-239), so this can only ever draw a subset of them.
      *
      * A square with no length assigned costs nothing, which is the same convention every other length
      * rule here uses - `getTileLength` answers 0 for unmeasured, and "only positive lengths are
@@ -9097,11 +9252,11 @@ public class AutonomySession
      *
      * @param running the layout
      * @param train the locomotive
-     * @param covered the endpoint squares of every edge this train covers
+     * @param covered every edge this train covers, as the reduction's own edges (`reducedEdgeOf`)
      * @param out the squares to draw, added to
      */
     private void walkBackFrom(org.traincontrol.automation.Layout running,
-        org.traincontrol.base.Locomotive train, Set<TileKey> covered,
+        org.traincontrol.base.Locomotive train, List<GraphReducer.ReducedEdge> covered,
         Map<TileKey, Set<RouteId>> out)
     {
         if (train == null || train.getTrainLength() == null) return;
@@ -9133,23 +9288,14 @@ public class AutonomySession
         // and is not this walk.
         while (remaining > 0)
         {
-            TileKey next = null;
+            // THE NEXT COVERED EDGE ALONG, walked along its own squares (OB-239) - see `nextCoveredEdge`.  The walk
+            // cannot double back: `walked` holds every square already passed, which is the same guard `Layout`'s own
+            // tail walk uses against a loop of track.
+            GraphReducer.ReducedEdge rail = nextCoveredEdge(covered, at, walked);
 
-            // The next covered square along, which is one of the endpoints the caller collected.  The
-            // walk cannot double back: `walked` holds every square already passed, which is the same
-            // guard `Layout`'s own tail walk uses against a loop of track.
-            for (TileKey candidate : covered)
-            {
-                if (walked.contains(candidate)) continue;
+            if (rail == null) return;
 
-                if (pathBetween(at, candidate) == null) continue;
-
-                next = candidate;
-
-                break;
-            }
-
-            if (next == null) return;
+            TileKey next = at.equals(rail.getEnd()) ? rail.getStart() : rail.getEnd();
 
             // THE SENSOR SQUARES ARE DRAWN TOO (Adam, 2026-09-23, OB-277: *"when we draw orange lines,
             // they don't overlap with sensors"*, and on every sensor, occupied or not).  The square a
@@ -9162,14 +9308,14 @@ public class AutonomySession
             // leaves by - and then its length is spent, before any square behind it (OB-278).
             if (walked.size() == 1)
             {
-                markTheSensor(out, at, next);
+                markTheSensor(out, at, rail);
 
                 remaining -= store.getTileLength(at);
 
                 if (remaining <= 0) return;
             }
 
-            List<GraphReducer.TileStep> between = pathBetween(at, next);
+            List<GraphReducer.TileStep> between = stepsFrom(rail, at);
 
             for (GraphReducer.TileStep step : between)
             {
@@ -9193,7 +9339,7 @@ public class AutonomySession
 
             // The far end is the next square back and the body lies over it - so it is drawn (OB-277),
             // along the road that faces the track just walked, and its own length counts.
-            markTheSensor(out, next, at);
+            markTheSensor(out, next, rail);
 
             remaining -= store.getTileLength(next);
 
@@ -9204,51 +9350,99 @@ public class AutonomySession
     }
 
     /**
-     * The squares between two Points, in the order a train travelling from one to the other crosses
-     * them, or null when the reduction knows of no edge joining them.
+     * The reduction's own edge for an edge the railway holds covered, or null where the reduction has none with its
+     * places (OB-239).
      *
-     * Both directions are matched and the reversed one is reversed, because a covered edge is covered
-     * whichever way the train came - and the ORDER is what this method exists for: the walk above
-     * spends the train's length square by square, so a path handed back the wrong way round would
-     * draw the far end of the segment and leave the square beside the train clear.
+     * The edge from the same square to the same square whose places (`GraphReducer.placesAlong`) are the ones the
+     * railway's edge carries, in the same order - which is what the build wrote them from.  Where the railway's edge
+     * carries none - a hand-written configuration, or one written before 3.0.0 - the two squares and the direction
+     * decide it, and the reduction keeps one edge for those.  An edge of a railway built before the diagram was redrawn
+     * can find none, and is not drawn rather than drawn along a road the railway does not hold; a train none of whose
+     * edges is found is drawn from the places it claims (`drawTheTrainsThatCoverNoEdge`).
      *
-     * The STEPS rather than the squares, because each one records which route of its square the edge
-     * runs through - and that is what lets the diagram draw the road the train is on rather than the
-     * whole tile (MT-309).
-     *
-     * @param from the square walked from
-     * @param to the square walked to
-     * @return the steps between, endpoints excluded, or null when they are not joined
+     * @param covered the railway's edge
+     * @return the reduced edge, or null
      */
-    private List<GraphReducer.TileStep> pathBetween(TileKey from, TileKey to)
+    private GraphReducer.ReducedEdge reducedEdgeOf(org.traincontrol.automation.Edge covered)
     {
+        TileKey from = getStationIndex().squareOf(covered.getStart().getName());
+        TileKey to = getStationIndex().squareOf(covered.getEnd().getName());
+
         if (from == null || to == null || reducer == null) return null;
 
         for (GraphReducer.ReducedEdge edge : reducer.getEdges())
         {
-            boolean sameWay = from.equals(edge.getStart()) && to.equals(edge.getEnd());
-            boolean otherWay = to.equals(edge.getStart()) && from.equals(edge.getEnd());
+            if (!from.equals(edge.getStart()) || !to.equals(edge.getEnd())) continue;
 
-            if (!sameWay && !otherWay) continue;
+            if (covered.getPlaceIds().isEmpty()) return edge;
 
-            List<GraphReducer.TileStep> steps = new ArrayList<>();
+            List<String> places = new ArrayList<>();
 
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() == null) continue;
+            for (GraphReducer.Place place : reducer.placesAlong(edge)) places.add(place.getId());
 
-                // The squares at either end are where trains STAND, not track lying under one.
-                if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
-
-                steps.add(step);
-            }
-
-            if (otherWay) java.util.Collections.reverse(steps);
-
-            return steps;
+            if (places.equals(covered.getPlaceIds())) return edge;
         }
 
         return null;
+    }
+
+    /**
+     * The covered edge the walk goes on along from this square, or null where none goes on (OB-239).
+     *
+     * One that ENDS here first: the train came along it, and its places are where the body lies - the arriving copy
+     * `Layout.walkOneTail` takes first, for the same reason (SVZ-B1).  Then one that starts here, which is a train
+     * turned round on its square.  Never back to a square already walked.
+     *
+     * @param covered the train's covered edges
+     * @param at the square the walk has reached
+     * @param walked the squares already passed
+     * @return the edge, or null
+     */
+    private static GraphReducer.ReducedEdge nextCoveredEdge(List<GraphReducer.ReducedEdge> covered, TileKey at,
+        Set<TileKey> walked)
+    {
+        for (GraphReducer.ReducedEdge edge : covered)
+        {
+            if (at.equals(edge.getEnd()) && !walked.contains(edge.getStart())) return edge;
+        }
+
+        for (GraphReducer.ReducedEdge edge : covered)
+        {
+            if (at.equals(edge.getStart()) && !walked.contains(edge.getEnd())) return edge;
+        }
+
+        return null;
+    }
+
+    /**
+     * A covered edge's own squares, in the order the train's body lies along them from this end - the ends excluded,
+     * because the squares at either end are where trains STAND, not track lying under one.
+     *
+     * The ORDER is what the walk spends the train's length in: handed back the wrong way round, it would draw the far
+     * end of the edge and leave the square beside the train clear.  The STEPS rather than the squares, because each
+     * records which route of its square the edge runs through - which lets the diagram draw the road the train is on
+     * rather than the whole tile (MT-309).
+     *
+     * @param rail the covered edge
+     * @param from the end the walk is at
+     * @return the steps, from that end
+     */
+    private static List<GraphReducer.TileStep> stepsFrom(GraphReducer.ReducedEdge rail, TileKey from)
+    {
+        List<GraphReducer.TileStep> steps = new ArrayList<>();
+
+        for (GraphReducer.TileStep step : rail.getPath())
+        {
+            if (step.getTile() == null) continue;
+
+            if (step.getTile().equals(rail.getStart()) || step.getTile().equals(rail.getEnd())) continue;
+
+            steps.add(step);
+        }
+
+        if (from.equals(rail.getEnd())) java.util.Collections.reverse(steps);
+
+        return steps;
     }
 
     /**
@@ -9260,10 +9454,11 @@ public class AutonomySession
      * simply draws no line rather than a line along a rail it cannot name.
      *
      * @param out the covered set, added to
-     * @param sensor the Point's square
-     * @param towards the neighbouring Point's square the train's body runs on towards
+     * @param sensor the Point's square, one end of the edge
+     * @param rail the covered edge the body lies along there - whose own side at the square names the road, and not the
+     *        first edge joining the two squares, which where two roads join them could be the other (OB-239)
      */
-    private void markTheSensor(Map<TileKey, Set<RouteId>> out, TileKey sensor, TileKey towards)
+    private void markTheSensor(Map<TileKey, Set<RouteId>> out, TileKey sensor, GraphReducer.ReducedEdge rail)
     {
         Set<RouteId> roads = out.get(sensor);
 
@@ -9274,48 +9469,27 @@ public class AutonomySession
             out.put(sensor, roads);
         }
 
-        RouteId road = roadOfTheSensor(sensor, towards);
+        RouteId road = roadOn(sensor, sensor.equals(rail.getEnd()) ? rail.getEntrySide() : rail.getExitSide());
 
         if (road != null) roads.add(road);
     }
 
     /**
-     * Which road of a sensor square runs towards a neighbouring Point, or null when that cannot be said.
+     * Which road of a square uses this side, or null when that cannot be said.
      *
-     * **Asked of the same edge `pathBetween` walks**: the first reduced edge joining the two squares, either way
-     * round, in the reducer's own order - so the line through the sensor and the line along the track beside it
-     * describe one road rather than two answers that could part.  The side is where that edge leaves or reaches
-     * the sensor, and the road is the one of the square's routes that uses that side.  A double curve's two arcs
-     * share no side, so the answer is one road even there - which is the case MT-309 was about.
+     * The side is where an edge leaves or reaches the square - so the line through a sensor and the line along the
+     * track beside it describe one road, that edge's own, rather than two answers that could part.  It was asked of
+     * the first reduced edge joining two squares either way round, which where two roads join them could be the other
+     * road (OB-239).  A double curve's two arcs share no side, so the answer is one road even there - which is the
+     * case MT-309 was about.
      *
-     * @param sensor the Point's square
-     * @param towards the neighbouring Point's square
+     * @param sensor the square
+     * @param side the side an edge leaves or reaches it by, or null
      * @return the road, or null
      */
-    private RouteId roadOfTheSensor(TileKey sensor, TileKey towards)
+    private RouteId roadOn(TileKey sensor, Side side)
     {
-        if (sensor == null || towards == null || reducer == null || graph == null) return null;
-
-        Side side = null;
-
-        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
-        {
-            if (sensor.equals(edge.getStart()) && towards.equals(edge.getEnd()))
-            {
-                side = edge.getExitSide();
-
-                break;
-            }
-
-            if (towards.equals(edge.getStart()) && sensor.equals(edge.getEnd()))
-            {
-                side = edge.getEntrySide();
-
-                break;
-            }
-        }
-
-        if (side == null) return null;
+        if (sensor == null || side == null || graph == null) return null;
 
         for (Map.Entry<RouteId, Route> road : graph.getRoutes(sensor).entrySet())
         {
@@ -10390,7 +10564,7 @@ public class AutonomySession
      *
      * A home the operator GAVE - the setup's `home` on a square - and not wherever a train last stood, which the
      * running layout also calls a home until the next build.  On a page autonomy runs, as placements are
-     * (`placedLocomotives`).  What Place All at Their Homes is counted and offered by, and what it walks, so the two
+     * (`placedLocomotives`).  What Place All Trains at Their Homes is counted and offered by, and what it walks, so the two
      * cannot answer differently.
      *
      * @return the homes, square to locomotive, in no particular order
@@ -11702,8 +11876,8 @@ public class AutonomySession
      *    been deleted. `CS2File` skips a page whose file will not parse or is not there, and this
      *    layout lives in OneDrive, where an unhydrated placeholder is an ordinary Tuesday;
      *  - the numbering is suspect, meaning a renumber has happened and nothing has re-keyed the setup
-     *    yet - so every entry is name-keyed to the WRONG page and "this square does not exist" is
-     *    being asked about coordinates that were never on that page.
+     *    yet - so an id cannot be trusted to say a square is gone, though `resolvePage` still files each
+     *    entry under the page its recorded name is on (VD17-C4).
      *
      * Either way the remedy is the same and it is the one OB-068 established: save, but do not prune.
      *

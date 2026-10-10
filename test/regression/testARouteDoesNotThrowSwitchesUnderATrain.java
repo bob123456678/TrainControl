@@ -687,6 +687,101 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * A platform a locked path has only reserved is refused as reserved, not as having a train standing at it (GSR-C2).
+     *
+     * A locked path holds every point along it for its train (`Point.reserve`), its destination included, from the moment
+     * it is locked - so the signal protecting that destination is held, rightly, before the train is anywhere near it.
+     * The refusal said "it protects a platform where a train is standing", in the log and in the question a person is
+     * asked, and nobody is standing there yet: the operator goes looking for a train that is somewhere else.  Asked from
+     * inside the dispatch, while the train still stands where it set off.
+     *
+     * MUTATION: have `heldReason` give the standing key whatever `protectsAStandingTrain` answers, or have
+     * `protectsAStandingTrain` stop asking `whereTheTrainIs`, and this fails.
+     */
+    @Test
+    public void testAPlatformOnlyReservedIsNotSaidToHaveATrainStanding() throws Exception
+    {
+        if (!model.isFeedbackSet(S88_PLATFORM)) model.newFeedback(Integer.parseInt(S88_PLATFORM), null);
+
+        model.setFeedbackState(S88_PLATFORM, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("GR_A", false, null);
+
+        // The platform is the DESTINATION this time, so the path itself reserves it
+        layout.createPoint("GR_PLATFORM", true, S88_PLATFORM);
+
+        Edge toPlatform = layout.createEdge("GR_A", "GR_PLATFORM");
+
+        MarklinAccessory signal = model.newSwitch(SIGNAL_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        signal.setState(Accessory.accessorySetting.GREEN);
+
+        layout.getPoint("GR_PLATFORM").setProtectingSignal(signal.getName());
+
+        final Locomotive running = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("GR_A").setLocomotive(running);
+
+        final List<String> reasons = new ArrayList<>();
+        final List<Boolean> onlyReserved = new ArrayList<>();
+        final List<Boolean> signalWasActive = new ArrayList<>();
+
+        layout.setCallback("reservation probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || !reasons.isEmpty()) return null;
+
+            // What the railway says, sampled at the moment of the refusal
+            onlyReserved.add(layout.getPoint("GR_PLATFORM").getCurrentLocomotive() == running
+                && layout.whereTheTrainIs(running) == layout.getPoint("GR_A"));
+
+            signalWasActive.add(layout.getActiveAccs().contains(signal));
+
+            String[] why = signalRoute(84941, false).conflictingAccessoryAndReason();
+
+            reasons.add(why == null ? null : why[1]);
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(toPlatform), running, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertFalse(reasons.isEmpty(), "the probe never ran");
+
+            assertTrue(onlyReserved.get(0), "precondition: when the probe ran the platform was not held by the train's"
+                + " path alone - the train was already there, or nothing held it - so this would test the wrong case");
+
+            assertFalse(signalWasActive.get(0), "precondition: the signal was one of the path's own accessories, where the"
+                + " locked-path reason is the right answer");
+
+            assertEquals(reasons.get(0), "route.refusedSignalProtectingReservedPlatform", "a route was refused over a"
+                + " platform the train's path had only reserved, with the sentence for a train standing at it - and nobody"
+                + " is standing there yet (GSR-C2)");
+
+            assertNotEquals(org.traincontrol.util.I18n.f(reasons.get(0), "R", "S"),
+                org.traincontrol.util.I18n.f("route.refusedSignalProtectingOccupiedPlatform", "R", "S"),
+                "the reserved platform's sentence is the standing train's");
+        }
+        finally
+        {
+            layout.getPoint("GR_A").setLocomotive(null);
+            layout.getPoint("GR_PLATFORM").setLocomotive(null);
+
+            signal.setState(Accessory.accessorySetting.GREEN);
+
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * An accessory the train has already gone past is still settable; one ahead of it is not.
      *
      * Adam, 2026-08-25, on the guard the rest of this class is about: "be careful with auto disallowed

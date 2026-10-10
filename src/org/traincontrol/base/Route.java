@@ -145,6 +145,62 @@ abstract public class Route
     }
     
     /**
+     * Whether a command in this route runs the named route (GSR-B4).
+     *
+     * Asked before that route is deleted, for the count the delete's question gives: `otherRouteDeleted` removes the
+     * commands, and afterwards there is nothing left to count.
+     *
+     * @param name the route that may be deleted
+     * @return true when at least one command here runs it
+     */
+    public boolean callsRoute(String name)
+    {
+        if (name == null) return false;
+
+        for (RouteCommand rc : this.route)
+        {
+            if (rc != null && rc.isRoute() && name.equals(rc.getName())) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Takes every command that runs a deleted route out of this one (GSR-B4).
+     *
+     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' calls to it, as deleting a locomotive
+     * removes the commands that drive it (`locomotiveDeleted`).  A command naming a route that is not there does nothing
+     * when this one fires - and then runs whatever route is next given that name, which nobody put here.  The wait the
+     * command carried goes with it, as a deleted locomotive's commands take theirs.
+     *
+     * Through the iterator, on the live list, as `locomotiveDeleted` does: a route already running walks a copy taken
+     * when it started (CS3-B1), so it finishes the commands it began with.
+     *
+     * @param name the route that has been deleted
+     * @return true when a command was removed, so the caller can say which route lost it
+     */
+    public boolean otherRouteDeleted(String name)
+    {
+        if (name == null) return false;
+
+        boolean any = false;
+
+        for (java.util.Iterator<RouteCommand> commands = this.route.iterator(); commands.hasNext();)
+        {
+            RouteCommand rc = commands.next();
+
+            if (rc != null && rc.isRoute() && name.equals(rc.getName()))
+            {
+                commands.remove();
+
+                any = true;
+            }
+        }
+
+        return any;
+    }
+
+    /**
      * This will update route commands when a locomotive is renamed
      * @param oldName
      * @param newName 

@@ -335,6 +335,123 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     }
 
     /**
+     * A setup that is there and will not read is said to be unreadable, with the reason - not called a layout with no
+     * folder to keep one in (GSP-B2).
+     *
+     * `getAutonomySession` caught every failure to open the setup and handed back null, and every door read null as
+     * "this layout cannot hold a setup": the editor's refusal said it needs a local layout folder TrainControl can write
+     * to, and the Autonomy menu that autonomy needs a layout stored on this computer - on a layout stored on this
+     * computer, in the folder the check before it had just found.  A setup.json that will not parse, one written by a
+     * newer TrainControl and a configuration that will not read all arrived that way, with the reason only in the log.
+     *
+     * On a sandboxed copy of the fixture whose setup.json is not JSON, asked of a real window and of its Autonomy menu.
+     * Nothing is pressed, so no dialog is raised.  And the file is as it was afterwards: a setup that cannot be read is
+     * not one anything may write over.
+     *
+     * MUTATION: forget the reason in `getAutonomySession`'s catch, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testASetupThatWillNotReadIsNotCalledMissing() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        org.traincontrol.marklin.MarklinControlStation model = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            File setup = new File(sandbox.getFolder(), "config/autonomy/setup.json");
+
+            assertTrue(setup.isFile(), "precondition: the fixture has no setup.json to break, so nothing below is about"
+                + " one that will not read");
+
+            byte[] broken = "{ this is not a setup".getBytes(StandardCharsets.UTF_8);
+
+            Files.write(setup.toPath(), broken);
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
+
+            ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+            final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
+
+            ui[0].whenTilesSettled(() -> settled.countDown());
+
+            settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
+
+            final String[] said = new String[4];
+
+            final java.util.List<String> items = new java.util.ArrayList<>();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                said[0] = String.valueOf(ui[0].getAutonomySession());
+                said[1] = String.valueOf(ui[0].whyAutonomyEditorCannotOpen());
+                said[2] = String.valueOf(ui[0].whyTheSetupCannotBeRead());
+
+                // THE AUTONOMY MENU, built as it is when it is opened
+                org.traincontrol.gui.AutonomyMenu menu = new org.traincontrol.gui.AutonomyMenu(ui[0]);
+
+                for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+
+                for (int i = 0; i < menu.getItemCount(); i++)
+                {
+                    javax.swing.JMenuItem item = menu.getItem(i);
+
+                    if (item == null) continue;
+
+                    items.add(item.getText());
+
+                    if (!item.isEnabled() && item.getToolTipText() != null) said[3] = item.getToolTipText();
+                }
+            });
+
+            assertEquals(said[0], "null", "precondition: a setup.json that is not JSON opened, so nothing below is about"
+                + " one that will not");
+
+            assertNotEquals(said[1], "layout.ui.errorEditingOnlySupportedForLocalFiles", "precondition: the sandbox is not"
+                + " read as a local layout, so the refusal is about that");
+
+            assertNotEquals(said[1], "autosetup.ui.errorNoSetupToEdit", "a setup that is there and will not read is"
+                + " refused as a layout with no folder TrainControl can write to (GSP-B2)");
+
+            assertNotEquals(said[2], "null", "the reason the setup would not read was not kept, so no door can say it"
+                + " (GSP-B2)");
+
+            assertFalse(items.contains(I18n.t("autosetup.ui.menuNoSetupPossible")), "the Autonomy menu says autonomy"
+                + " needs a layout stored on this computer, on one that is (GSP-B2): " + items);
+
+            assertNotNull(said[3], "the Autonomy menu's greyed line does not say why the setup would not read (GSP-B2): "
+                + items);
+
+            assertTrue(java.util.Arrays.equals(Files.readAllBytes(setup.toPath()), broken), "the setup that would not"
+                + " read was written over");
+        }
+        finally
+        {
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * The right-click menu asks the setup once where Start is offered: the Return Home item is handed the hand doors'
      * sentence, worked out only where Start is greyed (ADU-C3, ADD-C10).
      *

@@ -194,6 +194,56 @@ public class testMassAssignLengths
     }
 
     /**
+     * A leg over a permanent turnout is cut there, as at a switch, and the turnout is asked for with the switches
+     * (VD18-B3).
+     *
+     * The room walk stops at a permanent turnout - `GraphReducer.boundsTheRoom`, and Adam's ruling of 2026-09-22 that a
+     * permanent turnout is still the last switch (OB-233) - while Mass Assign Lengths cut its pieces at `isSwitch()`,
+     * which names the six throwable types and none of the five permanent ones.  So a piece ran over the turnout, and a
+     * length typed for it was shared onto the turnout and the track beyond it, where the room before the turnout does
+     * not count it.  Here the turnout's branch leads nowhere, so one leg runs over it and it is no shared square
+     * either - the case where nothing else cut the piece.
+     *
+     * MUTATION: cut the pieces at `isSwitch()` alone again, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testAPermanentTurnoutCutsAPieceAsASwitchDoes() throws IOException
+    {
+        // 1,1 sensor - 2,1 - 3,1 permanent left, toe west and its branch north to nothing - 4,1 - 5,1 sensor.  Trains
+        // trail it only, from 5,1 to 1,1.
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CUSTOM_PERM_LEFT, 3, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(1, 1), true);
+        session.rebuild();
+
+        assertTrue(edge(key(5, 1), key(1, 1)).getPath().stream().anyMatch(step -> key(3, 1).equals(step.getTile())),
+            "precondition: the leg from 5,1 to 1,1 does not run over the permanent turnout");
+
+        assertFalse(session.sharedSquaresALengthRuleReads().contains(key(3, 1)), "precondition: two legs run over the"
+            + " turnout, so it is cut out as a shared square and this asks nothing about the switch rule");
+
+        assertEquals(tileSets(session.stretchesALengthRuleReads()),
+            new HashSet<>(Arrays.asList(set(key(1, 1), key(2, 1)), set(key(4, 1), key(5, 1)))), "a leg over a"
+            + " permanent turnout is one piece, so a length typed for it is shared onto the turnout and the track"
+            + " beyond it, where the room walk stops (OB-233): " + describe(session.stretchesALengthRuleReads()));
+
+        assertEquals(session.switchesALengthRuleReads(), set(key(3, 1)), "the permanent turnout is not asked for with"
+            + " the switches, though the room walk ends at it as at a switch");
+    }
+
+    /**
      * A piece is measured once its total is above 0, and a square inside it may hold 0 (Adam's ruling of 2026-09-06).
      */
     @Test

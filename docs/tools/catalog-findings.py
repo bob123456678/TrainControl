@@ -122,6 +122,13 @@ DESCRIBES = ("what", "what was checked", "title", "one line", "finding", "the fi
 DISPOSES = ("disposition", "status", "verdict", "result", "outcome", "what was left", "note",
             "where", "caught?")
 
+# ONE VOCABULARY, READ WHOLE BY BOTH PATHS (OB-249).  `fromTheTable` read `DISPOSES[:-2]` - a slice whose meaning moved
+# whenever a name was added at the end - while the table-only path read the whole tuple, so one column was evidence
+# for a finding with a section and the disposition for one without.  Both read all of it now, which changes no row of
+# any review in history: `cell_under` takes the first name a table has, so `status` and the other verdict columns are
+# still read ahead of `where`.  `where` is here AND in SUBSTANCE on purpose - in a `| id | where |` table its one cell
+# is the only candidate for both, and `reads_as_a_verdict` decides which it is (see collect).
+
 # Where a table has a verdict column and no description column, the substance is in one of these: 111
 # tables are `| id | status | where |`, and for a D finding the "where" cell IS what was checked.
 SUBSTANCE = ("where", "subject", "note", "what was left")
@@ -365,7 +372,7 @@ def fromTheTable(row):
     if not row:
         return ""
 
-    said = cell_under(row, DISPOSES[:-2]) or (row["cells"][-1] if row["cells"] else "")
+    said = cell_under(row, DISPOSES) or (row["cells"][-1] if row["cells"] else "")
 
     return " ".join(said.split())
 
@@ -438,9 +445,15 @@ def collect():
             if not described:
                 described = cell_under(row, SUBSTANCE)
 
-                # Unless that column is the one the verdict came from, in which case there is only one
-                # cell of substance and it is already recorded.
-                if described == disposed:
+                # Unless that column is the one the verdict came from AND the cell reads as a verdict (OB-249).
+                #
+                # In a `| id | where |` or `| id | note |` table the one cell is the only candidate for the
+                # description and for the disposition.  Blanking the description whenever the two matched read every
+                # such cell as a verdict - so a D finding's "where", which is the whole of what was checked, became
+                # its disposition and its description the placeholder: the fault that once cost 200 D findings their
+                # text.  Asked as the headerless one-cell row below asks it: the text stays the disposition either
+                # way, and is the description too unless it opens with a verdict word.
+                if described == disposed and reads_as_a_verdict(described):
                     described = ""
 
             if not described and not disposed:

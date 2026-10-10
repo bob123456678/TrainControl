@@ -2967,9 +2967,57 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return path != null && !path.isEmpty();
     }
 
+    /**
+     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none to read
+     * (GSP-B2).  Worked out afresh by `getAutonomySession` at every attempt to build the session.
+     */
+    private String autonomySetupUnreadable;
+
+    /**
+     * Why the autonomy setup on this computer would not read, in words - or null when it read, or there is none (GSP-B2).
+     *
+     * `getAutonomySession` hands back null for two different things: a layout with no folder to keep a setup in, and a
+     * setup that is there and would not read - a setup.json that is not JSON, one written by a newer TrainControl, a
+     * configuration that will not parse.  Every door said the first whatever was true, so somebody whose setup had a
+     * typing slip in it was told their layout needs a folder it already has.  This tells the two apart and carries the
+     * reason for the doors to show.  It offers nothing more: a setup that would not read is left exactly as it is.
+     *
+     * @return the reason, or null
+     */
+    public String whyTheSetupCannotBeRead()
+    {
+        return autonomySetupUnreadable;
+    }
+
+    /**
+     * A failure to open the autonomy setup, in words somebody can act on (GSP-B2).
+     *
+     * The store's refusal of a setup written by a newer TrainControl arrives as its message KEY with the two version
+     * numbers after it - `AutonomyCompanionStore.ERROR_VERSION + " (3 > 2)"` - because the store writes no sentences;
+     * it is translated here, numbers kept.  An unreadable configuration arrives in words already, and a setup.json that
+     * is not JSON as the parser's own message, which is the most anybody has to go on.
+     *
+     * @param failure what opening the session threw
+     * @return the reason, never null
+     */
+    private static String describeSetupFailure(Exception failure)
+    {
+        String message = failure.getMessage();
+
+        if (message == null || message.trim().isEmpty()) return failure.getClass().getSimpleName();
+
+        String version = org.traincontrol.automationui.AutonomyCompanionStore.ERROR_VERSION;
+
+        return message.startsWith(version) ? I18n.t(version) + message.substring(version.length()) : message;
+    }
+
     public org.traincontrol.automationui.AutonomySession getAutonomySession()
     {
         if (autonomySession != null) return autonomySession;
+
+        // EACH ATTEMPT SAYS AFRESH WHY IT FAILED (GSP-B2): a setup mended since, or a layout with no folder now, is not
+        // the reason the last attempt gave.
+        autonomySetupUnreadable = null;
 
         String path = getLocalLayoutPath();
 
@@ -3067,6 +3115,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         catch (Exception e)
         {
             this.model.log(e);
+
+            // AND WHY, KEPT FOR THE DOORS (GSP-B2).  A setup that is there and would not read is not a layout with no
+            // folder to keep one in, which is what every door said when all it had was this null: the editor's refusal
+            // that it "needs a local layout folder", the Autonomy menu that autonomy "needs a layout stored on this
+            // computer".  Nothing is written: the setup stays exactly as it is on disk.
+            autonomySetupUnreadable = describeSetupFailure(e);
+
             return null;
         }
 
@@ -4559,11 +4614,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The train and the setup in memory have it; the file did not take it, and the next save writes it
                 this.model.log(cannotSave);
             }
+
+            // AND THE RAILWAY'S SETTINGS AS BUILT (RSA60-B1).  The tick changed the railway and the setup together, so
+            // the two agree - as if the railway had been built this way.  Left as it was built, a press of the Auto tab's
+            // pause button afterwards, which changes the railway alone, read to the next rebuild's fold as no change, and
+            // the setup's older answer stood: the rebuild undid the button.
+            notePausesAsBuilt();
         }
 
         trainsPausedChanged();
 
         repaintAutoLocList(false);
+    }
+
+    /**
+     * Writes the railway's paused trains into its settings as built (RSA60-B1), for a door that changed the railway and
+     * the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes (RSA21-C1).  Only
+     * for the railway the settings were read off.
+     */
+    private void notePausesAsBuilt()
+    {
+        Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (railway == null || railway != settingsBuiltFor || settingsAsBuilt == null) return;
+
+        java.util.List<String> paused = org.traincontrol.automation.Layout.pausedNamesOf(this.model);
+
+        if (paused.isEmpty()) settingsAsBuilt.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else settingsAsBuilt.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(paused));
     }
 
     /**
@@ -5620,7 +5698,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!this.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
 
-        if (this.getAutonomySession() == null) return "autosetup.ui.errorNoSetupToEdit";
+        // A SETUP THAT IS THERE AND WOULD NOT READ is not a layout with nowhere to keep one (GSP-B2), and openLayoutEditor
+        // says which of the two it is - so both keys are answered here.  `sayWhyAutonomyEditorCannotOpen` puts the reason
+        // into the first.
+        if (this.getAutonomySession() == null)
+        {
+            return whyTheSetupCannotBeRead() != null
+                ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit";
+        }
 
         if (this.isAutonomyBusy()) return "autolayout.errorCannotEditWhileRunning";
 
@@ -5630,6 +5715,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return null;
+    }
+
+    /**
+     * A refusal `whyAutonomyEditorCannotOpen` handed back, as the sentence to show (GSP-B2).
+     *
+     * Every refusal there is a message key shown as it stands but one: a setup that is there and would not read is said
+     * with the reason it would not, which only this window holds - `whyTheSetupCannotBeRead`.
+     *
+     * @param why a key `whyAutonomyEditorCannotOpen` returned
+     * @return the sentence, translated
+     */
+    public String sayWhyAutonomyEditorCannotOpen(String why)
+    {
+        if ("autosetup.ui.errorSetupUnreadable".equals(why))
+        {
+            return I18n.f("autosetup.ui.errorSetupUnreadable", String.valueOf(whyTheSetupCannotBeRead()));
+        }
+
+        return I18n.t(why);
     }
 
     public void openLayoutEditor(String page, Boolean autonomy,
@@ -5694,7 +5798,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // An explicit request says why it cannot be honoured; a remembered one just falls back
             if (autonomy != null)
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoSetupToEdit"));
+                // WITH THE REASON, when the setup is there and would not read (GSP-B2) - the two keys
+                // whyAutonomyEditorCannotOpen answers this refusal with.
+                JOptionPane.showMessageDialog(this, whyTheSetupCannotBeRead() != null
+                    ? I18n.f("autosetup.ui.errorSetupUnreadable", whyTheSetupCannotBeRead())
+                    : I18n.t("autosetup.ui.errorNoSetupToEdit"));
                 return;
             }
 
@@ -6755,7 +6863,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * How much drivable track has no length - THE question, asked by all three doors (VD13-B1, B2, B3).
+     * How much drivable track has no length - THE question, asked by the checkbox (`whyNonAtomicRoutesAreRefused`) and by
+     * the gate `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`, which every load and dispatch door calls (VD13-B1,
+     * B2, B3; VD17-R11).
      *
      * **This asked the EDITOR first, and that was wrong twice over.**  `squaresNeedingALength` is
      * non-empty whenever one switch square is unmeasured on a railway whose every edge is measured -
@@ -6851,8 +6961,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // This door used to ask the editor and fall back to the railway's edges only when there was no
         // session, which put the discriminator on "is there a diagram" rather than on the hazard - and
         // left the checkbox blind on the legacy railway this fallback was added for.  One question,
-        // three doors: `Layout.unmeasuredTrackThatCouldBeReleased`, and `Layout.trainsWithNoLength`
-        // beside it (VD14-B1).
+        // asked by the checkbox and by this gate, which every load and dispatch door calls:
+        // `Layout.unmeasuredTrackThatCouldBeReleased`, and `Layout.trainsWithNoLength` beside it (VD14-B1;
+        // VD17-R11).
         //
         // Adam's instruction for this case was *"just force the checkbox checked as well"*.  It asks
         // first, because a railway that IS measured end to end would otherwise lose non-atomic mode at
@@ -7089,9 +7200,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * it is asked for, so between the two its window does not exist yet: a door that asked only `isLayoutEditorOpen` in
      * that moment sent a train, and the editor then opened over the run.
      *
+     * Package-visible for `TailCrossedPrompt.saveBeforeAsking`, which saves a placement before its tail question only
+     * while no editor holds the setup (OB-305).
+     *
      * @return true while an editor is open, or asked for and not yet shown
      */
-    private boolean anEditorIsOpenOrOnItsWay()
+    boolean anEditorIsOpenOrOnItsWay()
     {
         return isLayoutEditorOpen() || this.editorOnItsWay;
     }
@@ -9795,6 +9909,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
+
+            // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and the
+            // question below can wait as long as the operator likes - a crash in that wait lost them.  See
+            // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled is logged as this door's own save is, since that
+            // save then finds nothing left to reconcile.
+            noteIfTheSetupWasNotTidied(org.traincontrol.gui.TailCrossedPrompt.saveBeforeAsking(session,
+                this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(), this));
 
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
@@ -14961,28 +15082,58 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return SPEED_STEP;
     }
 
+    /**
+     * Stops the shown locomotive and sets it running backwards, on a thread of its own because stopping talks to the
+     * Central Station.
+     *
+     * THE LOCOMOTIVE THE PRESS WAS FOR (GST-C2).  Captured here, on the event thread, because the worker used to read
+     * `activeLoc` again when it ran - so a press followed quickly by picking another locomotive stopped and turned that
+     * one.  The direction buttons are Swing's, so they are set back on the event thread, and only while the same
+     * locomotive is still the one shown.
+     */
     private void backwardLoc()
     {
-        if (this.activeLoc != null) // && this.activeLoc.goingForward())
+        final Locomotive loc = this.activeLoc;
+
+        if (loc != null)
         {
             new Thread(() ->
             {
-                this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
-                this.Forward.setSelected(false);
-                this.Backward.setSelected(true);
+                loc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    if (this.activeLoc != loc) return;
+
+                    this.Forward.setSelected(false);
+                    this.Backward.setSelected(true);
+                });
             }).start();
         } 
     }
     
+    /**
+     * Stops the shown locomotive and sets it running forwards, as `backwardLoc` does the other way: the locomotive the
+     * press was for is captured before the thread starts, and the buttons are set on the event thread while it is still
+     * the one shown (GST-C2).
+     */
     private void forwardLoc()
     {
-        if(this.activeLoc != null) // && this.activeLoc.goingBackward())
+        final Locomotive loc = this.activeLoc;
+
+        if (loc != null)
         {
             new Thread(() ->
             {
-                this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
-                this.Forward.setSelected(true);
-                this.Backward.setSelected(false);
+                loc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    if (this.activeLoc != loc) return;
+
+                    this.Forward.setSelected(true);
+                    this.Backward.setSelected(false);
+                });
             }).start();
         }
     }
@@ -21373,9 +21524,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (route != null)
         {            
+            // THE ROUTES THAT RUN IT, COUNTED BEFORE IT GOES (GSR-B4).  Adam, 2026-10-10: deleting a route removes the
+            // other routes' commands that run it, and the question says how many routes call it - as deleting a
+            // locomotive does with the commands that drive it.  Counted here because afterwards there is nothing left
+            // to count; which routes, by name, goes to the log as each loses its commands.
+            int calledBy = this.model.routesCalling(route.getName()).size();
+
             int dialogResult = JOptionPane.showOptionDialog(
                 RoutePanel,
-                I18n.f("route.ui.confirmDeleteRoute", route.getName()),
+                calledBy > 0
+                    ? I18n.f("route.ui.confirmDeleteRouteWithCallers", route.getName(), calledBy)
+                    : I18n.f("route.ui.confirmDeleteRoute", route.getName()),
                 I18n.t("route.ui.dialogDeleteRoute"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
@@ -21392,7 +21551,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The lock, not the id: see enableOrDisableRoute for why the id cannot say (MT-467).
                 boolean wasLocal = !route.isLocked();
 
-                this.model.deleteRoute(route.getName());
+                // THE DOOR'S OWN DELETE, which takes the route out of every route that runs it (GSR-B4).  Not the
+                // model's `deleteRoute`: `editRoute` deletes and re-adds through that, and an edit keeps its callers.
+                this.model.deleteRouteAndItsCalls(route.getName());
                 refreshRouteList();
 
                 // ONLY WHEN THE STATION COULD HAVE KNOWN THE ROUTE (OB-155).
@@ -21583,9 +21744,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Keyed off the message the route would have logged, so the two can never drift apart: there
         // is one place that decides what kind of conflict this is, and it is not here.
-        String question = "route.refusedSignalProtectingOccupiedPlatform".equals(
-            why == null ? null : why[1])
-                ? "layout.ui.confirmRouteProtectingSignal" : "layout.ui.confirmRouteActiveRoute";
+        String reason = why == null ? null : why[1];
+
+        // AND A PLATFORM ONLY RESERVED, asked about as that (GSR-C2): a locked path holds its destination for a train still
+        // on its way there, and the question said a train was standing at it.
+        String question = "route.refusedSignalProtectingOccupiedPlatform".equals(reason)
+            ? "layout.ui.confirmRouteProtectingSignal"
+            : "route.refusedSignalProtectingReservedPlatform".equals(reason)
+                ? "layout.ui.confirmRouteProtectingReservedSignal" : "layout.ui.confirmRouteActiveRoute";
 
         Runnable ask = () -> choice[0] = JOptionPane.showOptionDialog(
             over == null ? this : over,
@@ -22175,10 +22341,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         return;
                     }
 
-                    // Routes store locomotives by name, in a comma-separated text format whose parser
-                    // also treats brackets as grouping - so renaming into one of those characters
-                    // rewrites every existing command and condition into something that re-parses as a
-                    // different locomotive, or does not parse at all.  The route editor refuses these
+                    // Routes store locomotives by name, in a comma-separated text format - so renaming
+                    // into a name with a comma rewrites every existing command and condition into
+                    // something that re-parses as a different locomotive, or does not parse at all.
+                    // (Brackets are allowed since Adam's ruling of 2026-09-04; this said both - GSB-C1.)  The route editor refuses these
                     // names at both of its own doors; this is the third way in, and the one that turns
                     // commands that were legal when written into commands that are not.
                     if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
@@ -22190,6 +22356,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         return;
                     }
                 }
+
+                // ASKED AGAIN AFTER THE DIALOG, BEFORE ANYTHING IS WRITTEN (GSR-B6).  The question above was put before
+                // the dialog opened, an s88 trigger can start a route that drives this locomotive while it is open, and
+                // both writes below rewrite what that route is reading.  The multi-unit dialog and the Central Station's
+                // name proposal already ask after theirs.
+                if (result == JOptionPane.OK_OPTION && refuseWhileARouteDrivesIt(source, l.getName())) return;
 
                 String newAddress = edit.getAddress();
                 decoderType newDecoderType = edit.getDecoderType();
@@ -23073,6 +23245,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 YES_NO_OPTS[1]
             ))
         {
+            // ASKED AGAIN AT YES, BEFORE ANYTHING IS WRITTEN (GSR-B6): the question at the top was put before this
+            // confirmation opened, and an s88 trigger can start a route that drives the locomotive while it is open.
+            if (refuseWhileARouteDrivesIt(source, value)) return;
+
             Locomotive l = this.model.getLocByName(value);
 
             if (l != null)
@@ -28647,7 +28823,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (why != null)
         {
-            JOptionPane.showMessageDialog(this, I18n.t(why));
+            JOptionPane.showMessageDialog(this, sayWhyAutonomyEditorCannotOpen(why));
 
             return;
         }
@@ -31599,11 +31775,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Layout is the order the completion block already establishes.  Idle callers take it
         // uncontended and hand the EDT a finished copy.
         // The UI callers were left alone on the argument that their busy guard means the monitor is
-        // free by the time they run.  That argument is wrong: configureAndLockPath runs *before* the
-        // locomotive is put into activeLocomotives, and a hand-launched path never sets running - so
-        // for the whole configuration window isRunning(), and with it isAutonomyBusy(), answers false.
-        // Three of those callers hold a modal dialog open between the check and the snapshot, so the
-        // window is as wide as the operator leaves it.
+        // free by the time they run.  It does not hold for them: three hold a modal dialog open between
+        // the check and the snapshot, and a dispatch started meanwhile takes the monitor in
+        // configureAndLockPath.  isRunning() is true from the moment `Layout.executePath` counts the
+        // train's thread (`locomotiveThreads`), but the guard was asked before that - so the window is
+        // as wide as the operator leaves it.  (This said a hand-launched path never sets running, which
+        // the count contradicts - GST-C4; the conclusion stands.)
         //
         // Bouncing off the EDT costs one short-lived thread on a user action and asks nothing of the
         // callers, which still marshal their own work through the invokeLater below.

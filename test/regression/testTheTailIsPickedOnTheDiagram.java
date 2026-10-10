@@ -648,6 +648,118 @@ public class testTheTailIsPickedOnTheDiagram
         }
     }
 
+    /**
+     * Every placement door saves what it wrote before it asks the tail question, through the one helper (OB-305) - the
+     * paste door is asked by the claim below; the right-click Place and the locomotive dialog are asked here, of their
+     * source, as `testEveryPlacementDoorAsksWhetherItStillStands` asks them.
+     *
+     * MUTATION: take the save out of any door, and this fails naming it.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testEveryPlacementDoorSavesBeforeItAsks() throws Exception
+    {
+        final String newline = String.valueOf((char) 10);
+
+        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
+                java.nio.charset.StandardCharsets.UTF_8).replace(String.valueOf((char) 13), "");
+
+            int asked = source.indexOf("askAfterPlacement(");
+
+            assertTrue(asked > 0, "precondition: " + file + " no longer asks the tail question");
+
+            int saved = source.lastIndexOf("TailCrossedPrompt.saveBeforeAsking(", asked);
+
+            assertTrue(saved > 0 && !source.substring(saved, asked).contains(newline + "    }" + newline), file
+                + " asks the tail question without saving the placement first - a crash while it waits loses the"
+                + " train's place (OB-305)");
+        }
+    }
+
+    /**
+     * While the tail question waits, the setup on disk already has the train where it was put (OB-305).
+     *
+     * Every placement door writes the train, its facing and its side into the setup in memory, puts this question, and
+     * saved only once it was answered - and since FR-100 the question waits on the diagram for as long as the operator
+     * likes, with the window live.  A crash in that wait started the next session without the train where it stands.
+     * The paste door's question is left waiting, and the configuration's own file is read meanwhile.
+     *
+     * MUTATION: save only after the answer again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testThePlacementIsOnDiskWhileTheQuestionWaits() throws Exception
+    {
+        final String name = "OB-305 train";
+
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive(name, 2317);
+
+        try
+        {
+            pasteAndAnswerLate(train, () ->
+            {
+                AutonomySession session = ui.getAutonomySession();
+
+                java.lang.reflect.Method fileOf = session.getStore().getClass().getDeclaredMethod("configurationFile",
+                    String.class);
+
+                fileOf.setAccessible(true);
+
+                java.io.File file = (java.io.File) fileOf.invoke(session.getStore(),
+                    session.getStore().getActiveConfiguration());
+
+                assertTrue(file.isFile() && placesTrain(new org.json.JSONObject(new String(
+                    java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8)), name),
+                    "while the tail question waits, the setup on disk does not have " + name + " where the paste put"
+                    + " it - a crash now would start the next session without it (OB-305): " + file);
+
+                return null;
+            }, false);
+        }
+        finally
+        {
+            clearTunnel(name);
+        }
+    }
+
+    /**
+     * Whether a configuration as written places this train anywhere: a "loc" naming it.
+     *
+     * @param json the configuration, or any part of it
+     * @param train the train's name
+     * @return true where it is placed
+     */
+    private static boolean placesTrain(Object json, String train)
+    {
+        if (json instanceof org.json.JSONObject)
+        {
+            org.json.JSONObject object = (org.json.JSONObject) json;
+
+            org.json.JSONObject loc = object.optJSONObject("loc");
+
+            if (loc != null && train.equals(loc.optString("name", null))) return true;
+
+            for (String key : object.keySet())
+            {
+                if (placesTrain(object.opt(key), train)) return true;
+            }
+        }
+        else if (json instanceof org.json.JSONArray)
+        {
+            for (Object each : (org.json.JSONArray) json)
+            {
+                if (placesTrain(each, train)) return true;
+            }
+        }
+
+        return false;
+    }
+
     /** The button with this text, anywhere in the container. */
     private static javax.swing.JButton buttonNamed(java.awt.Container container, String text)
     {

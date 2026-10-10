@@ -69,10 +69,10 @@ public abstract class Locomotive
     private static final long FEEDBACK_ADVISORY_POLL = 5000;
     
     // Speed from 0 to 100 (percent)
-    private int speed;
+    private volatile int speed;
     
     // Direction
-    private locDirection direction;
+    private volatile locDirection direction;
     
     // Number of functions
     protected int numF;
@@ -108,10 +108,12 @@ public abstract class Locomotive
     // Functions that fire on/prior to arrival
     protected Integer arrivalFunc;
     protected Integer departureFunc;
-    protected boolean reversible;
+    // Volatile, with the speed, direction and length: written on the event thread or by the network while a driving
+    // thread reads them (GST-C1)
+    protected volatile boolean reversible;
     
     // Length of the train corresponding to this locomotive
-    protected Integer trainLength;
+    protected volatile Integer trainLength;
     
     // Number of completed paths, and last time run, in autonomous mode
     protected Integer numPaths = 0;

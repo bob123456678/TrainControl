@@ -24,10 +24,11 @@ import javax.swing.JLabel;
  * Still a JLabel, so that the grid's mouse handling, its tooltip and its place in the layout are as they were.  Its
  * text is the address and, where the decoder is not MM2, the protocol on a second line.
  */
-public final class AddressLabel extends JLabel
+public class AddressLabel extends JLabel
 {
-    /** The white of the halo, nearly opaque, so the letters part from whatever is under them. */
-    private static final Color HALO = new Color(255, 255, 255, 235);
+    /** The white of the halo, nearly opaque, so the letters part from whatever is under them - the diagram's own writing's
+     *  too (`StationCaption.setHalo`). */
+    static final Color HALO = new Color(255, 255, 255, 235);
 
     /** The lines drawn, top to bottom. */
     private String[] lines = new String[0];

@@ -1227,4 +1227,23 @@ public class testMessageBundles
         assertTrue(english.getProperty("autosetup.ui.warnPageRenumbered").contains("a save included"), "the renumbered"
             + " page's notice no longer says a save tidies nothing while it stands (RLV13-C6)");
     }
+
+    /**
+     * The right-click menu's Bulk Tools item says what it places: *Place All Trains at Their Homes* (Adam, 2026-10-10:
+     * *"rephrase "place all at their homes" to "place all trains at their homes" in the right click menu"*).  The other
+     * seven languages said trains already.
+     *
+     * MUTATION: put the old words back, and this fails.
+     *
+     * @throws Exception from reading the bundle
+     */
+    @Test
+    public void testPlaceAllSaysTrains() throws Exception
+    {
+        java.util.Properties english = valuesOf(new File(new File("src" + BUNDLE_DIR), ENGLISH_BUNDLE));
+
+        assertEquals(english.getProperty("autolayout.ui.menuPlaceEveryTrainAtHome"), "Place All Trains at Their Homes ({0})",
+            "the right-click menu's item does not say what it places - Adam asked for it to read Place All Trains at"
+            + " Their Homes");
+    }
 }

@@ -2571,6 +2571,165 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /**
+     * Autonomy chooses and sends nothing while the track power is off, and sends once it is back (GST-B1; Adam, 2026-10-10,
+     * asked: into 3.0.0).
+     *
+     * Nothing in autonomy read the power, so with it cut - from the window, by the Central Station, or by a route - autonomy
+     * went on choosing journeys and setting their routes: switches commanded on a railway with no power to move them, and
+     * trains given speeds that took effect when the power came back.  Its loop now waits, without stopping the run, and says
+     * so once.  The power is set here as the Central Station's STOP and GO echoes leave it.  Not Instant Stop, which halts
+     * the trains and leaves the power on: autonomy runs on through that, as Adam ruled (OB-251).
+     *
+     * MUTATION: take the wait out of autonomy's loop (`waitWhileThePowerIsOff` in `runLocomotive`), and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAutonomySendsNothingWhileThePowerIsOff() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2031, 2);
+
+        final Locomotive v = model.getLocByName(model.getLocList().get(3));
+
+        final int preferredWas = v.getPreferredSpeed();
+
+        final Layout rail = aLine(s, "PWA", "PWB");
+
+        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = aTapOn(said);
+
+        try
+        {
+            v.setSpeed(0);
+            v.setPreferredSpeed(30);
+
+            rail.getPoint("PWA").setLocomotive(v);
+            rail.setLocomotivesToRun(Arrays.asList(v));
+
+            // THE POWER OFF, as the Central Station's STOP echo leaves it
+            power.setBoolean(model, false);
+
+            rail.runLocomotives();
+
+            assertTrue(rail.isAutoRunning(), "precondition: autonomy did not start, so nothing here is asked");
+
+            assertFalse(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "autonomy chose a journey and"
+                + " sent its train with the track power off - its route's switches commanded on a railway with no power to"
+                + " move them, and the train set going the moment the power came back (GST-B1)");
+
+            assertTrue(rail.isAutoRunning(), "autonomy stopped because the power was off - it is to wait, not stop");
+
+            String waiting;
+
+            try
+            {
+                waiting = org.traincontrol.util.I18n.t("autolayout.infoWaitingForTrackPower");
+            }
+            catch (java.util.MissingResourceException none)
+            {
+                waiting = null;
+            }
+
+            assertTrue(waiting != null && said.contains(waiting), "autonomy waits for the power without saying so in the"
+                + " log, so a run that has gone quiet reads as stuck: " + said);
+
+            // AND ON AGAIN, as the GO echo leaves it: the run goes on
+            power.setBoolean(model, true);
+
+            assertTrue(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 5000), "the power came back on and"
+                + " autonomy still sent nothing - it is to wait while the power is off, and go on once it is back");
+        }
+        finally
+        {
+            power.setBoolean(model, true);
+
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+            rail.stopLocomotives();
+
+            v.setPreferredSpeed(preferredWas);
+
+            letGo(s, v, null);
+        }
+    }
+
+    /**
+     * Nor does a timetable start an entry while the track power is off - Execute Timetable, and Return Home, whose plan runs
+     * as one - and it starts it once the power is back (GST-B1; Adam, 2026-10-10, asked: into 3.0.0).
+     *
+     * MUTATION: take the wait out of the timetable's own loop (`waitWhileThePowerIsOff` in `executeTimetableInternal`), and
+     * this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATimetableStartsNothingWhileThePowerIsOff() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2041, 2);
+
+        final Locomotive t = model.getLocByName(model.getLocList().get(17));
+
+        final int preferredWas = t.getPreferredSpeed();
+
+        final Layout rail = aLine(s, "PTA", "PTB");
+
+        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        Thread executor = null;
+
+        try
+        {
+            t.setSpeed(0);
+            t.setPreferredSpeed(30);
+
+            rail.getPoint("PTA").setLocomotive(t);
+
+            final org.traincontrol.automation.TimetablePath entry =
+                new org.traincontrol.automation.TimetablePath(t, Arrays.asList(rail.getEdge("PTA", "PTB")), 0);
+
+            rail.setTimetable(Arrays.asList(entry));
+
+            // THE POWER OFF, as the Central Station's STOP echo leaves it
+            power.setBoolean(model, false);
+
+            executor = new Thread(() -> rail.executeTimetable(), "a timetable run with the power off");
+            executor.setDaemon(true);
+            executor.start();
+
+            assertTrue(waitFor(() -> rail.isAutoRunning(), 5000), "precondition: the timetable did not start");
+
+            assertFalse(waitFor(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t) || entry.getExecutionTime() != 0,
+                2000), "a timetable started its entry with the track power off - its route's switches commanded on a"
+                + " railway with no power to move them (GST-B1)");
+
+            assertTrue(rail.isAutoRunning(), "the timetable stopped because the power was off - it is to wait, not stop");
+
+            // AND ON AGAIN: the entry starts
+            power.setBoolean(model, true);
+
+            assertTrue(waitFor(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 5000), "the power came back on and the"
+                + " timetable still started nothing - it is to wait while the power is off, and go on once it is back");
+        }
+        finally
+        {
+            power.setBoolean(model, true);
+
+            rail.stopLocomotives();
+
+            t.setPreferredSpeed(preferredWas);
+
+            letGo(s, t, executor);
+        }
+    }
+
     /** A handler on the model's own logger, collecting every message into `into` - removed by the caller. */
     private static java.util.logging.Handler aTapOn(final List<String> into)
     {

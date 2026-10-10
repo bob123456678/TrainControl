@@ -16,6 +16,11 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TilePorts.Side;
+import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -183,6 +188,264 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
         {
             train.setTrainLength(4);
         }
+    }
+
+    /** The passing loop's squares that only its upper road runs over (OB-239). */
+    private static final Set<TileKey> UPPER_ROAD = new LinkedHashSet<>(java.util.Arrays.asList(
+        new TileKey("main", 4, 1), new TileKey("main", 5, 1), new TileKey("main", 6, 1), new TileKey("main", 7, 1)));
+
+    /** And the squares that only its lower road runs over. */
+    private static final Set<TileKey> LOWER_ROAD = new LinkedHashSet<>(java.util.Arrays.asList(
+        new TileKey("main", 5, 2), new TileKey("main", 6, 2)));
+
+    /** The passing loop's train (OB-239). */
+    private static final String LOOP_TRAIN = "OB-239 probe";
+
+    /**
+     * The orange is drawn along the road the railway says the train covers, of two between one pair of sensors
+     * (OB-239).
+     *
+     * The walk kept only the two squares at the ends of each covered edge and stepped between them along the FIRST
+     * reduced edge joining the pair, either way round - so where two roads join the same two sensors it drew whichever
+     * the reduction listed first, and a train on the other was drawn on track it is not on: track the railway would let
+     * another train onto.  Built here, since no railway in `test/layouts` has two roads between one pair of sensors: a
+     * passing loop between A and B, its upper road one-way east and its lower road one-way west, so the edge from A to
+     * B runs over the upper and the edge from B to A over the lower.  A four-unit train stands at each end in turn,
+     * come along the road that ends there - and whichever road the reduction lists first, one of the two is the other
+     * road.
+     *
+     * MUTATION: take the first reduced edge joining a covered edge's two squares, either way round, as `pathBetween`
+     * did, and this fails at one end or the other.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testTheOrangeFollowsTheRoadTheTrainCovers() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ob239").toFile();
+
+        try
+        {
+            AutonomySession loop = new AutonomySession(folder);
+
+            loop.open(java.util.Arrays.asList(passingLoop()));
+            loop.initialize("OB-239");
+
+            TileKey westSwitch = new TileKey("main", 4, 2);
+            TileKey eastSwitch = new TileKey("main", 7, 2);
+
+            // THE UPPER ROAD EAST ONLY AND THE LOWER WEST ONLY, set at the two switches: out of the west switch's
+            // branch and into the east switch's toe; and westward through both straights.
+            runs(loop, westSwitch, true, Side.N);
+            runs(loop, westSwitch, false, Side.W);
+            runs(loop, eastSwitch, true, Side.E);
+            runs(loop, eastSwitch, false, Side.W);
+
+            // ONE UNIT A SQUARE, so a four-unit train lies on its own square and three behind it
+            for (TileKey square : new ArrayList<>(loop.getGraph().getTiles().keySet())) loop.setTileLength(square, 1);
+
+            loop.rebuild();
+
+            TileKey a = new TileKey("main", 3, 2);
+            TileKey b = new TileKey("main", 8, 2);
+
+            assertTrue(runsOver(loop, a, b, UPPER_ROAD) && runsOver(loop, b, a, LOWER_ROAD), "precondition: the passing"
+                + " loop does not run A to B over its upper road and B to A over its lower, so there is no second road"
+                + " between the two sensors to draw");
+
+            Layout built = Layout.fromJSON(loop.buildConfiguration(), model);
+
+            assertNotNull(built, "precondition: the passing loop did not build");
+
+            Edge toB = null;
+            Edge toA = null;
+
+            for (Edge edge : built.getEdges())
+            {
+                TileKey from = loop.getStationIndex().squareOf(edge.getStart().getName());
+                TileKey to = loop.getStationIndex().squareOf(edge.getEnd().getName());
+
+                if (a.equals(from) && b.equals(to)) toB = edge;
+                if (b.equals(from) && a.equals(to)) toA = edge;
+            }
+
+            assertTrue(toB != null && toA != null && !toB.getPlaceIds().isEmpty() && !toA.getPlaceIds().isEmpty(),
+                "precondition: the built railway (valid: " + built.isValid() + ") has no rail each way between A and"
+                + " B, or no places on one");
+
+            MarklinLocomotive probe = model.newMM2Locomotive(LOOP_TRAIN, 2319);
+
+            assertNotNull(probe, "precondition: could not create the passing loop's train");
+
+            try
+            {
+                probe.setTrainLength(4);
+
+                for (Edge rail : new Edge[] {toB, toA})
+                {
+                    String road = rail == toB ? "upper" : "lower";
+
+                    Set<TileKey> its = rail == toB ? UPPER_ROAD : LOWER_ROAD;
+                    Set<TileKey> other = rail == toB ? LOWER_ROAD : UPPER_ROAD;
+
+                    Point end = rail.getEnd();
+
+                    end.setLocomotive(probe);
+                    end.setArrivedFrom(built.entrySideOf(rail, end));
+                    end.setArrivedAlong(java.util.Arrays.asList(rail));
+
+                    try
+                    {
+                        assertTrue(built.edgesCoveredByStandingTrains().get(rail) == probe, "precondition: the train"
+                            + " standing at the end of the " + road + " road does not cover it");
+
+                        Map<TileKey, Set<RouteId>> orange = loop.routesCoveredByStandingTrains(built);
+
+                        for (TileKey square : other)
+                        {
+                            assertFalse(orange.containsKey(square), "a train come along the " + road + " road is drawn"
+                                + " on " + square + ", on the other road between the same two sensors - track the"
+                                + " railway would let another train onto (OB-239).  Orange: " + orange);
+                        }
+
+                        boolean onItsOwn = false;
+
+                        for (TileKey square : its) onItsOwn |= orange.containsKey(square);
+
+                        assertTrue(onItsOwn, "a train come along the " + road + " road is not drawn on it at all, so"
+                            + " the claim above says nothing.  Orange: " + orange);
+                    }
+                    finally
+                    {
+                        end.setLocomotive(null);
+                    }
+                }
+            }
+            finally
+            {
+                model.deleteLoc(LOOP_TRAIN);
+            }
+        }
+        finally
+        {
+            deleteQuietly(folder);
+        }
+    }
+
+    /**
+     * A passing loop on a page of its own (OB-239): C 1,2 - 2,2 - A 3,2 - switch 4,2 - 5,2 - 6,2 - switch 7,2 - B 8,2 -
+     * 9,2 - D 10,2, both switches branching north onto an upper road 4,1 - 5,1 - 6,1 - 7,1.  The switches are
+     * addressed, as a railway's are; C and D give A and B a way in from both sides.
+     *
+     * @return the page
+     * @throws java.io.IOException from the diagram
+     */
+    private static LayoutDiagram passingLoop() throws java.io.IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 12, 4, null, null);
+
+        lay(page, componentType.FEEDBACK, 1, 2, 0, 71);
+        lay(page, componentType.STRAIGHT, 2, 2, 0, 0);
+        lay(page, componentType.FEEDBACK, 3, 2, 0, 72);
+        lay(page, componentType.SWITCH_LEFT, 4, 2, 3, 7);
+        lay(page, componentType.STRAIGHT, 5, 2, 0, 0);
+        lay(page, componentType.STRAIGHT, 6, 2, 0, 0);
+        lay(page, componentType.SWITCH_RIGHT, 7, 2, 1, 8);
+        lay(page, componentType.FEEDBACK, 8, 2, 0, 73);
+        lay(page, componentType.STRAIGHT, 9, 2, 0, 0);
+        lay(page, componentType.FEEDBACK, 10, 2, 0, 74);
+
+        // THE UPPER ROAD: up from the west switch's branch, along, and down into the east switch's
+        lay(page, componentType.CURVE, 4, 1, 0, 0);
+        lay(page, componentType.STRAIGHT, 5, 1, 0, 0);
+        lay(page, componentType.STRAIGHT, 6, 1, 0, 0);
+        lay(page, componentType.CURVE, 7, 1, 3, 0);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    /**
+     * Puts a tile down, and gives a switch the accessory a railway's switch has.
+     *
+     * @param page the page
+     * @param type the tile
+     * @param x its column
+     * @param y its row
+     * @param orientation its orientation
+     * @param address a sensor's or a switch's address, 0 for plain track
+     * @throws java.io.IOException from the diagram
+     */
+    private static void lay(LayoutDiagram page, componentType type, int x, int y, int orientation, int address)
+        throws java.io.IOException
+    {
+        page.addComponent(type, x, y, orientation, 0, address, address, accessoryDecoderType.MM2, null);
+
+        if (type == componentType.SWITCH_LEFT || type == componentType.SWITCH_RIGHT)
+        {
+            page.getComponent(x, y).setAccessory(new org.traincontrol.marklin.MarklinAccessory(null, address,
+                org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2, "Switch " + address,
+                false, 0));
+        }
+    }
+
+    /**
+     * Sets one road of a switch running one way only: its branch, or its straight road.
+     *
+     * @param on the setup
+     * @param square the switch
+     * @param branch true for the road that leaves by the north, false for the other
+     * @param toward the side trains run toward on it
+     */
+    private static void runs(AutonomySession on, TileKey square, boolean branch, Side toward)
+    {
+        for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> road : on.getRoutes(square).entrySet())
+        {
+            if (road.getValue().touches(Side.N) != branch) continue;
+
+            on.setDirection(square, road.getKey(), road.getValue().getA() == toward ? Direction.TOWARD_A
+                : Direction.TOWARD_B);
+        }
+    }
+
+    /**
+     * Whether the reduction's edge from one square to another runs over every one of these squares.
+     *
+     * @param on the setup
+     * @param from where the edge starts
+     * @param to where it ends
+     * @param squares the squares
+     * @return true when such an edge exists and runs over them all
+     */
+    private static boolean runsOver(AutonomySession on, TileKey from, TileKey to, Set<TileKey> squares)
+    {
+        for (org.traincontrol.automationui.GraphReducer.ReducedEdge edge : on.getReducer().getEdges())
+        {
+            if (!from.equals(edge.getStart()) || !to.equals(edge.getEnd())) continue;
+
+            Set<TileKey> over = new LinkedHashSet<>();
+
+            for (org.traincontrol.automationui.GraphReducer.TileStep step : edge.getPath()) over.add(step.getTile());
+
+            return over.containsAll(squares);
+        }
+
+        return false;
+    }
+
+    /**
+     * Deletes a folder and everything in it, as far as it can.
+     *
+     * @param file the folder
+     */
+    private static void deleteQuietly(java.io.File file)
+    {
+        java.io.File[] inside = file.listFiles();
+
+        if (inside != null) for (java.io.File each : inside) deleteQuietly(each);
+
+        if (!file.delete()) file.deleteOnExit();
     }
 
     /** The places the runtime says this class's train lies over. */

@@ -864,6 +864,94 @@ public class testCancelUndoesAutonomyEdits
         }
     }
 
+    /**
+     * A pre-edit note with a value of the wrong type inside it is refused, and the setup and the session survive it
+     * (GSP-C4).
+     *
+     * `unfinishedEdit` checks a note's top-level shape - `shared` and `configurations` are objects, its version is one
+     * this build reads - and `restoreSetup` then emptied the store and read the note with the strict accessors.  A value
+     * of the wrong type inside `shared` threw part way through, with the store already emptied and nothing to put it
+     * back; the throw left `revertUnfinishedEdit` before the note was forgotten, and `TrainControlUI.getAutonomySession`
+     * catches it and hands back no session - at every start, because the note that did it is still there.
+     *
+     * The wrong type is a page name that is a list, in the first field the read takes.  Asked of a session of its own
+     * over the sandbox's files, as the window builds one at start-up: the revert says it did nothing, the setup is as it
+     * was, and the note is kept and reported as one this build could not use.  The note is taken away however this ends.
+     *
+     * MUTATION: let the throw out of `AutonomySession.revertUnfinishedEdit` again, and this fails.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testANoteThatWillNotReadLeavesTheSetupAndTheSession() throws Exception
+    {
+        java.io.File note = new java.io.File(sandbox.getFolder(), "config/autonomy/setup-before-edit.json");
+
+        assertFalse(note.exists(), "precondition: a pre-edit note is in the sandbox already");
+
+        org.json.JSONObject written = session.snapshotSetup();
+
+        org.json.JSONObject shared = written.getJSONObject("shared");
+
+        org.json.JSONObject pages = shared.optJSONObject("pages");
+
+        if (pages == null)
+        {
+            pages = new org.json.JSONObject();
+
+            shared.put("pages", pages);
+        }
+
+        pages.put("GSP-C4", new org.json.JSONArray());
+
+        try
+        {
+            java.nio.file.Files.write(note.toPath(), written.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            AutonomySession restarted = new AutonomySession(sandbox.getFolder());
+
+            List<LayoutDiagram> onDisk = new ArrayList<>();
+
+            for (String name : model.getLayoutList()) onDisk.add(model.getLayout(name));
+
+            restarted.open(onDisk);
+
+            assertNotNull(restarted.getStore().unfinishedEdit(), "precondition: the note failed the shape check, so it is"
+                + " refused before anything reads it and this is not the case GSP-C4 is about");
+
+            org.json.JSONObject before = restarted.snapshotSetup();
+
+            boolean reverted;
+
+            try
+            {
+                reverted = restarted.revertUnfinishedEdit();
+            }
+            catch (RuntimeException thrown)
+            {
+                fail("a note with a value of the wrong type threw out of revertUnfinishedEdit, so the window opens no"
+                    + " setup - at every start, because the note is never forgotten (GSP-C4): " + thrown);
+
+                return;
+            }
+
+            assertFalse(reverted, "a note that would not read was reported as put back");
+
+            assertTrue(restarted.snapshotSetup().similar(before), "a note that would not read changed the setup it was"
+                + " refused over (GSP-C4)");
+
+            assertTrue(note.isFile(), "a note this build could not read was deleted rather than left for the build that"
+                + " can");
+
+            assertTrue(restarted.unusableEditNote(), "a note refused for a value of the wrong type is not reported, so it"
+                + " is refused at every start in silence");
+        }
+        finally
+        {
+            java.nio.file.Files.deleteIfExists(note.toPath());
+        }
+    }
+
     /** Every home the setup records, square by square, as a session holds it. */
     private static Map<String, String> homes(AutonomySession of)
     {
