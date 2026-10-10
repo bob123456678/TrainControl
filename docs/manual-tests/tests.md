@@ -30,8 +30,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-705](#mt-705) | 2026-10-07 | With the window always on top, its questions and messages open in front of it | fixed unvalidated | Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent" |
 | [MT-706](#mt-706) | 2026-10-09 | Place All at Their Homes puts every homed train on its home, facing as homed, and takes the others off | fixed unvalidated | FR-115 - Adam, 2026-10-09: "Place all at their homes" |
 | [MT-707](#mt-707) | 2026-10-09 | The diagram's new look: redrawn tiles, the see-through line, centred pills, addresses on a halo, grey arrival marks | fixed unvalidated | Adam's look requests of 2026-10-09 - the tiles, the tail, the pills, the addresses, OB-326 and OB-327 |
+| [MT-708](#mt-708) | 2026-10-09 | A paused train stays paused: the Is Active tick, the grey icon, Return Home, and the configuration remembers | fixed unvalidated | FR-117 - Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab" |
 
-Everything else - 704 of 707 - needs nothing from you unless the area changes again:
+Everything else - 704 of 708 - needs nothing from you unless the area changes again:
 556 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33555,5 +33556,47 @@ them back.  Claim `core.testPlaceAllAtTheirHomes`, on Adam's frozen railway.
 *What this is:* rounds 99 to 105 - the see-through line (`b8cd693b`), the pill's text and outline (`4f98ed40`), the
 tiles (`b70abee3`), the address halo (`6061f789`) and its place over the trains (`64dbe905`), OB-326 (`c9b6c475`) and
 OB-327 (`a54ea8e4`) - each with its claims in `ui.testDiagramLooksRight` and `ui.testTheTrainIsShownAsALine`.
+
+---
+
+<a id="mt-708"></a>
+### MT-708 - 2026-10-09 - A paused train stays paused: the Is Active tick, the grey icon, Return Home, and the configuration remembers
+
+**Disposition:** fixed unvalidated
+**From:** FR-117 - Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab"
+
+**Written:** 2026-10-09
+
+**Steps**
+
+1. Load a configuration with two trains standing on stations, each with a home, and autonomy stopped.
+2. On the track diagram, right-click the first train's station.  Read the item **... Is Active** and its tooltip, then
+   untick it.
+3. Look at the train's icon on the diagram, and at its pause button on the Auto tab.
+4. Start autonomy and let it run for a minute; then stop it.
+5. Move the paused train off its home by hand, the other train too, and press **Return Home**.  Read the log.
+6. Exit TrainControl and start it again.  Read the log as the configuration loads.
+7. Open the autonomy editor and right-click the paused train's station; tick **... Is Active** again, and close the
+   editor.
+8. Start autonomy; press the second train's pause button on the Auto tab; stop autonomy once it has stopped moving.
+   Exit and start TrainControl again.
+
+**Expected**
+
+- Step 2: the item is a tick, ticked, named for the train standing there; a station with no train has none, and it is
+  not offered while autonomy is running.
+- Step 3: the icon is grey where the other train's is black; the Auto tab's pause button is down.
+- Step 4: autonomy never moves the paused train, and runs the other.
+- Step 5: Return Home brings the other train home and leaves the paused one where it stands; the log says it is
+  paused and stays where it stands; afterwards no message says the run stopped short.
+- Step 6: the log names the paused train as the configuration loads ("Paused locomotives: ..."), and it is still
+  paused - unticked, grey, its pause button down.
+- Step 7: the train is active again on the diagram and the Auto tab - black, its pause button up.
+- Step 8: after the restart the second train is still paused, and the log names it.
+
+*What this is:* FR-117, built in round 107 (`ed0d310d`): the configuration lists its paused trains with its settings
+(`pausedLocomotives`), the railway reads and writes the list, and the Auto tab's pause button, the diagram's tick and
+the editor's tick change the same thing.  Claims `core.testAPausedTrainStaysPaused`,
+`core.testAutonomyDiagramMonitor.testAPausedTrainIsDrawnGrey` and `ui.testTheActiveTickPausesATrain`.
 
 ---

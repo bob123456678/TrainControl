@@ -1729,6 +1729,8 @@ To settle when it is built: whether the pause belongs to the configuration or to
 
 **Adam, 2026-10-09, added:** *“To FR-117, add a requirement to add an ‘active’ checkbox to the right click autonomy menu (also accessible via track diagram).  Show it if there is a locomotive at that station.  On the track diagram viewer, inactive locomotive icons go from black to gray on the track diagram.”*  So: an **Active** tick on the autonomy right-click menu, the diagram's included, offered on a station with a locomotive standing on it and setting the same paused or unpaused state the locomotive controls tab sets; and on the track diagram viewer a paused locomotive's icon is drawn grey where an active one is black.
 
+**Built in round 107** (`ed0d310d`), on Adam's answers of 2026-10-09: the tick is offered only while autonomy is stopped (*“Only when stopped”*), and a paused train is kept out of autonomy and Return Home (*“Autonomy and Return Home”*) - a train can still be sent by hand.  What was left to settle above: the pause belongs to the configuration, which lists its paused trains with its settings and sets every train paused or not as it loads; a paused train taken off the diagram stays paused in that configuration.  And on his later word, *“Make sure the log shows what locomotive are paused when the autonomy import happens”*, the log names the paused trains whenever a configuration loads, an import's included.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1745,6 +1747,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-09 | FR-117 | feature request | A paused train stays paused: the configuration keeps which trains are paused, set from the Auto tab's pause button or the new **Is Active** tick on the track diagram's and the editor's right-click menus (at rest, where a train stands); autonomy and Return Home leave a paused train where it stands; its icon is grey; the log names the paused trains as a configuration loads (round 107, `ed0d310d`): `core.testAPausedTrainStaysPaused`, `ui.testTheActiveTickPausesATrain`. | - | MT-708 |
 | 2026-10-09 | FR-115 | feature request | Place All at Their Homes, in Bulk Tools (the diagram's right-click menu under Autonomy Setup, and the editor's): every train with a home put on it facing the way it was homed, every other train taken off, nothing sent to the railway (round 106, `635b6ec8`): `core.testPlaceAllAtTheirHomes`. | - | MT-706 |
 | 2026-10-09 | OB-327 | bug | A caption stood on end is narrower and centred between its own station's badge and the next one's: text 15% smaller on end, the pill as thick as the letters need, on the line between the squares (round 104, `a54ea8e4`): `ui.testDiagramLooksRight.testAPillOnEndClearsTheStationsBesideIt`, red before (*“starts at 21, on or against its own station’s badge, which reaches 22”*). | - | MT-707 |
 | 2026-10-09 | OB-326 | bug | A side trains may not arrive by is one grey chevron at both sizes, its arms scaled with the square, where it was tan with strokes that came apart at 60 pixels (round 103, `c9b6c475`): `ui.testDiagramLooksRight.testABarredArrivalIsTheSameGreyChevronAtBothSizes`. | - | MT-707 |
