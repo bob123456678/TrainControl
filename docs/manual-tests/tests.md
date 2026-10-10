@@ -29,8 +29,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-705](#mt-705) | 2026-10-07 | With the window always on top, its questions and messages open in front of it | fixed unvalidated | Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent" |
 | [MT-707](#mt-707) | 2026-10-09 | The diagram's new look: redrawn tiles, the see-through line, centred pills, addresses on a halo, grey arrival marks | fixed unvalidated | Adam's look requests of 2026-10-09 - the tiles, the tail, the pills, the addresses, OB-326 and OB-327 |
+| [MT-709](#mt-709) | 2026-10-09 | Round 108: a train's line ends rounded, the Auto tab's darker blue, the tail question's Cancel, a maximised window comes forward, a smaller halo at 60 px | fixed unvalidated | Adam, 2026-10-09 - the rounded end, the Auto tab's colours, "drop not known, keep cancel", and his notes on MT-705 (OB-328) and MT-707 (OB-329) |
 
-Everything else - 706 of 708 - needs nothing from you unless the area changes again:
+Everything else - 706 of 709 - needs nothing from you unless the area changes again:
 558 **fixed validated** and 148 **superseded**.
 
 ---
@@ -33634,5 +33635,49 @@ the editor's tick change the same thing.  Claims `core.testAPausedTrainStaysPaus
 **Claude, 2026-10-09.**
 
 Validated on your *Works* of 2026-10-09.
+
+---
+
+<a id="mt-709"></a>
+### MT-709 - 2026-10-09 - Round 108: a train's line ends rounded, the Auto tab's darker blue, the tail question's Cancel, a maximised window comes forward, a smaller halo at 60 px
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-09 - the rounded end, the Auto tab's colours, "drop not known, keep cancel", and his notes on MT-705 (OB-328) and MT-707 (OB-329)
+
+**Written:** 2026-10-09
+
+**Steps**
+
+1. Stand a train with a length on a station so its tail lies back along the track, at the Small size and the Large.
+   Look at both ends of its orange line.
+2. Make the train one unit longer (its locomotive settings), and look at the line again.
+3. Open the Auto tab (Autonomy Locomotive Commands).  Look at a locomotive's station badge and its destination text,
+   and at a locomotive with no available paths.
+4. Put a train on a station where the "Where is the tail?" question comes up, once on the track diagram and once with
+   the autonomy editor open (the list).  Read the buttons, and press **Cancel**.
+5. On the Layout tab press **Small** to open a page in its own window, maximise that window, and close it.  With
+   **Window Always on Top** ticked, press **Small** again.  Do the same with the editor: open it, maximise it, close it,
+   and open it again.
+6. Look at a locomotive icon on the diagram at the Large size.
+
+**Expected**
+
+- Steps 1 and 2: the line ends rounded where the train ends, at both sizes, with no flat cut on the square's edge;
+  between squares it runs on unbroken; after the train grows, its old last square joins the new one with no gap.
+- Step 3: the badges and the destination text are the darker blue of the window's own labels; the (i) beside "No
+  available paths" is dark grey, like the icons of the side tabs.
+- Step 4: the question offers Cancel and no "Not known", on the diagram and as the list; Cancel places the train and
+  records nothing about its tail.
+- Step 5: the window and the editor open maximised and in front of every other program, with the main window back on
+  top of them.
+- Step 6: the white halo round the icon is a little narrower than before; at the Small size it is as it was.
+
+*What this is:* round 108 (`5aa69c2f`).  Claims `ui.testTheTrainIsShownAsALine.testTheTrainEndsRounded` and
+`testTheSquareBesideAChangedLineIsRedrawn`, `ui.testARunsCaptionsSpeakInItsColours`,
+`ui.testDiagramLooksRight.testTheNoPathsMarkIsTheSideTabsGrey`,
+`regression.testTheTailIsPickedOnTheDiagram.testTheQuestionOffersCancelAndNoNotKnown`,
+`ui.testAMaximisedWindowComesForward` (OB-328) and `core.testAutonomyDiagramMonitor.testTheHaloIsNarrowerAtTheLargeSize`
+(OB-329).  Whether Windows now brings the maximised window forward is this MT's to say: the claim holds the order the
+fix relies on, maximised only once on screen.
 
 ---

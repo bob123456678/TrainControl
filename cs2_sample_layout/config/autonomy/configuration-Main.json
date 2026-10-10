@@ -91,7 +91,20 @@
     },
     "3 - Top Parking:4,9": {},
     "1 - Main:7,7": {
+      "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 5,
+      "arrivedAlong": [
+        [
+          "BottomSecondary",
+          "TunnelPre"
+        ],
+        [
+          "TunnelPre",
+          "Tunnel (southbound)"
+        ]
+      ],
+      "facing": "S",
+      "arrivedFrom": "N",
       "priority": -2
     },
     "1 - Main:5,9": {},
@@ -233,11 +246,9 @@
       "autoDestination": false
     },
     "1 - Main:13,11": {
-      "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 4,
       "homeFacing": "W",
       "facing": "W",
-      "arrivedFrom": "E",
       "home": "2-8-4 3505 SP"
     },
     "1 - Main:6,9": {},
