@@ -1761,6 +1761,8 @@ Adam, 2026-10-09: *“the small font on the vertical labels is really hard to re
 
 **Not to be built yet**, on Adam's word.  OB-327 (round 104) made a caption stood on end beside a vertical track 15% smaller, and its pill only as thick as its letters, so that it clears the station badge or buffer stop on the next square; the smaller letters are hard to read.  Put them back to full size - and redesign the station icons with them, so that a full-size caption on end still has room beside the station and whatever stands next to it.
 
+**Adam, 2026-10-09, choosing among six options drawn for him (the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB):** *“For stations, can we do a hybrid of the D station for normal stations, B hexagon for reversing, and the B flat terminus hexagon?   since we don't differentiate icons for ‘must turn’, can we use just the B hexagon for those for now?”*  So, each no taller than the sensor's contact under it (13 pixels at 30, 26 at 60) and wider along the track: a station is a rounded block half as wide again as it is tall; where trains may turn, an elongated hexagon, pointed at both ends, with a U-turn arrow in it; where they must turn, the same hexagon with nothing in it; at a terminus, the hexagon flat against the buffer stop with a bar there.  Named in blue, unnamed in white ringed in blue, parking in grey, as now; the sensor's own contact painted over as plain track where the icon does not cover it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
