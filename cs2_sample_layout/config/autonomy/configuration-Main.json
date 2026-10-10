@@ -37,8 +37,10 @@
     "3 - Top Parking:18,11": {},
     "3 - Top Parking:10,10": {},
     "1 - Main:0,11": {
+      "loc": {"name": "EN57-203"},
       "maxTrainLength": 4,
       "facing": "E",
+      "arrivedFrom": "N",
       "priority": -1
     },
     "1 - Main:20,14": {
@@ -52,29 +54,8 @@
       "home": "EN57-947"
     },
     "1 - Main:20,12": {
-      "loc": {"name": "EN57-203"},
       "maxTrainLength": 5,
-      "arrivedAlong": [
-        [
-          "BottomSecondary",
-          "TunnelPre"
-        ],
-        [
-          "TunnelPre",
-          "Tunnel (southbound)"
-        ],
-        [
-          "Tunnel (southbound)",
-          "BottomMainAPre (eastbound)"
-        ],
-        [
-          "BottomMainAPre (eastbound)",
-          "BottomMainA (eastbound)"
-        ]
-      ],
       "homeFacing": "E",
-      "facing": "E",
-      "arrivedFrom": "W",
       "home": "EN57-203"
     },
     "1 - Main:20,13": {
@@ -212,7 +193,13 @@
       "autoDestination": false
     },
     "1 - Main:14,3": {
+      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 3,
+      "arrivedAlong": [[
+        "1 - Main 12,7",
+        "BottomInnerOtherside"
+      ]],
+      "facing": "E",
       "excludedLocs": [
         "EA 3005 DSB",
         "ER 2035 DSB",
@@ -221,6 +208,7 @@
         "MZ 1425 DSB",
         "SP45-204"
       ],
+      "arrivedFrom": "W",
       "priority": -2
     },
     "1 - Main:10,6": {
@@ -362,9 +350,7 @@
     "1 - Main:19,7": {},
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {
-      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 3,
-      "facing": "W",
       "homeFacing": "W",
       "excludedLocs": [
         "EA 3005 DSB",
