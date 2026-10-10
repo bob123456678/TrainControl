@@ -856,6 +856,41 @@ station's state, and "empty" is a state.  That is also why an unlabelled square 
 station tells you nothing about which station it is, which is what FR-014 was raised about - the menu
 names it in the "Stop Showing" item, and the tooltip explains the rest.
 
+## 4b. A station's icon: what the shape says
+
+FR-118 (Adam, 2026-10-09, choosing on the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB): every
+station's icon is no taller across its track than the sensor's contact under it - 13 pixels at the small size, 26 at the
+large - and longer along the track, so a caption stood on end beside it is full size again (OB-327 had drawn it 15%
+smaller to clear the old badges, half a square across; *"the small font on the vertical labels is really hard to
+read"*).
+
+| the icon | the station |
+|---|---|
+| a rounded block | a station |
+| a hexagon pointed at both ends | trains may turn round there |
+| two arrow-shaped halves back to back, pointing away from each other, white bars in them, the track's black line between them | trains must turn round there |
+| a hexagon flat at one end, with a bar at that end | a terminus: its track runs out on that side |
+| the orange X over a grey block | out of service |
+
+Blue where autonomy uses the station, grey a berth it does not choose - a colour on whatever shape the station has
+(*"shouldn't parking have the same shape as terminus?"*); filled when the station is named, white ringed in the colour
+when it is not.  On straight track the icon covers the sensor's own contact with white, the track drawn back across it
+(*"make sure the white would cover an s88 circle"*).  A passing point - a sensor that is no station - keeps its small
+mark.
+
+**A terminus is a station whose track runs out on one side** - at a buffer stop, or where the drawn track simply stops -
+before it reaches another sensor (Adam, 2026-10-09, asked *"a station with only one way out becomes a terminus,
+correct?"*: yes).  It is drawn flat against that side whatever its turning setting.  The TRACK is asked, not the setup: a
+station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
+its own shape.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
+
+On a curve the icon lies along the line between the curve's two ends, made smaller where it would not fit; in the editor
+a station on a curve sits off the rails, clear of the direction arrows, as its badge always has.  The icons:
+`core.testAutonomyDiagramMonitor` - `testAStationIsARoundedBlock`, `testWhereTrainsMayTurnIsTheHexagon`,
+`testWhereTrainsMustTurnIsTwoTerminiBackToBack`, `testAStationAtADeadEndIsATerminusFacingIt`,
+`testParkingIsGreyInItsOwnShape`, `testAStationOutOfServiceIsTheXOverAGreyBlock`, `testAStationCoversTheSensorsContact`;
+the caption, `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` and `testAPillOnEndClearsTheStationsBesideIt`.
+
 ## 5. Length: will the train fit?
 
 Two separate rules, both about length, both easy to mistake for each other.

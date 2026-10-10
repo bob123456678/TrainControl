@@ -3423,6 +3423,78 @@ public class testDiagramLooksRight
     }
 
     /**
+     * A caption stood on end is drawn at the size of one lying flat (FR-118; Adam, 2026-10-09: *"the small font on the
+     * vertical labels is really hard to read.  Add an FR to revert their size"*).  OB-327 drew it 15% smaller so that it
+     * cleared the station badges either side; the new badges, no taller than the sensor's contact, leave room for it -
+     * `testAPillOnEndClearsTheStationsBesideIt`.  Measured as painted: the letters across their line, flat and on end.
+     *
+     * MUTATION: put the 0.85 back and this fails.
+     */
+    @Test
+    public void testAPillOnEndIsFullSize()
+    {
+        for (int tile : new int[] {30, 60})
+        {
+            int flat = lettersAcross(tile, false), onEnd = lettersAcross(tile, true);
+
+            assertTrue(flat > 0, "precondition: no letters painted on a flat caption at " + tile + " pixels");
+
+            assertTrue(Math.abs(flat - onEnd) <= 1, "a caption's letters stood on end at " + tile + " pixels are " + onEnd
+                + " across, against " + flat + " lying flat - Adam: \"the small font on the vertical labels is really"
+                + " hard to read\"");
+        }
+    }
+
+    /** How many pixels across its line a caption's letters span, painted flat or stood on end, as the grid builds one. */
+    private static int lettersAcross(int tile, boolean rotated)
+    {
+        org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+        java.awt.Font font = new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, tile / 2);
+
+        pill.setPill(true);
+        pill.setFont(font.deriveFont(font.getSize2D() * org.traincontrol.gui.StationCaption.FONT_SCALE));
+        pill.setBackground(org.traincontrol.gui.StationCaption.PILL_GREY);
+        pill.setForeground(java.awt.Color.BLACK);
+        pill.setText("Hgjy Halt");
+        pill.setRotated(rotated);
+        pill.setTileGeometry(tile, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(tile, pill.lineHeight()));
+
+        java.awt.Dimension size = pill.getPreferredSize();
+
+        pill.setBounds(0, 0, size.width, size.height);
+
+        BufferedImage shot = new BufferedImage(Math.max(1, size.width), Math.max(1, size.height), BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
+
+        pill.paint(g);
+
+        g.dispose();
+
+        int lo = Integer.MAX_VALUE, hi = -1;
+
+        for (int x = 0; x < shot.getWidth(); x++)
+        {
+            for (int y = 0; y < shot.getHeight(); y++)
+            {
+                int rgb = shot.getRGB(x, y);
+
+                if (((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90 && (rgb & 0xFF) < 90)
+                {
+                    lo = Math.min(lo, rotated ? x : y);
+                    hi = Math.max(hi, rotated ? x : y);
+                }
+            }
+        }
+
+        return hi < 0 ? 0 : hi - lo + 1;
+    }
+
+    /**
      * A square's address is drawn over the locomotive standing on it, not under it (FR-116; Adam, 2026-10-09: "Red
      * address labels look good, but make sure they are rendered on top of the autonomy locomotive icons").
      *

@@ -9752,7 +9752,9 @@ public class AutonomyEditorPanel extends JPanel
             route == null ? null : route.getA(),
             route == null ? null : route.getB(),
             turns && !session.isMustTurnAround(tile),
-            Boolean.FALSE.equals(session.getPointProperty(tile, "active")));
+            Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
+            // which way a station's track runs out, for the terminus's flat end - as the diagram's badge (FR-118)
+            station ? session.deadEndSide(tile) : null);
     }
 
     /**

@@ -175,16 +175,6 @@ public class StationCaption extends JLabel
      */
     public static final float FONT_SCALE = 0.81f;
 
-    /**
-     * How much smaller a caption's text is when it is stood on end (OB-327; Adam, 2026-10-09: "narrow/nudge so that
-     * pills rotated vertically don't touch adjacent stations or terminuses").
-     *
-     * A caption on end stands between two vertical tracks a square apart, in the room between the two stations' badges -
-     * half a square, since a station's badge is half a square across.  At its full size its pill was thicker than that
-     * room: at 60 pixels 32 across a gap of 30, against its own badge on one side and its neighbour's on the other.
-     */
-    private static final float ON_END_SCALE = 0.85f;
-
     /** The room above and below the letters in a pill on end, as a share of its text's size. */
     private static final double ON_END_PAD = 0.12;
 
@@ -859,17 +849,19 @@ public class StationCaption extends JLabel
     }
 
     /**
-     * The font the text is DRAWN in: the caption's own, or, stood on end, a little smaller (OB-327, `ON_END_SCALE`).
+     * The font the text is DRAWN in: the caption's own, flat or stood on end.
+     *
+     * ON END AT FULL SIZE AGAIN (FR-118; Adam, 2026-10-09: *"the small font on the vertical labels is really hard to
+     * read.  Add an FR to revert their size, paired with a redesign of station icons"*).  OB-327 drew it 15% smaller so
+     * that its pill cleared the station badges either side of it, half a square across; the new icons are no taller
+     * across their track than the sensor's contact - 13 pixels at 30, 26 at 60 - and leave it room at full size, its
+     * pill still only as thick as its letters (`thickness`).  `testAPillOnEndClearsTheStationsBesideIt`.
      *
      * @return the font
      */
     private java.awt.Font drawnFont()
     {
-        java.awt.Font font = getFont();
-
-        if (!rotated || font == null) return font;
-
-        return font.deriveFont(font.getSize2D() * ON_END_SCALE);
+        return getFont();
     }
 
     /**

@@ -1732,10 +1732,15 @@ public class testAutonomyDiagramMonitor
             "a station that is switched off draws the same mark as one in use, so the one state where "
             + "nothing can stop or pass looks exactly like the ordinary one");
 
-        assertEquals(inkOf(badgeAt(true, true, true, size)), inkOf(badgeAt(false, true, true, size)),
-            "a switched-off station and a switched-off passing point draw differently, though nothing "
-            + "can use either - the mark is about the square being out of use, not about what it "
-            + "would be if it were in use");
+        // THE SAME CROSS, and a station's on a grey block (FR-118; Adam, 2026-10-09: *"make the inactive station
+        // have a gray rectangle below the X"*): the cross is about the square being out of use, the block says a
+        // station is what it would be.
+        assertEquals(orangeOf(badgeAt(true, true, true, size)), orangeOf(badgeAt(false, true, true, size)),
+            size / 5.0, "a switched-off station and a switched-off passing point draw different crosses, though "
+            + "nothing can use either - the mark is about the square being out of use");
+
+        assertTrue(inkOf(badgeAt(true, true, true, size)) > inkOf(badgeAt(false, true, true, size)),
+            "a switched-off station has no grey block under its cross (FR-118)");
 
         // AND PARKING IS NOT SHUT (TCX-B6).
         //
@@ -1768,8 +1773,9 @@ public class testAutonomyDiagramMonitor
     {
         final int size = 40;
 
-        java.awt.Color shut = markColour(plainBadge(true, true), size);
-        java.awt.Color shutAlone = markColour(plainBadge(false, true), size);
+        // THE CROSS'S OWN COLOUR (FR-118): a station's cross is drawn over a grey block now, which outweighs it
+        java.awt.Color shut = crossColour(plainBadge(true, true), size);
+        java.awt.Color shutAlone = crossColour(plainBadge(false, true), size);
         java.awt.Color parking = markColour(plainBadge(true, false), size);
         java.awt.Color working = markColour(plainBadge(false, false), size);
 
@@ -1831,14 +1837,564 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testTheCrossKeepsItsWeightAsTheTileGrows() throws Exception
     {
-        int small = inkOf(badgeAt(true, true, true, 40));
-        int large = inkOf(badgeAt(true, true, true, 80));
+        // A PASSING POINT'S, the cross alone: a station's sits on a grey block (FR-118), whose ink grows with the
+        // square of the tile whatever the cross does
+        int small = inkOf(badgeAt(false, true, true, 40));
+        int large = inkOf(badgeAt(false, true, true, 80));
 
         assertTrue(small > 0, "the cross drew nothing at all at the smaller size");
 
         assertTrue(large > small * 3,
             "doubling the tile did not thicken the cross with it - its arms grew and its stroke did "
             + "not, so it thins out as the diagram gets bigger.  Ink " + small + " then " + large);
+    }
+
+    // ---- FR-118: the station icons Adam chose on the station icon page (2026-10-09) ---------------------------------
+
+    /**
+     * A station is a rounded block, longer along its track than across it and no taller than the sensor's contact under
+     * it (FR-118; Adam, 2026-10-09: *"can we do a hybrid of the D station for normal stations"*).  The contact is 14
+     * pixels across at 30 and 26 at 60; the circle the block replaces was taller than the contact at 60.
+     *
+     * MUTATION: draw the circle again, or square the block's corners, and this fails.
+     *
+     * @throws Exception from reading the tile art
+     */
+    @Test
+    public void testAStationIsARoundedBlock() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            java.awt.image.BufferedImage image = onItsSensor(station(Side.W, Side.E, false, false, false, false, null), size);
+
+            java.awt.Rectangle blue = extent(image, BLUE);
+
+            assertNotNull(blue, "no station drawn at " + size + " pixels");
+
+            assertTrue(blue.height <= contact(size), "a station at " + size + " pixels is " + blue.height + " across its"
+                + " track, taller than the sensor's contact (" + contact(size) + ") it stands on (FR-118)");
+
+            assertTrue(blue.width >= blue.height * 1.3, "a station at " + size + " pixels is " + blue.width + " along its"
+                + " track and " + blue.height + " across - not the block half as long again as it is tall (FR-118)");
+
+            // rounded: the corners of what it covers are not blue, the middles of its four edges are
+            int right = blue.x + blue.width - 1, bottom = blue.y + blue.height - 1;
+
+            for (int[] corner : new int[][] {{blue.x, blue.y}, {right, blue.y}, {blue.x, bottom}, {right, bottom}})
+            {
+                assertFalse(BLUE.test(image.getRGB(corner[0], corner[1])), "a station at " + size + " pixels has a"
+                    + " square corner at " + corner[0] + "," + corner[1] + " - D's block has rounded ones (FR-118)");
+            }
+
+            assertTrue(BLUE.test(image.getRGB(blue.x + blue.width / 2, blue.y))
+                && BLUE.test(image.getRGB(blue.x, blue.y + blue.height / 2)), "precondition: the block's edges are not"
+                + " blue at " + size + " pixels");
+        }
+    }
+
+    /**
+     * Where trains may turn, the plain hexagon: pointed at both ends, nothing in it, the same shape at 30 pixels as at 60
+     * (FR-118; Adam, 2026-10-09: *"make the middle of reversing may turn in 30px slightly wider, matching the 60px
+     * hexagon's shape as closely as possible"*).  Its points are measured from tip to the first column it fills across,
+     * as a share of its height - at 30 and at 60 the same within a tenth or so.
+     *
+     * MUTATION: the more pointed 30-pixel hexagon (points two thirds of its height), or a glyph inside, fails this.
+     *
+     * @throws Exception from reading the tile art
+     */
+    @Test
+    public void testWhereTrainsMayTurnIsTheHexagon() throws Exception
+    {
+        double[] points = new double[2];
+
+        int at = 0;
+
+        for (int size : new int[] {30, 60})
+        {
+            java.awt.image.BufferedImage image = onItsSensor(station(Side.W, Side.E, true, true, false, false, null), size);
+
+            java.awt.Rectangle blue = extent(image, BLUE);
+
+            assertNotNull(blue, "no may-turn station drawn at " + size + " pixels");
+
+            assertTrue(blue.height <= contact(size), "a may-turn station at " + size + " pixels is taller than the"
+                + " sensor's contact");
+
+            assertTrue(blue.width >= blue.height * 1.6, "a may-turn station at " + size + " pixels is " + blue.width
+                + " along and " + blue.height + " across - not the long hexagon (FR-118)");
+
+            int right = blue.x + blue.width - 1;
+
+            assertTrue(blueAlong(image, blue.x, true) <= blue.height / 3 && blueAlong(image, right, true) <= blue.height / 3,
+                "a may-turn station at " + size + " pixels is not pointed at both ends (FR-118)");
+
+            int full = blue.x;
+
+            while (full < right && blueAlong(image, full, true) < blue.height - 1) full++;
+
+            points[at++] = (full - blue.x) / (double) blue.height;
+
+            // plain: blue right across its middle, no glyph
+            for (int x = blue.x + 3; x <= right - 3; x++)
+            {
+                assertTrue(BLUE.test(image.getRGB(x, size / 2)), "a may-turn station at " + size + " pixels has"
+                    + " something drawn in it at " + x + " - the plain hexagon has nothing (FR-118)");
+            }
+        }
+
+        assertEquals(points[0], points[1], 0.12, "a may-turn station's points are " + points[0] + " of its height at 30"
+            + " pixels and " + points[1] + " at 60 - Adam: \"matching the 60px hexagon's shape as closely as possible\"");
+    }
+
+    /**
+     * Where trains must turn, two terminus shapes back to back, pointing away from each other across the square, with
+     * the track's black line showing in the gap between them, and each with a WHITE bar (FR-118; Adam, 2026-10-09:
+     * *"the lines on the blue arrows in 30px "reversing must turn" should be white, not gray.  60px lost the black line
+     * in between, too"*).  A one-pixel bar set on a half pixel spreads over two columns and shows grey.
+     *
+     * MUTATION: narrow the gap so the outlines meet, or draw the 30-pixel bar inside its half's own frame, and this
+     * fails.
+     *
+     * @throws Exception from reading the tile art
+     */
+    @Test
+    public void testWhereTrainsMustTurnIsTwoTerminiBackToBack() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            java.awt.image.BufferedImage image = onItsSensor(station(Side.W, Side.E, true, false, false, false, null), size);
+
+            java.awt.Rectangle blue = extent(image, BLUE);
+
+            assertNotNull(blue, "no must-turn station drawn at " + size + " pixels");
+
+            int mid = size / 2, right = blue.x + blue.width - 1;
+
+            // across the square: at 30 edge to edge, at 60 less a pixel a side, as Adam last saw it on the page
+            assertTrue(blue.x <= 3 && right >= size - 4, "a must-turn station at " + size + " pixels runs " + blue.x
+                + " to " + right + ", not across its square (FR-118)");
+
+            assertTrue(blue.height <= contact(size), "a must-turn station at " + size + " pixels is taller than the"
+                + " sensor's contact");
+
+            assertTrue(BLACK.test(image.getRGB(mid - 1, mid)) && BLACK.test(image.getRGB(mid, mid)), "a must-turn"
+                + " station at " + size + " pixels shows no black line between its halves - Adam: \"60px lost the"
+                + " black line in between\"");
+
+            // each half: a point at its outer end, flat against the gap, and a white bar
+            for (boolean left : new boolean[] {true, false})
+            {
+                int outer = left ? blue.x : right;
+
+                int inner = left ? mid - 1 : mid;
+
+                while (!BLUE.test(image.getRGB(inner, mid))) inner += left ? -1 : 1;
+
+                assertTrue(blueAlong(image, outer, true) <= blue.height / 3, "the " + (left ? "left" : "right") + " half"
+                    + " of a must-turn station at " + size + " pixels does not point away from the other (FR-118)");
+
+                assertTrue(blueAlong(image, inner, true) >= blue.height - 2, "the " + (left ? "left" : "right") + " half"
+                    + " of a must-turn station at " + size + " pixels is not flat against the gap (FR-118)");
+
+                boolean bar = false;
+
+                for (int x = Math.min(outer, inner); x <= Math.max(outer, inner); x++)
+                {
+                    boolean white = true;
+
+                    for (int y = mid - 3; y <= mid + 2; y++) white &= PURE_WHITE.test(image.getRGB(x, y));
+
+                    bar |= white;
+                }
+
+                assertTrue(bar, "the " + (left ? "left" : "right") + " half of a must-turn station at " + size
+                    + " pixels has no white bar - Adam: \"should be white, not gray\"");
+            }
+        }
+    }
+
+    /**
+     * A station whose track runs out on one side is a terminus, flat against that side with its bar there and pointed
+     * the other way, whatever its turning setting (FR-118; Adam, 2026-10-09, asked whether a station with only one way
+     * out becomes a terminus: confirmed).  All four ways round, at both sizes.
+     *
+     * MUTATION: ignore the dead end, or turn the shape the wrong way, and this fails.
+     *
+     * @throws Exception from reading the tile art
+     */
+    @Test
+    public void testAStationAtADeadEndIsATerminusFacingIt() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            for (Side end : new Side[] {Side.W, Side.E, Side.N, Side.S})
+            {
+                boolean along = end == Side.W || end == Side.E;
+
+                for (boolean[] turning : new boolean[][] {{false, false}, {true, true}, {true, false}})
+                {
+                    String which = (turning[0] ? turning[1] ? "a may-turn" : "a must-turn" : "a") + " station whose"
+                        + " track runs out to the " + end + ", at " + size + " pixels,";
+
+                    java.awt.image.BufferedImage image = onItsSensor(station(along ? Side.W : Side.N,
+                        along ? Side.E : Side.S, turning[0], turning[1], false, false, end), size);
+
+                    assertTerminusFacing(image, BLUE, end, which);
+                }
+            }
+        }
+    }
+
+    /**
+     * A parking berth is grey in whatever shape it has: the block on through track, the terminus at a dead end (FR-118;
+     * Adam, 2026-10-09: *"shouldn't parking have the same shape as terminus?"* - parking is a colour, not a shape).
+     *
+     * MUTATION: give parking a shape of its own, or draw it blue, and this fails.
+     *
+     * @throws Exception from reading the tile art
+     */
+    @Test
+    public void testParkingIsGreyInItsOwnShape() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            java.awt.image.BufferedImage through = onItsSensor(station(Side.W, Side.E, false, false, true, false, null), size);
+
+            java.awt.Rectangle grey = extent(through, GREY);
+
+            assertNotNull(grey, "a parking berth at " + size + " pixels is not drawn grey");
+
+            assertNull(extent(through, BLUE), "a parking berth at " + size + " pixels has blue in it");
+
+            assertTrue(grey.width >= grey.height * 1.3 && grey.height <= contact(size), "a parking berth on through track"
+                + " at " + size + " pixels is not the station's block");
+
+            assertTerminusFacing(onItsSensor(station(Side.W, Side.E, false, false, true, false, Side.W), size), GREY,
+                Side.W, "a parking berth at a dead end, at " + size + " pixels,");
+        }
+    }
+
+    /**
+     * A station out of service is the orange X over a grey block, the X no taller than the new icons (FR-118; Adam,
+     * 2026-10-09: *"make the inactive station have a gray rectangle below the X"*).  It was 15 pixels at 30 and 30 at
+     * 60; now the icons' height, 13 and 26, with the round ends of its strokes.
+     *
+     * MUTATION: drop the block, or draw the X at its old size, and this fails.
+     *
+     * @throws Exception from reading the tile art
+     */
+    @Test
+    public void testAStationOutOfServiceIsTheXOverAGreyBlock() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            java.awt.image.BufferedImage image = onItsSensor(station(Side.W, Side.E, false, false, true, true, null), size);
+
+            java.awt.Rectangle orange = extent(image, ORANGE), grey = extent(image, GREY);
+
+            assertNotNull(orange, "a station out of service at " + size + " pixels has no orange X");
+
+            assertNotNull(grey, "a station out of service at " + size + " pixels has no grey block under its X (FR-118)");
+
+            assertTrue(grey.width >= grey.height * 1.3, "the grey under the X at " + size + " pixels is not the station's"
+                + " block");
+
+            int icon = Math.round(size * 0.43f);
+
+            assertTrue(orange.height <= icon + size / 15 + 1, "the X at " + size + " pixels is " + orange.height
+                + " tall, not the new icons' height (" + icon + ") (FR-118)");
+
+            assertEquals(orange.x + orange.width / 2.0, grey.x + grey.width / 2.0, 1.5, "the X at " + size
+                + " pixels is not on its block");
+        }
+    }
+
+    /**
+     * Every station icon covers the sensor's own contact - the circle of the s88 tile, 14 pixels at 30 and 26 at 60 -
+     * with white, the track's black band drawn back across it (FR-118; Adam, 2026-10-09: *"make sure the white would
+     * cover an s88 circle"*).  The icons are no taller than the contact, so they alone would leave its edges showing.
+     * Painted over the real tile art; above and below the band, nothing of the contact's grey ring may remain.
+     *
+     * MUTATION: drop the cover, and this fails.
+     *
+     * @throws Exception from reading the tile art
+     */
+    @Test
+    public void testAStationCoversTheSensorsContact() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            for (TileAnnotation.Badge badge : new TileAnnotation.Badge[] {
+                station(Side.W, Side.E, false, false, false, false, null), station(Side.W, Side.E, true, false, false, false, null),
+                station(Side.W, Side.E, true, true, false, false, null)})
+            {
+                java.awt.image.BufferedImage image = onItsSensor(badge, size);
+
+                int c = contact(size), from = (size - c) / 2, band = size * 4 / 30;
+
+                for (int x = from; x < from + c; x++)
+                {
+                    for (int y = from; y < from + c; y++)
+                    {
+                        if (Math.abs(y + 0.5 - size / 2.0) < band) continue;
+
+                        int rgb = image.getRGB(x, y), r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                        assertFalse(Math.max(r, Math.max(g, b)) < 215 && Math.max(r, Math.max(g, b))
+                            - Math.min(r, Math.min(g, b)) < 40, "the s88's contact shows at " + x + "," + y + " round "
+                            + badge + " at " + size + " pixels: " + new java.awt.Color(rgb) + " - Adam: \"make sure the"
+                            + " white would cover an s88 circle\"");
+                    }
+                }
+            }
+        }
+    }
+
+    /** The asserts of a terminus: flat on the side its track runs out, pointed the other way, a white bar near the flat. */
+    private static void assertTerminusFacing(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour,
+        Side end, String which)
+    {
+        java.awt.Rectangle shape = extent(image, colour);
+
+        assertNotNull(shape, which + " draws nothing in its colour");
+
+        boolean along = end == Side.W || end == Side.E;
+
+        int across = along ? shape.height : shape.width;
+
+        int near = end == Side.W ? shape.x : end == Side.E ? shape.x + shape.width - 1
+            : end == Side.N ? shape.y : shape.y + shape.height - 1;
+
+        int far = end == Side.W ? shape.x + shape.width - 1 : end == Side.E ? shape.x
+            : end == Side.N ? shape.y + shape.height - 1 : shape.y;
+
+        assertTrue(count(image, near, along, colour) >= across - 2, which + " is not flat on that side (FR-118)");
+
+        assertTrue(count(image, far, along, colour) <= across / 3, which + " does not point away from that side (FR-118)");
+
+        // the bar: in the third of the shape nearest that side, a line across the track white through its middle
+        int length = along ? shape.width : shape.height, step = near < far ? 1 : -1, middle = along
+            ? shape.y + shape.height / 2 : shape.x + shape.width / 2;
+
+        boolean bar = false;
+
+        for (int i = 0; i < length / 3; i++)
+        {
+            int line = near + i * step;
+
+            boolean white = true;
+
+            for (int j = middle - 2; j <= middle + 1; j++)
+            {
+                white &= PURE_WHITE.test(along ? image.getRGB(line, j) : image.getRGB(j, line));
+            }
+
+            bar |= white;
+        }
+
+        assertTrue(bar, which + " has no white bar at its flat end (FR-118)");
+    }
+
+    /** How many pixels of a colour lie on one line across the track: a column (`along`), or a row. */
+    private static int count(java.awt.image.BufferedImage image, int line, boolean along, java.util.function.IntPredicate colour)
+    {
+        int n = 0;
+
+        for (int i = 0; i < (along ? image.getHeight() : image.getWidth()); i++)
+        {
+            if (colour.test(along ? image.getRGB(line, i) : image.getRGB(i, line))) n++;
+        }
+
+        return n;
+    }
+
+    /** How many blue pixels a column holds (`column`), or a row. */
+    private static int blueAlong(java.awt.image.BufferedImage image, int line, boolean column)
+    {
+        return count(image, line, column, BLUE);
+    }
+
+    /** What the pixels of a colour cover, or null for none. */
+    private static java.awt.Rectangle extent(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour)
+    {
+        java.awt.Rectangle out = null;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                if (!colour.test(image.getRGB(x, y))) continue;
+
+                if (out == null) out = new java.awt.Rectangle(x, y, 1, 1);
+                else out.add(new java.awt.Rectangle(x, y, 1, 1));
+            }
+        }
+
+        return out;
+    }
+
+    /** The s88 tile's contact, across, in pixels: 14 at 30 and 26 at 60. */
+    private static int contact(int size)
+    {
+        return size < 60 ? 14 : 26;
+    }
+
+    private static int channel(int rgb, int shift)
+    {
+        return (rgb >> shift) & 0xFF;
+    }
+
+    /** The stations' blue, solid - not where it blends into its white outline. */
+    private static final java.util.function.IntPredicate BLUE =
+        rgb -> channel(rgb, 0) > 150 && channel(rgb, 16) < 90 && channel(rgb, 8) < 90;
+
+    /**
+     * The grey of a berth autonomy does not choose, rgb(128,130,134) - bluer than it is red, which the tile art's greys,
+     * all of them neutral, are not.
+     */
+    private static final java.util.function.IntPredicate GREY = rgb -> Math.abs(channel(rgb, 16) - 128) < 10
+        && Math.abs(channel(rgb, 8) - 130) < 10 && Math.abs(channel(rgb, 0) - 134) < 10
+        && channel(rgb, 0) - channel(rgb, 16) >= 3;
+
+    private static final java.util.function.IntPredicate ORANGE =
+        rgb -> channel(rgb, 16) > 200 && channel(rgb, 8) > 60 && channel(rgb, 8) < 160 && channel(rgb, 0) < 70;
+
+    private static final java.util.function.IntPredicate PURE_WHITE =
+        rgb -> channel(rgb, 16) >= 245 && channel(rgb, 8) >= 245 && channel(rgb, 0) >= 245;
+
+    private static final java.util.function.IntPredicate BLACK =
+        rgb -> channel(rgb, 16) < 70 && channel(rgb, 8) < 70 && channel(rgb, 0) < 70;
+
+    /**
+     * A named station on a road from a to b, as the diagram and the editor build one.
+     *
+     * @param turns whether trains turn round there
+     * @param may whether turning is a choice
+     * @param parking whether autonomy leaves it alone
+     * @param shut whether it is out of service
+     * @param deadEnd the side its track runs out, or null
+     */
+    private static TileAnnotation.Badge station(Side a, Side b, boolean turns, boolean may, boolean parking, boolean shut,
+        Side deadEnd)
+    {
+        return new TileAnnotation.Badge(true, turns, false, parking || shut, true, a, b, turns && may, shut, deadEnd);
+    }
+
+    /**
+     * A badge painted as the diagram paints it on its sensor's square: over the s88 tile's own art (turned a quarter for
+     * a road from N to S), on white.
+     *
+     * @param badge the badge
+     * @param size the tile's edge: 30 or 60, the sizes the art is drawn at
+     * @return the square
+     * @throws Exception from reading the art
+     */
+    private static java.awt.image.BufferedImage onItsSensor(TileAnnotation.Badge badge, int size) throws Exception
+    {
+        java.awt.image.BufferedImage art = javax.imageio.ImageIO.read(org.traincontrol.gui.TrainControlUI.class
+            .getResource("/org/traincontrol/gui/resources/icons" + size + "/s88.gif"));
+
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            java.awt.Graphics2D tile = (java.awt.Graphics2D) g.create();
+
+            if (badge.getA() == Side.N || badge.getA() == Side.S) tile.rotate(Math.PI / 2, size / 2.0, size / 2.0);
+
+            tile.drawImage(art, 0, 0, size, size, null);
+            tile.dispose();
+
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)), 0, false, badge,
+                false).paintBadgeOverRun(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /**
+     * The colour a cross is drawn in, read off the cross alone: the commonest solid colour where the badge differs from
+     * a grey station's block, which is what a station's cross is drawn over (FR-118).
+     */
+    private static java.awt.Color crossColour(TileAnnotation.Badge b, int size) throws Exception
+    {
+        java.awt.image.BufferedImage with = painted(b, size), without = painted(plainBadge(true, false), size);
+
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                int argb = with.getRGB(x, y);
+
+                if (argb == without.getRGB(x, y) || (argb >>> 24) < 200) continue;
+
+                counts.merge(argb & 0xFFFFFF, 1, Integer::sum);
+            }
+        }
+
+        int best = -1, most = 0;
+
+        for (java.util.Map.Entry<Integer, Integer> e : counts.entrySet())
+        {
+            if (e.getValue() > most)
+            {
+                most = e.getValue();
+                best = e.getKey();
+            }
+        }
+
+        assertTrue(best >= 0, "the cross drew nothing apart from the block");
+
+        return new java.awt.Color(best);
+    }
+
+    /** How many of a painted badge's pixels are the cross's orange. */
+    private static int orangeOf(java.awt.image.BufferedImage image)
+    {
+        int n = 0;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                if ((image.getRGB(x, y) >>> 24) >= 200 && ORANGE.test(image.getRGB(x, y))) n++;
+            }
+        }
+
+        return n;
+    }
+
+    /** One badge on a road from W to E, painted over the run as the diagram does, on nothing. */
+    private static java.awt.image.BufferedImage painted(TileAnnotation.Badge b, int size)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false)
+                .paintBadgeOverRun(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
     }
 
     /**
