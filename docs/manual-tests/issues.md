@@ -1771,6 +1771,8 @@ Adam, 2026-10-09: *“the small font on the vertical labels is really hard to re
 
 **Adam, 2026-10-09, then:** *“On the must turn icon, make the white like thinner so there's more visible blue, and make the two halves 2px wider”*  The bars one pixel wide at 30 and two at 60; the pair edge to edge of the square with a 2-pixel gap - each half 14 pixels at 30 (one wider: two would cross the square's edge, where a badge's paint is cut off) and 29 at 60 (two wider, the gap narrowed from 4 to 2 to keep it in the square).
 
+**Adam, 2026-10-09, then, of the 30-pixel must-turn:** *“model the 30px version after the 60px version you made, with the white gap and black line in the middle.  make sure the white would cover an s88 circle.”*  So at 30 pixels the gap is 4 pixels, wide enough for the track's black line to show through it between white, as at 60; each half 13 pixels.  And every badge of the new set covers the sensor's own contact itself - the s88 tile's circle is 14 x 14 pixels at 30 and 26 x 26 at 60 - with white a pixel wider all round (16 and 28), the track's black band drawn back across it, and then its shape: the page now draws the chosen icons straight over the real s88 tile to show it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
