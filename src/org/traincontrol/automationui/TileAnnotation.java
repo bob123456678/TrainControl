@@ -2162,10 +2162,10 @@ public class TileAnnotation
      *
      * Along the road from side a to side b, turned so the terminus's flat end is on its dead-end side.  On straight track
      * the sensor's contact is covered first (*"make sure the white would cover an s88 circle"*) - `cover`.  On a bend the
-     * icon lies along the chord between the road's two sides, moved in off the corner until all of it is inside its
-     * square (MT-710), smaller only where even in the middle it would not fit; in the editor it sits off the rails where
-     * the bend's badge always has (`CORNER_INSET`), clear of the arrows at the sides, and no longer than that badge was
-     * across.  The
+     * icon lies along the chord between the road's two sides, on its rails, made smaller until all of it is inside its
+     * square, and the contact is covered there too (Adam, 2026-10-10: *"You will need to make their icons smaller.  Make
+     * sure all types fit."*); in the editor it sits off the rails where the bend's badge always has (`CORNER_INSET`),
+     * clear of the arrows at the sides, and no longer than that badge was across.  The
      * proportions are the page's, which drew them on the real 30 and 60 pixel tiles.
      *
      * @param g the tile's graphics
@@ -2236,15 +2236,46 @@ public class TileAnnotation
         // nothing that badge did not
         if (editing && known && bends) scale = Math.min(1, Math.max(11, tile / 2) / stroked.getBounds2D().getWidth());
 
-        // AND WHOLLY INSIDE ITS SQUARE (Adam, MT-710: "On curves, regular stations are now cut off in the corners"): a
-        // square's paint is cut off at its edges, and on a curve the middle of the track is near a corner.  Moved in
-        // towards the middle of the square as far as it needs, and made smaller only where even there it would not fit.
-        // On straight track every icon fits where it is.
+        // ON A BEND, SMALLER WHERE IT STANDS (Adam, 2026-10-10: "Stations still clip on curved tracks.  You will need to
+        // make their icons smaller.  Make sure all types fit.").  A square's paint is cut off at its edges, and a curve's
+        // chord runs across a corner, so an icon its full size on the middle of it ran over two edges and lost its ends
+        // (MT-710).  Round 112 kept it full size and moved it in towards the middle of the square: inside, but off its
+        // rails, over the white beside them.  Now it stays on the middle of the chord and is made as much smaller as all
+        // of it needs to be inside the square - each kind its own size, as each is its own shape: a pointed end fits a
+        // corner a rounded block does not.  The editor's bend is off the rails already, in the corner (above).
+        if (!editing && known && bends) scale = Math.min(scale, largestThatFits(needs, centre[0], centre[1], width, height));
+
+        // AND WHOLLY INSIDE ITS SQUARE whatever else is asked of it (MT-710): moved in towards the middle of the square
+        // as far as it needs, and made smaller only where even there it would not fit.  On straight track, and on a
+        // bend at the size above, every icon fits where it is.
         double[] at = fitInside(needs, scale, centre[0], centre[1], width, height);
 
         scale = at[2];
 
         badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
+
+        // THE CONTACT COVERED ON A BEND TOO, as on straight track below - an icon made smaller on a curve sat inside the
+        // contact's ring.  On the chord's middle, where the curved sensor's art draws it, turned along the chord - and
+        // kept inside the square, which turned it overhangs at two edges.
+        if (!editing && known && bends)
+        {
+            Graphics2D c = (Graphics2D) g.create();
+
+            try
+            {
+                c.clipRect(0, 0, width, height);
+                c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                c.translate(centre[0], centre[1]);
+                c.rotate(angle);
+
+                cover(c, tile);
+            }
+            finally
+            {
+                c.dispose();
+            }
+        }
 
         Graphics2D s = (Graphics2D) g.create();
 
@@ -2347,6 +2378,29 @@ public class TileAnnotation
         double r = Math.max(2, h * 0.22);
 
         return new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
+    }
+
+    /**
+     * The largest scale, no more than 1, at which an icon centred here is all inside its square - a pixel's half to spare at
+     * each edge, as `fitInside` keeps (Adam, 2026-10-10: on a curve, *"make their icons smaller"*).
+     *
+     * @param needs what the icon covers at scale 1, about its centre, turned as it is drawn
+     * @param x where its centre is
+     * @param y where its centre is
+     * @param width the square's width
+     * @param height the square's height
+     * @return the scale
+     */
+    private static double largestThatFits(java.awt.geom.Rectangle2D needs, double x, double y, int width, int height)
+    {
+        double scale = 1;
+
+        if (needs.getMinX() < 0) scale = Math.min(scale, (x - 0.5) / -needs.getMinX());
+        if (needs.getMaxX() > 0) scale = Math.min(scale, (width - 0.5 - x) / needs.getMaxX());
+        if (needs.getMinY() < 0) scale = Math.min(scale, (y - 0.5) / -needs.getMinY());
+        if (needs.getMaxY() > 0) scale = Math.min(scale, (height - 0.5 - y) / needs.getMaxY());
+
+        return Math.max(0.1, scale);
     }
 
     /**

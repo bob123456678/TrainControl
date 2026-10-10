@@ -2201,8 +2201,7 @@ public class testAutonomyDiagramMonitor
      * loses: painted here with nothing to cut it, on a canvas three squares across, nothing may land outside the
      * middle one.  On straight track too.
      *
-     * MUTATION: centre a curve's icon on the middle of the curve's chord again, at the size that fits along it, and this
-     * fails.
+     * MUTATION: draw a curve's icon at full size on the middle of its chord again, and this fails.
      */
     @Test
     public void testAStationOnACurveIsWhollyInsideItsSquare()
@@ -2265,6 +2264,286 @@ public class testAutonomyDiagramMonitor
                 }
             }
         }
+    }
+
+    /**
+     * A station's icon on a curve is made smaller where it stands - on its rails, across the middle of the curve's chord -
+     * rather than moved off them, every kind, at both sizes, whichever way the curve turns (Adam, 2026-10-10: *"Stations
+     * still clip on curved tracks.  You will need to make their icons smaller.  Make sure all types fit."*).  Round 112
+     * kept each icon its full size and moved it in towards the middle of the square until it fitted: off the rails, over
+     * the white beside them.
+     *
+     * Painted over the curved sensor's own art, as the diagram paints it: the middle of the icon's colour lies on the
+     * chord, within a pixel at 30 and a pixel and a half at 60 - along the chord a terminus's weight may lean to its flat
+     * end; across it nothing may - and there is less of that colour than the same kind shows on straight track.  That it
+     * is wholly inside its square is `testAStationOnACurveIsWhollyInsideItsSquare`'s.
+     *
+     * MUTATION: keep a curve's icon full size and move it in off its rails again, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testAStationOnACurveIsSmallerOnItsRails() throws Exception
+    {
+        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : curves)
+            {
+                TileAnnotation.Badge[] kinds = everyKind(road[0], road[1]);
+                TileAnnotation.Badge[] straight = everyKind(Side.W, Side.E);
+
+                for (int k = 0; k < kinds.length; k++)
+                {
+                    java.util.function.IntPredicate colour = k == 5 ? GREY : k == 6 ? GREY.or(ORANGE) : BLUE;
+
+                    java.awt.image.BufferedImage onTheCurve = overTheArt(kinds[k], road, size);
+
+                    double[] middle = middleOf(onTheCurve, colour);
+
+                    assertTrue(middle[2] > 0, "precondition: " + kinds[k] + " on a curve " + road[0] + "-" + road[1]
+                        + " at " + size + " pixels painted nothing of its colour");
+
+                    double across = acrossTheChord(middle, road, size);
+
+                    assertTrue(across <= (size >= 60 ? 1.5 : 1.0), kinds[k] + " on a curve " + road[0] + "-" + road[1]
+                        + " at " + size + " pixels sits " + across + " pixels off the middle of its rails - moved off them"
+                        + " to fit, where Adam asked: \"You will need to make their icons smaller\"");
+
+                    double flat = middleOf(overTheArt(straight[k], new Side[] {Side.W, Side.E}, size), colour)[2];
+
+                    assertTrue(middle[2] < 0.75 * flat, kinds[k] + " on a curve " + road[0] + "-" + road[1] + " at "
+                        + size + " pixels shows " + (int) middle[2] + " pixels of its colour against " + (int) flat
+                        + " on straight track - not made smaller to fit (Adam: \"Make sure all types fit\")");
+                }
+            }
+        }
+    }
+
+    /**
+     * And the sensor's contact under it is covered, as on straight track (FR-118, Adam: *"make sure the white would cover
+     * an s88 circle"*) - an icon made smaller on a curve otherwise sits inside the contact's ring.  Painted over the
+     * curved sensor's own art, every kind at both sizes on every curve: no pixel the art draws dark near the contact and
+     * off the rails - the ring - is dark any more.
+     *
+     * MUTATION: cover the contact on straight track only again, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testTheContactIsCoveredOnACurve() throws Exception
+    {
+        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : curves)
+            {
+                java.awt.image.BufferedImage art = curvedSensorArt(size, road);
+
+                double cx = (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0;
+                double cy = (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0;
+
+                List<int[]> ring = new ArrayList<>();
+
+                for (int x = 0; x < size; x++)
+                {
+                    for (int y = 0; y < size; y++)
+                    {
+                        if (BLACK.test(art.getRGB(x, y)) && Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= size * 0.3
+                            && acrossTheChord(new double[] {x + 0.5, y + 0.5}, road, size) > size * 4 / 30.0 + 1)
+                        {
+                            ring.add(new int[] {x, y});
+                        }
+                    }
+                }
+
+                assertFalse(ring.isEmpty(), "precondition: the curved sensor's art at " + size + " pixels has no ring off"
+                    + " its rails to cover");
+
+                for (TileAnnotation.Badge badge : everyKind(road[0], road[1]))
+                {
+                    java.awt.image.BufferedImage image = overTheArt(badge, road, size);
+
+                    int showing = 0;
+
+                    for (int[] at : ring)
+                    {
+                        if (BLACK.test(image.getRGB(at[0], at[1]))) showing++;
+                    }
+
+                    assertEquals(showing, 0, badge + " on a curve " + road[0] + "-" + road[1] + " at " + size
+                        + " pixels leaves " + showing + " of the sensor's ring's " + ring.size() + " pixels showing round"
+                        + " it - Adam: \"make sure the white would cover an s88 circle\"");
+                }
+            }
+        }
+    }
+
+    /** Every kind of station on a road from a to b: plain, may turn, must turn, a terminus each way, parking, shut. */
+    private static TileAnnotation.Badge[] everyKind(Side a, Side b)
+    {
+        return new TileAnnotation.Badge[] {
+            station(a, b, false, false, false, false, null),
+            station(a, b, true, true, false, false, null),
+            station(a, b, true, false, false, false, null),
+            station(a, b, false, false, false, false, a),
+            station(a, b, false, false, false, false, b),
+            station(a, b, false, false, true, false, null),
+            station(a, b, false, false, true, true, null)};
+    }
+
+    /**
+     * A badge painted as the diagram paints it, over its sensor's art turned to run along its road - the curved sensor's
+     * for a curve, the straight one's for W-E - on white.
+     */
+    private static java.awt.image.BufferedImage overTheArt(TileAnnotation.Badge badge, Side[] road, int size)
+        throws Exception
+    {
+        boolean curve = !(road[0] == Side.W && road[1] == Side.E);
+
+        java.awt.image.BufferedImage image = curve ? curvedSensorArt(size, road) : turned(sensorArt("s88.gif", size), 0);
+
+        if (!curve && !runs(image, road)) image = turned(image, 1);
+
+        assertTrue(runs(image, road), "precondition: no quarter turn of the sensor's art runs " + road[0] + "-" + road[1]);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setClip(0, 0, size, size);
+
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1], null)), -1, false, badge, false,
+                false, false, null, true, null).paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /** The curved sensor's art, turned until its track runs from one side of the road to the other, on white. */
+    private static java.awt.image.BufferedImage curvedSensorArt(int size, Side[] road) throws Exception
+    {
+        java.awt.image.BufferedImage art = sensorArt("s88_curve.gif", size);
+
+        for (int k = 0; k < 4; k++)
+        {
+            java.awt.image.BufferedImage image = turned(art, k);
+
+            if (runs(image, road)) return image;
+        }
+
+        throw new AssertionError("precondition: no quarter turn of the curved sensor's art runs " + road[0] + "-" + road[1]);
+    }
+
+    private static java.awt.image.BufferedImage sensorArt(String name, int size) throws Exception
+    {
+        java.awt.image.BufferedImage art = javax.imageio.ImageIO.read(org.traincontrol.gui.TrainControlUI.class
+            .getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name));
+
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+            g.drawImage(art, 0, 0, null);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /** The image turned k quarter turns clockwise. */
+    private static java.awt.image.BufferedImage turned(java.awt.image.BufferedImage image, int k)
+    {
+        int size = image.getWidth();
+
+        java.awt.image.BufferedImage out =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = out.createGraphics();
+
+        try
+        {
+            g.rotate(k * Math.PI / 2, size / 2.0, size / 2.0);
+            g.drawImage(image, 0, 0, null);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return out;
+    }
+
+    /** Whether the art's track meets the square's edges at the road's two sides and no other. */
+    private static boolean runs(java.awt.image.BufferedImage image, Side[] road)
+    {
+        for (Side side : Side.values())
+        {
+            int[] at = midpointOf(side, image.getWidth());
+
+            int x = Math.max(1, Math.min(image.getWidth() - 2, at[0])), y = Math.max(1, Math.min(image.getHeight() - 2, at[1]));
+
+            if (BLACK.test(image.getRGB(x, y)) != (side == road[0] || side == road[1])) return false;
+        }
+
+        return true;
+    }
+
+    /** The middle of a side of a square. */
+    private static int[] midpointOf(Side side, int size)
+    {
+        switch (side)
+        {
+            case N: return new int[] {size / 2, 0};
+            case E: return new int[] {size, size / 2};
+            case S: return new int[] {size / 2, size};
+            default: return new int[] {0, size / 2};
+        }
+    }
+
+    /** How far a point is across the chord a road's curve is drawn as - the line between its two sides' middles. */
+    private static double acrossTheChord(double[] point, Side[] road, int size)
+    {
+        int[] a = midpointOf(road[0], size), b = midpointOf(road[1], size);
+
+        double dx = b[0] - a[0], dy = b[1] - a[1], length = Math.hypot(dx, dy);
+
+        return Math.abs((point[0] - a[0]) * dy - (point[1] - a[1]) * dx) / length;
+    }
+
+    /** The middle of the pixels of a colour, and how many there are. */
+    private static double[] middleOf(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour)
+    {
+        double x = 0, y = 0, n = 0;
+
+        for (int i = 0; i < image.getWidth(); i++)
+        {
+            for (int j = 0; j < image.getHeight(); j++)
+            {
+                if (colour.test(image.getRGB(i, j)))
+                {
+                    x += i + 0.5;
+                    y += j + 0.5;
+                    n++;
+                }
+            }
+        }
+
+        return n == 0 ? new double[] {0, 0, 0} : new double[] {x / n, y / n, n};
     }
 
     /**
