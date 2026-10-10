@@ -47,6 +47,7 @@
       "maxTrainLength": 2,
       "homeFacing": "W",
       "facing": "W",
+      "arrivedFrom": "W",
       "priority": 2,
       "home": "EN57-947"
     },
@@ -77,10 +78,9 @@
       "home": "EN57-203"
     },
     "1 - Main:20,13": {
-      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
       "homeFacing": "W",
-      "facing": "W",
+      "facing": "E",
       "canReverse": true,
       "home": "ET22-245"
     },
@@ -147,8 +147,40 @@
       "autoDestination": false
     },
     "1 - Main:6,4": {
+      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
+      "arrivedAlong": [
+        [
+          "BottomMainB (eastbound)",
+          "BottomMainPost (northbound)"
+        ],
+        [
+          "BottomMainPost (northbound)",
+          "1 - Main 7,1 (westbound)"
+        ],
+        [
+          "1 - Main 7,1 (westbound)",
+          "RampUp"
+        ],
+        [
+          "RampUp",
+          "1 - Main 0,3 (southbound)"
+        ],
+        [
+          "1 - Main 0,3 (southbound)",
+          "TopMainR2Inter (southbound)"
+        ],
+        [
+          "TopMainR2Inter (southbound)",
+          "TopMainR2Pre (northbound)"
+        ],
+        [
+          "TopMainR2Pre (northbound)",
+          "TopMainR2"
+        ]
+      ],
       "facing": "N",
+      "arrivedFrom": "S",
       "priority": 1
     },
     "2 - Bottom:16,9": {

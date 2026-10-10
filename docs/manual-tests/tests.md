@@ -33588,6 +33588,10 @@ reduce the size of halos around the locomotive slightly in 60px mode.  rest look
 
 Filed as OB-329 (the halo a little narrower at the large size); the rest passed.
 
+**Adam, 2026-10-09 (triage).** Works.
+
+*Run against commit 60bebd9c, in English - build\classes, compiled 09 Oct 23:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-708"></a>
@@ -33682,6 +33686,12 @@ Validated on your *Works* of 2026-10-09.
 (OB-329).  Whether Windows now brings the maximised window forward is this MT's to say: the claim holds the order the
 fix relies on, maximised only once on screen.
 
+**Adam, 2026-10-09 (triage).** Does not work.
+
+Round ending is not apparent.  I only want rounding at the tail, not by the locomotive.  Offset it from the end of the tile for better clarity.  In 30px mode, make the locomotive halo border slightly smaller. Rest looks ok for now.
+
+*Run against commit 60bebd9c, in English - build\classes, compiled 09 Oct 23:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-710"></a>
@@ -33725,6 +33735,20 @@ the sensor covered), `core.testAutonomyDiagramSession.testAStationWhoseTrackRuns
 `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` with `testAPillOnEndClearsTheStationsBesideIt`.  A station with one
 way out only because of a setting - a one-way run, a barred arrival - while its track carries on keeps its own shape.
 
+**Adam, 2026-10-09 (triage).** Does not work.
+
+If there is a red or green arrow on a tile, the rectangular station icon now hides it.  We need to render red arrows on top of stations in the viewer.  
+
+On curves, regular stations are now cut off in the corners.
+
+Make terminuses 1px shorter, they appear just a bit too long.  
+
+Shorten may reverse stations by 1px in 30px view, 2px in 60px view.  Make sure must revers are cumulatively no longer.  
+
+No may or must reverse on curves, test that yourself.
+
+*Run against commit 60bebd9c, in English - build\classes, compiled 09 Oct 23:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-711"></a>
@@ -33749,5 +33773,9 @@ way out only because of a setting - a one-way run, a barred arrival - while its 
 
 *What this is:* round 109 (`65756aab`).  Claims `ui.testDiagramLooksRight.testADestinationIsTheLineAsItLooksOnWhite` and
 `testADestinationIsRingedInDarkOrange`, and `ui.testARunsCaptionsSpeakInItsColours`.
+
+**Adam, 2026-10-09 (triage).** Works.
+
+*Run against commit 60bebd9c, in English - build\classes, compiled 09 Oct 23:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
