@@ -549,7 +549,6 @@ public class LayoutGrid
         // in the crowded caption.
         return StationCaption.withArrow(cut, arrow);
     }
-    public static final int LAYOUT_ADDRESS_OPACITY = 200;
 
     // Component that holds the layout
     private JPanel container;
@@ -864,7 +863,7 @@ public class LayoutGrid
      * Public and static so a test can build one out of plain components and look at what comes out -
      * which is the whole of what this has to get right and needs no railway to establish.
      *
-     * @return a panel that draws its tiles, then its captions, then its trains
+     * @return a panel that draws its tiles, then its captions, then its trains, then its addresses
      */
     public static JPanel newDiagramContainer()
     {
@@ -880,6 +879,27 @@ public class LayoutGrid
                     if (child instanceof LayoutLabel)
                     {
                         ((LayoutLabel) child).paintTrainOverCaptions(g);
+                    }
+                }
+
+                // AND THE ADDRESSES OVER THE TRAINS (FR-116; Adam, 2026-10-09: "Red address labels look good, but make
+                // sure they are rendered on top of the autonomy locomotive icons").  An address is what the operator
+                // turned Show Addresses on to read, and the pass above drew every icon over it.  Since round 102 it
+                // covers only its letters and their halo, so drawn last it hides nothing of the icon but the number.
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof AddressLabel && child.isVisible())
+                    {
+                        java.awt.Graphics over = g.create(child.getX(), child.getY(), child.getWidth(), child.getHeight());
+
+                        try
+                        {
+                            child.paint(over);
+                        }
+                        finally
+                        {
+                            over.dispose();
+                        }
                     }
                 }
 
@@ -1839,7 +1859,7 @@ public class LayoutGrid
                         layout.getShowAddress() &&
                         !c.isText() && c.isClickable())
                 {
-                    JLabel text = new JLabel();
+                    AddressLabel text = new AddressLabel();
                     
                     // Cascade click event
                     final JLabel outer = grid[x][y];
@@ -1884,9 +1904,9 @@ public class LayoutGrid
                         }
                     });
 
+                    // RED LETTERS ON A WHITE HALO, NOT IN A BOX (Adam, 2026-10-09: "Can we prettify address labels to have a
+                    // white halo outline around the red text rather than a rectangle around them?") - see AddressLabel
                     text.setForeground(Color.RED);
-                    text.setOpaque(true);
-                    text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_ADDRESS_OPACITY)); // yellow
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3)); 
                     
                     // To avoid a bug where feedback doesn't yet exist, turn off tooltips in the editor
@@ -1919,10 +1939,11 @@ public class LayoutGrid
 
                     if (c.getProtocol() != null && c.getProtocol() != Accessory.accessoryDecoderType.MM2)
                     {
-                        protocol = "<br>" + c.getProtocol().toString().toLowerCase() + "";
+                        protocol = c.getProtocol().toString().toLowerCase();
                     }
                     
-                    text.setText("<html>" + c.getLogicalAddress() + redOrGreen + protocol + "</html>");      
+                    // The address, and the protocol on a second line where it is not MM2
+                    text.setLines(c.getLogicalAddress() + redOrGreen, protocol);
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);

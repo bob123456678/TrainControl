@@ -2401,6 +2401,61 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * A paused train is drawn grey, where one that may run is black (FR-117; Adam, 2026-10-09: "On the track diagram
+     * viewer, Inactive locomotive icons go from black to gray on the track diagram").
+     *
+     * The icon's black body is counted on a train that runs; on a paused one none of it is left black, and as much again
+     * is a mid grey.
+     *
+     * MUTATION: draw a paused train's icon as any other's, and this fails.
+     */
+    @Test
+    public void testAPausedTrainIsDrawnGrey()
+    {
+        int size = 60;
+
+        java.awt.image.BufferedImage running = painted(TileOverlay.parked(Side.E), size);
+        java.awt.image.BufferedImage paused = painted(TileOverlay.parked(Side.E).withPaused(true), size);
+
+        int black = 0, blackPaused = 0, greyPaused = 0;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                if (isBlack(running.getRGB(x, y))) black++;
+                if (isBlack(paused.getRGB(x, y))) blackPaused++;
+                if (isMidGrey(paused.getRGB(x, y))) greyPaused++;
+            }
+        }
+
+        assertTrue(black > 50, "precondition: a train that runs is drawn with " + black + " black pixels, too few to tell"
+            + " its icon by");
+
+        assertEquals(blackPaused, 0, "a paused train is drawn with " + blackPaused + " of the " + black + " black pixels a"
+            + " train that runs has - its icon is not grey");
+
+        assertTrue(greyPaused >= black / 2, "a paused train's icon has " + greyPaused + " mid-grey pixels where one that"
+            + " runs has " + black + " black ones");
+    }
+
+    private static boolean isBlack(int argb)
+    {
+        int a = (argb >>> 24) & 0xFF, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
+
+        return a >= 200 && Math.max(r, Math.max(g, b)) < 70;
+    }
+
+    private static boolean isMidGrey(int argb)
+    {
+        int a = (argb >>> 24) & 0xFF, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
+
+        int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+
+        return a >= 200 && min >= 110 && max <= 190 && max - min <= 20;
+    }
+
+    /**
      * A train parked with no path is published on the square it stands on, as a parked train facing the way its Point
      * faces; a train holding a path is left to the run's own mark, the dot while it waits (FR-027).
      *

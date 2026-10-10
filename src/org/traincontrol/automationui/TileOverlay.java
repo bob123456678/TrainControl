@@ -224,6 +224,9 @@ public class TileOverlay
     private final org.traincontrol.automationui.TilePorts.Side facing;
     private final java.util.List<Segment> segments;
 
+    /** Whether the train here is paused, which draws its icon grey (FR-117). */
+    private final boolean paused;
+
     /**
      * @param state
      * @param train whether the train itself is standing here, which gets a mark of its own
@@ -277,7 +280,16 @@ public class TileOverlay
     private TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments, boolean parked,
         org.traincontrol.automationui.TilePorts.Side facing)
     {
+        this(state, train, moving, segments, parked, facing, false);
+    }
+
+    private TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments, boolean parked,
+        org.traincontrol.automationui.TilePorts.Side facing, boolean paused)
+    {
         this.state = state == null ? State.IDLE : state;
+
+        // Clamped as the rest are: paused is a fact about a train, so never without one
+        this.paused = train && paused;
         this.train = train;
 
         // Clamped, so "moving" cannot be true on a square with no train on it.  The two are one fact
@@ -331,6 +343,26 @@ public class TileOverlay
     }
 
     /**
+     * The same mark, for a train paused or not (FR-117; Adam, 2026-10-09: "On the track diagram viewer, Inactive
+     * locomotive icons go from black to gray").
+     *
+     * @param paused whether the train here is paused
+     * @return the mark
+     */
+    public TileOverlay withPaused(boolean paused)
+    {
+        return paused == this.paused ? this : new TileOverlay(state, train, moving, segments, parked, facing, paused);
+    }
+
+    /**
+     * @return whether the train here is paused, which draws its icon grey (FR-117)
+     */
+    public boolean isPaused()
+    {
+        return paused;
+    }
+
+    /**
      * @return the side a parked train's front faces, or null
      */
     public org.traincontrol.automationui.TilePorts.Side getFacing()
@@ -378,7 +410,7 @@ public class TileOverlay
         return new TileOverlay(
             rank(state) >= rank(other.state) ? state : other.state,
             train || other.train, moving || other.moving, both, parked || other.parked,
-            facing != null ? facing : other.facing);
+            facing != null ? facing : other.facing, paused || other.paused);
     }
 
     /**
@@ -615,6 +647,50 @@ public class TileOverlay
         return halo;
     }
 
+    /** A paused train's icon, worked out once from the train's (FR-117). */
+    private static java.awt.image.BufferedImage pausedIcon;
+
+    /** The grey a paused train's black is drawn in - the grey of the empty dash and the barred chevron's family. */
+    private static final int PAUSED_GREY = 150;
+
+    /**
+     * The train's icon with its black taken to a mid grey and its white left white (FR-117), so its windows and wheels
+     * still read: each pixel's brightness laid between `PAUSED_GREY` and white, its alpha kept - so the halo, which is
+     * the icon's silhouette, is the same.
+     *
+     * @param icon the train's icon
+     * @return the paused icon
+     */
+    private static synchronized java.awt.image.BufferedImage pausedIconOf(java.awt.image.BufferedImage icon)
+    {
+        if (pausedIcon != null) return pausedIcon;
+
+        int w = icon.getWidth(), h = icon.getHeight();
+
+        java.awt.image.BufferedImage grey = new java.awt.image.BufferedImage(w, h,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int argb = icon.getRGB(x, y);
+
+                int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
+
+                int bright = (int) Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+
+                int v = PAUSED_GREY + bright * (255 - PAUSED_GREY) / 255;
+
+                grey.setRGB(x, y, (argb & 0xFF000000) | (v << 16) | (v << 8) | v);
+            }
+        }
+
+        pausedIcon = grey;
+
+        return pausedIcon;
+    }
+
     private static int haloReach(java.awt.image.BufferedImage icon)
     {
         return Math.max(1, (int) Math.round(icon.getWidth() * HALO_REACH));
@@ -838,6 +914,9 @@ public class TileOverlay
             // the dot any more.
             java.awt.image.BufferedImage picture =
                 moving || parked || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
+
+            // GREY FOR A PAUSED TRAIN (FR-117; Adam, 2026-10-09: "Inactive locomotive icons go from black to gray")
+            if (picture != null && paused) picture = pausedIconOf(picture);
 
             if (picture != null)
             {
@@ -1114,22 +1193,24 @@ public class TileOverlay
         // moving counts, for the same reason the geometry does: a republish is suppressed when the
         // picture has not changed, and a train that has just started or just stopped is a changed
         // picture - it is the whole of what this flag draws.
+        // And paused (FR-117): a train paused or set going is a changed picture, and nothing else about it changes.
         return state == other.state && train == other.train && moving == other.moving
-            && parked == other.parked && facing == other.facing && segments.equals(other.segments);
+            && parked == other.parked && facing == other.facing && paused == other.paused
+            && segments.equals(other.segments);
     }
 
     @Override
     public int hashCode()
     {
-        return ((((state.hashCode() * 31 + (train ? 1 : 0)) * 31 + (moving ? 1 : 0)) * 31 + (parked ? 1 : 0)) * 31
-            + (facing == null ? 0 : facing.hashCode())) * 31 + segments.hashCode();
+        return (((((state.hashCode() * 31 + (train ? 1 : 0)) * 31 + (moving ? 1 : 0)) * 31 + (parked ? 1 : 0)) * 31
+            + (facing == null ? 0 : facing.hashCode())) * 31 + segments.hashCode()) * 31 + (paused ? 1 : 0);
     }
 
     @Override
     public String toString()
     {
         return state + (train ? (moving ? "+moving" : parked ? "+parked" + (facing == null ? "" : ":" + facing)
-            : "+train") : "")
+            : "+train") + (paused ? "+paused" : "") : "")
             + (segments.isEmpty() ? "" : segments.toString());
     }
 }

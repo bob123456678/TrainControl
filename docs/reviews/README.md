@@ -207,7 +207,10 @@ guarded. They are worth fixing as traps for the next caller, not worth a changel
 inside the loop that calls it. *The "intermittent no free paths" concern was raised from measuring a
 single `bfs` exclusion sequence; `pickPath` enumerates every route to every destination until exhausted,
 which makes the ordering irrelevant. Retracted after measuring the whole function - 2,680 invocations,
-zero spurious failures.*
+zero spurious failures.  (Not on the railway built from the diagram, where the example no longer holds: RSA59-B1
+found the enumeration ending once one shuffled search had no route left, so a route throwing a switch both ways
+could hide a clear one and stations came and went between asks.  Round 96 keyed the search on the switch settings
+too.  The rule stands - measure the whole function - and the measurement has to be on the data the users have.)*
 
 **Distinguish "this could happen" from "this does happen".** Where a claim depends on real data, check
 the real data. *B8 predicted an import failure on sparse function lists; 243 locomotive blocks across

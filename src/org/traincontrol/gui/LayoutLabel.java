@@ -1631,6 +1631,9 @@ public final class LayoutLabel extends JLabel
      * inactive colour.  It was rgb(255,140,0), half a shade off, which on a diagram carrying both at once
      * reads as two colours that were each meant to be something.  A parking berth is grey since FR-103
      * (Adam, 2026-09-26); a square nothing can pass - the X - is this orange again (2026-09-29).
+     *
+     * **The solid one of two since 2026-10-09** (`TailColour.SOFT`): the line is drawn in `tailColour()`, which is
+     * see-through unless set otherwise.
      */
     public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
 
@@ -1648,6 +1651,149 @@ public final class LayoutLabel extends JLabel
      * blocked, and has to be told apart from them at a glance.
      */
     public static final float BLOCKED_ALPHA = 0.40f;
+
+    /**
+     * One coach of a train, along one road of a square (T2 of the look's train tails; Adam, 2026-10-09: "Do T2 only if
+     * you can maintain shape continuity across curves rather than a jagged look when it straightens out").
+     *
+     * WHOLE COACHES, ONE TO A SQUARE.  A dash pattern laid along the line restarts at every square and leaves a stub
+     * wherever a road is not a whole number of dashes long - a curve's diagonal chord is about seven-tenths of a
+     * straight one - which is the jagged look.  Here every road is one coach, its ends trimmed by half a gap, so the
+     * gaps fall exactly at the joins between squares, on a curve as on a straight, and no coach is ever cut short.  On
+     * a curve the coach is shorter, as its chord is.
+     *
+     * @param g the graphics, its colour and stroke set by the caller
+     * @param a one end of the road, a side's midpoint
+     * @param b the other end
+     * @param span the square's size
+     */
+    public static void paintCoach(java.awt.Graphics2D g, int[] a, int[] b, int span)
+    {
+        java.awt.geom.Line2D coach = coach(a, b, span);
+
+        if (coach != null) g.draw(coach);
+    }
+
+    /**
+     * The coach `paintCoach` draws, as a segment, or null where the road is too short to hold one.
+     *
+     * @param a one end of the road, a side's midpoint
+     * @param b the other end
+     * @param span the square's size
+     * @return the coach's centre line
+     */
+    private static java.awt.geom.Line2D coach(int[] a, int[] b, int span)
+    {
+        double dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+
+        if (len < 1) return null;
+
+        double ux = dx / len, uy = dy / len;
+
+        // Half a gap at each end, and the round cap's reach inside it, so the drawn coach stops half a gap short
+        float band = Math.max(3f, span / 7f);
+        double trim = COACH_GAP * span / 2.0 + band / 2.0;
+
+        if (len <= 2 * trim) return null;
+
+        return new java.awt.geom.Line2D.Double(a[0] + ux * trim, a[1] + uy * trim, b[0] - ux * trim, b[1] - uy * trim);
+    }
+
+    /** The gap between two coaches, as a share of a square. */
+    public static final double COACH_GAP = 0.16;
+
+    /**
+     * How a train's body is drawn along the track it lies on.
+     */
+    public enum TailStyle
+    {
+        /** A line edge to edge along each road, as since MT-309 and FR-106. */
+        LINE,
+
+        /** Whole coaches, one to a square, the gaps at the joins (T2) - see `paintCoach`. */
+        COACHES
+    }
+
+    /**
+     * The style trains are drawn in: the line (Adam, 2026-10-09, having seen both: "revert back to the original
+     * occupied line shape").  Coaches stay, for a preference to choose.
+     */
+    private static volatile TailStyle tailStyle = TailStyle.LINE;
+
+    /**
+     * The style trains are drawn in, asked in ONE place so a preference can choose it later (Adam, 2026-10-09: "make it
+     * so that we can easily add an option later to switch between T2 and the current look"): read the preference here,
+     * as `TrainControlUI.stationLabelsAreGrey` reads the caption colour, and every square follows on its next paint.
+     *
+     * @return how a train's body is drawn
+     */
+    public static TailStyle tailStyle()
+    {
+        return tailStyle;
+    }
+
+    /**
+     * Chooses how trains are drawn from now on - for that preference, and for a test.
+     *
+     * @param style the style, null for the default
+     */
+    public static void setTailStyle(TailStyle style)
+    {
+        tailStyle = style == null ? TailStyle.LINE : style;
+    }
+
+    /**
+     * The colour a train's body is drawn in.
+     */
+    public enum TailColour
+    {
+        /** The old orange at 55%, the track showing through (`DiagramColours.TRAIN_SEE_THROUGH`). */
+        SEE_THROUGH(org.traincontrol.automationui.DiagramColours.TRAIN_SEE_THROUGH),
+
+        /** A soft orange, solid (`DiagramColours.TRAIN`). */
+        SOFT(org.traincontrol.automationui.DiagramColours.TRAIN);
+
+        private final Color colour;
+
+        TailColour(Color colour)
+        {
+            this.colour = colour;
+        }
+
+        /**
+         * @return the colour itself
+         */
+        public Color colour()
+        {
+            return colour;
+        }
+    }
+
+    /**
+     * The colour trains are drawn in: see-through (Adam, 2026-10-09: "can we change to the see through tail line, and
+     * make it easy to switch to that one too?").
+     */
+    private static volatile TailColour tailColour = TailColour.SEE_THROUGH;
+
+    /**
+     * The colour trains are drawn in, asked in ONE place so a preference can choose it later, as `tailStyle` is.
+     *
+     * @return the colour a train's body is drawn in
+     */
+    public static TailColour tailColour()
+    {
+        return tailColour;
+    }
+
+    /**
+     * Chooses the colour trains are drawn in from now on - for that preference, and for a test.
+     *
+     * @param colour the colour, null for the default
+     */
+    public static void setTailColour(TailColour colour)
+    {
+        tailColour = colour == null ? TailColour.SEE_THROUGH : colour;
+    }
 
     /**
      * Draws what a standing train has done to this square: the grey it has blocked, the orange it is
@@ -1669,7 +1815,8 @@ public final class LayoutLabel extends JLabel
      * an answer the reduction already had, since each step of an edge records the route it runs
      * through - and one line is drawn along each of them.
      *
-     * Edge to edge in one stroke, along the rail rather than around it, which is the same shape and
+     * Edge to edge in one stroke - or as whole coaches, where a preference chooses them (`tailStyle`) - along the rail
+     * rather than around it, which is the same shape and
      * the same reasoning as the run line: "a curve here is not an arc and a switch's diverging leg is
      * not a right angle", see `TileAnnotation.paintTraces`.
      *
@@ -1709,7 +1856,13 @@ public final class LayoutLabel extends JLabel
         g.setStroke(new java.awt.BasicStroke(Math.max(3f, span / 7f),
             java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
-        g.setColor(TRAIN_MARK);
+        // WHICHEVER COLOUR THE DIAGRAM IS SET TO DRAW - see `tailColour`
+        g.setColor(tailColour().colour());
+
+        // ONE SHAPE FOR ALL OF THE SQUARE'S ROADS, drawn once.  A see-through colour drawn road by road lays itself twice
+        // where two roads meet - the middle of a crossing, the throat of a switch - and comes out darker there; the
+        // outline of one shape is filled once.
+        java.awt.geom.Path2D.Double body = new java.awt.geom.Path2D.Double();
 
         for (org.traincontrol.automationui.TilePorts.Route road : roads)
         {
@@ -1721,8 +1874,17 @@ public final class LayoutLabel extends JLabel
 
             if (a == null || b == null) continue;
 
-            g.drawLine(a[0], a[1], b[0], b[1]);
+            // A COACH (T2) or a line edge to edge, whichever the diagram is set to draw - see `tailStyle`
+            if (tailStyle() == TailStyle.COACHES)
+            {
+                java.awt.geom.Line2D coach = coach(a, b, span);
+
+                if (coach != null) body.append(coach, false);
+            }
+            else body.append(new java.awt.geom.Line2D.Double(a[0], a[1], b[0], b[1]), false);
         }
+
+        g.draw(body);
     }
 
     /**

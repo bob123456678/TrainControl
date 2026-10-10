@@ -6775,6 +6775,78 @@ public class AutonomySession
     }
 
     /**
+     * The trains this configuration pauses (FR-117; Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused
+     * status of locomotives, as designated on the autonomy locomotive controls tab"), by name and sorted.
+     *
+     * Kept with the configuration's settings, under the key the railway writes them under (`Layout.PAUSED_LOCOMOTIVES`),
+     * so the build carries them to the railway as it carries the rest, and the fold brings back a pause made there - the
+     * Auto tab's pause button, pressed while trains run, when the setup is not edited.
+     *
+     * @return the names; empty where no configuration is active or it pauses nobody
+     */
+    public java.util.Set<String> getPausedLocomotives()
+    {
+        java.util.Set<String> names = new java.util.TreeSet<>();
+
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        org.json.JSONObject globals = configuration == null ? null : configuration.optJSONObject("globals");
+
+        org.json.JSONArray list = globals == null ? null
+            : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        for (int i = 0; list != null && i < list.length(); i++)
+        {
+            Object name = list.opt(i);
+
+            if (name instanceof String && !((String) name).trim().isEmpty()) names.add((String) name);
+        }
+
+        return names;
+    }
+
+    /**
+     * Records a train paused, or set going, in the active configuration, and saves it (FR-117).  The list is written only
+     * while it names somebody, as the railway writes it, so a configuration that pauses nobody carries no key.
+     *
+     * @param name the train
+     * @param paused whether it is paused
+     * @return whether there was a configuration to write it to
+     * @throws IOException if the setup cannot be written
+     */
+    public boolean setLocomotivePaused(String name, boolean paused) throws IOException
+    {
+        if (name == null) return false;
+
+        java.util.Set<String> names = getPausedLocomotives();
+
+        if (paused) names.add(name);
+        else names.remove(name);
+
+        return setGlobal(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
+            names.isEmpty() ? null : new org.json.JSONArray(names));
+    }
+
+    /**
+     * Pauses a train or sets it going (FR-117): the train itself, which autonomy and Return Home read, and this
+     * configuration's record of it, saved - the two together, so a fold between them cannot take one for the other.
+     *
+     * @param train the train
+     * @param active whether autonomy may run it
+     * @throws IOException if the setup cannot be written
+     */
+    public void setActive(Locomotive train, boolean active) throws IOException
+    {
+        if (train == null) return;
+
+        train.setAutonomyPaused(!active);
+
+        setLocomotivePaused(train.getName(), !active);
+    }
+
+    /**
      * What the active configuration STORES for a global, or null (RC-A2).
      *
      * The counterpart setGlobal never had, and its absence is why a caller asked the wrong thing. The
@@ -10311,6 +10383,129 @@ public class AutonomySession
         deriveStationIndex();
 
         return assigned;
+    }
+
+    /**
+     * Every home a train can be put on: the square, and the locomotive it is home to (FR-115).
+     *
+     * A home the operator GAVE - the setup's `home` on a square - and not wherever a train last stood, which the
+     * running layout also calls a home until the next build.  On a page autonomy runs, as placements are
+     * (`placedLocomotives`).  What Place All at Their Homes is counted and offered by, and what it walks, so the two
+     * cannot answer differently.
+     *
+     * @return the homes, square to locomotive, in no particular order
+     */
+    public Map<TileKey, String> homesToPlace()
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+
+        for (TileKey tile : tilesWithAHome())
+        {
+            if (store.getExcludedPages().contains(tile.getPage())) continue;
+
+            Object home = getPointProperty(tile, "home");
+
+            if (home == null || home.toString().trim().isEmpty()) continue;
+
+            out.put(tile, home.toString());
+        }
+
+        return out;
+    }
+
+    /**
+     * Puts every locomotive with a home on it, facing the way it was homed, and takes every other locomotive off its
+     * station - in the SETUP only, nothing sent to the railway (FR-115; Adam, 2026-10-09: "Place all at their homes.
+     * Teleports locomotives to their home stations, facing the correct way, and clears all other locomotives from other
+     * stations (without actually moving anything)").
+     *
+     * **The facing** is the home's own where it was homed with one (`homeFacing`); where it was not, the one the caller
+     * gives - the running layout's home copy, which the build chose for it - or none, on a square with one way to face.
+     *
+     * **No arrival side and no road.**  A train put down with no road it came by has no tail behind it (TDU2-A1), and an
+     * unknown arrival is the safe answer: nothing is held behind the train.
+     *
+     * **Each train's settings travel with it** - speed, arrival functions and the rest live on the placement, and the
+     * build resets whatever a placement leaves out - so a homed train standing elsewhere brings its own to its home.
+     *
+     * **Every train the railway or the setup has standing is named in the answer**, homed or not, because the rebuild
+     * that follows (`TrainControlUI.rebuildRunningLayoutFromSetup`) puts back every train it is not told about where the
+     * railway had it - which would undo this for any train it missed.
+     *
+     * Re-derives once, as the other bulk doors do.  Homes and placements on pages left out of autonomy are left alone,
+     * as Clear All Locomotives leaves them.
+     *
+     * @param fallbackFacings for a home recorded without a facing, the way its locomotive should face there; may be empty
+     * @return every locomotive this put on a home or took off a station
+     */
+    public java.util.Set<String> placeEveryTrainAtHome(Map<TileKey, Side> fallbackFacings)
+    {
+        Map<TileKey, String> homes = homesToPlace();
+
+        java.util.Set<String> touched = new LinkedHashSet<>();
+
+        for (String standing : trainsWhereTheyStand().values())
+        {
+            if (standing != null) touched.add(standing);
+        }
+
+        // OFF EVERY STATION, each train's settings kept to carry to its home
+        Map<String, org.json.JSONObject> settings = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            Object loc = getPointProperty(placed.getKey(), "loc");
+
+            if (loc instanceof org.json.JSONObject && placed.getValue() != null)
+            {
+                settings.putIfAbsent(placed.getValue(), new org.json.JSONObject(loc.toString()));
+            }
+
+            writePointProperty(placed.getKey(), "loc", null);
+            writePointProperty(placed.getKey(), AutonomyBuilder.FACING, null);
+            writePointProperty(placed.getKey(), "arrivedFrom", null);
+            writePointProperty(placed.getKey(), "arrivedAlong", null);
+
+            if (placed.getValue() != null) touched.add(placed.getValue());
+        }
+
+        // AND ONTO ITS HOME, facing the way it was homed
+        for (Map.Entry<TileKey, String> home : homes.entrySet())
+        {
+            org.json.JSONObject loc = settings.containsKey(home.getValue())
+                ? settings.get(home.getValue()) : new org.json.JSONObject();
+
+            loc.put("name", home.getValue());
+
+            writePointProperty(home.getKey(), "loc", loc);
+
+            Side facing = sideNamed(getPointProperty(home.getKey(), AutonomyBuilder.HOME_FACING));
+
+            if (facing == null && fallbackFacings != null) facing = fallbackFacings.get(home.getKey());
+
+            writePointProperty(home.getKey(), AutonomyBuilder.FACING, facing == null ? null : facing.name());
+
+            touched.add(home.getValue());
+        }
+
+        deriveStationIndex();
+
+        return touched;
+    }
+
+    /** A side from its stored name, or null for none or a name that is not a side. */
+    private static Side sideNamed(Object name)
+    {
+        if (name == null) return null;
+
+        try
+        {
+            return Side.valueOf(name.toString().trim());
+        }
+        catch (IllegalArgumentException notASide)
+        {
+            return null;
+        }
     }
 
     /**

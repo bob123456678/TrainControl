@@ -1446,6 +1446,17 @@ public class AutonomyEditorPanel extends JPanel
                     }));
             }
 
+            // WHETHER IT RUNS (FR-117; Adam, 2026-10-09: "add an 'active' checkbox to the right click autonomy menu (also
+            // accessible via track diagram).  Show it if there is a locomotive at that station").  Read off the setup,
+            // which is what this menu is about, and written to the train and the setup together.  Not in the deep menu,
+            // whose train items are on the track diagram's own menu one level up; and only at rest, as he answered.
+            if (standing != null && !menuOnly && (parentWindow() == null || !parentWindow().isAutonomyBusy()))
+            {
+                menu.add(toggle(I18n.f("autolayout.ui.menuLocomotiveActive", standing),
+                    "autolayout.ui.hintLocomotiveActive", !session.getPausedLocomotives().contains(standing),
+                    on -> setActive(standing, on)));
+            }
+
             if (isStation)
             {
                 // "Move a Locomotive to This Station..." used to sit here (OB-009).
@@ -2532,6 +2543,23 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.add(homeHere);
 
+        // PLACE ALL AT THEIR HOMES (FR-115; Adam, 2026-10-09: "Place all at their homes.  Teleports locomotives to their
+        // home stations, facing the correct way, and clears all other locomotives from other stations (without actually
+        // moving anything)").  Beside Home All Trains Where They Stand, its opposite: that one moves the homes to the
+        // trains, this one the trains to their homes.  Counted off the set the door walks (`homesToPlace`), so the
+        // affordance and the guard ask one question.
+        int homes = session == null ? 0 : session.homesToPlace().size();
+
+        javax.swing.JMenuItem placeHome = item(
+            I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes), () -> placeEveryTrainAtHome());
+
+        placeHome.setEnabled(homes > 0);
+        placeHome.setToolTipText(wrapped(homes > 0
+            ? I18n.f("autosetup.ui.tipPlaceEveryTrainAtHome", homes)
+            : I18n.t("autosetup.ui.infoNoHomesToPlace")));
+
+        bulk.add(placeHome);
+
         return bulk;
     }
 
@@ -2586,6 +2614,83 @@ public class AutonomyEditorPanel extends JPanel
         // is saved and the running layout keeps the old homes, so Return Home goes on offering the
         // arrangement the operator has just replaced.
         setupChanged();
+    }
+
+    /**
+     * Puts every train that has a home on it, facing the way it was homed, and takes every other train off the layout,
+     * after confirming - the setup only, nothing sent to the railway (FR-115).
+     *
+     * Built like `homeEveryPlacedTrain` beside it: the emptiness check is kept though the item greys itself on the same
+     * question, because the greying is the affordance and this is the guard.  The rebuild that follows is told every
+     * train the session touched, or it would put the ones it missed back where the railway had them.
+     */
+    private void placeEveryTrainAtHome()
+    {
+        java.util.Map<TileKey, String> homes = session.homesToPlace();
+
+        if (homes.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoHomesToPlace"));
+            return;
+        }
+
+        // the trains standing that have no home, which this takes off
+        java.util.Set<String> homed = new java.util.HashSet<>(homes.values());
+
+        int homeless = 0;
+
+        for (String standing : new java.util.LinkedHashSet<>(session.trainsWhereTheyStand().values()))
+        {
+            if (standing != null && !homed.contains(standing)) homeless++;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            I18n.f("autolayout.ui.confirmPlaceEveryTrainAtHome", homes.size(), homeless),
+            I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes.size()),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        java.util.Set<String> touched = session.placeEveryTrainAtHome(homeCopyFacings());
+
+        say(hint, I18n.f("autosetup.ui.infoTrainsPlacedAtHome", homes.size(), homeless));
+
+        placementChanged(touched);
+    }
+
+    /**
+     * For each home square, the way its locomotive faces on the copy the running layout made its home - what
+     * `placeEveryTrainAtHome` uses for a home recorded without a facing (FR-115).  Read off `getPoints` and the Points
+     * themselves, which take none of the railway's monitor; empty where there is no running layout yet.
+     *
+     * @return home square to facing
+     */
+    private java.util.Map<TileKey, org.traincontrol.automationui.TilePorts.Side> homeCopyFacings()
+    {
+        java.util.Map<TileKey, org.traincontrol.automationui.TilePorts.Side> out = new java.util.HashMap<>();
+
+        org.traincontrol.automation.Layout layout = layoutSource == null ? null : layoutSource.get();
+
+        if (layout == null) return out;
+
+        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
+
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.getHomeLoc() == null) continue;
+
+            TileKey square = index.squareOf(point);
+
+            if (square == null) continue;
+
+            org.traincontrol.automationui.TilePorts.Side facing = index.facingsAt(square).get(point.getName());
+
+            if (facing != null) out.put(square, facing);
+        }
+
+        return out;
     }
 
     /**
@@ -5601,6 +5706,40 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     private TrainControlUI mainWindow;
+
+    /**
+     * The Is Active tick (FR-117): the train and the setup together, through the window's door where there is a window
+     * and a train of that name, and the setup alone where there is not - then the railway is told, as every setup door
+     * tells it.
+     *
+     * @param name the train standing on the square
+     * @param active whether autonomy may run it
+     */
+    private void setActive(String name, boolean active)
+    {
+        TrainControlUI window = parentWindow();
+
+        org.traincontrol.base.Locomotive train = window == null || window.getModel() == null ? null
+            : window.getModel().getLocByName(name);
+
+        if (window != null && train != null)
+        {
+            window.setLocomotiveActive(session, train, active);
+        }
+        else
+        {
+            try
+            {
+                session.setLocomotivePaused(name, !active);
+            }
+            catch (java.io.IOException cannotSave)
+            {
+                throw new IllegalStateException(cannotSave.getMessage(), cannotSave);
+            }
+        }
+
+        setupChanged();
+    }
 
     private String locomotiveAt(TileKey tile)
     {

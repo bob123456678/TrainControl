@@ -5228,6 +5228,23 @@ public class Layout
         // reaching a point by several different routes in order to find one that is not excluded.
         // Marking on enqueue would explore only the first route to each point and could then fail to
         // return an allowed alternative that exists.
+        // THE SQUARE AND THE SWITCHES SET ON THE WAY THERE, not the square alone (RSA59-B1; Adam, 2026-10-09: "Fix B1").
+        //
+        // This marked a square visited the first time any route reached it, so a shorter route that set a switch one way
+        // and then the other - refused later for its conflicting commands - hid a clear route reaching the same square
+        // with the switch untouched.  Callers ask again with the routes found excluded, and which routes they ever got
+        // depended on the order `getNeighbors` shuffles into: on Adam's railway the right-click menu offered the lower
+        // level's eleven stations on some openings and not others (Switches 51 and 99), and Why Not Moving? blamed the
+        // conflict.  So a square is passed over only when it has been reached already under switch settings that leave
+        // at least as much freedom - Return Home's planner's own rule (`HomeStaging.alreadyReached`), shared rather
+        // than copied.  A route already in conflict is still followed, and still returned when it reaches the end - Why
+        // Not Moving? says so where it is all there is - but under the square-alone rule, into no square any route has
+        // left, so it can neither hide a clear route nor go round a loop.
+        //
+        // NOT FOR THE TRACK-ONLY QUESTION (`throughTermini`): whether any track connects two points does not depend on
+        // the switches, and the square alone answers it completely.
+        if (!throughTermini) return bfsBySettings(start, end, excludePaths);
+
         Set<Point> visited = new HashSet<>();
         Queue<PointPath> queue = new LinkedList<>();
         
@@ -5295,6 +5312,94 @@ public class Layout
         return null;   
     }
     
+    /**
+     * One step of `bfsBySettings`: where it has got to, the route there, and the switch commands that route sets - null
+     * once two of them have disagreed.
+     */
+    private static final class SettingsStep
+    {
+        final Point at;
+        final List<Edge> path;
+        final Map<String, Accessory.accessorySetting> commands;
+
+        SettingsStep(Point at, List<Edge> path, Map<String, Accessory.accessorySetting> commands)
+        {
+            this.at = at;
+            this.path = path;
+            this.commands = commands;
+        }
+    }
+
+    /**
+     * The shortest route from start to end that is not among those excluded, never through a terminus or another copy
+     * of either end, searched by square AND the switch settings on the way (RSA59-B1) - see the note in `bfs`.
+     *
+     * @param start where from
+     * @param end where to, a destination
+     * @param excludePaths routes already found, to be passed over
+     * @return the route, or null
+     */
+    private List<Edge> bfsBySettings(Point start, Point end, List<List<Edge>> excludePaths)
+    {
+        // MARKED WHEN TAKEN OFF THE QUEUE, as `bfs` marks a square, and for its reason: routes of the same length to
+        // a square are all followed on from it, so a caller that has excluded one of them still finds the next
+        Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
+        Set<Point> left = new HashSet<>();
+        Queue<SettingsStep> queue = new LinkedList<>();
+
+        queue.add(new SettingsStep(start, new LinkedList<>(), new HashMap<>()));
+
+        while (!queue.isEmpty())
+        {
+            SettingsStep current = queue.remove();
+
+            left.add(current.at);
+
+            if (current.commands != null && !HomeStaging.alreadyReached(seen, current.at.getUniqueId(), current.commands))
+            {
+                seen.computeIfAbsent(current.at.getUniqueId(), k -> new ArrayList<>()).add(current.commands);
+            }
+
+            for (Edge next : this.getNeighbors(current.at))
+            {
+                Map<String, Accessory.accessorySetting> commands = current.commands == null ? null
+                    : HomeStaging.withCommandsOf(next, current.commands);
+
+                if (next.getEnd().equals(end))
+                {
+                    List<Edge> path = new LinkedList<>(current.path);
+                    path.add(next);
+
+                    if (excludePaths == null || !excludePaths.contains(path)) return path;
+
+                    continue;
+                }
+
+                // Never through a terminus that is not the end (OB-229), nor round onto another copy of either end (AMR-B1)
+                if (next.getEnd().isTerminus() || next.getEnd().isSamePlaceAs(start)
+                    || next.getEnd().isSamePlaceAs(end)) continue;
+
+                // Passed over when this square has been left already under settings that leave as much freedom.
+                //
+                // A ROUTE ALREADY IN CONFLICT KEEPS THE SQUARE-ALONE RULE `bfs` HAS ALWAYS HAD: a square any route has
+                // left is closed to it.  It is followed only so that Why Not Moving? can name the conflict where that is
+                // all there is, so it must find nothing the old search could not.  Given a square set of its own it
+                // went round loops the clear routes were kept out of - on Adam's railway a 17-edge route from
+                // BottomSecondary back through Tunnel twice, whose refusal ("does not fit at RampDown") then stood in
+                // for OB-294's own-tail sentence for LowerFront.
+                if (commands == null ? left.contains(next.getEnd())
+                    : HomeStaging.alreadyReached(seen, next.getEnd().getUniqueId(), commands)) continue;
+
+                List<Edge> path = new LinkedList<>(current.path);
+                path.add(next);
+
+                queue.add(new SettingsStep(next.getEnd(), path, commands));
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Whether a path would turn the train round on its way somewhere else.
      *
@@ -13151,6 +13256,12 @@ public class Layout
             }
         }
 
+        // AND EACH PAUSED TRAIN IT LEAVES AWAY FROM ITS HOME (FR-117), which is not a reason the plan failed
+        for (Locomotive paused : staging.getPausedAwayFromHome())
+        {
+            this.control.logf("autolayout.infoReturnToHomePaused", paused.getName());
+        }
+
         return plan;
     }
 
@@ -13552,6 +13663,24 @@ public class Layout
         jsonObj.put("activateRoutes", this.isActivateRoutes());
         jsonObj.put("activateRouteIDs", new JSONArray(this.activateRouteIDs));
 
+        // THE TRAINS PAUSED (FR-117; Adam, 2026-10-09: "in autonomy configs, track the paused/unpaused status of
+        // locomotives, as designated on the autonomy locomotive controls tab"): every train the database has paused, by
+        // name and sorted, so the file is the same file when nothing has changed.  Written only while it names somebody,
+        // as `simulate` is, so an ordinary layout's file does not grow a key that means nothing to it.
+        List<String> paused = new ArrayList<>();
+
+        for (Locomotive l : this.control == null ? Collections.<Locomotive>emptyList() : this.control.getLocomotives())
+        {
+            if (l != null && l.getName() != null && l.isAutonomyPaused()) paused.add(l.getName());
+        }
+
+        if (!paused.isEmpty())
+        {
+            Collections.sort(paused);
+
+            jsonObj.put(PAUSED_LOCOMOTIVES, new JSONArray(paused));
+        }
+
         if (this.simulate)
         {
             jsonObj.put("simulate", true);
@@ -13560,6 +13689,12 @@ public class Layout
         return jsonObj.toString(4);
     }
     
+    /**
+     * The key a configuration lists its paused trains under (FR-117), by name: written by `toJSON`, read by `fromJSON`,
+     * and kept by the setup with the rest of a configuration's settings.
+     */
+    public static final String PAUSED_LOCOMOTIVES = "pausedLocomotives";
+
     /**
      * Parses TrainControl's autonomous operation configuration file
      * @param config 
@@ -13772,6 +13907,42 @@ public class Layout
                 "autolayout.warnSimulation",
                 e.getMessage()
             );
+        }
+
+        // WHICH TRAINS ARE PAUSED (FR-117), and every train the database has is told yes or no: the pause lives on the
+        // locomotive, which outlives this railway, so a train paused under the last configuration and not under this one
+        // runs again.  A list that will not read pauses nobody - not worth refusing the setup over.  And NAMED IN THE LOG
+        // (Adam, 2026-10-09: "Make sure the log shows what locomotive are paused when the autonomy import happens"): an
+        // import, a start-up and a rebuild all load through here.  The trains the database has, as the file is written.
+        java.util.Set<String> pausedNames = new java.util.HashSet<>();
+
+        JSONArray pausedList = o.optJSONArray(PAUSED_LOCOMOTIVES);
+
+        for (int i = 0; pausedList != null && i < pausedList.length(); i++)
+        {
+            Object name = pausedList.opt(i);
+
+            if (name instanceof String) pausedNames.add((String) name);
+        }
+
+        List<String> nowPaused = new ArrayList<>();
+
+        for (Locomotive l : control.getLocomotives())
+        {
+            if (l == null || l.getName() == null) continue;
+
+            boolean paused = pausedNames.contains(l.getName());
+
+            l.setAutonomyPaused(paused);
+
+            if (paused) nowPaused.add(l.getName());
+        }
+
+        if (!nowPaused.isEmpty())
+        {
+            Collections.sort(nowPaused);
+
+            control.logf("autolayout.infoPausedLocomotives", String.join(", ", nowPaused));
         }
         
         if (o.has("atomicRoutes"))

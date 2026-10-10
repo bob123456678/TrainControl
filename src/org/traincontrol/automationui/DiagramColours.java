@@ -64,10 +64,19 @@ public final class DiagramColours
     public static final Color DESTINATION = new Color(255, 214, 64);
 
     /**
-     * A train: its line along the track it lies on, the whole length of its tail, standing or running (MT-309, FR-106),
-     * and the cross of a square nothing can pass: an orange, rgb(255,102,0).
+     * A train: its line along the track it lies on, the whole length of its tail, standing or running (MT-309, FR-106):
+     * a soft orange, rgb(245,140,60) (Adam, 2026-10-09, choosing among the tail colour options: "let's go with the soft
+     * orange").  It was rgb(255,102,0), the loudest thing on a running diagram; the X of a square nothing can pass keeps
+     * that orange (`TileAnnotation.POINT_IMPASSABLE`).
      */
-    public static final Color TRAIN = new Color(255, 102, 0);
+    public static final Color TRAIN = new Color(245, 140, 60);
+
+    /**
+     * A train's line, see-through: the orange it had before 2026-10-09, rgb(255,102,0), at 55%, so the track it lies on
+     * shows through (Adam, 2026-10-09, from the tail colour options: "can we change to the see through tail line").
+     * What the line is drawn in unless `LayoutLabel.tailColour` is set to the soft orange.
+     */
+    public static final Color TRAIN_SEE_THROUGH = new Color(255, 102, 0, 140);
 
     /**
      * A running train whose icon cannot be read is drawn as a dot (RSA26-C2): this fill, ringed in `TRAIN_DOT_RING`.

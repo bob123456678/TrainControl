@@ -965,6 +965,8 @@ public class testSwitchingToACentralStationLayout
         // Still 64 on 2026-09-29: regression.testNoSetupEditDuringARun, which took RLV12's window claims out of the import
         // door's class when that ran out of memory with them, builds its windows through that class's openTheWindow - seen
         // here once, in that class - and each of its claims opens a sandbox first.
+        // Still 64 on 2026-10-09: ui.testTheActiveTickPausesATrain (FR-117) takes the window `init` builds, which this
+        // count does not read as building one; it opens a sandbox first.
         assertEquals(checked, 64,
             checked + " test classes were found to build a window, not the 64 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "

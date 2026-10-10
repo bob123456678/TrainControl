@@ -77,6 +77,12 @@ public class testTheTrainIsShownAsALine
     private static BufferedImage withTheTrain;
     private static BufferedImage without;
 
+    /** The tile with the train standing there, drawn in the other style a preference may choose: coaches. */
+    private static BufferedImage asCoaches;
+
+    /** And in the other colour a preference may choose: the soft orange, solid. */
+    private static BufferedImage asSoftOrange;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -131,6 +137,29 @@ public class testTheTrainIsShownAsALine
         tile = drawnTileFor(covered);
 
         withTheTrain = paint(tile);
+
+        // And in the style a preference may choose instead of the line: whole coaches (T2)
+        LayoutLabel.setTailStyle(LayoutLabel.TailStyle.COACHES);
+
+        try
+        {
+            asCoaches = paint(tile);
+        }
+        finally
+        {
+            LayoutLabel.setTailStyle(null);
+        }
+
+        LayoutLabel.setTailColour(LayoutLabel.TailColour.SOFT);
+
+        try
+        {
+            asSoftOrange = paint(tile);
+        }
+        finally
+        {
+            LayoutLabel.setTailColour(null);
+        }
 
         // AND THE SAME SQUARE WITH NOTHING STANDING ANYWHERE.  A length of zero is how this railway
         // says "not set", and an unmeasured train covers nothing - so the square goes back to being
@@ -262,11 +291,7 @@ public class testTheTrainIsShownAsALine
      */
     private static boolean isOrange(int rgb)
     {
-        int r = (rgb >> 16) & 0xFF;
-        int g = (rgb >> 8) & 0xFF;
-        int b = rgb & 0xFF;
-
-        return r > 190 && g > 70 && g < 190 && b < 90 && r - g > 60;
+        return support.Rendered.isTrainOrange(rgb);
     }
 
     private static int orangePixels(BufferedImage image)
@@ -581,5 +606,127 @@ public class testTheTrainIsShownAsALine
 
             pump();
         }
+    }
+
+    /**
+     * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
+     * edge, so the gaps fall at
+     * the joins on a curve as on a straight and no coach is ever cut short (T2 of the look's train tails; Adam,
+     * 2026-10-09: "Do T2 only if you can maintain shape continuity across curves rather than a jagged look when it
+     * straightens out").
+     *
+     * A dash pattern laid along the line would restart at every square and leave a stub wherever a square's road is not a
+     * whole number of dashes long - the diagonal chord of a curve, about seven-tenths of a straight one.  One coach to a
+     * square, its ends trimmed by half a gap, has no stub to leave.  So nothing orange reaches the edge of the square.
+     *
+     * MUTATION: draw the line edge to edge again and this fails.
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheTrainIsDrawnAsWholeCoaches()
+    {
+        int atTheEdge = orangeAtTheEdge(asCoaches);
+
+        assertEquals(atTheEdge, 0, atTheEdge + " orange pixels lie on the edge of " + covered + " - the train is drawn"
+            + " edge to edge, not as a coach that stops short of the square, so the next square's coach meets it with no"
+            + " gap");
+    }
+
+    /**
+     * The train is drawn as the line, edge to edge along its road, unless a preference chooses coaches (Adam,
+     * 2026-10-09, having seen both: "revert back to the original occupied line shape").
+     *
+     * MUTATION: make coaches the default again, or draw coaches whatever the style, and this fails.
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheTrainIsDrawnAsALineByDefault()
+    {
+        assertTrue(orangeAtTheEdge(withTheTrain) > 0, "the train on " + covered + " stops short of the square's edge -"
+            + " it is drawn as coaches, where Adam chose the line: \"revert back to the original occupied line shape\"");
+    }
+
+    /**
+     * The train's line is see-through: the track it lies on shows through it (Adam, 2026-10-09, from the tail colour
+     * options: "can we change to the see through tail line").
+     *
+     * Read off the picture, as the commonest orange pixel - the line's own colour where it crosses what is under it,
+     * its anti-aliased edges being the minority - rather than off the constant.  A solid line's commonest pixel is the
+     * solid colour, as bright as 245 or 255; a see-through one is darkened by the black and grey track under it.
+     *
+     * MUTATION: draw it solid, or make the soft orange the default, and this fails.
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheTrainIsSeeThrough()
+    {
+        int commonest = commonestOrange(withTheTrain);
+
+        int brightest = Math.max((commonest >> 16) & 0xFF, Math.max((commonest >> 8) & 0xFF, commonest & 0xFF));
+
+        assertTrue(brightest <= 220, "the train's line on " + covered + " is a solid " + rgbOf(commonest) + " - the"
+            + " track does not show through it, where Adam chose the see-through line");
+    }
+
+    /**
+     * The soft orange, rgb(245,140,60), solid, is still the other colour a preference may choose (Adam, 2026-10-09:
+     * "make it easy to switch to that one too").
+     *
+     * MUTATION: let the switch choose nothing, or the soft orange be another colour, and this fails.
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheSoftOrangeIsStillAChoice()
+    {
+        int commonest = commonestOrange(asSoftOrange);
+
+        int r = (commonest >> 16) & 0xFF, g = (commonest >> 8) & 0xFF, b = commonest & 0xFF;
+
+        assertTrue(Math.abs(r - 245) <= 4 && Math.abs(g - 140) <= 4 && Math.abs(b - 60) <= 4, "set to the soft orange,"
+            + " the train's line on " + covered + " is " + rgbOf(commonest) + ", not rgb(245,140,60)");
+    }
+
+    /** The commonest orange pixel in a picture of the square. */
+    private static int commonestOrange(BufferedImage shot)
+    {
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                int rgb = shot.getRGB(x, y) & 0xFFFFFF;
+
+                if (isOrange(rgb)) counts.merge(rgb, 1, Integer::sum);
+            }
+        }
+
+        assertFalse(counts.isEmpty(), "nothing orange on " + covered + " to read the colour off");
+
+        return java.util.Collections.max(counts.entrySet(), java.util.Map.Entry.comparingByValue()).getKey();
+    }
+
+    private static String rgbOf(int rgb)
+    {
+        return "rgb(" + ((rgb >> 16) & 0xFF) + "," + ((rgb >> 8) & 0xFF) + "," + (rgb & 0xFF) + ")";
+    }
+
+    /**
+     * The orange pixels on a picture's outermost ring.
+     *
+     * @param shot the tile, painted
+     * @return how many there are
+     */
+    private static int orangeAtTheEdge(BufferedImage shot)
+    {
+        int atTheEdge = 0;
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                boolean edge = x <= 0 || y <= 0 || x >= shot.getWidth() - 1 || y >= shot.getHeight() - 1;
+
+                if (edge && isOrange(shot.getRGB(x, y))) atTheEdge++;
+            }
+        }
+
+        return atTheEdge;
     }
 }

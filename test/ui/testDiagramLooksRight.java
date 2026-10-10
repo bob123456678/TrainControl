@@ -2782,4 +2782,724 @@ public class testDiagramLooksRight
         assertTrue(blue > 60, "a destination caption has " + blue + " pixels of the route's blue round it - it is not"
             + " ringed, so nothing ties it to the route that leads there");
     }
+
+    /**
+     * A pill's text sits in the middle of it, as much room at the right end as at the left (Adam, 2026-10-09: "In the
+     * station label pills, there has always been a padding issue on the right ... Fix it").
+     *
+     * The pill was sized from the text's width as measured for layout, and the text drawn by the label's own painter,
+     * centred by that same measurement; painted at a larger scale - a display scaled to 125 or 150 per cent, or the 2x
+     * the guide's pictures are made at - the glyphs come out wider than measured, and all of the difference lands at the
+     * right end.  Painted here at 2x, the room either side of the ink is measured: with the arrow on the left, on the
+     * right, and none.
+     *
+     * MUTATION: draw the text where the label's layout put it again, and this fails.
+     */
+    @Test
+    public void testAPillsTextSitsInTheMiddleOfIt()
+    {
+        String[] texts = {
+            org.traincontrol.gui.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.StationCaption.ARROW_W),
+            org.traincontrol.gui.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.StationCaption.ARROW_E),
+            "Carlton", "75 407 DB" };
+
+        for (double scale : new double[] {1.25, 1.5, 2.0})
+        for (int points : new int[] {12, 15})
+        {
+            for (String text : texts)
+            {
+                org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+                pill.setPill(true);
+                pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, points));
+                pill.setBackground(org.traincontrol.gui.StationCaption.PILL_GREY);
+                pill.setForeground(java.awt.Color.BLACK);
+                pill.setText(text);
+                pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(30, pill.lineHeight()));
+
+                java.awt.Dimension size = pill.getPreferredSize();
+
+                pill.setBounds(0, 0, size.width, size.height);
+
+                java.awt.Rectangle drawn = pill.drawnBounds();
+
+                java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
+                    (int) Math.ceil(size.width * scale) + 2, (int) Math.ceil(size.height * scale) + 2,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                java.awt.Graphics2D g = shot.createGraphics();
+
+                g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+                    java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g.scale(scale, scale);
+                g.setClip(0, 0, size.width, size.height);
+
+                pill.paint(g);
+
+                g.dispose();
+
+                // The pill's ends, along its middle row
+                int mid = (int) ((drawn.y + drawn.height / 2.0) * scale), left = -1, right = -1;
+
+                for (int x = 0; x < shot.getWidth(); x++)
+                {
+                    if (((shot.getRGB(x, mid) >>> 24) & 0xFF) > 100)
+                    {
+                        if (left < 0) left = x;
+                        right = x;
+                    }
+                }
+
+                // The ink, anywhere across the pill's height
+                int inkLeft = Integer.MAX_VALUE, inkRight = -1, inkTop = Integer.MAX_VALUE, inkBottom = -1;
+                int pillTop = Integer.MAX_VALUE, pillBottom = -1;
+
+                for (int y = 0; y < shot.getHeight(); y++)
+                {
+                    for (int x = 0; x < shot.getWidth(); x++)
+                    {
+                        java.awt.Color c = new java.awt.Color(shot.getRGB(x, y), true);
+
+                        if (c.getAlpha() > 100)
+                        {
+                            pillTop = Math.min(pillTop, y);
+                            pillBottom = Math.max(pillBottom, y);
+                        }
+
+                        if (c.getAlpha() > 100 && c.getRed() < 90 && c.getGreen() < 90 && c.getBlue() < 90)
+                        {
+                            inkLeft = Math.min(inkLeft, x);
+                            inkRight = Math.max(inkRight, x);
+                            inkTop = Math.min(inkTop, y);
+                            inkBottom = Math.max(inkBottom, y);
+                        }
+                    }
+                }
+
+                assertTrue(left >= 0 && inkRight >= 0, "precondition: nothing was drawn for \"" + text + "\"");
+
+                int before = inkLeft - left, after = right - inkRight;
+
+                assertTrue(Math.abs(before - after) <= 3, "\"" + text + "\" at " + points + " points, painted at " + scale
+                    + "x, has " + before + " pixels of pill before its text and " + after + " after it - the text is not in"
+                    + " the middle");
+
+                // AND UP AND DOWN (Adam, 2026-10-09: "make sure the pill label padding issue on the right/lower-right is
+                // addressed").  Asked of the two names without an arrow: neither has a letter that hangs below the
+                // line, so their ink is the capitals' height and should sit in the middle of the pill.  An arrow is a
+                // symbol from another font and sits where that font puts it.
+                int above = inkTop - pillTop, below = pillBottom - inkBottom;
+
+                if (text.equals("Carlton") || text.equals("75 407 DB"))
+                {
+                    assertTrue(Math.abs(above - below) <= 2, "\"" + text + "\" at " + points + " points, painted at "
+                        + scale + "x, has " + above + " pixels of pill above its text and " + below + " below it - the text"
+                        + " sits" + (above > below ? " low" : " high") + " in the pill");
+                }
+
+                assertTrue(after >= 2 * scale, "\"" + text + "\" at " + points + " points runs to within " + after
+                    + " pixels of the pill's right end");
+            }
+        }
+    }
+
+    /**
+     * A caption that names a train has a faint edge, so it parts from a signal or a switch drawn under it; a placeholder
+     * dash has none, so an empty station gets no louder (D2 of the look's design pass; Adam, 2026-10-09: "Do D1 and D2").
+     *
+     * MUTATION: drop the edge, or draw it on the dash too, and this fails.
+     */
+    @Test
+    public void testANamedCaptionHasAnEdgeAndADashHasNone()
+    {
+        java.awt.Color fill = org.traincontrol.gui.StationCaption.PILL_GREY;
+
+        int[] edge = new int[2];
+
+        String[] texts = {"Carlton", org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY};
+
+        for (int i = 0; i < texts.length; i++)
+        {
+            org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+            pill.setPill(true);
+            pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
+            pill.setBackground(fill);
+            pill.setForeground(java.awt.Color.BLACK);
+            pill.setText(texts[i]);
+            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(30, pill.lineHeight()));
+
+            java.awt.Dimension size = pill.getPreferredSize();
+
+            pill.setBounds(0, 0, size.width, size.height);
+
+            java.awt.Rectangle drawn = pill.drawnBounds();
+
+            java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
+                size.width, size.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            pill.paint(g);
+
+            g.dispose();
+
+            // The top edge, a quarter of the way along: darker than the fill by how much?
+            java.awt.Color top = new java.awt.Color(shot.getRGB(drawn.x + drawn.width / 2, drawn.y), true);
+
+            edge[i] = (fill.getRed() + fill.getGreen() + fill.getBlue()) / 3 - (top.getRed() + top.getGreen() + top.getBlue()) / 3;
+        }
+
+        assertTrue(edge[0] > 30, "a caption naming a train has no edge: its top is only " + edge[0] + " darker than its fill");
+
+        assertTrue(edge[1] < 15, "an empty station's dash pill has an edge " + edge[1] + " darker than its fill - it is"
+            + " louder, where D1 made it quieter");
+    }
+
+    /**
+     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes (Adam, 2026-10-09:
+     * "make a pass on the curve and switch tile to make sure they are symmetrical.  It looks like there are some pixel
+     * artifacts, as they were made in raster programs"; "extend it to the others too, like the 4-way").
+     *
+     * A curve between the south and east sides is its own mirror image across the diagonal; a left switch is a right
+     * switch turned over; a crossing is the same turned a quarter.  Drawn by hand, they were not: a set sensor on a curve
+     * differed from its own mirror image in 78 pixels at 30 and 230 at 60, the crossing switch from itself turned half
+     * round in 164 and 256.  They are drawn from their geometry now (`docs/tools/tile-icons.py`), and a pixel more than
+     * a shade out (12 of 255) on either side of a mirror is a pixel this counts.
+     *
+     * MUTATION: put any one of the old icons back and this fails.
+     *
+     * @throws Exception reading the icons
+     */
+    @Test
+    public void testTheCurveAndSwitchTilesAreMirrorImages() throws Exception
+    {
+        // tile, what it is the mirror image of: "T" across its diagonal, "H" turned half round, "LR" left to right,
+        // "TB" top to bottom, or another tile's name to be that tile turned over left to right
+        String[][] checks = {
+            {"curve", "T"}, {"curve_parallel", "H"}, {"curve_parallel", "T"}, {"s88_curve", "T"}, {"s88_curve_active", "T"},
+            {"s88_double_curve", "T"}, {"s88_double_curve_active", "T"},
+            {"switch_left", "switch_right"}, {"switch_left_active", "switch_right_active"}, {"switch_y", "switch_y_active"},
+            {"threeway", "LR"}, {"threeway_active", "threeway_active2"},
+            {"cross", "LR"}, {"cross", "TB"}, {"cross", "T"}, {"crossswitch", "H"}, {"crossswitch", "T"},
+            {"crossswitch_active", "H"}, {"crossswitch_active", "T"},
+            {"custom_scissors", "TB"}, {"custom_scissors_active", "TB"}, {"custom_perm_scissors", "TB"},
+            {"custom_perm_left", "custom_perm_right"}, {"custom_perm_y", "LR"}, {"custom_perm_threeway", "LR"},
+            {"s88", "LR"}, {"s88", "TB"}, {"s88_active", "LR"}, {"s88_active", "TB"}, {"end", "LR"}};
+
+        java.util.List<String> off = new java.util.ArrayList<>();
+
+        for (int size : new int[] {30, 60})
+        {
+            for (String[] check : checks)
+            {
+                BufferedImage a = icon(size, check[0]);
+                String how = check[1];
+                BufferedImage b = how.length() <= 2 ? a : icon(size, how);
+                int n = a.getWidth(), wrong = 0;
+
+                for (int y = 0; y < n; y++)
+                {
+                    for (int x = 0; x < n; x++)
+                    {
+                        int mx, my;
+
+                        switch (how)
+                        {
+                            case "T": mx = y; my = x; break;
+                            case "H": mx = n - 1 - x; my = n - 1 - y; break;
+                            case "TB": mx = x; my = n - 1 - y; break;
+                            default: mx = n - 1 - x; my = y;
+                        }
+
+                        int p = a.getRGB(x, y), q = b.getRGB(mx, my), most = 0;
+
+                        for (int shift = 0; shift <= 16; shift += 8)
+                        {
+                            most = Math.max(most, Math.abs(((p >> shift) & 0xFF) - ((q >> shift) & 0xFF)));
+                        }
+
+                        if (most > 12) wrong++;
+                    }
+                }
+
+                if (wrong > 0) off.add(check[0] + " at " + size + " vs " + how + ": " + wrong + " pixels");
+            }
+        }
+
+        assertTrue(off.isEmpty(), "tiles that are not the mirror images their shapes say they are: " + off);
+    }
+
+    /** A tile's icon, as the diagram loads it. */
+    private static BufferedImage icon(int size, String name) throws Exception
+    {
+        java.net.URL at = TrainControlUI.class.getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name + ".gif");
+
+        assertNotNull(at, "no icon " + name + " at " + size);
+
+        return javax.imageio.ImageIO.read(at);
+    }
+
+    /**
+     * A pill's edge (D2) and a destination's ring are as thick on the right and the bottom as on the left and the top
+     * (Adam, 2026-10-09: "make sure the pill label padding issue on the right/lower-right is addressed").
+     *
+     * They were drawn as `drawRoundRect(x, y, w - 1, h - 1)` - the whole-pixel way of keeping a one-pixel outline inside
+     * a box, which with anti-aliasing puts the left and top of the outline half outside the fill and the right and
+     * bottom wholly inside it, a sliver of fill showing past them.  Painted at twice the size, where the pill's ends
+     * fall on whole pixels, the four sides of an even outline read the same from the outside in.
+     *
+     * MUTATION: draw the outline the old way and this fails.
+     */
+    @Test
+    public void testAPillsOutlineIsEvenAllRound()
+    {
+        java.awt.Color[] fills = {org.traincontrol.gui.StationCaption.PILL_GREY, org.traincontrol.gui.StationCaption.DESTINATION_FILL};
+
+        for (java.awt.Color fill : fills)
+        {
+            org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+            pill.setPill(true);
+            pill.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
+            pill.setBackground(fill);
+            pill.setForeground(java.awt.Color.BLACK);
+            pill.setText("Carlton");
+            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(30, pill.lineHeight()));
+
+            java.awt.Dimension size = pill.getPreferredSize();
+
+            pill.setBounds(0, 0, size.width, size.height);
+
+            java.awt.Rectangle drawn = pill.drawnBounds();
+
+            java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(size.width * 2, size.height * 2,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
+            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            g.scale(2, 2);
+            g.setClip(0, 0, size.width, size.height);
+
+            pill.paint(g);
+
+            g.dispose();
+
+            int midRow = (drawn.y * 2 + (drawn.y + drawn.height) * 2) / 2;
+            int left = drawn.x * 2, right = (drawn.x + drawn.width) * 2 - 1;
+            int top = drawn.y * 2, bottom = (drawn.y + drawn.height) * 2 - 1;
+
+            // the middle of the long sides: a column a third of the way along, clear of the text
+            int col = left + (right - left) / 6;
+
+            for (int in = 0; in < 3; in++)
+            {
+                int l = grey(shot.getRGB(left + in, midRow)), r = grey(shot.getRGB(right - in, midRow));
+                int t = grey(shot.getRGB(col, top + in)), b = grey(shot.getRGB(col, bottom - in));
+
+                assertTrue(Math.abs(l - r) <= 24, "a pill filled " + fill + " is not as dark " + in + " pixels in from its right"
+                    + " end (" + r + ") as from its left (" + l + ") - its outline sits differently on the two sides");
+
+                assertTrue(Math.abs(t - b) <= 24, "a pill filled " + fill + " is not as dark " + in + " pixels in from its"
+                    + " bottom (" + b + ") as from its top (" + t + ") - its outline sits differently on the two sides");
+            }
+        }
+    }
+
+    private static int grey(int rgb)
+    {
+        return (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3;
+    }
+
+    /**
+     * A square's address is red letters with a white halo round them, and no box behind them (Adam, 2026-10-09: "Can we
+     * prettify address labels to have a white halo outline around the red text rather than a rectangle around them?").
+     *
+     * Each address label on a page with Show Addresses on is painted alone onto black.  A box behind the text lights the
+     * label's corners; a halo leaves them black and puts white only round the letters.
+     *
+     * MUTATION: put the box back and this fails.
+     *
+     * @throws Exception from Swing
+     */
+    @Test
+    public void testAnAddressHasAHaloAndNoBox() throws Exception
+    {
+        LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
+
+        final boolean addressesWere = page.getShowAddress();
+
+        page.setShowAddress(true);
+
+        try
+        {
+            support.Rendered drawn = support.Rendered.open(page, ui);
+
+            drawn.snapshot();
+
+            java.util.List<javax.swing.JLabel> addresses = new java.util.ArrayList<>();
+
+            collectAddresses(drawn.host(), addresses);
+
+            assertFalse(addresses.isEmpty(), "precondition: no address label on " + page.getName() + " with Show Addresses on");
+
+            int checked = 0;
+
+            for (final javax.swing.JLabel label : addresses)
+            {
+                final BufferedImage[] shot = new BufferedImage[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    java.awt.Dimension d = label.getSize();
+
+                    shot[0] = new BufferedImage(Math.max(1, d.width), Math.max(1, d.height), BufferedImage.TYPE_INT_RGB);
+
+                    java.awt.Graphics2D g = shot[0].createGraphics();
+
+                    g.setColor(java.awt.Color.BLACK);
+                    g.fillRect(0, 0, shot[0].getWidth(), shot[0].getHeight());
+
+                    label.paint(g);
+
+                    g.dispose();
+                });
+
+                BufferedImage s = shot[0];
+
+                if (s.getWidth() < 4 || s.getHeight() < 4) continue;
+
+                int red = 0, white = 0;
+
+                for (int y = 0; y < s.getHeight(); y++)
+                {
+                    for (int x = 0; x < s.getWidth(); x++)
+                    {
+                        int rgb = s.getRGB(x, y), r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                        if (r > 180 && g < 80 && b < 80) red++;
+                        if (r > 200 && g > 200 && b > 200) white++;
+                    }
+                }
+
+                String what = "the address \"" + label.getText() + "\" on " + page.getName();
+
+                for (int[] corner : new int[][] {{0, 0}, {s.getWidth() - 1, 0}, {0, s.getHeight() - 1},
+                    {s.getWidth() - 1, s.getHeight() - 1}})
+                {
+                    int rgb = s.getRGB(corner[0], corner[1]);
+
+                    int brightest = Math.max((rgb >> 16) & 0xFF, Math.max((rgb >> 8) & 0xFF, rgb & 0xFF));
+
+                    assertTrue(brightest < 40, what + " paints its corner (" + corner[0] + "," + corner[1] + ") - a box"
+                        + " behind the text, where Adam asked for a halo round the letters");
+                }
+
+                // and the letters, red on white
+                assertTrue(red > 0, what + " draws nothing red");
+
+                assertTrue(white > 0, what + " has no white round its letters");
+
+                checked++;
+            }
+
+            assertTrue(checked > 0, "precondition: no address label big enough to look at on " + page.getName());
+        }
+        finally
+        {
+            page.setShowAddress(addressesWere);
+        }
+    }
+
+    /** Every address label under a component: a plain label, not a square's tile or a station's caption. */
+    private static void collectAddresses(java.awt.Container under, java.util.List<javax.swing.JLabel> into)
+    {
+        for (java.awt.Component c : under.getComponents())
+        {
+            if (c instanceof javax.swing.JLabel && !(c instanceof org.traincontrol.gui.LayoutLabel)
+                && !(c instanceof org.traincontrol.gui.StationCaption))
+            {
+                String text = ((javax.swing.JLabel) c).getText();
+
+                if (text != null && text.replaceAll("<[^>]*>", "").trim().matches("\\d+[rg]?(\\s.*)?")) into.add((javax.swing.JLabel) c);
+            }
+
+            if (c instanceof java.awt.Container) collectAddresses((java.awt.Container) c, into);
+        }
+    }
+
+    /**
+     * A side trains may not arrive by is marked with the same grey chevron at the large size as at the small one (OB-326;
+     * Adam, 2026-10-09: "In 60px view, the trains can't arrive from this direction arrow's have an odd shape.  Make it
+     * consistent with the 30px, and gray.").
+     *
+     * The mark is painted on a 30-pixel square and on a 60-pixel one.  Every pixel it inks is grey - as much red as green
+     * as blue - and the large one, shrunk to half, carries the ink the small one does: a chevron whose arms scale with
+     * the square, not a hollow shape whose strokes come apart at the larger size.
+     *
+     * MUTATION: put the old strokes or the old tan back and this fails.
+     */
+    @Test
+    public void testABarredArrivalIsTheSameGreyChevronAtBothSizes()
+    {
+        org.traincontrol.automationui.TileAnnotation barred = new org.traincontrol.automationui.TileAnnotation(null, 0,
+            false, null, false, false, false, null, false, java.util.Collections.singletonList(
+                new org.traincontrol.automationui.TileAnnotation.Arrival(
+                    org.traincontrol.automationui.TilePorts.Side.N, false)));
+
+        BufferedImage small = paintedOnWhite(barred, 30), large = paintedOnWhite(barred, 60);
+
+        for (BufferedImage shot : new BufferedImage[] {small, large})
+        {
+            for (int y = 0; y < shot.getHeight(); y++)
+            {
+                for (int x = 0; x < shot.getWidth(); x++)
+                {
+                    int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+                    int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+
+                    // the red direction arrow a barred side also carries is its own mark, not this one
+                    if (isArrowRed(rgb)) continue;
+
+                    assertTrue(255 - min < 30 || max - min <= 16, "the barred-arrival mark at " + shot.getWidth()
+                        + " pixels is rgb(" + r + "," + g + "," + b + ") at " + x + "," + y + ", not grey");
+                }
+            }
+        }
+
+        double inkSmall = ink(small), inkLarge = ink(large) / 4.0;
+
+        assertTrue(inkSmall > 0, "precondition: the barred-arrival mark drew nothing at 30 pixels");
+
+        assertTrue(Math.abs(inkLarge - inkSmall) <= inkSmall * 0.12, "the barred-arrival mark at 60 pixels, taken to"
+            + " half size, carries " + Math.round(inkLarge) + " of ink against " + Math.round(inkSmall) + " at 30 - not"
+            + " the same shape scaled");
+    }
+
+    /** An annotation painted alone on a white square of this size. */
+    private static BufferedImage paintedOnWhite(org.traincontrol.automationui.TileAnnotation annotation, int size)
+    {
+        BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, size, size);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+        annotation.paint(g, size, size);
+
+        g.dispose();
+
+        return shot;
+    }
+
+    /** A pixel of a red direction arrow: more red than green or blue, which are alike. */
+    private static boolean isArrowRed(int rgb)
+    {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+        // by hue, so its anti-aliased pink edge counts too; the old tan, rgb(150,140,100), is not red
+        return r - g > 20 && r - b > 20 && Math.abs(g - b) <= 12;
+    }
+
+    /** How much darker than white a picture is, in all, leaving out a red direction arrow. */
+    private static double ink(BufferedImage shot)
+    {
+        double sum = 0;
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                int rgb = shot.getRGB(x, y);
+
+                if (isArrowRed(rgb)) continue;
+
+                sum += 255 - (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF)) / 3.0;
+            }
+        }
+
+        return sum;
+    }
+
+    /**
+     * A caption stood on end beside a station's vertical track clears that station's badge, and the badge of a station on
+     * the next square over (OB-327; Adam, 2026-10-09: "narrow/nudge so that pills rotated vertically don't touch adjacent
+     * stations or terminuses").
+     *
+     * The badge is MEASURED, painted as the diagram paints a station on vertical track, so this follows whatever size the
+     * badge rule gives; the caption is built and placed as the grid builds and places one, at both tile sizes, empty and
+     * with a train's name.  It stands to the right of its own track, so its near edge must clear its own badge and its
+     * far edge the same badge one square to the right, each by a pixel at 30 and two at 60.
+     *
+     * MUTATION: place it by the flat caption's offset again, or give it the full line height, and this fails.
+     */
+    @Test
+    public void testAPillOnEndClearsTheStationsBesideIt()
+    {
+        String[] texts = {org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY, "75 407 DB",
+            org.traincontrol.gui.StationCaption.withArrow("EN57-947", " " + org.traincontrol.gui.StationCaption.ARROW_W)};
+
+        for (int tile : new int[] {30, 60})
+        {
+            // The station's badge, as drawn, measured across its middle row
+            BufferedImage square = paintedOnWhite(new org.traincontrol.automationui.TileAnnotation(null, 0, false,
+                new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true,
+                    org.traincontrol.automationui.TilePorts.Side.N, org.traincontrol.automationui.TilePorts.Side.S),
+                false, false, false, null), tile);
+
+            int badgeLeft = -1, badgeRight = -1;
+
+            for (int x = 0; x < tile; x++)
+            {
+                int rgb = square.getRGB(x, tile / 2);
+
+                if (255 - Math.min((rgb >> 16) & 0xFF, Math.min((rgb >> 8) & 0xFF, rgb & 0xFF)) > 40)
+                {
+                    if (badgeLeft < 0) badgeLeft = x;
+                    badgeRight = x;
+                }
+            }
+
+            assertTrue(badgeLeft >= 0, "precondition: no station badge drawn at " + tile + " pixels");
+
+            int margin = tile >= 60 ? 2 : 1;
+
+            for (String text : texts)
+            {
+                org.traincontrol.gui.StationCaption pill = new org.traincontrol.gui.StationCaption();
+
+                // as the grid builds one: the caption font, a tenth or so smaller, then stood on end and placed
+                java.awt.Font font = new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN,
+                    tile / 2);
+
+                pill.setPill(true);
+                pill.setFont(font.deriveFont(font.getSize2D() * org.traincontrol.gui.StationCaption.FONT_SCALE));
+                pill.setBackground(org.traincontrol.gui.StationCaption.PILL_GREY);
+                pill.setText(text);
+                pill.setRotated(true);
+                pill.setTileGeometry(tile, 0, 0, org.traincontrol.gui.StationCaption.captionOffset(tile, pill.lineHeight()));
+
+                java.awt.Dimension size = pill.getPreferredSize();
+
+                pill.setBounds(0, 0, size.width, size.height);
+
+                java.awt.Rectangle drawn = pill.drawnBounds();
+
+                // the cell of a caption on end starts at its own square, so these are from the square's left edge
+                int near = drawn.x, far = drawn.x + drawn.width - 1;
+
+                assertTrue(near >= badgeRight + 1 + margin, "\"" + text + "\" stood on end at " + tile + " pixels starts"
+                    + " at " + near + ", on or against its own station's badge, which reaches " + badgeRight);
+
+                assertTrue(far <= tile + badgeLeft - 1 - margin, "\"" + text + "\" stood on end at " + tile + " pixels"
+                    + " reaches " + far + ", on or against the badge of a station one square over, which starts at "
+                    + (tile + badgeLeft));
+            }
+        }
+    }
+
+    /**
+     * A square's address is drawn over the locomotive standing on it, not under it (FR-116; Adam, 2026-10-09: "Red
+     * address labels look good, but make sure they are rendered on top of the autonomy locomotive icons").
+     *
+     * The diagram's container paints its children and then every tile's train over them (OB-159), so an address,
+     * being a child, was painted over by the icon.  Here an address lies across the middle of a square with a running
+     * train on it, where the icon is; its red letters must all still be there with the train drawn.
+     *
+     * MUTATION: drop the last pass that paints the addresses over the trains and this fails.
+     */
+    @Test
+    public void testAnAddressIsDrawnOverTheTrain() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        final int size = 120;
+
+        org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        org.traincontrol.gui.AddressLabel address = new org.traincontrol.gui.AddressLabel();
+
+        address.setForeground(java.awt.Color.RED);
+        address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, size / 3));
+        address.setLines("88");
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size, size);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        tile.setBounds(0, 0, size, size);
+
+        java.awt.Dimension d = address.getPreferredSize();
+
+        // across the middle of the square, where the icon is drawn
+        address.setBounds((size - d.width) / 2, (size - d.height) / 2, d.width, d.height);
+
+        grid.add(address);
+        grid.add(tile);
+
+        // the order the grid builds them in: an address in front of its tile
+        grid.setComponentZOrder(address, 0);
+
+        BufferedImage alone = shotOf(grid, size);
+
+        tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+            org.traincontrol.automationui.TileOverlay.State.ACTIVE, true, true, null));
+
+        BufferedImage withTrain = shotOf(grid, size);
+
+        // CONTROL: the train is drawn where the address is, or nothing below could tell the orders apart
+        assertTrue(differs(alone, withTrain, address.getBounds()), "precondition: the train's icon does not reach the"
+            + " address in the middle of the square, so the order they are drawn in cannot show");
+
+        int red = 0, kept = 0;
+
+        java.awt.Rectangle at = address.getBounds();
+
+        for (int y = at.y; y < at.y + at.height; y++)
+        {
+            for (int x = at.x; x < at.x + at.width; x++)
+            {
+                if (isAddressRed(alone.getRGB(x, y)))
+                {
+                    red++;
+
+                    if (isAddressRed(withTrain.getRGB(x, y))) kept++;
+                }
+            }
+        }
+
+        assertTrue(red > 0, "precondition: the address drew nothing red");
+
+        assertTrue(kept == red, "with a train on the square, " + (red - kept) + " of the address's " + red + " red pixels are"
+            + " painted over - the locomotive's icon is drawn on top of the address");
+    }
+
+    private static boolean isAddressRed(int rgb)
+    {
+        return ((rgb >> 16) & 0xFF) > 200 && ((rgb >> 8) & 0xFF) < 60 && (rgb & 0xFF) < 60;
+    }
+
+    private static boolean differs(BufferedImage a, BufferedImage b, java.awt.Rectangle within)
+    {
+        for (int y = within.y; y < within.y + within.height; y++)
+        {
+            for (int x = within.x; x < within.x + within.width; x++)
+            {
+                if (a.getRGB(x, y) != b.getRGB(x, y)) return true;
+            }
+        }
+
+        return false;
+    }
 }

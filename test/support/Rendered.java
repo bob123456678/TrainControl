@@ -86,6 +86,16 @@ public final class Rendered
     }
 
     /**
+     * The panel the grid was built into, for a test that looks at what the grid put there.
+     *
+     * @return the host
+     */
+    public JPanel host()
+    {
+        return host;
+    }
+
+    /**
      * Paints the grid as it stands now.
      *
      * The tiles decode their images on a worker, so this waits for them to settle first - otherwise the
@@ -334,6 +344,34 @@ public final class Rendered
     }
 
     /**
+     * Whether a pixel is the train's orange - by its HUE, an orange between 12 and 40 degrees, as saturated as a third and
+     * as bright as 110 of 255 (round 99).
+     *
+     * By hue because the line is see-through since 2026-10-09 (Adam: "can we change to the see through tail line"): over
+     * black track it is a dark orange, rgb(140,56,0), and over white a pale one, rgb(255,171,115), and the thresholds
+     * this replaced (red above 190, blue below 90) counted neither.  Red (0 degrees) and the destination's yellow (47)
+     * fall outside it; so do the greys.  One rule for every test that asks, so they cannot come to disagree about what
+     * orange is.
+     *
+     * @param rgb the pixel
+     * @return true when it is the train's orange, whatever lies under it
+     */
+    public static boolean isTrainOrange(int rgb)
+    {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        int max = Math.max(r, Math.max(g, b));
+        int min = Math.min(r, Math.min(g, b));
+
+        if (max != r || max < 110 || max - min < max / 3.0) return false;
+
+        double hue = 60.0 * (g - b) / (max - min);
+
+        return hue >= 12 && hue <= 40;
+    }
+
+    /**
      * The same question asked of a picture that has already been taken (MT-309).
      *
      * Separate so that a test working from a whole-page snapshot - `tile(page, x, y)` - asks the same
@@ -350,13 +388,7 @@ public final class Rendered
         {
             for (int y = 0; y < image.getHeight(); y++)
             {
-                int rgb = image.getRGB(x, y);
-
-                int r = (rgb >> 16) & 0xFF;
-                int g = (rgb >> 8) & 0xFF;
-                int b = rgb & 0xFF;
-
-                if (r > 190 && g > 70 && g < 190 && b < 90 && r - g > 60) return true;
+                if (isTrainOrange(image.getRGB(x, y))) return true;
             }
         }
 

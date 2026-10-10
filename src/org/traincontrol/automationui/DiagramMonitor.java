@@ -354,7 +354,10 @@ public class DiagramMonitor
             // the ones Adam did not want marked as running.
             boolean running = entry.getKey() != null && entry.getKey().getSpeed() > 0;
 
-            if (at != null) markTrain(overlays, at, running, running ? null : willStandOn(layout, entry.getKey()));
+            if (at != null)
+            {
+                markTrain(overlays, at, running, running ? null : willStandOn(layout, entry.getKey()), entry.getKey());
+            }
         }
 
         // AND EVERY TRAIN PARKED WITH NO PATH (Adam, 2026-10-01): "when a train is standing somewhere, can we show its
@@ -500,7 +503,8 @@ public class DiagramMonitor
 
             if (tile == null) continue;
 
-            TileOverlay mark = TileOverlay.parked(facings.get(point.getName()));
+            // GREY WHERE IT IS PAUSED (FR-117)
+            TileOverlay mark = TileOverlay.parked(facings.get(point.getName())).withPaused(standing.isAutonomyPaused());
 
             TileOverlay existing = into.get(tile);
 
@@ -520,7 +524,7 @@ public class DiagramMonitor
                 at = null;
             }
 
-            markTrain(into, at, false, willStandOn(layout, train));
+            markTrain(into, at, false, willStandOn(layout, train), train);
         }
 
         // AND THOSE ON NO POINT, where the setup says they stand (RSA17-C2)
@@ -564,8 +568,10 @@ public class DiagramMonitor
      * @param at the Point the train is on
      * @param moving whether it is running
      * @param will the copy it will be stood on when its run is done, or null
+     * @param train the train, whose icon is grey while it is paused (FR-117), or null where it is not known
      */
-    private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving, Point will)
+    private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving, Point will,
+        org.traincontrol.base.Locomotive train)
     {
         if (at == null) return;
 
@@ -589,7 +595,8 @@ public class DiagramMonitor
 
         if (facing == null) facing = facings.get(at.getName());
 
-        TileOverlay mark = moving ? new TileOverlay(State.IDLE, true, true, null) : TileOverlay.parked(facing);
+        TileOverlay mark = (moving ? new TileOverlay(State.IDLE, true, true, null) : TileOverlay.parked(facing))
+            .withPaused(train != null && train.isAutonomyPaused());
 
         TileOverlay existing = into.get(tile);
 

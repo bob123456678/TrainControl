@@ -2012,8 +2012,8 @@ public class testTheEditorNamesItsShortcuts
 
             for (java.awt.Component c : squares.getComponents())
             {
-                if (c instanceof javax.swing.JLabel && !(c instanceof org.traincontrol.gui.LayoutLabel)
-                    && String.valueOf(((javax.swing.JLabel) c).getText()).startsWith("<html>"))
+                // the address label itself (it was a plain label holding HTML until round 102 gave it a halo)
+                if (c instanceof org.traincontrol.gui.AddressLabel)
                 {
                     for (java.awt.Component s : squares.getComponents())
                     {

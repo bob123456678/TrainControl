@@ -149,10 +149,11 @@ public class TileAnnotation
 
     /**
      * And a square nothing can pass - the X - in orange again (Adam, 2026-09-29: *"make the nothing can pass (X
-     * stations) be orange again"*): the orange it had before FR-103, which is the train line's orange
-     * (`LayoutLabel.TRAIN_MARK`).  A square shut to every train reads apart from a berth autonomy merely does not choose.
+     * stations) be orange again"*): the orange it had before FR-103, rgb(255,102,0).  A square shut to every train reads
+     * apart from a berth autonomy merely does not choose.  It was the train line's own constant until the line went to a
+     * softer orange on 2026-10-09 (`DiagramColours.TRAIN`); the X kept the orange it was asked to be.
      */
-    private static final Color POINT_IMPASSABLE = DiagramColours.TRAIN;
+    private static final Color POINT_IMPASSABLE = new Color(255, 102, 0);
 
     /**
      * What a sensor has been designated as, drawn as a badge on its tile.
@@ -1120,9 +1121,9 @@ public class TileAnnotation
      * and a reader has to be able to tell which they are looking at without being told.
      *
      * Small, and at the very edge, so a station with all its sides marked still shows its badge, its
-     * name and whatever is standing on it.  A barred side is the same chevron hollowed out and struck
-     * through: the shape says "arrival", the state says whether it is allowed, so there is one thing to
-     * learn rather than two.
+     * name and whatever is standing on it.  A barred side is the same chevron left open, in grey (OB-326):
+     * the shape says "arrival", the state says whether it is allowed, so there is one thing to learn rather
+     * than two.
      */
     private void paintArrivals(Graphics2D g, int width, int height)
     {
@@ -1212,15 +1213,22 @@ public class TileAnnotation
             }
             else
             {
+                // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GREY (OB-326; Adam, 2026-10-09: "In 60px view,
+                // the trains can't arrive from this direction arrow's have an odd shape.  Make it consistent with the
+                // 30px, and gray.").
+                //
+                // It was the hollow chevron with two strokes meant to strike it through, which in fact ran beside its
+                // arms and ended a fifth of a wing from the tip.  At 30 pixels that is under a pixel, so they merged
+                // into one thicker chevron - the shape he wants.  At 60 they stood apart from the arms with a gap
+                // between, and read as a hollow triangle.  One chevron whose arms are a fourteenth of the square is the
+                // 30-pixel shape at any size.
+                java.awt.Stroke was = g.getStroke();
+
                 g.setColor(ARRIVAL_BARRED);
+                g.setStroke(new BasicStroke((float) Math.max(2.0, span / 14.0), BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND));
                 g.draw(head);
-
-                // Struck through, across the mouth of the chevron
-                g.drawLine((int) Math.round(baseX + px * wing), (int) Math.round(baseY + py * wing),
-                    (int) Math.round(tipX - px * wing * 0.2), (int) Math.round(tipY - py * wing * 0.2));
-
-                g.drawLine((int) Math.round(baseX - px * wing), (int) Math.round(baseY - py * wing),
-                    (int) Math.round(tipX + px * wing * 0.2), (int) Math.round(tipY + py * wing * 0.2));
+                g.setStroke(was);
             }
         }
     }
@@ -1833,10 +1841,11 @@ public class TileAnnotation
     private static final Color ARRIVAL_EDGE = new Color(60, 45, 0);
 
     /**
-     * And a barred one, which is the same mark drawn as an absence: hollow, struck through, and closer
-     * to grey than to indigo, so a shut side recedes and the open ones read as the answer.
+     * And a barred one, which is the same mark drawn as an absence: an open chevron, in grey, so a shut side recedes
+     * and the open ones read as the answer (OB-326; Adam, 2026-10-09: "... and gray").  It was a tan,
+     * rgb(150,140,100).
      */
-    private static final Color ARRIVAL_BARRED = new Color(150, 140, 100);
+    private static final Color ARRIVAL_BARRED = new Color(140, 140, 140);
 
     /**
      * Draws what a sensor IS, in the graph window's own shapes and colours.

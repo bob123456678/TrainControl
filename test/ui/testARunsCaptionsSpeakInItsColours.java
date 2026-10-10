@@ -241,4 +241,111 @@ public class testARunsCaptionsSpeakInItsColours
             if (c instanceof java.awt.Container) collect((java.awt.Container) c, out);
         }
     }
+
+    /**
+     * An empty station's dash is drawn dimmer than a name on the running diagram, as the diagram's own rule for a
+     * placeholder says (D1 of the look's design pass; Adam, 2026-10-09: "Do D1 and D2").  `StationCaption.onPill` dims a
+     * placeholder, and the editors ask it with the placeholder grey; the running diagram asked it with black, so the dash
+     * was as loud as a train's name.
+     *
+     * MUTATION: colour the dash black again and this fails.
+     *
+     * @throws Exception from the window or the railway
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testAnEmptyStationsDashIsDimmerThanAName() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            model = init(null, true, true, false, true);
+            model.setNetworkCommState(false);
+
+            ui = (TrainControlUI) model.getGUI();
+
+            assertNotNull(ui, "there is no window");
+
+            settle(300);
+
+            AutonomySession session = ui.getAutonomySession();
+
+            if (session == null) throw new SkipException("no autonomy setup on this railway");
+
+            model.parseAuto(session.buildConfiguration());
+
+            ui.updateVisiblePoints();
+
+            settle(1000);
+
+            Field stations = TrainControlUI.class.getDeclaredField("layoutStations");
+            stations.setAccessible(true);
+
+            final List<StationCaption> pills = new ArrayList<>();
+            final TrainControlUI window = ui;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    for (Set<JLabel> labels : ((Map<Object, Set<JLabel>>) stations.get(window)).values())
+                    {
+                        for (JLabel label : labels)
+                        {
+                            if (label instanceof StationCaption && ((StationCaption) label).isPill() && label.isVisible())
+                            {
+                                pills.add((StationCaption) label);
+                            }
+                        }
+                    }
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            double nameContrast = -1, dashContrast = -1;
+
+            for (StationCaption pill : pills)
+            {
+                Color fill = pill.getBackground(), text = pill.getForeground();
+
+                if (fill == null || text == null) continue;
+
+                double contrast = Math.sqrt(Math.pow(fill.getRed() - text.getRed(), 2)
+                    + Math.pow(fill.getGreen() - text.getGreen(), 2) + Math.pow(fill.getBlue() - text.getBlue(), 2));
+
+                if (org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY.equals(pill.getText())) dashContrast = contrast;
+                else if (pill.getText().matches(".*[A-Za-z0-9].*")) nameContrast = Math.max(nameContrast, contrast);
+            }
+
+            assertTrue(dashContrast >= 0 && nameContrast >= 0,
+                "precondition: the frozen railway shows no empty station or no named caption at rest");
+
+            assertTrue(dashContrast < nameContrast - 40, "an empty station's dash stands out from its pill by "
+                + Math.round(dashContrast) + ", a train's name by " + Math.round(nameContrast) + " - the placeholder is as"
+                + " loud as a name");
+        }
+        finally
+        {
+            if (model != null) model.stop();
+
+            if (ui != null)
+            {
+                final TrainControlUI closing = ui;
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
 }
