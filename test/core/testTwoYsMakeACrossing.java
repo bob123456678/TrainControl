@@ -883,6 +883,189 @@ public class testTwoYsMakeACrossing
         return count;
     }
 
+    /**
+     * The arm boxes on an untouched permanent turnout tick only its toe, as the branch submenus beside them tick the
+     * one way there is (VD18-C2).
+     *
+     * Every road of a permanent turnout is directed at its toe, and its default is `BOTH`, which the blades narrow to
+     * that one way - a train may leave by the toe and by no other arm.  The submenus learned to tick what is in force
+     * (VD18-B1); the boxes went on reading the stored `BOTH` and ticked every arm.
+     *
+     * MUTATION: read the stored direction in `AutonomyEditorPanel.armMask` again, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testAPermanentTurnoutsArmBoxesTickOnlyItsToe() throws Exception
+    {
+        open(lonePermanentLeft(), "VD18-C2 boxes");
+
+        final TileKey turnout = key(5, 5);
+
+        assertNull(session.getGraph().crossingPartner(turnout), "precondition: the turnout is half of a crossing");
+
+        Side toe = toeOf(turnout);
+
+        Set<Side> arms = new TreeSet<>();
+
+        for (Route route : session.getGraph().getRoutes(turnout).values())
+        {
+            arms.add(route.getA());
+            arms.add(route.getB());
+        }
+
+        assertEquals(arms.size(), 3, "precondition: a permanent left does not have three arms: " + arms);
+
+        final java.util.Map<String, Boolean> boxes = new java.util.LinkedHashMap<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            boxes.putAll(ticks(new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { })
+                .buildTileMenu(turnout, null))));
+
+        for (Side arm : arms)
+        {
+            String box = org.traincontrol.util.I18n.f("autosetup.ui.menuArm", String.valueOf(arm));
+
+            assertTrue(boxes.containsKey(box), "precondition: the menu has no box for the " + arm + " arm: "
+                + boxes.keySet());
+
+            assertEquals(boxes.get(box), Boolean.valueOf(arm == toe), "the box for the " + arm + " arm of an untouched"
+                + " permanent turnout is " + (boxes.get(box) ? "ticked" : "clear") + " - only its toe, " + toe
+                + ", is an arm a train leaves it by, and the branch submenus beside the boxes tick that way alone"
+                + " (VD18-C2)");
+        }
+    }
+
+    /**
+     * A click on a permanent turnout never leaves a road an answer its blades refuse, and still opens and shuts it
+     * (VD18-C2).
+     *
+     * The click steps through combinations of open arms, and on a permanent turnout every combination that opens an arm
+     * other than the toe stores `BOTH` or the way toward the fork - answers `TileGraph.directionIsPossible` says the
+     * editor must not offer, and which the arrows and the boxes read back as the toe-ward way or as closed.  Ten
+     * clicks, each road asked after every one; and the clicks must open the turnout and shut it, or a click that did
+     * nothing would pass.
+     *
+     * MUTATION: step through every combination of arms again, and this fails on the first click.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testAClickNeverStoresAWayAPermanentTurnoutCannotRun() throws Exception
+    {
+        open(lonePermanentLeft(), "VD18-C2 clicks");
+
+        final TileKey turnout = key(5, 5);
+
+        assertNull(session.getGraph().crossingPartner(turnout), "precondition: the turnout is half of a crossing");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        final java.lang.reflect.Method cycle =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+
+        cycle.setAccessible(true);
+
+        boolean opened = false;
+        boolean shut = false;
+
+        for (int click = 1; click <= 10; click++)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    cycle.invoke(panel[0], turnout);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (java.util.Map.Entry<RouteId, Route> road : session.getGraph().getRoutes(turnout).entrySet())
+            {
+                Direction left = session.getGraph().getDirection(turnout, road.getKey());
+
+                assertTrue(TileGraph.directionIsPossible(left, road.getValue()), "click " + click + " left the road "
+                    + road.getValue() + " of a permanent turnout " + left + " - an answer its blades refuse, which the"
+                    + " editor does not offer (VD18-C2)");
+            }
+
+            if (edges().isEmpty()) shut = true;
+            else opened = true;
+        }
+
+        assertTrue(opened && shut, "ten clicks on a permanent turnout did not both open it and shut it - opened: "
+            + opened + ", shut: " + shut);
+    }
+
+    /** A permanent left on its own, toe south at 5,5, with a sensor off each of its three arms (VD18-C2). */
+    private static LayoutDiagram lonePermanentLeft() throws IOException
+    {
+        LayoutDiagram page = page();
+
+        turnout(page, componentType.CUSTOM_PERM_LEFT, 5, 5, 0);
+
+        sensor(page, 5, 4, 1, 1);
+        sensor(page, 5, 6, 1, 2);
+        sensor(page, 4, 5, 0, 3);
+
+        return page;
+    }
+
+    /**
+     * The side every road of a turnout with no address is directed toward - its toe.
+     *
+     * @param turnout the square
+     * @return the toe
+     */
+    private Side toeOf(TileKey turnout)
+    {
+        Side toe = null;
+
+        for (Route route : session.getGraph().getRoutes(turnout).values())
+        {
+            assertNotNull(route.getDirectedToward(), "precondition: " + turnout + " has a road its blades do not"
+                + " restrict: " + route);
+
+            assertTrue(toe == null || toe == route.getDirectedToward(), "precondition: the roads of " + turnout
+                + " are directed at different sides");
+
+            toe = route.getDirectedToward();
+        }
+
+        assertNotNull(toe, "precondition: " + turnout + " has no roads");
+
+        return toe;
+    }
+
+    /**
+     * Every checkbox on a menu and its submenus, by its text, and whether it is ticked.
+     *
+     * @param in the menu, or anything on it
+     * @return the boxes
+     */
+    private static java.util.Map<String, Boolean> ticks(java.awt.Component in)
+    {
+        java.util.Map<String, Boolean> out = new java.util.LinkedHashMap<>();
+
+        if (in instanceof javax.swing.JCheckBoxMenuItem)
+        {
+            out.put(((javax.swing.JCheckBoxMenuItem) in).getText(), ((javax.swing.JCheckBoxMenuItem) in).isSelected());
+        }
+
+        java.awt.Component[] inside = in instanceof javax.swing.JMenu ? ((javax.swing.JMenu) in).getMenuComponents()
+            : in instanceof java.awt.Container ? ((java.awt.Container) in).getComponents() : new java.awt.Component[0];
+
+        for (java.awt.Component child : inside) out.putAll(ticks(child));
+
+        return out;
+    }
+
     // ---------------------------------------------------------------- the railway
 
     /** The vertical pair: Ys at 5,5 (toe south) and 5,6 (toe north), and a sensor at each of the four ends. */

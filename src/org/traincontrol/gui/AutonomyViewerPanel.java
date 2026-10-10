@@ -1508,6 +1508,26 @@ public class AutonomyViewerPanel extends JPanel
                 unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomesKept", String.join(", ", result.homesKept));
             }
 
+            // AND WHAT IT LEFT ON A SQUARE ALREADY TAKEN, and the homes it named twice (OB-304): each a choice the
+            // import made for the operator - the train or the home already there kept, the first home named kept - and
+            // skipped or counted without a word until now.
+            if (!result.squareTaken.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacySquareTaken",
+                    String.join(", ", result.squareTaken));
+            }
+
+            if (!result.homeSquareTaken.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomeSquareTaken",
+                    String.join(", ", result.homeSquareTaken));
+            }
+
+            if (result.duplicateHomes > 0)
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateHomes", result.duplicateHomes);
+            }
+
             // And the trains it did not place, into the configuration running (RLD3-C1)
             if (!result.notPlacedInUse.isEmpty())
             {

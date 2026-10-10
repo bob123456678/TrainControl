@@ -7200,9 +7200,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * it is asked for, so between the two its window does not exist yet: a door that asked only `isLayoutEditorOpen` in
      * that moment sent a train, and the editor then opened over the run.
      *
+     * Package-visible for `TailCrossedPrompt.saveBeforeAsking`, which saves a placement before its tail question only
+     * while no editor holds the setup (OB-305).
+     *
      * @return true while an editor is open, or asked for and not yet shown
      */
-    private boolean anEditorIsOpenOrOnItsWay()
+    boolean anEditorIsOpenOrOnItsWay()
     {
         return isLayoutEditorOpen() || this.editorOnItsWay;
     }
@@ -9906,6 +9909,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
+
+            // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and the
+            // question below can wait as long as the operator likes - a crash in that wait lost them.  See
+            // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled is logged as this door's own save is, since that
+            // save then finds nothing left to reconcile.
+            noteIfTheSetupWasNotTidied(org.traincontrol.gui.TailCrossedPrompt.saveBeforeAsking(session,
+                this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(), this));
 
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),

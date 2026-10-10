@@ -1151,7 +1151,8 @@ public class AutonomySession
          * The file states one where every edge from the train's point leaves the square by one side (REG4-A1).
          * Elsewhere a split square still needs one, so the import picks a way trains may arrive in.  It is a guess,
          * corrected in the autonomy editor and by the first real run's capture, and before ACC-C4 it was made silently
-         * AND at random.
+         * AND at random.  A facing the square already recorded, kept for the train, is counted too: it is no more
+         * evidence about the train the file puts there than a chosen one (OB-304).
          */
         public int facingsInvented;
 
@@ -1253,6 +1254,18 @@ public class AutonomySession
          * kept, and the message names them (RLA2-C3).
          */
         public final List<String> homesKept = new ArrayList<>();
+
+        /**
+         * Locomotives the file places on a square this configuration already has another train standing on.  Not
+         * placed: one square holds one train, and the one there stays (OB-304).
+         */
+        public final List<String> squareTaken = new ArrayList<>();
+
+        /**
+         * Locomotives the file gives a home on a square that is already another train's home.  Not homed there: a
+         * square is one train's home, and the one it has stays (OB-304).
+         */
+        public final List<String> homeSquareTaken = new ArrayList<>();
 
         /**
          * Locomotives the file places that were not placed because the configuration imported into is the one running:
@@ -1404,7 +1417,8 @@ public class AutonomySession
      * other way round from how the train drives.
      *
      * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS: the last occupant's is a guess as good as the first
-     * copy's, and a guess made by somebody standing a train there (RLA2-B3).
+     * copy's, and a guess made by somebody standing a train there (RLA2-B3).  Only one the guess itself could make - a
+     * way trains may arrive in, where the square has one - and counted with the guesses, which it is (OB-304).
      *
      * @param facingToFind the placed trains, by square and legacy point name
      * @param edgesLeadTo each legacy point's edges, by the square each ends on (null: not on this diagram)
@@ -1429,9 +1443,24 @@ public class AutonomySession
                 continue;
             }
 
-            if (ran == null && getFacing(tile) != null) continue;
-
             java.util.Set<Side> mayArrive = homeFacingsFor(tile);
+
+            // A FACING THE SQUARE RECORDS STAYS where the file cannot say (RLA2-B3) - only one the guess below could
+            // make, and counted with the guesses, which it is (OB-304).  It is the last occupant's, no evidence
+            // about the train the file puts there: kept unasked, a facing trains may not arrive in stood the imported
+            // train where autonomy will not start it (REG3-C1), and the log said nothing had been guessed.  Where no
+            // copy is one trains may arrive at, the guess takes the first copy, and the recorded one is as good.
+            Side recorded = ran == null ? getFacing(tile) : null;
+
+            boolean keepIt = recorded != null && ways.contains(recorded)
+                && (mayArrive.contains(recorded) || java.util.Collections.disjoint(ways, mayArrive));
+
+            if (keepIt)
+            {
+                result.facingsInvented++;
+
+                continue;
+            }
 
             Side guess = null;
 
@@ -1858,6 +1887,23 @@ public class AutonomySession
                         }
                     }
 
+                    // A SQUARE ANOTHER TRAIN STANDS ON keeps it, and the file's train is named (OB-304): one square
+                    // holds one train.  It was skipped without a word.  The same train already there - a file
+                    // imported a second time - is nothing to say.
+                    if (standing != null && extras.has(AutonomyBuilder.LOCOMOTIVE))
+                    {
+                        String locName = standing.optString("name", "").trim();
+
+                        org.json.JSONObject there = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+                        String standsThere = there == null ? "" : there.optString("name", "").trim();
+
+                        if (!locName.isEmpty() && !locName.equals(standsThere) && !result.squareTaken.contains(locName))
+                        {
+                            result.squareTaken.add(locName);
+                        }
+                    }
+
                     if (!home.trim().isEmpty() && !extras.has("home"))
                     {
                         if (homedInConfiguration.contains(home.trim()))
@@ -1872,6 +1918,15 @@ public class AutonomySession
                         {
                             result.duplicateHomes++;
                         }
+                    }
+
+                    // A SQUARE ALREADY HOME TO ANOTHER TRAIN keeps it, and the file's is named (OB-304): a square is
+                    // one train's home.  It was skipped without a word.
+                    if (!home.trim().isEmpty() && !extras.optString("home", "").trim().isEmpty()
+                        && !home.trim().equals(extras.optString("home", "").trim())
+                        && !result.homeSquareTaken.contains(home.trim()))
+                    {
+                        result.homeSquareTaken.add(home.trim());
                     }
 
                     for (String key : CARRIED_SETTINGS)
@@ -4373,7 +4428,8 @@ public class AutonomySession
     }
 
     /**
-     * Every switch square on a leg autonomy uses.  A switch is in no piece - its share would sit where the room rule
+     * Every switch square on a leg autonomy uses - a switch or a permanent turnout, as `isSwitchSquare` says
+     * (VD18-B3).  A switch is in no piece - its share would sit where the room rule
      * does not count it - so switches are asked for on their own, one turnout length for a page (Adam, 2026-09-16:
      * "One length for all switches").
      *
@@ -4804,11 +4860,29 @@ public class AutonomySession
         return component != null && TilePorts.takesNoLength(component.getType());
     }
 
+    /**
+     * Whether a length rule's piece is cut at this square, and the square asked for with the switches: what
+     * `GraphReducer.boundsTheRoom` asks of the room walk - a switch or a permanent turnout, and not a square of a
+     * two-square crossing (VD18-B3).
+     *
+     * **A PERMANENT TURNOUT CUTS A PIECE AS A SWITCH DOES.**  The room walk stops at one (OB-233, Adam's ruling of
+     * 2026-09-22: a permanent turnout is still the last switch), so a piece that ran over it shared the operator's
+     * typed length onto the turnout and the track beyond it, and the room before the turnout came out short by that
+     * share.  Asked `isSwitch()` alone, which names the six throwable types and none of the five permanent ones, Mass
+     * Assign Lengths did exactly that wherever one leg ran over the turnout - two legs made it a shared square, which
+     * cut the piece by another rule.  A two-square crossing's squares are permanent turnouts drawn as one crossing,
+     * which ends no room (OB-320), so they stay track here.
+     *
+     * @param tile a square
+     * @return true where a piece ends and the square is asked for with the switches
+     */
     private boolean isSwitchSquare(TileKey tile)
     {
         org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
 
-        return component != null && component.isSwitch();
+        if (component == null || getGraph().crossingPartner(tile) != null) return false;
+
+        return component.isSwitch() || TileGraph.isPermanentTurnout(component.getType());
     }
 
     /**
@@ -8932,7 +9006,14 @@ public class AutonomySession
         // Grouped by TRAIN, because the walk below is a walk backwards from one train and the map the
         // railway hands back has thrown that away - it answers "is this edge covered", which is the
         // routing question rather than the drawing one.
-        Map<org.traincontrol.base.Locomotive, Set<TileKey>> reach = new LinkedHashMap<>();
+        //
+        // AND KEPT AS THE EDGES THEMSELVES (OB-239), each the reduction's own edge with its places (`reducedEdgeOf`).
+        // This kept only the two squares at each end and stepped between them along the first reduced edge joining the
+        // pair, either way round - so where two roads join one pair of sensors the line went down whichever the
+        // reduction listed first, and from the train's square to any covered square a reduced edge reached, though no
+        // covered edge ran there: track the railway would let another train onto, drawn as this one.  Painting each
+        // covered edge's own places, the line and the railway cannot name different roads.
+        Map<org.traincontrol.base.Locomotive, List<GraphReducer.ReducedEdge>> reach = new LinkedHashMap<>();
 
         for (Map.Entry<org.traincontrol.automation.Edge, org.traincontrol.base.Locomotive> covered
             : running.edgesCoveredByStandingTrains().entrySet())
@@ -8941,28 +9022,24 @@ public class AutonomySession
 
             if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
 
-            TileKey from = getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = getStationIndex().squareOf(edge.getEnd().getName());
+            GraphReducer.ReducedEdge rail = reducedEdgeOf(edge);
 
-            if (from == null || to == null) continue;
+            if (rail == null) continue;
 
-            Set<TileKey> squares = reach.get(covered.getValue());
+            List<GraphReducer.ReducedEdge> rails = reach.get(covered.getValue());
 
-            if (squares == null)
+            if (rails == null)
             {
-                squares = new LinkedHashSet<>();
+                rails = new ArrayList<>();
 
-                reach.put(covered.getValue(), squares);
+                reach.put(covered.getValue(), rails);
             }
 
-            // Both ends, so the chain below can be followed by SQUARE.  The railway records each rail
-            // twice, once per direction, and matching by square rather than by Edge identity makes the
-            // pair one hop rather than two.
-            squares.add(from);
-            squares.add(to);
+            // ONCE EACH: several of the railway's copies of a rail are one edge of the reduction
+            if (!rails.contains(rail)) rails.add(rail);
         }
 
-        for (Map.Entry<org.traincontrol.base.Locomotive, Set<TileKey>> train : reach.entrySet())
+        for (Map.Entry<org.traincontrol.base.Locomotive, List<GraphReducer.ReducedEdge>> train : reach.entrySet())
         {
             walkBackFrom(running, train.getKey(), train.getValue(), out);
         }
@@ -9026,7 +9103,7 @@ public class AutonomySession
 
                 if (tile == null) continue;
 
-                RouteId road = onTheWay ? path.get(at).getRouteId() : roadOfTheSensor(edge.getEnd(), edge.getStart());
+                RouteId road = onTheWay ? path.get(at).getRouteId() : roadOn(edge.getEnd(), edge.getEntrySide());
 
                 Set<RouteId> roads = seen.get(tile);
 
@@ -9165,9 +9242,8 @@ public class AutonomySession
      * Paints one train's own length back along the track it is covering (MT-309).
      *
      * Walks square by square from where the train stands, deducting each square's assigned length,
-     * and stops the moment the train has been used up.  Only squares the RAILWAY already holds
-     * covered are ever reached: the chain is followed through the endpoints of the covered edges, so
-     * this can only ever draw a subset of them.
+     * and stops the moment the train has been used up.  Only the edges the RAILWAY holds covered are
+     * walked, each along its own squares in order (OB-239), so this can only ever draw a subset of them.
      *
      * A square with no length assigned costs nothing, which is the same convention every other length
      * rule here uses - `getTileLength` answers 0 for unmeasured, and "only positive lengths are
@@ -9176,11 +9252,11 @@ public class AutonomySession
      *
      * @param running the layout
      * @param train the locomotive
-     * @param covered the endpoint squares of every edge this train covers
+     * @param covered every edge this train covers, as the reduction's own edges (`reducedEdgeOf`)
      * @param out the squares to draw, added to
      */
     private void walkBackFrom(org.traincontrol.automation.Layout running,
-        org.traincontrol.base.Locomotive train, Set<TileKey> covered,
+        org.traincontrol.base.Locomotive train, List<GraphReducer.ReducedEdge> covered,
         Map<TileKey, Set<RouteId>> out)
     {
         if (train == null || train.getTrainLength() == null) return;
@@ -9212,23 +9288,14 @@ public class AutonomySession
         // and is not this walk.
         while (remaining > 0)
         {
-            TileKey next = null;
+            // THE NEXT COVERED EDGE ALONG, walked along its own squares (OB-239) - see `nextCoveredEdge`.  The walk
+            // cannot double back: `walked` holds every square already passed, which is the same guard `Layout`'s own
+            // tail walk uses against a loop of track.
+            GraphReducer.ReducedEdge rail = nextCoveredEdge(covered, at, walked);
 
-            // The next covered square along, which is one of the endpoints the caller collected.  The
-            // walk cannot double back: `walked` holds every square already passed, which is the same
-            // guard `Layout`'s own tail walk uses against a loop of track.
-            for (TileKey candidate : covered)
-            {
-                if (walked.contains(candidate)) continue;
+            if (rail == null) return;
 
-                if (pathBetween(at, candidate) == null) continue;
-
-                next = candidate;
-
-                break;
-            }
-
-            if (next == null) return;
+            TileKey next = at.equals(rail.getEnd()) ? rail.getStart() : rail.getEnd();
 
             // THE SENSOR SQUARES ARE DRAWN TOO (Adam, 2026-09-23, OB-277: *"when we draw orange lines,
             // they don't overlap with sensors"*, and on every sensor, occupied or not).  The square a
@@ -9241,14 +9308,14 @@ public class AutonomySession
             // leaves by - and then its length is spent, before any square behind it (OB-278).
             if (walked.size() == 1)
             {
-                markTheSensor(out, at, next);
+                markTheSensor(out, at, rail);
 
                 remaining -= store.getTileLength(at);
 
                 if (remaining <= 0) return;
             }
 
-            List<GraphReducer.TileStep> between = pathBetween(at, next);
+            List<GraphReducer.TileStep> between = stepsFrom(rail, at);
 
             for (GraphReducer.TileStep step : between)
             {
@@ -9272,7 +9339,7 @@ public class AutonomySession
 
             // The far end is the next square back and the body lies over it - so it is drawn (OB-277),
             // along the road that faces the track just walked, and its own length counts.
-            markTheSensor(out, next, at);
+            markTheSensor(out, next, rail);
 
             remaining -= store.getTileLength(next);
 
@@ -9283,51 +9350,99 @@ public class AutonomySession
     }
 
     /**
-     * The squares between two Points, in the order a train travelling from one to the other crosses
-     * them, or null when the reduction knows of no edge joining them.
+     * The reduction's own edge for an edge the railway holds covered, or null where the reduction has none with its
+     * places (OB-239).
      *
-     * Both directions are matched and the reversed one is reversed, because a covered edge is covered
-     * whichever way the train came - and the ORDER is what this method exists for: the walk above
-     * spends the train's length square by square, so a path handed back the wrong way round would
-     * draw the far end of the segment and leave the square beside the train clear.
+     * The edge from the same square to the same square whose places (`GraphReducer.placesAlong`) are the ones the
+     * railway's edge carries, in the same order - which is what the build wrote them from.  Where the railway's edge
+     * carries none - a hand-written configuration, or one written before 3.0.0 - the two squares and the direction
+     * decide it, and the reduction keeps one edge for those.  An edge of a railway built before the diagram was redrawn
+     * can find none, and is not drawn rather than drawn along a road the railway does not hold; a train none of whose
+     * edges is found is drawn from the places it claims (`drawTheTrainsThatCoverNoEdge`).
      *
-     * The STEPS rather than the squares, because each one records which route of its square the edge
-     * runs through - and that is what lets the diagram draw the road the train is on rather than the
-     * whole tile (MT-309).
-     *
-     * @param from the square walked from
-     * @param to the square walked to
-     * @return the steps between, endpoints excluded, or null when they are not joined
+     * @param covered the railway's edge
+     * @return the reduced edge, or null
      */
-    private List<GraphReducer.TileStep> pathBetween(TileKey from, TileKey to)
+    private GraphReducer.ReducedEdge reducedEdgeOf(org.traincontrol.automation.Edge covered)
     {
+        TileKey from = getStationIndex().squareOf(covered.getStart().getName());
+        TileKey to = getStationIndex().squareOf(covered.getEnd().getName());
+
         if (from == null || to == null || reducer == null) return null;
 
         for (GraphReducer.ReducedEdge edge : reducer.getEdges())
         {
-            boolean sameWay = from.equals(edge.getStart()) && to.equals(edge.getEnd());
-            boolean otherWay = to.equals(edge.getStart()) && from.equals(edge.getEnd());
+            if (!from.equals(edge.getStart()) || !to.equals(edge.getEnd())) continue;
 
-            if (!sameWay && !otherWay) continue;
+            if (covered.getPlaceIds().isEmpty()) return edge;
 
-            List<GraphReducer.TileStep> steps = new ArrayList<>();
+            List<String> places = new ArrayList<>();
 
-            for (GraphReducer.TileStep step : edge.getPath())
-            {
-                if (step.getTile() == null) continue;
+            for (GraphReducer.Place place : reducer.placesAlong(edge)) places.add(place.getId());
 
-                // The squares at either end are where trains STAND, not track lying under one.
-                if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
-
-                steps.add(step);
-            }
-
-            if (otherWay) java.util.Collections.reverse(steps);
-
-            return steps;
+            if (places.equals(covered.getPlaceIds())) return edge;
         }
 
         return null;
+    }
+
+    /**
+     * The covered edge the walk goes on along from this square, or null where none goes on (OB-239).
+     *
+     * One that ENDS here first: the train came along it, and its places are where the body lies - the arriving copy
+     * `Layout.walkOneTail` takes first, for the same reason (SVZ-B1).  Then one that starts here, which is a train
+     * turned round on its square.  Never back to a square already walked.
+     *
+     * @param covered the train's covered edges
+     * @param at the square the walk has reached
+     * @param walked the squares already passed
+     * @return the edge, or null
+     */
+    private static GraphReducer.ReducedEdge nextCoveredEdge(List<GraphReducer.ReducedEdge> covered, TileKey at,
+        Set<TileKey> walked)
+    {
+        for (GraphReducer.ReducedEdge edge : covered)
+        {
+            if (at.equals(edge.getEnd()) && !walked.contains(edge.getStart())) return edge;
+        }
+
+        for (GraphReducer.ReducedEdge edge : covered)
+        {
+            if (at.equals(edge.getStart()) && !walked.contains(edge.getEnd())) return edge;
+        }
+
+        return null;
+    }
+
+    /**
+     * A covered edge's own squares, in the order the train's body lies along them from this end - the ends excluded,
+     * because the squares at either end are where trains STAND, not track lying under one.
+     *
+     * The ORDER is what the walk spends the train's length in: handed back the wrong way round, it would draw the far
+     * end of the edge and leave the square beside the train clear.  The STEPS rather than the squares, because each
+     * records which route of its square the edge runs through - which lets the diagram draw the road the train is on
+     * rather than the whole tile (MT-309).
+     *
+     * @param rail the covered edge
+     * @param from the end the walk is at
+     * @return the steps, from that end
+     */
+    private static List<GraphReducer.TileStep> stepsFrom(GraphReducer.ReducedEdge rail, TileKey from)
+    {
+        List<GraphReducer.TileStep> steps = new ArrayList<>();
+
+        for (GraphReducer.TileStep step : rail.getPath())
+        {
+            if (step.getTile() == null) continue;
+
+            if (step.getTile().equals(rail.getStart()) || step.getTile().equals(rail.getEnd())) continue;
+
+            steps.add(step);
+        }
+
+        if (from.equals(rail.getEnd())) java.util.Collections.reverse(steps);
+
+        return steps;
     }
 
     /**
@@ -9339,10 +9454,11 @@ public class AutonomySession
      * simply draws no line rather than a line along a rail it cannot name.
      *
      * @param out the covered set, added to
-     * @param sensor the Point's square
-     * @param towards the neighbouring Point's square the train's body runs on towards
+     * @param sensor the Point's square, one end of the edge
+     * @param rail the covered edge the body lies along there - whose own side at the square names the road, and not the
+     *        first edge joining the two squares, which where two roads join them could be the other (OB-239)
      */
-    private void markTheSensor(Map<TileKey, Set<RouteId>> out, TileKey sensor, TileKey towards)
+    private void markTheSensor(Map<TileKey, Set<RouteId>> out, TileKey sensor, GraphReducer.ReducedEdge rail)
     {
         Set<RouteId> roads = out.get(sensor);
 
@@ -9353,48 +9469,27 @@ public class AutonomySession
             out.put(sensor, roads);
         }
 
-        RouteId road = roadOfTheSensor(sensor, towards);
+        RouteId road = roadOn(sensor, sensor.equals(rail.getEnd()) ? rail.getEntrySide() : rail.getExitSide());
 
         if (road != null) roads.add(road);
     }
 
     /**
-     * Which road of a sensor square runs towards a neighbouring Point, or null when that cannot be said.
+     * Which road of a square uses this side, or null when that cannot be said.
      *
-     * **Asked of the same edge `pathBetween` walks**: the first reduced edge joining the two squares, either way
-     * round, in the reducer's own order - so the line through the sensor and the line along the track beside it
-     * describe one road rather than two answers that could part.  The side is where that edge leaves or reaches
-     * the sensor, and the road is the one of the square's routes that uses that side.  A double curve's two arcs
-     * share no side, so the answer is one road even there - which is the case MT-309 was about.
+     * The side is where an edge leaves or reaches the square - so the line through a sensor and the line along the
+     * track beside it describe one road, that edge's own, rather than two answers that could part.  It was asked of
+     * the first reduced edge joining two squares either way round, which where two roads join them could be the other
+     * road (OB-239).  A double curve's two arcs share no side, so the answer is one road even there - which is the
+     * case MT-309 was about.
      *
-     * @param sensor the Point's square
-     * @param towards the neighbouring Point's square
+     * @param sensor the square
+     * @param side the side an edge leaves or reaches it by, or null
      * @return the road, or null
      */
-    private RouteId roadOfTheSensor(TileKey sensor, TileKey towards)
+    private RouteId roadOn(TileKey sensor, Side side)
     {
-        if (sensor == null || towards == null || reducer == null || graph == null) return null;
-
-        Side side = null;
-
-        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
-        {
-            if (sensor.equals(edge.getStart()) && towards.equals(edge.getEnd()))
-            {
-                side = edge.getExitSide();
-
-                break;
-            }
-
-            if (towards.equals(edge.getStart()) && sensor.equals(edge.getEnd()))
-            {
-                side = edge.getEntrySide();
-
-                break;
-            }
-        }
-
-        if (side == null) return null;
+        if (sensor == null || side == null || graph == null) return null;
 
         for (Map.Entry<RouteId, Route> road : graph.getRoutes(sensor).entrySet())
         {

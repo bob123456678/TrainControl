@@ -316,6 +316,12 @@ public class GraphLocAssign extends javax.swing.JPanel
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
 
+            // SAVED BEFORE THE QUESTION WAITS (OB-305): the train, its facing and its side are written above, and the
+            // question below can wait as long as the operator likes - a crash in that wait lost them.  See
+            // `TailCrossedPrompt.saveBeforeAsking`; what it reconciled goes unsaid, as this door's own save leaves it.
+            TailCrossedPrompt.saveBeforeAsking(session, layout, point, tail,
+                point.getCurrentLocomotive().getTrainLength(), edit.parent);
+
             TailCrossedPrompt.Answer answer = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
                 point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit.parent,
                 session::baseNameOf, roadBefore);

@@ -11371,6 +11371,184 @@ public class testAutonomyDiagramSession
             "the import cleared a home without counting it, so nothing can tell the user that a "
             + "choice was made on their behalf");
     }
+
+    /**
+     * An import says what it left on a square already taken: a placement onto a square another train stands on, and a
+     * home onto a square that is already another train's home (OB-304).
+     *
+     * Both were skipped without a word - the square keeps its train and its home, which is right, and the operator was
+     * told nothing about the train the file put there.  The same train already on its own square, which is what a file
+     * imported a second time meets, is nothing to say.
+     *
+     * MUTATION: skip either silently again, or name the train already there as another, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAnImportSaysWhatItLeftOnATakenSquare() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        session.getStore().createConfiguration("Only", null);
+        session.getStore().setActiveConfiguration("Only");
+
+        TileKey west = new TileKey("main", 1, 1);
+        TileKey east = new TileKey("main", 4, 1);
+
+        session.placeLocomotive(west, "BR 01");
+        session.setHome(east, "BR 01");
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        // ANOTHER TRAIN onto the square BR 01 stands on (sensor 11), and another home onto the square that is BR 01's
+        points.put(new org.json.JSONObject().put("name", "Hauptbahnhof").put("s88", 11)
+            .put("loc", new org.json.JSONObject().put("name", "BR 02")));
+        points.put(new org.json.JSONObject().put("name", "Nebenbahnhof").put("s88", 12).put("home", "BR 03"));
+
+        // AND THE SAME TRAIN onto its own square, from a second old point on that sensor: nothing to say
+        points.put(new org.json.JSONObject().put("name", "Hauptbahnhof Einfahrt").put("s88", 11)
+            .put("loc", new org.json.JSONObject().put("name", "BR 01")));
+
+        AutonomySession.LegacyImport result = session.importLegacy(new org.json.JSONObject().put("points", points));
+
+        assertEquals(result.squareTaken, Arrays.asList("BR 02"), "a placement onto a square another train stands on was"
+            + " skipped without a word, or the train already standing there was named as another (OB-304)");
+
+        assertEquals(result.homeSquareTaken, Arrays.asList("BR 03"), "a home onto a square already home to another"
+            + " train was skipped without a word (OB-304)");
+
+        // AND THE SQUARES KEPT WHAT THEY HAD
+        Object standing = session.getPointProperty(west, "loc");
+
+        assertTrue(standing instanceof org.json.JSONObject
+            && "BR 01".equals(((org.json.JSONObject) standing).optString("name")), "the import put another train on a"
+            + " square that had one: " + standing);
+
+        assertEquals(session.getPointProperty(east, "home"), "BR 01", "the import took a square's home away for another"
+            + " train");
+    }
+
+    /**
+     * A facing the square records is kept by an import only where trains may arrive that way, and counted as the guess
+     * it is (OB-304).
+     *
+     * Where the old file cannot say which way a placed train faces, the facing the square last recorded was kept as it
+     * stood (RLA2-B3) - unchecked against the ways trains may arrive, though the guess made in its place prefers one of
+     * those (REG3-C1), and uncounted, so the log said no facing was guessed.  Here the middle square of a line, with
+     * arrivals from the east barred, records the barred way; the file places a train there with no edges to say.  Then,
+     * the bar lifted, the same way is one trains may arrive in, and is kept - and counted.
+     *
+     * MUTATION: keep any recorded facing again, or keep one without counting it, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAnImportKeepsARecordedFacingOnlyWhereTrainsMayArrive() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        session.getStore().createConfiguration("Barred", null);
+        session.getStore().setActiveConfiguration("Barred");
+
+        TileKey middle = new TileKey("main", 3, 1);
+
+        // A STATION, whose barred sides are read - a square that is not one has them ignored (GSE-C4)
+        session.setStation(middle, true);
+        session.setBarredArrivals(middle, java.util.EnumSet.of(Side.E));
+        session.rebuild();
+
+        Set<Side> mayArrive = session.homeFacingsFor(middle);
+
+        Side barredWay = null;
+
+        for (Side way : session.facingsFor(middle).values())
+        {
+            if (!mayArrive.contains(way)) barredWay = way;
+        }
+
+        assertFalse(mayArrive.isEmpty(), "precondition: no copy of the middle square is one trains may arrive at");
+        assertNotNull(barredWay, "precondition: no copy of the middle square faces a way trains may not arrive in: "
+            + session.facingsFor(middle) + ", " + mayArrive);
+
+        // THE LAST OCCUPANT'S FACING: the barred way
+        session.setFacing(middle, barredWay);
+
+        org.json.JSONObject legacy = new org.json.JSONObject().put("points", new org.json.JSONArray().put(
+            new org.json.JSONObject().put("name", "Mitte").put("s88", 12)
+                .put("loc", new org.json.JSONObject().put("name", "BR 50"))));
+
+        AutonomySession.LegacyImport barred = session.importLegacy(legacy);
+
+        assertTrue(session.homeFacingsFor(middle).contains(session.getFacing(middle)), "the import kept the facing the"
+            + " square recorded, " + session.getFacing(middle) + ", a way trains may not arrive in - the train stands"
+            + " where autonomy will not start it, though the guess made in its place prefers a way trains may arrive"
+            + " (REG3-C1, OB-304)");
+
+        assertEquals(barred.facingsInvented, 1, "the facing the import chose for the train is not counted as a guess");
+
+        // THE BAR LIFTED, in a configuration of its own: the same way is now one trains may arrive in, and stays
+        session.setBarredArrivals(middle, java.util.EnumSet.noneOf(Side.class));
+
+        session.getStore().createConfiguration("Open", null);
+        session.getStore().setActiveConfiguration("Open");
+        session.rebuild();
+
+        assertTrue(session.homeFacingsFor(middle).contains(barredWay), "precondition: with the bar lifted, " + barredWay
+            + " is still not a way trains may arrive at the middle square");
+
+        session.setFacing(middle, barredWay);
+
+        AutonomySession.LegacyImport lifted = session.importLegacy(legacy);
+
+        assertEquals(session.getFacing(middle), barredWay, "the import did not keep a recorded facing trains may arrive"
+            + " in (RLA2-B3)");
+
+        assertEquals(lifted.facingsInvented, 1, "the import kept the facing the square recorded, which is no evidence"
+            + " about the train the file puts there, and did not count it as a guess - the log says nothing was guessed"
+            + " (OB-304)");
+    }
+
+    /**
+     * The import's message names every skip it counts or lists (OB-304): the trains and homes left on a taken square,
+     * and the homes the file named twice - each read by the viewer's import door into the message, through its own
+     * sentence in the English bundle.
+     *
+     * MUTATION: leave any of the three out of the message, and this fails naming it.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testTheImportMessageNamesEverySkip() throws Exception
+    {
+        String door = new String(Files.readAllBytes(
+            new File("src/org/traincontrol/gui/AutonomyViewerPanel.java").toPath()), StandardCharsets.UTF_8);
+
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = AutonomySession.class.getResourceAsStream(
+            "/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        for (String[] skip : new String[][] {
+            {"result.squareTaken", "autosetup.ui.infoLegacySquareTaken"},
+            {"result.homeSquareTaken", "autosetup.ui.infoLegacyHomeSquareTaken"},
+            {"result.duplicateHomes", "autosetup.ui.infoLegacyDuplicateHomes"}})
+        {
+            int read = door.indexOf(skip[0]);
+
+            assertTrue(read > 0, "the import door never reads " + skip[0] + ", so the operator is not told (OB-304)");
+
+            int said = door.indexOf(skip[1], read);
+
+            assertTrue(said > read && said - read < 300, "the import door reads " + skip[0] + " and does not say it"
+                + " through " + skip[1] + " (OB-304)");
+
+            assertNotNull(english.getProperty(skip[1]), "the English bundle has no " + skip[1]);
+        }
+    }
+
     /**
      * The bulk clear touches exactly the squares the findings call homes (WK3-C3).
      *

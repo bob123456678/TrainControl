@@ -1476,6 +1476,39 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * The locomotives a Central Station sync changed while autonomy ran, by name, swept by the first sync that finds it
+     * stopped (OB-303).
+     *
+     * A sync asks the railway what each locomotive it re-addressed or re-linked now conflicts with, as the window's
+     * edit doors do - and not while autonomy runs, as they do not (RLA2-B2).  An address change is held back until the
+     * run has stopped, so the sync that applies it sweeps it; but a Central Station multi-unit's new members are taken
+     * at once, and every later sync saw no change to sweep for.  So a train standing as a member of a standing
+     * multi-unit stayed on the graph until the next load or Place, and autonomy could run it as a train of its own
+     * while every command to the multi-unit moved it.  By name, as the database holds them: a locomotive renamed or
+     * deleted since is not swept here, since the rename and delete doors sweep their own.
+     */
+    private final java.util.Set<String> sweepsHeldBackByARun =
+        java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
+
+    /**
+     * How many of a railway's points hold a train, so a sweep can tell whether it took one off (OB-303).
+     *
+     * @param layout the railway
+     * @return the points with a locomotive on them
+     */
+    private static int trainsStandingOn(Layout layout)
+    {
+        int standing = 0;
+
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null) standing++;
+        }
+
+        return standing;
+    }
+
+    /**
      * Synchronizes CS2 state
      * @return 
      */
@@ -1695,19 +1728,54 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // autonomy would run the second as a train of its own while the multi-unit's commands moved it.  Asked as the
         // window's edit doors ask it, of each locomotive the sync changed; not while autonomy runs, as they are not.  An
         // address change is held back until the run has stopped, and swept by the sync that makes it; new members of a
-        // Central Station multi-unit are taken at once, and one that arrives during a run is swept by the next load or
-        // Place (OB-303).
+        // Central Station multi-unit are taken at once, and one that arrives during a run is remembered and swept by
+        // the first sync after it (`sweepsHeldBackByARun`), and the railway redrawn where a sweep took a train off
+        // (OB-303).
         // Asked once, not built (RLV11-C5): the event thread can clear the railway between two questions
         final Layout loadedNow = this.getAutoLayoutIfLoaded();
 
-        if (!sweptAfterTheSync.isEmpty() && loadedNow != null && !this.isAutonomyRunning())
+        if (this.isAutonomyRunning())
         {
-            Layout layout = loadedNow;
+            // HELD BACK, AND REMEMBERED (OB-303) - see `sweepsHeldBackByARun`
+            for (MarklinLocomotive changed : sweptAfterTheSync) this.sweepsHeldBackByARun.add(changed.getName());
+        }
+        else
+        {
+            // AND EVERY ONE A RUN HELD BACK, by the name the database has it under now (OB-303)
+            final List<MarklinLocomotive> toSweep = new ArrayList<>(sweptAfterTheSync);
 
-            synchronized (layout)
+            synchronized (this.sweepsHeldBackByARun)
             {
-                for (MarklinLocomotive changed : sweptAfterTheSync) layout.sanitizeMultiUnits(changed);
+                for (String name : this.sweepsHeldBackByARun)
+                {
+                    MarklinLocomotive held = this.locDB.getByName(name);
+
+                    if (held != null && !toSweep.contains(held)) toSweep.add(held);
+                }
+
+                this.sweepsHeldBackByARun.clear();
             }
+
+            boolean tookATrainOff = false;
+
+            if (!toSweep.isEmpty() && loadedNow != null)
+            {
+                Layout layout = loadedNow;
+
+                synchronized (layout)
+                {
+                    int standing = trainsStandingOn(layout);
+
+                    for (MarklinLocomotive changed : toSweep) layout.sanitizeMultiUnits(changed);
+
+                    tookATrainOff = trainsStandingOn(layout) < standing;
+                }
+            }
+
+            // AND REDRAWN WHERE IT TOOK A TRAIN OFF (OB-303), as the window's doors redraw after the same sweep: the
+            // autonomy panels went on drawing the train standing until something else repainted them.  Outside the
+            // railway's monitor, because the redraw runs every listener the railway has.
+            if (tookATrainOff) loadedNow.refreshUI();
         }
 
         this.logf("loc.syncCompleted");
