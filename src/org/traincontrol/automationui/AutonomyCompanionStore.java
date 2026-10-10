@@ -665,9 +665,26 @@ public class AutonomyCompanionStore
 
         if (loaded == null) return missing;
 
-        for (String name : pageNamesWhenWritten.values())
+        for (Map.Entry<String, String> written : pageNamesWhenWritten.entrySet())
         {
-            if (name != null && !loaded.contains(name)) missing.add(name);
+            String name = written.getValue();
+
+            if (name == null || loaded.contains(name)) continue;
+
+            // A PAGE RENAMED OUTSIDE TRAINCONTROL IS STILL LOADED (GSE-C2).  This record is the name each id had when
+            // the setup was written, and a rename on the Central Station or in the page's file keeps the id and
+            // changes the name - the case page ids exist for.  Asked by name alone, the renamed page read as absent,
+            // so no save tidied anything while that layout was open and every save warned about a page on the screen.
+            //
+            // So the id is asked as well, by the rule `resolvePage` uses to tell a rename from a renumber: where the
+            // old name is still in the index the page IS that one, and it is not loaded; where it is not, the page the
+            // id names today is the one to look for.  Not `pageIsHere`, which answers from the index - and the index
+            // holds a stand-in for a page that would not read (FV3-A1, MT-135).
+            String nowCalled = resolvePage(written.getKey());
+
+            if (nowCalled != null && loaded.contains(nowCalled)) continue;
+
+            missing.add(name);
         }
 
         return missing;

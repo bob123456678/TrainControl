@@ -304,6 +304,101 @@ public class testARouteDrivenLocomotiveIsNotEdited
         assertTrue(renames > proposed, "the name proposal renames before it asks (OB-287)");
     }
 
+    /** The locomotive and route of GSR-B2's claim. */
+    private static final String SYNCED = "GSR-B2 loc";
+    private static final String SYNCED_ROUTE = "GSR-B2 route";
+
+    /**
+     * A Central Station sync does not re-address a locomotive a running route drives (GSR-B2).
+     *
+     * The sync's address change waited for autonomy and nothing else.  A route sends its commands to a locomotive by
+     * NAME, one after another with delays between them, and each goes to whatever address the name has when its turn
+     * comes - so a sync landing part-way along moved the locomotive to another address under the route, and the
+     * route's remaining commands went to a different decoder: another train, or none.  The delete and edit doors refuse
+     * the same change while a route drives the locomotive (OB-287); the sync is the door nobody opens by hand.
+     *
+     * The sync's address step is asked directly, with the Central Station's description of the locomotive at another
+     * address, because the whole sync needs a station on the network.  Autonomy is idle throughout, so the route is the
+     * only thing that can hold the address back.
+     *
+     * MUTATION: drop `|| this.runningRouteDriving(l.getName()) != null` from `adoptCentralStationAddress`, and this
+     * fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncDoesNotReAddressALocomotiveARouteDrives() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY, as the claims above open theirs (TSX-B8, OB-111).
+            sandbox = support.LayoutSandbox.open();
+
+            model = MarklinControlStation.init(null, true, false, false, false);
+
+            model.newMM2Locomotive(SYNCED, 66);
+
+            // A ROUTE THAT DRIVES IT, running long enough to ask: one function command, with a pause after it.
+            List<RouteCommand> commands = new ArrayList<>();
+
+            RouteCommand fires = RouteCommand.RouteCommandFunction(SYNCED, 1, true);
+
+            fires.setDelay(10000);
+
+            commands.add(fires);
+
+            model.newRoute(SYNCED_ROUTE, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            final MarklinControlStation running = model;
+
+            new Thread(() -> running.execRoute(SYNCED_ROUTE)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(SYNCED_ROUTE).isExecuting() && System.currentTimeMillis() < armed) Thread.sleep(20);
+
+            assertNotNull(model.runningRouteDriving(SYNCED), "precondition: the model does not say the running route"
+                + " drives the locomotive, so there is nothing for the sync to wait for");
+
+            assertFalse(model.isAutonomyRunning(), "precondition: autonomy is busy, so the sync would wait for it and"
+                + " this would say nothing about the route");
+
+            // THE CENTRAL STATION'S DESCRIPTION: the same locomotive and decoder, at another address
+            org.traincontrol.marklin.MarklinLocomotive fromTheStation = new org.traincontrol.marklin.MarklinLocomotive(
+                model, 67, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, SYNCED);
+
+            model.adoptCentralStationAddress(fromTheStation,
+                new ArrayList<org.traincontrol.marklin.MarklinLocomotive>());
+
+            assertEquals(model.getLocByName(SYNCED).getAddress(), 66, "a Central Station sync moved a locomotive a"
+                + " running route drives to another address - the route's remaining commands go to whatever decoder"
+                + " answers there, another train or none (GSR-B2)");
+        }
+        finally
+        {
+            if (model != null)
+            {
+                long giveUp = System.currentTimeMillis() + 30000;
+
+                while (model.getRoute(SYNCED_ROUTE) != null && model.getRoute(SYNCED_ROUTE).isExecuting()
+                    && System.currentTimeMillis() < giveUp)
+                {
+                    Thread.sleep(100);
+                }
+
+                try { model.deleteRoute(SYNCED_ROUTE); } catch (Exception ignored) { }
+                try { model.deleteLoc(SYNCED); } catch (Exception ignored) { }
+
+                model.stop();
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
     /**
      * Runs a door on the event thread, and closes the first message it shows without answering yes.
      *

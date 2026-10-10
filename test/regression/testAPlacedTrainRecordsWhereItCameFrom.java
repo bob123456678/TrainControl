@@ -574,6 +574,105 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
+     * OK on a placement the railway refuses leaves the locomotive as it was (GST-B2).
+     *
+     * `Layout.moveLocomotive` refuses while autonomy runs, for a point the railway does not have, and for one that is
+     * no station, and answers false with a line in the log.  `commitChanges` threw the answer away and wrote the form's
+     * length, speed, functions and reversing onto the locomotive anyway - so the operator read that the train had not
+     * been placed and found its settings changed regardless, and `commitAndRecord` went on as though it had been.
+     *
+     * Refused here by a point the railway does not have - what the dialog holds when a rebuild drops the station it
+     * was opened on - so nothing on the fixture is changed to get the refusal.  A different length is chosen in the
+     * form, as the operator would choose it, so a write cannot pass for the value already there going round.
+     *
+     * MUTATION: take the `if (!... moveLocomotive(...)) return false;` guard out of `commitChanges`, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testARefusedPlacementLeavesTheTrainAsItWas() throws Exception
+    {
+        final Point nowhere = new Point("GST-B2 not on this railway", false, null);
+
+        assertNull(model.getAutoLayout().getPoint(nowhere.getName()), "precondition: the railway has a point called "
+            + nowhere.getName() + ", so nothing below is refused");
+
+        final GraphLocAssign[] built = new GraphLocAssign[1];
+
+        SwingUtilities.invokeAndWait(() ->
+            built[0] = new GraphLocAssign(ui, nowhere, false, session, model.getAutoLayout()));
+
+        final GraphLocAssign edit = built[0];
+
+        final Locomotive subject = model.getLocByName(edit.getLoc());
+
+        assertNotNull(subject, "precondition: the dialog offers no locomotive to place");
+
+        final javax.swing.JComboBox<?> lengths = theLengthCombo(edit);
+
+        assertNotNull(lengths, "precondition: the dialog shows no train-length list");
+
+        final Integer lengthWas = subject.getTrainLength();
+        final int speedWas = subject.getPreferredSpeed();
+
+        final String chosen = Integer.valueOf(7).equals(lengthWas) ? "8" : "7";
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> lengths.setSelectedItem(chosen));
+
+            assertEquals(edit.getTrainLength(), Integer.valueOf(chosen),
+                "precondition: the form did not take the length chosen in it");
+
+            GraphLocAssign.commitAndRecord(edit);
+
+            assertEquals(subject.getTrainLength(), lengthWas, "OK on a placement the railway refused changed "
+                + subject.getName() + "'s length to " + chosen + " anyway - the log says the train was not placed, and"
+                + " its settings changed regardless (GST-B2)");
+        }
+        finally
+        {
+            subject.setTrainLength(lengthWas == null ? 0 : lengthWas);
+            subject.setPreferredSpeed(speedWas);
+        }
+    }
+
+    /**
+     * The form's train-length list, found by what it offers.
+     *
+     * Its field is generated and private, so it is recognised by its entries: the one list in the form that runs from
+     * 0 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`.  The locomotive list holds names, and the two function lists start
+     * with their "none" entry.
+     *
+     * @param in where to look
+     * @return the list, or null when none is shown
+     */
+    private static javax.swing.JComboBox<?> theLengthCombo(java.awt.Container in)
+    {
+        for (java.awt.Component child : in.getComponents())
+        {
+            if (child instanceof javax.swing.JComboBox)
+            {
+                javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) child;
+
+                if (list.getItemCount() == TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + 1
+                    && "0".equals(String.valueOf(list.getItemAt(0))))
+                {
+                    return list;
+                }
+            }
+            else if (child instanceof java.awt.Container)
+            {
+                javax.swing.JComboBox<?> inside = theLengthCombo((java.awt.Container) child);
+
+                if (inside != null) return inside;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The arrival-side combo as the operator would see it, found in what the dialog actually shows.
      *
      * Searched through the wrapper rather than read off a field: the form itself carries four combos

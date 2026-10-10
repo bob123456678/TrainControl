@@ -607,6 +607,89 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A page renamed outside TrainControl is still a page that is loaded (GSE-C2).
+     *
+     * `pagesNotLoaded` is the question every save asks before it tidies the setup, and it compared the NAMES the setup
+     * recorded with the names of the pages loaded.  A page renamed on the Central Station, or in its file, keeps its id
+     * and changes its name - the case page ids exist for, and the test above pins that the settings follow it.  The
+     * question did not follow it: the renamed page read as missing for as long as the layout was open, so no save
+     * tidied anything and every save warned about a page that was on the screen.
+     *
+     * MUTATION: delete `if (nowCalled != null && loaded.contains(nowCalled)) continue;` from `pagesNotLoaded`, and this
+     * fails.
+     *
+     * @throws IOException from the temporary folder
+     */
+    @Test
+    public void testAPageRenamedElsewhereIsNotMissing() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Old Name", "2");
+
+        store.setPageIds(before);
+        store.setPointName(new TileKey("Old Name", 4, 7), "Yard throat");
+        store.createConfiguration("Default", null);
+        store.save();
+
+        // the same page, renamed somewhere else: same id, new name
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("New Name", "2");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertEquals(reloaded.getPointName(new TileKey("New Name", 4, 7)), "Yard throat",
+            "precondition: the renamed page did not keep its settings, so this is not the rename case");
+
+        assertEquals(reloaded.pagesNotLoaded(after.keySet()), java.util.Collections.<String>emptyList(),
+            "a page renamed outside TrainControl is loaded and on the screen, and the setup reports it as a page it "
+            + "cannot see - so no save tidies the setup while that layout is open, and every save warns about a page "
+            + "that is there (GSE-C2)");
+    }
+
+    /**
+     * A page RENUMBERED, whose page did not load, is still reported as not loaded (GSE-C2).
+     *
+     * The guard on the fix above: the id is believed only where `resolvePage` believes it.  Here id 2 belonged to
+     * "Yard" and now belongs to "Main Line", while "Yard" is still in the index under another id and did not load -
+     * the shape an unreadable page's stand-in gives (FV3-A1).  Asked by id alone, the question finds "Main Line"
+     * loaded and calls "Yard" present, the save tidies against a picture without it, and a page of settings goes,
+     * which is the MT-135 loss.  Green before the fix and after it; it is here to catch the fix done the short way.
+     *
+     * MUTATION: ask `pageIdToName.get(written.getKey())` in `pagesNotLoaded` instead of
+     * `resolvePage(written.getKey())`, and this fails.
+     *
+     * @throws IOException from the temporary folder
+     */
+    @Test
+    public void testARenumberedPageThatDidNotLoadIsStillMissing() throws IOException
+    {
+        java.util.Map<String, String> before = new java.util.LinkedHashMap<>();
+        before.put("Yard", "2");
+
+        store.setPageIds(before);
+        store.setPointName(new TileKey("Yard", 1, 1), "Yard throat");
+        store.createConfiguration("Default", null);
+        store.save();
+
+        java.util.Map<String, String> after = new java.util.LinkedHashMap<>();
+        after.put("Main Line", "2");
+        after.put("Yard", "3");
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.setPageIds(after);
+        reloaded.load();
+
+        assertFalse(reloaded.getPageIdConflicts().isEmpty(), "precondition: the renumber was not read as one");
+
+        assertEquals(reloaded.pagesNotLoaded(java.util.Collections.singletonList("Main Line")),
+            java.util.Collections.singletonList("Yard"),
+            "Yard did not load, and the setup no longer says so because another page holds its old number - the save "
+            + "would tidy against a picture without Yard and drop its settings (GSE-C2, FV3-A1, MT-135)");
+    }
+
+    /**
      * A page RENUMBERED is reported rather than adopted.
      *
      * The Central Station orders pages by this id, so reordering them there can renumber the pages - and

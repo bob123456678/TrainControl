@@ -14987,28 +14987,58 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return SPEED_STEP;
     }
 
+    /**
+     * Stops the shown locomotive and sets it running backwards, on a thread of its own because stopping talks to the
+     * Central Station.
+     *
+     * THE LOCOMOTIVE THE PRESS WAS FOR (GST-C2).  Captured here, on the event thread, because the worker used to read
+     * `activeLoc` again when it ran - so a press followed quickly by picking another locomotive stopped and turned that
+     * one.  The direction buttons are Swing's, so they are set back on the event thread, and only while the same
+     * locomotive is still the one shown.
+     */
     private void backwardLoc()
     {
-        if (this.activeLoc != null) // && this.activeLoc.goingForward())
+        final Locomotive loc = this.activeLoc;
+
+        if (loc != null)
         {
             new Thread(() ->
             {
-                this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
-                this.Forward.setSelected(false);
-                this.Backward.setSelected(true);
+                loc.stop().setDirection(Locomotive.locDirection.DIR_BACKWARD);
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    if (this.activeLoc != loc) return;
+
+                    this.Forward.setSelected(false);
+                    this.Backward.setSelected(true);
+                });
             }).start();
         } 
     }
     
+    /**
+     * Stops the shown locomotive and sets it running forwards, as `backwardLoc` does the other way: the locomotive the
+     * press was for is captured before the thread starts, and the buttons are set on the event thread while it is still
+     * the one shown (GST-C2).
+     */
     private void forwardLoc()
     {
-        if(this.activeLoc != null) // && this.activeLoc.goingBackward())
+        final Locomotive loc = this.activeLoc;
+
+        if (loc != null)
         {
             new Thread(() ->
             {
-                this.activeLoc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
-                this.Forward.setSelected(true);
-                this.Backward.setSelected(false);
+                loc.stop().setDirection(Locomotive.locDirection.DIR_FORWARD);
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    if (this.activeLoc != loc) return;
+
+                    this.Forward.setSelected(true);
+                    this.Backward.setSelected(false);
+                });
             }).start();
         }
     }

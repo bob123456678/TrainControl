@@ -342,13 +342,13 @@ public class testTheRefusalsAreAskedAtTheDoors
      * half that survives a restart, so the next build emitted the train on a square it was never put
      * on.
      *
-     * **A named list, and one of them is allowed to discard it** - which is the point of writing them
-     * down rather than counting. `GraphLocAssign.commitChanges` does discard the answer, and what
-     * makes that safe is the line after it: `commitAndRecord` asks the POINT what is standing there
-     * rather than assuming the move took, so a refused placement records the train that is really
-     * there - or nothing - and never the one the dialog hoped for.
+     * **A named list, and every door on it guards** - which is the point of writing them down rather
+     * than counting.  `GraphLocAssign.commitChanges` used to be allowed to discard the answer, because
+     * `commitAndRecord` asks the POINT what is standing there afterwards and so records no placement
+     * for a refused move.  That kept the setup honest and not the locomotive: the dialog's length,
+     * speed and functions were written to a train the railway had just refused to place (GST-B2).
      *
-     * MUTATION: drop the `if (!` from either of the two doors that guard, and this names it.
+     * MUTATION: drop the `if (!` from any of the three doors, and this names it.
      */
     @Test
     public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
@@ -360,9 +360,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             {"src/org/traincontrol/gui/TrainControlUI.java", "guards",
                 "the diagram's paste door - TWV-B4, which discarded the refusal AND cleared the "
                 + "clipboard, so a train cut with Control+X was on no square and on no clipboard"},
-            {"src/org/traincontrol/gui/GraphLocAssign.java", "discards",
-                "the assign dialog: commitChanges moves and does not look, and commitAndRecord "
-                + "afterwards asks the POINT what is standing there rather than assuming"},
+            {"src/org/traincontrol/gui/GraphLocAssign.java", "guards",
+                "the assign dialog - GST-B2, where a refused placement still wrote the train's length, "
+                + "speed and functions"},
         };
 
         List<String> wrong = new ArrayList<>();

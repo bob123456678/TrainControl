@@ -4884,4 +4884,114 @@ public class testEditorSurfaceRules
             + " mark's front sheet is filled rather than outlined, so on a selected row it is a solid sheet among outlines"
             + " (OB-258)");
     }
+
+    /**
+     * The "why is this train not moving" answer reads no setup collection on its worker (GSE-C3).
+     *
+     * `composeWhy` runs on `WhyRenderer`, off the event thread, and it asked the session for the turn squares, the
+     * barred arrival sides, the switched-off squares and the reduction as it went.  Those are the setup's live
+     * collections, and the event thread edits them - a click on the diagram while the answer is being worked out
+     * changes them under the worker, which can throw part-way through a walk or draw routes from half an edit.
+     * `applyWhy` already captures the railway and the station index on the event thread for the same reason, and
+     * these belong beside them.
+     *
+     * MUTATION: put `session.shutTiles()` back into `composeWhy`'s `findPath` call, and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testTheWhyWorkerReadsNoSetupCollection() throws Exception
+    {
+        String panel = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
+
+        String worker = withoutComments(bodyOf(panel, "private WhyAnswer composeWhy("));
+
+        assertFalse(worker.isEmpty(), "composeWhy has moved or been renamed, so this rule asks nothing of it");
+
+        for (String asked : new String[] {
+            ".mandatoryTurnTiles(", ".mayTurnTiles(", ".barredArrivals(", ".shutTiles(", ".getReducer(" })
+        {
+            assertFalse(worker.contains(asked), "composeWhy runs on the WhyRenderer thread and calls "
+                + asked.substring(1) + ") - a setup collection the event thread edits, read while a click may be"
+                + " changing it, so the answer can throw part-way or draw routes from half an edit.  Capture it in"
+                + " applyWhy, beside the station index (GSE-C3)");
+        }
+    }
+
+    /**
+     * The direction buttons' worker commands the locomotive it was pressed for, and leaves Swing to the event thread
+     * (GST-C2).
+     *
+     * `forwardLoc` and `backwardLoc` stop the shown locomotive and set its direction on a new thread, because stopping
+     * talks to the Central Station.  The thread read `activeLoc` again when it ran, so a press followed quickly by
+     * picking another locomotive stopped and turned the second one; and it ticked the Forward and Backward buttons from
+     * that thread, which is Swing off the event thread.  The locomotive is captured before the thread starts, and the
+     * buttons are set in an `invokeLater` - which may read `activeLoc`, on the thread that writes it.
+     *
+     * MUTATION: command `this.activeLoc` again inside either thread, or set a button outside the `invokeLater`, and
+     * this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testTheDirectionButtonsCommandTheLocomotiveTheyWerePressedFor() throws Exception
+    {
+        String ui = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
+            StandardCharsets.UTF_8);
+
+        for (String declaration : new String[] { "private void backwardLoc()", "private void forwardLoc()" })
+        {
+            String body = withoutComments(bodyOf(ui, declaration));
+
+            assertFalse(body.isEmpty(), declaration + " has moved or been renamed, so this rule asks nothing of it");
+
+            int started = body.indexOf("new Thread(");
+
+            assertTrue(started >= 0, declaration + " no longer starts a thread, so this rule needs rewriting rather"
+                + " than passing: " + body);
+
+            String worker = parenthesised(body, started + "new Thread".length());
+
+            // WHAT THE WORKER HANDS BACK belongs to the event thread, and may do both.
+            for (int back = worker.indexOf("invokeLater("); back >= 0; back = worker.indexOf("invokeLater("))
+            {
+                int open = back + "invokeLater".length();
+
+                worker = worker.substring(0, back) + worker.substring(open + parenthesised(worker, open).length());
+            }
+
+            assertFalse(worker.contains("setSelected("), declaration + " sets the direction buttons from its worker"
+                + " thread.  Swing is single-threaded, so Forward and Backward are changed while the event thread may"
+                + " be painting them (GST-C2): " + worker);
+
+            assertFalse(worker.contains("activeLoc"), declaration + " reads the shown locomotive again on its worker,"
+                + " so a press followed quickly by picking another locomotive stops and turns that one instead"
+                + " (GST-C2): " + worker);
+        }
+    }
+
+    /**
+     * The text from an opening parenthesis to the one that closes it, both included.
+     *
+     * Counted rather than matched by a pattern, because a thread's body holds lambdas and calls of its own, and a
+     * match that stopped at the first close would hand back a fragment.
+     *
+     * @param code the source
+     * @param open the index of the opening parenthesis
+     * @return the span, or the rest of the source when nothing closes it
+     */
+    private static String parenthesised(String code, int open)
+    {
+        int depth = 0;
+
+        for (int i = open; i < code.length(); i++)
+        {
+            char c = code.charAt(i);
+
+            if (c == '(') depth++;
+            else if (c == ')' && --depth == 0) return code.substring(open, i + 1);
+        }
+
+        return code.substring(open);
+    }
 }

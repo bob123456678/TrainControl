@@ -1633,63 +1633,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 
                 // We already have this locomotive, with the same decoder type, but different address.  Update the address and UID in database
-                if (this.locDB.getByName(l.getName()) != null 
-                    && this.locDB.getByName(l.getName()).getAddress() != l.getAddress()
-                    && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
-                )
-                {
-                    // Deferred while anything is running.  setAddress changes which decoder this
-                    // locomotive commands, so applying it mid-run sends every subsequent speed and
-                    // function command to a different engine while the graph goes on tracking this one
-                    // - and the train already moving keeps moving, now unaddressable.  A rename and a
-                    // manual address change are both refused while running; a sync had no such guard
-                    // and is triggered automatically from a dozen places, so the check belongs here.
-                    //
-                    // This used to cite hash drift as the reason as well.  That reason is gone: a
-                    // locomotive hashes by identity, so no mutation moves it out of the collections
-                    // holding it - see the note on MarklinLocomotive.hashCode.  Do not re-add repair
-                    // machinery here to satisfy it.
-                    if (this.isAutonomyRunning())
-                    {
-                        this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
-                    }
-                    else
-                    {
-                        String oldAddr = this.getLocAddress(l.getName());
-                        this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
-
-                        // Update DB entry
-                        MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
-                        this.locDB.delete(l.getName());
-                        this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
-
-                        // AND THE CACHE FOLLOWS THE NEW UID AT ONCE (MKR-C2).  The rebuild at the end of the sync
-                        // is on the success path only, and until it runs every echo for this locomotive resolves
-                        // to nothing - the address it now answers to is not in the cache, and the one it used to
-                        // answer to names a locomotive the database no longer has under that key.
-                        this.rebuildLocIdCache();
-
-                        this.logf("loc.addressUpdated",
-                            existingLoc.getName(),
-                            oldAddr,
-                            this.getLocAddress(existingLoc.getName()));
-
-                        sweptAfterTheSync.add(existingLoc);
-
-                        // The same repair changeLocAddress performs, for the same reason
-                        for (Locomotive other : getLocomotives())
-                        {
-                            if (other.hasLinkedLocomotives())
-                            {
-                                // ONE CALL (NSV-B2).  The two-call form stages on an instance
-                                // field, and this loop runs off the event thread inside syncWithCS2
-                                // while the multi-unit dialog can be staging on the event thread -
-                                // so a consist could be rebuilt from the other thread's list.
-                                other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
-                            }
-                        }
-                    }
-                }
+                this.adoptCentralStationAddress(l, sweptAfterTheSync);
                 
                 // Update function types if they have changed
                 if (this.locDB.hasId(l.getUID()) &&
@@ -1771,6 +1715,82 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
+    /**
+     * Gives a locomotive this database already has the address the Central Station reports for it.
+     *
+     * One step of `syncWithCS2`'s locomotive pass, in a method of its own so the decision can be asked without a
+     * station on the network (GSR-B2).  Nothing happens unless this database has a locomotive of that name, with the
+     * same decoder type, at a different address.
+     *
+     * @param l the locomotive as the Central Station describes it
+     * @param sweptAfterTheSync where a locomotive re-addressed here is recorded, for the sweep at the end of the sync
+     */
+    public void adoptCentralStationAddress(MarklinLocomotive l, List<MarklinLocomotive> sweptAfterTheSync)
+    {
+        if (this.locDB.getByName(l.getName()) != null
+            && this.locDB.getByName(l.getName()).getAddress() != l.getAddress()
+            && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
+        )
+        {
+            // Deferred while anything is running.  setAddress changes which decoder this
+            // locomotive commands, so applying it mid-run sends every subsequent speed and
+            // function command to a different engine while the graph goes on tracking this one
+            // - and the train already moving keeps moving, now unaddressable.  A rename and a
+            // manual address change are both refused while running; a sync had no such guard
+            // and is triggered automatically from a dozen places, so the check belongs here.
+            //
+            // This used to cite hash drift as the reason as well.  That reason is gone: a
+            // locomotive hashes by identity, so no mutation moves it out of the collections
+            // holding it - see the note on MarklinLocomotive.hashCode.  Do not re-add repair
+            // machinery here to satisfy it.
+            // AND WHILE A ROUTE DRIVES IT (GSR-B2).  A route sends its commands to a locomotive by name, one after
+            // another with delays between them, and each goes to whatever address the name has when its turn comes -
+            // so an address adopted part-way along sends the rest of the route to a different decoder.  The window's
+            // delete and edit doors refuse the same change while a route drives the locomotive (OB-287); this is the
+            // door that runs by itself.
+            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null)
+            {
+                this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
+            }
+            else
+            {
+                String oldAddr = this.getLocAddress(l.getName());
+                this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
+
+                // Update DB entry
+                MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
+                this.locDB.delete(l.getName());
+                this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+
+                // AND THE CACHE FOLLOWS THE NEW UID AT ONCE (MKR-C2).  The rebuild at the end of the sync
+                // is on the success path only, and until it runs every echo for this locomotive resolves
+                // to nothing - the address it now answers to is not in the cache, and the one it used to
+                // answer to names a locomotive the database no longer has under that key.
+                this.rebuildLocIdCache();
+
+                this.logf("loc.addressUpdated",
+                    existingLoc.getName(),
+                    oldAddr,
+                    this.getLocAddress(existingLoc.getName()));
+
+                sweptAfterTheSync.add(existingLoc);
+
+                // The same repair changeLocAddress performs, for the same reason
+                for (Locomotive other : getLocomotives())
+                {
+                    if (other.hasLinkedLocomotives())
+                    {
+                        // ONE CALL (NSV-B2).  The two-call form stages on an instance
+                        // field, and this loop runs off the event thread inside syncWithCS2
+                        // while the multi-unit dialog can be staging on the event thread -
+                        // so a consist could be rebuilt from the other thread's list.
+                        other.setLinkedLocomotives(other.getLinkedLocomotiveNames());
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Deletes the current layout from the model
      *
@@ -2051,9 +2071,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 // Cast object
                 instance = (List<MarklinSimpleComponent>) obj;
-            }
 
-            this.logf("log.databaseLoadedFromFile");
+                this.logf("log.databaseLoadedFromFile");
+            }
+            else
+            {
+                // READ, AND NOT A DATABASE (GSP-C1).  A file that deserializes to something other than a list is as
+                // unreadable as one that will not deserialize at all, and it is marked the same way.  Unmarked, the
+                // application ran with an empty database, logged that it had loaded one, and the save on the way out
+                // wrote that emptiness over the file with no copy kept - see saveState.
+                this.databaseLoadFailed = true;
+
+                this.logf("log.databaseBadDataFile");
+            }
         }
         catch (IOException iex)
         {

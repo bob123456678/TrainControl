@@ -273,7 +273,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         final org.traincontrol.automationui.TileGraph.TileKey squareBefore = wasOn == null || session == null
             || session.getStationIndex() == null ? null : session.getStationIndex().squareOf(wasOn);
 
-        edit.commitChanges();
+        // A REFUSED PLACEMENT RECORDS NOTHING (GST-B2): the railway did not put the train there, so the setup is not
+        // told it did - no placement, no facing, no tail, and no save.
+        if (!edit.commitChanges()) return;
 
         if (session == null) return;
 
@@ -837,12 +839,19 @@ public class GraphLocAssign extends javax.swing.JPanel
     }
     
     /**
-     * Applies all changes from the UI
+     * Applies all changes from the UI, once the railway has accepted the placement.
+     *
+     * NOTHING WHEN THE MOVE IS REFUSED (GST-B2).  `moveLocomotive` refuses while autonomy runs, for a point the
+     * railway does not have and for one that is no station, and answers false with a line in the log.  The answer was
+     * thrown away and the form's length, speed, functions and reversing written anyway - so the operator read that the
+     * train had not been placed and found its settings changed regardless.
+     *
+     * @return true when the locomotive was placed and its settings applied, false when the railway refused it
      */
-    public void commitChanges()
+    public boolean commitChanges()
     {
         // ONTO A COPY TRAINS MAY NOT ARRIVE AT, TOO, where that is the heading kept (OB-284).
-        parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false, true);
+        if (!parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false, true)) return false;
 
         parent.getModel().getLocByName(getLoc()).setReversible(isReversible());
         parent.getModel().getLocByName(getLoc()).setArrivalFunc(getArrivalFunc());
@@ -851,8 +860,10 @@ public class GraphLocAssign extends javax.swing.JPanel
         parent.getModel().getLocByName(getLoc()).setTrainLength(getTrainLength());
 
         parent.getModel().getAutoLayout().applyDefaultLocCallbacks(parent.getModel().getLocByName(getLoc()));
-        
-        parent.repaintAutoLocList(false);  
+
+        parent.repaintAutoLocList(false);
+
+        return true;
     }
 
     /**

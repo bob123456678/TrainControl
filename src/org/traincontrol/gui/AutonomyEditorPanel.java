@@ -8409,6 +8409,12 @@ public class AutonomyEditorPanel extends JPanel
         // the setup rather than to whichever reader asks first.
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
+        // AND WHAT THE SETUP SAYS ABOUT TURNING, ARRIVALS AND CLOSED SQUARES, captured here for the index's reason
+        // (GSE-C3).  They are the setup's live collections, which the event thread edits; read by the worker as it
+        // went, a click on the diagram while the answer was being worked out changed them under a walk that was
+        // iterating them.
+        final WhySetup setup = new WhySetup(session);
+
         // WHICH TIER IT ANSWERS FOR (MT-434), read with the radio here on the event thread, and the square remembered so
         // switching Path Type can ask it again.  Adam, 2026-09-15: *"in manual mode, I still get reasons like
         // 'tunnellongpark will never be chosen in autonomy'"*.
@@ -8431,7 +8437,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, tile, byHand));
+            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
         }
         catch (RuntimeException refused)
         {
@@ -8454,11 +8460,12 @@ public class AutonomyEditorPanel extends JPanel
      * @param asked which ask this is, so a stale answer can be discarded
      * @param layout the railway, captured on the event thread
      * @param index the square-to-Point translation, captured with it
+     * @param setup the setup's turn squares, barred sides, closed squares and reduction, captured with it
      * @param tile the square that was clicked
      * @param byHand true when Path Type is Manual
      */
     private void workOutWhy(long asked, org.traincontrol.automation.Layout layout,
-        org.traincontrol.automationui.StationIndex index, TileKey tile, boolean byHand)
+        org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
     {
         try
         {
@@ -8466,7 +8473,7 @@ public class AutonomyEditorPanel extends JPanel
 
             try
             {
-                answer = composeWhy(layout, index, tile, byHand);
+                answer = composeWhy(layout, index, setup, tile, byHand);
             }
             catch (RuntimeException failed)
             {
@@ -8501,12 +8508,13 @@ public class AutonomyEditorPanel extends JPanel
      *
      * @param layout the railway
      * @param index the square-to-Point translation
+     * @param setup what the setup says about turning, arrivals and closed squares, read on the event thread (GSE-C3)
      * @param tile the square that was clicked
      * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
      */
     private WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
-        org.traincontrol.automationui.StationIndex index, TileKey tile, boolean byHand)
+        org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
     {
         // Which train is standing here.  Asked of the LAYOUT rather than of the setup, because it is
         // the layout's opinion of where trains are that decides what runs.
@@ -8588,15 +8596,15 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
         java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
 
-        java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
-        java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
+        // FROM THE EVENT THREAD'S COPIES, and never from the session: this runs on WhyRenderer (GSE-C3).
+        java.util.Set<TileKey> mustTurn = setup.mustTurn;
+        java.util.Set<TileKey> mayTurn = setup.mayTurn;
 
         // The red arrows, so the routes drawn here are routes a train would actually be offered
         // (OB-120).  This tool answers "where could it go"; drawing a run into a station that refuses
         // arrivals from that side answers it wrongly, and in the direction that wastes the most time -
         // the user goes looking for why the railway will not do something it was never going to do.
-        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred =
-            session.barredArrivals();
+        java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred = setup.barred;
 
         // Collapsed to STATIONS, the way the locomotive panel's tooltip does.  The reasons come back
         // keyed by the running graph's Points, and a square is several of those - so a derived-graph
@@ -8624,12 +8632,12 @@ public class AutonomyEditorPanel extends JPanel
                 if (!available.add(station)) continue;
 
                 // Drawn, so "where can it go" is read off the track rather than out of a list
-                if (where != null && session.getReducer() != null)
+                if (where != null && setup.reducer != null)
                 {
                     // AND THE CLOSED SQUARES, so this tool and the findings panel walk one railway
                     // (DIR-B1).
-                    trace(drawn, session.getReducer().findPath(tile, where, mayTurn, mustTurn, barred,
-                        session.shutTiles()), tile, true, where);
+                    trace(drawn, setup.reducer.findPath(tile, where, mayTurn, mustTurn, barred,
+                        setup.shut), tile, true, where);
                 }
             }
             else
@@ -8789,6 +8797,48 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return true;
+    }
+
+    /**
+     * What the setup says about turning, arrivals and closed squares, read for one "why is this train not moving" ask
+     * on the event thread (GSE-C3).
+     *
+     * The answer is composed on `WhyRenderer`, and these are the setup's live collections, which the event thread
+     * edits - so the worker is handed copies taken on the thread that owns them, as it is handed the railway and the
+     * station index.  The session's own methods build each of the four collections fresh, so holding them is holding
+     * copies.  The reduction is held by reference: a rebuild replaces it rather than editing it, so the one captured
+     * goes on describing the setup the copies came from.
+     */
+    private static final class WhySetup
+    {
+        /** The squares where a run must turn round. */
+        private final java.util.Set<TileKey> mustTurn;
+
+        /** The squares where a run may turn round, less the ones where it must. */
+        private final java.util.Set<TileKey> mayTurn;
+
+        /** The sides each station refuses arrivals by. */
+        private final java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred;
+
+        /** The squares switched off. */
+        private final java.util.Set<TileKey> shut;
+
+        /** The reduction the routes are walked on, or null when there is none. */
+        private final org.traincontrol.automationui.GraphReducer reducer;
+
+        /**
+         * Reads all five from the session, on the caller's thread - which has to be the event thread.
+         *
+         * @param session the setup being edited
+         */
+        private WhySetup(AutonomySession session)
+        {
+            this.mustTurn = session.mandatoryTurnTiles();
+            this.mayTurn = session.mayTurnTiles();
+            this.barred = session.barredArrivals();
+            this.shut = session.shutTiles();
+            this.reducer = session.getReducer();
+        }
     }
 
     /**
