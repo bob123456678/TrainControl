@@ -1769,6 +1769,8 @@ Adam, 2026-10-09: *“the small font on the vertical labels is really hard to re
 
 **Adam, 2026-10-09, then:** *“For FR-118, make the inactive station have a gray rectangle below the X.  Make reversing must turn be two of the terminus shapes, slightly narrower, pointing away from each other, with a gap in between them.  And to confirm, a station with only one way out becomes a terminus, correct?”*  So a square out of service is the orange X over a grey block (the station's own shape); where trains must turn, two terminus shapes back to back - flat ends towards each other across a gap, each with its bar, points outward - the pair as wide as the square, since a badge draws inside its own square (about 28 pixels at 30, 56 at 60; the chevron hexagon above is replaced).  And yes: a station whose track on one side runs out at a buffer stop, however far beyond it, is drawn as the terminus with its flat end that way, whatever its turning setting.  A station with one way out only because of a setting - a barred arrival, a one-way run - while its track carries on keeps its own shape, unless Adam says otherwise.
 
+**Adam, 2026-10-09, then:** *“On the must turn icon, make the white like thinner so there's more visible blue, and make the two halves 2px wider”*  The bars one pixel wide at 30 and two at 60; the pair edge to edge of the square with a 2-pixel gap - each half 14 pixels at 30 (one wider: two would cross the square's edge, where a badge's paint is cut off) and 29 at 60 (two wider, the gap narrowed from 4 to 2 to keep it in the square).
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
