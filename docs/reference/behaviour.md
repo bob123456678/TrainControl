@@ -900,11 +900,17 @@ correct?"*: yes).  It is drawn flat against that side whatever its turning setti
 station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
 its own shape.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
 
-On a curve the icon lies along the line between the curve's two ends, made smaller where it would not fit; in the editor
-a station on a curve sits off the rails, clear of the direction arrows, as its badge always has.  The icons:
+On a curve the icon lies along the line between the curve's two ends, moved in off the corner until all of it is inside
+its square, smaller only where even in the middle it would not fit (MT-710: *"On curves, regular stations are now cut off
+in the corners"*); in the editor a station on a curve sits off the rails, clear of the direction arrows, as its badge
+always has.  The red and green arrows are drawn over the icon, on the diagram and in the editor (MT-710: *"We need to
+render red arrows on top of stations"*).  A may-turn hexagon is 24 pixels long at the small size and 47 at the large, a
+terminus 24 and 48, and the must-turn pair, both halves and the gap, no longer than the may-turn (MT-710).  The icons:
 `core.testAutonomyDiagramMonitor` - `testAStationIsARoundedBlock`, `testWhereTrainsMayTurnIsTheHexagon`,
 `testWhereTrainsMustTurnIsTwoTerminiBackToBack`, `testAStationAtADeadEndIsATerminusFacingIt`,
-`testParkingIsGreyInItsOwnShape`, `testAStationOutOfServiceIsTheXOverAGreyBlock`, `testAStationCoversTheSensorsContact`;
+`testParkingIsGreyInItsOwnShape`, `testAStationOutOfServiceIsTheXOverAGreyBlock`, `testAStationCoversTheSensorsContact`,
+`testTheTurningIconsAreTheLengthsAdamAskedFor`, `testAStationOnACurveIsWhollyInsideItsSquare`,
+`testTheArrowsAreDrawnOverAStationsIcon`;
 the caption, `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` and `testAPillOnEndClearsTheStationsBesideIt`.
 
 ## 5. Length: will the train fit?

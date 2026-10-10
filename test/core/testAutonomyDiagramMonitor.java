@@ -1948,7 +1948,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * Where trains must turn, two terminus shapes back to back, pointing away from each other across the square, with
+     * Where trains must turn, two terminus shapes back to back, pointing away from each other, with
      * the track's black line showing in the gap between them, and each with a WHITE bar (FR-118; Adam, 2026-10-09:
      * *"the lines on the blue arrows in 30px "reversing must turn" should be white, not gray.  60px lost the black line
      * in between, too"*).  A one-pixel bar set on a half pixel spreads over two columns and shows grey.
@@ -1971,9 +1971,7 @@ public class testAutonomyDiagramMonitor
 
             int mid = size / 2, right = blue.x + blue.width - 1;
 
-            // across the square: at 30 edge to edge, at 60 less a pixel a side, as Adam last saw it on the page
-            assertTrue(blue.x <= 3 && right >= size - 4, "a must-turn station at " + size + " pixels runs " + blue.x
-                + " to " + right + ", not across its square (FR-118)");
+            // its length, no longer than the may-turn hexagon: `testTheTurningIconsAreTheLengthsAdamAskedFor` (MT-710)
 
             assertTrue(blue.height <= contact(size), "a must-turn station at " + size + " pixels is taller than the"
                 + " sensor's contact");
@@ -2151,6 +2149,246 @@ public class testAutonomyDiagramMonitor
         }
     }
 
+    /**
+     * The icons are the lengths Adam asked for on MT-710 (2026-10-09): *"Make terminuses 1px shorter, they appear just a
+     * bit too long.  Shorten may reverse stations by 1px in 30px view, 2px in 60px view.  Make sure must reverses are
+     * cumulatively no longer"* - asked, no longer than the may-turn hexagon, both halves and the gap between them.
+     *
+     * Measured along the middle of the track, painted eight times over, so the half pixel an antialiased edge would round
+     * away is seen: the outline's length is the shape's plus its stroke, which runs on further at a point.  Before, a
+     * may-turn and a terminus were
+     * `round(h * 1.9)` long (25 at 30, 49 at 60), and the must-turn pair ran across the square.
+     *
+     * MUTATION: put any of the three lengths back and this fails.
+     */
+    @Test
+    public void testTheTurningIconsAreTheLengthsAdamAskedFor()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            int h = Math.round(size * 0.43f), was = Math.round(h * 1.9f);
+
+            double stroke = size >= 60 ? 2 : 1.5;
+
+            double may = lengthAlong(station(Side.W, Side.E, true, true, false, false, null), size);
+            double must = lengthAlong(station(Side.W, Side.E, true, false, false, false, null), size);
+            double terminus = lengthAlong(station(Side.W, Side.E, false, false, false, false, Side.W), size);
+
+            // the outline's own length past each end: half the stroke at a flat end, more at a point, where the stroke's
+            // mitre runs on - a point of length p on a shape h tall is an angle whose half has tan (h / 2) / p
+            double pointed = stroke / 2 / Math.sin(Math.atan(h / 2.0 / (h / 2.0)));
+            double terminusPoint = stroke / 2 / Math.sin(Math.atan(h / 2.0 / (size >= 60 ? h / 2.0 : h * 0.66)));
+
+            assertEquals(may, was - (size >= 60 ? 2 : 1) + 2 * pointed, 0.35, "a may-turn station at " + size + " pixels is "
+                + may + " long, outline and all - Adam: \"Shorten may reverse stations by 1px in 30px view, 2px in 60px"
+                + " view\"");
+
+            assertEquals(terminus, was - 1 + stroke / 2 + terminusPoint, 0.35, "a terminus at " + size + " pixels is "
+                + terminus + " long -"
+                + " Adam: \"Make terminuses 1px shorter\"");
+
+            assertTrue(must <= may + 0.25, "a must-turn station at " + size + " pixels is " + must + " long, its two"
+                + " halves and the gap, against a may-turn's " + may + " - Adam: \"Make sure must reverses are"
+                + " cumulatively no longer\"");
+        }
+    }
+
+    /**
+     * A station's icon on a curve lies wholly inside its square, at both sizes, whichever way the curve turns, on the
+     * diagram and in the editor - every kind, where trains may and must turn included (Adam, MT-710: *"On curves,
+     * regular stations are now cut off in the corners"*, and *"No may or must reverse on curves, test that
+     * yourself"*).  A square's paint is cut off at its edges, so ink the icon puts outside the square is ink the diagram
+     * loses: painted here with nothing to cut it, on a canvas three squares across, nothing may land outside the
+     * middle one.  On straight track too.
+     *
+     * MUTATION: centre a curve's icon on the middle of the curve's chord again, at the size that fits along it, and this
+     * fails.
+     */
+    @Test
+    public void testAStationOnACurveIsWhollyInsideItsSquare()
+    {
+        Side[][] roads = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}, {Side.W, Side.E},
+            {Side.N, Side.S}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : roads)
+            {
+                TileAnnotation.Badge[] kinds = {
+                    station(road[0], road[1], false, false, false, false, null),
+                    station(road[0], road[1], true, true, false, false, null),
+                    station(road[0], road[1], true, false, false, false, null),
+                    station(road[0], road[1], false, false, false, false, road[0]),
+                    station(road[0], road[1], false, false, false, false, road[1]),
+                    station(road[0], road[1], false, false, true, true, null)};
+
+                for (TileAnnotation.Badge badge : kinds)
+                {
+                    for (boolean editor : new boolean[] {false, true})
+                    {
+                        java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
+                            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                        java.awt.Graphics2D g = canvas.createGraphics();
+
+                        try
+                        {
+                            g.translate(size, size);
+
+                            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
+                                road[1], null)), 0, false, badge, false, false, false, null, true, null);
+
+                            (editor ? annotation.inTheEditor() : annotation).paintBadgeOverRun(g, size, size);
+                        }
+                        finally
+                        {
+                            g.dispose();
+                        }
+
+                        int outside = 0;
+
+                        for (int x = 0; x < canvas.getWidth(); x++)
+                        {
+                            for (int y = 0; y < canvas.getHeight(); y++)
+                            {
+                                boolean in = x >= size && x < 2 * size && y >= size && y < 2 * size;
+
+                                if (!in && (canvas.getRGB(x, y) >>> 24) > 40) outside++;
+                            }
+                        }
+
+                        assertEquals(outside, 0, badge + " on a road " + road[0] + "-" + road[1] + " at " + size
+                            + " pixels" + (editor ? " in the editor" : "") + " puts " + outside + " pixels outside its"
+                            + " square, where the diagram cuts it off - Adam: \"On curves, regular stations are now cut"
+                            + " off in the corners\"");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * The red and green arrows on a station's square are drawn over its icon, on the diagram and in the editor, and over
+     * the icon drawn again above a running train's line (Adam, MT-710: *"If there is a red or green arrow on a tile, the
+     * rectangular station icon now hides it.  We need to render red arrows on top of stations in the viewer"*; asked, the
+     * editor too).  FR-118's icons run along the track nearly the width of the square, where the arrows are.
+     *
+     * Each kind painted with a one-way road - a red arrow at one end, a green at the other - and without its icon: the
+     * arrows' pixels are all still there with it.
+     *
+     * MUTATION: paint the icon after the arrows again, or leave them out of the icon drawn over the run, and this fails.
+     */
+    @Test
+    public void testTheArrowsAreDrawnOverAStationsIcon()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            for (TileAnnotation.Badge badge : new TileAnnotation.Badge[] {
+                station(Side.W, Side.E, false, false, false, false, null), station(Side.W, Side.E, true, true, false, false, null),
+                station(Side.W, Side.E, true, false, false, false, null), station(Side.W, Side.E, false, false, false, false, Side.W)})
+            {
+                for (boolean editor : new boolean[] {false, true})
+                {
+                    int bare = arrowInk(null, size, editor), over = arrowInk(badge, size, editor);
+
+                    assertTrue(bare > 0, "precondition: no arrows drawn at " + size + " pixels");
+
+                    assertTrue(over >= bare * 0.95, badge + " at " + size + " pixels" + (editor ? " in the editor" : "")
+                        + " leaves " + over + " of the arrows' " + bare + " pixels showing - Adam: \"render red arrows on"
+                        + " top of stations\"");
+                }
+            }
+        }
+    }
+
+    /**
+     * How many of a square's pixels are its arrows' red or green, painted as the diagram paints it - the square, then the
+     * icon again over a running train's line - with a one-way road from W to E.
+     *
+     * @param badge the station, or null for none
+     */
+    private static int arrowInk(TileAnnotation.Badge badge, int size, boolean editor)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E,
+                org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, badge, false, false, false, null,
+                false, null);
+
+            if (editor) annotation = annotation.inTheEditor();
+
+            annotation.paint(g, size, size);
+            annotation.paintBadgeOverRun(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int n = 0;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
+
+                // the arrows' own red and green, solid: an antialiased edge takes the colour of what it is drawn over
+                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30 && Math.abs(gr - 205) < 30
+                    && Math.abs(b - 90) < 30)) n++;
+            }
+        }
+
+        return n;
+    }
+
+    /**
+     * How long a station's icon is along a road from W to E, outline and all: painted eight times over on nothing, the
+     * run of ink along the middle of the track, in the tile's own pixels.
+     */
+    private static double lengthAlong(TileAnnotation.Badge badge, int size)
+    {
+        int k = 8;
+
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size * k, size * k,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.scale(k, k);
+
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, badge, false, false,
+                false, null, true, null).paintBadgeOverRun(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int row = size * k / 2, first = -1, last = -1;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            if ((image.getRGB(x, row) >>> 24) >= 128)
+            {
+                if (first < 0) first = x;
+                last = x;
+            }
+        }
+
+        return first < 0 ? 0 : (last - first + 1) / (double) k;
+    }
+
     /** The asserts of a terminus: flat on the side its track runs out, pointed the other way, a white bar near the flat. */
     private static void assertTerminusFacing(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour,
         Side end, String which)
@@ -2313,7 +2551,7 @@ public class testAutonomyDiagramMonitor
             tile.dispose();
 
             new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)), 0, false, badge,
-                false).paintBadgeOverRun(g, size, size);
+                false, false, false, null, true, null).paintBadgeOverRun(g, size, size);
         }
         finally
         {
@@ -2403,8 +2641,8 @@ public class testAutonomyDiagramMonitor
 
         try
         {
-            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false)
-                .paintBadgeOverRun(g, size, size);
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false, false,
+                false, null, true, null).paintBadgeOverRun(g, size, size);
         }
         finally
         {
@@ -2428,8 +2666,10 @@ public class testAutonomyDiagramMonitor
      */
     private static java.awt.Color markColour(TileAnnotation.Badge b, int size) throws Exception
     {
+        // as the running diagram builds one: its road for the badge, and only restricted roads' arrows (`blockedOnly`),
+        // which an open road has none of - the arrows are drawn over the badge (MT-710)
         TileAnnotation annotation = new TileAnnotation(
-            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false);
+            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false, b, false, false, false, null, true, null);
 
         java.awt.image.BufferedImage image =
             new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
@@ -2522,7 +2762,7 @@ public class testAutonomyDiagramMonitor
             Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), 0, false,
             new TileAnnotation.Badge(station, station && turns, !station && turns, parking, true,
                 Side.W, Side.E, false, shut),
-            false);
+            false, false, false, null, true, null);
 
         java.awt.image.BufferedImage image =
             new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);

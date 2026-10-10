@@ -1743,6 +1743,48 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
+     * How a train's line ends where the train ends.
+     */
+    public enum TailEnds
+    {
+        /**
+         * Rounded, stopped short of the square's edge so the round cap lies inside it (round 108; Adam, 2026-10-09: "Can
+         * we make the end of a train (orange line) rounded, not a straight jagged edge?").
+         */
+        ROUNDED,
+
+        /** Run to the square's edge and cut off flat there, as before round 108. */
+        SQUARE
+    }
+
+    /**
+     * How a train's line ends: rounded.  `TailEnds.SQUARE` goes back to the line cut off flat on the square's edge -
+     * Adam, 2026-10-10: "make it easy to revert to the old, non rounded orange train tails" - one word here, or
+     * `setTailEnds` for a preference.
+     */
+    private static volatile TailEnds tailEnds = TailEnds.ROUNDED;
+
+    /**
+     * How a train's line ends, asked in ONE place as `tailStyle` and `tailColour` are.
+     *
+     * @return how the line ends where the train ends
+     */
+    public static TailEnds tailEnds()
+    {
+        return tailEnds;
+    }
+
+    /**
+     * Chooses how a train's line ends from now on - for a preference, and for a test.
+     *
+     * @param ends how, null for the default
+     */
+    public static void setTailEnds(TailEnds ends)
+    {
+        tailEnds = ends == null ? TailEnds.ROUNDED : ends;
+    }
+
+    /**
      * The colour a train's body is drawn in.
      */
     public enum TailColour
@@ -1889,8 +1931,12 @@ public final class LayoutLabel extends JLabel
                 // round cap at the train's last side was cut off flat on the square's edge.  At a side the train goes no
                 // further than, the line stops as far short as its cap needs to lie inside the square; between squares it
                 // still runs to the edge, since two see-through caps laid over each other would show.
-                double[] from = endOf(a, b, road.getA(), width / 2);
-                double[] to = endOf(b, a, road.getB(), width / 2);
+                //
+                // Or SQUARE, edge to edge as before, where the switch says so (`tailEnds`)
+                boolean round = tailEnds() == TailEnds.ROUNDED;
+
+                double[] from = round ? endOf(a, b, road.getA(), width / 2) : new double[] {a[0], a[1]};
+                double[] to = round ? endOf(b, a, road.getB(), width / 2) : new double[] {b[0], b[1]};
 
                 body.append(new java.awt.geom.Line2D.Double(from[0], from[1], to[0], to[1]), false);
             }

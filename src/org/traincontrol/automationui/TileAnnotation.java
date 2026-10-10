@@ -1020,15 +1020,17 @@ public class TileAnnotation
             // runs or what the square is.
             if (unmeasured) paintUnmeasured(g, width, height);
 
+            // THE BADGE UNDER THE ARROWS AGAIN (Adam, MT-710, 2026-10-09: "If there is a red or green arrow on a tile,
+            // the rectangular station icon now hides it.  We need to render red arrows on top of stations in the
+            // viewer"; asked, the editor too).  It was drawn over them once a badge on a bend had moved off into the
+            // corner, to keep its outline clean; FR-118's icons run along the track nearly the width of the square,
+            // where the arrows are, and an arrow says where a train may go - the thing a reader cannot get from the
+            // icon.  `paintBadgeOverRun` draws them over it again.
+            if (badge != null) paintBadge(g, width, height);
+
             paintArrows(g, width, height);
 
             paintArrivals(g, width, height);
-
-            // The badge over the arrows - which is where it started, and where it can go back now that
-            // a badge on a bend has moved off into the corner.  It was put underneath because the two
-            // were landing on the same few pixels; they no longer do, and a badge drawn last keeps a
-            // clean outline instead of having an arrowhead laid across it.
-            if (badge != null) paintBadge(g, width, height);
 
             // And the train mark over the badge (MT-099).
             //
@@ -1924,7 +1926,15 @@ public class TileAnnotation
 
             g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
 
-            if (badge != null) paintBadge(g, width, height);
+            if (badge != null)
+            {
+                paintBadge(g, width, height);
+
+                // and the arrows over it, as `paint` draws them (MT-710)
+                paintArrows(g, width, height);
+
+                paintArrivals(g, width, height);
+            }
 
             // And the train mark with it, for the same reason it goes over the badge in the first
             // place - it is the most changeable fact on the square.
@@ -2152,9 +2162,10 @@ public class TileAnnotation
      *
      * Along the road from side a to side b, turned so the terminus's flat end is on its dead-end side.  On straight track
      * the sensor's contact is covered first (*"make sure the white would cover an s88 circle"*) - `cover`.  On a bend the
-     * icon lies along the chord between the road's two sides, made smaller where it would not fit along it; in the editor
-     * it sits off the rails where the bend's badge always has (`CORNER_INSET`), clear of the arrows at the sides, and no
-     * longer than that badge was across.  The
+     * icon lies along the chord between the road's two sides, moved in off the corner until all of it is inside its
+     * square (MT-710), smaller only where even in the middle it would not fit; in the editor it sits off the rails where
+     * the bend's badge always has (`CORNER_INSET`), clear of the arrows at the sides, and no longer than that badge was
+     * across.  The
      * proportions are the page's, which drew them on the real 30 and 60 pixel tiles.
      *
      * @param g the tile's graphics
@@ -2182,8 +2193,6 @@ public class TileAnnotation
             centre = new int[] {CORNER_INSET + old / 2, height - old - CORNER_INSET + old / 2};
         }
 
-        badgeDrawnAt = centre;
-
         int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
 
         boolean known = a != null && b != null && badge.getA() != badge.getB();
@@ -2202,21 +2211,40 @@ public class TileAnnotation
 
         boolean turns = badge.isTerminus() || badge.isReversing();
 
-        // how long the icon is along its road, outline included
         float stroke = large ? 2f : 1.5f;
 
-        double length = badge.isImpassable() ? Math.round(h * 1.5f)
-            : deadEnd != null || (turns && badge.isOptional()) ? Math.round(h * 1.9f)
-            : turns ? tile - (large ? 2 : 0) : Math.round(h * 1.5f);
+        // THE LENGTHS ADAM ASKED FOR (MT-710, 2026-10-09): "Make terminuses 1px shorter, they appear just a bit too long.
+        // Shorten may reverse stations by 1px in 30px view, 2px in 60px view.  Make sure must reverses are cumulatively
+        // no longer" - asked, no longer than the may-turn hexagon, both halves and the gap together.  They were
+        // `round(h * 1.9)` (25 at 30, 49 at 60), and the must-turn pair ran across the square.
+        int turning = Math.round(h * 1.9f) - (large ? 2 : 1), terminus = Math.round(h * 1.9f) - 1;
 
-        length += stroke;
+        java.awt.Shape outline = badge.isImpassable() || !turns && deadEnd == null ? blockShape(h)
+            : deadEnd != null ? hexagon(terminus, h, true, large ? h / 2.0 : h * 0.66)
+            : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
+            : mustTurnShape(h, turning, large);
 
-        // on a bend, along the chord between the road's two sides, and no longer than it - and in the editor, off the
-        // rails, no longer than the badge that stood there was across, so it crowds nothing that badge did not
-        double room = !known || !bends ? Double.MAX_VALUE
-            : editing ? Math.max(11, tile / 2) : Math.hypot(b[0] - a[0], b[1] - a[1]) - 2;
+        // what it covers, outline and all, turned along its road - and its length along the road
+        java.awt.Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
 
-        double scale = length > room ? room / length : 1;
+        java.awt.geom.Rectangle2D needs =
+            java.awt.geom.AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
+
+        double scale = 1;
+
+        // in the editor, on a bend, off the rails: no longer than the badge that stood there was across, so it crowds
+        // nothing that badge did not
+        if (editing && known && bends) scale = Math.min(1, Math.max(11, tile / 2) / stroked.getBounds2D().getWidth());
+
+        // AND WHOLLY INSIDE ITS SQUARE (Adam, MT-710: "On curves, regular stations are now cut off in the corners"): a
+        // square's paint is cut off at its edges, and on a curve the middle of the track is near a corner.  Moved in
+        // towards the middle of the square as far as it needs, and made smaller only where even there it would not fit.
+        // On straight track every icon fits where it is.
+        double[] at = fitInside(needs, scale, centre[0], centre[1], width, height);
+
+        scale = at[2];
+
+        badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
 
         Graphics2D s = (Graphics2D) g.create();
 
@@ -2228,7 +2256,7 @@ public class TileAnnotation
             // on whole pixels, and at 60 pixels the must-turn's outlines then met across the gap and hid the track's
             // black line in it - the line Adam asked to have back
             s.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-            s.translate(centre[0], centre[1]);
+            s.translate(at[0], at[1]);
             s.rotate(angle);
 
             if (known && !bends) cover(s, tile);
@@ -2248,7 +2276,7 @@ public class TileAnnotation
                 {
                     x.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     x.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-                    x.translate(centre[0], centre[1]);
+                    x.translate(at[0], at[1]);
                     x.scale(scale, scale);
 
                     cross(x, h, colour);
@@ -2261,26 +2289,22 @@ public class TileAnnotation
             else if (deadEnd != null)
             {
                 // flat against the buffer, its bar there; more pointed at 30 pixels, where it stayed as Adam last saw it
-                int w = Math.round(h * 1.9f);
+                body(s, outline, fill, line);
 
-                body(s, hexagon(w, h, true, large ? h / 2.0 : h * 0.66), fill, line);
-
-                bar(s, -w / 2.0 + h * 0.3, h * 0.62, Math.max(2, Math.round(tile / 12f)), line);
+                bar(s, -terminus / 2.0 + h * 0.3, h * 0.62, Math.max(2, Math.round(tile / 12f)), line);
             }
             else if (turns && badge.isOptional())
             {
                 // the same shape at 30 pixels as at 60 (Adam: "matching the 60px hexagon's shape as closely as possible")
-                int w = Math.round(h * 1.9f);
-
-                body(s, hexagon(w, h, false, h / 2.0), fill, line);
+                body(s, outline, fill, line);
             }
             else if (turns)
             {
-                mustTurn(s, tile, h, fill, line);
+                mustTurn(s, tile, h, turning, fill, line);
             }
             else
             {
-                block(s, h, fill, line);
+                body(s, outline, fill, line);
             }
         }
         finally
@@ -2312,28 +2336,90 @@ public class TileAnnotation
     /** A station's block: half as long again as it is tall, its corners rounded (D's, on the station icon page). */
     private static void block(Graphics2D g, int h, Color fill, Color line)
     {
+        body(g, blockShape(h), fill, line);
+    }
+
+    /** The block's shape, about the origin along x. */
+    private static java.awt.Shape blockShape(int h)
+    {
         int w = Math.round(h * 1.5f);
 
         double r = Math.max(2, h * 0.22);
 
-        body(g, new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r), fill, line);
+        return new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
+    }
+
+    /**
+     * Where an icon goes so that all of it is inside its square (MT-710): where it was asked to go if it fits there, or
+     * the first place that fits on the way from there to the middle of the square, or - fitting nowhere - the middle,
+     * made smaller until it does.  A pixel's half to spare at each edge, so no edge pixel is touched.
+     *
+     * @param needs what the icon covers at scale 1, about its centre, turned as it is drawn
+     * @param scale the scale it is drawn at
+     * @param x where its centre was asked to go
+     * @param y where its centre was asked to go
+     * @param width the square's width
+     * @param height the square's height
+     * @return the centre's x and y, and the scale
+     */
+    private static double[] fitInside(java.awt.geom.Rectangle2D needs, double scale, double x, double y, int width,
+        int height)
+    {
+        double mx = width / 2.0, my = height / 2.0;
+
+        for (int step = 0; step <= 20; step++)
+        {
+            double t = step / 20.0, cx = x + t * (mx - x), cy = y + t * (my - y);
+
+            if (cx + scale * needs.getMinX() >= 0.5 && cx + scale * needs.getMaxX() <= width - 0.5
+                && cy + scale * needs.getMinY() >= 0.5 && cy + scale * needs.getMaxY() <= height - 0.5)
+            {
+                return new double[] {cx, cy, scale};
+            }
+        }
+
+        double across = Math.max(-needs.getMinX(), needs.getMaxX()), down = Math.max(-needs.getMinY(), needs.getMaxY());
+
+        return new double[] {mx, my, Math.min(scale, Math.min((mx - 0.5) / across, (my - 0.5) / down))};
+    }
+
+    /**
+     * The must-turn pair's outline, about the origin along x: two terminus shapes back to back across a 4-pixel gap, the
+     * whole `total` long (MT-710: no longer than the may-turn hexagon).
+     */
+    private static java.awt.Shape mustTurnShape(int h, int total, boolean large)
+    {
+        int gap = 4, half = (total - gap) / 2;
+
+        java.awt.geom.Path2D.Double out = new java.awt.geom.Path2D.Double();
+
+        for (int dir : new int[] {-1, 1})
+        {
+            java.awt.geom.AffineTransform t = java.awt.geom.AffineTransform.getTranslateInstance(dir * (gap / 2.0 + half / 2.0), 0);
+
+            if (dir < 0) t.scale(-1, 1);
+
+            out.append(t.createTransformedShape(hexagon(half, h, true, large ? h * 0.4 : h * 0.5)), false);
+        }
+
+        return out;
     }
 
     /**
      * Where trains must turn: two terminus shapes back to back, flat ends towards each other across a 4-pixel gap the
-     * track's black line shows through, pointing away from each other, each with its bar (Adam, 2026-10-09).  At 60
-     * pixels each half is the square less a pixel a side, at 30 the square edge to edge.
+     * track's black line shows through, pointing away from each other, each with its bar (Adam, 2026-10-09).  The pair is
+     * `total` long, no longer than the may-turn hexagon (MT-710) - each half 10 pixels at 30, 21 at 60.
      *
      * The bar at 30 is a pixel wide and set on whole pixels (*"should be white, not gray"*): drawn in its half's own
-     * frame, which sits on a half pixel, it spread over two columns and showed grey.
+     * frame, which can sit on a half pixel, it spread over two columns and showed grey.
      */
-    private static void mustTurn(Graphics2D g, int tile, int h, Color fill, Color line)
+    private static void mustTurn(Graphics2D g, int tile, int h, int total, Color fill, Color line)
     {
         boolean large = tile >= 60;
 
         int gap = 4;
 
-        int half = (tile - (large ? 2 : 0) - gap) / 2;
+        int half = (total - gap) / 2;
 
         for (int dir : new int[] {-1, 1})
         {
@@ -2356,7 +2442,8 @@ public class TileAnnotation
 
             if (!large)
             {
-                int at = gap / 2 + Math.round(tile / 10f), tall = Math.round(tile * 8 / 30f);
+                // in the half's flat part, before its point begins
+                int at = gap / 2 + Math.round(tile / 15f), tall = Math.round(tile * 8 / 30f);
 
                 g.setColor(line);
                 g.fill(new java.awt.geom.Rectangle2D.Double(dir > 0 ? at : -at - 1, -tall / 2.0, 1, tall));
