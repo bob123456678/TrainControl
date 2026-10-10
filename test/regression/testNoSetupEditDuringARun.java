@@ -297,7 +297,7 @@ public class testNoSetupEditDuringARun
 
             driving = (Thread) dispatched[3];
 
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.NOT_KNOWN);
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
 
             List<String> asked = answeringYes(() -> edit.doClick());
 
@@ -1739,7 +1739,7 @@ public class testNoSetupEditDuringARun
             session.getStore().getConfiguration(inUse).getJSONObject("points").getJSONObject(square.toString())
                 .remove(AutonomyBuilder.FACING);
 
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.NOT_KNOWN);
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
 
             // THE ANSWERING: the Edit dialog's OK only after a run has begun; every other dialog answered and recorded
             final TrainControlUI window = ui[0];

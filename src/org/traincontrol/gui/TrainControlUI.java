@@ -6509,8 +6509,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             if (p.equals(destination))
                             {
-                                // Highlight destination: a warm yellow, dark text, and the pill rings it in the
-                                // route's blue (the second look proposal - it was pure yellow with red text)
+                                // Highlight destination: the train's line as it shows on white, solid, black text, and
+                                // the pill rings it in a dark orange (Adam, 2026-10-09 - it was a warm yellow, ringed blue)
                                 j.setBackground(StationCaption.DESTINATION_FILL);
                                 j.setForeground(Color.BLACK);
                                 
@@ -9637,6 +9637,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> after = now.get(at);
 
                 if (then == null ? after == null : then.equals(after)) key.remove();
+            }
+
+            // AND THE SQUARES BESIDE A LINE THAT CHANGED (Adam, 2026-10-09, the rounded end): a square's line ends rounded
+            // where the train goes no further, which the square beside decides - so a train that grows or shrinks by a
+            // square changes how its last square ends, and that square is not among the ones whose roads changed.
+            for (org.traincontrol.automationui.TileGraph.TileKey at : new java.util.ArrayList<>(changed))
+            {
+                for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    org.traincontrol.automationui.TileGraph.TileKey beside = LayoutLabel.besideOn(at, side);
+
+                    if (beside != null && now.containsKey(beside)) changed.add(beside);
+                }
             }
 
             // AND THE SQUARES WHOSE GREY CHANGED - by road, as the covered half is compared, since OB-208 made the

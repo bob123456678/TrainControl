@@ -200,6 +200,13 @@ public class TileAnnotation
         private final Side a;
         private final Side b;
 
+        /**
+         * The side of the road whose track runs out - to a buffer stop, or simply stops - before it reaches another
+         * sensor (FR-118), or null where both sides go somewhere.  A station there is drawn as a terminus, flat
+         * against that side, whatever its turning setting.
+         */
+        private final Side deadEnd;
+
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named)
         {
@@ -232,6 +239,16 @@ public class TileAnnotation
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named, Side a, Side b, boolean optional, boolean shut)
         {
+            this(station, terminus, reversing, parking, named, a, b, optional, shut, null);
+        }
+
+        /**
+         * @param deadEnd the side of the road whose track runs out before it reaches another sensor, or null
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional, boolean shut, Side deadEnd)
+        {
+            this.deadEnd = deadEnd;
             this.shut = shut;
             this.optional = optional;
             this.station = station;
@@ -251,6 +268,16 @@ public class TileAnnotation
         public Side getB()
         {
             return b;
+        }
+
+        /**
+         * The side of the road whose track runs out before another sensor (FR-118), or null.
+         *
+         * @return the side, or null
+         */
+        public Side getDeadEnd()
+        {
+            return deadEnd;
         }
 
         public boolean isStation()
@@ -321,7 +348,7 @@ public class TileAnnotation
                 && optional == other.optional
                 && reversing == other.reversing && parking == other.parking && named == other.named
                 && shut == other.shut
-                && a == other.a && b == other.b;
+                && a == other.a && b == other.b && deadEnd == other.deadEnd;
         }
 
         @Override
@@ -1949,6 +1976,14 @@ public class TileAnnotation
         // every square switched off is parking as well - see the paragraph above.
         Color colour = badge.isImpassable() ? POINT_IMPASSABLE : badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;
 
+        // A STATION TAKES THE ICONS ADAM CHOSE (FR-118) - `paintStation`.  A passing point keeps its small mark below.
+        if (badge.isStation())
+        {
+            paintStation(g, width, height, colour);
+
+            return;
+        }
+
         // A station takes a bigger badge than a passing point, as it does on the graph: 20px against
         // 17px there, the same proportion here.
         int size = Math.max(badge.isStation() ? 11 : 8,
@@ -1982,41 +2017,10 @@ public class TileAnnotation
         int x = on[0] - size / 2;
         int y = on[1] - size / 2;
 
-        // But where the TRACK BENDS, the badge goes in the bottom left, off the rails.
-        //
-        // A bend's art hugs one corner, and the badge was centred on that art on the reasoning that a
-        // mark belongs on the rails it is about.  True in isolation, and wrong in company: the two
-        // direction arrows sit at the middles of the same two sides the chord joins, so the badge
-        // landed exactly between them and three marks fought over one corner of a twenty-pixel
-        // square.  A station on a curve was the hardest thing on the diagram to read.
-        //
-        // Asked of the ROUTE rather than of the curved flag, which is a different question wearing
-        // the same word: that flag is about whether to TILT the arrows, and it is deliberately false
-        // for a curve carrying a sensor - a tilted arrow disappears into the heavy feedback art.  So
-        // every curved s88 - which is to say every station on a curve, the whole case this is for -
-        // came through here as "not curved" and kept its badge in the middle.  Two sides that are not
-        // opposite means the track turns a corner, whatever is drawn on it.
-        //
-        // The bottom left whichever way it bends: three of the four curves bend away from it
-        // entirely, the fourth clips only its corner, and it is clear of the length, which is written
-        // top right.  Being off the track costs nothing - a badge is one square's worth of mark on
-        // one square, and nobody has to trace which rail it sits on to know which square it means.
-        if (editing && badge.isStation() && trackBends())
-        {
-            // In from the very corner, at the author's eye.  Hard against the edges the badge read as
-            // something that had slipped off the tile rather than as a mark placed on it, and it was
-            // tight against the arrival chevron at the middle of the west side.
-            //
-            // STATIONS only.  A station's badge is the big one - half the tile across, and bigger
-            // again where it is a diamond - which is why it collided with the arrows in the first
-            // place.  A passing point's is a third of the tile and sits on the track without
-            // crowding anything, so moving it out to the corner would take a mark off the rails it
-            // is about in exchange for solving a problem it does not have.  It would also break the
-            // one thing the badges do best: a page of small circles sitting on the track, with the
-            // few that are stations standing out from it.
-            x = CORNER_INSET;
-            y = height - size - CORNER_INSET;
-        }
+        // A STATION ON A BEND, IN THE EDITOR, GOES OFF THE RAILS - and is placed by `paintStation` now (FR-118), where
+        // this put it: the bend's two direction arrows sit at the middles of the sides its chord joins, so a big badge
+        // on the track landed between them, three marks in one corner.  A passing point's mark is a third of the tile
+        // and sits on the track without crowding anything, as it always has.
 
         // never let it hang outside the square
         x = Math.max(1, Math.min(width - size - 1, x));
@@ -2070,7 +2074,10 @@ public class TileAnnotation
             // BIGGER than it first was, on Adam seeing it: a quarter of the tile put it among the
             // smallest marks on the page, and it is saying something larger than the badges beside it
             // - not "this square turns trains" but "this square is not in use at all".
-            int mark = Math.max(9, Math.min(width, height) / 2);
+            //
+            // AND NOW THE STATION ICONS' HEIGHT (FR-118): the X keeps its place among them at the height they are, 13
+            // pixels at 30 and 26 at 60, where it was half the tile.
+            int mark = Math.max(9, Math.round(Math.min(width, height) * ICON_SHARE));
 
             int cx = on[0];
             int cy = on[1];
@@ -2118,6 +2125,306 @@ public class TileAnnotation
             g.setColor(line);
             g.drawOval(x, y, size, size);
         }
+    }
+
+    /**
+     * How tall a station's icon is across its track, as a share of the tile (FR-118): 13 pixels at 30 and 26 at 60, no
+     * taller than the sensor's contact under it, so that a caption stood on end at full size has room beside it.
+     */
+    private static final float ICON_SHARE = 0.43f;
+
+    /**
+     * A station's icon (FR-118): the shapes Adam chose on the station icon page on 2026-10-09
+     * (https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB) - *"a hybrid of the D station for normal stations, B hexagon
+     * for reversing, and the B flat terminus hexagon"*, then refined by him there.  Each no taller across its track than
+     * the sensor's contact and longer along it:
+     *
+     *     a station                      a rounded block, half as long again as it is tall
+     *     trains may turn                the hexagon, pointed at both ends - the same shape at 30 pixels as at 60
+     *     trains must turn               two terminus shapes back to back, pointing away from each other across the
+     *                                    square, the track's black line showing in the gap between them
+     *     its track runs out one way     the terminus: the hexagon flat against that side, with a bar there - whatever
+     *                                    the turning setting (Adam: a station with one way out is a terminus)
+     *     out of service                 the orange X over the station's block in grey
+     *
+     * Blue where autonomy uses it, grey a berth it does not choose - a colour, not a shape (*"shouldn't parking have the
+     * same shape as terminus?"*) - filled when named and white ringed in the colour when not, as before.
+     *
+     * Along the road from side a to side b, turned so the terminus's flat end is on its dead-end side.  On straight track
+     * the sensor's contact is covered first (*"make sure the white would cover an s88 circle"*) - `cover`.  On a bend the
+     * icon lies along the chord between the road's two sides, made smaller where it would not fit along it; in the editor
+     * it sits off the rails where the bend's badge always has (`CORNER_INSET`), clear of the arrows at the sides, and no
+     * longer than that badge was across.  The
+     * proportions are the page's, which drew them on the real 30 and 60 pixel tiles.
+     *
+     * @param g the tile's graphics
+     * @param width the tile's width
+     * @param height the tile's height
+     * @param colour the colour the square's state gives it
+     */
+    private void paintStation(Graphics2D g, int width, int height, Color colour)
+    {
+        int tile = Math.min(width, height);
+
+        int h = Math.max(7, Math.round(tile * ICON_SHARE));
+
+        boolean large = tile >= 60;
+
+        boolean bends = trackBends();
+
+        int[] centre = trackCentre(width, height);
+
+        // On a bend in the editor, off the rails - where the old badge stood, a box of half the tile in from the corner
+        if (editing && bends)
+        {
+            int old = Math.max(11, tile / 2);
+
+            centre = new int[] {CORNER_INSET + old / 2, height - old - CORNER_INSET + old / 2};
+        }
+
+        badgeDrawnAt = centre;
+
+        int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
+
+        boolean known = a != null && b != null && badge.getA() != badge.getB();
+
+        // along the road from a to b: the shapes are drawn with their flat end - a terminus's - to the left, so a dead
+        // end on side b turns them round
+        double angle = known ? Math.atan2(b[1] - a[1], b[0] - a[0]) : 0;
+
+        Side deadEnd = known && (badge.getDeadEnd() == badge.getA() || badge.getDeadEnd() == badge.getB())
+            ? badge.getDeadEnd() : null;
+
+        if (deadEnd != null && deadEnd == badge.getB()) angle += Math.PI;
+
+        Color fill = badge.isNamed() ? colour : Color.WHITE;
+        Color line = badge.isNamed() ? Color.WHITE : colour;
+
+        boolean turns = badge.isTerminus() || badge.isReversing();
+
+        // how long the icon is along its road, outline included
+        float stroke = large ? 2f : 1.5f;
+
+        double length = badge.isImpassable() ? Math.round(h * 1.5f)
+            : deadEnd != null || (turns && badge.isOptional()) ? Math.round(h * 1.9f)
+            : turns ? tile - (large ? 2 : 0) : Math.round(h * 1.5f);
+
+        length += stroke;
+
+        // on a bend, along the chord between the road's two sides, and no longer than it - and in the editor, off the
+        // rails, no longer than the badge that stood there was across, so it crowds nothing that badge did not
+        double room = !known || !bends ? Double.MAX_VALUE
+            : editing ? Math.max(11, tile / 2) : Math.hypot(b[0] - a[0], b[1] - a[1]) - 2;
+
+        double scale = length > room ? room / length : 1;
+
+        Graphics2D s = (Graphics2D) g.create();
+
+        try
+        {
+            s.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // PURE, as the page drew them: the default stroke control moves an outline by up to half a pixel to sit it
+            // on whole pixels, and at 60 pixels the must-turn's outlines then met across the gap and hid the track's
+            // black line in it - the line Adam asked to have back
+            s.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            s.translate(centre[0], centre[1]);
+            s.rotate(angle);
+
+            if (known && !bends) cover(s, tile);
+
+            s.scale(scale, scale);
+            s.setStroke(new BasicStroke(stroke));
+
+            if (badge.isImpassable())
+            {
+                // the station's block in the grey of a square autonomy leaves alone (Adam, 2026-10-09: "make the
+                // inactive station have a gray rectangle below the X"), and the X over it, upright
+                block(s, h, POINT_INACTIVE, Color.WHITE);
+
+                Graphics2D x = (Graphics2D) g.create();
+
+                try
+                {
+                    x.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    x.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                    x.translate(centre[0], centre[1]);
+                    x.scale(scale, scale);
+
+                    cross(x, h, colour);
+                }
+                finally
+                {
+                    x.dispose();
+                }
+            }
+            else if (deadEnd != null)
+            {
+                // flat against the buffer, its bar there; more pointed at 30 pixels, where it stayed as Adam last saw it
+                int w = Math.round(h * 1.9f);
+
+                body(s, hexagon(w, h, true, large ? h / 2.0 : h * 0.66), fill, line);
+
+                bar(s, -w / 2.0 + h * 0.3, h * 0.62, Math.max(2, Math.round(tile / 12f)), line);
+            }
+            else if (turns && badge.isOptional())
+            {
+                // the same shape at 30 pixels as at 60 (Adam: "matching the 60px hexagon's shape as closely as possible")
+                int w = Math.round(h * 1.9f);
+
+                body(s, hexagon(w, h, false, h / 2.0), fill, line);
+            }
+            else if (turns)
+            {
+                mustTurn(s, tile, h, fill, line);
+            }
+            else
+            {
+                block(s, h, fill, line);
+            }
+        }
+        finally
+        {
+            s.dispose();
+        }
+    }
+
+    /**
+     * The sensor's contact covered, under a station's icon on straight track (FR-118; Adam: *"make sure the white would
+     * cover an s88 circle"*).  The contact is 14 pixels across at 30 and 26 at 60: white a pixel wider all round, and the
+     * track's black band, `tile` * 8 / 30 across, drawn back over it.  The icons are no taller than the contact, so they
+     * alone would leave its edges showing.
+     *
+     * @param g graphics at the icon's centre, turned along the track
+     * @param tile the tile's edge
+     */
+    private static void cover(Graphics2D g, int tile)
+    {
+        int m = Math.round(tile * 0.2f + 2);
+
+        g.setColor(Color.WHITE);
+        g.fill(new java.awt.geom.Rectangle2D.Double(-m, -m, 2 * m, 2 * m));
+
+        g.setColor(Color.BLACK);
+        g.fill(new java.awt.geom.Rectangle2D.Double(-m, -tile * 4 / 30.0, 2 * m, tile * 8 / 30.0));
+    }
+
+    /** A station's block: half as long again as it is tall, its corners rounded (D's, on the station icon page). */
+    private static void block(Graphics2D g, int h, Color fill, Color line)
+    {
+        int w = Math.round(h * 1.5f);
+
+        double r = Math.max(2, h * 0.22);
+
+        body(g, new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r), fill, line);
+    }
+
+    /**
+     * Where trains must turn: two terminus shapes back to back, flat ends towards each other across a 4-pixel gap the
+     * track's black line shows through, pointing away from each other, each with its bar (Adam, 2026-10-09).  At 60
+     * pixels each half is the square less a pixel a side, at 30 the square edge to edge.
+     *
+     * The bar at 30 is a pixel wide and set on whole pixels (*"should be white, not gray"*): drawn in its half's own
+     * frame, which sits on a half pixel, it spread over two columns and showed grey.
+     */
+    private static void mustTurn(Graphics2D g, int tile, int h, Color fill, Color line)
+    {
+        boolean large = tile >= 60;
+
+        int gap = 4;
+
+        int half = (tile - (large ? 2 : 0) - gap) / 2;
+
+        for (int dir : new int[] {-1, 1})
+        {
+            Graphics2D p = (Graphics2D) g.create();
+
+            try
+            {
+                p.translate(dir * (gap / 2.0 + half / 2.0), 0);
+
+                if (dir < 0) p.scale(-1, 1);
+
+                body(p, hexagon(half, h, true, large ? h * 0.4 : h * 0.5), fill, line);
+
+                if (large) bar(p, -half / 2.0 + Math.max(2, h * 0.22), h * 0.6, Math.max(2, Math.round(tile / 12f)), line);
+            }
+            finally
+            {
+                p.dispose();
+            }
+
+            if (!large)
+            {
+                int at = gap / 2 + Math.round(tile / 10f), tall = Math.round(tile * 8 / 30f);
+
+                g.setColor(line);
+                g.fill(new java.awt.geom.Rectangle2D.Double(dir > 0 ? at : -at - 1, -tall / 2.0, 1, tall));
+            }
+        }
+    }
+
+    /**
+     * A hexagon about the origin along x: pointed at both ends, or flat at the left (a terminus's buffer end).
+     *
+     * @param w its length
+     * @param h its height
+     * @param flatLeft whether its left end is flat
+     * @param point how far each point runs along x
+     */
+    private static java.awt.geom.Path2D hexagon(double w, double h, boolean flatLeft, double point)
+    {
+        java.awt.geom.Path2D.Double p = new java.awt.geom.Path2D.Double();
+
+        if (flatLeft)
+        {
+            p.moveTo(-w / 2, -h / 2);
+            p.lineTo(w / 2 - point, -h / 2);
+            p.lineTo(w / 2, 0);
+            p.lineTo(w / 2 - point, h / 2);
+            p.lineTo(-w / 2, h / 2);
+        }
+        else
+        {
+            p.moveTo(-w / 2, 0);
+            p.lineTo(-w / 2 + point, -h / 2);
+            p.lineTo(w / 2 - point, -h / 2);
+            p.lineTo(w / 2, 0);
+            p.lineTo(w / 2 - point, h / 2);
+            p.lineTo(-w / 2 + point, h / 2);
+        }
+
+        p.closePath();
+
+        return p;
+    }
+
+    /** A shape filled, then outlined in the stroke already set. */
+    private static void body(Graphics2D g, java.awt.Shape shape, Color fill, Color line)
+    {
+        g.setColor(fill);
+        g.fill(shape);
+        g.setColor(line);
+        g.draw(shape);
+    }
+
+    /** A bar across the track at x, `tall` high and `wide` across, its left edge on a whole pixel of the shape's frame. */
+    private static void bar(Graphics2D g, double x, double tall, int wide, Color colour)
+    {
+        g.setColor(colour);
+        g.fill(new java.awt.geom.Rectangle2D.Double(Math.round(x - wide / 2.0), -tall / 2, wide, tall));
+    }
+
+    /**
+     * The orange X of a square out of service, `mark` across, stroked at a seventh of it with round ends - its weight as
+     * it was (`testTheCrossKeepsItsWeightAsTheTileGrows`).
+     */
+    private static void cross(Graphics2D g, int mark, Color colour)
+    {
+        g.setStroke(new BasicStroke(Math.max(2f, mark / 7f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(colour);
+        g.draw(new java.awt.geom.Line2D.Double(-mark / 2.0, -mark / 2.0, mark / 2.0, mark / 2.0));
+        g.draw(new java.awt.geom.Line2D.Double(-mark / 2.0, mark / 2.0, mark / 2.0, -mark / 2.0));
     }
 
     /**

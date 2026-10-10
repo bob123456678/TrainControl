@@ -856,6 +856,41 @@ station's state, and "empty" is a state.  That is also why an unlabelled square 
 station tells you nothing about which station it is, which is what FR-014 was raised about - the menu
 names it in the "Stop Showing" item, and the tooltip explains the rest.
 
+## 4b. A station's icon: what the shape says
+
+FR-118 (Adam, 2026-10-09, choosing on the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB): every
+station's icon is no taller across its track than the sensor's contact under it - 13 pixels at the small size, 26 at the
+large - and longer along the track, so a caption stood on end beside it is full size again (OB-327 had drawn it 15%
+smaller to clear the old badges, half a square across; *"the small font on the vertical labels is really hard to
+read"*).
+
+| the icon | the station |
+|---|---|
+| a rounded block | a station |
+| a hexagon pointed at both ends | trains may turn round there |
+| two arrow-shaped halves back to back, pointing away from each other, white bars in them, the track's black line between them | trains must turn round there |
+| a hexagon flat at one end, with a bar at that end | a terminus: its track runs out on that side |
+| the orange X over a grey block | out of service |
+
+Blue where autonomy uses the station, grey a berth it does not choose - a colour on whatever shape the station has
+(*"shouldn't parking have the same shape as terminus?"*); filled when the station is named, white ringed in the colour
+when it is not.  On straight track the icon covers the sensor's own contact with white, the track drawn back across it
+(*"make sure the white would cover an s88 circle"*).  A passing point - a sensor that is no station - keeps its small
+mark.
+
+**A terminus is a station whose track runs out on one side** - at a buffer stop, or where the drawn track simply stops -
+before it reaches another sensor (Adam, 2026-10-09, asked *"a station with only one way out becomes a terminus,
+correct?"*: yes).  It is drawn flat against that side whatever its turning setting.  The TRACK is asked, not the setup: a
+station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
+its own shape.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
+
+On a curve the icon lies along the line between the curve's two ends, made smaller where it would not fit; in the editor
+a station on a curve sits off the rails, clear of the direction arrows, as its badge always has.  The icons:
+`core.testAutonomyDiagramMonitor` - `testAStationIsARoundedBlock`, `testWhereTrainsMayTurnIsTheHexagon`,
+`testWhereTrainsMustTurnIsTwoTerminiBackToBack`, `testAStationAtADeadEndIsATerminusFacingIt`,
+`testParkingIsGreyInItsOwnShape`, `testAStationOutOfServiceIsTheXOverAGreyBlock`, `testAStationCoversTheSensorsContact`;
+the caption, `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` and `testAPillOnEndClearsTheStationsBesideIt`.
+
 ## 5. Length: will the train fit?
 
 Two separate rules, both about length, both easy to mistake for each other.
@@ -1183,20 +1218,23 @@ The editor notice about turn-round squares with no length is a different questio
     BottomCrossover, and four units RampDown and towards BottomCrossover, where the list once offered RampDown
     alone. A tail that ends before the points covers the same squares on every road, and is not asked.
     `core.testATailPastASwitchIsAskedAbout`. Not asked, or closed without an answer, the road the train
-    had on the railway is kept where it stays on the same square with the same side; **Not known** forgets it. The
+    had on the railway is kept where it stays on the same square with the same side - the question's **Cancel** - and
+    there is no answer that forgets it (Adam, 2026-10-09: *"drop not known, keep cancel"*; for a train just put down the
+    two did the same). The
     list starts on the road it has; with none, on the one sensor nearest the back of the train where exactly one
     qualifies - no other offered sensor lies further back on the same road - and on nothing otherwise (FR-088,
     Adam on MT-435, 2026-09-15: *"so the user can just click OK if appropriate"*); a way towards a sensor the tail
     has not reached is no sensor crossed, and is never where the list starts (MT-477). The list
-    offers each such sensor, nearest first, and **Not known**, which keeps the fork rule. A sensor exactly the
+    offers each such sensor, nearest first, with **OK** and **Cancel**; Cancel, or OK with none chosen, keeps the fork
+    rule. A sensor exactly the
     train's length back is offered: the tail has reached it (OB-226). Only roads a train can drive in on are
     offered - the walk back takes rails that run towards the train - so a road it could only have reversed along is
     not one (OB-227, Adam: *"that isn't a realistic path"*). The same list is in
     the right-click menu under **Farthest sensor the tail crossed**, and in the autonomy editor **Pick on the
     diagram...** outlines the sensors to click instead. **On the main window the question itself is put on the diagram**
     (FR-100; Adam, 2026-09-24: *"highlight possible squares on the diagram and ask the user to click one.  only show the
-    list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Not known**
-    and **Cancel** in a small window.  The list is asked where a choice is on another page or not drawn, and where an
+    list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Cancel** in a
+    small window.  The list is asked where a choice is on another page or not drawn, and where an
     editor window is open, whose squares do not take the click (TDU-C1) - and then the list opens from the editor,
     in front of it, not from the main window it covers (MT-575, 2026-09-25), while the editor is showing; a minimised
     one hides what it owns, so then the list opens from the main window (RLA-C4).  The rest of a double-click on the sensor that
@@ -1242,7 +1280,7 @@ The editor notice about turn-round squares with no length is a different questio
 - **With no road to follow, a fork right behind the platform stops the tail at the switch** (Adam, 2026-09-24, on
   MT-477: *"stop at the switch"*), as every other fork does under his rule of 2026-09-07. Where the rails arriving by
   the recorded side part before the train's length is spent - at BottomSecondary, the straight rail from RampDown and
-  the turned one from BottomCrossover, at switch 51 - and the train was placed with no answer, or Not known, the
+  the turned one from BottomCrossover, at switch 51 - and the train was placed with no answer, the
   squares they share are claimed up to and including the switch, and nothing past it. It used to take the first rail
   by that side and lay the tail up it. `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
 - A train never blocks itself — pulling forward off its own tail is how it leaves. **But its own tail is not an

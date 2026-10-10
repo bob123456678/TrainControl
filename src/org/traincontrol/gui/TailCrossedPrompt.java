@@ -54,9 +54,6 @@ public class TailCrossedPrompt
     {
     }
 
-    /** The answer that says nobody knows, for `answerForTests`. */
-    public static final String NOT_KNOWN = "";
-
     /** The question closed without an answer, for `answerForTests` (TLV-A1). */
     public static final String DISMISSED = "(dismissed)";
 
@@ -69,7 +66,7 @@ public class TailCrossedPrompt
     /**
      * Makes every question answer this without showing a dialog, until reset with null.  For tests only.
      *
-     * @param farthest the farthest sensor's point name, `NOT_KNOWN`, or null to put the dialog back
+     * @param farthest the farthest sensor's point name, `DISMISSED` for Cancel, or null to put the dialog back
      */
     public static void answerForTests(String farthest)
     {
@@ -399,8 +396,6 @@ public class TailCrossedPrompt
 
         if (answeredByATest != null)
         {
-            if (NOT_KNOWN.equals(answeredByATest)) return new Reply(true, null);
-
             if (DISMISSED.equals(answeredByATest)) return new Reply(false, null);
 
             for (Choice choice : choices)
@@ -434,15 +429,20 @@ public class TailCrossedPrompt
                     .replace("\n", "<br>") + "</html>"), java.awt.BorderLayout.NORTH);
                 panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
 
-                Object[] options = { I18n.t("ui.ok"), I18n.t("autosetup.ui.tailCrossedNotKnown") };
+                // OK AND CANCEL, NO "NOT KNOWN" (Adam, 2026-10-09, asked what told the two apart - for a train just put
+                // down they did the same: "drop not known, keep cancel").  Cancel is no answer, and keeps whatever road
+                // the train has; OK with nothing chosen is the same, so no answer is given that nobody chose.
+                Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
 
                 int chose = JOptionPane.showOptionDialog(parent, panel, I18n.t("autolayout.ui.askArrivalSideTitle"),
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
-                // OK with a sensor chosen is that sensor; OK with none, or Not Known, is Not Known.  Closed is no answer.
-                if (chose == 0 || chose == 1) answered[0] = true;
-
-                if (chose == 0 && list.getSelectedIndex() >= 0) answer[0] = choices.get(list.getSelectedIndex());
+                // OK with a sensor chosen is that sensor.  Anything else is no answer.
+                if (chose == 0 && list.getSelectedIndex() >= 0)
+                {
+                    answered[0] = true;
+                    answer[0] = choices.get(list.getSelectedIndex());
+                }
             };
 
             if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
@@ -888,16 +888,14 @@ public class TailCrossedPrompt
                 + escape(I18n.f("autosetup.ui.promptTailCrossedOnTheDiagram", train, station)).replace("\n", "<br>")
                 + "</div></html>"), java.awt.BorderLayout.CENTER);
 
-            javax.swing.JButton notKnown = new javax.swing.JButton(I18n.t("autosetup.ui.tailCrossedNotKnown"));
+            // CANCEL, AND NO "NOT KNOWN" (Adam, 2026-10-09: "drop not known, keep cancel"): for a train just put down
+            // the two did the same, and Cancel keeps whatever road a train standing still already has.
             javax.swing.JButton cancel = new javax.swing.JButton(I18n.t("ui.cancel"));
 
-            // NOT KNOWN IS AN ANSWER, a closed question is none (TLW-C2) - the list's two ways out, kept.
-            notKnown.addActionListener(e -> finish(new Reply(true, null)));
             cancel.addActionListener(e -> finish(new Reply(false, null)));
 
             javax.swing.JPanel buttons = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
 
-            buttons.add(notKnown);
             buttons.add(cancel);
 
             panel.add(buttons, java.awt.BorderLayout.SOUTH);

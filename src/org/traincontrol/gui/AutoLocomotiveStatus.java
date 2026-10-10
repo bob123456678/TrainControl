@@ -56,8 +56,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         this.locName.setText(locomotive.getName());
         
         // Style labels
-        locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), StationCaption.PILL, 1, 999));
-        locStation.setBackground(StationCaption.PILL);
+        locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), TAB_BLUE, 1, 999));
+        locStation.setBackground(TAB_BLUE);
         locStation.setForeground(new Color(255,255,255));
         
         explainOnHover();
@@ -112,6 +112,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * the panel.
      */
     private static final javax.swing.ImageIcon INFO_ICON = loadInfoIcon();
+
+    /**
+     * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in
+     * (Adam, 2026-10-09: "On the Autonomy Locomotive Commands tab, match the color of the text and pills to the darker
+     * blue used on text labels").  The track diagram's captions and badges keep their brighter blue, `StationCaption.PILL`.
+     */
+    static final Color TAB_BLUE = AutonomyViewerPanel.HEADING_COLOUR;
 
     private static javax.swing.ImageIcon loadInfoIcon()
     {
@@ -242,7 +249,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         {
             DefaultListModel<String> pathList = new DefaultListModel<>();
             
-            this.locDest.setForeground(StationCaption.PILL);
+            this.locDest.setForeground(TAB_BLUE);
             
             // Ensure consistent state
             this.pauseButton.setSelected(locomotive.isAutonomyPaused());
@@ -297,9 +304,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.pauseButton.setVisible(true);
                 
                 // Restore label color
-                locStation.setBackground(StationCaption.PILL);
+                locStation.setBackground(TAB_BLUE);
                 locStation.setForeground(Color.WHITE);
-                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), StationCaption.PILL, 1, 999 ));
+                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), TAB_BLUE, 1, 999 ));
             }
             
             this.locStation.setToolTipText("");

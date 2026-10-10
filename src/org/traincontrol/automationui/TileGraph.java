@@ -2036,6 +2036,53 @@ public class TileGraph
     }
 
     /**
+     * Whether the track leaving a square by one side runs out - at a buffer stop, or where the drawn track simply stops -
+     * before it reaches any of some squares, over the track as DRAWN, whichever way trains may run on it (FR-118).  A
+     * walk that comes back round to the square it left goes somewhere, so that side is no dead end; nor is a side the
+     * square has no track by.
+     *
+     * @param from the square
+     * @param side the side to leave it by
+     * @param stops the squares a walk ends at - the sensors
+     * @return true when every way that side leads ends in nothing
+     */
+    public boolean runsOutLeaving(TileKey from, Side side, Set<TileKey> stops)
+    {
+        if (from == null || side == null || stops == null || !tiles.containsKey(from)) return false;
+
+        boolean trackThatWay = false;
+
+        for (Route route : getRoutes(from).values())
+        {
+            if (route.touches(side)) trackThatWay = true;
+        }
+
+        if (!trackThatWay) return false;
+
+        Landing first = landing(from, side);
+
+        if (first == null || !tiles.containsKey(first.getTile())) return true;
+
+        Set<String> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
+
+        frontier.add(new Step(first.getTile(), first.getEntrySide()));
+
+        while (!frontier.isEmpty())
+        {
+            Step here = frontier.poll();
+
+            if (!seen.add(here.key())) continue;
+
+            if (here.tile.equals(from) || stops.contains(here.tile)) return false;
+
+            frontier.addAll(continuations(here));
+        }
+
+        return true;
+    }
+
+    /**
      * The squares from one square to another, leaving the first by one side, over the track as DRAWN and never past a
      * stop on the way - `firstStopsLeaving`'s walk, with the route it took (Adam, 2026-09-24, carrying an old file's
      * directions).

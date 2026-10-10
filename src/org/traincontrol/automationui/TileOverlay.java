@@ -601,6 +601,28 @@ public class TileOverlay
     private static final double HALO_REACH = 1.0 / 14;
 
     /**
+     * The most the halo reaches past the icon as drawn, as a share of the icon's drawn width (OB-329; Adam, 2026-10-09, on
+     * MT-707: "reduce the size of halos around the locomotive slightly in 60px mode") - which leaves the small size as it
+     * was and takes a pixel off the large.
+     */
+    private static final double HALO_MOST = 1.0 / 15;
+
+    /**
+     * How far the halo reaches past the icon as drawn: its share of the icon (`HALO_REACH`), but no more than `HALO_MOST`
+     * of it and never less than two pixels - two at the small size, three at the large where it was four (OB-329).
+     *
+     * @param picture the icon
+     * @param side the width the icon is drawn at
+     * @return the halo's reach, in pixels
+     */
+    private static int haloOut(java.awt.image.BufferedImage picture, int side)
+    {
+        int share = (int) Math.round(haloReach(picture) * side / (double) picture.getWidth());
+
+        return Math.min(share, Math.max(2, (int) Math.round(side * HALO_MOST)));
+    }
+
+    /**
      * The icon's silhouette in white, grown by `HALO_REACH` on every side (Adam, 2026-10-09, the diagram look
      * proposals: "Build 2,3,5,6").  Drawn under the icon so it reads as on top of the caption and the badge it stands
      * over; the icon's own thin rim did not.  The icon's size is unchanged - his "C: full size".
@@ -947,9 +969,7 @@ public class TileOverlay
                     else turnToTravel(g);
 
                     // The halo first, at the icon's own scale and reaching past it on every side
-                    int reach = haloReach(picture);
-                    double scale = side / (double) picture.getWidth();
-                    int out = (int) Math.round(reach * scale);
+                    int out = haloOut(picture, side);
 
                     g.drawImage(haloOf(picture), -side / 2 - out, -side / 2 - out, side + 2 * out, side + 2 * out, null);
 

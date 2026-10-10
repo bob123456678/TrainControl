@@ -11519,7 +11519,9 @@ public class AutonomySession
                 firstRoute(tile) == null ? null : firstRoute(tile).getA(),
                 firstRoute(tile) == null ? null : firstRoute(tile).getB(),
                 isTurnAround(tile) && !isMustTurnAround(tile),
-                shut),
+                shut,
+                // which way a station's track runs out, for the terminus's flat end (FR-118)
+                store.isStation(tile) ? deadEndSide(tile) : null),
             false, false, false, null,
             // RESTRICTED ONLY, which is the whole of what was asked for: "show RESTRICTION arrows".
             // A run that is open both ways is the majority of any layout and is also the default, so
@@ -11542,6 +11544,35 @@ public class AutonomySession
             // platform would be the clutter this mark exists to avoid.
             arrivals ? arrivalMarks(tile, false)
                 : new ArrayList<TileAnnotation.Arrival>());
+    }
+
+    /**
+     * The side of a square's road whose track runs out - to a buffer stop, or where the drawn track stops - before it
+     * reaches another sensor, or null where both sides go somewhere, or neither does (FR-118).  A station there is drawn
+     * as a terminus flat against that side, whatever its turning setting (Adam, 2026-10-09, asked *"a station with only
+     * one way out becomes a terminus, correct?"* - confirmed).
+     *
+     * Asked of the TRACK as drawn, not of the edges built from it: a one-way run or a barred arrival leaves trains one
+     * way out of a station whose track carries on, and that station keeps its own shape.  The road is the badge's,
+     * `firstRoute`.
+     *
+     * @param tile a sensor's square
+     * @return the side, or null
+     */
+    public Side deadEndSide(TileKey tile)
+    {
+        if (graph == null || reducer == null || tile == null) return null;
+
+        Route road = firstRoute(tile);
+
+        if (road == null || road.getA() == null || road.getB() == null || road.getA() == road.getB()) return null;
+
+        Set<TileKey> sensors = reducer.getPoints().keySet();
+
+        boolean outA = graph.runsOutLeaving(tile, road.getA(), sensors);
+        boolean outB = graph.runsOutLeaving(tile, road.getB(), sensors);
+
+        return outA == outB ? null : outA ? road.getA() : road.getB();
     }
 
     /**

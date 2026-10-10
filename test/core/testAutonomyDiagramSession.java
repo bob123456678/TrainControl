@@ -4381,6 +4381,80 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station whose track runs out on one side - at a buffer stop, or where the drawn track simply stops - before it
+     * reaches another sensor is drawn as a terminus flat against that side (FR-118; Adam, 2026-10-09, asked *"a station
+     * with only one way out becomes a terminus, correct?"* - confirmed).  The diagram's badge and the editor's carry the
+     * side; a station with track going on both ways carries none, and a setting that stops trains leaving one way - a
+     * one-way run - is no dead end: the track is what is asked.
+     *
+     * MUTATION: answer from the built edges, which a one-way run takes away, or drop the side from either badge, and this
+     * fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationWhoseTrackRunsOutIsATerminus() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 12, 3, null, null);
+
+        // a buffer stop, its track to the east; a station against it; a station in the middle; one where the track stops
+        page.addComponent(componentType.END, 1, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 81, 81, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 82, 82, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 7, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 8, 1, 0, 0, 83, 83, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 9, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("FR-118");
+
+        TileKey buffer = new TileKey("main", 2, 1), through = new TileKey("main", 5, 1), open = new TileKey("main", 8, 1);
+
+        for (TileKey station : new TileKey[] {buffer, through, open}) session.setStation(station, true);
+
+        session.rebuild();
+
+        assertEquals(session.deadEndSide(buffer), Side.W, "the station against the buffer stop is not a terminus facing"
+            + " it (FR-118)");
+
+        assertEquals(session.deadEndSide(open), Side.E, "the station whose track stops two squares on is not a terminus"
+            + " facing that way (FR-118)");
+
+        assertNull(session.deadEndSide(through), "a station with track going on both ways is drawn as a terminus");
+
+        assertEquals(session.staticAnnotationFor(buffer).getBadge().getDeadEnd(), Side.W, "the diagram's badge for the"
+            + " station against the buffer stop does not say which way its track runs out");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session,
+            "main", () -> { }));
+
+        java.lang.reflect.Method badgeFor =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("badgeFor", TileKey.class);
+
+        badgeFor.setAccessible(true);
+
+        assertEquals(((TileAnnotation.Badge) badgeFor.invoke(panel[0], open)).getDeadEnd(), Side.E, "the editor's badge"
+            + " for the station whose track stops does not say which way it runs out");
+
+        // A SETTING IS NOT A DEAD END: the track east of the middle station made one-way towards it, so no train leaves
+        // it eastwards - its track still goes on
+        session.setDirection(new TileKey("main", 6, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.setDirection(new TileKey("main", 7, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.rebuild();
+
+        assertNull(session.deadEndSide(through), "a station trains cannot leave eastwards only because of a one-way run"
+            + " is drawn as a terminus - Adam asked about a station with one way out of the track");
+
+        assertEquals(session.deadEndSide(buffer), Side.W, "control: the buffer stop's station lost its dead end");
+    }
+
+    /**
      * And the running graph is told, so trains do not simply drive through it (D24-B5).
      *
      * The editor offers **Out of service** on every square, station or not, and its handler writes

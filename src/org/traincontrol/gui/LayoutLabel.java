@@ -1853,8 +1853,9 @@ public final class LayoutLabel extends JLabel
         g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
             java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g.setStroke(new java.awt.BasicStroke(Math.max(3f, span / 7f),
-            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        float width = Math.max(3f, span / 7f);
+
+        g.setStroke(new java.awt.BasicStroke(width, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
         // WHICHEVER COLOUR THE DIAGRAM IS SET TO DRAW - see `tailColour`
         g.setColor(tailColour().colour());
@@ -1881,10 +1882,109 @@ public final class LayoutLabel extends JLabel
 
                 if (coach != null) body.append(coach, false);
             }
-            else body.append(new java.awt.geom.Line2D.Double(a[0], a[1], b[0], b[1]), false);
+            else
+            {
+                // ROUNDED WHERE THE TRAIN ENDS (Adam, 2026-10-09: "Can we make the end of a train (orange line) rounded,
+                // not a straight jagged edge?").  The line runs side to side and the square clips what it draws, so the
+                // round cap at the train's last side was cut off flat on the square's edge.  At a side the train goes no
+                // further than, the line stops as far short as its cap needs to lie inside the square; between squares it
+                // still runs to the edge, since two see-through caps laid over each other would show.
+                double[] from = endOf(a, b, road.getA(), width / 2);
+                double[] to = endOf(b, a, road.getB(), width / 2);
+
+                body.append(new java.awt.geom.Line2D.Double(from[0], from[1], to[0], to[1]), false);
+            }
         }
 
         g.draw(body);
+    }
+
+    /**
+     * Where the line along a road stops at one of its sides (the rounded end): at the side, where the train runs on into
+     * the square beside; otherwise short of it by as much as the round cap needs to lie wholly inside this square - more
+     * where the road meets the side at a slant, as a curve's does - and a pixel and a half more, so the cap's edge does
+     * not touch the square's own.
+     *
+     * @param end the road's midpoint on that side
+     * @param other its midpoint on the other side
+     * @param side the side
+     * @param radius the cap's radius, half the line's width
+     * @return where the line stops
+     */
+    private double[] endOf(int[] end, int[] other, org.traincontrol.automationui.TilePorts.Side side, double radius)
+    {
+        if (runsOnAcross(side)) return new double[] {end[0], end[1]};
+
+        double dx = other[0] - end[0], dy = other[1] - end[1];
+        double length = Math.hypot(dx, dy);
+
+        if (length <= 0) return new double[] {end[0], end[1]};
+
+        // How squarely the road meets the side: the cap's centre has to be a radius in from the side, measured across it
+        double square = side == org.traincontrol.automationui.TilePorts.Side.N
+            || side == org.traincontrol.automationui.TilePorts.Side.S ? Math.abs(dy) / length : Math.abs(dx) / length;
+
+        double inset = Math.min(length / 2, (radius + 1.5) / Math.max(square, 0.25));
+
+        return new double[] {end[0] + dx / length * inset, end[1] + dy / length * inset};
+    }
+
+    /**
+     * Whether the train's line runs on across a side into the square beside (the rounded end): that square carries a
+     * covered road through the side facing this one.  A square beside that this page does not draw is taken to carry
+     * the line on, as every side was before.
+     *
+     * @param side the side
+     * @return whether the line goes on
+     */
+    private boolean runsOnAcross(org.traincontrol.automationui.TilePorts.Side side)
+    {
+        if (square == null || tcUI == null || side == null) return true;
+
+        org.traincontrol.automationui.TileGraph.TileKey beside = besideOn(square, side);
+
+        if (beside == null) return true;
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> there = tcUI.coveredRoutesAt(beside);
+
+        if (there.isEmpty()) return false;
+
+        org.traincontrol.base.LayoutDiagram page = tcUI.getModel() == null ? null : tcUI.getModel().getLayout(square.getPage());
+
+        LayoutDiagramComponent next = page == null ? null : page.getComponent(beside.getX(), beside.getY());
+
+        if (next == null) return true;
+
+        org.traincontrol.automationui.TilePorts.Side back = side.opposite();
+
+        for (org.traincontrol.automationui.TilePorts.Route road : routesOf(next, there))
+        {
+            if (road.getA() == back || road.getB() == back) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The square beside one across a side, on the same page.
+     *
+     * @param square the square
+     * @param side the side
+     * @return the square beside, or null for no side
+     */
+    public static org.traincontrol.automationui.TileGraph.TileKey besideOn(org.traincontrol.automationui.TileGraph.TileKey square,
+        org.traincontrol.automationui.TilePorts.Side side)
+    {
+        if (square == null || side == null) return null;
+
+        switch (side)
+        {
+            case N: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX(), square.getY() - 1);
+            case S: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX(), square.getY() + 1);
+            case E: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX() + 1, square.getY());
+            case W: return new org.traincontrol.automationui.TileGraph.TileKey(square.getPage(), square.getX() - 1, square.getY());
+            default: return null;
+        }
     }
 
     /**
@@ -1976,6 +2076,20 @@ public final class LayoutLabel extends JLabel
      * @return the roads, possibly none
      */
     private java.util.List<org.traincontrol.automationui.TilePorts.Route> routesOf(
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads)
+    {
+        return routesOf(component, roads);
+    }
+
+    /**
+     * The same, for the roads of any square - this one's, or the square beside's, which decides whether this one's line
+     * ends rounded.
+     *
+     * @param component what is drawn on the square
+     * @param roads the reduction's names for its roads
+     * @return the roads, possibly none
+     */
+    private static java.util.List<org.traincontrol.automationui.TilePorts.Route> routesOf(LayoutDiagramComponent component,
         java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads)
     {
         java.util.List<org.traincontrol.automationui.TilePorts.Route> out =

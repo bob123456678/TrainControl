@@ -356,35 +356,6 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * Answering Not Known forgets a road the train held before (TLR-C5, TLV-C2).
-     *
-     * Pasted back onto the square it stands on, the train is not a change of occupant, so nothing else clears the road.
-     * The question is put and answered Not Known, and the road goes from both stores.
-     */
-    @Test
-    public void testNotKnownOnAPasteForgetsAnOldRoad() throws Exception
-    {
-        Fixture f = Fixture.open();
-
-        try
-        {
-            TailCrossedPrompt.Choice farthest = f.recordARoadByPasting();
-
-            f.pasteInPlace(TailCrossedPrompt.NOT_KNOWN);
-
-            assertNull(session.getArrivedAlong(f.tile), "Not Known was answered and the setup still holds the road "
-                + farthest.getLabel() + " - the next rebuild follows it");
-
-            assertNull(f.standing().getArrivedAlong(), "Not Known was answered and the train on the running railway still"
-                + " follows the road " + farthest.getLabel());
-        }
-        finally
-        {
-            f.close();
-        }
-    }
-
-    /**
      * A paste that puts no question keeps the road the train has (TLV-A1).
      *
      * The doors wrote "no road" whenever nothing was chosen, and nothing is chosen where nothing is asked - so pasting a
@@ -405,7 +376,7 @@ public class testTheTailCanBeGivenInTheEditor
             assertFalse(TailCrossedPrompt.wouldAsk(model.getAutoLayout(), f.standing(), f.standing().getArrivedFrom(), 1),
                 "precondition: a one-unit train is still asked");
 
-            f.pasteInPlace(TailCrossedPrompt.NOT_KNOWN);
+            f.pasteInPlace(TailCrossedPrompt.DISMISSED);
 
             assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
                 "the train was pasted back where it stands, nothing was asked, and the setup lost its road");
@@ -667,7 +638,7 @@ public class testTheTailCanBeGivenInTheEditor
         /**
          * Takes the train off and pastes it back on its square through Control+V, the tail question answered.
          *
-         * @param answer the farthest sensor's point name, or `TailCrossedPrompt.NOT_KNOWN`
+         * @param answer the farthest sensor's point name, or `TailCrossedPrompt.DISMISSED` for Cancel
          */
         void paste(String answer) throws Exception
         {
@@ -730,7 +701,7 @@ public class testTheTailCanBeGivenInTheEditor
         /**
          * Pastes the train back onto the square it stands on - no change of occupant - the tail question answered.
          *
-         * @param answer the farthest sensor's point name, `TailCrossedPrompt.NOT_KNOWN` or `TailCrossedPrompt.DISMISSED`
+         * @param answer the farthest sensor's point name, or `TailCrossedPrompt.DISMISSED` for Cancel
          */
         void pasteInPlace(String answer) throws Exception
         {

@@ -729,4 +729,281 @@ public class testTheTrainIsShownAsALine
 
         return atTheEdge;
     }
+
+    /** The large size, where a cap is wide enough to tell round from flat. */
+    private static final int LARGE = 60;
+
+    /**
+     * The train's line ends rounded where the train ends, not cut off flat on the square's edge (Adam, 2026-10-09: "Can
+     * we make the end of a train (orange line) rounded, not a straight jagged edge?").
+     *
+     * Each of the train's end squares - covered, beside a covered square, with a side whose square beside the train does
+     * not reach - painted at the large size: nothing orange on that side's edge, where a line cut off there lays its
+     * whole width.
+     *
+     * MUTATION: run the line to the edge at the train's end as it runs between squares, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheTrainEndsRounded() throws Exception
+    {
+        try
+        {
+            train.setTrainLength(4);
+
+            refreshCoveredTrack();
+
+            int ends = 0;
+
+            for (TileKey square : everyTile())
+            {
+                if (!ui.isTrackCovered(square)) continue;
+
+                java.util.List<org.traincontrol.automationui.TilePorts.Side> open = new java.util.ArrayList<>();
+
+                boolean runsOn = false;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    TileKey beside = besideOn(square, side);
+
+                    if (beside == null) continue;
+
+                    if (ui.isTrackCovered(beside)) runsOn = true;
+                    else open.add(side);
+                }
+
+                if (!runsOn || open.isEmpty()) continue;
+
+                org.traincontrol.base.LayoutDiagram page = model.getLayout(square.getPage());
+
+                LayoutDiagramComponent component = page == null ? null : page.getComponent(square.getX(), square.getY());
+
+                if (component == null || component.isText()) continue;
+
+                BufferedImage shot = paintAt(drawnTileFor(square, LARGE), LARGE);
+
+                // A square the train covers with no line to draw - a link's - says nothing about how a line ends
+                if (orangePixels(shot) == 0) continue;
+
+                ends++;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : open)
+                {
+                    int onTheEdge = orangeOnTheEdge(shot, side);
+
+                    assertTrue(onTheEdge <= 1, "the train's line on " + square + " is cut off flat on its " + side
+                        + " edge (" + onTheEdge + " orange pixels on it), where the train goes no further - it does not"
+                        + " end rounded");
+                }
+            }
+
+            assertTrue(ends > 0, "precondition: the train has no end square with a line on it to look at");
+        }
+        finally
+        {
+            train.setTrainLength(0);
+
+            refreshCoveredTrack();
+        }
+    }
+
+    /**
+     * A square whose own line did not change is redrawn when the square beside it changed: the train's last square ends
+     * rounded only while the train goes no further, so a train grown by a square has to redraw the square that was its
+     * last (the rounded end).
+     *
+     * Asked of the window's own refresh, through a tile registered for that square, with Swing's repaint requests
+     * recorded.
+     *
+     * MUTATION: redraw only the squares whose roads changed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
+    public void testTheSquareBesideAChangedLineIsRedrawn() throws Exception
+    {
+        try
+        {
+            java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> atThree = coveredAt(3);
+            java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> atFour = coveredAt(4);
+
+            // THE SQUARE: covered at both lengths along the same roads, beside one only the longer train covers
+            TileKey kept = null;
+
+            for (TileKey square : atThree.keySet())
+            {
+                if (!atThree.get(square).equals(atFour.get(square))) continue;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    TileKey beside = besideOn(square, side);
+
+                    if (beside != null && atFour.containsKey(beside) && !atThree.containsKey(beside)) kept = square;
+                }
+            }
+
+            assertNotNull(kept, "precondition: no square the train covers at a length of 3 lies beside one it covers only"
+                + " at 4: " + atThree.keySet() + " / " + atFour.keySet());
+
+            coveredAt(3);
+
+            final LayoutLabel watched = drawnTileFor(kept, TILE);
+
+            final Set<java.awt.Component> asked = java.util.Collections.synchronizedSet(new java.util.HashSet<java.awt.Component>());
+
+            final javax.swing.RepaintManager was = javax.swing.RepaintManager.currentManager(watched);
+
+            SwingUtilities.invokeAndWait(() -> javax.swing.RepaintManager.setCurrentManager(new javax.swing.RepaintManager()
+            {
+                @Override
+                public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+                {
+                    asked.add(c);
+
+                    super.addDirtyRegion(c, x, y, w, h);
+                }
+            }));
+
+            try
+            {
+                coveredAt(4);
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(() -> javax.swing.RepaintManager.setCurrentManager(was));
+            }
+
+            assertTrue(asked.contains(watched), "the train grew from 3 to 4 and " + kept + ", its last square before,"
+                + " was not redrawn - its line stays rounded short of a square the train now covers");
+        }
+        finally
+        {
+            train.setTrainLength(0);
+
+            refreshCoveredTrack();
+        }
+    }
+
+    /** The train at a length, the window's marks worked out again, and the squares it covers along their roads. */
+    private static java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> coveredAt(int length)
+        throws Exception
+    {
+        train.setTrainLength(length);
+
+        refreshCoveredTrack();
+
+        java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> out = new java.util.LinkedHashMap<>();
+
+        // THE SENSORS' SQUARES TOO, which `everyTile` - the squares along the roads - leaves out: a train lies across them
+        Set<TileKey> squares = new LinkedHashSet<>(everyTile());
+
+        squares.addAll(session.getReducer().getPoints().keySet());
+
+        for (TileKey square : squares)
+        {
+            if (ui.isTrackCovered(square)) out.put(square, new LinkedHashSet<>(ui.coveredRoutesAt(square)));
+        }
+
+        return out;
+    }
+
+    /** The square beside one across a side, on the same page. */
+    private static TileKey besideOn(TileKey square, org.traincontrol.automationui.TilePorts.Side side)
+    {
+        switch (side)
+        {
+            case N: return new TileKey(square.getPage(), square.getX(), square.getY() - 1);
+            case S: return new TileKey(square.getPage(), square.getX(), square.getY() + 1);
+            case E: return new TileKey(square.getPage(), square.getX() + 1, square.getY());
+            case W: return new TileKey(square.getPage(), square.getX() - 1, square.getY());
+            default: return null;
+        }
+    }
+
+    /** The orange pixels on one side's edge of a picture. */
+    private static int orangeOnTheEdge(BufferedImage shot, org.traincontrol.automationui.TilePorts.Side side)
+    {
+        int found = 0;
+
+        int w = shot.getWidth(), h = shot.getHeight();
+
+        for (int i = 0; i < (side == org.traincontrol.automationui.TilePorts.Side.N
+            || side == org.traincontrol.automationui.TilePorts.Side.S ? w : h); i++)
+        {
+            int x, y;
+
+            switch (side)
+            {
+                case N: x = i; y = 0; break;
+                case S: x = i; y = h - 1; break;
+                case W: x = 0; y = i; break;
+                default: x = w - 1; y = i; break;
+            }
+
+            if (isOrange(shot.getRGB(x, y))) found++;
+        }
+
+        return found;
+    }
+
+    /** A real tile for a square at a size, drawn and ready to be painted. */
+    private static LayoutLabel drawnTileFor(TileKey square, int size) throws Exception
+    {
+        org.traincontrol.base.LayoutDiagram page = model.getLayout(square.getPage());
+
+        LayoutDiagramComponent component = page.getComponent(square.getX(), square.getY());
+
+        final LayoutLabel[] built = new LayoutLabel[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutLabel(component, OURS, size, ui, false);
+            built[0].setSquare(square);
+        });
+
+        ui.getDiagramTileRegistry().register(square, built[0]);
+
+        long until = System.currentTimeMillis() + 30000;
+
+        while (built[0].getIcon() == null && System.currentTimeMillis() < until) pump();
+
+        assertNotNull(built[0].getIcon(), "the tile on " + square + " never drew its image");
+
+        SwingUtilities.invokeAndWait(() -> built[0].refreshCoveredMark());
+
+        pump();
+
+        return built[0];
+    }
+
+    /** A tile painted at a size, as `paint` paints one at the small size. */
+    private static BufferedImage paintAt(final LayoutLabel label, final int size) throws Exception
+    {
+        final BufferedImage[] shot = new BufferedImage[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            label.setSize(size, size);
+
+            shot[0] = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+            Graphics2D g = shot[0].createGraphics();
+
+            try
+            {
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, size, size);
+
+                label.paint(g);
+            }
+            finally
+            {
+                g.dispose();
+            }
+        });
+
+        return shot[0];
+    }
 }

@@ -104,8 +104,8 @@ public class testThePlaceDoorsKeepTheHeading
 
         assertEquals(ui.getActiveLoc().getName(), HIS_TRAIN, "precondition: another train is the active locomotive");
 
-        // EVERY QUESTION A PLACEMENT MAY ASK, answered as the steps answer it: where the tail lies is "Not known".
-        TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+        // EVERY QUESTION A PLACEMENT MAY ASK, answered as the steps answer it: where the tail lies is not said (Cancel).
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
     }
 
     @AfterClass(alwaysRun = true)
@@ -479,7 +479,7 @@ public class testThePlaceDoorsKeepTheHeading
         }
         finally
         {
-            TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+            TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
 
             closeEveryDialog();
 
@@ -604,7 +604,7 @@ public class testThePlaceDoorsKeepTheHeading
         }
         finally
         {
-            TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+            TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
 
             // THE QUESTION TAKEN DOWN BY ITS OWN PANE, shown or hidden: a hidden one is past closeEveryDialog.
             for (java.awt.Window window : java.awt.Window.getWindows())

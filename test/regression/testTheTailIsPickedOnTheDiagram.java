@@ -469,12 +469,12 @@ public class testTheTailIsPickedOnTheDiagram
         {
             takeDownDialogs();
 
-            // A question left waiting on the diagram is answered Not known, so nothing holds the next class.
+            // A question left waiting on the diagram is dismissed, so nothing holds the next class.
             if (armed.get(null) != null)
             {
                 javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-                TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+                TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
 
                 java.awt.Window[] windows = java.awt.Window.getWindows();
 
@@ -1934,5 +1934,180 @@ public class testTheTailIsPickedOnTheDiagram
         {
             clearTunnel("TDD3-C7 side");
         }
+    }
+
+    /**
+     * The tail question offers Cancel and no "Not known", on the diagram and as the list (Adam, 2026-10-09, asked what
+     * tells them apart - a train just placed came out the same either way: "drop not known, keep cancel").
+     *
+     * Asked for real, as a placement asks it: on the diagram, its buttons; with an editor open, which puts it as the list,
+     * the list's.  Cancel is no answer in both, so a train keeps whatever road it had.
+     *
+     * MUTATION: put Not known back on either, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheQuestionOffersCancelAndNoNotKnown() throws Exception
+    {
+        TailCrossedPrompt.answerForTests(null);
+
+        final TunnelQuestion q = tunnelQuestion();
+
+        final String notKnown = org.traincontrol.util.I18n.t("autosetup.ui.tailCrossedNotKnown");
+        final String cancel = org.traincontrol.util.I18n.t("ui.cancel");
+
+        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
+
+        armed.setAccessible(true);
+
+        ExecutorService asker = Executors.newSingleThreadExecutor();
+
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+
+        open.setAccessible(true);
+
+        try
+        {
+            // ON THE DIAGRAM
+            Future<TailCrossedPrompt.Answer> asked = asker.submit(() ->
+                TailCrossedPrompt.askAfterPlacement(q.layout, q.tunnel, "N", 5, "OB tail train", ui, null));
+
+            javax.swing.JDialog prompt = awaitTheQuestion();
+
+            List<String> buttons = new java.util.ArrayList<>();
+
+            javax.swing.JButton cancelButton = buttonsOf(prompt.getContentPane(), buttons, cancel);
+
+            assertFalse(buttons.contains(notKnown), "the tail question on the diagram still offers \"" + notKnown + "\": "
+                + buttons + " - Adam: \"drop not known, keep cancel\"");
+
+            assertNotNull(cancelButton, "the tail question on the diagram offers no Cancel: " + buttons);
+
+            javax.swing.SwingUtilities.invokeAndWait(cancelButton::doClick);
+
+            assertFalse(asked.get(10, TimeUnit.SECONDS).wasAnswered(), "Cancel on the diagram was taken as an answer");
+
+            // AS THE LIST, with an editor open
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0] = new org.traincontrol.gui.LayoutEditor(model.getLayout("1 - Main"), 30, ui, 0);
+                editor[0].pack();
+            });
+
+            open.set(ui, editor[0]);
+
+            Future<TailCrossedPrompt.Answer> listed = asker.submit(() ->
+                TailCrossedPrompt.askAfterPlacement(q.layout, q.tunnel, "N", 5, "OB tail train", ui, null));
+
+            javax.swing.JDialog list = awaitTheQuestion();
+
+            final javax.swing.JOptionPane pane = findPane(list.getContentPane());
+
+            assertNotNull(pane, "precondition: the tail question as the list has no option pane");
+
+            List<String> options = new java.util.ArrayList<>();
+
+            for (Object option : pane.getOptions()) options.add(String.valueOf(option));
+
+            assertFalse(options.contains(notKnown), "the tail question as the list still offers \"" + notKnown + "\": "
+                + options);
+
+            assertTrue(options.contains(cancel), "the tail question as the list offers no Cancel: " + options);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> pane.setValue(cancel));
+
+            assertFalse(listed.get(10, TimeUnit.SECONDS).wasAnswered(), "Cancel on the list was taken as an answer");
+        }
+        finally
+        {
+            takeDownDialogs();
+
+            // A question left waiting on the diagram is dismissed, so nothing holds the next class.
+            if (armed.get(null) != null)
+            {
+                TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
+                takeDownDialogs();
+
+                TailCrossedPrompt.answerForTests(null);
+            }
+
+            open.set(ui, null);
+
+            if (editor[0] != null) javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+
+            asker.shutdownNow();
+        }
+    }
+
+    /** The tail question once it is on screen, by its title. */
+    private static javax.swing.JDialog awaitTheQuestion() throws Exception
+    {
+        String title = org.traincontrol.util.I18n.t("autolayout.ui.askArrivalSideTitle");
+
+        for (long end = System.currentTimeMillis() + 15000; System.currentTimeMillis() < end; )
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle()))
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                    return (javax.swing.JDialog) window;
+                }
+            }
+
+            Thread.sleep(100);
+        }
+
+        fail("the tail question did not come up");
+
+        return null;
+    }
+
+    /** Every button's text in a container, and the one with the given text. */
+    private static javax.swing.JButton buttonsOf(java.awt.Container in, List<String> texts, String wanted)
+    {
+        javax.swing.JButton found = null;
+
+        for (java.awt.Component c : in.getComponents())
+        {
+            if (c instanceof javax.swing.JButton)
+            {
+                texts.add(((javax.swing.JButton) c).getText());
+
+                if (wanted.equals(((javax.swing.JButton) c).getText())) found = (javax.swing.JButton) c;
+            }
+
+            if (c instanceof java.awt.Container)
+            {
+                javax.swing.JButton inner = buttonsOf((java.awt.Container) c, texts, wanted);
+
+                if (inner != null) found = inner;
+            }
+        }
+
+        return found;
+    }
+
+    private static javax.swing.JOptionPane findPane(java.awt.Container in)
+    {
+        for (java.awt.Component c : in.getComponents())
+        {
+            if (c instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) c;
+
+            if (c instanceof java.awt.Container)
+            {
+                javax.swing.JOptionPane inner = findPane((java.awt.Container) c);
+
+                if (inner != null) return inner;
+            }
+        }
+
+        return null;
     }
 }
