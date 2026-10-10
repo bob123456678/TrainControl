@@ -1149,13 +1149,16 @@ beside it along the road it carries - plain track before a switch - so every tot
 **A deliberate 0 is an answer** (Adam, 2026-09-23, OB-274: *"we need to allow a length of 0 as a length
 that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow
 everything to get assigned without what appears to be a skip."*). So the walks accept 0, and the piece is
-recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule
-but one** - the own-tail rule, which judges a way round only where it has run some length, is filed as OB-300 (RLA-C6)
+recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule**
 (Adam, 2026-09-25, ADU-C7: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*).  The route in, the room walk, the
 walk that claims a standing train's tail, the berth rule and the tail question count it, adding nothing, and walk on
 over it - so a train is let in wherever the measured track holds it in total, and a train standing there is claimed over
 the 0 and the track behind it.  They all ask one question, `Edge.isMeasured` - a length, or every place answered - so
-what the route in admits the tail walk claims.  **A leg with any square nobody answered still ends every walk** - a switch
+what the route in admits the tail walk claims.  **The own-tail rule asks it too, of the way round** (OB-300, RLA-C6;
+Adam, 2026-10-10, asked: into 3.0.0) - place by place, since a way round begins and ends inside a leg - so a loop
+answered 0 all the way round is judged as track of no length, and no train lying on it is let round into its own body
+(§5c).  Until then it judged a way round only where the route had run some length, and was the one length rule that
+erred towards letting through.  **A leg with any square nobody answered still ends every walk** - a switch
 or crossing on it included, which Mass Assign Lengths still asks for.  On the frozen railway's Tunnel: with BottomSecondary
 -> TunnelPre answered 0 throughout, a train of 5 from RampDown is admitted over the 8 measured end to end, where it was
 refused quoting 4.  Until then an answered 0 read as a stretch nobody measured (confirmed by Adam on 2026-09-23), but for
@@ -1336,8 +1339,10 @@ The editor notice about turn-round squares with no length is a different questio
   track the head runs before it comes back there plus the body in front of that place; for a place the route ran
   over, the measured track run since the head left it. A longer train is refused, and the refusal names the tightest
   such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a return is judged
-  only where the route itself - not the body in front of the place - has measured something since the head left it,
-  and where some of it has no length the refusal says how many things Mass Assign Lengths would ask a length for on
+  only where the way round - the route itself, not the body in front of the place - is measured since the head left
+  it: some length run on it, or every place on it answered 0 (OB-300 - a loop answered 0 throughout is track of no
+  length, and refused to any train lying on it); a way round nobody measured is not judged.  Where some of it has no
+  length the refusal says how many things Mass Assign Lengths would ask a length for on
   the way round, which is the other way past (TDA-B1).  The build marks, place by place, the piece, switch or shared
   square the editor still asks for, keyed by the answer it is asked in - its piece, or all of its page's switches, or
   all of its page's crossings, one length each (Adam, 2026-09-24, OB-297: *"Locations of switches are known."*;
@@ -1783,6 +1788,16 @@ Giving an edge back early is what lets a second train follow a first down the sa
 waiting for it to arrive.  The question is only ever *has the tail passed this edge*, and
 `Layout.tailHasProvablyPassed` answers it from two facts: how far the head has travelled since the end
 of the edge, and how long the train is.
+
+**How far the head has travelled is counted to where the sensor that last answered saw it** (GS-B3; Adam,
+2026-10-10, asked: into 3.0.0, *"earlier, never unsafe"*): the edge whose sensor answered, up to that sensor's own
+square.  A sensor answers when the head ENTERS its square, so the square is counted behind the head only when the next
+sensor answers - the safe reading for a release, where the walk that claims a running train's body takes the generous
+one (the head at the square's far end).  It was counted one sensor short, and on a path of three edges or fewer the
+first edge was held to the end of the run whatever the train's length.  A Point with no sensor - a hand-written
+configuration may have one; the builder's all carry one - is passed without waiting, so the track to it is counted only
+once the next sensor answers.  `core.testTrainTailClearsEdges.testAnEdgeIsHandedBackOnceTheTailHasPassedIt`,
+`testASensorsOwnSquareIsNotCountedBehindTheHeadYet`, `testAnEdgeIsNotHandedBackBeforeTheTailHasPassedIt`.
 
 **It is wrongly true in exactly two states, and both of them are ordinary.**
 
@@ -2818,6 +2833,17 @@ timetable's entries and its own loop count as running until they leave, and any 
 reads busy until the old timetable has gone and Start cannot come back into a run it would then join (RSA3-C5, RSA4-C1).
 The Yes waits for no lock a journey holds: it is answered on the window's own thread (RSA3-C4).
 `core.testATrainIsDispatchedOnce`.
+
+**Nothing is sent while the track power is off** (GST-B1; Adam, 2026-10-10, asked: into 3.0.0).  Autonomy, Execute
+Timetable and Return Home - whose plan runs as a timetable - wait before they choose a journey, start a timetable's entry
+or try a refused one again while the power reads off, cut from the window, by the Central Station or by a route, and go
+on when it reads on: the run is not stopped, and the log says once that it is waiting.  They used to go on choosing and
+setting routes, commanding switches on a railway with no power to move them.  A journey already under way is not
+touched.  The power reads on until the Central Station says otherwise - at start-up, and always in a simulation without
+Echo Sent Commands - so a state nobody has reported never holds a run.  Instant Stop is a halt, not a power cut, and
+autonomy runs on through it (OB-251).  A hand send is not waited for: the send gate refuses it while the power is off, as
+it refuses every door's press.  `core.testATrainIsDispatchedOnce.testAutonomySendsNothingWhileThePowerIsOff`,
+`testATimetableStartsNothingWhileThePowerIsOff`.
 
 **An old autonomy.json goes into the configuration named at the Import prompt** (Adam, 2026-09-25, choosing
 between honouring the name typed and not asking for one: *"(a)"*), created where there is none of that name.  It is
