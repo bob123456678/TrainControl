@@ -1763,6 +1763,8 @@ Adam, 2026-10-09: *“the small font on the vertical labels is really hard to re
 
 **Adam, 2026-10-09, choosing among six options drawn for him (the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB):** *“For stations, can we do a hybrid of the D station for normal stations, B hexagon for reversing, and the B flat terminus hexagon?   since we don't differentiate icons for ‘must turn’, can we use just the B hexagon for those for now?”*  So, each no taller than the sensor's contact under it (13 pixels at 30, 26 at 60) and wider along the track: a station is a rounded block half as wide again as it is tall; where trains may turn, an elongated hexagon, pointed at both ends, with a U-turn arrow in it; where they must turn, the same hexagon with nothing in it; at a terminus, the hexagon flat against the buffer stop with a bar there.  Named in blue, unnamed in white ringed in blue, parking in grey, as now; the sensor's own contact painted over as plain track where the icon does not cover it.
 
+**Adam, 2026-10-09, then:** *“Swap the may and must turn icons.  What about inactive stations- do those just keep the X? Also, arrow in may turn is still hard to see.  just add some white chevrons inside it instead.”*  So where trains may turn, the plain hexagon; where they must, the hexagon with white chevrons pointing out (the U-turn arrow did not read at 30 pixels).  A square out of service keeps its orange X, drawn instead of any station shape as now, at the same height as the new icons (13 pixels at 30, 26 at 60; it was 15 and 30); a station autonomy does not choose keeps the grey of its own shape.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
