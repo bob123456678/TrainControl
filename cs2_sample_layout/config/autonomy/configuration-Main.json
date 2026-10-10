@@ -45,39 +45,10 @@
       "loc": {"name": "EN57-947"},
       "mustReverse": true,
       "maxTrainLength": 2,
-      "arrivedAlong": [
-        [
-          "BottomInnerOtherside",
-          "1 - Main 19,7 (southbound)"
-        ],
-        [
-          "1 - Main 19,7 (southbound)",
-          "1 - Main 17,10 (westbound)"
-        ],
-        [
-          "1 - Main 17,10 (westbound)",
-          "BottomInner (northbound)"
-        ],
-        [
-          "BottomInner (northbound)",
-          "1 - Main 12,7"
-        ],
-        [
-          "1 - Main 12,7",
-          "Tunnel (southbound)"
-        ],
-        [
-          "Tunnel (southbound)",
-          "BottomMainBCPre (eastbound)"
-        ],
-        [
-          "BottomMainBCPre (eastbound)",
-          "BottomMainC"
-        ]
-      ],
+      "homeFacing": "W",
       "facing": "W",
-      "arrivedFrom": "W",
-      "priority": 2
+      "priority": 2,
+      "home": "EN57-947"
     },
     "1 - Main:20,12": {
       "loc": {"name": "EN57-203"},
@@ -100,25 +71,18 @@
           "BottomMainA (eastbound)"
         ]
       ],
+      "homeFacing": "E",
       "facing": "E",
-      "arrivedFrom": "W"
+      "arrivedFrom": "W",
+      "home": "EN57-203"
     },
     "1 - Main:20,13": {
       "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "Tunnel (southbound)",
-          "BottomMainBCPre (eastbound)"
-        ],
-        [
-          "BottomMainBCPre (eastbound)",
-          "BottomMainB (eastbound, reverse)"
-        ]
-      ],
+      "homeFacing": "W",
       "facing": "W",
-      "arrivedFrom": "W",
-      "canReverse": true
+      "canReverse": true,
+      "home": "ET22-245"
     },
     "1 - Main:21,6": {
       "maxTrainLength": 4,
@@ -128,7 +92,6 @@
     "3 - Top Parking:4,9": {},
     "1 - Main:7,7": {
       "maxTrainLength": 5,
-      "facing": "S",
       "priority": -2
     },
     "1 - Main:5,9": {},
@@ -172,10 +135,8 @@
     },
     "1 - Main:6,4": {
       "maxTrainLength": 4,
-      "homeFacing": "N",
       "facing": "N",
-      "priority": 1,
-      "home": "2-8-4 3505 SP"
+      "priority": 1
     },
     "2 - Bottom:16,9": {
       "parking": true,
@@ -207,8 +168,6 @@
     },
     "1 - Main:14,3": {
       "maxTrainLength": 3,
-      "homeFacing": "E",
-      "facing": "E",
       "excludedLocs": [
         "EA 3005 DSB",
         "ER 2035 DSB",
@@ -217,8 +176,7 @@
         "MZ 1425 DSB",
         "SP45-204"
       ],
-      "priority": -2,
-      "home": "EN57-947"
+      "priority": -2
     },
     "1 - Main:10,6": {
       "parking": true,
@@ -277,32 +235,10 @@
     "1 - Main:13,11": {
       "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "TopMainR1Inter (southbound)",
-          "TopMainR1Pre (northbound)"
-        ],
-        [
-          "TopMainR1Pre (northbound)",
-          "TopMainR1"
-        ],
-        [
-          "TopMainR1",
-          "TopMainPost (eastbound)"
-        ],
-        [
-          "TopMainPost (eastbound)",
-          "RampDown (southbound)"
-        ],
-        [
-          "RampDown (southbound)",
-          "BottomSecondary"
-        ]
-      ],
-      "facing": "W",
       "homeFacing": "W",
+      "facing": "W",
       "arrivedFrom": "E",
-      "home": "75 407 DB"
+      "home": "2-8-4 3505 SP"
     },
     "1 - Main:6,9": {},
     "1 - Main:17,10": {},
@@ -315,9 +251,7 @@
     },
     "2 - Bottom:19,0": {
       "maxTrainLength": 20,
-      "facing": "W",
-      "homeFacing": "W",
-      "home": "EN57-203"
+      "facing": "W"
     },
     "1 - Main:1,3": {},
     "1 - Main:10,13": {},
@@ -358,7 +292,7 @@
       "facing": "N",
       "arrivedFrom": "S",
       "priority": 2,
-      "home": "BR 628 2"
+      "home": "75 407 DB"
     },
     "1 - Main:7,2": {},
     "2 - Bottom:17,8": {
@@ -385,6 +319,7 @@
     "1 - Main:19,7": {},
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {
+      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 3,
       "facing": "W",
       "homeFacing": "W",

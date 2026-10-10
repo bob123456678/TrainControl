@@ -33493,6 +33493,14 @@ they were made.  Each now opens over a window that is there (round 85, `f61a3811
 `ui.testTheEditorNamesItsShortcuts.testTheExitBringsAMinimisedEditorBackBeforeItAsks`,
 `core.testLayoutTiles.testTheExitBringsAMinimisedRouteEditorBackBeforeItAsks`.
 
+**Adam, 2026-10-09 (triage).** Does not work.
+
+When a track diagram popup is maximized, it will not appear on top of the window (or any other windows) after the button is clicked.  It should appear and then the main window should go back on top of it. same for the editor.  Both work when the window is not previously maximized.  
+
+The rest of the popups seem OK.
+
+*Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-706"></a>
@@ -33523,6 +33531,10 @@ they were made.  Each now opens over a window that is there (round 85, `f61a3811
 *What this is:* FR-115, built in round 106 (`635b6ec8`): the setup's placements are rewritten to the homes the operator
 gave and the running layout is rebuilt from them, naming every train it moved or took off so the rebuild puts none of
 them back.  Claim `core.testPlaceAllAtTheirHomes`, on Adam's frozen railway.
+
+**Adam, 2026-10-09 (triage).** Works.
+
+*Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -33556,6 +33568,12 @@ them back.  Claim `core.testPlaceAllAtTheirHomes`, on Adam's frozen railway.
 *What this is:* rounds 99 to 105 - the see-through line (`b8cd693b`), the pill's text and outline (`4f98ed40`), the
 tiles (`b70abee3`), the address halo (`6061f789`) and its place over the trains (`64dbe905`), OB-326 (`c9b6c475`) and
 OB-327 (`a54ea8e4`) - each with its claims in `ui.testDiagramLooksRight` and `ui.testTheTrainIsShownAsALine`.
+
+**Adam, 2026-10-09 (triage).** Does not work.
+
+reduce the size of halos around the locomotive slightly in 60px mode.  rest looks good
+
+*Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -33598,5 +33616,9 @@ OB-327 (`a54ea8e4`) - each with its claims in `ui.testDiagramLooksRight` and `ui
 (`pausedLocomotives`), the railway reads and writes the list, and the Auto tab's pause button, the diagram's tick and
 the editor's tick change the same thing.  Claims `core.testAPausedTrainStaysPaused`,
 `core.testAutonomyDiagramMonitor.testAPausedTrainIsDrawnGrey` and `ui.testTheActiveTickPausesATrain`.
+
+**Adam, 2026-10-09 (triage).** Works.
+
+*Run against commit 627bb674, in English - build\classes, compiled 09 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
