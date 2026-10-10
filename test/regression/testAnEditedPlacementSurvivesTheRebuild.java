@@ -843,6 +843,23 @@ public class testAnEditedPlacementSurvivesTheRebuild
             // AND LISTED FOR THE DIAGRAM TO DRAW WHERE IT STANDS (RSA17-C2)
             assertEquals(session.trainsOnNoPoint().get(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train"
                 + " on no Point is not listed, facing west, for the diagram to draw on Beta: " + session.trainsOnNoPoint());
+
+            // AND GREY WHERE THE CONFIGURATION PAUSES IT (RSA60-C5) - asked of the setup's list, since the railway does
+            // not have the train
+            assertFalse(session.pausedTrainsOnNoPoint().contains(beta), "control: the train on no Point is listed as"
+                + " paused before anybody paused it");
+
+            session.setLocomotivePaused(MOVED, true);
+
+            try
+            {
+                assertTrue(session.pausedTrainsOnNoPoint().contains(beta), "a paused train on no Point is not listed for"
+                    + " the diagram to draw grey (RSA60-C5): " + session.pausedTrainsOnNoPoint());
+            }
+            finally
+            {
+                session.setLocomotivePaused(MOVED, false);
+            }
         }
         finally
         {

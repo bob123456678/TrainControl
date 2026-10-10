@@ -147,7 +147,7 @@ public class DiagramMonitorDriver
 
         if (current == null || session == null) return;
 
-        current.setTrainsOnNoPoint(session.trainsOnNoPoint());
+        current.setTrainsOnNoPoint(session.trainsOnNoPoint(), session.pausedTrainsOnNoPoint());
 
         current.markDirty();
     }

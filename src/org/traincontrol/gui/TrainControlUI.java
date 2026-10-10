@@ -4559,11 +4559,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The train and the setup in memory have it; the file did not take it, and the next save writes it
                 this.model.log(cannotSave);
             }
+
+            // AND THE RAILWAY'S SETTINGS AS BUILT (RSA60-B1).  The tick changed the railway and the setup together, so
+            // the two agree - as if the railway had been built this way.  Left as it was built, a press of the Auto tab's
+            // pause button afterwards, which changes the railway alone, read to the next rebuild's fold as no change, and
+            // the setup's older answer stood: the rebuild undid the button.
+            notePausesAsBuilt();
         }
 
         trainsPausedChanged();
 
         repaintAutoLocList(false);
+    }
+
+    /**
+     * Writes the railway's paused trains into its settings as built (RSA60-B1), for a door that changed the railway and
+     * the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes (RSA21-C1).  Only
+     * for the railway the settings were read off.
+     */
+    private void notePausesAsBuilt()
+    {
+        Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (railway == null || railway != settingsBuiltFor || settingsAsBuilt == null) return;
+
+        java.util.List<String> paused = org.traincontrol.automation.Layout.pausedNamesOf(this.model);
+
+        if (paused.isEmpty()) settingsAsBuilt.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else settingsAsBuilt.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(paused));
     }
 
     /**

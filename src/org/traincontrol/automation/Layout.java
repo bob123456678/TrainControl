@@ -13667,19 +13667,9 @@ public class Layout
         // locomotives, as designated on the autonomy locomotive controls tab"): every train the database has paused, by
         // name and sorted, so the file is the same file when nothing has changed.  Written only while it names somebody,
         // as `simulate` is, so an ordinary layout's file does not grow a key that means nothing to it.
-        List<String> paused = new ArrayList<>();
+        List<String> paused = pausedNamesOf(this.control);
 
-        for (Locomotive l : this.control == null ? Collections.<Locomotive>emptyList() : this.control.getLocomotives())
-        {
-            if (l != null && l.getName() != null && l.isAutonomyPaused()) paused.add(l.getName());
-        }
-
-        if (!paused.isEmpty())
-        {
-            Collections.sort(paused);
-
-            jsonObj.put(PAUSED_LOCOMOTIVES, new JSONArray(paused));
-        }
+        if (!paused.isEmpty()) jsonObj.put(PAUSED_LOCOMOTIVES, new JSONArray(paused));
 
         if (this.simulate)
         {
@@ -13694,6 +13684,27 @@ public class Layout
      * and kept by the setup with the rest of a configuration's settings.
      */
     public static final String PAUSED_LOCOMOTIVES = "pausedLocomotives";
+
+    /**
+     * Every train the database has paused, by name and sorted (FR-117): the list `toJSON` writes under
+     * `PAUSED_LOCOMOTIVES`, and the window's settings as built take (RSA60-B1) - one answer for both.
+     *
+     * @param control the model, or null for none
+     * @return the names, possibly none
+     */
+    public static List<String> pausedNamesOf(ViewListener control)
+    {
+        List<String> paused = new ArrayList<>();
+
+        for (Locomotive l : control == null ? Collections.<Locomotive>emptyList() : control.getLocomotives())
+        {
+            if (l != null && l.getName() != null && l.isAutonomyPaused()) paused.add(l.getName());
+        }
+
+        Collections.sort(paused);
+
+        return paused;
+    }
 
     /**
      * Parses TrainControl's autonomous operation configuration file

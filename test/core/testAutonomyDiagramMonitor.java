@@ -1739,8 +1739,9 @@ public class testAutonomyDiagramMonitor
             size / 5.0, "a switched-off station and a switched-off passing point draw different crosses, though "
             + "nothing can use either - the mark is about the square being out of use");
 
-        assertTrue(inkOf(badgeAt(true, true, true, size)) > inkOf(badgeAt(false, true, true, size)),
-            "a switched-off station has no grey block under its cross (FR-118)");
+        // the block's grey, counted - not ink, which the white over the sensor's contact adds to a station's as well
+        assertTrue(greyOf(badgeAt(true, true, true, size)) > size && greyOf(badgeAt(false, true, true, size)) == 0,
+            "a switched-off station has no grey block under its cross, or a passing point has one (FR-118)");
 
         // AND PARKING IS NOT SHUT (TCX-B6).
         //
@@ -2358,6 +2359,22 @@ public class testAutonomyDiagramMonitor
         assertTrue(best >= 0, "the cross drew nothing apart from the block");
 
         return new java.awt.Color(best);
+    }
+
+    /** How many of a painted badge's pixels are solid in the grey of a berth autonomy does not choose. */
+    private static int greyOf(java.awt.image.BufferedImage image)
+    {
+        int n = 0;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                if ((image.getRGB(x, y) >>> 24) >= 200 && GREY.test(image.getRGB(x, y))) n++;
+            }
+        }
+
+        return n;
     }
 
     /** How many of a painted badge's pixels are the cross's orange. */
@@ -3348,5 +3365,37 @@ public class testAutonomyDiagramMonitor
         java.util.Collections.sort(gaps);
 
         return gaps.get(gaps.size() / 2);
+    }
+
+    /**
+     * A paused train the railway stands on no Point is drawn grey there, as every other paused train is (RSA60-C5).
+     *
+     * MUTATION: draw the trains on no Point without asking whether they are paused, and this fails.
+     */
+    @Test
+    public void testAPausedTrainOnNoPointIsDrawnGrey()
+    {
+        StubLayout layout = new StubLayout();
+
+        final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(),
+            new LinkedHashMap<String, TileKey>(), overlays -> published.add(new LinkedHashMap<>(overlays)));
+
+        Map<TileKey, Side> nowhere = new LinkedHashMap<>();
+
+        nowhere.put(key("main", 3, 1), Side.W);
+        nowhere.put(key("main", 6, 1), Side.E);
+
+        monitor.setTrainsOnNoPoint(nowhere, java.util.Collections.singleton(key("main", 3, 1)));
+
+        monitor.refresh();
+
+        Map<TileKey, TileOverlay> picture = published.get(published.size() - 1);
+
+        assertTrue(picture.get(key("main", 3, 1)) != null && picture.get(key("main", 3, 1)).isPaused(), "a paused train on"
+            + " no Point is drawn as one that runs: " + picture.get(key("main", 3, 1)));
+
+        assertFalse(picture.get(key("main", 6, 1)).isPaused(), "a train on no Point that is not paused is drawn paused");
     }
 }

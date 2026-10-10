@@ -3712,4 +3712,73 @@ public class testDiagramLooksRight
             + " is mostly rgb(" + ((commonest >> 16) & 0xFF) + "," + ((commonest >> 8) & 0xFF) + "," + (commonest & 0xFF)
             + "), not the train's line as it shows on white");
     }
+
+    /** An address that counts its paints. */
+    public static final class CountingAddress extends org.traincontrol.gui.AddressLabel
+    {
+        static int painted;
+
+        @Override
+        protected void paintComponent(java.awt.Graphics g)
+        {
+            painted++;
+
+            super.paintComponent(g);
+        }
+    }
+
+    /**
+     * A repaint of a corner of the diagram paints the addresses in that corner and no others (RSA60-C1): the pass that
+     * draws the addresses over the trains took every one on the page, whatever was being repainted - with Show Addresses
+     * on, a hover's 3 x 3 repaint cost a pass over all 112 on Adam's main page.
+     *
+     * Forty addresses across a diagram, a repaint clipped to the first one's corner: it is painted, by the ordinary pass
+     * and the one over the trains, and nothing else is.
+     *
+     * MUTATION: paint every address in the pass over the trains, whatever the clip, and this fails.
+     */
+    @Test
+    public void testASmallRepaintPaintsOnlyTheAddressesInIt()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("painting a diagram needs a display");
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(1200, 1200);
+
+        for (int i = 0; i < 40; i++)
+        {
+            CountingAddress address = new CountingAddress();
+
+            address.setForeground(java.awt.Color.RED);
+            address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
+            address.setLines(String.valueOf(100 + i));
+
+            java.awt.Dimension d = address.getPreferredSize();
+
+            address.setBounds((i % 8) * 150, (i / 8) * 150, d.width, d.height);
+
+            grid.add(address);
+        }
+
+        CountingAddress.painted = 0;
+
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(1200, 1200,
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        g.setClip(0, 0, 60, 60);
+
+        grid.paint(g);
+
+        g.dispose();
+
+        assertTrue(CountingAddress.painted >= 1, "precondition: the address in the corner repainted was not painted");
+
+        assertTrue(CountingAddress.painted <= 2, "a repaint of one corner of the diagram painted addresses "
+            + CountingAddress.painted + " times, where one address lies in it - the pass over the trains painted every"
+            + " address on the page (RSA60-C1)");
+    }
 }

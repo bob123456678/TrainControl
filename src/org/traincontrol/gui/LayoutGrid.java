@@ -886,9 +886,15 @@ public class LayoutGrid
                 // sure they are rendered on top of the autonomy locomotive icons").  An address is what the operator
                 // turned Show Addresses on to read, and the pass above drew every icon over it.  Since round 102 it
                 // covers only its letters and their halo, so drawn last it hides nothing of the icon but the number.
+                // ONLY THOSE IN WHAT IS BEING REPAINTED (RSA60-C1): a hover repaints three squares by three, and with Show
+                // Addresses on this pass painted every address on the page each time, clipped to nothing - about eighteen
+                // times the cost on Adam's main page.  The pass above already skips what the clip misses.
+                java.awt.Rectangle clip = g.getClipBounds();
+
                 for (java.awt.Component child : getComponents())
                 {
-                    if (child instanceof AddressLabel && child.isVisible())
+                    if (child instanceof AddressLabel && child.isVisible()
+                        && (clip == null || clip.intersects(child.getBounds())))
                     {
                         java.awt.Graphics over = g.create(child.getX(), child.getY(), child.getWidth(), child.getHeight());
 

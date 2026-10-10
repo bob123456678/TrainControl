@@ -2902,4 +2902,47 @@ public class testAutonomyDiagramStore
         assertTrue(written.contains("\"2:3,3\""),
             "the square on \"Yard: Upper\" was not stored under that page's own id (2): " + written);
     }
+
+    /**
+     * A rename reaches every configuration's list of paused trains, and a deletion takes the train off it (RSA60-C2): the
+     * list is a holder of a locomotive's name like the placements, homes, exclusions and timetable, and a train paused in
+     * a configuration not loaded ran again after a rename.
+     *
+     * MUTATION: leave the paused list out of the rename's repair, and this fails.
+     *
+     * @throws IOException from the store
+     */
+    @Test
+    public void testARenameReachesThePausedTrains() throws IOException
+    {
+        store.createConfiguration("Running", null);
+        store.createConfiguration("Other", null);
+        store.setActiveConfiguration("Running");
+
+        org.json.JSONObject other = store.getConfiguration("Other");
+
+        if (!other.has("globals")) other.put("globals", new org.json.JSONObject());
+
+        other.getJSONObject("globals").put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
+            new org.json.JSONArray(java.util.Arrays.asList("Another", "Old Name")));
+
+        store.locomotiveRenamed("Old Name", "New Name");
+
+        org.json.JSONArray paused = store.getConfiguration("Other").getJSONObject("globals")
+            .getJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        java.util.List<Object> names = paused.toList();
+
+        assertTrue(names.contains("New Name") && !names.contains("Old Name"), "a rename did not reach the paused trains of a"
+            + " configuration not loaded: " + names + " - the renamed train runs there again (RSA60-C2)");
+
+        store.locomotiveDeleted("Another");
+        store.locomotiveDeleted("New Name");
+
+        org.json.JSONObject globals = store.getConfiguration("Other").getJSONObject("globals");
+
+        assertFalse(globals.has(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES), "trains deleted are still listed as"
+            + " paused: " + globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES) + " - a new train given one"
+            + " of their names would start paused");
+    }
 }

@@ -167,6 +167,22 @@ station that excludes this train; and a route to it is used only
 if it turns the train nowhere on the way and `isPathClear` passes it. No routing rule can admit a
 journey any of that refuses.
 
+**A paused train is left where it stands** (FR-117; Adam, 2026-10-09: *"in autonomy configs, track the paused/unpaused
+status of locomotives, as designated on the autonomy locomotive controls tab"*, and, asked what a pause keeps a train out
+of, *"Autonomy and Return Home"*). Autonomy never chooses a journey for it (`Layout.pickPath`), and Why Not Moving? says
+it is paused; Return Home leaves it too (section 6). A hand send still takes it, and so does Execute Timetable (Adam,
+2026-10-09, asked: *"Timetable can run paused trains"*; RSA60-C4). **The pause belongs to the configuration**: it is listed with the
+configuration's settings (`pausedLocomotives`, written only while it names somebody), every train is set paused or not
+as a configuration loads - start-up, a load, an import, a rebuild - and the log names the paused ones (*"Make sure the
+log shows what locomotive are paused when the autonomy import happens"*). Three doors set it: the Auto tab's pause
+button, which changes the train alone while trains run and is taken into the setup by the next fold, as the tab's other
+settings are; and the **... Is Active** tick on the track diagram's right-click menu and the autonomy editor's, offered
+where a train stands and only while autonomy is stopped, which changes the train and the setup together (and the
+railway's settings as built, so a press of the pause button afterwards is not undone by a rebuild - RSA60-B1). A rename
+of a train is carried into every configuration's list, and a deletion takes it off (RSA60-C2). On the diagram a paused
+train's icon is grey. `core.testAPausedTrainStaysPaused`, `ui.testTheActiveTickPausesATrain`,
+`core.testAutonomyDiagramMonitor.testAPausedTrainIsDrawnGrey`.
+
 **Station priority is absolute, and it is the default behaviour.** Every station has a whole-number
 priority, 0 unless set - clearing the box means 0. The candidates are shuffled and then sorted highest
 priority first, and the sort keeps the shuffle within a priority, so equals are chosen between at
@@ -1974,7 +1990,16 @@ not fight: the post-processor only ever sees what the focus owner did not want.
 
 ## 6. Parking and Return Home
 
-- Return Home stages every locomotive that has a home, as one plan.
+- Return Home stages every locomotive that has a home, as one plan - **but a paused one** (FR-117): for the plan its home
+  is where it stands, so it is home already and nothing is planned for it, the search never moves it out of another
+  train's way, and the log says it is paused and stays where it stands. The check after a run counts it home, so the
+  window does not report the run as stopped short. `core.testAPausedTrainStaysPaused`.
+- **Place All at Their Homes** (FR-115, Bulk Tools; Adam, 2026-10-09: *"Teleports locomotives to their home stations,
+  facing the correct way, and clears all other locomotives from other stations (without actually moving anything)"*)
+  rewrites the setup only: every train with a home is put on it facing the way it was homed (a home with no recorded
+  facing takes the facing of the copy the running layout homes it on), every other train is taken off, and the running
+  layout is rebuilt from that, naming every train it moved so the rebuild puts none of them back. Nothing is sent to the
+  railway; a pause is kept; it is refused while trains run. `core.testPlaceAllAtTheirHomes`.
 - One locomotive has one home; assigning a home takes it away from wherever it was.
 - **A home has a facing, and Return Home brings the train back in it** (Adam, 2026-09-23, OB-282: *"yes, it should
   accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic on the

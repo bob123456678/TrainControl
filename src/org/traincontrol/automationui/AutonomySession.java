@@ -8001,6 +8001,30 @@ public class AutonomySession
     }
 
     /**
+     * The squares of `trainsOnNoPoint` whose train this configuration pauses (RSA60-C5), for the diagram to draw grey.
+     * The setup's list, not the train's flag: the railway does not have these trains, and the setup is what says.
+     *
+     * @return the squares
+     */
+    public java.util.Set<TileKey> pausedTrainsOnNoPoint()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>();
+
+        java.util.Set<String> paused = getPausedLocomotives();
+
+        if (paused.isEmpty()) return out;
+
+        Map<TileKey, String> placed = placedLocomotives();
+
+        for (TileKey square : trainsOnNoPoint().keySet())
+        {
+            if (paused.contains(placed.get(square))) out.add(square);
+        }
+
+        return out;
+    }
+
+    /**
      * Writes into the setup, where it stands and facing as it faces, each train of the railway's the setup as it now
      * stands gives no copy facing its way (Adam, 2026-10-01; in place of RSA5-A2's and RSA6-A3's refusals).  The copy a
      * train stands on is its direction, so the rebuild cannot stand it on another - and it used to leave the train where

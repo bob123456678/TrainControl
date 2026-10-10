@@ -437,4 +437,93 @@ public class testTheActiveTickPausesATrain
     {
         SwingUtilities.invokeAndWait(() -> { });
     }
+
+    /**
+     * The Auto tab's pause button pressed after the diagram's tick is not undone by the next rebuild (RSA60-B1).
+     *
+     * The tick pauses the train and records it in the setup; the button then sets the train going on the railway alone,
+     * as it is meant to, for the fold to take in; and a setup gesture's rebuild folds the railway's settings that changed
+     * since it was built.  The tick did not tell the window the railway's pauses had changed, so the button's "going"
+     * read as no change and the setup's "paused" stood: the rebuild paused the train again.
+     *
+     * MUTATION: leave the railway's settings as built alone when the tick changes a pause, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheAutoTabsButtonAfterTheTickIsNotUndoneByARebuild() throws Exception
+    {
+        String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+        javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
+
+        assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
+
+        click(tick);
+
+        assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " did not pause the train");
+
+        final javax.swing.AbstractButton button = autoTabPauseButton();
+
+        assertNotNull(button, "precondition: the Auto tab shows no pause button for " + HIS_TRAIN);
+
+        SwingUtilities.invokeAndWait(button::doClick);
+
+        pump();
+
+        assertFalse(train.isAutonomyPaused(), "precondition: the Auto tab's pause button did not set the train going");
+
+        // A SETUP GESTURE'S REBUILD
+        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+        for (int turn = 0; turn < 10; turn++) pump();
+
+        assertFalse(train.isAutonomyPaused(), "the Auto tab's pause button set " + HIS_TRAIN + " going after the diagram's"
+            + " tick paused it, and the next rebuild paused it again - the last choice made for it was undone (RSA60-B1)");
+    }
+
+    /** The Auto tab's pause button on the card of his train, or null where the tab has none. */
+    private static javax.swing.AbstractButton autoTabPauseButton() throws Exception
+    {
+        final javax.swing.AbstractButton[] found = new javax.swing.AbstractButton[1];
+
+        final java.lang.reflect.Field loco = Class.forName("org.traincontrol.gui.AutoLocomotiveStatus").getDeclaredField("locomotive");
+        final java.lang.reflect.Field pause = Class.forName("org.traincontrol.gui.AutoLocomotiveStatus").getDeclaredField("pauseButton");
+
+        loco.setAccessible(true);
+        pause.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            java.util.List<java.awt.Component> all = new ArrayList<>();
+
+            everything(ui.getContentPane(), all);
+
+            for (java.awt.Component c : all)
+            {
+                if (!c.getClass().getSimpleName().equals("AutoLocomotiveStatus")) continue;
+
+                try
+                {
+                    if (train.equals(loco.get(c))) found[0] = (javax.swing.AbstractButton) pause.get(c);
+                }
+                catch (IllegalAccessException cannot)
+                {
+                    throw new IllegalStateException(cannot);
+                }
+            }
+        });
+
+        return found[0];
+    }
+
+    private static void everything(java.awt.Container in, java.util.List<java.awt.Component> into)
+    {
+        for (java.awt.Component c : in.getComponents())
+        {
+            into.add(c);
+
+            if (c instanceof java.awt.Container) everything((java.awt.Container) c, into);
+        }
+    }
 }

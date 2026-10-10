@@ -1752,6 +1752,51 @@ public class AutonomyCompanionStore
         }
 
         repairLocomotiveInTimetable(configuration, from, to);
+
+        repairLocomotiveInPausedTrains(configuration, from, to);
+    }
+
+    /**
+     * The fifth holder of a locomotive's name: the configuration's list of paused trains (FR-117; RSA60-C2), in "globals"
+     * with the timetable.  A rename carries across it, and a deletion takes the train off it - a name left there would
+     * start a new train given it paused.  Written back sorted, and not at all once it names nobody, as the railway writes
+     * it.
+     *
+     * @param configuration the configuration to repair, modified in place
+     * @param from the locomotive's name as it was
+     * @param to the new name, or null when the locomotive is being deleted
+     */
+    private static void repairLocomotiveInPausedTrains(JSONObject configuration, String from, String to)
+    {
+        JSONObject globals = configuration.optJSONObject("globals");
+
+        org.json.JSONArray list = globals == null ? null
+            : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        if (list == null) return;
+
+        java.util.Set<String> names = new java.util.TreeSet<>();
+
+        boolean named = false;
+
+        for (Object name : list)
+        {
+            if (from.equals(name))
+            {
+                named = true;
+
+                if (to != null) names.add(to);
+            }
+            else if (name instanceof String)
+            {
+                names.add((String) name);
+            }
+        }
+
+        if (!named) return;
+
+        if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
     }
 
     /**
