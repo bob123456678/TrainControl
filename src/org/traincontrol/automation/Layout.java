@@ -10423,9 +10423,9 @@ public class Layout
                         // is known to be behind the head is the edge up to that square: the square is credited when the
                         // next sensor answers (`arrivingSquare`).  Crediting it at once - the head at the square's far end,
                         // as the walk that claims a running train's body reads a milestone - could hand an edge back with
-                        // the tail still on it by up to that square's length; a release must never be early (Adam's
-                        // condition for this fix: "earlier, never unsafe").  The walk's reading is the generous one for a
-                        // claim; this one is the safe one for a release.
+                        // the tail still on it by up to that square's length; a release must never be early (the fix
+                        // was put to Adam as releasing track "earlier, never unsafe", and he chose it).  The walk's reading
+                        // is the generous one for a claim; this one is the safe one for a release.
                         //
                         // ONLY AS FAR AS A SENSOR HAS SEEN THE HEAD.  A Point with no sensor - a hand-written configuration
                         // may have one; every Point the builder makes carries one - is passed without waiting, and nothing

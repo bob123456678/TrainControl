@@ -1790,8 +1790,8 @@ waiting for it to arrive.  The question is only ever *has the tail passed this e
 of the edge, and how long the train is.
 
 **How far the head has travelled is counted to where the sensor that last answered saw it** (GS-B3; Adam,
-2026-10-10, asked: into 3.0.0, *"earlier, never unsafe"*): the edge whose sensor answered, up to that sensor's own
-square.  A sensor answers when the head ENTERS its square, so the square is counted behind the head only when the next
+2026-10-10, asked: into 3.0.0 - put to him as releasing track earlier, never unsafely): the edge whose sensor answered,
+up to that sensor's own square.  A sensor answers when the head ENTERS its square, so the square is counted behind the head only when the next
 sensor answers - the safe reading for a release, where the walk that claims a running train's body takes the generous
 one (the head at the square's far end).  It was counted one sensor short, and on a path of three edges or fewer the
 first edge was held to the end of the run whatever the train's length.  A Point with no sensor - a hand-written

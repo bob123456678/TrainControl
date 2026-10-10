@@ -520,7 +520,8 @@ public class testTrainTailClearsEdges
     /**
      * But a sensor's own square is not counted behind the head until the next sensor answers (GS-B3): a sensor answers
      * when the head ENTERS its square, so when C's answers all that is known to be behind the head is B-C up to C's square.
-     * A release must never be early - Adam's condition for this fix, "earlier, never unsafe" (2026-10-10).
+     * A release must never be early - the fix was put to Adam as releasing track "earlier, never unsafe", and he chose
+     * it (2026-10-10).
      *
      * A-B-C-D, ten units an edge, C's square the last 3 of B-C.  At C the head is known to be 7 past the end of A-B: a
      * 7-unit train is clear of it and A-B is handed back; an 8-unit train may still have a unit on it, and A-B is held.
