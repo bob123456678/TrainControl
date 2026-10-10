@@ -198,7 +198,9 @@ public class testARunsCaptionsSpeakInItsColours
 
             assertTrue(ahead > 0, "no caption along " + mover.getName() + "'s run is in the route's blue");
 
-            // THE AUTO TAB'S BADGE, the captions' blue: every card that is not home and not idle
+            // THE AUTO TAB'S BADGE AND TEXT, the window's label blue (Adam, 2026-10-09: "On the Autonomy Locomotive
+            // Commands tab, match the color of the text and pills to the darker blue used on text labels"): every card
+            // whose badge is neither idle grey nor the home teal, and every destination not written in red
             List<AutoLocomotiveStatus> cards = new ArrayList<>();
 
             collect(ui.getContentPane(), cards);
@@ -208,12 +210,31 @@ public class testARunsCaptionsSpeakInItsColours
             Field badgeField = AutoLocomotiveStatus.class.getDeclaredField("locStation");
             badgeField.setAccessible(true);
 
+            Field destinationField = AutoLocomotiveStatus.class.getDeclaredField("locDest");
+            destinationField.setAccessible(true);
+
+            int blueBadges = 0;
+
             for (AutoLocomotiveStatus card : cards)
             {
                 Color badge = ((JLabel) badgeField.get(card)).getBackground();
 
-                assertFalse(rgb(badge, 0, 0, 115), "an Auto tab card's station badge is still the old navy");
+                if (badge.equals(Color.LIGHT_GRAY) || badge.equals(TrainControlUI.COLOR_AT_HOME)) continue;
+
+                blueBadges++;
+
+                assertTrue(rgb(badge, 0, 0, 115), "an Auto tab card's station badge is " + badge + ", not the darker blue"
+                    + " the window's labels are written in, rgb(0,0,115)");
+
+                Color written = ((JLabel) destinationField.get(card)).getForeground();
+
+                if (written.getRed() > 140) continue;
+
+                assertTrue(rgb(written, 0, 0, 115), "an Auto tab card's text is " + written + ", not the darker blue the"
+                    + " window's labels are written in, rgb(0,0,115)");
             }
+
+            assertTrue(blueBadges > 0, "precondition: no Auto tab card has a station badge in blue to look at");
         }
         finally
         {

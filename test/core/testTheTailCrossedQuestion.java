@@ -154,10 +154,10 @@ public class testTheTailCrossedQuestion
         assertFalse(covered.containsKey(layout.getEdge("TQ_A", "TQ_J")),
             "the tail was claimed along A -> J, a road the answer did not name. Covered: " + covered.keySet());
 
-        TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
 
         assertNull(TailCrossedPrompt.askAfterPlacement(layout, s, "W", 5, loc.getName(), null, null).getRoad(),
-            "Not Known gave a road");
+            "Cancel gave a road");
     }
 
     /**

@@ -198,7 +198,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
         ArrivalSidePrompt.answerForTests(sides == null || sides.isEmpty() ? null : sides.get(0).name());
 
-        TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
 
         assertEquals(gesture(mainA, KeyEvent.VK_V), Boolean.TRUE, "Control+V over BottomMainA was not taken");
 
@@ -267,7 +267,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
         assertTrue(westbound != null && westbound.isDestination() && eastbound != null && eastbound.isDestination(),
             "precondition: BottomMainA does not have two copies a train may stand on here");
 
-        TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
 
         try
         {

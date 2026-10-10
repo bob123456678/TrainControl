@@ -76,7 +76,7 @@ public class testWhereHisTrainsMayBeSent
 
         assertNotNull(railway(), "the frozen railway built no autonomy layout");
 
-        TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
     }
 
     @AfterClass(alwaysRun = true)

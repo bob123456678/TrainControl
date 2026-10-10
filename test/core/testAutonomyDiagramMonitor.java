@@ -2728,4 +2728,69 @@ public class testAutonomyDiagramMonitor
             + " train's icon are white - it has only the icon's own thin rim, no halo, and runs into the caption and the"
             + " badge under it");
     }
+
+    /**
+     * The halo round a train's icon is a little narrower at the large size than its share of the icon would make it, and
+     * the same at the small (OB-329; Adam, 2026-10-09, on MT-707: "reduce the size of halos around the locomotive slightly
+     * in 60px mode").
+     *
+     * Read along the rows through the icon, from the edge of what was painted in to its dark body - the halo and the
+     * icon's own thin rim together: no more than 4 pixels at 60, where it was 5, and still 3 at 30.
+     *
+     * MUTATION: let the halo grow with the icon at the large size as before, and this fails.
+     */
+    @Test
+    public void testTheHaloIsNarrowerAtTheLargeSize()
+    {
+        int large = whiteBeforeTheBody(60);
+        int small = whiteBeforeTheBody(30);
+
+        assertTrue(large <= 4, "at 60 pixels the halo and rim reach " + large + " pixels past the icon's body, where Adam"
+            + " asked for them a little narrower than the 5 they were (OB-329)");
+
+        assertTrue(small >= 3, "at 30 pixels the halo and rim reach only " + small + " pixels past the icon's body - the"
+            + " small size was to stay as it was (OB-329)");
+    }
+
+    /** From the left edge of a parked train's paint to its dark body, the median over the rows through its middle third. */
+    private static int whiteBeforeTheBody(int size)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        org.traincontrol.automationui.TileOverlay.parked(org.traincontrol.automationui.TilePorts.Side.E)
+            .paintTrain(g, size, size, null);
+
+        g.dispose();
+
+        java.util.List<Integer> gaps = new java.util.ArrayList<>();
+
+        for (int y = size / 3; y < size * 2 / 3; y++)
+        {
+            int painted = -1, body = -1;
+
+            for (int x = 0; x < size && body < 0; x++)
+            {
+                int argb = image.getRGB(x, y);
+
+                if (((argb >>> 24) & 0xFF) <= 128) continue;
+
+                if (painted < 0) painted = x;
+
+                int r = (argb >> 16) & 0xFF, gr = (argb >> 8) & 0xFF, b = argb & 0xFF;
+
+                if (Math.max(r, Math.max(gr, b)) < 100) body = x;
+            }
+
+            if (painted >= 0 && body >= 0) gaps.add(body - painted);
+        }
+
+        assertFalse(gaps.isEmpty(), "precondition: no icon was drawn at " + size + " pixels");
+
+        java.util.Collections.sort(gaps);
+
+        return gaps.get(gaps.size() / 2);
+    }
 }

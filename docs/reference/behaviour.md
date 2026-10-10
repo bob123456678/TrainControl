@@ -1183,20 +1183,23 @@ The editor notice about turn-round squares with no length is a different questio
     BottomCrossover, and four units RampDown and towards BottomCrossover, where the list once offered RampDown
     alone. A tail that ends before the points covers the same squares on every road, and is not asked.
     `core.testATailPastASwitchIsAskedAbout`. Not asked, or closed without an answer, the road the train
-    had on the railway is kept where it stays on the same square with the same side; **Not known** forgets it. The
+    had on the railway is kept where it stays on the same square with the same side - the question's **Cancel** - and
+    there is no answer that forgets it (Adam, 2026-10-09: *"drop not known, keep cancel"*; for a train just put down the
+    two did the same). The
     list starts on the road it has; with none, on the one sensor nearest the back of the train where exactly one
     qualifies - no other offered sensor lies further back on the same road - and on nothing otherwise (FR-088,
     Adam on MT-435, 2026-09-15: *"so the user can just click OK if appropriate"*); a way towards a sensor the tail
     has not reached is no sensor crossed, and is never where the list starts (MT-477). The list
-    offers each such sensor, nearest first, and **Not known**, which keeps the fork rule. A sensor exactly the
+    offers each such sensor, nearest first, with **OK** and **Cancel**; Cancel, or OK with none chosen, keeps the fork
+    rule. A sensor exactly the
     train's length back is offered: the tail has reached it (OB-226). Only roads a train can drive in on are
     offered - the walk back takes rails that run towards the train - so a road it could only have reversed along is
     not one (OB-227, Adam: *"that isn't a realistic path"*). The same list is in
     the right-click menu under **Farthest sensor the tail crossed**, and in the autonomy editor **Pick on the
     diagram...** outlines the sensors to click instead. **On the main window the question itself is put on the diagram**
     (FR-100; Adam, 2026-09-24: *"highlight possible squares on the diagram and ask the user to click one.  only show the
-    list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Not known**
-    and **Cancel** in a small window.  The list is asked where a choice is on another page or not drawn, and where an
+    list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Cancel** in a
+    small window.  The list is asked where a choice is on another page or not drawn, and where an
     editor window is open, whose squares do not take the click (TDU-C1) - and then the list opens from the editor,
     in front of it, not from the main window it covers (MT-575, 2026-09-25), while the editor is showing; a minimised
     one hides what it owns, so then the list opens from the main window (RLA-C4).  The rest of a double-click on the sensor that
@@ -1242,7 +1245,7 @@ The editor notice about turn-round squares with no length is a different questio
 - **With no road to follow, a fork right behind the platform stops the tail at the switch** (Adam, 2026-09-24, on
   MT-477: *"stop at the switch"*), as every other fork does under his rule of 2026-09-07. Where the rails arriving by
   the recorded side part before the train's length is spent - at BottomSecondary, the straight rail from RampDown and
-  the turned one from BottomCrossover, at switch 51 - and the train was placed with no answer, or Not known, the
+  the turned one from BottomCrossover, at switch 51 - and the train was placed with no answer, the
   squares they share are claimed up to and including the switch, and nothing past it. It used to take the first rail
   by that side and lay the tail up it. `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
 - A train never blocks itself — pulling forward off its own tail is how it leaves. **But its own tail is not an

@@ -3502,4 +3502,65 @@ public class testDiagramLooksRight
 
         return false;
     }
+
+    /**
+     * The mark beside "No available paths" on the Auto tab is the dark grey of the window's side tabs' icons, not blue
+     * (Adam, 2026-10-09: "the (i) icon in no available paths should be dark grey, matching the color in the sidebar
+     * tabs").
+     *
+     * The card's own icon, read off the class that draws it, against the commonest colour of the side tabs' pictures.
+     *
+     * @throws Exception from reading the icons
+     */
+    @Test
+    public void testTheNoPathsMarkIsTheSideTabsGrey() throws Exception
+    {
+        java.lang.reflect.Field field = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("INFO_ICON");
+
+        field.setAccessible(true);
+
+        javax.swing.ImageIcon mark = (javax.swing.ImageIcon) field.get(null);
+
+        assertNotNull(mark, "precondition: the Auto tab has no info mark to draw");
+
+        BufferedImage drawn = new BufferedImage(mark.getIconWidth(), mark.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        g.drawImage(mark.getImage(), 0, 0, null);
+        g.dispose();
+
+        int ink = commonestInk(drawn);
+
+        BufferedImage tab = javax.imageio.ImageIO.read(org.traincontrol.gui.TrainControlUI.class.getResource(
+            "resources/tabs/loc.png"));
+
+        int tabs = commonestInk(tab);
+
+        assertEquals(Integer.toHexString(ink), Integer.toHexString(tabs), "the mark beside \"No available paths\" is"
+            + " rgb(" + ((ink >> 16) & 0xFF) + "," + ((ink >> 8) & 0xFF) + "," + (ink & 0xFF) + "), where the side tabs'"
+            + " icons are rgb(" + ((tabs >> 16) & 0xFF) + "," + ((tabs >> 8) & 0xFF) + "," + (tabs & 0xFF) + ")");
+    }
+
+    /** The commonest opaque colour in a picture that is not white. */
+    private static int commonestInk(BufferedImage image)
+    {
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+
+        for (int y = 0; y < image.getHeight(); y++)
+        {
+            for (int x = 0; x < image.getWidth(); x++)
+            {
+                int argb = image.getRGB(x, y);
+
+                if (((argb >>> 24) & 0xFF) < 200 || (argb & 0xFFFFFF) == 0xFFFFFF) continue;
+
+                counts.merge(argb & 0xFFFFFF, 1, Integer::sum);
+            }
+        }
+
+        assertFalse(counts.isEmpty(), "precondition: a picture with nothing drawn in it");
+
+        return java.util.Collections.max(counts.entrySet(), java.util.Map.Entry.comparingByValue()).getKey();
+    }
 }

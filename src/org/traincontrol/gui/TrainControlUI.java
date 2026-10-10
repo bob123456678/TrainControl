@@ -9639,6 +9639,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (then == null ? after == null : then.equals(after)) key.remove();
             }
 
+            // AND THE SQUARES BESIDE A LINE THAT CHANGED (Adam, 2026-10-09, the rounded end): a square's line ends rounded
+            // where the train goes no further, which the square beside decides - so a train that grows or shrinks by a
+            // square changes how its last square ends, and that square is not among the ones whose roads changed.
+            for (org.traincontrol.automationui.TileGraph.TileKey at : new java.util.ArrayList<>(changed))
+            {
+                for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    org.traincontrol.automationui.TileGraph.TileKey beside = LayoutLabel.besideOn(at, side);
+
+                    if (beside != null && now.containsKey(beside)) changed.add(beside);
+                }
+            }
+
             // AND THE SQUARES WHOSE GREY CHANGED - by road, as the covered half is compared, since OB-208 made the
             // grey per road: a double curve whose blocked arc changes stays in the set both times and still has
             // to be redrawn.  Added after the covered squares have been filtered, because a square whose line
