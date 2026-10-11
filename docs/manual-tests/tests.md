@@ -34040,6 +34040,10 @@ Superseded by MT-717, which retests it with round 124 (`128aed37`): writing on a
 `testEveryKindOfSpillIsUnderTheCaptionsAtBothSizes`.  Step 5 is RSA62-C1; the stall RSA62-B1 found near two of your
 curve stations at the Large size is gone with it.
 
+**Claude, 2026-10-11.**
+
+Round 129 (`1c124337`), with step 1: a double-curve station whose track runs out at one end of its curve is drawn as a terminus facing that end (RSA63-C2).
+
 ---
 
 <a id="mt-718"></a>
@@ -34064,6 +34068,10 @@ curve stations at the Large size is gone with it.
 
 *What this is:* round 126.  Claims `ui.testDiagramLooksRight.testTheEditorsShowTrainsSwitchHidesItsTrains` and
 `core.testAutonomyDiagramSession.testTheEditorHasAShowTrainsSwitch`.
+
+**Claude, 2026-10-11.**
+
+Round 129 (`1c124337`), with step 2: unticked, the editor also hides its own mark for where the setup puts a train - the star that used to show through when the icons were hidden (RSA63-C3).
 
 ---
 
@@ -34153,5 +34161,9 @@ one without now look alike; the name is on its caption.
 *What this is:* round 128.  Claims in `core.testAutonomyDiagramMonitor`:
 `testASquareOutOfServiceIsAnOrangeRingedCircle`, `testASquareNothingCanUseIsDrawnAsACross`.  Its station settings are
 kept, and come back with the station.
+
+**Claude, 2026-10-11.**
+
+Round 129 (`1c124337`): in the autonomy editor a square out of service shows no pointer for changing directions, and a click on it changes nothing and says why (RSA63-C5).
 
 ---
