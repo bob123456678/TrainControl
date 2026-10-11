@@ -15309,6 +15309,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         smallButton = new javax.swing.JButton();
         jLabel19 = new javax.swing.JLabel();
         editLayoutButton = new javax.swing.JButton();
+        mediumButton = new javax.swing.JButton();
         autoPanel = new javax.swing.JPanel();
         locCommandPanels = new javax.swing.JTabbedPane();
         locCommandTab = new javax.swing.JPanel();
@@ -17239,7 +17240,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         LayoutList.setToolTipText("- / + to cycle");
         LayoutList.setFocusable(false);
         LayoutList.setMinimumSize(new java.awt.Dimension(90, 24));
-        LayoutList.setPreferredSize(new java.awt.Dimension(90, 24));
+        LayoutList.setPreferredSize(new java.awt.Dimension(150, 24));
         LayoutList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LayoutListActionPerformed(evt);
@@ -17281,10 +17282,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         sizeLabel.setText(bundle.getString("ui.main.sizeLabel")); // NOI18N
 
         SizeList.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        SizeList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Small", "Large" }));
+        SizeList.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Small", "Medium", "Large" }));
         SizeList.setFocusable(false);
         SizeList.setMinimumSize(new java.awt.Dimension(90, 22));
-        SizeList.setPreferredSize(new java.awt.Dimension(90, 22));
+        SizeList.setPreferredSize(new java.awt.Dimension(100, 22));
         SizeList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SizeListActionPerformed(evt);
@@ -17328,6 +17329,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
+        mediumButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        mediumButton.setText(bundle.getString("ui.main.mediumLayout")); // NOI18N
+        mediumButton.setToolTipText(bundle.getString("ui.main.tooltip.smallPopup")); // NOI18N
+        mediumButton.setFocusable(false);
+        mediumButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                mediumButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layoutPanelLayout = new javax.swing.GroupLayout(layoutPanel);
         layoutPanel.setLayout(layoutPanelLayout);
         layoutPanelLayout.setHorizontalGroup(
@@ -17339,19 +17350,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     .addGroup(layoutPanelLayout.createSequentialGroup()
                         .addComponent(layoutListLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(LayoutList, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(sizeLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(SizeList, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 60, Short.MAX_VALUE)
+                        .addComponent(editLayoutButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 181, Short.MAX_VALUE)
                         .addComponent(jLabel19)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, 94, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.DEFAULT_SIZE, 92, Short.MAX_VALUE)))
+                        .addComponent(smallButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(mediumButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(layoutNewWindow)))
                 .addContainerGap())
         );
         layoutPanelLayout.setVerticalGroup(
@@ -17367,9 +17380,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         .addComponent(layoutListLabel)
                         .addComponent(sizeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(editLayoutButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(layoutNewWindow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layoutPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(layoutNewWindow, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(mediumButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(smallButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
         );
 
@@ -29665,6 +29680,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }).start();
     }//GEN-LAST:event_gracefulStopActionPerformed
 
+    private void mediumButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mediumButtonActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_mediumButtonActionPerformed
+
     public final void displayKeyboardHints(boolean visibility)
     {
         this.PrimaryControls.setVisible(visibility);
@@ -33327,6 +33346,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSlider maxDelay;
     private javax.swing.JSlider maxLocInactiveSeconds;
     private javax.swing.JSlider maximumLatency;
+    private javax.swing.JButton mediumButton;
     private javax.swing.JCheckBoxMenuItem menuItemShowLayoutAddresses;
     private javax.swing.JSlider minDelay;
     private javax.swing.JMenu modifyLocalLayoutMenu;

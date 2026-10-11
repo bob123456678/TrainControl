@@ -27,10 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-725](#mt-725) | 2026-10-11 | Round 134: OB-333 to OB-335, switches and signals flash yellow again when autonomy or a route changes them | fixed unvalidated | Adam, 2026-10-11 - OB-333: "when autonomy is running, I don't see yellow highlights for switches and signals on my track diagram"; OB-334: "when autonomy is running, I don't see tiles being highlighted for switches and signals being changed."; and "I also didn't see highlighting from manually clicked routes (i.e. MarklinRoute) when clicked from the layout, also a regression." |
 
-Everything else - 724 of 725 - needs nothing from you unless the area changes again:
-571 **fixed validated** and 153 **superseded**.
+
+Everything else - 725 of 725 - needs nothing from you unless the area changes again:
+572 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34311,7 +34311,7 @@ it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.
 <a id="mt-725"></a>
 ### MT-725 - 2026-10-11 - Round 134: OB-333 to OB-335, switches and signals flash yellow again when autonomy or a route changes them
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11 - OB-333: "when autonomy is running, I don't see yellow highlights for switches and signals on my track diagram"; OB-334: "when autonomy is running, I don't see tiles being highlighted for switches and signals being changed."; and "I also didn't see highlighting from manually clicked routes (i.e. MarklinRoute) when clicked from the layout, also a regression."
 
 **Written:** 2026-10-11
@@ -34330,5 +34330,9 @@ it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.
 - Step 3: the switches and signals the route changes flash yellow.
 
 *What this is:* round 134 (`d28e2de1`).  Claim `core.testLayoutTiles.testASecondHighlightIsDrawnYellow`.
+
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit 0c634f5c, in English - build\classes, compiled 11 Oct 14:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
