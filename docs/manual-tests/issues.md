@@ -1832,6 +1832,16 @@ Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, b
 
 A route button drawn on a running line carries the line: the graph runs the track through it (`TileGraph.transparentRoutes`), so a direction can be stored on it and its arrow is drawn there.  The editor greyed every route button and refused its click (`AutonomyEditorPanel.isIgnored`), so that arrow could not be changed.  On the Oles kreds sandbox's page *0 komplet* six route buttons carry a stored one-way direction - routes 37, 41 (at 4,14, between signal 24 and sensor 15), 53, 50, 101 and 1019.
 
+### FR-121 - 2026-10-11 - A station's locomotive exclusions get two modes: exclude the chosen locomotives (the default), or allow only them
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."
+
+Today the list under `Advanced Parameters...` -> `Excluded Locomotives` names the locomotives that may not stop at the station.  In the new mode the same list names the only ones that may, and every other locomotive is excluded - including one added to the locomotive database later, which a list of exclusions would let in.  The list is kept as chosen and read in its mode wherever an exclusion is asked, so changing the mode back keeps the choice.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
