@@ -651,11 +651,14 @@ public class TileAnnotation
     /**
      * Whether this is being drawn in the autonomy EDITOR rather than on a diagram.
      *
-     * One thing turns on it: where a badge sits on a square whose track bends.  In the editor the
-     * badge moves out to the corner, because there it shares the tile with two direction arrows and
-     * an arrival chevron and the four of them were fighting over the same few pixels.  Everywhere
-     * else - the main window, a popup, an exported image - none of that is drawn, so the badge goes
-     * back onto the track it is about, which is where it belongs when it has the room.
+     * One thing turns on it: what colour a badge is.  In the editor every point's icon is white with
+     * its colour round it, named or not, because the direction arrows are drawn over the icon there
+     * and are what the editor is read for (Adam, 2026-10-10: *"Let's make all of the icons white with
+     * a blue border in the editor.  That way, arrows can be seen clearly."*).  Everywhere else - the
+     * main window, a popup, an exported image - a named point's icon is filled with its colour.
+     *
+     * Where the icon sits no longer turns on it: on a bend it lies along the rails in the editor as
+     * on a diagram (round 127), where it once moved out to the square's corner.
      *
      * Set rather than passed: the constructor already takes ten arguments and this is a property of
      * the SURFACE doing the drawing rather than of the square being drawn.
@@ -830,8 +833,8 @@ public class TileAnnotation
     public boolean isBlank()
     {
         // `editing` is deliberately NOT here, unlike in equals and hashCode.  On its own it paints
-        // nothing - it only says WHERE a badge goes, and with no badge there is nothing to place - so
-        // an annotation carrying it and nothing else is still blank.  Said out loud because the comment
+        // nothing - it only says what colour a badge is, and with no badge there is nothing to colour -
+        // so an annotation carrying it and nothing else is still blank.  Said out loud because the comment
         // above is about a field being left out of this method, and the next reader should not have to
         // work out whether this is the same mistake again.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
@@ -2111,10 +2114,8 @@ public class TileAnnotation
         int x = on[0] - size / 2;
         int y = on[1] - size / 2;
 
-        // A STATION ON A BEND, IN THE EDITOR, GOES OFF THE RAILS - and is placed by `paintStation` now (FR-118), where
-        // this put it: the bend's two direction arrows sit at the middles of the sides its chord joins, so a big badge
-        // on the track landed between them, three marks in one corner.  A passing point's mark is a third of the tile
-        // and sits on the track without crowding anything, as it always has.
+        // A STATION is placed by `paintStation` (FR-118), on its rails, in the editor as on a diagram.  A passing point's
+        // mark is a third of the tile and sits on the track without crowding anything, as it always has.
 
         // never let it hang outside the square
         x = Math.max(1, Math.min(width - size - 1, x));
@@ -2122,9 +2123,9 @@ public class TileAnnotation
 
         // Where the badge ACTUALLY went, for the star drawn on top of it (MT-124).
         //
-        // Recorded rather than recomputed. The placement above is three rules deep - the track centre,
-        // then the corner for a curved station in the editor, then the clamp - and a second copy of
-        // that arithmetic would be a second chance to disagree. The star asked trackCentre directly, so
+        // Recorded rather than recomputed. The placement above is two rules deep - the track centre,
+        // then the clamp - and it was three once, with the corner for a curved station in the editor
+        // between them; a second copy of that arithmetic would be a second chance to disagree. The star asked trackCentre directly, so
         // it stayed on the rails while the badge moved to the corner. Adam: "Move the * so it aligns
         // with the offset placement."
         badgeDrawnAt = new int[] {x + size / 2, y + size / 2};
@@ -2227,10 +2228,12 @@ public class TileAnnotation
      *                                    square, the track's black line showing in the gap between them
      *     its track runs out one way     the terminus: the hexagon flat against that side, with a bar there - whatever
      *                                    the turning setting (Adam: a station with one way out is a terminus)
-     *     out of service                 the orange X over the station's block in grey
+     *     out of service                 a white circle, an orange ring and an orange X in it, whatever the point is
+     *                                    otherwise - `paintOutOfService`, drawn by `paintBadge` before it gets here
      *
      * Blue where autonomy uses it, grey a berth it does not choose - a colour, not a shape (*"shouldn't parking have the
-     * same shape as terminus?"*) - filled when named and white ringed in the colour when not, as before.
+     * same shape as terminus?"*) - filled when named and white ringed in the colour when not, and in the autonomy editor
+     * white ringed in the colour named or not.
      *
      * Along the road from side a to side b, turned so the terminus's flat end is on its dead-end side.  On straight track
      * the sensor's contact is covered first (*"make sure the white would cover an s88 circle"*) - `cover`.  On a bend the
@@ -3025,8 +3028,8 @@ public class TileAnnotation
 
         TileAnnotation other = (TileAnnotation) o;
 
-        // `editing` is in here because it changes the PICTURE - it decides whether a station's badge
-        // moves out to the corner on a bend - and equals is what LayoutLabel asks to decide whether a
+        // `editing` is in here because it changes the PICTURE - it decides whether a named point's icon
+        // is filled with its colour or white - and equals is what LayoutLabel asks to decide whether a
         // redraw is needed.  Two annotations differing only in it were indistinguishable to that
         // question (TD-11).
         //
