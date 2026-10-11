@@ -214,7 +214,8 @@ public class testLocomotiveExclusions
      * *"For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."*).  Autonomy sends the named locomotive to EX_Far, the one place it may choose here, and refuses
      * the other.
      *
-     * MUTATION: read an allow-only list as a list of exclusions, and this fails.
+     * MUTATION: read an allow-only list as a list of exclusions - in `pickPath`, or in the yield probe that mirrors it -
+     * and this fails.
      */
     @Test
     public void testAnAllowOnlyStationTakesOnlyTheLocomotivesItNames() throws Exception
@@ -229,12 +230,23 @@ public class testLocomotiveExclusions
         far.setExcludedLocs(new HashSet<>(Arrays.asList(first)));
         far.setAllowOnlyListed(true);
 
+        // and the yield probe agrees with pickPath - the other trains wait for a train autonomy will send somewhere
+        java.lang.reflect.Method probe = Layout.class.getDeclaredMethod("hasAutonomousDestination", Locomotive.class);
+
+        probe.setAccessible(true);
+
         assertNotNull(layout.pickPath(first), "the one locomotive an allow-only station names was not sent to it");
+
+        assertTrue((Boolean) probe.invoke(layout, first), "the yield probe says autonomy has nowhere to send the one"
+            + " locomotive an allow-only station names");
 
         layout.moveLocomotive(second.getName(), "EX_Start", false);
 
         assertNull(layout.pickPath(second), "a locomotive an allow-only station does not name was sent to it - Adam:"
             + " \"just flip it to anything other than what is selected by the user\"");
+
+        assertFalse((Boolean) probe.invoke(layout, second), "the yield probe says autonomy has somewhere to send a"
+            + " locomotive an allow-only station does not name - the other trains would wait for a train never sent");
     }
 
     /**
