@@ -4541,6 +4541,182 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The Medium size is between Small and Large in the size list, 46 pixels a square (FR-122; Adam, 2026-10-11: *"Let's
+     * implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and
+     * phrasing to SizeList"*): the list names Small, Medium and Large in that order, and they are 30, 46 and 60.
+     *
+     * MUTATION: give Medium Large's size, and this fails.
+     *
+     * @throws Exception reflection
+     */
+    @Test
+    public void testTheMediumSizeIsBetweenSmallAndLarge() throws Exception
+    {
+        java.lang.reflect.Field sizesField = TrainControlUI.class.getDeclaredField("layoutSizes");
+        sizesField.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Integer> sizes = (java.util.Map<String, Integer>) sizesField.get(ui);
+
+        assertEquals(new java.util.ArrayList<>(sizes.keySet()), java.util.Arrays.asList(
+            org.traincontrol.util.I18n.t("layout.ui.small"), org.traincontrol.util.I18n.t("layout.ui.medium"),
+            org.traincontrol.util.I18n.t("layout.ui.large")), "the sizes are not Small, Medium and Large, in that order");
+
+        assertEquals(new java.util.ArrayList<>(sizes.values()), java.util.Arrays.asList(30, 46, 60),
+            "Small, Medium and Large are not 30, 46 and 60 pixels a square - Adam: \"Let's implement the 46px diagram\"");
+
+        java.lang.reflect.Field listField = TrainControlUI.class.getDeclaredField("SizeList");
+        listField.setAccessible(true);
+
+        javax.swing.JComboBox<?> list = (javax.swing.JComboBox<?>) listField.get(ui);
+
+        java.util.List<String> offered = new java.util.ArrayList<>();
+
+        for (int i = 0; i < list.getItemCount(); i++) offered.add(String.valueOf(list.getItemAt(i)));
+
+        assertEquals(offered, new java.util.ArrayList<>(sizes.keySet()), "the size list does not offer the three sizes");
+    }
+
+    /**
+     * A square at the Medium size is drawn from the Large art scaled down (FR-122: *"Start with the cheap 60px
+     * scaling"*), its own picture 46 pixels across, cached apart from the Large one it comes from - a sensor, a switch,
+     * a curve and a signal.
+     *
+     * MUTATION: look for a 46 pixel icon set, or cache a Medium picture under its Large one's key, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testAMediumSquareIsTheLargeArtScaledDown() throws Exception
+    {
+        org.traincontrol.base.LayoutDiagramComponent.componentType[] kinds = {
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.SWITCH_LEFT,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.CURVE,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.SIGNAL};
+
+        for (org.traincontrol.base.LayoutDiagramComponent.componentType kind : kinds)
+        {
+            org.traincontrol.base.LayoutDiagramComponent c = new org.traincontrol.base.LayoutDiagramComponent(kind, 0, 0,
+                1, 0, kind == org.traincontrol.base.LayoutDiagramComponent.componentType.CURVE ? 0 : 5, 10,
+                org.traincontrol.base.Accessory.accessoryDecoderType.MM2);
+
+            // loaded before it is measured: a scaled picture may still be arriving
+            java.awt.Image image = new javax.swing.ImageIcon(c.getImage(46, true)).getImage();
+
+            java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(46, 46, BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = drawn.createGraphics();
+
+            try
+            {
+                g.setColor(java.awt.Color.WHITE);
+                g.fillRect(0, 0, 46, 46);
+
+                g.drawImage(image, 0, 0, null);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            assertEquals(image.getWidth(null), 46, kind + " at the Medium size is not 46 pixels across");
+
+            int dark = 0;
+
+            for (int x = 0; x < 46; x++)
+            {
+                for (int y = 0; y < 46; y++)
+                {
+                    int rgb = drawn.getRGB(x, y);
+
+                    if (((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF) < 200) dark++;
+                }
+            }
+
+            assertTrue(dark > 46, kind + " at the Medium size drew no track: " + dark + " dark pixels");
+
+            assertTrue(c.getImageName(46, true).contains("icons60"), kind + " at the Medium size is not drawn from the"
+                + " Large art: " + c.getImageName(46, true));
+
+            assertFalse(c.getImageKey(46, true).equals(c.getImageKey(60, true)), kind + " at the Medium size is cached"
+                + " under its Large picture's key, so one size draws the other's picture");
+        }
+    }
+
+    /**
+     * The Medium pop-up button opens the page in a window at the Medium size (FR-122; Adam's *"I added mediumButton to
+     * the UI"*): its squares 46 pixels across.
+     *
+     * MUTATION: leave the button's handler empty again, and this fails.
+     *
+     * @throws Exception reflection, the event thread
+     */
+    @Test
+    public void testTheMediumButtonOpensAMediumPopUp() throws Exception
+    {
+        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
+        buttonField.setAccessible(true);
+
+        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+
+        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
+
+        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
+
+        org.traincontrol.gui.LayoutPopupUI opened = null;
+
+        for (long end = System.currentTimeMillis() + 15000; opened == null && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                {
+                    opened = (org.traincontrol.gui.LayoutPopupUI) w;
+                }
+            }
+        }
+
+        assertNotNull(opened, "the Medium button opened no pop-up window");
+
+        final org.traincontrol.gui.LayoutPopupUI popup = opened;
+
+        try
+        {
+            Thread.sleep(1500);
+
+            final int[] width = {-1};
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                java.util.Deque<java.awt.Component> todo = new java.util.ArrayDeque<>();
+
+                todo.add(popup.getContentPane());
+
+                while (!todo.isEmpty() && width[0] < 0)
+                {
+                    java.awt.Component c = todo.pop();
+
+                    if (c instanceof org.traincontrol.gui.LayoutLabel && ((org.traincontrol.gui.LayoutLabel) c).getComponent() != null)
+                    {
+                        width[0] = c.getWidth();
+                    }
+
+                    if (c instanceof java.awt.Container) for (java.awt.Component k : ((java.awt.Container) c).getComponents()) todo.add(k);
+                }
+            });
+
+            assertEquals(width[0], 46, "the Medium button's pop-up draws its squares " + width[0] + " pixels across");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+        }
+    }
+
+    /**
      * The autonomy editor's Show Trains switch hides the trains on its diagram (FR-119; Adam, 2026-10-10: *"in the autonomy
      * editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."*).  A square
      * with a train standing on it, in the diagram's own container: its train drawn while the square's switch says yes,

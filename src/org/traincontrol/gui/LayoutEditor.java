@@ -6065,8 +6065,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         java.awt.Rectangle usable = usableScreen();
 
         this.setMinimumSize(new Dimension(
-            Math.min(550 + sideways + (this.size == 60 ? 200 : 0), usable.width),
-            Math.min(630 + EXTRA_MINIMUM_HEIGHT + (this.size == 60 ? 320 : 0), usable.height)));
+            // In proportion to the square, Small to Large - the Medium size between them (FR-122)
+            Math.min(550 + sideways + Math.max(0, (this.size - 30) * 200 / 30), usable.width),
+            Math.min(630 + EXTRA_MINIMUM_HEIGHT + Math.max(0, (this.size - 30) * 320 / 30), usable.height)));
 
         // Never SMALLER than the window already is (MT-096).
         //
