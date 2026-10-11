@@ -167,7 +167,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             || (p.isReversing() && p.isDestination())
             || !p.isAutoDestination()
             || (loc != null && p.isTerminus() && !loc.isReversible())
-            || p.getExcludedLocs().contains(loc) ? " -" : "";
+            || p.excludes(loc) ? " -" : "";
     }
 
     /**

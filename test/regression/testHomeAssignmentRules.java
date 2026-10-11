@@ -112,6 +112,21 @@ public class testHomeAssignmentRules
     }
 
     /**
+     * And where the list names the only locomotives allowed (FR-121), the home it breaks is the one it leaves OUT.
+     *
+     * MUTATION: read an allow-only list as a list of exclusions when asking about the home, and this fails.
+     */
+    @Test
+    public void testAnAllowOnlyListThatLeavesOutTheHomeIsReported()
+    {
+        assertEquals(AutonomyEditorPanel.homeBrokenBy("BR 218", Arrays.asList("V 200"), true), "BR 218",
+            "letting in only locomotives other than the one homed at the station was not reported");
+
+        assertNull(AutonomyEditorPanel.homeBrokenBy("BR 218", Arrays.asList("V 200", "BR 218"), true),
+            "an allow-only list that names the home was reported as breaking it");
+    }
+
+    /**
      * And all three rules are actually ASKED.
      *
      * This is the half that matters. Every one of these rules already existed, was commented, and was
@@ -168,7 +183,8 @@ public class testHomeAssignmentRules
             + "cannot be produced however correct the helper is. The token check above passes on the "
             + "helper's own body, which is why it did not notice (TA-B4, DD-A6)");
 
-        assertTrue(source.contains("homeBrokenBy(tile, picked)"),
+        // with the list's mode since FR-121: the home a list breaks depends on whether it keeps its locomotives out
+        assertTrue(source.contains("homeBrokenBy(tile, picked, allowOnly)"),
             "nothing calls the homeBrokenBy overload that takes a tile, so the exclusion warning is "
             + "unreachable from the assignment path (TA-B4)");
 

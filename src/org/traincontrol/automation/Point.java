@@ -73,6 +73,21 @@ public class Point
      */
     private boolean autoDestination = true;
     private Set<Locomotive> excludedLocs;
+
+    /**
+     * Whether `excludedLocs` names the ONLY locomotives allowed here rather than the ones kept out (FR-121; Adam,
+     * 2026-10-11: *"For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."*).  The list is kept as chosen and read in its mode by `excludes`, which every
+     * exclusion rule asks - so a locomotive added to the database later is excluded too, and turning the mode back
+     * keeps the choice.
+     */
+    private boolean allowOnlyListed = false;
+
+    /** The key the mode is written under, beside `excludedLocs` - only when the list names the locomotives allowed. */
+    public static final String EXCLUDED_LOCS_MODE = "excludedLocsMode";
+
+    /** The value of `EXCLUDED_LOCS_MODE` that makes the list the locomotives allowed (Adam's word for it). */
+    public static final String ALLOW_ONLY_LISTED = "whitelist";
+
     private double speedMultiplier = 1.0;
 
     // The locomotive this station has been assigned to, as a REFERENCE.
@@ -328,6 +343,43 @@ public class Point
         {
             this.excludedLocs = excludedLocs;
         }
+    }
+
+    /**
+     * Whether this point keeps a locomotive out: one its list names, or - where the list names the locomotives allowed
+     * (FR-121) - any it does not, a locomotive added to the database since included.  What every exclusion rule asks,
+     * rather than the list, so the two modes cannot be read two ways.
+     *
+     * @param loc the locomotive, or null
+     * @return true where it is excluded; false for null
+     */
+    public boolean excludes(Locomotive loc)
+    {
+        if (loc == null) return false;
+
+        boolean listed = excludedLocs.contains(loc);
+
+        return allowOnlyListed ? !listed : listed;
+    }
+
+    /**
+     * Whether the list names the only locomotives allowed here (FR-121), rather than the ones kept out.
+     *
+     * @return true in that mode
+     */
+    public boolean isAllowOnlyListed()
+    {
+        return allowOnlyListed;
+    }
+
+    /**
+     * Reads the list as the only locomotives allowed here, or - false, the default - as the ones kept out (FR-121).
+     *
+     * @param allowOnlyListed the mode
+     */
+    public void setAllowOnlyListed(boolean allowOnlyListed)
+    {
+        this.allowOnlyListed = allowOnlyListed;
     }
 
     /**
@@ -1393,6 +1445,13 @@ public class Point
             java.util.Collections.sort(locNames);
 
             jsonObj.put("excludedLocs", locNames);
+        }
+
+        // The list's mode, written only where it names the locomotives allowed (FR-121) - an empty list then
+        // keeps every locomotive out, so the mode is written whether the list is or not
+        if (this.allowOnlyListed)
+        {
+            jsonObj.put(EXCLUDED_LOCS_MODE, ALLOW_ONLY_LISTED);
         }
 
         if (!this.blockedBy.isEmpty())

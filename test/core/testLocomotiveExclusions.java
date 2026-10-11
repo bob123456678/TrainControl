@@ -209,6 +209,164 @@ public class testLocomotiveExclusions
             + "excluding one train from a station has taken it out of service for everybody");
     }
 
+    /**
+     * A station whose list names the only locomotives allowed takes the named one and no other (FR-121; Adam, 2026-10-11:
+     * *"For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."*).  Autonomy sends the named locomotive to EX_Far, the one place it may choose here, and refuses
+     * the other.
+     *
+     * MUTATION: read an allow-only list as a list of exclusions - in `pickPath`, or in the yield probe that mirrors it -
+     * and this fails.
+     */
+    @Test
+    public void testAnAllowOnlyStationTakesOnlyTheLocomotivesItNames() throws Exception
+    {
+        Layout layout = twoWaysRound();
+
+        Locomotive first = placed(layout);
+        Locomotive second = other(first);
+
+        Point far = layout.getPoint("EX_Far");
+
+        far.setExcludedLocs(new HashSet<>(Arrays.asList(first)));
+        far.setAllowOnlyListed(true);
+
+        // and the yield probe agrees with pickPath - the other trains wait for a train autonomy will send somewhere
+        java.lang.reflect.Method probe = Layout.class.getDeclaredMethod("hasAutonomousDestination", Locomotive.class);
+
+        probe.setAccessible(true);
+
+        assertNotNull(layout.pickPath(first), "the one locomotive an allow-only station names was not sent to it");
+
+        assertTrue((Boolean) probe.invoke(layout, first), "the yield probe says autonomy has nowhere to send the one"
+            + " locomotive an allow-only station names");
+
+        layout.moveLocomotive(second.getName(), "EX_Start", false);
+
+        assertNull(layout.pickPath(second), "a locomotive an allow-only station does not name was sent to it - Adam:"
+            + " \"just flip it to anything other than what is selected by the user\"");
+
+        assertFalse((Boolean) probe.invoke(layout, second), "the yield probe says autonomy has somewhere to send a"
+            + " locomotive an allow-only station does not name - the other trains would wait for a train never sent");
+    }
+
+    /**
+     * And a locomotive added to the database after the list was made is kept out too, which is the point of the mode
+     * (FR-121: *"we don't want to allow new locomotives that get added later when that mode is on"*): the list is kept as
+     * chosen and read in its mode, not turned into a list of everybody else the day it was made.
+     *
+     * THE CONTROL: the same list keeping the chosen locomotives out lets the new one in, so the last assertion is about
+     * the mode and not about a new locomotive being refused everywhere.
+     *
+     * MUTATION: make an allow-only list a list of exclusions of the locomotives there are when it is set, and this fails.
+     */
+    @Test
+    public void testAnAllowOnlyListKeepsOutALocomotiveAddedLater() throws Exception
+    {
+        Layout layout = twoWaysRound();
+
+        Locomotive first = placed(layout);
+
+        Point far = layout.getPoint("EX_Far");
+
+        far.setExcludedLocs(new HashSet<>(Arrays.asList(first)));
+        far.setAllowOnlyListed(true);
+
+        String name = "FR-121 added later";
+
+        Locomotive later = model.newMM2Locomotive(name, 79);
+
+        try
+        {
+            assertNotNull(later, "precondition: no locomotive was added");
+
+            assertTrue(far.excludes(later), "a locomotive added after an allow-only list was made is let in - Adam: \"we"
+                + " don't want to allow new locomotives that get added later when that mode is on\"");
+
+            assertFalse(far.excludes(first), "the locomotive an allow-only list names is kept out");
+
+            far.setAllowOnlyListed(false);
+
+            assertFalse(far.excludes(later), "control: a list keeping the chosen locomotives out kept a new one out too");
+        }
+        finally
+        {
+            model.deleteLoc(name);
+        }
+    }
+
+    /**
+     * On a point that is not a station an allow-only list lets only its locomotives pass, as a list of exclusions keeps
+     * its own from passing (FR-121) - the same list, read in its mode.
+     *
+     * MUTATION: read an allow-only list as a list of exclusions where a route is checked for passage, and this fails.
+     */
+    @Test
+    public void testAnAllowOnlyPointLetsOnlyItsLocomotivesPass() throws Exception
+    {
+        Layout layout = twoWaysRound();
+
+        Locomotive first = placed(layout);
+        Locomotive second = other(first);
+
+        Point middle = layout.getPoint("EX_Middle");
+
+        middle.setExcludedLocs(new HashSet<>(Arrays.asList(second)));
+        middle.setAllowOnlyListed(true);
+
+        assertFalse(usesPoint(layout.getPossiblePaths(first, false), "EX_Middle"),
+            "a locomotive an allow-only point does not name was routed through it");
+
+        layout.moveLocomotive(second.getName(), "EX_Start", false);
+
+        assertTrue(usesPoint(layout.getPossiblePaths(second, false), "EX_Middle"),
+            "the locomotive an allow-only point names was refused passage through it");
+    }
+
+    /**
+     * And the mode survives a save: written beside the list as `excludedLocsMode: whitelist` and read back, where a list
+     * of exclusions writes no mode at all (FR-121).
+     *
+     * MUTATION: leave the mode out of the saved layout, or out of the reading, and this fails.
+     */
+    @Test
+    public void testAnAllowOnlyListSurvivesASave() throws Exception
+    {
+        Layout layout = twoWaysRound();
+
+        Locomotive first = placed(layout);
+        Locomotive second = other(first);
+
+        Point far = layout.getPoint("EX_Far");
+
+        far.setExcludedLocs(new HashSet<>(Arrays.asList(first)));
+        far.setAllowOnlyListed(true);
+
+        layout.getPoint("EX_Middle").setExcludedLocs(new HashSet<>(Arrays.asList(second)));
+
+        assertEquals(far.toJSON().optString(Point.EXCLUDED_LOCS_MODE, null), Point.ALLOW_ONLY_LISTED,
+            "an allow-only list was saved without its mode, so it comes back as a list of exclusions");
+
+        assertFalse(layout.getPoint("EX_Middle").toJSON().has(Point.EXCLUDED_LOCS_MODE),
+            "a list of exclusions was saved with a mode");
+
+        // as a saved layout has one, or it does not load
+        layout.setDefaultLocSpeed(30);
+
+        Layout back = Layout.fromJSON(layout.toJSON(), model);
+
+        assertTrue(back.isValid(), "precondition: the saved layout does not load: " + back.getInvalidReason());
+
+        Point farBack = back.getPoint("EX_Far");
+
+        assertNotNull(farBack, "precondition: the saved layout came back without EX_Far");
+
+        assertTrue(farBack.isAllowOnlyListed(), "an allow-only list came back from a save as a list of exclusions");
+        assertTrue(farBack.excludes(second), "a locomotive an allow-only list does not name is let in after a save");
+        assertFalse(farBack.excludes(first), "the locomotive an allow-only list names is kept out after a save");
+
+        assertFalse(back.getPoint("EX_Middle").isAllowOnlyListed(), "a list of exclusions came back as an allow-only list");
+    }
+
     // --- helpers ----------------------------------------------------------------------------------
 
     /**

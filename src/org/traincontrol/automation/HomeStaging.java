@@ -807,7 +807,7 @@ public final class HomeStaging
                 // exclusion - pickPath does that separately.  So it offers stations the planner's
                 // canRest correctly refuses, and every audit on a layout with a free excluded station
                 // reported a disagreement between two runtime methods rather than a planner defect.
-                if (p.getExcludedLocs().contains(loc)) continue;
+                if (p.excludes(loc)) continue;
 
                 // AND NO FR-001 EXEMPTION, since 2026-09-09.
                 //
@@ -1941,7 +1941,7 @@ public final class HomeStaging
         // Enforcing the stricter reading on stations too was tried and reverted: on the author's own
         // layout it removed 45% of the reachable station pairs for two locomotives, because two of its
         // through stations carry exclusion lists.
-        return p.isDestination() || !p.getExcludedLocs().contains(loc);
+        return p.isDestination() || !p.excludes(loc);
     }
 
     /**
@@ -2248,7 +2248,7 @@ public final class HomeStaging
 
             anyStation = true;
             anyActive |= copy.isActive();
-            anyAdmits |= !copy.getExcludedLocs().contains(loc);
+            anyAdmits |= !copy.excludes(loc);
             anyLongEnough |= copy.validateTrainLength(loc);
         }
 
@@ -2637,7 +2637,7 @@ public final class HomeStaging
 
         return at.isDestination()
             && at.isActive()
-            && !at.getExcludedLocs().contains(loc)
+            && !at.excludes(loc)
             && at.validateTrainLength(loc);
     }
 

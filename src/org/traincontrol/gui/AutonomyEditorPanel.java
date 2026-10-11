@@ -1862,8 +1862,9 @@ public class AutonomyEditorPanel extends JPanel
             advanced.add(item(I18n.f("autolayout.ui.menuSpeedMultiplier", percent(target)),
                 () -> promptPercent(target)));
 
-            advanced.add(item(I18n.f("autolayout.ui.menuExcludedLocomotives",
-                strings(target, "excludedLocs").size()),
+            // named for its mode (FR-121): the locomotives kept out, or the only ones let in
+            advanced.add(item(I18n.f(allowsOnlyListed(target) ? "autolayout.ui.menuAllowedLocomotivesOnly"
+                : "autolayout.ui.menuExcludedLocomotives", strings(target, "excludedLocs").size()),
                 () -> promptLocomotives(target, "excludedLocs", allLocomotives())));
 
             // FR-001: the same idea as excluded locomotives, about PLACES rather than trains - "we
@@ -6130,19 +6131,52 @@ public class AutonomyEditorPanel extends JPanel
 
         list.setSelectedIndices(selection);
 
+        // AND THE LIST'S MODE, above it (FR-121; Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."): keep the chosen
+        // locomotives out, the default, or let only them in - every other one, a locomotive added later included.
+        boolean exclusions = "excludedLocs".equals(key);
+
+        javax.swing.JRadioButton keepOut = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionExcludeChosenLocs"));
+        javax.swing.JRadioButton letInOnly = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionAllowOnlyChosenLocs"));
+
+        javax.swing.ButtonGroup modes = new javax.swing.ButtonGroup();
+
+        modes.add(keepOut);
+        modes.add(letInOnly);
+
+        (allowsOnlyListed(tile) ? letInOnly : keepOut).setSelected(true);
+
+        javax.swing.JComponent asked = new JScrollPane(list);
+
+        if (exclusions)
+        {
+            javax.swing.JPanel choices = new javax.swing.JPanel(new java.awt.GridLayout(0, 1));
+
+            choices.add(keepOut);
+            choices.add(letInOnly);
+
+            javax.swing.JPanel both = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
+
+            both.add(choices, java.awt.BorderLayout.NORTH);
+            both.add(asked, java.awt.BorderLayout.CENTER);
+
+            asked = both;
+        }
+
         // The "home" arm of this is not reached: the only caller passes "excludedLocs".  Kept rather
         // than deleted because the shape is right for any list-valued property - but anything that
         // starts using it for a HOME has to go through session.setHome instead, which sweeps that
         // locomotive's home off every other square (TD-8).  Writing the property straight through here
         // would put things back exactly as they were before that rule existed.
-        if (JOptionPane.showConfirmDialog(owner(), new JScrollPane(list), I18n.t(key.equals("home")
-                ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelExcludedLocs"),
+        if (JOptionPane.showConfirmDialog(owner(), asked, I18n.t(key.equals("home")
+                ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelLocomotiveExclusions"),
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
             return;
         }
 
         List<String> picked = list.getSelectedValuesList();
+
+        boolean allowOnly = exclusions && letInOnly.isSelected();
 
         // Excluding a locomotive from the station that is its HOME contradicts the home (OB-022).
         //
@@ -6156,7 +6190,7 @@ public class AutonomyEditorPanel extends JPanel
         // excludes.
         if ("excludedLocs".equals(key))
         {
-            String broken = homeBrokenBy(tile, picked);
+            String broken = homeBrokenBy(tile, picked, allowOnly);
 
             if (broken != null && JOptionPane.showOptionDialog(owner(),
                 I18n.f("autolayout.ui.confirmExcludingHome", broken, describeTile(tile)),
@@ -6170,6 +6204,12 @@ public class AutonomyEditorPanel extends JPanel
 
         session.setPointProperty(tile, key,
             picked.isEmpty() ? null : new org.json.JSONArray(picked));
+
+        if (exclusions)
+        {
+            session.setPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE,
+                allowOnly ? org.traincontrol.automation.Point.ALLOW_ONLY_LISTED : null);
+        }
 
         refresh();
 
@@ -6185,12 +6225,13 @@ public class AutonomyEditorPanel extends JPanel
      * been built, and a setup being edited may never have been.
      *
      * @param tile the square
-     * @param excluded the locomotives about to be shut out of it
+     * @param chosen the locomotives the list names
+     * @param allowOnly whether it names the only ones allowed (FR-121) rather than the ones shut out
      * @return the home that would be contradicted, or null
      */
-    private String homeBrokenBy(TileKey tile, List<String> excluded)
+    private String homeBrokenBy(TileKey tile, List<String> chosen, boolean allowOnly)
     {
-        return homeBrokenBy(homeOf(tile), excluded);
+        return homeBrokenBy(homeOf(tile), chosen, allowOnly);
     }
 
     /**
@@ -6207,14 +6248,35 @@ public class AutonomyEditorPanel extends JPanel
      */
     public static String homeBrokenBy(String home, List<String> excluded)
     {
-        if (home == null || excluded == null) return null;
+        return homeBrokenBy(home, excluded, false);
+    }
 
-        for (String name : excluded)
-        {
-            if (home.equals(name)) return home;
-        }
+    /**
+     * The home this list would break, read in its mode (FR-121): a home the list names where it keeps the named
+     * locomotives out, a home it does NOT name where it lets only the named ones in.
+     *
+     * @param home the station's home locomotive, or null
+     * @param chosen the locomotives the list names
+     * @param allowOnly whether the list names the only locomotives allowed
+     * @return the home that would be contradicted, or null
+     */
+    public static String homeBrokenBy(String home, List<String> chosen, boolean allowOnly)
+    {
+        if (home == null || chosen == null) return null;
 
-        return null;
+        return chosen.contains(home) != allowOnly ? home : null;
+    }
+
+    /**
+     * Whether a square's locomotive list names the only locomotives allowed there (FR-121), as the setup says.
+     *
+     * @param tile the square
+     * @return true in that mode
+     */
+    private boolean allowsOnlyListed(TileKey tile)
+    {
+        return org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
+            session.getPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE));
     }
 
     /**

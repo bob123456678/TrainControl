@@ -2151,6 +2151,7 @@ public class testAutoLayout
         boolean wasActive = point.isActive();
         java.util.List<Point> hadBlockedBy = new java.util.ArrayList<>(point.getBlockedBy());
         java.util.Set<Locomotive> hadExcludedLocs = new java.util.HashSet<>(point.getExcludedLocs());
+        boolean hadAllowOnly = point.isAllowOnlyListed();
 
         // TST-B20: these four used to be set below and never put back, leaving this point of the
         // shared sample layout non-dispatchable and speed-scaled for every test that ran after this
@@ -2184,6 +2185,7 @@ public class testAutoLayout
             point.setAutoDestination(false);
             point.setExcludedLocs(new java.util.HashSet<>(
                 Arrays.asList(model.getLocByName("Test loc 2"))));
+            point.setAllowOnlyListed(true);
             point.setBlockedBy(Arrays.asList(blocker));
 
             // Not the default, deliberately.  The format omits a field that holds its default value -
@@ -2205,7 +2207,7 @@ public class testAutoLayout
                 "name", "station", "s88", "x", "y",
                 "block", "protectingSignal", "home", "maxTrainLength",
                 "active", "autoDestination", "priority", "speedMultiplier",
-                "blockedBy", "excludedLocs"
+                "blockedBy", "excludedLocs", "excludedLocsMode"
             };
 
             for (String key : readsOffAPoint)
@@ -2223,6 +2225,7 @@ public class testAutoLayout
             point.setActive(wasActive);
             point.setBlockedBy(hadBlockedBy);
             point.setExcludedLocs(hadExcludedLocs);
+            point.setAllowOnlyListed(hadAllowOnly);
             point.setMaxTrainLength(hadMaxTrainLength);
             point.setPriority(hadPriority);
             point.setSpeedMultiplier(hadSpeedMultiplier);
