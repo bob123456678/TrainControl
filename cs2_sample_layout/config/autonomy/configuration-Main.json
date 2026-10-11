@@ -37,31 +37,104 @@
     "3 - Top Parking:18,11": {},
     "3 - Top Parking:10,10": {},
     "1 - Main:0,11": {
-      "loc": {"name": "EN57-203"},
+      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 4,
+      "arrivedAlong": [
+        [
+          "BottomMainA (eastbound)",
+          "BottomMainPost (northbound)"
+        ],
+        [
+          "BottomMainPost (northbound)",
+          "1 - Main 7,1 (westbound)"
+        ],
+        [
+          "1 - Main 7,1 (westbound)",
+          "RampUp"
+        ],
+        [
+          "RampUp",
+          "1 - Main 0,3 (southbound)"
+        ],
+        [
+          "1 - Main 0,3 (southbound)",
+          "TopMainR2Inter (southbound)"
+        ]
+      ],
       "facing": "E",
       "arrivedFrom": "N",
       "priority": -1
     },
     "1 - Main:20,14": {
-      "loc": {"name": "EN57-947"},
       "mustReverse": true,
       "maxTrainLength": 2,
       "homeFacing": "W",
       "facing": "W",
-      "arrivedFrom": "W",
       "priority": 2,
       "home": "EN57-947"
     },
     "1 - Main:20,12": {
+      "loc": {"name": "EN57-203"},
       "maxTrainLength": 5,
+      "arrivedAlong": [
+        [
+          "TopMainR2",
+          "TopMainPost (eastbound)"
+        ],
+        [
+          "TopMainPost (eastbound)",
+          "RampDown (southbound)"
+        ],
+        [
+          "RampDown (southbound)",
+          "BottomSecondary"
+        ],
+        [
+          "BottomSecondary",
+          "TunnelPre"
+        ],
+        [
+          "TunnelPre",
+          "Tunnel (southbound)"
+        ],
+        [
+          "Tunnel (southbound)",
+          "BottomMainAPre (eastbound)"
+        ],
+        [
+          "BottomMainAPre (eastbound)",
+          "BottomMainA (eastbound)"
+        ]
+      ],
       "homeFacing": "E",
+      "facing": "E",
+      "arrivedFrom": "W",
       "home": "EN57-203"
     },
     "1 - Main:20,13": {
+      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
+      "arrivedAlong": [
+        [
+          "BottomSecondary",
+          "TunnelPre"
+        ],
+        [
+          "TunnelPre",
+          "Tunnel (southbound)"
+        ],
+        [
+          "Tunnel (southbound)",
+          "BottomMainBCPre (eastbound)"
+        ],
+        [
+          "BottomMainBCPre (eastbound)",
+          "BottomMainB (eastbound)"
+        ]
+      ],
       "homeFacing": "W",
       "facing": "E",
+      "arrivedFrom": "W",
       "canReverse": true,
       "home": "ET22-245"
     },
@@ -72,20 +145,8 @@
     },
     "3 - Top Parking:4,9": {},
     "1 - Main:7,7": {
-      "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 5,
-      "arrivedAlong": [
-        [
-          "BottomSecondary",
-          "TunnelPre"
-        ],
-        [
-          "TunnelPre",
-          "Tunnel (southbound)"
-        ]
-      ],
       "facing": "S",
-      "arrivedFrom": "N",
       "priority": -2
     },
     "1 - Main:5,9": {},
@@ -112,8 +173,32 @@
     "1 - Main:2,1": {},
     "3 - Top Parking:17,10": {},
     "1 - Main:1,10": {
+      "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 4,
+      "arrivedAlong": [
+        [
+          "BottomMainB (eastbound)",
+          "BottomMainPost (northbound)"
+        ],
+        [
+          "BottomMainPost (northbound)",
+          "1 - Main 7,1 (westbound)"
+        ],
+        [
+          "1 - Main 7,1 (westbound)",
+          "RampUp"
+        ],
+        [
+          "RampUp",
+          "1 - Main 1,3 (southbound)"
+        ],
+        [
+          "1 - Main 1,3 (southbound)",
+          "TopMainR1Inter (southbound)"
+        ]
+      ],
       "facing": "E",
+      "arrivedFrom": "N",
       "priority": -2
     },
     "1 - Main:4,5": {
@@ -128,10 +213,8 @@
       "autoDestination": false
     },
     "1 - Main:6,4": {
-      "loc": {"name": "ET22-245"},
       "maxTrainLength": 4,
       "facing": "N",
-      "arrivedFrom": "S",
       "priority": 1
     },
     "2 - Bottom:16,9": {
@@ -163,7 +246,22 @@
       "autoDestination": false
     },
     "1 - Main:14,3": {
+      "loc": {"name": "EN57-947"},
       "maxTrainLength": 3,
+      "arrivedAlong": [
+        [
+          "BottomMainC",
+          "BottomMainBCPre (westbound)"
+        ],
+        [
+          "BottomMainBCPre (westbound)",
+          "Tunnel (northbound)"
+        ],
+        [
+          "Tunnel (northbound)",
+          "BottomInnerOtherside"
+        ]
+      ],
       "facing": "E",
       "excludedLocs": [
         "EA 3005 DSB",
@@ -173,6 +271,7 @@
         "MZ 1425 DSB",
         "SP45-204"
       ],
+      "arrivedFrom": "W",
       "priority": -2
     },
     "1 - Main:10,6": {
@@ -230,25 +329,9 @@
       "autoDestination": false
     },
     "1 - Main:13,11": {
-      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "TopMainR1",
-          "TopMainPost (eastbound)"
-        ],
-        [
-          "TopMainPost (eastbound)",
-          "RampDown (southbound)"
-        ],
-        [
-          "RampDown (southbound)",
-          "BottomSecondary"
-        ]
-      ],
       "homeFacing": "W",
       "facing": "W",
-      "arrivedFrom": "E",
       "home": "2-8-4 3505 SP"
     },
     "1 - Main:6,9": {},
@@ -298,15 +381,19 @@
     "1 - Main:19,7": {},
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {
-      "loc": {"name": "02 0314-1 DDR"},
+      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 3,
       "arrivedAlong": [
         [
-          "BottomInnerOtherside",
-          "1 - Main 19,7 (southbound)"
+          "TopMainR1",
+          "TopMainPost (eastbound)"
         ],
         [
-          "1 - Main 19,7 (southbound)",
+          "TopMainPost (eastbound)",
+          "RampDown (southbound)"
+        ],
+        [
+          "RampDown (southbound)",
           "1 - Main 17,10 (westbound)"
         ],
         [

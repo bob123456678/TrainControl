@@ -1861,6 +1861,24 @@ What it takes, as surveyed on 2026-10-11:
 
 46 rather than 45 because the centring arithmetic is in whole pixels and an odd square puts the rails half a pixel off its middle.
 
+### OB-333 - 2026-10-11 - regression- highlighted tiles
+
+**Kind:** bug  
+**Raised from:** MT-715 (Round 116: autonomy waits while the track power is off)  
+**Filed:** 2026-10-11 13:47  
+**Build:** commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when autonomy is running, I don't see yellow highlights for switches and signals on my track diagram
+
+### OB-334 - 2026-10-11 - regression- tile higlights
+
+**Kind:** bug  
+**Raised from:** MT-715 (Round 116: autonomy waits while the track power is off)  
+**Filed:** 2026-10-11 13:47  
+**Build:** commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when autonomy is running, I don't see tiles being highlighted for switches and signals being changed.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

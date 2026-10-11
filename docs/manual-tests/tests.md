@@ -33968,6 +33968,12 @@ Validated on your *Works* of 2026-10-10.  Your note on the double curve's arriva
 `testATimetableStartsNothingWhileThePowerIsOff`.  A train already under way when the power goes off is untouched, as
 Instant Stop's halt is (OB-251).
 
+**Adam, 2026-10-11 (triage).** Works.
+
+Filed from this test: OB-333 (bug - regression- highlighted tiles).  They are in `issues.md` until they are picked up.
+
+*Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-716"></a>
@@ -34049,6 +34055,10 @@ Round 129 (`1c124337`), with step 1: a double-curve station whose track runs out
 
 Round 131 (`74f6b921`), on your revert to circles, diamonds and squares: step 1's station is the classic mark, on the curve with the sensor's circle; step 5 no longer applies, as nothing spills onto the squares beside it.  Steps 2 to 4 stand.
 
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-718"></a>
@@ -34077,6 +34087,10 @@ Round 131 (`74f6b921`), on your revert to circles, diamonds and squares: step 1'
 **Claude, 2026-10-11.**
 
 Round 129 (`1c124337`), with step 2: unticked, the editor also hides its own mark for where the setup puts a train - the star that used to show through when the icons were hidden (RSA63-C3).
+
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -34107,6 +34121,10 @@ Round 129 (`1c124337`), with step 2: unticked, the editor also hides its own mar
 
 *What this is:* round 126.  Claim `core.testAutonomyDiagramSession.testAnUnnamedSensorIsNamedAsItBecomesAStation`.  The
 check for a name another square has is in this box only; renaming a sensor (Rename, Control+S) is as it was.
+
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -34217,6 +34235,10 @@ and MT-721 with the classic icons.  Claims in `core.testAutonomyDiagramMonitor`:
 `testTheClassicIconsAreTheSameInTheEditor`, `testAClassicStationsDiamondOnACurveIsOnItsRails`,
 `testAStationOnACurveIsWhollyInsideItsSquare`.
 
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-723"></a>
@@ -34245,6 +34267,10 @@ and MT-721 with the classic icons.  Claims in `core.testAutonomyDiagramMonitor`:
 *What this is:* round 132 (`28e4e138`).  Claim
 `core.testAutonomyDiagramSession.testARouteButtonOnALineTakesADirectionClick`.  The same goes for the five other route
 buttons on that page with a stored direction - routes 37, 50, 53, 101 and 1019.
+
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -34281,5 +34307,9 @@ buttons on that page with a stored direction - routes 37, 50, 53, 101 and 1019.
 *What this is:* round 133 (`f68aabbc`).  On a sensor that is not a station the same list decides who may pass
 it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.testAutonomyDiagramSession` and
 `regression.testHomeAssignmentRules`.
+
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
