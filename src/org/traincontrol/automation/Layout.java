@@ -7654,10 +7654,9 @@ public class Layout
                                 // given back unrun (RSA61-C1), and that false is not the track refusing: counted, three cuts in
                                 // one leg's setting ended Return Home with "the path stayed blocked" and sent the operator to
                                 // move a train out of nobody's way.  Neither an attempt, nor the start of a parallel run's clock.
-                                // the epoch, read once each time: a STOP after the power wait and before the attempt's read
-                                // left the attempt begun with the power off, which is a cut too (RSA63-C1)
-                                boolean cut = this.control.getPowerEpoch() != powerAtAttempt || powerAtAttempt % 2 != 0
-                                    || !this.control.getPowerState();
+                                // the epoch read once each time (RSA63-C1): a STOP after the power wait and before the
+                                // attempt's read began it with the power off - a GO since moved the epoch, and no GO reads off
+                                boolean cut = this.control.getPowerEpoch() != powerAtAttempt || !this.control.getPowerState();
 
                                 if (!cut)
                                 {
@@ -10155,9 +10154,9 @@ public class Layout
             //
             // A CUT THAT CAME AND WENT TOO (RSA62-C2): asked only whether the power was on now, one begun and ended while the
             // route was set went unseen - the switches commanded during it had not moved, nothing commanded them again, and
-            // the train was given its speed over them.  So the power's epoch is compared with the one at dispatch, and one
-            // odd at dispatch - the power off already - gives it back too.
-            if (!this.control.getPowerState() || this.control.getPowerEpoch() != powerAtDispatch || powerAtDispatch % 2 != 0)
+            // the train was given its speed over them.  So the power's epoch is compared with the one at dispatch: any cut or
+            // return since moved it, and a power off throughout reads off now.
+            if (!this.control.getPowerState() || this.control.getPowerEpoch() != powerAtDispatch)
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
 

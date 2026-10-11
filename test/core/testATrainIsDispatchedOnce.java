@@ -3084,8 +3084,7 @@ public class testATrainIsDispatchedOnce
      * given back once its route is set, though the power is back by then (RSA63-C1).  The instant forced here by setting
      * the epoch alone: odd at dispatch, then on again 300 ms into the route; the state reads on throughout.
      *
-     * MUTATION: ask the power only whether it is on now and whether its epoch moved, not whether it was off at dispatch,
-     * and this fails.
+     * MUTATION: ask only whether the power is on now, not whether its epoch moved since dispatch, and this fails.
      *
      * @throws Exception from the railway
      */
