@@ -1777,6 +1777,16 @@ Adam, 2026-10-09: *“the small font on the vertical labels is really hard to re
 
 **Built in round 110** (`67cf6045`), on Adam's *“Ok, now implement FR-118”* (2026-10-09): the icons as the page last showed them, the terminus wherever a station's track runs out before another sensor - asked of the track as drawn, so a station with one way out only because of a setting keeps its own shape - and captions on end at full size, their pills still only as thick as their letters.  On a curve the icon lies along the curve's chord, smaller where it would not fit; in the editor a curved station sits off the rails as its badge always has.  MT-710.
 
+### OB-330 - 2026-10-10 - for 3.1.0: save the timetable and the autonomy settings on an exit with trains running
+
+**Kind:** bug  
+**Raised from:** RSA49-C1  
+**Filed:** 2026-10-10  
+
+Closing TrainControl while a train runs - after the question *"Trains are still running ... Close anyway?"* - saves nothing of the configuration, as 2.8.x did: the timetable recorded since the last save and any change to the autonomy settings are lost with where the trains are (RSA49-C1).  Adam, 2026-10-10, chose to keep that and say so (*"b, easier to manage edge cases.  document as a future item to revisit"*): round 122 (`d6ce5a16`) names the settings in the question, beside the timetable.
+
+**To revisit:** fold what the railway owns and nothing of where its trains stand - `AutonomySession.captureTheRailwaysSettings`, the timetable and the settings - and save without reconciling, which is what the exit already does while a declined setup edit waits (`TrainControlUI`'s exit, `setupEditDeclinedDuringRun`).  It changes no train.  The question then names only where the trains are.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
