@@ -27,7 +27,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-705](#mt-705) | 2026-10-07 | With the window always on top, its questions and messages open in front of it | fixed unvalidated | Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent" |
 | [MT-709](#mt-709) | 2026-10-09 | Round 108: a train's line ends rounded, the Auto tab's darker blue, the tail question's Cancel, a maximised window comes forward, a smaller halo at 60 px | fixed unvalidated | Adam, 2026-10-09 - the rounded end, the Auto tab's colours, "drop not known, keep cancel", and his notes on MT-705 (OB-328) and MT-707 (OB-329) |
 | [MT-712](#mt-712) | 2026-10-10 | Rounds 112, 118-120: MT-710's points on the station icons, curves' icons spilling over with their arrows on top, the tunnel's wall | fixed unvalidated | Adam, 2026-10-09, MT-710 (Does not work) - the arrows hidden, curves cut off, the lengths - with "Make sure must reverses are cumulatively no longer" (asked: no longer than may-turn) and "render red arrows on top of stations in the viewer" (asked: the editor too); then 2026-10-10: "Stations still clip on curved tracks.  You will need to make their icons smaller.  Make sure all types fit.  Also, make the light gray tunnel wall on tunnel icons about 1px wider on each side in the 30px version, and correspondingly white in the 60px."; then "can we instead make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."; then "Now with these new station badges, make sure that the optional ingress/egress arrows remain visible, especially on curves." |
 | [MT-713](#mt-713) | 2026-10-10 | Round 115: deleting a route takes the other routes' commands that run it | fixed unvalidated | Adam, 2026-10-10 - GSR-B4, asked what deleting a route should do with the routes that run it: "Remove the calls" |
@@ -35,8 +34,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-715](#mt-715) | 2026-10-10 | Round 116: autonomy waits while the track power is off | fixed unvalidated | Adam, 2026-10-10 - GST-B1, "stop autonomy when power is off", into 3.0.0 |
 | [MT-716](#mt-716) | 2026-10-10 | Round 121: your own writing on the diagram with a white halo; Place All Trains at Their Homes | fixed unvalidated | Adam, 2026-10-10 - "Give regular text labels on the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like tracks."; and "rephrase "place all at their homes" to "place all trains at their homes" in the right click menu" |
 
-Everything else - 709 of 716 - needs nothing from you unless the area changes again:
-560 **fixed validated** and 149 **superseded**.
+Everything else - 710 of 716 - needs nothing from you unless the area changes again:
+561 **fixed validated** and 149 **superseded**.
 
 ---
 
@@ -33465,7 +33464,7 @@ Validated on your *Works* of 2026-10-07.
 
 ### MT-705 - 2026-10-07 - With the window always on top, its questions and messages open in front of it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's note on MT-703, 2026-10-07 - "Do a sweep for popups not tied to the right parent"
 
 **Written:** 2026-10-07
@@ -33515,6 +33514,10 @@ Filed as OB-328 (a maximised diagram window or editor is not brought to the fron
 **Adam, 2026-10-10 (triage).** Works.
 
 *Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-10.**
+
+Validated on your *Works* of 2026-10-10.
 
 ---
 
