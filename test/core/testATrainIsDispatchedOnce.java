@@ -2806,6 +2806,231 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /**
+     * Nor when the power goes off and on again while its route is being set (RSA62-C2): the power was asked once, after the
+     * route was set, so a cut that came and went in that second or two was not seen - the switches commanded during it did
+     * not move, nothing commanded them again, and the train was given its speed over them.  The cuts are counted as the
+     * Central Station reports them, and a journey compares the count where it was dispatched with the count once its route
+     * is set.  As `testAJourneyIsNotSetGoingIfThePowerWentOffWhileItsRouteWasSet`, the power back on 300 ms after it went:
+     * the train is given no speed, the journey is not under way, and the log says why.
+     *
+     * MUTATION: ask only whether the power is on now, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAJourneyIsNotSetGoingIfThePowerWentOffAndOnWhileItsRouteWasSet() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2081, 9);
+
+        final Locomotive v = model.getLocByName(model.getLocList().get(18));
+
+        String[] names = {"PQA", "PQ1", "PQ2", "PQ3", "PQ4", "PQ5", "PQ6", "PQ7", "PQB"};
+
+        final Layout rail = aLine(s, names);
+
+        final List<Edge> path = through(rail, names);
+
+        for (int i = 0; i < path.size(); i++)
+        {
+            org.traincontrol.marklin.MarklinAccessory turnout =
+                model.newSwitch(251 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
+        }
+
+        // AS THE CENTRAL STATION'S STOP AND GO ARE TAKEN IN
+        final java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
+
+        power.setAccessible(true);
+
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        java.util.logging.Handler tap = aTapOn(said);
+
+        Thread journey = null;
+
+        final boolean validatingWas = Layout.PATH_INTEGRITY_VALIDATION;
+
+        try
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = false;
+
+            v.setSpeed(0);
+
+            rail.getPoint("PQA").setLocomotive(v);
+
+            journey = sendOn(rail, path, v);
+
+            // ITS ROUTE BEING SET, a switch every CONFIGURE_SLEEP - the power off, and on again before the route is set
+            Thread.sleep(300);
+
+            power.invoke(model, false);
+
+            Thread.sleep(300);
+
+            power.invoke(model, true);
+
+            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey whose route was being set when the power went off"
+                + " and came back gave its train its speed over the switches commanded with no power to move them"
+                + " (RSA62-C2)");
+
+            final Thread running = journey;
+
+            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+                + " whose route was being set when the power went off and came back is still under way (RSA62-C2)");
+
+            String why = org.traincontrol.util.I18n.f("autolayout.log.notSentPowerOff", v.getName());
+
+            assertTrue(said.contains(why), "the log does not say the journey was given back for the power - expected \""
+                + why + "\" in " + said);
+        }
+        finally
+        {
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+            power.invoke(model, true);
+
+            Layout.PATH_INTEGRITY_VALIDATION = validatingWas;
+
+            letGo(s, v, journey);
+        }
+    }
+
+    /**
+     * And a Return Home leg whose route setting the power cuts three times is still run once the power stays on
+     * (RSA62-C3): each give-back for the power counted as a refused attempt, and three of them ended Return Home with
+     * "the path stayed blocked ... move the train out of the way by hand" - a train in nobody's way.  A one-leg plan run
+     * one train at a time, as Return Home's is; each attempt's route cut 300 ms in for three seconds: the run goes on, and
+     * the leg sets off once the cuts stop.
+     *
+     * MUTATION: count an attempt the power cut as a refusal again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testPowerCutsDoNotEndAReturnHomeLeg() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2091, 9);
+
+        final Locomotive t = model.getLocByName(model.getLocList().get(17));
+
+        final int preferredWas = t.getPreferredSpeed();
+
+        String[] names = {"PNA", "PN1", "PN2", "PN3", "PN4", "PN5", "PN6", "PN7", "PNB"};
+
+        final Layout rail = aLine(s, names);
+
+        final List<Edge> path = through(rail, names);
+
+        for (int i = 0; i < path.size(); i++)
+        {
+            org.traincontrol.marklin.MarklinAccessory turnout =
+                model.newSwitch(261 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
+        }
+
+        final java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
+
+        power.setAccessible(true);
+
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        java.util.logging.Handler tap = aTapOn(said);
+
+        // EACH ATTEMPT'S ROUTE CUT 300 MS IN, FOR THREE SECONDS: an attempt starts with the first switch command after a
+        // quiet second and a half - its switches go a CONFIGURE_SLEEP apart, the attempts a pause of two seconds apart
+        final java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
+        final long[] lastSwitch = {0};
+
+        model.setSentMessageObserver(m ->
+        {
+            if (m == null || !m.isAccessoryCommand() || m.getResponse()) return;
+
+            long now = System.currentTimeMillis();
+
+            boolean starts = now - lastSwitch[0] > 1500;
+
+            lastSwitch[0] = now;
+
+            if (starts && attempts.incrementAndGet() <= 3)
+            {
+                Thread cut = new Thread(() ->
+                {
+                    try
+                    {
+                        Thread.sleep(300);
+                        power.invoke(model, false);
+                        Thread.sleep(3000);
+                        power.invoke(model, true);
+                    }
+                    catch (Exception e)
+                    {
+                        // the claim's own assertions say what is wrong
+                    }
+                }, "a power cut");
+
+                cut.setDaemon(true);
+                cut.start();
+            }
+        });
+
+        Thread executor = null;
+
+        final boolean validatingWas = Layout.PATH_INTEGRITY_VALIDATION;
+
+        try
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = false;
+
+            t.setSpeed(0);
+            t.setPreferredSpeed(30);
+
+            rail.getPoint("PNA").setLocomotive(t);
+
+            final org.traincontrol.automation.TimetablePath entry = new org.traincontrol.automation.TimetablePath(t, path, 0);
+
+            rail.setTimetable(Arrays.asList(entry));
+
+            // ONE TRAIN AT A TIME, as Return Home's plan runs
+            rail.setTimetableSequential(true);
+
+            executor = new Thread(() -> rail.executeTimetable(), "a sequential timetable run");
+            executor.setDaemon(true);
+            executor.start();
+
+            assertTrue(waitFor(() -> attempts.get() >= 3, 20000), "precondition: the leg was not tried three times - "
+                + attempts.get() + " attempts seen");
+
+            // RUNNING - given its speed, or counted among the trains running - and not merely claiming its route, which
+            // `isAlreadyUnderway` counts too
+            assertTrue(waitFor(() -> t.getSpeed() > 0 || rail.getActiveLocomotives().containsKey(t), 20000), "a Return Home"
+                + " leg whose route"
+                + " setting the power cut three times was given up, not run once the power stayed on (RSA62-C3): " + said);
+
+            String stuck = org.traincontrol.util.I18n.f("autolayout.errorReturnToHomeEntryStuck", entry.toString());
+
+            assertFalse(said.contains(stuck), "Return Home said the path stayed blocked, for the power's cuts (RSA62-C3)");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+            power.invoke(model, true);
+
+            Layout.PATH_INTEGRITY_VALIDATION = validatingWas;
+
+            rail.stopLocomotives();
+
+            t.setPreferredSpeed(preferredWas);
+
+            letGo(s, t, executor);
+        }
+    }
+
     /** A handler on the model's own logger, collecting every message into `into` - removed by the caller. */
     private static java.util.logging.Handler aTapOn(final List<String> into)
     {

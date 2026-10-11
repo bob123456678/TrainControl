@@ -8559,6 +8559,31 @@ public class AutonomySession
     }
 
     /**
+     * Whether another square already has this name, in any case (FR-120) - asked as a sensor is named on becoming a station.
+     *
+     * @param name the name as typed
+     * @param except the square being named, whose own name does not count
+     * @return true where another square is called that
+     */
+    public boolean isPointNameTaken(String name, TileKey except)
+    {
+        if (name == null || name.trim().isEmpty()) return false;
+
+        String wanted = name.trim();
+
+        for (TileKey tile : store.getNamedTiles())
+        {
+            if (tile.equals(except)) continue;
+
+            String other = store.getPointName(tile);
+
+            if (other != null && other.trim().equalsIgnoreCase(wanted)) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Why a typed name may not be given to a square, or null when it may (TDR-C11).
      *
      * A name ending in the builder's own direction heading - "Main (eastbound)" - reads as another square
@@ -11648,7 +11673,7 @@ public class AutonomySession
         if (!reducer.getPoints().containsKey(tile))
         {
             return marks.isEmpty() ? null
-                : new TileAnnotation(marks, -1, false, null, false, false, false, null, arrows, null);
+                : new TileAnnotation(marks, -1, false, null, false, isCurveSquare(tile), false, null, arrows, null);
         }
 
         String name = store.getPointName(tile);
@@ -11683,6 +11708,8 @@ public class AutonomySession
         // showStaticAutonomyLayer clears the whole layer and returns when autonomy is not showing,
         // when there is no session or graph, and when no configuration is loaded. An arrow is a
         // statement about a setup, and with no setup there is nothing to state.
+        Route road = stationRoad(tile);
+
         return new TileAnnotation(marks, -1, false,
             !worthABadge ? null : new TileAnnotation.Badge(
                 store.isStation(tile),
@@ -11690,13 +11717,13 @@ public class AutonomySession
                 !store.isStation(tile) && isTurnAround(tile),
                 shut || !isAutoDestination(tile),
                 name != null && !name.trim().isEmpty(),
-                firstRoute(tile) == null ? null : firstRoute(tile).getA(),
-                firstRoute(tile) == null ? null : firstRoute(tile).getB(),
+                road == null ? null : road.getA(),
+                road == null ? null : road.getB(),
                 isTurnAround(tile) && !isMustTurnAround(tile),
                 shut,
                 // which way a station's track runs out, for the terminus's flat end (FR-118)
                 store.isStation(tile) ? deadEndSide(tile) : null),
-            false, false, false, null,
+            false, isCurveSquare(tile), false, null,
             // RESTRICTED ONLY, which is the whole of what was asked for: "show RESTRICTION arrows".
             // A run that is open both ways is the majority of any layout and is also the default, so
             // drawing those here would put an arrow on nearly every square - which is the clutter that
@@ -11836,7 +11863,62 @@ public class AutonomySession
     }
 
     /**
-     * The tile's first route, which is where its badge is drawn.
+     * The road a Point's badge is drawn on: the road its sensor's contact is on (`TilePorts.contactRoad`) - on a
+     * double-curve sensor not the first road, the other curve (MT-712) - and the first road of any other square.  The
+     * track diagram's badge and the editor's ask this one question.
+     *
+     * @param tile the square
+     * @return the road, or null where the square has none in the graph
+     */
+    public Route stationRoad(TileKey tile)
+    {
+        org.traincontrol.base.LayoutDiagramComponent square = graph == null ? null : graph.getTiles().get(tile);
+
+        if (square != null && square.isFeedback())
+        {
+            Route contact = TilePorts.contactRoad(square.getType(), square.getOrientation());
+
+            // the graph's own road on those two sides, so the badge and the graph agree about it
+            Map<RouteId, Route> routes = graph.getRoutes(tile);
+
+            for (Route road : routes == null ? java.util.Collections.<Route>emptyList() : routes.values())
+            {
+                if (contact != null && (road.getA() == contact.getA() && road.getB() == contact.getB()
+                    || road.getA() == contact.getB() && road.getB() == contact.getA()))
+                {
+                    return road;
+                }
+            }
+        }
+
+        return firstRoute(tile);
+    }
+
+    /**
+     * Whether a square's track is a curve or a double curve, with a sensor or without: the squares whose arrows lie along
+     * their chords (`TileAnnotation.heading`).  A double curve's other road's arrows were aimed from the middle of the
+     * badge's road, across their own rails (MT-712; Adam, 2026-10-10: *"They are not parallel with the track on one
+     * side."*); on a single curve the angle is the same either way.
+     *
+     * @param tile the square
+     * @return true for the four curved types
+     */
+    public boolean isCurveSquare(TileKey tile)
+    {
+        org.traincontrol.base.LayoutDiagramComponent square = graph == null ? null : graph.getTiles().get(tile);
+
+        if (square == null) return false;
+
+        org.traincontrol.base.LayoutDiagramComponent.componentType type = square.getType();
+
+        return type == org.traincontrol.base.LayoutDiagramComponent.componentType.CURVE
+            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
+            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_CURVE
+            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
+    }
+
+    /**
+     * The tile's first route: where the badge of a square that is not a sensor is drawn (`stationRoad`).
      */
     private Route firstRoute(TileKey tile)
     {

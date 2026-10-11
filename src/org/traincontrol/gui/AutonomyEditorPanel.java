@@ -244,6 +244,9 @@ public class AutonomyEditorPanel extends JPanel
     /** Remembered like Track Lengths above it. */
     private static final String PREF_UNMEASURED = "autonomyEditorUnmeasured";
 
+    /** Remembered like the two above it (FR-119). */
+    private static final String PREF_TRAINS = "autonomyEditorTrains";
+
     /**
      * Whether the captions in this editor name the train parked at a station or the station itself.
      *
@@ -319,6 +322,13 @@ public class AutonomyEditorPanel extends JPanel
      * statically highlight all relevant unmeasured squares"*).
      */
     private final JCheckBox showUnmeasured = new JCheckBox(I18n.t("autosetup.ui.btnShowUnmeasured"), false);
+
+    /**
+     * Draws the trains on this editor's diagram, or hides them (FR-119; Adam, 2026-10-10: *"in the autonomy editor, have a
+     * "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."*).  On by default, as they
+     * were drawn; remembered like Track Lengths; the track diagram's own trains are not this switch's.
+     */
+    private final JCheckBox showTrains = new JCheckBox(I18n.t("autosetup.ui.btnShowTrains"), true);
 
     /**
      * The squares it highlights, worked out once per refresh rather than once per square painted - null until asked.
@@ -826,6 +836,8 @@ public class AutonomyEditorPanel extends JPanel
 
         showUnmeasured.setSelected(VIEW_PREFS.getBoolean(PREF_UNMEASURED, false));
 
+        showTrains.setSelected(VIEW_PREFS.getBoolean(PREF_TRAINS, true));
+
         // ONE REMEMBERED SETTING, and the two boxes follow it (FR-061).
         //
         // Station Names by default, as asked. The two older preferences are deliberately not read:
@@ -869,6 +881,10 @@ public class AutonomyEditorPanel extends JPanel
         showUnmeasured.setFocusable(false);
         showUnmeasured.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowUnmeasured")));
 
+        // Nor this one (OB-019)
+        showTrains.setFocusable(false);
+        showTrains.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowTrains")));
+
         // NOR THE DIRECTIONS BOX, which the window mounts in its Toggle visibility box (OB-200), for the same reason
         directions.setFocusable(false);
 
@@ -888,6 +904,16 @@ public class AutonomyEditorPanel extends JPanel
         {
             VIEW_PREFS.putBoolean(PREF_UNMEASURED, showUnmeasured.isSelected());
             refresh();
+        });
+
+        // Only redrawn: the trains are drawn by the squares, which ask `isShowingTrains` as they paint
+        showTrains.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(PREF_TRAINS, showTrains.isSelected());
+
+            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+
+            if (window != null) window.repaint();
         });
 
         captions.addActionListener(e ->
@@ -4552,6 +4578,21 @@ public class AutonomyEditorPanel extends JPanel
 
     private void setUsage(TileKey tile, boolean station, boolean open)
     {
+        // A SENSOR WITH NO NAME IS NAMED AS IT BECOMES A STATION (FR-120; Adam, 2026-10-10: "when an unnamed sensor is
+        // converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names
+        // are remembered so future changes are applied.  we apply a name duplication check here.").  Cancelled, or left
+        // blank, nothing changes; a square with a name - given here or before - is not asked again.  The station menu is
+        // the one door that makes a square a station, in the editor and on the track diagram's own menu.
+        if (station && !session.getStore().isStation(tile) && !hasAName(tile))
+        {
+            String name = askTheNewStationsName(tile);
+
+            if (name == null) return;
+
+            // written here, with the rest of the answer, and announced below with it (MT-246)
+            session.setPointName(tile, name);
+        }
+
         setStation(tile, station);
 
         // Stored only when it is off, like every other default, so a square nobody has closed carries
@@ -4560,6 +4601,62 @@ public class AutonomyEditorPanel extends JPanel
 
         // Persisted, and the running layout told (MT-246).
         setupChanged();
+    }
+
+    /**
+     * Asks for a new station's name (FR-120): the message and the name as typed so far, to the answer - null for Cancel.
+     * A dialog over the editor; a claim answers it instead.
+     */
+    private java.util.function.BiFunction<String, String, String> askForAName =
+        (message, typed) -> JOptionPane.showInputDialog(owner(), wrapped(message), typed);
+
+    /**
+     * @param tile a square
+     * @return whether the setup has a name for it
+     */
+    private boolean hasAName(TileKey tile)
+    {
+        String name = session.getStore().getPointName(tile);
+
+        return name != null && !name.trim().isEmpty();
+    }
+
+    /**
+     * Asks a sensor becoming a station for its name (FR-120): again, saying why, for a name that cannot be a square's
+     * (`AutonomySession.whyNotAPointName`) or that another square has, in any case.  Writes nothing.
+     *
+     * @param tile the sensor
+     * @return the name, or null for Cancel or a blank name, which change nothing
+     */
+    private String askTheNewStationsName(TileKey tile)
+    {
+        String prompt = I18n.t("autosetup.ui.promptNewStationName");
+        String message = prompt;
+        String typed = "";
+
+        while (true)
+        {
+            String answer = askForAName.apply(message, typed);
+
+            if (answer == null) return null;
+
+            // no quotes in a name, as `promptName` takes them out
+            String name = answer.replace("\"", "").trim();
+
+            if (name.isEmpty()) return null;
+
+            String refused = AutonomySession.whyNotAPointName(name);
+
+            if (refused == null && session.isPointNameTaken(name, tile))
+            {
+                refused = I18n.f("autosetup.ui.errorPointNameTaken", name);
+            }
+
+            if (refused == null) return name;
+
+            message = refused + "  " + prompt;
+            typed = name;
+        }
     }
 
     private void setStation(TileKey tile, boolean on)
@@ -9753,23 +9850,11 @@ public class AutonomyEditorPanel extends JPanel
      */
     private boolean isCurved(TileKey tile)
     {
-        LayoutDiagramComponent component =
-            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
-
-        if (component == null) return false;
-
-        LayoutDiagramComponent.componentType type = component.getType();
-
-        // Only the curves WITHOUT a sensor.
-        //
-        // Following the chord puts the arrow along the rail, which reads beautifully on plain track and
-        // disappears on a sensor: a feedback curve carries the heaviest art on the diagram, and a red
-        // arrow laid at forty-five degrees across it is the one thing on the page nobody can see.
-        // Square N/E/S/W arrows sit clear of the icon and are legible - which is what an arrow is for.
-        //
-        // The sensor tiles are also the ones that matter most to read: they are the Points.
-        return type == LayoutDiagramComponent.componentType.CURVE
-            || type == LayoutDiagramComponent.componentType.DOUBLE_CURVE;
+        // THE SENSOR CURVES TOO, as on the track diagram (MT-712; Adam, 2026-10-10: "They are not parallel with the track
+        // on one side.").  They were left out for square N/E/S/W arrows, which a curve's arrows have not been since they
+        // were aimed from the middle of its track (TD-4) - along its chord, with the flag or without.  What the flag still
+        // decided was a double curve's OTHER road, whose arrows were aimed from the badge's road, across their own rails.
+        return session.isCurveSquare(tile);
     }
 
     /**
@@ -9903,7 +9988,8 @@ public class AutonomyEditorPanel extends JPanel
 
         String name = session.getStore().getPointName(tile);
 
-        org.traincontrol.automationui.TilePorts.Route route = firstRoute(tile);
+        // the road its contact is on, as on the track diagram (MT-712)
+        org.traincontrol.automationui.TilePorts.Route route = session.stationRoad(tile);
 
         boolean station = session.getStore().isStation(tile);
 
@@ -9926,16 +10012,6 @@ public class AutonomyEditorPanel extends JPanel
             Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
             // which way a station's track runs out, for the terminus's flat end - as the diagram's badge (FR-118)
             station ? session.deadEndSide(tile) : null);
-    }
-
-    /**
-     * The tile's first route, which is where its badge is drawn.
-     */
-    private org.traincontrol.automationui.TilePorts.Route firstRoute(TileKey tile)
-    {
-        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
-
-        return routes.isEmpty() ? null : routes.values().iterator().next();
     }
 
     /**
@@ -11750,6 +11826,24 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowUnmeasured()
     {
         return control(showUnmeasured);
+    }
+
+    /**
+     * @return the Show Trains switch, for the window to mount under Unmeasured Track (FR-119)
+     */
+    public JCheckBox getShowTrains()
+    {
+        return control(showTrains);
+    }
+
+    /**
+     * Whether this editor's diagram draws its trains (FR-119) - asked by its squares as they paint.
+     *
+     * @return the Show Trains switch's state
+     */
+    public boolean isShowingTrains()
+    {
+        return showTrains.isSelected();
     }
 
     /**

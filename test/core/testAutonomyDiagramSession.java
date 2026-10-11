@@ -4718,6 +4718,191 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712; Adam, 2026-10-10: *"the
+     * station gets rendered on the track without the sensor rather than the one with the sensor"*).
+     *
+     * The square is two curves and one contact, and its art draws the contact on one of them - the E-S curve as drawn,
+     * turned with the square.  The badge was put on the square's FIRST road, which is the other one.  Which curve has the
+     * contact is read here off the art itself - the white inside the contact's ring at the middle of its curve - so the
+     * claim cannot agree with a wrong rule about which road that is.
+     *
+     * MUTATION: badge the square's first road again, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADoubleCurveStationIsDrawnOnTheCurveWithTheContact() throws Exception
+    {
+        for (int orientation = 0; orientation < 4; orientation++)
+        {
+            session = new AutonomySession(layout);
+
+            LayoutDiagram page = doubleCurveCrossroads(orientation);
+
+            session.open(Arrays.asList(page));
+            session.initialize("contact " + orientation);
+
+            TileKey curve = new TileKey("main", 2, 2);
+
+            session.setStation(curve, true);
+
+            Set<Side> contact = contactRoadOnTheArt(page.getComponent(2, 2), orientation);
+
+            TileAnnotation annotation = session.staticAnnotationFor(curve, false, false);
+
+            assertNotNull(annotation, "precondition: the station at orientation " + orientation + " has no annotation");
+            assertNotNull(annotation.getBadge(), "precondition: the station at orientation " + orientation + " has no badge");
+
+            Set<Side> badged = new LinkedHashSet<>(Arrays.asList(annotation.getBadge().getA(), annotation.getBadge().getB()));
+
+            assertEquals(badged, contact, "a station on a double-curve sensor turned " + orientation + " is drawn on the curve"
+                + " " + badged + ", and the contact is on " + contact + " - Adam: \"the station gets rendered on the track"
+                + " without the sensor rather than the one with the sensor\"");
+        }
+    }
+
+    /**
+     * And the arrows on BOTH its curves lie along their rails (MT-712; Adam, 2026-10-10: *"They are not parallel with the
+     * track on one side."*).
+     *
+     * The track diagram's annotation of a sensor square said it was not curved, so an arrow was aimed from the middle of
+     * the badge's road - right on a curve, which has one road, and some thirty degrees off on a double curve's other one.
+     * Both roads one-way here, so each has a red arrow at its shut end; each arrow's ink is centred on its own curve's
+     * chord.
+     *
+     * MUTATION: annotate a sensor square as not curved again, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADoubleCurvesArrowsLieAlongBothItsCurves() throws Exception
+    {
+        int size = 60;
+
+        for (int orientation = 0; orientation < 4; orientation++)
+        {
+            session = new AutonomySession(layout);
+
+            LayoutDiagram page = doubleCurveCrossroads(orientation);
+
+            session.open(Arrays.asList(page));
+            session.initialize("arrows " + orientation);
+
+            TileKey curve = new TileKey("main", 2, 2);
+
+            for (java.util.Map.Entry<RouteId, Route> route : session.getGraph().getRoutes(curve).entrySet())
+            {
+                session.setDirection(curve, route.getKey(), Direction.TOWARD_A);
+            }
+
+            TileAnnotation annotation = session.staticAnnotationFor(curve, true, false);
+
+            assertNotNull(annotation, "precondition: the square at orientation " + orientation + " has no annotation");
+
+            BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+            Graphics2D g = shot.createGraphics();
+
+            try
+            {
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, size, size);
+
+                annotation.paint(g, size, size);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            for (Route road : session.getGraph().getRoutes(curve).values())
+            {
+                double[] a = midpointOf(road.getA(), size), b = midpointOf(road.getB(), size);
+
+                double sumX = 0, sumY = 0;
+                int red = 0;
+
+                for (int x = 0; x < size; x++)
+                {
+                    for (int y = 0; y < size; y++)
+                    {
+                        int rgb = shot.getRGB(x, y);
+
+                        if (((rgb >> 16) & 0xFF) < 150 || ((rgb >> 8) & 0xFF) > 90 || (rgb & 0xFF) > 90) continue;
+
+                        if (Math.hypot(x + 0.5 - b[0], y + 0.5 - b[1]) > size * 0.4) continue;
+
+                        sumX += x + 0.5;
+                        sumY += y + 0.5;
+                        red++;
+                    }
+                }
+
+                assertTrue(red > 10, "precondition: no red arrow at the shut end " + road.getB() + " of the curve "
+                    + road.getA() + "-" + road.getB() + " at orientation " + orientation);
+
+                double cx = sumX / red, cy = sumY / red;
+
+                // distance of the arrow's middle from the line through the curve's two edge midpoints
+                double dx = b[0] - a[0], dy = b[1] - a[1];
+                double off = Math.abs(dy * (cx - a[0]) - dx * (cy - a[1])) / Math.hypot(dx, dy);
+
+                assertTrue(off <= 3, "the red arrow at " + road.getB() + " on the double curve's " + road.getA() + "-"
+                    + road.getB() + " curve, turned " + orientation + ", is centred " + Math.round(off) + " pixels off its"
+                    + " rail - Adam: \"They are not parallel with the track on one side.\"");
+            }
+        }
+    }
+
+    /**
+     * Which of a double-curve sensor's two roads its art draws the contact on: the one whose middle - the middle of the
+     * chord between its two sides - is the white inside the contact's ring.
+     */
+    private static Set<Side> contactRoadOnTheArt(org.traincontrol.base.LayoutDiagramComponent square, int orientation)
+        throws IOException
+    {
+        int size = 60;
+
+        BufferedImage art = org.traincontrol.base.LayoutDiagramComponent.toBufferedImage(square.getImage(size, true));
+
+        Set<Side> found = null;
+
+        for (Route road : org.traincontrol.automationui.TilePorts.ports(componentType.FEEDBACK_DOUBLE_CURVE, orientation, 0))
+        {
+            double[] a = midpointOf(road.getA(), size), b = midpointOf(road.getB(), size);
+
+            int rgb = art.getRGB((int) ((a[0] + b[0]) / 2), (int) ((a[1] + b[1]) / 2));
+
+            boolean white = ((rgb >> 16) & 0xFF) > 230 && ((rgb >> 8) & 0xFF) > 230 && (rgb & 0xFF) > 230
+                && ((rgb >>> 24) & 0xFF) > 200;
+
+            if (!white) continue;
+
+            assertNull(found, "precondition: both curves of the double-curve art turned " + orientation + " are white in"
+                + " the middle");
+
+            found = new LinkedHashSet<>(Arrays.asList(road.getA(), road.getB()));
+        }
+
+        assertNotNull(found, "precondition: neither curve of the double-curve art turned " + orientation + " has the"
+            + " contact's white in its middle");
+
+        return found;
+    }
+
+    /** The middle of a side of a square this size, x and y. */
+    private static double[] midpointOf(Side side, int size)
+    {
+        switch (side)
+        {
+            case N: return new double[] {size / 2.0, 0};
+            case E: return new double[] {size, size / 2.0};
+            case S: return new double[] {size / 2.0, size};
+            default: return new double[] {0, size / 2.0};
+        }
+    }
+
+    /**
      * A double-curve sensor with track on both of its arcs: north, west, east and south all reachable.
      *
      * @return the page
@@ -4730,6 +4915,29 @@ public class testAutonomyDiagramSession
         page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 25, 25,
+            accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    /**
+     * The same, the double curve turned to this orientation - every orientation has track on all four sides.
+     *
+     * @param orientation the double curve's orientation
+     * @return the page
+     * @throws IOException from the diagram
+     */
+    private LayoutDiagram doubleCurveCrossroads(int orientation) throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25,
             accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
@@ -9536,6 +9744,144 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The autonomy editor's Show Trains switch is on until it is turned off, and says what it is set to (FR-119) - what
+     * its diagram's squares ask as they paint.
+     *
+     * MUTATION: answer the squares anything but the switch's state, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTheEditorHasAShowTrainsSwitch() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+
+        final java.lang.reflect.Method box = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("getShowTrains");
+        final java.lang.reflect.Method showing = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("isShowingTrains");
+
+        final javax.swing.JCheckBox[] trains = new javax.swing.JCheckBox[1];
+        final boolean[] seen = new boolean[3];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                trains[0] = (javax.swing.JCheckBox) box.invoke(panel);
+
+                boolean was = trains[0].isSelected();
+
+                trains[0].setSelected(true);
+                seen[0] = (Boolean) showing.invoke(panel);
+
+                trains[0].setSelected(false);
+                seen[1] = (Boolean) showing.invoke(panel);
+
+                trains[0].setSelected(was);
+                seen[2] = was;
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertTrue(seen[0], "the editor's Show Trains switch, ticked, says not to show the trains (FR-119)");
+        assertFalse(seen[1], "the editor's Show Trains switch, unticked, says to show the trains (FR-119)");
+        assertEquals(trains[0].getText(), org.traincontrol.util.I18n.t("autosetup.ui.btnShowTrains"), "the switch is not"
+            + " the one called Show Trains");
+    }
+
+    /**
+     * A sensor with no name is named as it becomes a station (FR-120; Adam, 2026-10-10: *"when an unnamed sensor is
+     * converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are
+     * remembered so future changes are applied.  we apply a name duplication check here."*).  Through the editor's own
+     * answer to the station menu, `setUsage`, with its question answered here: Cancel, and a blank name, leave the square a
+     * sensor and unnamed; a name another square has - in any case - is refused and asked for again, with the name typed
+     * and why; a free name makes it a station of that name; and a square with a name already is not asked.
+     *
+     * MUTATION: make an unnamed sensor a station without asking, or take a name another square has, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testAnUnnamedSensorIsNamedAsItBecomesAStation() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+
+        final TileKey unnamed = new TileKey("main", 5, 1);
+        final TileKey named = new TileKey("main", 1, 1);
+
+        session.setPointName(named, "North Yard");
+
+        final List<String[]> asked = new java.util.ArrayList<>();
+        final java.util.LinkedList<String> answers = new java.util.LinkedList<>();
+
+        java.lang.reflect.Field question = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("askForAName");
+
+        question.setAccessible(true);
+
+        question.set(panel, (java.util.function.BiFunction<String, String, String>) (message, typed) ->
+        {
+            asked.add(new String[] {message, typed});
+
+            return answers.isEmpty() ? null : answers.removeFirst();
+        });
+
+        // CANCEL: nothing changes
+        answers.add(null);
+        answerTheStationMenu(panel, unnamed, true);
+
+        assertEquals(asked.size(), 1, "an unnamed sensor was made a station without being asked its name - Adam: \"when"
+            + " an unnamed sensor is converted to a station, pop up a box to ask for its name\"");
+        assertFalse(session.getStore().isStation(unnamed), "Cancel made the unnamed sensor a station - Adam: \"if none is"
+            + " provided, changes are cancelled\"");
+
+        // BLANK: nothing changes
+        answers.add("   ");
+        answerTheStationMenu(panel, unnamed, true);
+
+        assertFalse(session.getStore().isStation(unnamed), "a blank name made the unnamed sensor a station");
+        assertNull(session.getStore().getPointName(unnamed), "a blank name named the sensor");
+
+        // ANOTHER SQUARE'S NAME, in another case: refused, and asked again with what was typed
+        asked.clear();
+        answers.add(" north yard ");
+        answers.add("Far Yard");
+        answerTheStationMenu(panel, unnamed, true);
+
+        assertEquals(asked.size(), 2, "a name another square has was taken, not refused and asked for again - Adam: \"we"
+            + " apply a name duplication check here\"");
+        assertEquals(asked.get(1)[1], "north yard", "asked again, the name typed was not kept for correcting");
+        assertTrue(asked.get(1)[0].contains(org.traincontrol.util.I18n.f("autosetup.ui.errorPointNameTaken", "north yard")),
+            "asked again without saying the name is taken: " + asked.get(1)[0]);
+
+        assertTrue(session.getStore().isStation(unnamed), "a free name did not make the sensor a station");
+        assertEquals(session.getStore().getPointName(unnamed), "Far Yard", "the station is not called what was typed");
+
+        // NAMED ALREADY: not asked
+        asked.clear();
+        answerTheStationMenu(panel, named, true);
+
+        assertTrue(asked.isEmpty(), "a sensor with a name was asked for one as it became a station - Adam: \"names are"
+            + " remembered so future changes are applied\"");
+        assertTrue(session.getStore().isStation(named), "a named sensor was not made a station");
+    }
+
+    /** The editor over `pageWithATwoEndedStation`, its three sensors plain points. */
+    private org.traincontrol.gui.AutonomyEditorPanel anEditorOverATwoEndedStation() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("Default");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        return panel[0];
+    }
+
+    /**
      * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not
      * (GSE-C4): the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
      * (address 22) on the track either side, wired as parsing a real layout wires them.
@@ -9576,6 +9922,8 @@ public class testAutonomyDiagramSession
         TileKey entry = new TileKey("main", 4, 1);
 
         session.setStation(station, true);
+        // NAMED, as a station made one in the editor is now (FR-120) - so promoting it again asks nothing
+        session.setPointName(station, "Platform");
         session.setCaption(caption, station);
         session.setBarredArrivals(station, new LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
         session.setProtectingSignal(station, exit);

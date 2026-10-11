@@ -1715,10 +1715,6 @@ public class testAutonomyDiagramMonitor
             "switching a reversing point off does not change its badge at all, so a square no train "
             + "can enter goes on wearing the mark for 'every train turns here'");
 
-        assertTrue(shut < open,
-            "the mark for a square nothing can use is not lighter than the one it replaces - it "
-            + "should read as an absence beside the shapes that are present, and it covered " + shut
-            + " pixels against " + open);
 
         // AND A STATION THAT IS SWITCHED OFF IS A CROSS TOO, as of 2026-09-01.
         //
@@ -1740,8 +1736,10 @@ public class testAutonomyDiagramMonitor
             + "nothing can use either - the mark is about the square being out of use");
 
         // the block's grey, counted - not ink, which the white over the sensor's contact adds to a station's as well
-        assertTrue(greyOf(badgeAt(true, true, true, size)) > size && greyOf(badgeAt(false, true, true, size)) == 0,
-            "a switched-off station has no grey block under its cross, or a passing point has one (FR-118)");
+        // ONE MARK FOR BOTH, AND NO GREY BLOCK (Adam, 2026-10-10: "regardless of the type of station or point it
+        // otherwise is") - `testASquareOutOfServiceIsAnOrangeRingedCircle`
+        assertEquals(greyOf(badgeAt(true, true, true, size)) + greyOf(badgeAt(false, true, true, size)), 0,
+            "a square out of service still draws a grey block");
 
         // AND PARKING IS NOT SHUT (TCX-B6).
         //
@@ -2074,39 +2072,192 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A station out of service is the orange X over a grey block, the X no taller than the new icons (FR-118; Adam,
-     * 2026-10-09: *"make the inactive station have a gray rectangle below the X"*).  It was 15 pixels at 30 and 30 at
-     * 60; now the icons' height, 13 and 26, with the round ends of its strokes.
+     * Every square out of service is one mark - a white circle, an orange ring, an orange X in it - whatever it otherwise
+     * is, a station of any kind or a plain sensor, on the track diagram and in the editor (Adam, 2026-10-10:
+     * *"For simplicity, could an out of service station be made a round white circle with an orange border and X inside of it, regardless of the type of station or point it otherwise is?"*, then *"Make them small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the user to discern."*).  It replaces the orange X over a grey block (FR-118) and the bare X on a plain sensor.
      *
-     * MUTATION: drop the block, or draw the X at its old size, and this fails.
+     * Painted on white, on straight track and a curve, at both sizes: every kind draws the same picture; the mark is round,
+     * orange-ringed with white inside it, at least the contact's size and no wider than the space inside the activation
+     * arrows (16 pixels at 30, 31 at 60); and over the sensor's art as it is drawn while the sensor reads occupied, the
+     * contact - its ring and its yellow - is covered and every pixel of its red activation arrows still shows.
      *
-     * @throws Exception from reading the tile art
+     * MUTATION: draw a station out of service as its own kind again, or the circle over the activation arrows, and this
+     * fails.
+     *
+     * @throws Exception from reading the art
      */
     @Test
-    public void testAStationOutOfServiceIsTheXOverAGreyBlock() throws Exception
+    public void testASquareOutOfServiceIsAnOrangeRingedCircle() throws Exception
     {
+        Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}};
+
         for (int size : new int[] {30, 60})
         {
-            java.awt.image.BufferedImage image = onItsSensor(station(Side.W, Side.E, false, false, true, true, null), size);
+            for (Side[] road : roads)
+            {
+                Side a = road[0], b = road[1];
 
-            java.awt.Rectangle orange = extent(image, ORANGE), grey = extent(image, GREY);
+                TileAnnotation.Badge[] kinds = {
+                    station(a, b, false, false, true, true, null),
+                    station(a, b, true, true, true, true, null),
+                    station(a, b, true, false, true, true, null),
+                    station(a, b, false, false, true, true, a),
+                    new TileAnnotation.Badge(false, false, false, true, false, a, b, false, true, null),
+                    new TileAnnotation.Badge(false, false, true, true, false, a, b, true, true, null)};
 
-            assertNotNull(orange, "a station out of service at " + size + " pixels has no orange X");
+                for (boolean editor : new boolean[] {false, true})
+                {
+                    java.awt.image.BufferedImage first = null;
 
-            assertNotNull(grey, "a station out of service at " + size + " pixels has no grey block under its X (FR-118)");
+                    for (TileAnnotation.Badge badge : kinds)
+                    {
+                        java.awt.image.BufferedImage image = outOfServiceOn(null, badge, road, size, editor);
 
-            assertTrue(grey.width >= grey.height * 1.3, "the grey under the X at " + size + " pixels is not the station's"
-                + " block");
+                        if (first == null)
+                        {
+                            first = image;
 
-            int icon = Math.round(size * 0.43f);
+                            continue;
+                        }
 
-            assertTrue(orange.height <= icon + size / 15 + 1, "the X at " + size + " pixels is " + orange.height
-                + " tall, not the new icons' height (" + icon + ") (FR-118)");
+                        for (int x = 0; x < size; x++)
+                        {
+                            for (int y = 0; y < size; y++)
+                            {
+                                assertEquals(image.getRGB(x, y), first.getRGB(x, y), badge + " out of service on " + a
+                                    + "-" + b + " at " + size + " pixels" + (editor ? " in the editor" : "") + " is not"
+                                    + " drawn as " + kinds[0] + " is, at " + x + "," + y + " - Adam: \"regardless of the"
+                                    + " type of station or point it otherwise is\"");
+                            }
+                        }
+                    }
 
-            assertEquals(orange.x + orange.width / 2.0, grey.x + grey.width / 2.0, 1.5, "the X at " + size
-                + " pixels is not on its block");
+                    String what = "a square out of service on " + a + "-" + b + " at " + size + " pixels"
+                        + (editor ? " in the editor" : "");
+
+                    java.awt.Rectangle ring = extent(first, ORANGE);
+
+                    assertNotNull(ring, what + " has no orange");
+
+                    assertTrue(Math.abs(ring.width - ring.height) <= 1, what + " is not round: " + ring);
+
+                    assertTrue(ring.width >= contact(size) && ring.width <= (size < 60 ? 16 : 31), what + " is "
+                        + ring.width + " across - at least the contact (" + contact(size) + "), and clear of the"
+                        + " activation arrows (Adam: \"small enough that you can still see the sensor activation arrows,"
+                        + " but big enough to be prominent\")");
+
+                    assertEquals(inkOf(first, GREY) + inkOf(first, BLUE), 0, what + " still draws the grey block or a"
+                        + " station's blue");
+
+                    // white inside the ring, between the arms of its X
+                    double cx = ring.x + ring.width / 2.0, cy = ring.y + ring.height / 2.0;
+
+                    assertTrue(PURE_WHITE.test(first.getRGB((int) cx, (int) (cy - ring.height * 0.3)))
+                        || PURE_WHITE.test(first.getRGB((int) (cx + ring.width * 0.3), (int) cy)), what
+                        + " is not white inside its ring");
+
+                    // over the sensor's art while it reads occupied
+                    java.awt.image.BufferedImage art = activeArt(size, road);
+                    java.awt.image.BufferedImage over = outOfServiceOn(art, kinds[0], road, size, editor);
+
+                    int red = 0, covered = 0, contactLeft = 0;
+
+                    double ax = (midpointOf(a, size)[0] + midpointOf(b, size)[0]) / 2.0;
+                    double ay = (midpointOf(a, size)[1] + midpointOf(b, size)[1]) / 2.0;
+
+                    for (int x = 0; x < size; x++)
+                    {
+                        for (int y = 0; y < size; y++)
+                        {
+                            int before = art.getRGB(x, y), after = over.getRGB(x, y);
+
+                            if (ACTIVATION_RED.test(before))
+                            {
+                                red++;
+
+                                if (!ACTIVATION_RED.test(after)) covered++;
+                            }
+
+                            boolean nearContact = Math.hypot(x + 0.5 - ax, y + 0.5 - ay) <= contact(size) / 2.0 - 1;
+
+                            if (nearContact && (YELLOW.test(after) || BLACK.test(after) && acrossTheChord(
+                                new double[] {x + 0.5, y + 0.5}, road, size) > size * 4 / 30.0 + 1)) contactLeft++;
+                        }
+                    }
+
+                    assertTrue(red > 0, "precondition: the sensor's art at " + size + " pixels reading occupied has no"
+                        + " activation arrows");
+
+                    assertEquals(covered, 0, what + " covers " + covered + " of the " + red + " pixels of the sensor's"
+                        + " activation arrows - Adam: \"small enough that you can still see the sensor activation"
+                        + " arrows\"");
+
+                    assertEquals(contactLeft, 0, what + " leaves " + contactLeft + " pixels of the contact showing"
+                        + " inside it");
+                }
+            }
         }
     }
+
+    /** The sensor's art as it is drawn while the sensor reads occupied, turned to run along the road, on white. */
+    private static java.awt.image.BufferedImage activeArt(int size, Side[] road) throws Exception
+    {
+        boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
+
+        java.awt.image.BufferedImage art = sensorArt(curve ? "s88_curve_active.gif" : "s88_active.gif", size);
+
+        for (int k = 0; k < 4; k++)
+        {
+            java.awt.image.BufferedImage image = turned(art, k);
+
+            if (runs(image, road)) return image;
+        }
+
+        throw new AssertionError("precondition: no quarter turn of the occupied sensor's art runs " + road[0] + "-"
+            + road[1]);
+    }
+
+    /** A square out of service painted on this art, or on white, with a road one-way through it. */
+    private static java.awt.image.BufferedImage outOfServiceOn(java.awt.image.BufferedImage art, TileAnnotation.Badge badge,
+        Side[] road, int size, boolean editor)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            if (art != null) g.drawImage(art, 0, 0, null);
+
+            boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
+
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1],
+                org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, badge, false, curve, false, null,
+                false, null);
+
+            if (editor) annotation = annotation.inTheEditor();
+
+            annotation.paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /** The red of the activation arrows a sensor's art draws while it reads occupied. */
+    private static final java.util.function.IntPredicate ACTIVATION_RED =
+        rgb -> channel(rgb, 16) > 180 && channel(rgb, 8) < 80 && channel(rgb, 0) < 80;
+
+    /** The yellow of a contact that reads occupied. */
+    private static final java.util.function.IntPredicate YELLOW =
+        rgb -> channel(rgb, 16) > 200 && channel(rgb, 8) > 200 && channel(rgb, 0) < 80;
 
     /**
      * Every station icon covers the sensor's own contact - the circle of the s88 tile, 14 pixels at 30 and 26 at 60 -
@@ -2324,9 +2475,9 @@ public class testAutonomyDiagramMonitor
 
     /**
      * The spill is only what falls outside the square: the square's own paint has drawn the rest, and drawn twice its
-     * soft edges would darken.  Every kind on every curve at both sizes: nothing inside the square, and something outside
-     * it for the plain station, whose block reaches past two edges.  Nothing at all on straight track, or in the editor,
-     * where a curve's icon stands in the corner inside its square.
+     * soft edges would darken.  Every kind on every curve at both sizes, on the diagram and in the editor - where the icon
+     * is on its rails too now, white (Adam, 2026-10-10: *"Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly."*): nothing inside the square, and something outside
+     * it for the plain station, whose block reaches past two edges.  Nothing at all on straight track.
      *
      * MUTATION: let the spill draw inside the square too, and this fails.
      */
@@ -2385,7 +2536,7 @@ public class testAutonomyDiagramMonitor
                         assertEquals(inside, 0, what + ": its spill drew " + inside + " pixels inside its own square,"
                             + " which the square has drawn already");
 
-                        if (!curve || editor) assertEquals(outside, 0, what + " spilled " + outside + " pixels, where it"
+                        if (!curve) assertEquals(outside, 0, what + " spilled " + outside + " pixels, where it"
                             + " is drawn inside its square");
                         else if (k == 0) assertTrue(outside > 0, what + " spilled nothing - its block reaches past two"
                             + " edges of the square, and the spill is what draws that part (Adam: \"make the stations"
@@ -2499,6 +2650,298 @@ public class testAutonomyDiagramMonitor
             station(a, b, false, false, false, false, b),
             station(a, b, false, false, true, false, null),
             station(a, b, false, false, true, true, null)};
+    }
+
+    /**
+     * A plain sensor's turn mark - the diamond where trains may turn, the square where they must - covers the sensor's
+     * contact and is a little bigger than it was (Adam, 2026-10-10: *"Make the plain turn icon slightly bigger so it covers
+     * the circle."*).  Painted over the sensor's own art, on straight track and every curve, at both sizes: no pixel of
+     * the contact's ring off the rails is dark any more, and the mark is at least as wide as the contact.
+     *
+     * MUTATION: leave the contact uncovered under a plain turn mark, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testAPlainTurnMarkCoversTheContact() throws Exception
+    {
+        Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : roads)
+            {
+                java.awt.image.BufferedImage art = overTheArt(null, road, size);
+
+                double cx = (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0;
+                double cy = (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0;
+
+                List<int[]> ring = new ArrayList<>();
+
+                for (int x = 0; x < size; x++)
+                {
+                    for (int y = 0; y < size; y++)
+                    {
+                        if (BLACK.test(art.getRGB(x, y)) && Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= size * 0.3
+                            && acrossTheChord(new double[] {x + 0.5, y + 0.5}, road, size) > size * 4 / 30.0 + 1)
+                        {
+                            ring.add(new int[] {x, y});
+                        }
+                    }
+                }
+
+                assertFalse(ring.isEmpty(), "precondition: the sensor's art " + road[0] + "-" + road[1] + " at " + size
+                    + " pixels has no ring off its rails to cover");
+
+                for (boolean may : new boolean[] {true, false})
+                {
+                    TileAnnotation.Badge mark = new TileAnnotation.Badge(false, false, true, false, false, road[0], road[1],
+                        may, false, null);
+
+                    java.awt.image.BufferedImage image = overTheArt(mark, road, size);
+
+                    int showing = 0;
+
+                    for (int[] at : ring)
+                    {
+                        if (BLACK.test(image.getRGB(at[0], at[1]))) showing++;
+                    }
+
+                    String what = (may ? "the diamond where trains may turn" : "the square where trains must turn") + " on a"
+                        + " plain sensor " + road[0] + "-" + road[1] + " at " + size + " pixels";
+
+                    assertEquals(showing, 0, what + " leaves " + showing + " of the contact's ring pixels showing round it"
+                        + " - Adam: \"Make the plain turn icon slightly bigger so it covers the circle.\"");
+
+                    if (may)
+                    {
+                        java.awt.Rectangle blue = extent(image, BLUE);
+
+                        assertTrue(blue != null && Math.max(blue.width, blue.height) >= contact(size), what + " is "
+                            + (blue == null ? "not drawn" : blue.width + " wide") + ", narrower than the contact ("
+                            + contact(size) + ")");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * In the autonomy editor every icon is white with its colour round it - blue, grey for a berth autonomy does not
+     * choose - so the arrows over it can be seen clearly (Adam, 2026-10-10: *"Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly."*).  Every named kind, on
+     * straight track and a curve, at both sizes: in the editor the icon's colour is its outline, a small part of what the
+     * track diagram fills with it; on the diagram it is filled as before.
+     *
+     * MUTATION: fill the editor's icons in their colour again, and this fails.
+     */
+    @Test
+    public void testTheEditorsIconsAreWhiteWithTheirColourRound()
+    {
+        Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : roads)
+            {
+                TileAnnotation.Badge[] kinds = everyKind(road[0], road[1]);
+
+                // the middle of the icon: the middle of the road, on a canvas three squares across
+                int cx = size + (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2;
+                int cy = size + (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2;
+
+                for (TileAnnotation.Badge badge : java.util.Arrays.copyOf(kinds, kinds.length - 1))
+                {
+                    java.util.function.IntPredicate colour = badge.isParking() ? GREY : BLUE;
+
+                    java.awt.image.BufferedImage diagram = wholeIcon(badge, road, size, false);
+                    java.awt.image.BufferedImage editor = wholeIcon(badge, road, size, true);
+
+                    assertTrue(inkOf(editor, colour) > 0, "precondition: " + badge + " on " + road[0] + "-" + road[1]
+                        + " at " + size + " pixels shows none of its colour in the editor");
+
+                    String what = badge + " on " + road[0] + "-" + road[1] + " at " + size + " pixels";
+
+                    // not the must-turn pair, whose middle is the gap between its halves and each half barred in its
+                    // colour: its fill is the same `fill` as every other kind's
+                    if (badge.isTerminus() && !badge.isOptional()) continue;
+
+                    assertTrue(colour.test(diagram.getRGB(cx, cy)), "precondition: " + what + " on the track diagram is"
+                        + " not filled in its colour at its middle: " + new java.awt.Color(diagram.getRGB(cx, cy)));
+
+                    assertTrue(PURE_WHITE.test(editor.getRGB(cx, cy)), what + " in the editor is "
+                        + new java.awt.Color(editor.getRGB(cx, cy)) + " at its middle, not white - Adam: \"Let's make all"
+                        + " of the icons white with a blue border in the editor\"");
+                }
+            }
+        }
+    }
+
+    /**
+     * And on a curve the editor's icon is where the track diagram's is - on the rails, its full size, spilling onto the
+     * squares beside it - not in the square's corner: white, the arrows read over it, which is what the corner was for.
+     * Every kind on every curve at both sizes: the middle of the icon's colour, square and spill together, is the middle of
+     * the curve's chord.
+     *
+     * MUTATION: put the editor's icon on a bend back in the corner, and this fails.
+     */
+    @Test
+    public void testTheEditorsIconOnACurveIsOnItsRails()
+    {
+        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : curves)
+            {
+                double cx = size + (midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0;
+                double cy = size + (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0;
+
+                TileAnnotation.Badge[] kinds = everyKind(road[0], road[1]);
+
+                for (TileAnnotation.Badge badge : java.util.Arrays.copyOf(kinds, kinds.length - 1))
+                {
+                    double[] middle = middleOf(wholeIcon(badge, road, size, true), badge.isParking() ? GREY : BLUE);
+
+                    assertTrue(middle[2] > 0, "precondition: " + badge + " drew none of its colour");
+
+                    assertTrue(Math.hypot(middle[0] - cx, middle[1] - cy) <= size / 8.0, badge + " on a curve " + road[0]
+                        + "-" + road[1] + " at " + size + " pixels in the editor is centred at " + Math.round(middle[0])
+                        + "," + Math.round(middle[1]) + ", not on its rails at " + cx + "," + cy);
+                }
+            }
+        }
+    }
+
+    /**
+     * A square out of service carries no arrows and no arrival marks, on the diagram or in the editor: nothing can pass
+     * it, so a way through says nothing, and the X says it all (Adam, 2026-10-10, asked *"For ones out of service, should
+     * arrows be drawn at all, since no trains can pass?"* - and if not, *"we don't show arrows there"*).  Its directions
+     * stay as they are set, and are drawn again once it is back in service.  A station and a plain sensor, on straight
+     * track and a curve, with a one-way road and an arrival barred and one open: none of the arrows' red or green, and
+     * none of the arrival marks' yellow.
+     *
+     * MUTATION: draw the arrows on a square out of service again, and this fails.
+     */
+    @Test
+    public void testASquareOutOfServiceHasNoArrows()
+    {
+        Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : roads)
+            {
+                for (TileAnnotation.Badge shut : new TileAnnotation.Badge[] {
+                    station(road[0], road[1], false, false, true, true, null),
+                    new TileAnnotation.Badge(false, false, false, true, false, road[0], road[1], false, true, null)})
+                {
+                    for (boolean editor : new boolean[] {false, true})
+                    {
+                        java.awt.image.BufferedImage image =
+                            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+                        java.awt.Graphics2D g = image.createGraphics();
+
+                        try
+                        {
+                            g.setColor(java.awt.Color.WHITE);
+                            g.fillRect(0, 0, size, size);
+
+                            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
+                                road[1], org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, shut,
+                                false, road[0] != Side.W, false, null, false, Arrays.asList(
+                                    new TileAnnotation.Arrival(road[0], true), new TileAnnotation.Arrival(road[1], false)));
+
+                            if (editor) annotation = annotation.inTheEditor();
+
+                            annotation.paint(g, size, size);
+                        }
+                        finally
+                        {
+                            g.dispose();
+                        }
+
+                        int arrows = 0, arrivals = 0;
+
+                        for (int x = 0; x < size; x++)
+                        {
+                            for (int y = 0; y < size; y++)
+                            {
+                                int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
+
+                                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30
+                                    && Math.abs(gr - 205) < 30 && Math.abs(b - 90) < 30)) arrows++;
+
+                                if (r > 230 && Math.abs(gr - 205) < 25 && b < 40) arrivals++;
+                            }
+                        }
+
+                        String what = shut + " on " + road[0] + "-" + road[1] + " at " + size + " pixels"
+                            + (editor ? " in the editor" : "");
+
+                        assertEquals(arrows, 0, what + " drew " + arrows + " pixels of arrows - nothing can pass it (Adam:"
+                            + " \"For ones out of service, should arrows be drawn at all, since no trains can pass?\")");
+
+                        assertEquals(arrivals, 0, what + " drew " + arrivals + " pixels of an arrival mark");
+                    }
+                }
+            }
+        }
+    }
+
+    /** A badge painted on a canvas three squares across, the square in the middle - its own paint and its spill. */
+    private static java.awt.image.BufferedImage wholeIcon(TileAnnotation.Badge badge, Side[] road, int size, boolean editor)
+    {
+        java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = canvas.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
+
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1], null)),
+                -1, false, badge, false, curve, false, null, true, null);
+
+            if (editor) annotation = annotation.inTheEditor();
+
+            java.awt.Graphics2D square = (java.awt.Graphics2D) g.create(size, size, size, size);
+
+            annotation.paint(square, size, size);
+            square.dispose();
+
+            java.awt.Graphics2D spill = (java.awt.Graphics2D) g.create();
+
+            spill.translate(size, size);
+            annotation.paintSpill(spill, size, size);
+            spill.dispose();
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return canvas;
+    }
+
+    /** How many pixels of a colour an image has. */
+    private static int inkOf(java.awt.image.BufferedImage image, java.util.function.IntPredicate colour)
+    {
+        int n = 0;
+
+        for (int x = 0; x < image.getWidth(); x++)
+        {
+            for (int y = 0; y < image.getHeight(); y++)
+            {
+                if (colour.test(image.getRGB(x, y))) n++;
+            }
+        }
+
+        return n;
     }
 
     /**
@@ -2710,6 +3153,9 @@ public class testAutonomyDiagramMonitor
             {
                 for (TileAnnotation.Badge badge : everyKind(road[0], road[1]))
                 {
+                    // not a square out of service, which carries no arrows (`testASquareOutOfServiceHasNoArrows`)
+                    if (badge.isImpassable()) continue;
+
                     for (boolean editor : new boolean[] {false, true})
                     {
                         for (boolean overRun : new boolean[] {false, true})
@@ -3015,6 +3461,9 @@ public class testAutonomyDiagramMonitor
                 int argb = with.getRGB(x, y);
 
                 if (argb == without.getRGB(x, y) || (argb >>> 24) < 200) continue;
+
+                // not the white inside the circle (Adam, 2026-10-10), which says nothing about the colour chosen
+                if (PURE_WHITE.test(argb)) continue;
 
                 counts.merge(argb & 0xFFFFFF, 1, Integer::sum);
             }
@@ -4074,5 +4523,133 @@ public class testAutonomyDiagramMonitor
             + " no Point is drawn as one that runs: " + picture.get(key("main", 3, 1)));
 
         assertFalse(picture.get(key("main", 6, 1)).isPaused(), "a train on no Point that is not paused is drawn paused");
+    }
+
+    /**
+     * A double-curve sensor's arrival chevrons keep off its direction arrows and off each other (MT-714; Adam, 2026-10-10:
+     * *"when a double curve with a s88 has arrival directions set, the arrow icons may overlap.  Hard to fix given how
+     * little space we have."*).
+     *
+     * A chevron is pushed along its side, off the middle where the direction arrow is - to the corner away from the track,
+     * which on a double curve was never asked: every side has track and so has its opposite, so each chevron went the same
+     * fixed way round and half of them landed on their own curve, over its arrow.  Pushed away from its OWN curve, two
+     * chevrons share each free corner, and are drawn in nearer the middles of their sides so they do not meet.
+     *
+     * MUTATION: push a double curve's chevrons the fixed way round again, and the overlap with the arrows fails; push them
+     * as far along as on any other square, and the overlap of two in one corner fails.
+     */
+    @Test
+    public void testADoubleCurvesArrivalArrowsKeepOffItsArrowsAndEachOther()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            for (int orientation = 0; orientation < 4; orientation++)
+            {
+                List<org.traincontrol.automationui.TilePorts.Route> roads = org.traincontrol.automationui.TilePorts.ports(
+                    componentType.FEEDBACK_DOUBLE_CURVE, orientation, 0);
+
+                for (boolean allowed : new boolean[] {true, false})
+                {
+                    List<TileAnnotation.Arrival> every = new ArrayList<>();
+
+                    for (Side side : Side.values()) every.add(new TileAnnotation.Arrival(side, allowed));
+
+                    // the arrows: every side's, both ways shown; the chevrons: drawn over roads that say nothing
+                    boolean[][] arrows = ink(new TileAnnotation(marksOf(roads, TileGraph.Direction.TOWARD_A), -1, false,
+                        null, false, true, false, null, false, null), size);
+
+                    boolean[][] chevrons = ink(chevronsOn(roads, every), size);
+
+                    int over = 0, chevronInk = 0;
+
+                    for (int x = 0; x < size; x++)
+                    {
+                        for (int y = 0; y < size; y++)
+                        {
+                            if (!chevrons[x][y]) continue;
+
+                            chevronInk++;
+
+                            if (arrows[x][y]) over++;
+                        }
+                    }
+
+                    assertTrue(chevronInk > 0, "precondition: no chevrons drawn at " + size + " pixels");
+
+                    assertTrue(over <= chevronInk / 50, "the double curve's arrival chevrons, turned " + orientation + ", "
+                        + (allowed ? "open" : "barred") + ", at " + size + " pixels lie over its direction arrows: " + over
+                        + " of their " + chevronInk + " pixels - Adam: \"when a double curve with a s88 has arrival"
+                        + " directions set, the arrow icons may overlap\"");
+
+                    int alone = 0;
+
+                    for (TileAnnotation.Arrival one : every)
+                    {
+                        boolean[][] single = ink(chevronsOn(roads, Arrays.asList(one)), size);
+
+                        for (boolean[] column : single) for (boolean on : column) if (on) alone++;
+                    }
+
+                    assertTrue(chevronInk >= alone * 0.97, "two of the double curve's arrival chevrons, turned "
+                        + orientation + ", " + (allowed ? "open" : "barred") + ", at " + size + " pixels lie over each other: "
+                        + chevronInk + " pixels drawn together against " + alone + " one at a time");
+                }
+            }
+        }
+    }
+
+    /** These roads, each one-way or both ways. */
+    private static List<TileAnnotation.Mark> marksOf(List<org.traincontrol.automationui.TilePorts.Route> roads,
+        TileGraph.Direction direction)
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        for (org.traincontrol.automationui.TilePorts.Route road : roads)
+        {
+            marks.add(new TileAnnotation.Mark(road.getA(), road.getB(), direction));
+        }
+
+        return marks;
+    }
+
+    /** Only these arrivals' chevrons: the roads open both ways, which the track diagram draws no arrow for. */
+    private static TileAnnotation chevronsOn(List<org.traincontrol.automationui.TilePorts.Route> roads,
+        List<TileAnnotation.Arrival> arrivals)
+    {
+        return new TileAnnotation(marksOf(roads, TileGraph.Direction.BOTH), -1, false, null, false, true, false, null, true,
+            arrivals);
+    }
+
+    /** Which pixels of a white square this annotation draws on. */
+    private static boolean[][] ink(TileAnnotation annotation, int size)
+    {
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(size, size,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            annotation.paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        boolean[][] on = new boolean[size][size];
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                on[x][y] = (shot.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF;
+            }
+        }
+
+        return on;
     }
 }

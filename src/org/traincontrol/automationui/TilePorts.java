@@ -253,6 +253,7 @@ public class TilePorts
         // Feedback tiles are plain track that also carries an s88.  Every one of them becomes a Point.
         fixed(componentType.FEEDBACK, route(Side.E, Side.W));
         fixed(componentType.FEEDBACK_CURVE, route(Side.E, Side.S));
+        // The contact is on the E-S curve as drawn - the second road, which `contactRoad` names
         fixed(componentType.FEEDBACK_DOUBLE_CURVE, route(Side.N, Side.W), route(Side.E, Side.S));
 
         // A signal does not branch - topologically it is a straight - but it must be GREEN for a train to
@@ -377,6 +378,28 @@ public class TilePorts
 
         // getImage rotates by (4 - orientation) * 90 degrees clockwise, so the ports follow
         return states.get(state).rotateClockwise(4 - normalizeOrientation(type, orientation)).getRoutes();
+    }
+
+    /**
+     * The road of a sensor square its contact is on, at this orientation - its only road on a straight or a curve, and on
+     * a double curve the curve its art draws the contact on (MT-712; Adam, 2026-10-10: *"the station gets rendered on the
+     * track without the sensor rather than the one with the sensor"*): the E-S curve as drawn, turned with the square.
+     * The ports are turned the way the art is (`ports`), in their order, so that is the second road at every orientation.
+     *
+     * Where a station's badge is drawn.  What a train on the other curve reaches is a separate question: the diagram does
+     * not say which track is wired to the contact, and the reduction makes one Point of the square (GraphReducer).
+     *
+     * @param type the square's type
+     * @param orientation its orientation
+     * @return the road, or null for a square with none
+     */
+    public static Route contactRoad(componentType type, int orientation)
+    {
+        List<Route> roads = ports(type, orientation, 0);
+
+        if (roads.isEmpty()) return null;
+
+        return type == componentType.FEEDBACK_DOUBLE_CURVE && roads.size() == 2 ? roads.get(1) : roads.get(0);
     }
 
     /**

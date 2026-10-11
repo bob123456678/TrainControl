@@ -4310,6 +4310,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.powerState;
     }
+
+    /** How many times the power has gone from on to off (RSA62-C2) - see `getPowerCuts`. */
+    private final java.util.concurrent.atomic.AtomicInteger powerCuts = new java.util.concurrent.atomic.AtomicInteger();
+
+    @Override
+    public int getPowerCuts()
+    {
+        return this.powerCuts.get();
+    }
     
     /**
      * Sets the power
@@ -4319,6 +4328,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         synchronized(this)
         {
+            // A CUT COUNTED (RSA62-C2): on to off, once however many STOPs report it
+            if (!state && this.powerState) this.powerCuts.incrementAndGet();
+
             this.powerState = state;
             notifyAll();
         }

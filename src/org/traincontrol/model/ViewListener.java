@@ -88,6 +88,18 @@ public interface ViewListener
      */
     public Accessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public boolean getPowerState();
+
+    /**
+     * How many times the track power has gone off, as the Central Station has reported it (RSA62-C2): read where a
+     * journey is dispatched and again once its route is set, so a cut that came and went in between is seen as well as
+     * one that lasts.
+     *
+     * @return the cuts counted so far
+     */
+    default int getPowerCuts()
+    {
+        return 0;
+    }
     public void allFunctionsOff();
     public void locFunctionsOff(Locomotive l);
     public void lightsOn(List<String> locomotives);

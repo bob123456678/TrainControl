@@ -2389,8 +2389,9 @@ public class Layout
      *
      * @param path the route claimed
      * @param loc the train
+     * @param why the log line saying why, naming the train - the stop, or the power (RSA62-C4)
      */
-    private void giveBackUnrun(List<Edge> path, Locomotive loc)
+    private void giveBackUnrun(List<Edge> path, Locomotive loc, String why)
     {
         synchronized (this)
         {
@@ -2407,7 +2408,7 @@ public class Layout
         this.takingPath.remove(loc);
 
         // AND SAYS SO (RSA2-C8): a hand send answers a false with "check log"
-        this.control.logf("autolayout.log.notSentAfterTheStop", loc.getName());
+        this.control.logf(why, loc.getName());
     }
 
     /**
@@ -7603,6 +7604,9 @@ public class Layout
                             // When this entry first refused, so a parallel run can give up on time
                             long refusingSince = 0;
 
+                            // The power's cuts as this attempt began - see below (RSA62-C3)
+                            int cutsAtAttempt = this.control.getPowerCuts();
+
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(),
                                 ttp.getLoc().getPreferredSpeed(), ttp, playedBack(ttp), stopsAtChoice))
                             {
@@ -7646,9 +7650,18 @@ public class Layout
                                     break;
                                 }
 
-                                attempts++;
+                                // AN ATTEMPT THE POWER CUT IS NO REFUSAL (RSA62-C3).  A route being set when the power goes off is
+                                // given back unrun (RSA61-C1), and that false is not the track refusing: counted, three cuts in
+                                // one leg's setting ended Return Home with "the path stayed blocked" and sent the operator to
+                                // move a train out of nobody's way.  Neither an attempt, nor the start of a parallel run's clock.
+                                boolean cut = this.control.getPowerCuts() != cutsAtAttempt || !this.control.getPowerState();
 
-                                if (refusingSince == 0) refusingSince = System.currentTimeMillis();
+                                if (!cut)
+                                {
+                                    attempts++;
+
+                                    if (refusingSince == 0) refusingSince = System.currentTimeMillis();
+                                }
 
                                 // A PARALLEL timetable gives up on time, where a sequential one gives up
                                 // on attempts.
@@ -7663,9 +7676,9 @@ public class Layout
                                 // pacedWait, which honours the user's delay settings - anything from a
                                 // quarter second to tens of them.  Attempts would then bound a
                                 // different amount of standing still on every layout.
-                                boolean stuck = this.timetableSequential
+                                boolean stuck = !cut && (this.timetableSequential
                                     ? attempts >= STAGING_MAX_ATTEMPTS
-                                    : System.currentTimeMillis() - refusingSince >= TIMETABLE_STUCK_MS;
+                                    : System.currentTimeMillis() - refusingSince >= TIMETABLE_STUCK_MS);
 
                                 if (stuck)
                                 {
@@ -7714,6 +7727,8 @@ public class Layout
                                 // NOR TRIED AGAIN ON A RAILWAY WITH ITS POWER OFF (GST-B1): the next attempt waits for the
                                 // power, and the wait is not refusing - a parallel run's clock for giving up starts again.
                                 if (this.waitWhileThePowerIsOff()) refusingSince = 0;
+
+                                cutsAtAttempt = this.control.getPowerCuts();
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
@@ -9965,6 +9980,10 @@ public class Layout
         // wait seconds behind another train's switches.  A stop ordered since is one this journey obeys.
         final int stopsAtDispatch = stopsAtChoice < 0 ? this.stopsOrdered.get() : stopsAtChoice;
 
+        // AND THE POWER'S CUTS, here, before the route's first switch (RSA62-C2) - or none to agree with, where the power
+        // is off already and every switch would be commanded on a railway with no power to move it
+        final int cutsAtDispatch = this.control.getPowerState() ? this.control.getPowerCuts() : -1;
+
         // AND ONE ORDERED ALREADY SENDS NOTHING, and says so (RSA2-C2, RSA2-C8)
         if (this.stopsOrdered.get() != stopsAtDispatch)
         {
@@ -10120,7 +10139,7 @@ public class Layout
             // it was.
             if (this.stopsOrdered.get() != stopsAtDispatch)
             {
-                giveBackUnrun(path, loc);
+                giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
 
                 return false;
             }
@@ -10129,9 +10148,13 @@ public class Layout
             // chooses, and setting a long route takes a second and more - a switch every `CONFIGURE_SLEEP` - so a cut in that
             // window left the train to be given its speed, to take effect the moment the power came back.  Given back unrun,
             // as a stop ordered in the same window is; autonomy's loop and the timetable's wait for the power and go on.
-            if (!this.control.getPowerState())
+            //
+            // A CUT THAT CAME AND WENT TOO (RSA62-C2): asked only whether the power was on now, one begun and ended while the
+            // route was set went unseen - the switches commanded during it had not moved, nothing commanded them again, and
+            // the train was given its speed over them.  So the cuts are counted, and compared with the count at dispatch.
+            if (!this.control.getPowerState() || this.control.getPowerCuts() != cutsAtDispatch)
             {
-                giveBackUnrun(path, loc);
+                giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
 
                 return false;
             }
