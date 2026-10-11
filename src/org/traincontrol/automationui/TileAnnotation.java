@@ -981,7 +981,10 @@ public class TileAnnotation
             //
             // Nothing is lost by skipping it.  The wash exists to lift thin arrows off busy tile art,
             // and a link's art is a single bold arrow in a box with room around it.
-            if (!marks.isEmpty() && !blockedOnly && !portal)
+            //
+            // NOR ON A SQUARE OUT OF SERVICE, which draws no arrows (Adam, 2026-10-10): the wash only paled its track and
+            // the red arrows its sensor shows while it reads occupied, which he asked to keep visible.
+            if (!marks.isEmpty() && !blockedOnly && !portal && !outOfService())
             {
                 // WHAT IS LEFT OF THE TILE, rather than all of it or none of it (PRW-C1).
                 //
@@ -2052,6 +2055,14 @@ public class TileAnnotation
         // every square switched off is parking as well - see the paragraph above.
         Color colour = badge.isImpassable() ? POINT_IMPASSABLE : badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;
 
+        // ONE MARK FOR EVERY SQUARE OUT OF SERVICE, whatever it otherwise is - `paintOutOfService`
+        if (badge.isImpassable())
+        {
+            paintOutOfService(g, width, height, colour);
+
+            return;
+        }
+
         // A STATION TAKES THE ICONS ADAM CHOSE (FR-118) - `paintStation`.  A passing point keeps its small mark below.
         if (badge.isStation())
         {
@@ -2140,54 +2151,6 @@ public class TileAnnotation
         // The bordering cases are what makes it worth the trouble.  A station where every train turns
         // and a siding where every train turns are the SAME fact about a railway happening in two
         // places, and they now look like the same fact in two sizes.
-        // A SQUARE NOTHING CAN USE IS A CROSS (OB-167).
-        //
-        // Adam: "station no + must reverse + disabled gets same large square icon as inactive
-        // terminus.  if nothing can pass, the icon should be a small x."
-        //
-        // The grid above answers two questions and neither of them is "is this square switched off",
-        // which only ever reached the colour - so a reversing point that had been turned off drew the
-        // same square as one that was working, in the same orange as a parking station. Its shape was
-        // saying "every train turns here" about a square no train can enter.
-        //
-        // A cross rather than a fourth shape in the grid, because it is not a third answer to "does
-        // this square turn trains": it is the square opting out of the question. Small, and drawn as
-        // strokes rather than filled, so it reads as an absence beside the marks that are present.
-        if (badge.isImpassable())
-        {
-            // BIGGER than it first was, on Adam seeing it: a quarter of the tile put it among the
-            // smallest marks on the page, and it is saying something larger than the badges beside it
-            // - not "this square turns trains" but "this square is not in use at all".
-            //
-            // AND NOW THE STATION ICONS' HEIGHT (FR-118): the X keeps its place among them at the height they are, 13
-            // pixels at 30 and 26 at 60, where it was half the tile.
-            int mark = Math.max(9, Math.round(Math.min(width, height) * ICON_SHARE));
-
-            int cx = on[0];
-            int cy = on[1];
-
-            // THE WEIGHT THE OLD REVERSING-POINT CROSS HAD (Adam, 2026-09-01: "make the X a little
-            // thicker, close to what we had in the old reversing points").
-            //
-            // That one was `Math.max(1.5f, size / 7f)` with round ends, so its thickness grew with the
-            // mark.  A flat 2f did not: the cross was as heavy on a large tile as on a small one, which
-            // at the sizes the diagram is actually drawn at made it look drawn in pencil beside badges
-            // stroked at 2f over a third of the width.
-            //
-            // A seventh of the mark, floored at the 2f it used to be so that nothing gets thinner than
-            // it already was, and round caps and joins because a cross meeting at a sharp mitre grows a
-            // spike at the crossing that reads as a fifth arm.
-            g.setStroke(new BasicStroke(Math.max(2f, mark / 7f),
-                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-
-            g.setColor(colour);
-
-            g.drawLine(cx - mark / 2, cy - mark / 2, cx + mark / 2, cy + mark / 2);
-            g.drawLine(cx - mark / 2, cy + mark / 2, cx + mark / 2, cy - mark / 2);
-
-            return;
-        }
-
         boolean turns = badge.isTerminus() || badge.isReversing();
         boolean mayTurn = turns && badge.isOptional();
 
@@ -2322,7 +2285,7 @@ public class TileAnnotation
         // `round(h * 1.9)` (25 at 30, 49 at 60), and the must-turn pair ran across the square.
         int turning = Math.round(h * 1.9f) - (large ? 2 : 1), terminus = Math.round(h * 1.9f) - 1;
 
-        java.awt.Shape outline = badge.isImpassable() || !turns && deadEnd == null ? blockShape(h)
+        java.awt.Shape outline = !turns && deadEnd == null ? blockShape(h)
             : deadEnd != null ? hexagon(terminus, h, true, large ? h / 2.0 : h * 0.66)
             : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
             : mustTurnShape(h, turning, large);
@@ -2423,31 +2386,7 @@ public class TileAnnotation
             s.scale(scale, scale);
             s.setStroke(new BasicStroke(stroke));
 
-            if (badge.isImpassable())
-            {
-                // the station's block in the grey of a square autonomy leaves alone (Adam, 2026-10-09: "make the
-                // inactive station have a gray rectangle below the X"), and the X over it, upright
-                block(s, h, editing ? Color.WHITE : POINT_INACTIVE, editing ? POINT_INACTIVE : Color.WHITE);
-
-                Graphics2D x = (Graphics2D) g.create();
-
-                try
-                {
-                    if (spills) x.clip(spilling ? outside(width, height) : new java.awt.Rectangle(0, 0, width, height));
-
-                    x.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    x.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-                    x.translate(at[0], at[1]);
-                    x.scale(scale, scale);
-
-                    cross(x, h, colour);
-                }
-                finally
-                {
-                    x.dispose();
-                }
-            }
-            else if (deadEnd != null)
+            if (deadEnd != null)
             {
                 // flat against the buffer, its bar there; more pointed at 30 pixels, where it stayed as Adam last saw it
                 body(s, outline, fill, line);
@@ -2484,7 +2423,7 @@ public class TileAnnotation
      */
     public boolean spillsOverItsSquare()
     {
-        return badge != null && badge.isStation() && badge.getA() != null && badge.getB() != null
+        return badge != null && badge.isStation() && !badge.isImpassable() && badge.getA() != null && badge.getB() != null
             && badge.getA() != badge.getB() && trackBends();
     }
 
@@ -2776,15 +2715,63 @@ public class TileAnnotation
     }
 
     /**
-     * The orange X of a square out of service, `mark` across, stroked at a seventh of it with round ends - its weight as
-     * it was (`testTheCrossKeepsItsWeightAsTheTileGrows`).
+     * A square out of service - nothing may pass or stop there - whatever it otherwise is, a station of any kind or a plain
+     * sensor, on the track diagram and in the editor: a white circle, an orange ring, an orange X in it, a no-stopping sign
+     * in orange (Adam, 2026-10-10: *"For simplicity, could an out of service station be made a round white circle with an
+     * orange border and X inside of it, regardless of the type of station or point it otherwise is?"*).  It replaced the X
+     * over a grey block (FR-118) and the bare X on a plain sensor (OB-167).
+     *
+     * On the middle of its track, where the sensor's contact is, and filled white across all of it so the contact does not
+     * show; no wider than the space inside the red arrows the sensor's art draws round its contact while it reads occupied
+     * (*"small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the
+     * user to discern"*): 14 pixels across at 30 and 28 at 60 - the contact's own width and a little more - where the
+     * arrows' nearest pixels are 8 and 15.5 from the middle.  Its ring and its X grow heavier with the square, as the cross did (Adam, 2026-09-01: *"make the X a little
+     * thicker, close to what we had in the old reversing points"*).  Round, so it is the same on a curve, and inside its
+     * square, so it spills nothing.
+     *
+     * @param g the tile's graphics
+     * @param width the tile's width
+     * @param height the tile's height
+     * @param colour the orange of a square nothing can pass
      */
-    private static void cross(Graphics2D g, int mark, Color colour)
+    private void paintOutOfService(Graphics2D g, int width, int height, Color colour)
     {
-        g.setStroke(new BasicStroke(Math.max(2f, mark / 7f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.setColor(colour);
-        g.draw(new java.awt.geom.Line2D.Double(-mark / 2.0, -mark / 2.0, mark / 2.0, mark / 2.0));
-        g.draw(new java.awt.geom.Line2D.Double(-mark / 2.0, mark / 2.0, mark / 2.0, -mark / 2.0));
+        int tile = Math.min(width, height);
+
+        int[] on = trackCentre(width, height);
+
+        double across = Math.round(tile * 0.47f);
+
+        float ring = Math.max(2f, (float) across / 9f);
+
+        // the ring's middle, so that its outer edge is `across` wide
+        double r = (across - ring) / 2.0, arm = r * 0.55;
+
+        badgeDrawnAt = new int[] {on[0], on[1]};
+
+        Graphics2D c = (Graphics2D) g.create();
+
+        try
+        {
+            c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            c.translate(on[0], on[1]);
+
+            c.setColor(Color.WHITE);
+            c.fill(new java.awt.geom.Ellipse2D.Double(-across / 2.0, -across / 2.0, across, across));
+
+            c.setColor(colour);
+            c.setStroke(new BasicStroke(ring));
+            c.draw(new java.awt.geom.Ellipse2D.Double(-r, -r, 2 * r, 2 * r));
+
+            c.setStroke(new BasicStroke(Math.max(2f, (float) across / 8f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            c.draw(new java.awt.geom.Line2D.Double(-arm, -arm, arm, arm));
+            c.draw(new java.awt.geom.Line2D.Double(-arm, arm, arm, -arm));
+        }
+        finally
+        {
+            c.dispose();
+        }
     }
 
     /**

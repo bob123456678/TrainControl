@@ -1715,10 +1715,6 @@ public class testAutonomyDiagramMonitor
             "switching a reversing point off does not change its badge at all, so a square no train "
             + "can enter goes on wearing the mark for 'every train turns here'");
 
-        assertTrue(shut < open,
-            "the mark for a square nothing can use is not lighter than the one it replaces - it "
-            + "should read as an absence beside the shapes that are present, and it covered " + shut
-            + " pixels against " + open);
 
         // AND A STATION THAT IS SWITCHED OFF IS A CROSS TOO, as of 2026-09-01.
         //
@@ -1740,8 +1736,10 @@ public class testAutonomyDiagramMonitor
             + "nothing can use either - the mark is about the square being out of use");
 
         // the block's grey, counted - not ink, which the white over the sensor's contact adds to a station's as well
-        assertTrue(greyOf(badgeAt(true, true, true, size)) > size && greyOf(badgeAt(false, true, true, size)) == 0,
-            "a switched-off station has no grey block under its cross, or a passing point has one (FR-118)");
+        // ONE MARK FOR BOTH, AND NO GREY BLOCK (Adam, 2026-10-10: "regardless of the type of station or point it
+        // otherwise is") - `testASquareOutOfServiceIsAnOrangeRingedCircle`
+        assertEquals(greyOf(badgeAt(true, true, true, size)) + greyOf(badgeAt(false, true, true, size)), 0,
+            "a square out of service still draws a grey block");
 
         // AND PARKING IS NOT SHUT (TCX-B6).
         //
@@ -2074,39 +2072,192 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A station out of service is the orange X over a grey block, the X no taller than the new icons (FR-118; Adam,
-     * 2026-10-09: *"make the inactive station have a gray rectangle below the X"*).  It was 15 pixels at 30 and 30 at
-     * 60; now the icons' height, 13 and 26, with the round ends of its strokes.
+     * Every square out of service is one mark - a white circle, an orange ring, an orange X in it - whatever it otherwise
+     * is, a station of any kind or a plain sensor, on the track diagram and in the editor (Adam, 2026-10-10:
+     * *"For simplicity, could an out of service station be made a round white circle with an orange border and X inside of it, regardless of the type of station or point it otherwise is?"*, then *"Make them small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the user to discern."*).  It replaces the orange X over a grey block (FR-118) and the bare X on a plain sensor.
      *
-     * MUTATION: drop the block, or draw the X at its old size, and this fails.
+     * Painted on white, on straight track and a curve, at both sizes: every kind draws the same picture; the mark is round,
+     * orange-ringed with white inside it, at least the contact's size and no wider than the space inside the activation
+     * arrows (16 pixels at 30, 31 at 60); and over the sensor's art as it is drawn while the sensor reads occupied, the
+     * contact - its ring and its yellow - is covered and every pixel of its red activation arrows still shows.
      *
-     * @throws Exception from reading the tile art
+     * MUTATION: draw a station out of service as its own kind again, or the circle over the activation arrows, and this
+     * fails.
+     *
+     * @throws Exception from reading the art
      */
     @Test
-    public void testAStationOutOfServiceIsTheXOverAGreyBlock() throws Exception
+    public void testASquareOutOfServiceIsAnOrangeRingedCircle() throws Exception
     {
+        Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}};
+
         for (int size : new int[] {30, 60})
         {
-            java.awt.image.BufferedImage image = onItsSensor(station(Side.W, Side.E, false, false, true, true, null), size);
+            for (Side[] road : roads)
+            {
+                Side a = road[0], b = road[1];
 
-            java.awt.Rectangle orange = extent(image, ORANGE), grey = extent(image, GREY);
+                TileAnnotation.Badge[] kinds = {
+                    station(a, b, false, false, true, true, null),
+                    station(a, b, true, true, true, true, null),
+                    station(a, b, true, false, true, true, null),
+                    station(a, b, false, false, true, true, a),
+                    new TileAnnotation.Badge(false, false, false, true, false, a, b, false, true, null),
+                    new TileAnnotation.Badge(false, false, true, true, false, a, b, true, true, null)};
 
-            assertNotNull(orange, "a station out of service at " + size + " pixels has no orange X");
+                for (boolean editor : new boolean[] {false, true})
+                {
+                    java.awt.image.BufferedImage first = null;
 
-            assertNotNull(grey, "a station out of service at " + size + " pixels has no grey block under its X (FR-118)");
+                    for (TileAnnotation.Badge badge : kinds)
+                    {
+                        java.awt.image.BufferedImage image = outOfServiceOn(null, badge, road, size, editor);
 
-            assertTrue(grey.width >= grey.height * 1.3, "the grey under the X at " + size + " pixels is not the station's"
-                + " block");
+                        if (first == null)
+                        {
+                            first = image;
 
-            int icon = Math.round(size * 0.43f);
+                            continue;
+                        }
 
-            assertTrue(orange.height <= icon + size / 15 + 1, "the X at " + size + " pixels is " + orange.height
-                + " tall, not the new icons' height (" + icon + ") (FR-118)");
+                        for (int x = 0; x < size; x++)
+                        {
+                            for (int y = 0; y < size; y++)
+                            {
+                                assertEquals(image.getRGB(x, y), first.getRGB(x, y), badge + " out of service on " + a
+                                    + "-" + b + " at " + size + " pixels" + (editor ? " in the editor" : "") + " is not"
+                                    + " drawn as " + kinds[0] + " is, at " + x + "," + y + " - Adam: \"regardless of the"
+                                    + " type of station or point it otherwise is\"");
+                            }
+                        }
+                    }
 
-            assertEquals(orange.x + orange.width / 2.0, grey.x + grey.width / 2.0, 1.5, "the X at " + size
-                + " pixels is not on its block");
+                    String what = "a square out of service on " + a + "-" + b + " at " + size + " pixels"
+                        + (editor ? " in the editor" : "");
+
+                    java.awt.Rectangle ring = extent(first, ORANGE);
+
+                    assertNotNull(ring, what + " has no orange");
+
+                    assertTrue(Math.abs(ring.width - ring.height) <= 1, what + " is not round: " + ring);
+
+                    assertTrue(ring.width >= contact(size) && ring.width <= (size < 60 ? 16 : 31), what + " is "
+                        + ring.width + " across - at least the contact (" + contact(size) + "), and clear of the"
+                        + " activation arrows (Adam: \"small enough that you can still see the sensor activation arrows,"
+                        + " but big enough to be prominent\")");
+
+                    assertEquals(inkOf(first, GREY) + inkOf(first, BLUE), 0, what + " still draws the grey block or a"
+                        + " station's blue");
+
+                    // white inside the ring, between the arms of its X
+                    double cx = ring.x + ring.width / 2.0, cy = ring.y + ring.height / 2.0;
+
+                    assertTrue(PURE_WHITE.test(first.getRGB((int) cx, (int) (cy - ring.height * 0.3)))
+                        || PURE_WHITE.test(first.getRGB((int) (cx + ring.width * 0.3), (int) cy)), what
+                        + " is not white inside its ring");
+
+                    // over the sensor's art while it reads occupied
+                    java.awt.image.BufferedImage art = activeArt(size, road);
+                    java.awt.image.BufferedImage over = outOfServiceOn(art, kinds[0], road, size, editor);
+
+                    int red = 0, covered = 0, contactLeft = 0;
+
+                    double ax = (midpointOf(a, size)[0] + midpointOf(b, size)[0]) / 2.0;
+                    double ay = (midpointOf(a, size)[1] + midpointOf(b, size)[1]) / 2.0;
+
+                    for (int x = 0; x < size; x++)
+                    {
+                        for (int y = 0; y < size; y++)
+                        {
+                            int before = art.getRGB(x, y), after = over.getRGB(x, y);
+
+                            if (ACTIVATION_RED.test(before))
+                            {
+                                red++;
+
+                                if (!ACTIVATION_RED.test(after)) covered++;
+                            }
+
+                            boolean nearContact = Math.hypot(x + 0.5 - ax, y + 0.5 - ay) <= contact(size) / 2.0 - 1;
+
+                            if (nearContact && (YELLOW.test(after) || BLACK.test(after) && acrossTheChord(
+                                new double[] {x + 0.5, y + 0.5}, road, size) > size * 4 / 30.0 + 1)) contactLeft++;
+                        }
+                    }
+
+                    assertTrue(red > 0, "precondition: the sensor's art at " + size + " pixels reading occupied has no"
+                        + " activation arrows");
+
+                    assertEquals(covered, 0, what + " covers " + covered + " of the " + red + " pixels of the sensor's"
+                        + " activation arrows - Adam: \"small enough that you can still see the sensor activation"
+                        + " arrows\"");
+
+                    assertEquals(contactLeft, 0, what + " leaves " + contactLeft + " pixels of the contact showing"
+                        + " inside it");
+                }
+            }
         }
     }
+
+    /** The sensor's art as it is drawn while the sensor reads occupied, turned to run along the road, on white. */
+    private static java.awt.image.BufferedImage activeArt(int size, Side[] road) throws Exception
+    {
+        boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
+
+        java.awt.image.BufferedImage art = sensorArt(curve ? "s88_curve_active.gif" : "s88_active.gif", size);
+
+        for (int k = 0; k < 4; k++)
+        {
+            java.awt.image.BufferedImage image = turned(art, k);
+
+            if (runs(image, road)) return image;
+        }
+
+        throw new AssertionError("precondition: no quarter turn of the occupied sensor's art runs " + road[0] + "-"
+            + road[1]);
+    }
+
+    /** A square out of service painted on this art, or on white, with a road one-way through it. */
+    private static java.awt.image.BufferedImage outOfServiceOn(java.awt.image.BufferedImage art, TileAnnotation.Badge badge,
+        Side[] road, int size, boolean editor)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            if (art != null) g.drawImage(art, 0, 0, null);
+
+            boolean curve = Math.abs(road[0].ordinal() - road[1].ordinal()) != 2;
+
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0], road[1],
+                org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, badge, false, curve, false, null,
+                false, null);
+
+            if (editor) annotation = annotation.inTheEditor();
+
+            annotation.paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /** The red of the activation arrows a sensor's art draws while it reads occupied. */
+    private static final java.util.function.IntPredicate ACTIVATION_RED =
+        rgb -> channel(rgb, 16) > 180 && channel(rgb, 8) < 80 && channel(rgb, 0) < 80;
+
+    /** The yellow of a contact that reads occupied. */
+    private static final java.util.function.IntPredicate YELLOW =
+        rgb -> channel(rgb, 16) > 200 && channel(rgb, 8) > 200 && channel(rgb, 0) < 80;
 
     /**
      * Every station icon covers the sensor's own contact - the circle of the s88 tile, 14 pixels at 30 and 26 at 60 -
@@ -3310,6 +3461,9 @@ public class testAutonomyDiagramMonitor
                 int argb = with.getRGB(x, y);
 
                 if (argb == without.getRGB(x, y) || (argb >>> 24) < 200) continue;
+
+                // not the white inside the circle (Adam, 2026-10-10), which says nothing about the colour chosen
+                if (PURE_WHITE.test(argb)) continue;
 
                 counts.merge(argb & 0xFFFFFF, 1, Integer::sum);
             }
