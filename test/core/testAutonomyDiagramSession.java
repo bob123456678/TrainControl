@@ -10065,6 +10065,83 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A route button on a running line takes direction clicks like the track it sits on (OB-332; Adam, 2026-10-11:
+     * *"sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable."*).  The graph runs the line through the button, so a direction is stored on it and its arrow
+     * drawn there, and the editor greyed every button and refused its click - six such arrows on his Oles kreds sandbox,
+     * route 41 among them.  Not greyed, a click changes its direction; a button beside the line, with no track through
+     * it, is still greyed and takes no click.
+     *
+     * MUTATION: grey every route button again, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testARouteButtonOnALineTakesADirectionClick() throws Exception
+    {
+        File pages = new File(layout, "config/gleisbilder");
+
+        assertTrue(pages.mkdirs() || pages.isDirectory(), "could not create " + pages);
+
+        pageFile = new File(pages, "main.cs2");
+
+        Files.write(pageFile.toPath(), "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
+
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, "file:///" + pageFile.getAbsolutePath().replace('\\', '/'),
+            null);
+
+        // a sensor, track, a sensor, a ROUTE BUTTON on the line, a sensor - and another button beside the line, under it
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.ROUTE, 4, 1, 0, 0, 41, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.ROUTE, 4, 3, 0, 0, 42, 0, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Default");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        final TileKey button = new TileKey("main", 4, 1), beside = new TileKey("main", 4, 3);
+
+        assertEquals(session.getRoutes(button).size(), 1, "precondition: the line does not run through the route button");
+        assertTrue(session.getRoutes(beside).isEmpty(), "precondition: track runs through the button beside the line");
+
+        final RouteId road = session.getRoutes(button).keySet().iterator().next();
+
+        final Direction before = session.getGraph().getDirection(button, road);
+
+        final boolean[] seen = new boolean[4];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            TileAnnotation on = panel[0].annotationFor(button), off = panel[0].annotationFor(beside);
+
+            seen[0] = on == null || !on.isIgnored();
+            seen[1] = off != null && off.isIgnored();
+            seen[2] = panel[0].clickChangesDirections(button);
+            seen[3] = panel[0].clickChangesDirections(beside);
+
+            panel[0].tileClicked(button, page.getComponent(4, 1), false);
+        });
+
+        assertTrue(seen[0], "a route button on the line is greyed in the editor - Adam: " + "\"those are greyed out in the"
+            + " autonomy editor and can't be clicked/changed\"");
+        assertTrue(seen[2], "a route button on the line offers no direction click - Adam: \"We need the direction arrows"
+            + " to be editable and clickable.\"");
+        assertNotEquals(session.getGraph().getDirection(button, road), before, "a click on a route button on the line"
+            + " left its direction " + before);
+
+        assertTrue(seen[1], "a route button beside the line, with no track through it, is not greyed");
+        assertFalse(seen[3], "a route button beside the line, with no track through it, offers a direction click");
+    }
+
+    /**
      * A square out of service offers no direction click in the editor (RSA63-C5): it draws no arrows (round 127), and its
      * click went on cycling the hidden setting under the hand pointer, the square looking the same afterwards.
      *
