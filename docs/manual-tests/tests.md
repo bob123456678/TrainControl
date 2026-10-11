@@ -27,15 +27,15 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-709](#mt-709) | 2026-10-09 | Round 108: a train's line ends rounded, the Auto tab's darker blue, the tail question's Cancel, a maximised window comes forward, a smaller halo at 60 px | fixed unvalidated | Adam, 2026-10-09 - the rounded end, the Auto tab's colours, "drop not known, keep cancel", and his notes on MT-705 (OB-328) and MT-707 (OB-329) |
-| [MT-712](#mt-712) | 2026-10-10 | Rounds 112, 118-120: MT-710's points on the station icons, curves' icons spilling over with their arrows on top, the tunnel's wall | fixed unvalidated | Adam, 2026-10-09, MT-710 (Does not work) - the arrows hidden, curves cut off, the lengths - with "Make sure must reverses are cumulatively no longer" (asked: no longer than may-turn) and "render red arrows on top of stations in the viewer" (asked: the editor too); then 2026-10-10: "Stations still clip on curved tracks.  You will need to make their icons smaller.  Make sure all types fit.  Also, make the light gray tunnel wall on tunnel icons about 1px wider on each side in the 30px version, and correspondingly white in the 60px."; then "can we instead make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."; then "Now with these new station badges, make sure that the optional ingress/egress arrows remain visible, especially on curves." |
-| [MT-713](#mt-713) | 2026-10-10 | Round 115: deleting a route takes the other routes' commands that run it | fixed unvalidated | Adam, 2026-10-10 - GSR-B4, asked what deleting a route should do with the routes that run it: "Remove the calls" |
-| [MT-714](#mt-714) | 2026-10-10 | Round 115: a square that stops being a station keeps its settings for when it is one again | fixed unvalidated | Adam, 2026-10-10 - GSE-C4, asked what a station set to `No - Trains Cannot Stop Here` should do with its settings: "Keep them, ignored" |
 | [MT-715](#mt-715) | 2026-10-10 | Round 116: autonomy waits while the track power is off | fixed unvalidated | Adam, 2026-10-10 - GST-B1, "stop autonomy when power is off", into 3.0.0 |
-| [MT-716](#mt-716) | 2026-10-10 | Round 121: your own writing on the diagram with a white halo; Place All Trains at Their Homes | fixed unvalidated | Adam, 2026-10-10 - "Give regular text labels on the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like tracks."; and "rephrase "place all at their homes" to "place all trains at their homes" in the right click menu" |
+| [MT-717](#mt-717) | 2026-10-10 | Round 124: a double curve's station and arrows, its arrival arrows, the halo on all your writing, the house on the Auto tab | fixed unvalidated | Adam, 2026-10-10 - MT-712 (Does not work): "Direction arrows on the station end of course curve icons  point in the wrong direction where the sensor is.  They are not parallel with the track on one side.  Also, the station gets rendered on the track without the sensor rather than the one with the sensor."; MT-714: "when a double curve with a s88 has arrival directions set, the arrow icons may overlap."; MT-716 (Does not work): "I see this on some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have something else on them plus text."; MT-709: "on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in the same spot as the (i))." |
+| [MT-718](#mt-718) | 2026-10-10 | Round 126: FR-119, Show Trains in the autonomy editor | fixed unvalidated | Adam, 2026-10-10 - FR-119: "in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer." |
+| [MT-719](#mt-719) | 2026-10-10 | Round 126: FR-120, a sensor is named as it becomes a station | fixed unvalidated | Adam, 2026-10-10 - FR-120: "when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here." |
+| [MT-720](#mt-720) | 2026-10-10 | Round 127: the autonomy editor's icons white on their rails, no arrows out of service, the plain turn mark over the circle | fixed unvalidated | Adam, 2026-10-10, on the icon sheets: "Make the plain turn icon slightly bigger so it covers the circle."; "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly.  For ones out of service, should arrows be drawn at all, since no trains can pass?" - asked: no |
+| [MT-721](#mt-721) | 2026-10-10 | Round 128: every square out of service is one round sign, clear of the sensor's arrows | fixed unvalidated | Adam, 2026-10-10: "For simplicity, could an out of service station be made a round white circle with an orange border and X inside of it, regardless of the type of station or point it otherwise is?"; then "Make them small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the user to discern." |
 
-Everything else - 710 of 716 - needs nothing from you unless the area changes again:
-561 **fixed validated** and 149 **superseded**.
+Everything else - 715 of 721 - needs nothing from you unless the area changes again:
+564 **fixed validated** and 151 **superseded**.
 
 ---
 
@@ -33660,7 +33660,7 @@ Validated on your *Works* of 2026-10-09.
 <a id="mt-709"></a>
 ### MT-709 - 2026-10-09 - Round 108: a train's line ends rounded, the Auto tab's darker blue, the tail question's Cancel, a maximised window comes forward, a smaller halo at 60 px
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-09 - the rounded end, the Auto tab's colours, "drop not known, keep cancel", and his notes on MT-705 (OB-328) and MT-707 (OB-329)
 
 **Written:** 2026-10-09
@@ -33710,6 +33710,10 @@ Round ending is not apparent.  I only want rounding at the tail, not by the loco
 Works.  But on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in the same spot as the (i)).
 
 *Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-11.**
+
+Validated on your *Works* of 2026-10-10.  Your note is built in round 124 (`128aed37`): a train at its home keeps the tab's blue badge and shows a small house beside the line below it, where the (i) is - and both where both.  MT-717 step 4 is its test.
 
 ---
 
@@ -33806,7 +33810,7 @@ Superseded by MT-712, which retests all five of the points above with round 112'
 <a id="mt-712"></a>
 ### MT-712 - 2026-10-10 - Rounds 112, 118-120: MT-710's points on the station icons, curves' icons spilling over with their arrows on top, the tunnel's wall
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam, 2026-10-09, MT-710 (Does not work) - the arrows hidden, curves cut off, the lengths - with "Make sure must reverses are cumulatively no longer" (asked: no longer than may-turn) and "render red arrows on top of stations in the viewer" (asked: the editor too); then 2026-10-10: "Stations still clip on curved tracks.  You will need to make their icons smaller.  Make sure all types fit.  Also, make the light gray tunnel wall on tunnel icons about 1px wider on each side in the 30px version, and correspondingly white in the 60px."; then "can we instead make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."; then "Now with these new station badges, make sure that the optional ingress/egress arrows remain visible, especially on curves."
 
 **Written:** 2026-10-10
@@ -33854,12 +33858,16 @@ Direction arrows on the station end of course curve icons  point in the wrong di
 
 *Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-11.**
+
+Superseded by MT-717, which retests it with round 124 (`128aed37`): the double-curve sensor's station is on the curve with the contact, as its art draws it, and the arrows on both its curves lie along their rails - the track diagram said a sensor curve was not curved, so the other curve's arrows were aimed from the station's.
+
 ---
 
 <a id="mt-713"></a>
 ### MT-713 - 2026-10-10 - Round 115: deleting a route takes the other routes' commands that run it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-10 - GSR-B4, asked what deleting a route should do with the routes that run it: "Remove the calls"
 
 **Written:** 2026-10-10
@@ -33887,12 +33895,16 @@ test this on your end- trivial to test
 
 *Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-11.**
+
+Verified on my end, on your *"test this on your end"* of 2026-10-10: `core.testAdvancedRoutes.testADeletedRouteIsNotRunByTheRoutesThatCalledIt` is green at `8389b266` - a route that ran the deleted one loses that command and nothing else, a new route of the old name is not run by it, and the delete's question counts the one route that runs it.  One correction to step 2 as I wrote it: the question gives the number of routes that run A, not their names; the log line after Yes names B (*Route B: the commands that ran route A have been removed*).
+
 ---
 
 <a id="mt-714"></a>
 ### MT-714 - 2026-10-10 - Round 115: a square that stops being a station keeps its settings for when it is one again
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-10 - GSE-C4, asked what a station set to `No - Trains Cannot Stop Here` should do with its settings: "Keep them, ignored"
 
 **Written:** 2026-10-10
@@ -33920,6 +33932,10 @@ test this on your end- trivial to test
 Works, but when a double curve with a s88 has arrival directions set, the arrow icons may overlap.  Hard to fix given how little space we have.
 
 *Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-11.**
+
+Validated on your *Works* of 2026-10-10.  Your note on the double curve's arrival arrows is built in round 124 (`128aed37`): each is pushed away from its own curve, two to a free corner, apart - MT-717 step 2.
 
 ---
 
@@ -33956,7 +33972,7 @@ Instant Stop's halt is (OB-251).
 <a id="mt-716"></a>
 ### MT-716 - 2026-10-10 - Round 121: your own writing on the diagram with a white halo; Place All Trains at Their Homes
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam, 2026-10-10 - "Give regular text labels on the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like tracks."; and "rephrase "place all at their homes" to "place all trains at their homes" in the right click menu"
 
 **Written:** 2026-10-10
@@ -33982,5 +33998,160 @@ Instant Stop's halt is (OB-251).
 I see this on some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have something else on them plus text.
 
 *Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-11.**
+
+Superseded by MT-717, which retests it with round 124 (`128aed37`): writing on a square that also has track is set as HTML to stand a line below it, and the halo skipped HTML - it is drawn round it now, where the HTML draws each line.
+
+---
+
+<a id="mt-717"></a>
+### MT-717 - 2026-10-10 - Round 124: a double curve's station and arrows, its arrival arrows, the halo on all your writing, the house on the Auto tab
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10 - MT-712 (Does not work): "Direction arrows on the station end of course curve icons  point in the wrong direction where the sensor is.  They are not parallel with the track on one side.  Also, the station gets rendered on the track without the sensor rather than the one with the sensor."; MT-714: "when a double curve with a s88 has arrival directions set, the arrow icons may overlap."; MT-716 (Does not work): "I see this on some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have something else on them plus text."; MT-709: "on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in the same spot as the (i))."
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Make a double-curve sensor a station, with Display Travel Restrictions on and one of its curves one-way.  Look at it on
+   the track diagram at the Small size and the Large, and in the autonomy editor.
+2. Bar arrivals on two of its sides, and look again.
+3. Look at writing of yours on a square that also has track, a sensor or a switch on it, at both sizes.
+4. Stand a train on its home station and open the Auto tab; then stand it somewhere else.
+5. At the Large size, look at a station on a curve whose icon reaches a square with a station name on it.
+
+**Expected**
+
+- Step 1: the station's icon is on the curve with the sensor's circle, on the track diagram and in the editor.  The red
+  and green arrows on both curves lie along their own rails.
+- Step 2: the arrival arrows sit in the two free corners between the curves, two to a corner, neither over the other nor
+  over a red or green arrow.
+- Step 3: the writing has the thin white halo, as writing on a square of its own does.
+- Step 4: at home, the train's station badge is the tab's blue, with a small house beside the line below it - where the
+  (i) is when there is a reason to hover for, and beside the (i) when there is both; away from home, no house.
+- Step 5: the name is drawn over the part of the icon that reaches its square, not under it.
+
+*What this is:* round 124 (`128aed37`).  MT-712's and MT-716's retest, and MT-709's and MT-714's notes built.  Claims
+`core.testAutonomyDiagramSession.testADoubleCurveStationIsDrawnOnTheCurveWithTheContact` and
+`testADoubleCurvesArrowsLieAlongBothItsCurves`, `core.testAutonomyDiagramMonitor.testADoubleCurvesArrivalArrowsKeepOffItsArrowsAndEachOther`,
+`ui.testDiagramLooksRight.testWritingThatSharesItsSquareHasAHaloToo`, `testATrainAtHomeShowsAHouseNotTeal` and
+`testEveryKindOfSpillIsUnderTheCaptionsAtBothSizes`.  Step 5 is RSA62-C1; the stall RSA62-B1 found near two of your
+curve stations at the Large size is gone with it.
+
+---
+
+<a id="mt-718"></a>
+### MT-718 - 2026-10-10 - Round 126: FR-119, Show Trains in the autonomy editor
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10 - FR-119: "in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. With trains standing on the diagram, open the autonomy editor and find Show Trains under Unmeasured Track.
+2. Untick it, then tick it again.
+3. Untick it, close the editor and look at the track diagram; then open the editor again.
+
+**Expected**
+
+- Step 1: it is ticked, and the trains are drawn in the editor as before.
+- Step 2: unticked, the editor draws no trains - no icons and no tails; ticked, they are back.
+- Step 3: the track diagram still draws its trains.  The editor opens with Show Trains as you left it.
+
+*What this is:* round 126.  Claims `ui.testDiagramLooksRight.testTheEditorsShowTrainsSwitchHidesItsTrains` and
+`core.testAutonomyDiagramSession.testTheEditorHasAShowTrainsSwitch`.
+
+---
+
+<a id="mt-719"></a>
+### MT-719 - 2026-10-10 - Round 126: FR-120, a sensor is named as it becomes a station
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10 - FR-120: "when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here."
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. In the autonomy editor, right-click a sensor with no name and choose Station > Yes - Trains Can Stop Here.  Cancel the box.
+2. Again, and click OK with the box empty.
+3. Again, and type the name of another station in different capitals.
+4. Type a new name and click OK.
+5. Make it a plain sensor and a station again.
+6. Do step 1 from the track diagram's own right-click autonomy menu.
+
+**Expected**
+
+- Steps 1 and 2: it stays a plain sensor, with no name.
+- Step 3: the box says another square already has that name and asks again, with what you typed in it.
+- Step 4: it becomes a station with that name, and the name appears on the diagram.
+- Step 5: it is not asked for a name again.
+- Step 6: the same box, the same answers.
+
+*What this is:* round 126.  Claim `core.testAutonomyDiagramSession.testAnUnnamedSensorIsNamedAsItBecomesAStation`.  The
+check for a name another square has is in this box only; renaming a sensor (Rename, Control+S) is as it was.
+
+---
+
+<a id="mt-720"></a>
+### MT-720 - 2026-10-10 - Round 127: the autonomy editor's icons white on their rails, no arrows out of service, the plain turn mark over the circle
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10, on the icon sheets: "Make the plain turn icon slightly bigger so it covers the circle."; "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly.  For ones out of service, should arrows be drawn at all, since no trains can pass?" - asked: no
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Open the autonomy editor with Track Directions showing, and look at stations of every kind on straight track, on
+   curves and on double curves, at the Small size and the Large.
+2. Put a station and a plain sensor out of service, with a one-way road through each and an arrival barred, and look at
+   them in the editor and on the track diagram; then put them back in service.
+3. Look at a plain sensor where trains turn, on straight track and on a curve, at both sizes.
+
+**Expected**
+
+- Step 1: every icon is white with its colour round it - blue, grey for parking - and on a curve it lies on the rails at
+  its full size, reaching onto the squares beside it, as on the track diagram.  The red and green arrows read clearly over
+  it.
+- Step 2: no arrows and no arrival marks on a square out of service (its mark is MT-721's); back in service, its
+  arrows are back.
+- Step 3: the diamond is a little bigger than before, and the sensor's circle does not show round it.
+
+*What this is:* round 127 (`b2bedaef`).  Claims in `core.testAutonomyDiagramMonitor`:
+`testTheEditorsIconsAreWhiteWithTheirColourRound`, `testTheEditorsIconOnACurveIsOnItsRails`,
+`testASquareOutOfServiceHasNoArrows`, `testAPlainTurnMarkCoversTheContact`.  In the editor a station with a name and
+one without now look alike; the name is on its caption.
+
+---
+
+<a id="mt-721"></a>
+### MT-721 - 2026-10-10 - Round 128: every square out of service is one round sign, clear of the sensor's arrows
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10: "For simplicity, could an out of service station be made a round white circle with an orange border and X inside of it, regardless of the type of station or point it otherwise is?"; then "Make them small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the user to discern."
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Put out of service a station of each kind - an ordinary one, one where trains may turn, one where they must, a
+   terminus, a parking berth - and a plain sensor, on straight track and on a curve.
+2. Look at them on the track diagram and in the autonomy editor, at the Small size and the Large.
+3. Stand a train on one so its sensor reads occupied.
+
+**Expected**
+
+- Steps 1 and 2: every one is the same mark - a white circle with an orange ring and an orange X in it, over the
+  sensor's circle, which does not show - whatever kind it is, and no arrows on its square.
+- Step 3: the sensor's red arrows round its circle still show beside the mark.
+
+*What this is:* round 128.  Claims in `core.testAutonomyDiagramMonitor`:
+`testASquareOutOfServiceIsAnOrangeRingedCircle`, `testASquareNothingCanUseIsDrawnAsACross`.  Its station settings are
+kept, and come back with the station.
 
 ---
