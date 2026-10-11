@@ -27,9 +27,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-725](#mt-725) | 2026-10-11 | Round 134: OB-333 to OB-335, switches and signals flash yellow again when autonomy or a route changes them | fixed unvalidated | Adam, 2026-10-11 - OB-333: "when autonomy is running, I don't see yellow highlights for switches and signals on my track diagram"; OB-334: "when autonomy is running, I don't see tiles being highlighted for switches and signals being changed."; and "I also didn't see highlighting from manually clicked routes (i.e. MarklinRoute) when clicked from the layout, also a regression." |
 
-
-Everything else - 724 of 724 - needs nothing from you unless the area changes again:
+Everything else - 724 of 725 - needs nothing from you unless the area changes again:
 571 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34305,5 +34305,30 @@ it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.
 **Adam, 2026-10-11 (triage).** Works.
 
 *Run against commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-725"></a>
+### MT-725 - 2026-10-11 - Round 134: OB-333 to OB-335, switches and signals flash yellow again when autonomy or a route changes them
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11 - OB-333: "when autonomy is running, I don't see yellow highlights for switches and signals on my track diagram"; OB-334: "when autonomy is running, I don't see tiles being highlighted for switches and signals being changed."; and "I also didn't see highlighting from manually clicked routes (i.e. MarklinRoute) when clicked from the layout, also a regression."
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. With the track diagram at the Large size in the main window, start autonomous operation and watch the switches and
+   signals as trains set their routes.
+2. The same at the Small size.
+3. Stop autonomy, and click a route on the track diagram.
+
+**Expected**
+
+- Steps 1 and 2: every switch and signal that changes flashes yellow for about two seconds, including one that changes
+  again while it is still flashing.
+- Step 3: the switches and signals the route changes flash yellow.
+
+*What this is:* round 134 (`d28e2de1`).  Claim `core.testLayoutTiles.testASecondHighlightIsDrawnYellow`.
 
 ---

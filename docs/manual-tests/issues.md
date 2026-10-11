@@ -1879,6 +1879,16 @@ when autonomy is running, I don't see yellow highlights for switches and signals
 
 when autonomy is running, I don't see tiles being highlighted for switches and signals being changed.
 
+### OB-335 - 2026-10-11 - regression - no highlights on the switches a route clicked on the diagram changes
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11, in the session after OB-333 and OB-334: "I also didn't see highlighting from manually clicked routes (i.e. MarklinRoute) when clicked from the layout, also a regression."
+
+Not reproduced: run on a copy of his layout at the Large size, three routes clicked as a click runs them each lit every switch they changed, and yellow on screen.  The defect behind OB-333 is the likely cause - a square changed again inside its highlight showed no yellow - and a route that changes a square twice, or one autonomy has just changed, meets it.  Fixed with it in round 134; MT-725 asks for a route clicked on the diagram.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1895,6 +1905,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-11 | OB-335 | bug | Not reproduced - three routes clicked on a copy of Adam's layout at Large lit every switch they changed.  Covered by OB-333's fix, the likely cause (round 134, `d28e2de1`). | - | MT-725 |
+| 2026-10-11 | OB-334 | bug | The same defect as OB-333, filed twice from MT-715.  The highlight is drawn again when a square changes twice inside it: the first highlight ended before the second's yellow goes on, where ending it afterwards put the plain picture back over the yellow (round 134, `d28e2de1`): `core.testLayoutTiles.testASecondHighlightIsDrawnYellow`, red before.  Reproduced on a copy of Adam's layout at the Large size: every switch and signal autonomy changed had a highlight armed and none showed yellow; with the fix they do. | - | MT-725 |
+| 2026-10-11 | OB-333 | bug | The highlight is drawn again when a square changes twice inside it: the first highlight ended before the second's yellow goes on, where ending it afterwards put the plain picture back over the yellow (round 134, `d28e2de1`): `core.testLayoutTiles.testASecondHighlightIsDrawnYellow`, red before.  Reproduced on a copy of Adam's layout at the Large size: every switch and signal autonomy changed had a highlight armed and none showed yellow; with the fix they do. | - | MT-725 |
 | 2026-10-11 | FR-121 | feature request | A point's locomotive list has two modes in the autonomy editor's `Excluded Locomotives` window: exclude the chosen locomotives, the default, or allow only them - every other one excluded, a locomotive added to the database later included; the menu says which (*Allowed Locomotives Only*).  The list is kept as chosen and read in its mode wherever an exclusion is asked (`Point.excludes`), so switching back keeps the choice; saved as `excludedLocsMode: whitelist` beside it (round 133, `f68aabbc`): `core.testLocomotiveExclusions` - `testAnAllowOnlyStationTakesOnlyTheLocomotivesItNames`, `testAnAllowOnlyListKeepsOutALocomotiveAddedLater`, `testAnAllowOnlyPointLetsOnlyItsLocomotivesPass`, `testAnAllowOnlyListSurvivesASave`; `core.testAutonomyDiagramSession.testAnAllowOnlyModeGoesIntoTheRailwayAndComesBack`; `regression.testHomeAssignmentRules.testAnAllowOnlyListThatLeavesOutTheHomeIsReported`. | - | MT-724 |
 | 2026-10-11 | OB-332 | bug | A route button on a running line is track in the autonomy editor: not greyed, its arrows clickable, a click stepping its direction as on plain track - the button alone, as it is not part of a run; a button beside the line, with no track through it, is still greyed (round 132, `28e4e138`): `core.testAutonomyDiagramSession.testARouteButtonOnALineTakesADirectionClick`, red before (*"a route button on the line is greyed in the editor"*). | - | MT-723 |
 | 2026-10-10 | FR-120 | feature request | A sensor with no name is asked for one as it becomes a station, from the editor's and the track diagram's station menu: Cancel or a blank name leaves it a sensor; a name another square has, in any case, is refused and asked for again with what was typed; a named square is not asked (round 126, `8389b266`): `core.testAutonomyDiagramSession.testAnUnnamedSensorIsNamedAsItBecomesAStation`. | - | MT-719 |
