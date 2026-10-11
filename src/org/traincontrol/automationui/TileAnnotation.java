@@ -1109,6 +1109,14 @@ public class TileAnnotation
     }
 
     /**
+     * @return whether this square is out of service - nothing may pass or stop - so that it carries no arrows
+     */
+    private boolean outOfService()
+    {
+        return badge != null && badge.isImpassable();
+    }
+
+    /**
      * Whether nudging an arrival arrow this way puts it over the tile's own track (OB-175).
      *
      * An arrow on one side is pushed along that side, clear of the direction mark in the middle.  Which
@@ -1192,7 +1200,8 @@ public class TileAnnotation
      */
     private void paintArrivals(Graphics2D g, int width, int height)
     {
-        if (arrivals.isEmpty()) return;
+        // nor where trains may arrive, on a square nothing can arrive at (see `paintArrows`)
+        if (arrivals.isEmpty() || outOfService()) return;
 
         int span = Math.min(width, height);
 
@@ -1334,6 +1343,11 @@ public class TileAnnotation
      */
     private void paintArrows(Graphics2D g, int width, int height)
     {
+        // NONE ON A SQUARE OUT OF SERVICE (Adam, 2026-10-10, asked: "For ones out of service, should arrows be drawn at
+        // all, since no trains can pass?"): nothing can pass it, so a way through says nothing, and the X says it all.
+        // Its directions are kept, and drawn again once it is back in service.
+        if (outOfService()) return;
+
         // side -> may a train travel out through it
         java.util.Map<Side, Boolean> out = new java.util.LinkedHashMap<>();
 
@@ -2072,6 +2086,13 @@ public class TileAnnotation
             size -= badge.isStation() ? 2 : 1;
         }
 
+        // A PLAIN SENSOR'S TURN MARK A LITTLE BIGGER, OVER ITS CONTACT (Adam, 2026-10-10: "Make the plain turn icon slightly
+        // bigger so it covers the circle.") - the diamond 16 pixels at 30 and 32 at 60, where it was 13 and 26, and the
+        // square where trains must turn in proportion; the contact itself is covered under it, below, as under a station's.
+        boolean turnsHere = !badge.isImpassable() && (badge.isTerminus() || badge.isReversing());
+
+        if (turnsHere) size = Math.round(Math.min(width, height) * (badge.isOptional() ? 0.53f : 0.4f));
+
         // Centred on the TRACK for anything straight - the midpoint of the route's own two sides,
         // which is the tile centre for a straight and lands on the rails for anything else.
         int[] on = trackCentre(width, height);
@@ -2099,9 +2120,10 @@ public class TileAnnotation
 
         g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
 
-        // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.
-        Color fill = badge.isNamed() ? colour : Color.WHITE;
-        Color line = badge.isNamed() ? Color.WHITE : colour;
+        // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.  White with its
+        // colour round it in the editor, as a station's icon there (Adam, 2026-10-10).
+        Color fill = badge.isNamed() && !editing ? colour : Color.WHITE;
+        Color line = badge.isNamed() && !editing ? Color.WHITE : colour;
 
         // THE SHAPE SAYS WHAT TURNING MEANS HERE.  THE SIZE SAYS WHETHER IT IS A STATION.
         //
@@ -2169,6 +2191,8 @@ public class TileAnnotation
         boolean turns = badge.isTerminus() || badge.isReversing();
         boolean mayTurn = turns && badge.isOptional();
 
+        if (turns) coverTheContact(g, width, height);
+
         if (turns && mayTurn)
         {
             diamond(g, x, y, size, fill, line);
@@ -2186,6 +2210,39 @@ public class TileAnnotation
             g.fillOval(x, y, size, size);
             g.setColor(line);
             g.drawOval(x, y, size, size);
+        }
+    }
+
+    /**
+     * The sensor's contact covered under a plain sensor's turn mark (Adam, 2026-10-10: *"Make the plain turn icon slightly
+     * bigger so it covers the circle."*): `cover`, along the track at its middle, kept inside the square - as under a
+     * station's icon on a bend.  Nothing where the badge names no road.
+     */
+    private void coverTheContact(Graphics2D g, int width, int height)
+    {
+        if (badge.getA() == null || badge.getB() == null || badge.getA() == badge.getB()) return;
+
+        int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
+
+        if (a == null || b == null) return;
+
+        int[] centre = trackCentre(width, height);
+
+        Graphics2D c = (Graphics2D) g.create();
+
+        try
+        {
+            c.clipRect(0, 0, width, height);
+            c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            c.translate(centre[0], centre[1]);
+            c.rotate(Math.atan2(b[1] - a[1], b[0] - a[0]));
+
+            cover(c, Math.min(width, height));
+        }
+        finally
+        {
+            c.dispose();
         }
     }
 
@@ -2216,10 +2273,9 @@ public class TileAnnotation
      * the sensor's contact is covered first (*"make sure the white would cover an s88 circle"*) - `cover`.  On a bend the
      * icon lies along the chord between the road's two sides, on its rails, its full size, and the contact is covered
      * there too; what falls outside the square spills onto the squares beside it (Adam, 2026-10-10: *"can we instead make
-     * the stations spill over onto adjacent tiles?"*) - `paintSpill`; in the editor it sits off the rails where the
-     * bend's badge always has (`CORNER_INSET`), clear of the arrows at the sides, and no longer than that badge was
-     * across.  The
-     * proportions are the page's, which drew them on the real 30 and 60 pixel tiles.
+     * the stations spill over onto adjacent tiles?"*) - `paintSpill`; in the autonomy editor too, white with its colour
+     * round it (Adam, 2026-10-10: *"Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly."*).  The proportions are the page's, which drew them on the real 30 and
+     * 60 pixel tiles.
      *
      * @param g the tile's graphics
      * @param width the tile's width
@@ -2238,14 +2294,6 @@ public class TileAnnotation
 
         int[] centre = trackCentre(width, height);
 
-        // On a bend in the editor, off the rails - where the old badge stood, a box of half the tile in from the corner
-        if (editing && bends)
-        {
-            int old = Math.max(11, tile / 2);
-
-            centre = new int[] {CORNER_INSET + old / 2, height - old - CORNER_INSET + old / 2};
-        }
-
         int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
 
         boolean known = a != null && b != null && badge.getA() != badge.getB();
@@ -2259,8 +2307,10 @@ public class TileAnnotation
 
         if (deadEnd != null && deadEnd == badge.getB()) angle += Math.PI;
 
-        Color fill = badge.isNamed() ? colour : Color.WHITE;
-        Color line = badge.isNamed() ? Color.WHITE : colour;
+        // WHITE WITH ITS COLOUR ROUND IT IN THE EDITOR (Adam, 2026-10-10: "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly.") - the
+        // arrows are drawn over the icon, and the editor is where they are read
+        Color fill = badge.isNamed() && !editing ? colour : Color.WHITE;
+        Color line = badge.isNamed() && !editing ? Color.WHITE : colour;
 
         boolean turns = badge.isTerminus() || badge.isReversing();
 
@@ -2285,18 +2335,16 @@ public class TileAnnotation
 
         double scale = 1;
 
-        // in the editor, on a bend, off the rails: no longer than the badge that stood there was across, so it crowds
-        // nothing that badge did not
-        if (editing && known && bends) scale = Math.min(1, Math.max(11, tile / 2) / stroked.getBounds2D().getWidth());
-
         // ON A BEND, ITS FULL SIZE ON ITS RAILS, SPILLING ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead
         // make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the
         // size.").  A curve's chord runs across a corner, so an icon its full size on the middle of it reaches past two
         // edges, and a square's paint is cut off at its edges - the ends were lost (MT-710).  Round 112 moved it in off its
         // rails; round 118 made it smaller.  Now the square draws what falls inside it, cut off cleanly at its edges, and
-        // `paintSpill`, asked by the diagram once every square is drawn, draws the rest over the squares beside it.  The
-        // editor's bend is off the rails, in the corner (above), and inside its square.
-        boolean spills = !editing && known && bends;
+        // `paintSpill`, asked by the diagram once every square is drawn, draws the rest over the squares beside it.
+        //
+        // IN THE EDITOR TOO (Adam, 2026-10-10: "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly."): it stood in the square's corner, off the
+        // rails and smaller, to keep the arrows at the sides clear of it; white, they read over it.
+        boolean spills = known && bends;
 
         // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved in towards the middle of the square as far as it
         // needs, and made smaller only where even there it would not fit.  On straight track every icon fits where it is.
@@ -2379,7 +2427,7 @@ public class TileAnnotation
             {
                 // the station's block in the grey of a square autonomy leaves alone (Adam, 2026-10-09: "make the
                 // inactive station have a gray rectangle below the X"), and the X over it, upright
-                block(s, h, POINT_INACTIVE, Color.WHITE);
+                block(s, h, editing ? Color.WHITE : POINT_INACTIVE, editing ? POINT_INACTIVE : Color.WHITE);
 
                 Graphics2D x = (Graphics2D) g.create();
 
@@ -2436,7 +2484,7 @@ public class TileAnnotation
      */
     public boolean spillsOverItsSquare()
     {
-        return badge != null && badge.isStation() && !editing && badge.getA() != null && badge.getB() != null
+        return badge != null && badge.isStation() && badge.getA() != null && badge.getB() != null
             && badge.getA() != badge.getB() && trackBends();
     }
 
@@ -2738,14 +2786,6 @@ public class TileAnnotation
         g.draw(new java.awt.geom.Line2D.Double(-mark / 2.0, -mark / 2.0, mark / 2.0, mark / 2.0));
         g.draw(new java.awt.geom.Line2D.Double(-mark / 2.0, mark / 2.0, mark / 2.0, -mark / 2.0));
     }
-
-    /**
-     * How far in from the bottom left corner a badge on a bend sits, in the editor.
-     *
-     * One pixel put it hard against both edges; this lifts it clear without moving it back under the
-     * track it was moved out of.
-     */
-    private static final int CORNER_INSET = 7;
 
     /**
      * Whether the track through this square turns a corner.
