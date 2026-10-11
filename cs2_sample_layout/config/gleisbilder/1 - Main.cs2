@@ -926,7 +926,7 @@ element
  .id=0xb06
  .typ=bogen
  .drehung=2
- .artikel=-1
+ .artikel=0
 element
  .id=0xb07
  .typ=gerade

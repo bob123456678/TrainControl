@@ -33512,6 +33512,10 @@ The rest of the popups seem OK.
 
 Filed as OB-328 (a maximised diagram window or editor is not brought to the front).
 
+**Adam, 2026-10-10 (triage).** Works.
+
+*Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-706"></a>
@@ -33698,6 +33702,12 @@ Round ending is not apparent.  I only want rounding at the tail, not by the loco
 
 *Run against commit 60bebd9c, in English - build\classes, compiled 09 Oct 23:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-10-10 (triage).** Works, with notes.
+
+Works.  But on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in the same spot as the (i)).
+
+*Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-710"></a>
@@ -33835,6 +33845,12 @@ pixels each side at Large; say if you meant the wall white there.  Claims in `co
 
 Adam, 2026-10-10, on the tunnel: *"white meant wider"* - the wall two pixels wider each side at Large, as built in round 118.  Step 4 stands as written.
 
+**Adam, 2026-10-10 (triage).** Does not work.
+
+Direction arrows on the station end of course curve icons  point in the wrong direction where the sensor is.  They are not parallel with the track on one side.  Also, the station gets rendered on the track without the sensor rather than the one with the sensor.
+
+*Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-713"></a>
@@ -33861,6 +33877,12 @@ Adam, 2026-10-10, on the tunnel: *"white meant wider"* - the wall two pixels wid
 
 *What this is:* round 115 (`2b18974e`).  Claim `core.testAdvancedRoutes.testADeletedRouteIsNotRunByTheRoutesThatCalledIt`.
 Editing a route does not strip the routes that call it.
+
+**Adam, 2026-10-10 (triage).** Could not run this.
+
+test this on your end- trivial to test
+
+*Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -33889,6 +33911,12 @@ Editing a route does not strip the routes that call it.
 *What this is:* round 115 (`2b18974e`), behaviour.md 2a.  Claims in `core.testAutonomyDiagramSession`:
 `testADemotedStationHasItsSettingsBackWhenItIsAStationAgain` and
 `testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation`.
+
+**Adam, 2026-10-10 (triage).** Works, with notes.
+
+Works, but when a double curve with a s88 has arrival directions set, the arrow icons may overlap.  Hard to fix given how little space we have.
+
+*Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -33945,5 +33973,11 @@ Instant Stop's halt is (OB-251).
 
 *What this is:* round 121.  Claims `ui.testDiagramLooksRight.testTheDiagramsOwnWritingHasAHalo`,
 `testTheGridGivesEveryLabelThatIsNotAPillAHalo`, and `core.testMessageBundles.testPlaceAllSaysTrains`.
+
+**Adam, 2026-10-10 (triage).** Does not work.
+
+I see this on some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have something else on them plus text.
+
+*Run against commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

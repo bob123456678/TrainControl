@@ -1804,6 +1804,24 @@ None of these changes what TrainControl does; they are why changes keep being ri
 
 Closed with it: DD-B6 (a shared test harness) declined, as `open-questions.md` already recommended; DD-C4 (the dead code) done in round 122 (`d6ce5a16`).
 
+### FR-119 - 2026-10-10 - autonomy editor show trains
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-10 20:43  
+**Build:** commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer.
+
+### FR-120 - 2026-10-10 - auto naming stations
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-10 20:45  
+**Build:** commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
