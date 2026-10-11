@@ -2841,8 +2841,12 @@ The Yes waits for no lock a journey holds: it is answered on the window's own th
 Timetable and Return Home - whose plan runs as a timetable - wait before they choose a journey, start a timetable's entry
 or try a refused one again while the power reads off, cut from the window, by the Central Station or by a route, and go
 on when it reads on: the run is not stopped, and the log says once that it is waiting.  They used to go on choosing and
-setting routes, commanding switches on a railway with no power to move them.  A journey already under way is not
-touched.  The power reads on until the Central Station says otherwise - at start-up, and always in a simulation without
+setting routes, commanding switches on a railway with no power to move them.  A journey still setting its route when the
+power goes off - or goes off and comes back while it does - is given back unrun: its train is left where it stood and given
+no speed, the log says so, and the run waits for the power (RSA61-C1, RSA62-C2;
+`testAJourneyIsNotSetGoingIfThePowerWentOffWhileItsRouteWasSet`, `testAJourneyIsNotSetGoingIfThePowerWentOffAndOnWhileItsRouteWasSet`).
+An attempt the power cut is not counted against a timetable's entry as a refusal, so it does not end Return Home
+(RSA62-C3, `testPowerCutsDoNotEndAReturnHomeLeg`).  A journey that has set off is not touched.  The power reads on until the Central Station says otherwise - at start-up, and always in a simulation without
 Echo Sent Commands - so a state nobody has reported never holds a run.  Instant Stop is a halt, not a power cut, and
 autonomy runs on through it (OB-251).  A hand send is not waited for: the send gate refuses it while the power is off, as
 it refuses every door's press.  `core.testATrainIsDispatchedOnce.testAutonomySendsNothingWhileThePowerIsOff`,
