@@ -4417,6 +4417,99 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The outline of a square a curve station's spill reaches is drawn over the spill, as its arrows are (RSA63-C4): the
+     * spill was drawn over the square's own paint and only the arrows and captions were drawn again, so its selection
+     * outline was broken where the station reached it.  Nine squares in the diagram's own container, a station on an E-S
+     * curve in the middle, the square to its right selected: all of its outline's orange with the station beside it as
+     * without.
+     *
+     * MUTATION: leave the outline out of what is drawn again over a spill, and this fails.
+     */
+    @Test
+    public void testANeighboursOutlineIsDrawnOverASpill()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        for (int size : new int[] {30, 60})
+        {
+            int alone = outlineBesideACurvedStation(size, null);
+
+            assertTrue(alone > 0, "precondition: the selected square drew no outline at " + size + " pixels");
+
+            for (org.traincontrol.automationui.TileAnnotation station : curvedStationsOfEveryKind())
+            {
+                int beside = outlineBesideACurvedStation(size, station);
+
+                assertEquals(beside, alone, "the curve's " + station + " spilled over the outline of the selected square"
+                    + " beside it at " + size + " pixels (RSA63-C4)");
+            }
+        }
+    }
+
+    /** The orange of a selection outline on the square to the right of the middle one, a station on its curve or none. */
+    private static int outlineBesideACurvedStation(int size, org.traincontrol.automationui.TileAnnotation station)
+    {
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        middle.setBounds(size, size, size, size);
+
+        if (station != null) middle.setAutonomyAnnotation(station);
+
+        grid.add(middle);
+
+        org.traincontrol.gui.LayoutLabel right = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        right.setOpaque(true);
+        right.setBackground(java.awt.Color.WHITE);
+        right.setBounds(2 * size, size, size, size);
+        right.setAutonomyAnnotation(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+            new org.traincontrol.automationui.TileAnnotation.Mark(org.traincontrol.automationui.TilePorts.Side.W,
+                org.traincontrol.automationui.TilePorts.Side.E, org.traincontrol.automationui.TileGraph.Direction.BOTH)),
+            -1, true, null, false, false, false, null, true, null));
+
+        grid.add(right);
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int orange = 0;
+
+        for (int x = 2 * size; x < 3 * size; x++)
+        {
+            for (int y = size; y < 2 * size; y++)
+            {
+                int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                if (r > 230 && Math.abs(gr - 140) < 30 && b < 40) orange++;
+            }
+        }
+
+        return orange;
+    }
+
+    /**
      * The autonomy editor's Show Trains switch hides the trains on its diagram (FR-119; Adam, 2026-10-10: *"in the autonomy
      * editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."*).  A square
      * with a train standing on it, in the diagram's own container: its train drawn while the square's switch says yes,

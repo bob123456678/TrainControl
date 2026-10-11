@@ -906,14 +906,12 @@ public class AutonomyEditorPanel extends JPanel
             refresh();
         });
 
-        // Only redrawn: the trains are drawn by the squares, which ask `isShowingTrains` as they paint
+        // Redrawn, the squares' annotations with them: the squares ask `isShowingTrains` as they paint, and the annotations
+        // mark where the setup puts a train only while it says yes (RSA63-C3)
         showTrains.addActionListener(e ->
         {
             VIEW_PREFS.putBoolean(PREF_TRAINS, showTrains.isSelected());
-
-            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
-
-            if (window != null) window.repaint();
+            refresh();
         });
 
         captions.addActionListener(e ->
@@ -8025,7 +8023,8 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey target = leaderOf(tile);
 
-        if (isALink(target)) return false;
+        // NOR A SQUARE OUT OF SERVICE (RSA63-C5): nothing can pass it, it draws no arrows, and `cycle` declines it
+        if (isALink(target) || isOutOfService(target)) return false;
 
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
@@ -8039,6 +8038,17 @@ public class AutonomyEditorPanel extends JPanel
         Direction next = after(session.getGraph().getDirection(target, routes.keySet().iterator().next()));
 
         return next == Direction.BOTH || next == Direction.NONE || session.canRunOneWay(target);
+    }
+
+    /**
+     * Whether a square is out of service - nothing may pass or stop there - so that it has no directions to set.
+     *
+     * @param target the square that would be set
+     * @return true where the square is switched off
+     */
+    private boolean isOutOfService(TileKey target)
+    {
+        return Boolean.FALSE.equals(session.getPointProperty(target, "active"));
     }
 
     /**
@@ -8065,6 +8075,14 @@ public class AutonomyEditorPanel extends JPanel
         if (isALink(target))
         {
             say(hint, I18n.t("autosetup.ui.infoLinkHasNoDirection"));
+            return;
+        }
+
+        // NOR A SQUARE OUT OF SERVICE (RSA63-C5): its directions are kept for when it is back in service and are not drawn
+        // meanwhile (round 127), so a click changed something nobody could see
+        if (isOutOfService(target))
+        {
+            say(hint, I18n.t("autosetup.ui.infoOutOfServiceHasNoDirection"));
             return;
         }
 
@@ -9810,7 +9828,10 @@ public class AutonomyEditorPanel extends JPanel
         // A train the setup puts here gets a mark of its own.  The caption says which train, and the
         // caption is on another square, is sometimes on no square, and can be switched off - so
         // without this the diagram can be read right through without seeing where the trains are.
-        if (locomotiveAt(tile) != null) annotation.withTrain();
+        //
+        // NOT WITH SHOW TRAINS OFF (RSA63-C3): the switch hides the trains, and this mark is one of them - under the icon
+        // while they show, it appeared when they were switched off.
+        if (locomotiveAt(tile) != null && isShowingTrains()) annotation.withTrain();
 
         // UNMEASURED TRACK: every square a length rule reads that has no length, asked of the session's one answer so
         // the highlight and Mass Assign Lengths cannot disagree about which squares those are.

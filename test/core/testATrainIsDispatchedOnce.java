@@ -3031,6 +3031,133 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /**
+     * The power's state and its cuts are one number, read once (RSA63-C1): it changes at every cut and every return, and
+     * is odd while the power is off.  Read as two - the state, then a count of cuts - a STOP landing between the reads was
+     * taken as a cut that had not happened yet, with the power on.
+     *
+     * MUTATION: let a second STOP while the power is off move it, or leave it even while off, and this fails.
+     *
+     * @throws Exception reflection
+     */
+    @Test
+    public void testThePowersEpochIsOddWhileThePowerIsOff() throws Exception
+    {
+        final java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
+        final java.lang.reflect.Method epoch = MarklinControlStation.class.getMethod("getPowerEpoch");
+
+        power.setAccessible(true);
+
+        try
+        {
+            power.invoke(model, true);
+
+            int on = (Integer) epoch.invoke(model);
+
+            assertEquals(on % 2, 0, "the power's epoch is odd while the power is on");
+
+            power.invoke(model, false);
+
+            int off = (Integer) epoch.invoke(model);
+
+            assertEquals(off % 2, 1, "the power's epoch is even while the power is off");
+
+            power.invoke(model, false);
+
+            assertEquals((int) (Integer) epoch.invoke(model), off, "a second STOP while the power is off moved the epoch");
+
+            power.invoke(model, true);
+
+            int back = (Integer) epoch.invoke(model);
+
+            assertTrue(back % 2 == 0 && back != on, "the power back on did not move the epoch to a new even number: " + on
+                + " then " + back);
+        }
+        finally
+        {
+            power.invoke(model, true);
+        }
+    }
+
+    /**
+     * And a journey dispatched in the instant the power went off - its epoch already odd, the state not yet written - is
+     * given back once its route is set, though the power is back by then (RSA63-C1).  The instant forced here by setting
+     * the epoch alone: odd at dispatch, then on again 300 ms into the route; the state reads on throughout.
+     *
+     * MUTATION: ask only whether the power is on now, not whether its epoch moved since dispatch, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAJourneyDispatchedAsThePowerWentOffIsGivenBack() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2101, 9);
+
+        final Locomotive v = model.getLocByName(model.getLocList().get(18));
+
+        String[] names = {"PEA", "PE1", "PE2", "PE3", "PE4", "PE5", "PE6", "PE7", "PEB"};
+
+        final Layout rail = aLine(s, names);
+
+        final List<Edge> path = through(rail, names);
+
+        for (int i = 0; i < path.size(); i++)
+        {
+            org.traincontrol.marklin.MarklinAccessory turnout =
+                model.newSwitch(271 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
+        }
+
+        final java.lang.reflect.Field epochField = MarklinControlStation.class.getDeclaredField("powerEpoch");
+
+        epochField.setAccessible(true);
+
+        final java.util.concurrent.atomic.AtomicInteger epoch =
+            (java.util.concurrent.atomic.AtomicInteger) epochField.get(model);
+
+        Thread journey = null;
+
+        final boolean validatingWas = Layout.PATH_INTEGRITY_VALIDATION;
+
+        final int was = epoch.get();
+
+        try
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = false;
+
+            v.setSpeed(0);
+
+            rail.getPoint("PEA").setLocomotive(v);
+
+            // THE INSTANT A STOP IS TAKEN IN: the epoch odd, the state not yet written
+            epoch.set(was % 2 == 0 ? was + 1 : was);
+
+            journey = sendOn(rail, path, v);
+
+            Thread.sleep(300);
+
+            // AND THE GO, while the route is still being set
+            epoch.incrementAndGet();
+
+            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey dispatched in the instant the power went off was"
+                + " given its speed over the route set while it was off (RSA63-C1)");
+
+            final Thread running = journey;
+
+            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+                + " dispatched in the instant the power went off is still under way (RSA63-C1)");
+        }
+        finally
+        {
+            epoch.set(was % 2 == 0 ? was + 2 : was + 1);
+
+            Layout.PATH_INTEGRITY_VALIDATION = validatingWas;
+
+            letGo(s, v, journey);
+        }
+    }
+
     /** A handler on the model's own logger, collecting every message into `into` - removed by the caller. */
     private static java.util.logging.Handler aTapOn(final List<String> into)
     {

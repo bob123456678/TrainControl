@@ -9882,6 +9882,155 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A double-curve station whose track runs out on the contact's curve is a terminus facing that way (RSA63-C2): round 124
+     * put its badge on the contact's curve, and `deadEndSide` still asked the square's first road, the other curve - so a
+     * double curve was never drawn as a terminus.  Every orientation, the side past the contact's curve's second end left
+     * with no track: the badge's dead end is that side.
+     *
+     * MUTATION: ask the first road again, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADoubleCurveStationWhoseTrackRunsOutIsATerminus() throws Exception
+    {
+        for (int orientation = 0; orientation < 4; orientation++)
+        {
+            session = new AutonomySession(layout);
+
+            Route contact = org.traincontrol.automationui.TilePorts.contactRoad(componentType.FEEDBACK_DOUBLE_CURVE,
+                orientation);
+
+            Side gone = contact.getB();
+
+            LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
+
+            if (gone != Side.N) page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+            if (gone != Side.W) page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25, accessoryDecoderType.MM2,
+                null);
+            if (gone != Side.E) page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+            if (gone != Side.S) page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+            page.setPageId("1");
+
+            session.open(Arrays.asList(page));
+            session.initialize("dead end " + orientation);
+
+            TileKey curve = new TileKey("main", 2, 2);
+
+            session.setStation(curve, true);
+
+            TileAnnotation annotation = session.staticAnnotationFor(curve, false, false);
+
+            assertNotNull(annotation, "precondition: no annotation at orientation " + orientation);
+            assertNotNull(annotation.getBadge(), "precondition: no badge at orientation " + orientation);
+
+            assertEquals(annotation.getBadge().getDeadEnd(), gone, "a double-curve station turned " + orientation + " whose"
+                + " track runs out at " + gone + " on the contact's curve is not drawn as a terminus facing it (RSA63-C2)");
+        }
+    }
+
+    /**
+     * Show Trains off hides the train mark the editor's own annotation draws where the setup puts a train, as well as the
+     * trains' icons and tails (RSA63-C3): under the icon while the trains show, it appeared when they were switched off.
+     *
+     * MUTATION: mark the setup's train whatever the switch says, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testShowTrainsOffHidesTheSetupsTrainMarkToo() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+
+        final TileKey station = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Platform");
+        session.placeLocomotive(station, "Probe Train");
+
+        assertNotNull(session.getLocomotiveNameAt(station), "precondition: no train placed on the station");
+
+        final java.lang.reflect.Field occupied = TileAnnotation.class.getDeclaredField("occupied");
+
+        occupied.setAccessible(true);
+
+        final boolean[] marked = new boolean[2];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                javax.swing.JCheckBox trains = panel.getShowTrains();
+                boolean was = trains.isSelected();
+
+                trains.setSelected(true);
+                marked[0] = (Boolean) occupied.get(panel.annotationFor(station));
+
+                trains.setSelected(false);
+                marked[1] = (Boolean) occupied.get(panel.annotationFor(station));
+
+                trains.setSelected(was);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertTrue(marked[0], "precondition: the editor does not mark the setup's train with Show Trains on");
+        assertFalse(marked[1], "with Show Trains off the editor still marks where the setup puts a train (RSA63-C3)");
+    }
+
+    /**
+     * A square out of service offers no direction click in the editor (RSA63-C5): it draws no arrows (round 127), and its
+     * click went on cycling the hidden setting under the hand pointer, the square looking the same afterwards.
+     *
+     * MUTATION: let the click change a square out of service again, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testAClickChangesNoDirectionOnASquareOutOfService() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+
+        final TileKey square = new TileKey("main", 3, 1);
+
+        assertTrue(panel.clickChangesDirections(square), "precondition: a click does not change the square's directions"
+            + " while it is in service");
+
+        session.setPointProperty(square, "active", Boolean.FALSE);
+
+        final RouteId road = session.getRoutes(square).keySet().iterator().next();
+
+        final Direction before = session.getGraph().getDirection(square, road);
+
+        assertFalse(panel.clickChangesDirections(square), "the editor offers a direction click on a square out of service,"
+            + " whose arrows it does not draw (RSA63-C5)");
+
+        final java.lang.reflect.Method cycle = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle",
+            TileKey.class);
+
+        cycle.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                cycle.invoke(panel, square);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertEquals(session.getGraph().getDirection(square, road), before, "a click changed the hidden directions of a"
+            + " square out of service (RSA63-C5)");
+    }
+
+    /**
      * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not
      * (GSE-C4): the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
      * (address 22) on the track either side, wired as parsing a real layout wires them.

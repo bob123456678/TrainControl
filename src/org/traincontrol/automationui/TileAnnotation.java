@@ -2423,8 +2423,9 @@ public class TileAnnotation
      */
     public boolean spillsOverItsSquare()
     {
-        return badge != null && badge.isStation() && !badge.isImpassable() && badge.getA() != null && badge.getB() != null
-            && badge.getA() != badge.getB() && trackBends();
+        // not a square the editor shades, which draws no icon on itself (RSA63-C4)
+        return badge != null && badge.isStation() && !badge.isImpassable() && !ignored && badge.getA() != null
+            && badge.getB() != null && badge.getA() != badge.getB() && trackBends();
     }
 
     /**
@@ -2508,6 +2509,14 @@ public class TileAnnotation
             paintArrows(a, width, height);
 
             paintArrivals(a, width, height);
+
+            // AND ITS OUTLINE, which its own paint draws over everything on it (RSA63-C4): the spill broke it
+            if (selected)
+            {
+                a.setStroke(new BasicStroke(2f));
+                a.setColor(SELECTED);
+                a.drawRect(1, 1, width - 3, height - 3);
+            }
         }
         finally
         {

@@ -2945,6 +2945,44 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * A square the editor shades spills nothing (RSA63-C4): while a protecting signal is picked every square but the
+     * signals is shaded, and a curve station's square drew no icon while its two ends were drawn on the squares beside it.
+     *
+     * MUTATION: let a shaded square spill again, and this fails.
+     */
+    @Test
+    public void testAShadedStationSpillsNothing()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            TileAnnotation shaded = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.E, Side.S, null)), -1,
+                false, station(Side.E, Side.S, false, false, false, false, null), true, true, false, null, true, null)
+                .inTheEditor();
+
+            assertFalse(shaded.spillsOverItsSquare(), "a shaded curve station at " + size + " pixels says it spills"
+                + " (RSA63-C4)");
+
+            java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = canvas.createGraphics();
+
+            try
+            {
+                g.translate(size, size);
+                shaded.paintSpill(g, size, size);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            assertEquals(inkOf(canvas), 0, "a shaded curve station at " + size + " pixels spills onto the squares beside it"
+                + " (RSA63-C4)");
+        }
+    }
+
+    /**
      * A badge painted as the diagram paints it, over its sensor's art turned to run along its road - the curved sensor's
      * for a curve, the straight one's for W-E - on white.
      */

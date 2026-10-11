@@ -4311,13 +4311,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.powerState;
     }
 
-    /** How many times the power has gone from on to off (RSA62-C2) - see `getPowerCuts`. */
-    private final java.util.concurrent.atomic.AtomicInteger powerCuts = new java.util.concurrent.atomic.AtomicInteger();
+    /** The power's epoch: even while it is on, as it is at start-up - see `getPowerEpoch`. */
+    private final java.util.concurrent.atomic.AtomicInteger powerEpoch = new java.util.concurrent.atomic.AtomicInteger();
 
     @Override
-    public int getPowerCuts()
+    public int getPowerEpoch()
     {
-        return this.powerCuts.get();
+        return this.powerEpoch.get();
     }
     
     /**
@@ -4328,8 +4328,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         synchronized(this)
         {
-            // A CUT COUNTED (RSA62-C2): on to off, once however many STOPs report it
-            if (!state && this.powerState) this.powerCuts.incrementAndGet();
+            // THE EPOCH MOVED AT EVERY CHANGE (RSA62-C2, RSA63-C1): odd from a STOP, even again from a GO, once however many
+            // report it
+            if (state != this.powerState) this.powerEpoch.incrementAndGet();
 
             this.powerState = state;
             notifyAll();
