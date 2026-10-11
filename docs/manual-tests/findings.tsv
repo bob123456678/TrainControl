@@ -768,8 +768,8 @@ DCN4-D6	DCN4.md	Closed	Closed - checked clean	DCN3-C1, DCN3-C2, GUI3-C5, REG3-C5
 DCN4-D7	DCN4.md	Closed	Closed - checked clean	The new comments of `4be3798a` say what the code does
 DCN4-D8	DCN4.md	Closed	Closed - checked clean	The two new sentences are in all eight bundles, ASCII-escaped, and the menu they name exists
 DCN4-D9	DCN4.md	Closed	Closed - checked clean	The round's test prose and the user documents' round-3 sentences checked
-DD-A1	2026-08-22-duplication-and-design.md	Open	Open	the automationui chain
-DD-A1	2026-09-22-GS-backlog.md	Open	**cannot be settled**	(listed in a table, no section of its own)
+DD-A1	2026-08-22-duplication-and-design.md	Open - deferred	Open	the automationui chain
+DD-A1	2026-09-22-GS-backlog.md	Open - deferred	**cannot be settled**	(listed in a table, no section of its own)
 DD-A2	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - 34 classes added, `ant test` runs 75	`Layout.java` and `HomeStaging`
 DD-A2	2026-08-24-duplication-robustness.md	Closed	Closed (`ae94421a`); its step-2 matrix extensions (reconcile, clear-then-load, import/expo	Closed (`ae94421a`); its step-2 matrix extensions (reconcile, clear-then-load, import/export columns) remain undone — noted in DR-D1.
 DD-A3	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - greying applied after the table's own renderer	`base/` against `marklin/`
@@ -783,28 +783,28 @@ DD-B2	2026-08-22-duplication-and-design.md	Closed	Open	`menuOnly` decides four d
 DD-B3	2026-08-22-duplication-and-design.md	Closed	Open	four grid-construction sites, three of which call `discard()`
 DD-B4	2026-08-22-duplication-and-design.md	Closed	Closed in `c0c9055d`, arriving as a user-visible defect (MT-093) - three rounds of it. See	the station caption is drawn twice, and the copies have drifted
 DD-B5	2026-08-22-duplication-and-design.md	Closed	Open	the right-click entry point is written four times, and the guard is on three
-DD-B6	2026-08-22-duplication-and-design.md	Open	Open	there is no test harness, and `test/` has paid for it in three currencies
-DD-B6	2026-09-22-GS-backlog.md	Open	still true, **declined** by `open-questions.md`	(listed in a table, no section of its own)
+DD-B6	2026-08-22-duplication-and-design.md	Closed	Open	there is no test harness, and `test/` has paid for it in three currencies
+DD-B6	2026-09-22-GS-backlog.md	Closed	still true, **declined** by `open-questions.md`	(listed in a table, no section of its own)
 DD-B7	2026-08-22-duplication-and-design.md	Closed	Open	three copies of `item(text, Runnable)`, three different things happen when it throws
 DD-B8	2026-08-22-duplication-and-design.md	Closed	Open	two "something changed" protocols in `AutonomySession`
 DD-B8	2026-08-24-duplication-robustness.md	Closed	Open; `touched()` at `:3848`, the two inline `dirty = true` unchanged.	Open; `touched()` at `:3848`, the two inline `dirty = true` unchanged.
-DD-B9	2026-08-22-duplication-and-design.md	Open	Open	one reachability rule, written out three times
-DD-B9	2026-08-24-duplication-robustness.md	Open	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFr	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFrom` unchanged, plus the new session-level pair: DR-B6.
-DD-C1	2026-08-22-duplication-and-design.md	Open	Open	`TrainControlUI`, and what could actually leave it
-DD-C1	2026-09-22-GS-backlog.md	Open	still true, **not a defect** by the §2c ruling	(listed in a table, no section of its own)
+DD-B9	2026-08-22-duplication-and-design.md	Open - deferred	Open	one reachability rule, written out three times
+DD-B9	2026-08-24-duplication-robustness.md	Open - deferred	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFr	Open; `findPath`/`reachableTiles` walks and turn blocks unchanged, `onwardSides`/`onwardFrom` unchanged, plus the new session-level pair: DR-B6.
+DD-C1	2026-08-22-duplication-and-design.md	Open - deferred	Open	`TrainControlUI`, and what could actually leave it
+DD-C1	2026-09-22-GS-backlog.md	Open - deferred	still true, **not a defect** by the §2c ruling	(listed in a table, no section of its own)
 DD-C10	2026-08-22-duplication-and-design.md	Closed	Open	the port table exists three times, one of them in Python
 DD-C11	2026-08-22-duplication-and-design.md	Closed	Open	the trace loops re-derive what the reducer already recorded
 DD-C2	2026-08-22-duplication-and-design.md	Closed	Open	one image cache, two key namespaces, no eviction
 DD-C3	2026-08-22-duplication-and-design.md	Closed	Open	three of the store's translate helpers exist only because a generic was not used
-DD-C4	2026-08-22-duplication-and-design.md	Open	Open	dead code left by de-duplications that stopped halfway
-DD-C4	2026-09-22-GS-backlog.md	Open	still true (3 of 6 items)	(listed in a table, no section of its own)
+DD-C4	2026-08-22-duplication-and-design.md	Closed	Open	dead code left by de-duplications that stopped halfway
+DD-C4	2026-09-22-GS-backlog.md	Closed	still true (3 of 6 items)	(listed in a table, no section of its own)
 DD-C5	2026-08-22-duplication-and-design.md	Closed	Open	five copies of the popup-trigger adapter, and two conventions
-DD-C6	2026-08-22-duplication-and-design.md	Open	Open	the store's eleven collections are declared in six places
-DD-C6	2026-09-22-GS-backlog.md	Open	still true, and grown	(listed in a table, no section of its own)
-DD-C7	2026-08-22-duplication-and-design.md	Open	Open	the dialog parent is named five different ways
-DD-C7	2026-09-22-GS-backlog.md	Open	still true, and grown	(listed in a table, no section of its own)
-DD-C8	2026-08-22-duplication-and-design.md	Open	Open	a 426-line keyboard dispatcher as an if/else chain
-DD-C8	2026-09-22-GS-backlog.md	Open	still true, and grown	(listed in a table, no section of its own)
+DD-C6	2026-08-22-duplication-and-design.md	Open - deferred	Open	the store's eleven collections are declared in six places
+DD-C6	2026-09-22-GS-backlog.md	Open - deferred	still true, and grown	(listed in a table, no section of its own)
+DD-C7	2026-08-22-duplication-and-design.md	Open - deferred	Open	the dialog parent is named five different ways
+DD-C7	2026-09-22-GS-backlog.md	Open - deferred	still true, and grown	(listed in a table, no section of its own)
+DD-C8	2026-08-22-duplication-and-design.md	Open - deferred	Open	a 426-line keyboard dispatcher as an if/else chain
+DD-C8	2026-09-22-GS-backlog.md	Open - deferred	still true, and grown	(listed in a table, no section of its own)
 DD-C9	2026-08-22-duplication-and-design.md	Closed	Open	`sideTowards` and `sideToward`, in the same class
 DD-C9	2026-08-24-duplication-robustness.md	Closed	**Fixed** (`gridSideTowards`/`sideTowardNeighbour`, javadoc cites DD-C9). Recorded in DR-D	Fixed** (`gridSideTowards`/`sideTowardNeighbour`, javadoc cites DD-C9). Recorded in DR-D3.
 DD-D1	2026-08-22-duplication-and-design.md	Closed	Recorded	The icon → annotation → overlay pipeline is not duplication

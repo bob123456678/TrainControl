@@ -1787,6 +1787,23 @@ Closing TrainControl while a train runs - after the question *"Trains are still 
 
 **To revisit:** fold what the railway owns and nothing of where its trains stand - `AutonomySession.captureTheRailwaysSettings`, the timetable and the settings - and save without reconciling, which is what the exit already does while a declined setup edit waits (`TrainControlUI`'s exit, `setupEditDeclinedDuringRun`).  It changes no train.  The question then names only where the trains are.
 
+### OB-331 - 2026-10-10 - for 3.1.0: the August design review's code-structure notes (DD-A1, DD-B9, DD-C1, DD-C6, DD-C7, DD-C8)
+
+**Kind:** bug  
+**Raised from:** DD (2026-08-22 duplication and design review)  
+**Filed:** 2026-10-10  
+
+None of these changes what TrainControl does; they are why changes keep being risky.  Adam, 2026-10-10: *"Agree- defer the DD's for 3.1.0"*.  The cheap and safe ones first.
+
+- **DD-C6** - the autonomy store's collections declared in six places: move the declarations together.
+- **DD-C8** - the keyboard shortcuts as one long if/else chain in `TrainControlUI`: a table of shortcuts, so the set can be listed in one place.
+- **DD-C1** - `TrainControlUI` (about 28,000 lines): the seams that come out cleanly - image loading and caching, then the locomotive-to-button mapping.
+- **DD-C7** - about 330 message dialogs naming their parent window five ways: a `Dialogs` helper, adopted as code is touched.
+- **DD-A1** - the store's collections each handled by hand in about fourteen code paths: one registry the paths walk.
+- **DD-B9** - the routing rule (which way a train may go on from a square) written out three times; tried on 2026-09-07 and backed out - reachability is per copy, not per square - with the shape of a working fix in `open-questions.md`.
+
+Closed with it: DD-B6 (a shared test harness) declined, as `open-questions.md` already recommended; DD-C4 (the dead code) done in round 122 (`d6ce5a16`).
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
