@@ -4134,6 +4134,8 @@ public class AutonomySession
     private static final List<String> POINT_OPERATIONAL_KEYS = java.util.Arrays.asList(
         "loc", "active", "maxTrainLength", "speedMultiplier",
         "priority", "home", "excludedLocs",
+        // the list's mode with it (FR-121), or a capture writes the list back read the other way
+        "excludedLocsMode",
         // WHERE A STANDING TRAIN'S TAIL LIES, captured with the train (WK7-B1).  A side and a road written by a
         // run lived only on the running layout, so a restart put every driven train back with neither and its
         // tail blocked nothing past the platform.  Replaced like the rest - and removed where the layout no
@@ -10229,7 +10231,7 @@ public class AutonomySession
      *
      * @param tile
      * @param key terminus, reversing, active, maxTrainLength, speedMultiplier, priority, home,
-     *        excludedLocs
+     *        excludedLocs, excludedLocsMode
      * @param value the value, or null to remove the property entirely
      */
     /**

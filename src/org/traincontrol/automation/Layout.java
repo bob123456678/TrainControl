@@ -3132,7 +3132,7 @@ public class Layout
             // through excluded stations as well was tried and reverted - on the author's own layout it
             // removed 45% of the reachable station pairs for two locomotives, because it uses station
             // exclusions on through routes.  See HomeStaging.canEnter for the other half of the rule.
-            if (!e.getStart().isDestination() && e.getStart().getExcludedLocs().contains(loc))
+            if (!e.getStart().isDestination() && e.getStart().excludes(loc))
             {
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorIntermediatePointExcluded", placeNameOf(e.getStart()))
@@ -5561,7 +5561,7 @@ public class Layout
             if (isSendableDestination(end)
                     && (!end.isTerminus()
                         || (loc.isReversible() && leaves.computeIfAbsent(end, t -> this.leavesForAStationItFits(t, loc))))
-                    && !end.getExcludedLocs().contains(loc)
+                    && !end.excludes(loc)
                     && !this.reversesAlongTheWay(path))
             {
                 return true;
@@ -5924,7 +5924,7 @@ public class Layout
                     if (!end.equals(start) && end.getBlockLocomotive() == null
                             && isSendableDestination(end)
                             && (!end.isTerminus() || (loc.isReversible() && this.leavesForAStationItFits(end, loc)))
-                            && !end.getExcludedLocs().contains(loc))
+                            && !end.excludes(loc))
                     {
                         try 
                         {
@@ -6421,8 +6421,7 @@ public class Layout
     {
         if (end == null || !end.isActive()) return I18n.t("autolayout.why.inactive");
 
-        if (loc != null && !end.getExcludedLocs().isEmpty()
-            && end.getExcludedLocs().contains(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
+        if (loc != null && end.excludes(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
 
         // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (Adam, OB-205).
         //
@@ -6571,7 +6570,7 @@ public class Layout
     {
         for (Point d : this.points.values())
         {
-            if (d.equals(from) || !isSendableDestination(d) || d.getExcludedLocs().contains(loc)) continue;
+            if (d.equals(from) || !isSendableDestination(d) || d.excludes(loc)) continue;
 
             if (d.isTerminus() && !loc.isReversible()) continue;
 
@@ -6663,7 +6662,7 @@ public class Layout
             return I18n.f("autolayout.why.terminusItCouldNotLeave", loc.getName());
         }
 
-        if (loc != null && end.getExcludedLocs().contains(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
+        if (loc != null && end.excludes(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
 
         return null;
     }
@@ -14524,6 +14523,13 @@ public class Layout
                     }
                     
                     layout.getPoint(point.getString("name")).setExcludedLocs(excludedLocs);
+                }
+
+                // THE LIST'S MODE (FR-121): the locomotives allowed rather than the ones kept out
+                if (point.has(Point.EXCLUDED_LOCS_MODE) && layout.getPoint(point.getString("name")) != null)
+                {
+                    layout.getPoint(point.getString("name")).setAllowOnlyListed(
+                        Point.ALLOW_ONLY_LISTED.equals(point.optString(Point.EXCLUDED_LOCS_MODE, null)));
                 }
                 
                 if (point.has("maxTrainLength"))

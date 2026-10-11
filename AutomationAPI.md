@@ -501,6 +501,8 @@ You can keep locomotives off a given point by adding them to the list within the
 * On a station, the excluded locomotives may not stop there.  Autonomy never chooses it for them, and since v3.0.0 neither the Auto tab nor the track diagram's right-click menu offers it to them either (until then you could still send them there yourself).  They can still pass through it on the way somewhere else, and Return Home routes them through it too.
 * On a point that is not a station, the excluded locomotives may never pass it, on any path.
 
+*Since v3.0.0* the list can name the only locomotives allowed instead: add `"excludedLocsMode": "whitelist"` beside `excludedLocs` (in the autonomy editor, tick `Allow only the chosen locomotives`).  Every locomotive the list does not name is then excluded, including one added to the locomotive database later, by the same rules as above.  Without the key - or with `"blacklist"` - the list names the locomotives excluded.
+
 ## Ensuring network stability (v2.4.7+)
 
 The `maxLatency` setting can be used to configure a network latency threshold (in milliseconds). 

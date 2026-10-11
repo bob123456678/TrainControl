@@ -179,6 +179,54 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station's allow-only mode goes into the railway with its list and comes back from it (FR-121): the build writes
+     * `excludedLocsMode` on the station's point, and a capture of a railway whose point no longer carries it takes it
+     * off the setup, as it takes the list - the mode is one of the settings the railway owns.
+     *
+     * MUTATION: leave the mode out of the settings a capture carries back, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAnAllowOnlyModeGoesIntoTheRailwayAndComesBack() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Evening");
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setPointName(station, "FR121 Platform");
+        session.setStation(station, true);
+        session.setPointProperty(station, "excludedLocs", new org.json.JSONArray().put("FR121 Loco"));
+        session.setPointProperty(station, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE,
+            org.traincontrol.automation.Point.ALLOW_ONLY_LISTED);
+
+        org.json.JSONObject running = new org.json.JSONObject(session.buildConfiguration());
+
+        org.json.JSONObject built = null;
+
+        for (Object o : running.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            if (point.getString("name").startsWith("FR121 Platform")) built = point;
+        }
+
+        assertNotNull(built, "precondition: the station is not in the built railway: " + running);
+
+        assertEquals(built.optString(org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE, null),
+            org.traincontrol.automation.Point.ALLOW_ONLY_LISTED, "the station's allow-only mode did not reach the railway,"
+            + " so its list keeps out the one locomotive it names: " + built);
+
+        built.remove(org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE);
+
+        session.captureFromLayout(running.toString());
+
+        assertNull(session.getPointProperty(station, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE), "a capture of"
+            + " a railway whose station no longer lets in only its list left the setup reading it that way");
+    }
+
+    /**
      * Moving a train in the setup takes its tail off the square it left (AMS-C1).
      *
      * `placeLocomotive(tile, null)` and `clearEveryPlacement` clear `loc`, the facing, `arrivedFrom` and

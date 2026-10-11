@@ -163,7 +163,9 @@ in full autonomy, not a reversing point), with nothing standing in its block, no
 train that cannot reverse - nor, for one that can, a terminus from which no station it fits is reachable
 again (E2E-B1: a train of 4 turned at BottomMainB's turning copy, where everything beyond is shorter, never
 moved again; `Layout.leavesForAStationItFits`, asked by the Why Not Moving? reasons too) - and not a
-station that excludes this train; and a route to it is used only
+station that excludes this train (`Point.excludes`: one its list names, or, where the list names the only locomotives
+allowed - FR-121, `excludedLocsMode: whitelist` - any it does not, a locomotive added later included); and a route to it
+is used only
 if it turns the train nowhere on the way and `isPathClear` passes it. No routing rule can admit a
 journey any of that refuses.
 
