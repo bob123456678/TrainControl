@@ -33830,6 +33830,10 @@ pixels each side at Large; say if you meant the wall white there.  Claims in `co
 `testAStationOnACurveSpillsOntoTheSquaresBesideIt`, `testAStationThatSpillsRepaintsWhatItSpillsOnto`,
 `testANeighboursArrowsAreDrawnOverASpill`, `testTheTunnelsWallIsWider`.
 
+**Claude, 2026-10-10.**
+
+Adam, 2026-10-10, on the tunnel: *"white meant wider"* - the wall two pixels wider each side at Large, as built in round 118.  Step 4 stands as written.
+
 ---
 
 <a id="mt-713"></a>
