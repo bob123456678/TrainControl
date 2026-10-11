@@ -907,11 +907,20 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         // Redrawn, the squares' annotations with them: the squares ask `isShowingTrains` as they paint, and the annotations
-        // mark where the setup puts a train only while it says yes (RSA63-C3)
+        // mark where the setup puts a train only while it says yes (RSA63-C3).
+        //
+        // The whole window as well as the refresh (RSA64-C1).  A refresh redraws only the squares whose annotation changes,
+        // and the switch changes one only where the SETUP puts a train - while the trains' icons are drawn from the
+        // RAILWAY.  Where the railway has a train the setup does not place (the setup unable to build, the last valid
+        // railway kept), its square kept its icon with the trains switched off.
         showTrains.addActionListener(e ->
         {
             VIEW_PREFS.putBoolean(PREF_TRAINS, showTrains.isSelected());
             refresh();
+
+            javax.swing.JRootPane window = javax.swing.SwingUtilities.getRootPane(this);
+
+            if (window != null) window.repaint();
         });
 
         captions.addActionListener(e ->
@@ -9813,10 +9822,10 @@ public class AutonomyEditorPanel extends JPanel
             traces.get(tile), directionsView() == 1,
             ignored ? null
                 : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS))
-            // Which moves a badge on a bend out to the corner - see TileAnnotation.inTheEditor.
-            // Here and nowhere else: this is the only surface that draws direction arrows and
-            // arrival chevrons on the same square, and so the only one where the badge has to give
-            // way.  On a diagram it goes back onto the track it is about.
+            // Which draws every point's icon white with its colour round it - see
+            // TileAnnotation.inTheEditor.  Here and nowhere else: this is the surface the direction
+            // arrows are read on, and they are drawn over the icon.  On a diagram a named point's
+            // icon is filled with its colour.
             .inTheEditor();
 
         // NONE WHERE A CROSSING'S SQUARES MEET, as on the track diagram (OB-322)

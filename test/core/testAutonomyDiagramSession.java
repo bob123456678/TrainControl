@@ -9983,6 +9983,88 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Show Trains redraws every square in its window, not only the squares whose annotation it changes (RSA64-C1).  The
+     * trains' icons are drawn from the railway, by squares that ask the switch as they paint; where the railway has a train
+     * and the setup places none - the setup unable to build, the last valid railway kept - the switch changes no
+     * annotation, and redrawing only the changed squares left that train drawn with the trains switched off.
+     *
+     * Here the panel shares its window with a square it knows nothing about, standing for such a square on the diagram:
+     * each click of the switch, off and back on, asks for that square to be redrawn.
+     *
+     * MUTATION: drop the switch's redraw of its window, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testShowTrainsRedrawsEverySquareInItsWindow() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+
+        final boolean[] redrawn = new boolean[2];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            final javax.swing.JRootPane window = new javax.swing.JRootPane();
+            final javax.swing.JPanel square = new javax.swing.JPanel();
+
+            window.setSize(800, 600);
+            window.getContentPane().setLayout(null);
+            window.getContentPane().add(panel);
+            window.getContentPane().add(square);
+            window.doLayout();
+
+            panel.setBounds(0, 0, 400, 600);
+            square.setBounds(500, 100, 30, 30);
+
+            final java.awt.Rectangle where = javax.swing.SwingUtilities.convertRectangle(square,
+                new java.awt.Rectangle(0, 0, 30, 30), window);
+
+            final List<java.awt.Rectangle> dirty = new ArrayList<>();
+
+            javax.swing.RepaintManager was = javax.swing.RepaintManager.currentManager(window);
+
+            javax.swing.RepaintManager.setCurrentManager(new javax.swing.RepaintManager()
+            {
+                @Override
+                public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+                {
+                    dirty.add(javax.swing.SwingUtilities.convertRectangle(c, new java.awt.Rectangle(x, y, w, h), window));
+
+                    super.addDirtyRegion(c, x, y, w, h);
+                }
+            });
+
+            javax.swing.JCheckBox trains = panel.getShowTrains();
+            boolean before = trains.isSelected();
+
+            try
+            {
+                trains.setSelected(true);
+
+                for (int click = 0; click < 2; click++)
+                {
+                    dirty.clear();
+
+                    trains.doClick();
+
+                    for (java.awt.Rectangle r : dirty) redrawn[click] |= r.contains(where);
+                }
+            }
+            finally
+            {
+                javax.swing.RepaintManager.setCurrentManager(was);
+
+                if (trains.isSelected() != before) trains.doClick();
+            }
+        });
+
+        assertTrue(redrawn[0], "switching the trains off did not redraw a square in the editor's window whose annotation"
+            + " it does not change - a train the railway has there stays drawn (RSA64-C1)");
+        assertTrue(redrawn[1], "switching the trains back on did not redraw a square in the editor's window whose"
+            + " annotation it does not change - a train the railway has there is not drawn back (RSA64-C1)");
+    }
+
+    /**
      * A square out of service offers no direction click in the editor (RSA63-C5): it draws no arrows (round 127), and its
      * click went on cycling the hidden setting under the hand pointer, the square looking the same afterwards.
      *
