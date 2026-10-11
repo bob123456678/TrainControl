@@ -651,9 +651,9 @@ public class TileAnnotation
     /**
      * Whether this is being drawn in the autonomy EDITOR rather than on a diagram.
      *
-     * One thing turns on it: what colour a badge is.  In the editor every point's icon is white with
-     * its colour round it, named or not, because the direction arrows are drawn over the icon there
-     * and are what the editor is read for (Adam, 2026-10-10: *"Let's make all of the icons white with
+     * One thing turns on it, with FR-118's icons only (`StationIcons.SHAPES`): what colour a badge is.
+     * In the editor every point's icon is white with its colour round it, named or not, because the
+     * direction arrows are drawn over the icon there and are what the editor is read for (Adam, 2026-10-10: *"Let's make all of the icons white with
      * a blue border in the editor.  That way, arrows can be seen clearly."*).  Everywhere else - the
      * main window, a popup, an exported image - a named point's icon is filled with its colour.
      *
@@ -2023,6 +2023,69 @@ public class TileAnnotation
         }
     }
 
+    /**
+     * Which icons stations are drawn with.
+     */
+    public enum StationIcons
+    {
+        /**
+         * Circles, diamonds and squares - the grid in `paintBadge`, a big mark for a station and a small one for a plain
+         * sensor, the same in the autonomy editor as on the track diagram.
+         */
+        CLASSIC,
+
+        /**
+         * FR-118's blocks and hexagons, drawn by `paintStation` and spilling onto the squares beside a bend, white in the
+         * autonomy editor (rounds 110 to 130).
+         */
+        SHAPES
+    }
+
+    /**
+     * The icons stations are drawn with: the circles, diamonds and squares again (Adam, 2026-10-11: *"The icons are hard to
+     * work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and
+     * revert roughly to what we had before"*).  FR-118's shapes are kept whole, one setting away.
+     */
+    private static volatile StationIcons stationIcons = StationIcons.CLASSIC;
+
+    /**
+     * The icons stations are drawn with, asked in ONE place, as `LayoutLabel.tailStyle` is: every square follows on its
+     * next paint.
+     *
+     * @return the icons
+     */
+    public static StationIcons stationIcons()
+    {
+        return stationIcons;
+    }
+
+    /**
+     * Chooses the icons stations are drawn with from now on - for a later look at FR-118's, and for a test.
+     *
+     * @param icons the icons, null for the default
+     */
+    public static void setStationIcons(StationIcons icons)
+    {
+        stationIcons = icons == null ? StationIcons.CLASSIC : icons;
+    }
+
+    /**
+     * The box a mark is drawn in with the classic icons (Adam, 2026-10-11): 14 pixels at 30 and 28 at 60 for a station, a
+     * pixel under the badges before FR-118 (*"same as before, just ever slightly smaller"*), the sensor's contact's own
+     * width; 10 and 20 for a plain sensor, the inside of the contact's ring (*"match radius of s88, so 2px more
+     * diameter"*).  A station's mark covers the contact; a sensor's fills its ring.  A station out of service takes the same
+     * box for its sign (*"larger (same size a normal station) if a station, smaller if just a sensor"*), and a sensor a
+     * pixel more all round - `paintOutOfService`.
+     *
+     * @param tile the tile's edge
+     * @param station whether the mark is a station's
+     * @return the box's edge
+     */
+    static int classicBox(int tile, boolean station)
+    {
+        return station ? Math.max(9, Math.round(tile * 14 / 30f)) : Math.max(6, Math.round(tile * 10 / 30f));
+    }
+
     private void paintBadge(Graphics2D g, int width, int height)
     {
         // ONE COLOUR WHENEVER AUTONOMY WILL NOT SEND A TRAIN HERE, which is one question and now has one
@@ -2066,18 +2129,28 @@ public class TileAnnotation
             return;
         }
 
-        // A STATION TAKES THE ICONS ADAM CHOSE (FR-118) - `paintStation`.  A passing point keeps its small mark below.
-        if (badge.isStation())
+        // A STATION TAKES THE ICONS ADAM CHOSE FOR FR-118 - `paintStation` - while they are the ones drawn.  With the classic
+        // icons, and for a passing point either way, the grid below.
+        if (badge.isStation() && stationIcons() == StationIcons.SHAPES)
         {
             paintStation(g, width, height, colour);
 
             return;
         }
 
+        boolean classic = stationIcons() == StationIcons.CLASSIC;
+
         // A station takes a bigger badge than a passing point, as it does on the graph: 20px against
-        // 17px there, the same proportion here.
-        int size = Math.max(badge.isStation() ? 11 : 8,
-            Math.min(width, height) / (badge.isStation() ? 2 : 3));
+        // 17px there, the same proportion here.  A pixel less all round with the classic icons - `classicBox`.
+        int size = classic ? classicBox(Math.min(width, height), badge.isStation())
+            : Math.max(badge.isStation() ? 11 : 8, Math.min(width, height) / (badge.isStation() ? 2 : 3));
+
+        // A STATION WHOSE TRACK RUNS OUT IS A TERMINUS, whatever its turning setting (FR-118; Adam, 2026-10-09: a station
+        // with one way out is a terminus) - the square, with the classic icons.
+        boolean deadEnd = classic && badge.isStation() && badge.getDeadEnd() != null;
+
+        boolean turns = deadEnd || badge.isTerminus() || badge.isReversing();
+        boolean mayTurn = turns && !deadEnd && badge.isOptional();
 
         // A diamond is drawn larger than a circle or a square of the same box.
         //
@@ -2085,7 +2158,7 @@ public class TileAnnotation
         // stick out are smaller than the ones that go in.  So a diamond nominally the same size as
         // the station circle beside it reads as the smaller mark, which is backwards - the diamonds
         // are the designations somebody is scanning for, and the circles are the ordinary case.
-        if ((badge.isTerminus() || badge.isReversing()) && badge.isOptional())
+        if (mayTurn)
         {
             size = Math.round(size * 1.35f);
 
@@ -2103,9 +2176,9 @@ public class TileAnnotation
         // A PLAIN SENSOR'S TURN MARK A LITTLE BIGGER, OVER ITS CONTACT (Adam, 2026-10-10: "Make the plain turn icon slightly
         // bigger so it covers the circle.") - the diamond 16 pixels at 30 and 32 at 60, where it was 13 and 26, and the
         // square where trains must turn in proportion; the contact itself is covered under it, below, as under a station's.
-        boolean turnsHere = !badge.isImpassable() && (badge.isTerminus() || badge.isReversing());
-
-        if (turnsHere) size = Math.round(Math.min(width, height) * (badge.isOptional() ? 0.53f : 0.4f));
+        // With FR-118's icons only: with the classic ones a sensor's mark sits inside its contact, smaller than a station's
+        // (Adam, 2026-10-11: *"diamond for reversing, larger if station, smaller if not"*).
+        if (!classic && turns) size = Math.round(Math.min(width, height) * (mayTurn ? 0.53f : 0.4f));
 
         // Centred on the TRACK for anything straight - the midpoint of the route's own two sides,
         // which is the tile centre for a straight and lands on the rails for anything else.
@@ -2117,9 +2190,39 @@ public class TileAnnotation
         // A STATION is placed by `paintStation` (FR-118), on its rails, in the editor as on a diagram.  A passing point's
         // mark is a third of the tile and sits on the track without crowding anything, as it always has.
 
-        // never let it hang outside the square
-        x = Math.max(1, Math.min(width - size - 1, x));
-        y = Math.max(1, Math.min(height - size - 1, y));
+        // A CLASSIC STATION'S DIAMOND ON A BEND, ON ITS RAILS (Adam, 2026-10-11: "make sure that the diamonds are correctly
+        // aligned on curves"; shown three ways, he chose it a little smaller there): a pixel in from the middle of the
+        // curve's chord toward the middle of the square, as the circle and the square beside it are, and 15 pixels at 30
+        // and 29 at 60, where it is 17 and 36 on straight track - a curve leaves no more room on its rails.  The clamp below
+        // put it in by 3 pixels and 5, off them.  Still bigger than a sensor's, 13 and 26.  Its points' mitres reach under
+        // half a pixel past the square, and `paintBadge` cuts them off there.
+        boolean onTheBend = classic && badge.isStation() && mayTurn && trackBends();
+
+        if (onTheBend)
+        {
+            int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
+
+            double cx = (a[0] + b[0]) / 2.0, cy = (a[1] + b[1]) / 2.0;
+
+            cx += Math.signum(width / 2.0 - cx);
+            cy += Math.signum(height / 2.0 - cy);
+
+            size = Math.round(Math.min(width, height) * 29 / 60f);
+
+            x = (int) Math.round(cx - size / 2.0);
+            y = (int) Math.round(cy - size / 2.0);
+        }
+
+        // never let it hang outside the square - by its outline's width too: a station's is 2 pixels, and a classic
+        // station's mark on a curve, a pixel from the edge, put its outline's outer half over it, where the square's paint
+        // is cut off (Adam, MT-710: "On curves, regular stations are now cut off in the corners")
+        int margin = badge.isStation() ? 2 : 1;
+
+        if (!onTheBend)
+        {
+            x = Math.max(margin, Math.min(width - size - margin, x));
+            y = Math.max(margin, Math.min(height - size - margin, y));
+        }
 
         // Where the badge ACTUALLY went, for the star drawn on top of it (MT-124).
         //
@@ -2132,10 +2235,13 @@ public class TileAnnotation
 
         g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
 
-        // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.  White with its
-        // colour round it in the editor, as a station's icon there (Adam, 2026-10-10).
-        Color fill = badge.isNamed() && !editing ? colour : Color.WHITE;
-        Color line = badge.isNamed() && !editing ? Color.WHITE : colour;
+        // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.  With FR-118's icons,
+        // white with its colour round it in the editor, as a station's icon there (Adam, 2026-10-10); with the classic ones
+        // the same in the editor as on the diagram (Adam, 2026-10-11: *"same appearance in editor as viewer"*).
+        boolean white = editing && !classic;
+
+        Color fill = badge.isNamed() && !white ? colour : Color.WHITE;
+        Color line = badge.isNamed() && !white ? Color.WHITE : colour;
 
         // THE SHAPE SAYS WHAT TURNING MEANS HERE.  THE SIZE SAYS WHETHER IT IS A STATION.
         //
@@ -2152,14 +2258,26 @@ public class TileAnnotation
         // The bordering cases are what makes it worth the trouble.  A station where every train turns
         // and a siding where every train turns are the SAME fact about a railway happening in two
         // places, and they now look like the same fact in two sizes.
-        boolean turns = badge.isTerminus() || badge.isReversing();
-        boolean mayTurn = turns && badge.isOptional();
-
-        if (turns) coverTheContact(g, width, height);
+        // THE CONTACT COVERED UNDER A STATION'S MARK, as under FR-118's icons (*"make sure the white would cover an s88
+        // circle"*) - a classic diamond is wider than the contact and leaves its ring showing between its sides.  A sensor's
+        // classic mark sits inside its contact and leaves it showing round it; with FR-118's icons a sensor's turn mark covers
+        // it (round 127).
+        if (classic ? badge.isStation() : turns) coverTheContact(g, width, height);
 
         if (turns && mayTurn)
         {
-            diamond(g, x, y, size, fill, line);
+            Graphics2D d = (Graphics2D) g.create();
+
+            try
+            {
+                if (onTheBend) d.clipRect(0, 0, width, height);
+
+                diamond(d, x, y, size, fill, line);
+            }
+            finally
+            {
+                d.dispose();
+            }
         }
         else if (turns)
         {
@@ -2426,8 +2544,9 @@ public class TileAnnotation
      */
     public boolean spillsOverItsSquare()
     {
-        // not a square the editor shades, which draws no icon on itself (RSA63-C4)
-        return badge != null && badge.isStation() && !badge.isImpassable() && !ignored && badge.getA() != null
+        // not a square the editor shades, which draws no icon on itself (RSA63-C4); and only FR-118's icons spill - a classic
+        // mark is kept inside its square
+        return stationIcons() == StationIcons.SHAPES && badge != null && badge.isStation() && !badge.isImpassable() && !ignored && badge.getA() != null
             && badge.getB() != null && badge.getA() != badge.getB() && trackBends();
     }
 
@@ -2741,6 +2860,9 @@ public class TileAnnotation
      * thicker, close to what we had in the old reversing points"*).  Round, so it is the same on a curve, and inside its
      * square, so it spills nothing.
      *
+     * That is the sign with FR-118's icons.  With the classic ones (round 131) a station's is its mark's size and solid
+     * orange with a white X, and a plain sensor's the white circle ringed in orange, a pixel more all round than its mark.
+     *
      * @param g the tile's graphics
      * @param width the tile's width
      * @param height the tile's height
@@ -2752,12 +2874,27 @@ public class TileAnnotation
 
         int[] on = trackCentre(width, height);
 
-        double across = Math.round(tile * 0.47f);
+        boolean shapes = stationIcons() == StationIcons.SHAPES;
 
-        float ring = Math.max(2f, (float) across / 9f);
+        // FR-118's size for every square with its icons.  With the classic ones a station's mark's size, and a sensor's a
+        // pixel more all round than its mark (Adam, 2026-10-11: "1px more radius on the non station out of service")
+        double across = shapes ? Math.round(tile * 0.47f)
+            : classicBox(tile, badge.isStation()) + (badge.isStation() ? 0 : Math.round(tile / 15f));
 
-        // the ring's middle, so that its outer edge is `across` wide
-        double r = (across - ring) / 2.0, arm = r * 0.55;
+        // A CLASSIC STATION'S IS SOLID ORANGE WITH A WHITE X (Adam, 2026-10-11: "give the station out of service a solid
+        // orange fill, with a white X inside instead") - filled, as a named station's mark is, where a sensor's stays the
+        // white circle ringed in orange
+        boolean filled = !shapes && badge.isStation();
+
+        // lighter strokes on a classic sensor's small sign, so its X still reads as an X
+        boolean small = !shapes && across < 16;
+
+        float least = small ? 1.5f : 2f;
+
+        float ring = Math.max(least, (float) across / 9f);
+
+        // the ring's middle, so that its outer edge is `across` wide; the small sign's X reaches nearer its ring, as thin
+        double r = (across - ring) / 2.0, arm = filled ? across / 4.0 : r * (small ? 0.62 : 0.55);
 
         badgeDrawnAt = new int[] {on[0], on[1]};
 
@@ -2769,14 +2906,18 @@ public class TileAnnotation
             c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
             c.translate(on[0], on[1]);
 
-            c.setColor(Color.WHITE);
+            c.setColor(filled ? colour : Color.WHITE);
             c.fill(new java.awt.geom.Ellipse2D.Double(-across / 2.0, -across / 2.0, across, across));
 
-            c.setColor(colour);
-            c.setStroke(new BasicStroke(ring));
-            c.draw(new java.awt.geom.Ellipse2D.Double(-r, -r, 2 * r, 2 * r));
+            if (!filled)
+            {
+                c.setColor(colour);
+                c.setStroke(new BasicStroke(ring));
+                c.draw(new java.awt.geom.Ellipse2D.Double(-r, -r, 2 * r, 2 * r));
+            }
 
-            c.setStroke(new BasicStroke(Math.max(2f, (float) across / 8f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            c.setColor(filled ? Color.WHITE : colour);
+            c.setStroke(new BasicStroke(Math.max(least, (float) across / 8f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             c.draw(new java.awt.geom.Line2D.Double(-arm, -arm, arm, arm));
             c.draw(new java.awt.geom.Line2D.Double(-arm, arm, arm, -arm));
         }

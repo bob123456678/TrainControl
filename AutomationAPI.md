@@ -394,7 +394,8 @@ Point shapes and sizes work together: the SHAPE says whether trains turn here, t
 
 * Circle - trains do not turn here.  A large circle is a regular station any train can stop at; a small circle is an ordinary point.
 * Diamond - trains MAY turn here, as a choice rather than a requirement - a reversing station (large) or reversing point (small).  Useful for shunting/parking.
-* Square - trains ALWAYS turn here on arrival - a terminus station (large) or a point where reversing is compulsory (small).  Full autonomy only sends reversible locomotives here; you can still send a non-reversible one yourself if the track lets it back in.
+* Square - trains ALWAYS turn here on arrival - a terminus station (large) or a point where reversing is compulsory (small).  Full autonomy only sends reversible locomotives here; you can still send a non-reversible one yourself if the track lets it back in.  A station whose track runs out on one side is drawn as a square too, whatever its turning setting.
+* Orange circle with an X - out of service: nothing may pass or stop here.  A station's is solid orange with a white X; a point's is smaller, white inside an orange ring.
 
 ![Sample layout](assets/graph2b.png?raw=true)
 
@@ -495,10 +496,10 @@ The time between paths will be recorded and replayed.  Timetables can also be bu
 
 ## Locomotive exclusions (v2.1.5+)
 
-You can prevent locomotives from stopping at a given station by adding them to the list within the 
-`excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station's square in the autonomy editor.  Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
+You can keep locomotives off a given point by adding them to the list within the `excludedLocs` JSON key on any `Point`.  This can also be set in the autonomy editor: right-click the square, then `Advanced Parameters...` → `Excluded Locomotives`.  What it does depends on whether the point is a station:
 
-However, if you set an exclusion on a non-station, the excluded locomotives will never be able to traverse such points on any path.
+* On a station, the excluded locomotives may not stop there.  Autonomy never chooses it for them, and since v3.0.0 neither the Auto tab nor the track diagram's right-click menu offers it to them either (until then you could still send them there yourself).  They can still pass through it on the way somewhere else, and Return Home routes them through it too.
+* On a point that is not a station, the excluded locomotives may never pass it, on any path.
 
 ## Ensuring network stability (v2.4.7+)
 

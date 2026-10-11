@@ -33,6 +33,28 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  */
 public class testDiagramLooksRight
 {
+
+    /**
+     * The icons each claim draws (round 131): FR-118's for a claim marked `@DrawsFR118Icons`, the classic ones - what
+     * stations are drawn with - for every other.
+     *
+     * @param claim the claim about to run
+     */
+    @org.testng.annotations.BeforeMethod(alwaysRun = true)
+    public void theIconsItDraws(java.lang.reflect.Method claim)
+    {
+        org.traincontrol.automationui.TileAnnotation.setStationIcons(claim.isAnnotationPresent(support.DrawsFR118Icons.class)
+            ? org.traincontrol.automationui.TileAnnotation.StationIcons.SHAPES
+            : org.traincontrol.automationui.TileAnnotation.StationIcons.CLASSIC);
+    }
+
+    /** And the classic icons again after it, whatever it set. */
+    @org.testng.annotations.AfterMethod(alwaysRun = true)
+    public void theClassicIconsAgain()
+    {
+        org.traincontrol.automationui.TileAnnotation.setStationIcons(null);
+    }
+
     private static MarklinControlStation model;
     private static TrainControlUI ui;
 
@@ -3378,7 +3400,9 @@ public class testDiagramLooksRight
      * The badge is MEASURED, painted as the diagram paints a station on vertical track, so this follows whatever size the
      * badge rule gives; the caption is built and placed as the grid builds and places one, at both tile sizes, empty and
      * with a train's name.  It stands to the right of its own track, so its near edge must clear its own badge and its
-     * far edge the same badge one square to the right, each by a pixel at 30 and two at 60.
+     * far edge the same badge one square to the right, by a pixel - two at 60 until round 131, when Adam set the classic
+     * station's mark to 28 pixels there by eye (2026-10-11: *"same as before, just ever slightly smaller"*), which leaves
+     * one, the mark's own white rim between them.
      *
      * MUTATION: place it by the flat caption's offset again, or give it the full line height, and this fails.
      */
@@ -3411,7 +3435,7 @@ public class testDiagramLooksRight
 
             assertTrue(badgeLeft >= 0, "precondition: no station badge drawn at " + tile + " pixels");
 
-            int margin = tile >= 60 ? 2 : 1;
+            int margin = 1;
 
             for (String text : texts)
             {
@@ -3816,6 +3840,7 @@ public class testDiagramLooksRight
      * MUTATION: take the spill pass out of `LayoutGrid.newDiagramContainer`, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testAStationOnACurveSpillsOntoTheSquaresBesideIt()
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
@@ -3898,6 +3923,7 @@ public class testDiagramLooksRight
      * MUTATION: repaint only the square itself again, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testAStationThatSpillsRepaintsWhatItSpillsOnto() throws Exception
     {
         final int size = 30;
@@ -3974,6 +4000,7 @@ public class testDiagramLooksRight
      * MUTATION: draw the spill over the captions again, or the arrows again over the whole square, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testASpillIsDrawnUnderTheCaptionsOverIt()
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
@@ -4063,6 +4090,7 @@ public class testDiagramLooksRight
      * MUTATION: make the region the icon's outline alone again, and this fails at 60 pixels.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testEveryKindOfSpillIsUnderTheCaptionsAtBothSizes()
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
@@ -4095,6 +4123,7 @@ public class testDiagramLooksRight
      * MUTATION: build the region afresh on every call, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testASpillsRegionIsBuiltOnceAndQuickly()
     {
         org.traincontrol.automationui.TilePorts.Side n = org.traincontrol.automationui.TilePorts.Side.N;
@@ -4226,6 +4255,7 @@ public class testDiagramLooksRight
      * MUTATION: take the arrows' pass over the spill out of `LayoutGrid.newDiagramContainer`, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testANeighboursArrowsAreDrawnOverASpill()
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
@@ -4426,6 +4456,7 @@ public class testDiagramLooksRight
      * MUTATION: leave the outline out of what is drawn again over a spill, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testANeighboursOutlineIsDrawnOverASpill()
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
