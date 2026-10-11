@@ -383,6 +383,16 @@ public class testMaxActiveTrains
      */
     private static Layout twoSeparateRoutes() throws Exception
     {
+        // THE FOUR SENSORS CLEAR FIRST.  The tests share them, and a train an earlier test sent clears its arrival's sensor
+        // from its own thread a moment after that test has ended - under a battery's load once (battery 81) late enough that
+        // the next test's route was refused as occupied.
+        long until = System.currentTimeMillis() + 5000;
+
+        for (int sensor = 190; sensor <= 193; sensor++)
+        {
+            while (model.getFeedbackState(String.valueOf(sensor)) && System.currentTimeMillis() < until) Thread.sleep(20);
+        }
+
         Layout layout = new Layout(model);
 
         layout.createPoint("CAP_a", true, "190");
