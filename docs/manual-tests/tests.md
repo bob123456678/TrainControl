@@ -32,8 +32,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-709](#mt-709) | 2026-10-09 | Round 108: a train's line ends rounded, the Auto tab's darker blue, the tail question's Cancel, a maximised window comes forward, a smaller halo at 60 px | fixed unvalidated | Adam, 2026-10-09 - the rounded end, the Auto tab's colours, "drop not known, keep cancel", and his notes on MT-705 (OB-328) and MT-707 (OB-329) |
 | [MT-710](#mt-710) | 2026-10-09 | Round 110: the new station icons, and captions on end at full size (FR-118) | fixed unvalidated | Adam, 2026-10-09 - FR-118, as chosen on the station icon page, and "Ok, now implement FR-118 and advise when it's in so I can run MT's" |
 | [MT-711](#mt-711) | 2026-10-09 | Round 109: a train's destination is the train's orange, ringed in dark orange | fixed unvalidated | Adam, 2026-10-09 - "Make the yellow labels (trains on their way somewhere) have the same orange background color as occupied train tiles, just without the fading", then "Go with as the line actually looks on white, but give the pill a dark orange border instead of the blue border" |
+| [MT-712](#mt-712) | 2026-10-10 | Rounds 112, 118-120: MT-710's points on the station icons, curves' icons spilling over with their arrows on top, the tunnel's wall | fixed unvalidated | Adam, 2026-10-09, MT-710 (Does not work) - the arrows hidden, curves cut off, the lengths - with "Make sure must reverses are cumulatively no longer" (asked: no longer than may-turn) and "render red arrows on top of stations in the viewer" (asked: the editor too); then 2026-10-10: "Stations still clip on curved tracks.  You will need to make their icons smaller.  Make sure all types fit.  Also, make the light gray tunnel wall on tunnel icons about 1px wider on each side in the 30px version, and correspondingly white in the 60px."; then "can we instead make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."; then "Now with these new station badges, make sure that the optional ingress/egress arrows remain visible, especially on curves." |
+| [MT-713](#mt-713) | 2026-10-10 | Round 115: deleting a route takes the other routes' commands that run it | fixed unvalidated | Adam, 2026-10-10 - GSR-B4, asked what deleting a route should do with the routes that run it: "Remove the calls" |
+| [MT-714](#mt-714) | 2026-10-10 | Round 115: a square that stops being a station keeps its settings for when it is one again | fixed unvalidated | Adam, 2026-10-10 - GSE-C4, asked what a station set to `No - Trains Cannot Stop Here` should do with its settings: "Keep them, ignored" |
+| [MT-715](#mt-715) | 2026-10-10 | Round 116: autonomy waits while the track power is off | fixed unvalidated | Adam, 2026-10-10 - GST-B1, "stop autonomy when power is off", into 3.0.0 |
+| [MT-716](#mt-716) | 2026-10-10 | Round 121: your own writing on the diagram with a white halo; Place All Trains at Their Homes | fixed unvalidated | Adam, 2026-10-10 - "Give regular text labels on the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like tracks."; and "rephrase "place all at their homes" to "place all trains at their homes" in the right click menu" |
 
-Everything else - 706 of 711 - needs nothing from you unless the area changes again:
+Everything else - 706 of 716 - needs nothing from you unless the area changes again:
 558 **fixed validated** and 148 **superseded**.
 
 ---
@@ -24532,6 +24537,10 @@ closing the editor and losing the edit.
 
 *Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-10.**
+
+Step 5's expected result is right and its reason is not (VD17-R10): step 5 deletes a condition, not a word.  A deleted condition takes the joining word at its own depth beside it - the one before it, or, for the first condition, the one after - which is why no `and` is left in front of B.  The word rule (a deleted word takes the whole term after it) is step 3a's.
+
 ---
 
 <a id="mt-472"></a>
@@ -33777,5 +33786,159 @@ No may or must reverse on curves, test that yourself.
 **Adam, 2026-10-09 (triage).** Works.
 
 *Run against commit 60bebd9c, in English - build\classes, compiled 09 Oct 23:24 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-712"></a>
+### MT-712 - 2026-10-10 - Rounds 112, 118-120: MT-710's points on the station icons, curves' icons spilling over with their arrows on top, the tunnel's wall
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-09, MT-710 (Does not work) - the arrows hidden, curves cut off, the lengths - with "Make sure must reverses are cumulatively no longer" (asked: no longer than may-turn) and "render red arrows on top of stations in the viewer" (asked: the editor too); then 2026-10-10: "Stations still clip on curved tracks.  You will need to make their icons smaller.  Make sure all types fit.  Also, make the light gray tunnel wall on tunnel icons about 1px wider on each side in the 30px version, and correspondingly white in the 60px."; then "can we instead make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."; then "Now with these new station badges, make sure that the optional ingress/egress arrows remain visible, especially on curves."
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Load a configuration and look at the track diagram at the Small size, then the Large, at a station with a red or a
+   green arrow on its square.
+2. Look at stations of every kind on curves: an ordinary one, where trains may and must change direction, a terminus, a
+   parking berth and one out of service - with Display Travel Restrictions on, and one of them next to one-way track.
+3. Look at a terminus, a station where trains may change direction and one where they must, at both sizes, on straight
+   track.
+4. Look at a tunnel, at both sizes.
+5. Open the autonomy editor on the same pages and look at the same stations.
+
+**Expected**
+
+- Step 1: the arrow is drawn over the station's icon, not hidden by it.
+- Step 2: every icon lies along the curve on its rails, the size it is on straight track, its ends reaching onto the
+  squares beside it - nothing cut off; the sensor's circle does not show round it.  The red and green arrows on its own
+  square and on the squares beside it are drawn over the icon.  A train arriving on the squares beside it is drawn over
+  the ends.
+- Step 3: the terminus is a pixel shorter than it was; the may-turn hexagon a pixel shorter at Small and two at
+  Large; the must-turn pair no longer than the may-turn hexagon.
+- Step 4: the light grey wall beside the arch is a pixel wider each side at Small and two at Large; the arch and the
+  track through it are as before.
+- Step 5: the arrows over the icons; a station on a curve sits in the corner off the rails, inside its square, as before.
+
+*What this is:* round 112 (`65aa84b3`), round 118 (`ad266099`, the tunnel; its smaller curve icons replaced), rounds 119 and 120.  "Correspondingly white" read as *wider* - two
+pixels each side at Large; say if you meant the wall white there.  Claims in `core.testAutonomyDiagramMonitor`:
+`testTheTurningIconsAreTheLengthsAdamAskedFor`, `testAStationOnACurveIsWhollyInsideItsSquare`,
+`testAStationOnACurveIsFullSizeOnItsRails`, `testTheSpillIsOnlyWhatFallsOutsideTheSquare`,
+`testTheContactIsCoveredOnACurve`, `testTheArrowsAreDrawnOverAStationsIcon`,
+`testTheArrowsAreDrawnOverAStationsIconOnACurve`; and in `ui.testDiagramLooksRight`:
+`testAStationOnACurveSpillsOntoTheSquaresBesideIt`, `testAStationThatSpillsRepaintsWhatItSpillsOnto`,
+`testANeighboursArrowsAreDrawnOverASpill`, `testTheTunnelsWallIsWider`.
+
+---
+
+<a id="mt-713"></a>
+### MT-713 - 2026-10-10 - Round 115: deleting a route takes the other routes' commands that run it
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10 - GSR-B4, asked what deleting a route should do with the routes that run it: "Remove the calls"
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Make two routes, A and B, and give B a command that runs route A.  Save both.
+2. Delete route A from the routes list.
+3. Open route B.
+4. Make a new route called A, and run route B.
+
+**Expected**
+
+- Step 2: the question names B as a route that runs A, and says its command will be deleted with A.  After Yes, the log
+  says B's command that ran A was removed.
+- Step 3: B no longer has the command that ran A.
+- Step 4: B does not run the new A.
+
+*What this is:* round 115 (`2b18974e`).  Claim `core.testAdvancedRoutes.testADeletedRouteIsNotRunByTheRoutesThatCalledIt`.
+Editing a route does not strip the routes that call it.
+
+---
+
+<a id="mt-714"></a>
+### MT-714 - 2026-10-10 - Round 115: a square that stops being a station keeps its settings for when it is one again
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10 - GSE-C4, asked what a station set to `No - Trains Cannot Stop Here` should do with its settings: "Keep them, ignored"
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Copy the layout's `config/autonomy` folder aside.
+2. Open the autonomy editor.  On a station, set a side trains may not arrive by and set Changing Direction to must
+   turn; note where its name is shown.
+3. Right-click it and set Station to `No - Trains Can Only Pass Through`.  Save.
+4. Set it back to `Yes - Trains Can Stop Here`.  Save.
+5. Close the editor and copy the `config/autonomy` folder back.
+
+**Expected**
+
+- Step 3: its name is no longer shown and its icon is gone; nothing asks or warns.
+- Step 4: its name is back where it was, the barred side is still barred, and it is a must-turn station again.
+
+*What this is:* round 115 (`2b18974e`), behaviour.md 2a.  Claims in `core.testAutonomyDiagramSession`:
+`testADemotedStationHasItsSettingsBackWhenItIsAStationAgain` and
+`testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation`.
+
+---
+
+<a id="mt-715"></a>
+### MT-715 - 2026-10-10 - Round 116: autonomy waits while the track power is off
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10 - GST-B1, "stop autonomy when power is off", into 3.0.0
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Start autonomy with two or three trains and let them run.
+2. Turn the track power off (Power Off on TrainControl's toolbar, or the Stop button on the Central Station) while one
+   train is standing at a station.
+3. Wait half a minute.
+4. Turn the power back on.
+5. Repeat with Execute Timetable instead of Start.
+
+**Expected**
+
+- Step 2: the log says "Track power is off - autonomy is waiting for it to come back on", once.
+- Step 3: no new journey starts - no route's switches are thrown, no train is set going.
+- Step 4: autonomy carries on choosing and sending trains.
+- Step 5: the same for the timetable: its next entry waits for the power.
+
+*What this is:* round 116.  Claims `core.testATrainIsDispatchedOnce.testAutonomySendsNothingWhileThePowerIsOff` and
+`testATimetableStartsNothingWhileThePowerIsOff`.  A train already under way when the power goes off is untouched, as
+Instant Stop's halt is (OB-251).
+
+---
+
+<a id="mt-716"></a>
+### MT-716 - 2026-10-10 - Round 121: your own writing on the diagram with a white halo; Place All Trains at Their Homes
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-10 - "Give regular text labels on the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that labels are visible against black backgrounds like tracks."; and "rephrase "place all at their homes" to "place all trains at their homes" in the right click menu"
+
+**Written:** 2026-10-10
+
+**Steps**
+
+1. Look at a page with text you wrote on the diagram, at the Small size and the Large - text lying over track above all.
+2. Turn Show Addresses on and look at an address beside your writing.
+3. Right-click a square on the track diagram and open Autonomy Setup's Bulk Tools.
+
+**Expected**
+
+- Step 1: the letters have a thin white halo round them and read over black track; they are where they were, and
+  nothing else on the page has moved.
+- Step 2: the halo round your writing is thinner than the address's.
+- Step 3: the item reads "Place All Trains at Their Homes".
+
+*What this is:* round 121.  Claims `ui.testDiagramLooksRight.testTheDiagramsOwnWritingHasAHalo`,
+`testTheGridGivesEveryLabelThatIsNotAPillAHalo`, and `core.testMessageBundles.testPlaceAllSaysTrains`.
 
 ---

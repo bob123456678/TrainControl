@@ -1300,51 +1300,51 @@ GR-D2	2026-08-18-v3.0.0-branch-review.md	Closed	Recorded	Reconciliation and obse
 GS-B1	2026-09-22-GS-round.md	Closed	the atomic-routes gate had three more dispatch doors: Execute Timetable, Return Home, and 	the gate, three doors further out
 GS-B1	2026-09-22-GS-run-loop.md	Closed	The non-atomic gate's fourth door is only on Start. Execute Timetable and Return Home driv	the fourth door of the non-atomic gate is only at Start; two other run doors release track under the same trains
 GS-B2	2026-09-22-GS-run-loop.md	Closed	Instant Stop ("stops all running locomotives") does not stop autonomy: `running` stays set	Instant Stop stops every train and autonomy starts them again
-GS-B3	2026-09-22-GS-round.md	Open - deferred until the MT retests	the tail bookkeeping is one edge behind its own definition, and on a path of three edges o	the tail bookkeeping is one edge behind its own definition, and on a path of three edges or fewer nothing is ever released. Never early, so nothing is
-GS-B3	2026-09-22-GS-run-loop.md	Open - deferred until the MT retests	The tail bookkeeping is one edge behind its own definition: `behind` never counts the edge	the tail bookkeeping is one edge behind its own definition, and on a short path it never releases anything
-GS-C1	2026-09-22-GS-run-loop.md	Open	`executePathInternal`'s own comment says the speed writes below it are each fenced by `isC	the departure speed write is not fenced, and a comment above it says it is
-GSB-C1	2026-09-22-GS-backlog.md	Open	Open	route.ui.frameNameNotUsable is a second copy of VD12-R7's wrong rule, and VD12-R7 does not name it
-GSB-C2	2026-09-22-GS-backlog.md	Open	Open	RouteEditorFrame imports ConditionRows and does not use it
-GSB-C3	2026-09-22-GS-backlog.md	Open	Open	nothing verifies the status_note claims that an OB exists - second instance
+GS-B3	2026-09-22-GS-round.md	Closed	the tail bookkeeping is one edge behind its own definition, and on a path of three edges o	the tail bookkeeping is one edge behind its own definition, and on a path of three edges or fewer nothing is ever released. Never early, so nothing is
+GS-B3	2026-09-22-GS-run-loop.md	Closed	The tail bookkeeping is one edge behind its own definition: `behind` never counts the edge	the tail bookkeeping is one edge behind its own definition, and on a short path it never releases anything
+GS-C1	2026-09-22-GS-run-loop.md	Closed	`executePathInternal`'s own comment says the speed writes below it are each fenced by `isC	the departure speed write is not fenced, and a comment above it says it is
+GSB-C1	2026-09-22-GS-backlog.md	Closed	Open	route.ui.frameNameNotUsable is a second copy of VD12-R7's wrong rule, and VD12-R7 does not name it
+GSB-C2	2026-09-22-GS-backlog.md	Closed	Open	RouteEditorFrame imports ConditionRows and does not use it
+GSB-C3	2026-09-22-GS-backlog.md	Closed	Open	nothing verifies the status_note claims that an OB exists - second instance
 GSE-B1	2026-09-22-GS-editor-and-store.md	Closed	Unpair This Link writes the setup and never tells the running layout — autonomy keeps rout	Unpair This Link writes the setup and never tells the running layout
 GSE-B1	2026-09-22-GS-round.md	Closed	-	Unpair This Link wrote the setup and never told the running layout
 GSE-B2	2026-09-22-GS-editor-and-store.md	Closed	the bulk locomotive clear counts one population and clears another, in the same sentence —	the bulk locomotive clear counts one population and clears another, in the same sentence
 GSE-B2	2026-09-22-GS-round.md	Closed	-	the bulk clear's confirmation counted every page, named the editor's own list, and cleared a third set
 GSE-B3	2026-09-22-GS-editor-and-store.md	Closed	the page-renumber warning tells the operator a page's settings were dropped; they were loa	the page-renumber warning tells the operator his settings were dropped; they were loaded, and onto the right page
 GSE-B3	2026-09-22-GS-round.md	Closed	-	the page-renumber warning described a loss that stopped happening on 2026-08-24
-GSE-C1	2026-09-22-GS-editor-and-store.md	Open	the `setupChanged` guard analyses the enclosing 820-line method, so every inline writer in	the `setupChanged` guard reads the enclosing 820-line method, so `buildTileMenu`'s inline writers exempt each other
-GSE-C2	2026-09-22-GS-editor-and-store.md	Open	an externally renamed page is reported as one that failed to load, and nothing reconciles 	an externally renamed page is reported as one that failed to load, and nothing reconciles for the rest of the session
-GSE-C3	2026-09-22-GS-editor-and-store.md	Open	the "why is it not moving" worker iterates the live store collections from off the event t	the "why is it not moving" worker iterates the live store collections off the event thread
-GSE-C4	2026-09-22-GS-editor-and-store.md	Open	demoting a station destroys five settings with no warning, and from the diagram door there	demoting a station destroys five settings with no warning, and `viewer-editability.md` says the gesture changes two things
-GSE-C5	2026-09-22-GS-editor-and-store.md	Open	the menu door replaces a caption the drag door refuses to replace	the menu door replaces a caption the drag door refuses to replace
+GSE-C1	2026-09-22-GS-editor-and-store.md	Closed	the `setupChanged` guard analyses the enclosing 820-line method, so every inline writer in	the `setupChanged` guard reads the enclosing 820-line method, so `buildTileMenu`'s inline writers exempt each other
+GSE-C2	2026-09-22-GS-editor-and-store.md	Closed	an externally renamed page is reported as one that failed to load, and nothing reconciles 	an externally renamed page is reported as one that failed to load, and nothing reconciles for the rest of the session
+GSE-C3	2026-09-22-GS-editor-and-store.md	Closed	the "why is it not moving" worker iterates the live store collections from off the event t	the "why is it not moving" worker iterates the live store collections off the event thread
+GSE-C4	2026-09-22-GS-editor-and-store.md	Closed	demoting a station destroys five settings with no warning, and from the diagram door there	demoting a station destroys five settings with no warning, and `viewer-editability.md` says the gesture changes two things
+GSE-C5	2026-09-22-GS-editor-and-store.md	Closed	the menu door replaces a caption the drag door refuses to replace	the menu door replaces a caption the drag door refuses to replace
 GSP-B1	2026-09-22-GS-persistence.md	Closed	Import is the fourth door to a configuration name and the only one that does not ask `file	Import is the fourth door to a configuration name, and the only one that does not ask whether the file is already taken
 GSP-B1	2026-09-22-GS-round.md	Closed	-	import was the one configuration-name door that did not ask `fileNameTaken`
-GSP-B2	2026-09-22-GS-persistence.md	Open	Every reason a setup will not load is swallowed into the log and reported as "it needs a l	A setup that will not read is reported as a layout folder that cannot be written
-GSP-C1	2026-09-22-GS-persistence.md	Open	`restoreState` treats "read an object that is not a List" as a successful load, so the exi	A locomotive database that reads as something other than a List loads as "loaded", and the exit save writes emptiness over it
-GSP-C2	2026-09-22-GS-persistence.md	Open	The four page shifts move modelled tiles and leave unmodelled elements at their old coordi	The page shifts move the tiles and leave the unmodelled elements behind
-GSP-C3	2026-09-22-GS-persistence.md	Open	`fileNameTaken`'s javadoc says "the two doors a name comes in by"; there are three	`fileNameTaken` names two doors and there are three
-GSP-C4	2026-09-22-GS-persistence.md	Open	`readShared` has two callers; only `load()` has the rollback, and the pre-edit note's shap	`readShared` has two callers and one rollback, and the pre-edit note is the caller without it
+GSP-B2	2026-09-22-GS-persistence.md	Closed	Every reason a setup will not load is swallowed into the log and reported as "it needs a l	A setup that will not read is reported as a layout folder that cannot be written
+GSP-C1	2026-09-22-GS-persistence.md	Closed	`restoreState` treats "read an object that is not a List" as a successful load, so the exi	A locomotive database that reads as something other than a List loads as "loaded", and the exit save writes emptiness over it
+GSP-C2	2026-09-22-GS-persistence.md	Closed	The four page shifts move modelled tiles and leave unmodelled elements at their old coordi	The page shifts move the tiles and leave the unmodelled elements behind
+GSP-C3	2026-09-22-GS-persistence.md	Closed	`fileNameTaken`'s javadoc says "the two doors a name comes in by"; there are three	`fileNameTaken` names two doors and there are three
+GSP-C4	2026-09-22-GS-persistence.md	Closed	`readShared` has two callers; only `load()` has the rollback, and the pre-edit note's shap	`readShared` has two callers and one rollback, and the pre-edit note is the caller without it
 GSR-B1	2026-09-22-GS-round.md	Closed	the route editor's Test button waited for a train on the event thread, freezing the window	a report that waited for a train
 GSR-B1	2026-09-22-GS-routes.md	Closed	The route editor's **Test** button parks the event thread inside `Layout.waitForS88Reached	Test parks the event thread in an untimed wait
-GSR-B2	2026-09-22-GS-routes.md	Open	`syncWithCS2`'s address-update branch is the fourth writer of a locomotive's address and t	the fourth writer past `runningRouteDriving`
-GSR-B3	2026-09-22-GS-routes.md	Open	`editRoute` replaces the route OBJECT, so `isExecuting` - and the guard that reads it - fo	the running flag belongs to an object the edit throws away
-GSR-B4	2026-09-22-GS-routes.md	Open	Deleting a route leaves every other route's chain command naming it, and a later route of 	a deleted route's name is still a live target
+GSR-B2	2026-09-22-GS-routes.md	Closed	`syncWithCS2`'s address-update branch is the fourth writer of a locomotive's address and t	the fourth writer past `runningRouteDriving`
+GSR-B3	2026-09-22-GS-routes.md	Closed	`editRoute` replaces the route OBJECT, so `isExecuting` - and the guard that reads it - fo	the running flag belongs to an object the edit throws away
+GSR-B4	2026-09-22-GS-routes.md	Closed	Deleting a route leaves every other route's chain command naming it, and a later route of 	a deleted route's name is still a live target
 GSR-B5	2026-09-22-GS-routes.md	Closed	The target dropdown cannot show a name the database has not got, so one click into that ce	a dropdown that cannot show the value in the cell rewrites it
-GSR-B6	2026-09-22-GS-routes.md	Open	`refuseWhileARouteDrivesIt` is asked BEFORE a modal dialog at two of its three doors, and 	the guard is asked before the dialog, and the thing it guards against starts on its own
-GSR-C1	2026-09-22-GS-routes.md	Open	An autonomy ("train X at sensor Y") condition's sensor number is the one target the editor	the one target the editor does not range-check
-GSR-C2	2026-09-22-GS-routes.md	Open	`protectsAnOccupiedSquare` reads reservation as occupancy, and the sentence it puts in fro	reservation read as occupancy, then described as standing
-GSR-C3	2026-09-22-GS-routes.md	Open	The ROUTE target dropdown offers the route being edited, which Save then refuses - the pag	the ROUTE dropdown offers the route being edited
-GSR-C4	2026-09-22-GS-routes.md	Open	A route re-triggered while it is still running is dropped in silence, one line after the l	a re-trigger while the route runs is dropped in silence
-GST-B1	2026-09-22-GS-threading.md	Open - deferred until the MT retests	Nothing in `Layout` consults the power or the halt: the all-stop restarts a train, or latc	Nothing in `Layout` consults the power or the halt, so the all-stop either restarts a train or latches the session
-GST-B1	2026-09-22-VD17-records.md	Open - deferred until the MT retests	`Closed`	`Open - deferred until the MT retests`
-GST-B2	2026-09-22-GS-threading.md	Open	`GraphLocAssign.commitChanges` throws away `moveLocomotive`'s answer and writes five locom	`GraphLocAssign.commitChanges` discards `moveLocomotive`'s answer and writes five locomotive fields past its guard
-GST-C1	2026-09-22-GS-threading.md	Open	The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLe	The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLength`/`reversible`, or `Feedback.set`
-GST-C2	2026-09-22-GS-threading.md	Open	`forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the work	`forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the worker
-GST-C3	2026-09-22-GS-threading.md	Open	`Layout.getTimetable()` is the live list; four UI doors read it and one mutates it, beside	`Layout.getTimetable()` is the live list, beside a synchronized snapshot door
-GST-C4	2026-09-22-GS-threading.md	Open	`repaintTimetable`'s comment justifies itself with a mechanism `executePath` closed	`repaintTimetable`'s comment justifies itself with a mechanism `executePath` closed
-GST-C5	2026-09-22-GS-threading.md	Open	`createPoint`/`createEdge` are the unsynchronized, unguarded siblings of `deletePoint`/`de	`createPoint`/`createEdge` are the unsynchronized, unguarded siblings of the delete doors
-GST-C6	2026-09-22-GS-threading.md	Open	`getInvalidReason()` has no callers; the javadoc describes a surface nothing implements	`getInvalidReason()` has no callers, and its javadoc describes a surface nothing implements
-GST-C7	2026-09-22-GS-threading.md	Open	Open	quitting while autonomy is running skips the exit capture of the session's placements in silence, and autosetup.log.placementsNotSaved already exists 
+GSR-B6	2026-09-22-GS-routes.md	Closed	`refuseWhileARouteDrivesIt` is asked BEFORE a modal dialog at two of its three doors, and 	the guard is asked before the dialog, and the thing it guards against starts on its own
+GSR-C1	2026-09-22-GS-routes.md	Closed	An autonomy ("train X at sensor Y") condition's sensor number is the one target the editor	the one target the editor does not range-check
+GSR-C2	2026-09-22-GS-routes.md	Closed	`protectsAnOccupiedSquare` reads reservation as occupancy, and the sentence it puts in fro	reservation read as occupancy, then described as standing
+GSR-C3	2026-09-22-GS-routes.md	Closed	The ROUTE target dropdown offers the route being edited, which Save then refuses - the pag	the ROUTE dropdown offers the route being edited
+GSR-C4	2026-09-22-GS-routes.md	Closed	A route re-triggered while it is still running is dropped in silence, one line after the l	a re-trigger while the route runs is dropped in silence
+GST-B1	2026-09-22-GS-threading.md	Closed	Nothing in `Layout` consults the power or the halt: the all-stop restarts a train, or latc	Nothing in `Layout` consults the power or the halt, so the all-stop either restarts a train or latches the session
+GST-B1	2026-09-22-VD17-records.md	Closed	`Closed`	`Open - deferred until the MT retests`
+GST-B2	2026-09-22-GS-threading.md	Closed	`GraphLocAssign.commitChanges` throws away `moveLocomotive`'s answer and writes five locom	`GraphLocAssign.commitChanges` discards `moveLocomotive`'s answer and writes five locomotive fields past its guard
+GST-C1	2026-09-22-GS-threading.md	Closed	The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLe	The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLength`/`reversible`, or `Feedback.set`
+GST-C2	2026-09-22-GS-threading.md	Closed	`forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the work	`forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the worker
+GST-C3	2026-09-22-GS-threading.md	Closed	`Layout.getTimetable()` is the live list; four UI doors read it and one mutates it, beside	`Layout.getTimetable()` is the live list, beside a synchronized snapshot door
+GST-C4	2026-09-22-GS-threading.md	Closed	`repaintTimetable`'s comment justifies itself with a mechanism `executePath` closed	`repaintTimetable`'s comment justifies itself with a mechanism `executePath` closed
+GST-C5	2026-09-22-GS-threading.md	Closed	`createPoint`/`createEdge` are the unsynchronized, unguarded siblings of `deletePoint`/`de	`createPoint`/`createEdge` are the unsynchronized, unguarded siblings of the delete doors
+GST-C6	2026-09-22-GS-threading.md	Closed	`getInvalidReason()` has no callers; the javadoc describes a surface nothing implements	`getInvalidReason()` has no callers, and its javadoc describes a surface nothing implements
+GST-C7	2026-09-22-GS-threading.md	Closed	Open	quitting while autonomy is running skips the exit capture of the session's placements in silence, and autosetup.log.placementsNotSaved already exists 
 GUI-A1	GUI.md	Closed	Fixed - 0be2bbe4 (claim 5d871f6d, red first), second pass 919e0dc8 (claim b6d08239, red ag	the Atomic Routes gate switches atomic mode on in the middle of a run, and the run's unlock then gives back track it already gave back
 GUI-B1	GUI.md	Closed	Fixed - 1c855483 (claims 2e565b5e, red first), reworked in 8370abb1: the first repair stoo	the placement doors other than the paste still save a facing only a barred copy holds, and the next build stands the train on that copy, where autonom
 GUI-B2	GUI.md	Closed	Fixed - 55959c9c (claim 41589728, red first): Segment Length opens empty where nothing has	Segment Length opens on an unmeasured square showing "0", so pressing OK untouched now records a deliberate 0
@@ -3315,6 +3315,13 @@ RSA58-D3	RSA58.md	Closed	Checked - clean.	`3c975188`: the fixture change gives t
 RSA58-D4	RSA58.md	Closed	Checked - clean (but RSA58-C1, which is about what the name is said with).	Round 93 (OB-325): the first-move scan is a proof of the planner's own search - every rule `firstClearRoute` reads the arrangement through only refuse
 RSA58-D5	RSA58.md	Closed	Checked - clean.	Round 91 (RSA57-C1): a sensor the run has already recorded is not waited for, so a train turning at a reversing point partway along is answered at onc
 RSA58-D6	RSA58.md	Closed	Checked - clean.	Round 91 (RSA57-C2): the instant-stop claim watches for the station's train-stop command for this locomotive, and an ordinary stop no longer passes it
+RSA59-B1	RSA59.md	Closed	Fixed in round 96 (`ce20dde3`), by the validator's first direction: the search `getPossibl	Older than every round in scope: the right-click menu, the Auto tab's list of paths and Why Not Moving? by hand answer differently each time they are
+RSA59-D1	RSA59.md	Closed	Checked - clean.	Round 94 (RSA58-C1): the second ask reads no sensor and takes nothing else away - every train that truly cannot move is still named with a sensor set
+RSA59-D2	RSA59.md	Closed	Checked - clean.	A train held only by a sensor nothing accounts for: Return Home says what round 90 said, word for word - in the window *"No way to arrange this was fo
+RSA59-D3	RSA59.md	Closed	Checked - clean.	A train held only by its OWN tail's sensor behaves as before round 93: Return Home answers NO_PLAN_FOUND with round 90's words (round 93 named it with
+RSA59-D4	RSA59.md	Closed	Checked - clean (but RSA59-B1, which is about the menu's answer on stations a train CAN re	Rounds 91-94 together give one answer about a train that cannot leave, wherever it stands: Return Home's naming, the right-click menu, Why Not Moving?
+RSA59-D5	RSA59.md	Closed	Checked - clean.	Round 91's route condition while a hand-turned train arrives at the dead end and turns: asked as the dead end's sensor reads occupied it waits for the
+RSA59-D6	RSA59.md	Closed	Checked - clean.	The release jar is commit `5016055d` byte for byte: every class file a fresh compile of the commit's `src` makes (771) is in it and identical, every r
 RSA6-A1	RSA6.md	Closed	Fixed - every session sees the running railway from the moment the window makes it (TrainC	The direction refusal cannot see the railway until a station's Facing menu or the setup editor has told the session where it is: after start-up, or an
 RSA6-A2	RSA6.md	Closed	Fixed - the fold writes each running Point into the square it says it is a copy of (Point.	The fold reads the running layout by Point name through the setup's naming as the gesture has already changed it: a page ticked out from the Autonomy
 RSA6-A3	RSA6.md	Closed	Fixed - a link switched off where a train came in through it is refused and put back, as a	"Use this link" switched off beside a station where the run left a train that came in through the link: the station is left with one copy, facing the
@@ -3331,6 +3338,19 @@ RSA6-D6	RSA6.md	Closed	Checked - clean.	The Point's square in every JSON reader 
 RSA6-D7	RSA6.md	Closed	Checked - clean, apart from RSA6-A1 (which trains it sees), A3 and B3 (what it asks).	The five direction doors say a refusal, and a refusal changes nothing
 RSA6-D8	RSA6.md	Closed	Checked - clean.	Captions, link names and unpairing name no Point and carry no train off
 RSA6-D9	RSA6.md	Closed	Checked - clean.	The probes' controls, and the baseline
+RSA60-B1	RSA60.md	Closed	Fixed in round 111 (`dbbe3195`), by the validator's direction: the Is Active tick, which c	New in round 107: the track diagram's Is Active tick writes the setup but not the railway's settings as built, so the Auto tab's pause button pressed
+RSA60-C1	RSA60.md	Closed	Fixed in round 111 (`dbbe3195`): the address pass in `LayoutGrid` paints only the addresse	New in round 105: Show Addresses now costs every small repaint of the diagram a pass over every address on the page - on Adam's main page a 3 x 3 repa
+RSA60-C2	RSA60.md	Closed	Fixed in round 111 (`dbbe3195`): `AutonomyCompanionStore.repairLocomotiveIn` carries a ren	New in round 107: a locomotive's rename (or deletion) is followed into every configuration's placements, homes, exclusions and timetable, but not into
+RSA60-C3	RSA60.md	Closed	Fixed in round 111 (`dbbe3195`): behaviour.md section 1a says what a pause keeps a train o	behaviour.md says nothing of FR-115 or FR-117, and its section 6 still says Return Home stages every locomotive that has a home - a paused one now sta
+RSA60-C4	RSA60.md	Closed	As designed, on Adam's ruling (2026-10-09, asked: *"Timetable can run paused trains"*). Th	Execute Timetable runs a paused train's entries: Adam ruled what a pause keeps a train out of - "Autonomy and Return Home" - and the timetable was not
+RSA60-C5	RSA60.md	Closed	Fixed in round 111 (`dbbe3195`): the trains on no Point are drawn grey where the configura	A paused train the railway cannot stand (its facing has no copy of its square, RSA17-C2) is drawn black, where every other paused train is grey
+RSA60-D1	RSA60.md	Closed	Checked - clean.	Round 96 fixes RSA59-B1: the menu, the Auto tab's list and Why Not Moving? give the same stations on every opening from every place on Adam's railway,
+RSA60-D2	RSA60.md	Closed	Checked - clean (a change of character worth Adam's eye, not a defect).	Round 96 and autonomy's pick: the same picks alone except where the old search hid a route; live, with six trains, no route round a loop and none in c
+RSA60-D3	RSA60.md	Closed	Checked - clean.	Round 107, FR-117, apart from B1, C2 and C5: the pause survives two configurations loaded and loaded back, a start-up, an import, the exit and the edi
+RSA60-D4	RSA60.md	Closed	Checked - clean.	Round 106, FR-115: every homed train is put on its home facing as homed, every other taken off, a pause kept, nothing sent to the railway, and the doo
+RSA60-D5	RSA60.md	Closed	Checked - clean.	Round 101's tiles: every one of the 56 meets the straight tile flush on every side its track leaves by, at 30 and 60 pixels, and the straight's own pr
+RSA60-D6	RSA60.md	Closed	Checked - clean (but C1).	Rounds 95, 97-100 and 102-105, the look: the pills' text centred and their outline even, a caption on end clear of its neighbours' badges, the destina
+RSA60-D7	RSA60.md	Closed	Checked - clean.	Race conditions the day introduces: none - nothing new is painted on the event thread from the railway, and FR-115's and FR-117's writes are event-thr
 RSA7-A1	RSA7.md	Closed	Fixed - no fold follows a square removed or built over until the setup is opened again (Au	The track editor's Cancel after a square was deleted, cut or cleared: the Cancel puts the setup back, and the reset's fold then judges "a square whose
 RSA7-B1	RSA7.md	Closed	Fixed - the refusal asks only about a train the change turns: one on a copy facing its way	The direction refusal cannot tell which way a train on a copy that records no facing faces: it skips the railway's train and reads the setup's record,
 RSA7-B2	RSA7.md	Closed	Fixed - the Pages dialog is refused while autonomy runs, before it opens and again when ap	The Autonomy panel's Pages dialog is not refused during a run and never reloads: a page ticked out there goes on being run - its stations dispatched t
@@ -5135,26 +5155,26 @@ VD17-C2	2026-09-22-VD17-code.md	Closed	-	`sync` opens the file store and never c
 VD17-C2	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	`sync` opened a second handle on the file store and never closed it, one function above the comment stating that rule
 VD17-C3	2026-09-22-VD17-code.md	Closed	-	the mirror's only protection is "n == 0", not "is this the store the mirror comes from"
 VD17-C3	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the mirror's refusal fired only at zero findings, so a store holding one would still flatten 3,607 rows
-VD17-C4	2026-09-22-VD17-code.md	Open	-	the premise the new warning disavows still stands, as the javadoc of the guard it drives
-VD17-C4	2026-09-22-VD17-round.md	Open	Open	`isPageNumberingSuspect`'s javadoc still states the premise VD17-B2 disproved
+VD17-C4	2026-09-22-VD17-code.md	Closed	-	the premise the new warning disavows still stands, as the javadoc of the guard it drives
+VD17-C4	2026-09-22-VD17-round.md	Closed	Open	`isPageNumberingSuspect`'s javadoc still states the premise VD17-B2 disproved
 VD17-C5	2026-09-22-VD17-code.md	Closed	-	the Unpair comment says three siblings rebuild; one of them is a navigation item
 VD17-C5	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the unpair comment called itself the only one of four that left the layout alone; Go To Link Partner does too, and rightly
-VD17-C6	2026-09-22-VD17-code.md	Open	-	the import refusal tells the operator a configuration exists that does not
-VD17-C6	2026-09-22-VD17-round.md	Open	Open	the import refusal says "a configuration called X already exists" in the one case it can reach, where it does not
+VD17-C6	2026-09-22-VD17-code.md	Closed	-	the import refusal tells the operator a configuration exists that does not
+VD17-C6	2026-09-22-VD17-round.md	Closed	Open	the import refusal says "a configuration called X already exists" in the one case it can reach, where it does not
 VD17-C7	2026-09-22-VD17-code.md	Closed	-	the bulk-clear confirmation still counts squares against a list of names
 VD17-C7	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the bulk clear counted squares and named locomotives
 VD17-C8	2026-09-22-VD17-code.md	Closed	-	the Test button can be left dead for the life of the window, silently
 VD17-C8	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the Test hand-off lost the message for an outline that cannot be built
-VD17-C9	2026-09-22-VD17-code.md	Open	-	two stale hard-coded finding counts in `triagedb.py`, disagreeing with each other
-VD17-C9	2026-09-22-VD17-round.md	Open	Open	two disagreeing stale counts in `triagedb.py`
+VD17-C9	2026-09-22-VD17-code.md	Closed	-	two stale hard-coded finding counts in `triagedb.py`, disagreeing with each other
+VD17-C9	2026-09-22-VD17-round.md	Closed	Open	two disagreeing stale counts in `triagedb.py`
 VD17-R1	2026-09-22-VD17-records.md	Closed	low	`docs/manual-tests/issues.md`, OB-252: `GS-B3` is listed twice
 VD17-R1	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	`GS-B3` listed twice in OB-252, the first copy cut off mid-sentence
-VD17-R10	2026-09-22-VD17-records.md	Open	low	`tests.md` MT-471 step 5: right answer, wrong rule
-VD17-R10	2026-09-22-VD17-round.md	Open	Open	MT-471 step 5 cites the wrong rule
-VD17-R11	2026-09-22-VD17-records.md	Open	low	`src/.../TrainControlUI.java:6111` and `:6130`: the gate method still says it has two doors
-VD17-R11	2026-09-22-VD17-round.md	Open	Open	a stale door count in a second javadoc
-VD17-R12	2026-09-22-VD17-records.md	Open	low	Adam's note is corrected inside the quotation marks in two javadocs
-VD17-R12	2026-09-22-VD17-round.md	Open	Open	a quotation of Adam's words silently corrected rather than quoted
+VD17-R10	2026-09-22-VD17-records.md	Closed	low	`tests.md` MT-471 step 5: right answer, wrong rule
+VD17-R10	2026-09-22-VD17-round.md	Closed	Open	MT-471 step 5 cites the wrong rule
+VD17-R11	2026-09-22-VD17-records.md	Closed	low	`src/.../TrainControlUI.java:6111` and `:6130`: the gate method still says it has two doors
+VD17-R11	2026-09-22-VD17-round.md	Closed	Open	a stale door count in a second javadoc
+VD17-R12	2026-09-22-VD17-records.md	Closed	low	Adam's note is corrected inside the quotation marks in two javadocs
+VD17-R12	2026-09-22-VD17-round.md	Closed	Open	a quotation of Adam's words silently corrected rather than quoted
 VD17-R2	2026-09-22-VD17-records.md	Closed	medium	`docs/manual-tests/issues.md`, OB-252 preamble: the arithmetic does not match the store
 VD17-R2	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	OB-252's preamble counted the deferrals and the orphans wrongly
 VD17-R3	2026-09-22-VD17-records.md	Closed	medium	the store holds a phantom finding whose ref is an Inbox entry id
@@ -5183,28 +5203,28 @@ VD17-T4	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the walk's `isActive` t
 VD17-T4	2026-09-22-VD17-tests.md	Closed	-	(medium) - the seventh claim the counter needs: the walk's inactive-intermediate guard is never exercised
 VD17-T5	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	"walking to exhaustion" was satisfied by a walk bounded at two levels
 VD17-T5	2026-09-22-VD17-tests.md	Closed	-	(medium) - the sixth claim proves a two-deep walk, not "walking to exhaustion"
-VD17-T6	2026-09-22-VD17-round.md	Open	Open	the records guard's MUTATION overclaims: `README.md`'s "44 + 21 = 65" is read by nothing
-VD17-T6	2026-09-22-VD17-tests.md	Open	-	(medium) - the records class promises coverage it does not have, and the README's one unchecked piece of arithmetic sits in the paragraph it does chec
+VD17-T6	2026-09-22-VD17-round.md	Closed	Open	the records guard's MUTATION overclaims: `README.md`'s "44 + 21 = 65" is read by nothing
+VD17-T6	2026-09-22-VD17-tests.md	Closed	-	(medium) - the records class promises coverage it does not have, and the README's one unchecked piece of arithmetic sits in the paragraph it does chec
 VD17-T7	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the door list's MUTATION said "any one of the four" over five entries
 VD17-T7	2026-09-22-VD17-tests.md	Closed	-	(low) - the door-list javadoc miscounts its own list and claims a property it does not have
-VD17-T8	2026-09-22-VD17-round.md	Open	Open	`testStartAsksBeforeItDispatchesAnything` is subsumed by the list's first entry
-VD17-T8	2026-09-22-VD17-tests.md	Open	-	(low) - `testStartAsksBeforeItDispatchesAnything` is strictly subsumed and carries a refuted rationale
-VD17-T9	2026-09-22-VD17-round.md	Open	Open	the hand-door markers are the modal prompt, so hoisting the gate ABOVE it - strictly safer - would go red
-VD17-T9	2026-09-22-VD17-tests.md	Open	-	(low) - the hand-door triples pin the gate *between the modal prompt and the dispatch*, not "before the dispatch"
+VD17-T8	2026-09-22-VD17-round.md	Closed	Open	`testStartAsksBeforeItDispatchesAnything` is subsumed by the list's first entry
+VD17-T8	2026-09-22-VD17-tests.md	Closed	-	(low) - `testStartAsksBeforeItDispatchesAnything` is strictly subsumed and carries a refuted rationale
+VD17-T9	2026-09-22-VD17-round.md	Closed	Open	the hand-door markers are the modal prompt, so hoisting the gate ABOVE it - strictly safer - would go red
+VD17-T9	2026-09-22-VD17-tests.md	Closed	-	(low) - the hand-door triples pin the gate *between the modal prompt and the dispatch*, not "before the dispatch"
 VD18-B1	2026-09-22-VD18-code.md	Closed	On a permanent turnout the arm gesture that SHUTS a road now OPENS it. Autonomy routes tra	`narrowed` turns "shut this road" into "open it"
 VD18-B1	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the narrowing inverted a shut road; the arrow was the real defect
 VD18-B2	2026-09-22-VD18-code.md	Closed	Left-click on a permanent turnout becomes a dead control after two clicks; six of its eigh	the click cycle on a permanent turnout reaches a fixed point
 VD18-B2	2026-09-22-VD18-round.md	Closed	Closed 2026-09-22	the arm-mask read-back it describes went with the revert
-VD18-B3	2026-09-22-VD18-code.md	Open - deferred until the MT retests	Mass Assign Lengths still cuts at `isSwitch()`. A leg over a permanent turnout now has par	Mass Assign Lengths was not swept with the room walk
-VD18-B3	2026-09-22-VD18-round.md	Open - deferred until the MT retests	Open - deferred until the MT retests	Mass Assign Lengths still cuts pieces at `isSwitch()`, so a piece straddles a permanent turnout while the room walk stops at one
+VD18-B3	2026-09-22-VD18-code.md	Closed	Mass Assign Lengths still cuts at `isSwitch()`. A leg over a permanent turnout now has par	Mass Assign Lengths was not swept with the room walk
+VD18-B3	2026-09-22-VD18-round.md	Closed	Open - deferred until the MT retests	Mass Assign Lengths still cuts pieces at `isSwitch()`, so a piece straddles a permanent turnout while the room walk stops at one
 VD18-C1	2026-09-22-VD18-code.md	Closed	The added `while` loop cannot fire - no single-route tile carries a hardware restriction -	the click-cycle half of `b1f2fc8a` cannot fire
 VD18-C1	2026-09-22-VD18-round.md	Closed	Closed 2026-09-22	the dead `while` went with the revert
-VD18-C2	2026-09-22-VD18-code.md	Open	The arm checkboxes still read the raw stored direction, so an untouched permanent turnout 	the checkbox panel was not taught the rule the menu learned
-VD18-C2	2026-09-22-VD18-round.md	Open	Open	the arm checkboxes show both arms open where the menu offers one way
+VD18-C2	2026-09-22-VD18-code.md	Closed	The arm checkboxes still read the raw stored direction, so an untouched permanent turnout 	the checkbox panel was not taught the rule the menu learned
+VD18-C2	2026-09-22-VD18-round.md	Closed	Open	the arm checkboxes show both arms open where the menu offers one way
 VD18-C3	2026-09-22-VD18-code.md	Closed	The restored `try` catches nothing: `ConditionOutline.toExpression` contains no `throw` an	the Test button's restored `try` catches nothing
 VD18-C3	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the restored `try` is a belt, and its comment called it the buckle
-VD18-C4	2026-09-22-VD18-code.md	Open	Six javadocs and one method name still say the walk stops at a switch. The rule changed; n	the rule changed; the places that state it did not
-VD18-C4	2026-09-22-VD18-round.md	Open	Open	`Edge.crossesASwitch` and five statements of the rule still say "switch" where a permanent turnout now bounds too
+VD18-C4	2026-09-22-VD18-code.md	Closed	Six javadocs and one method name still say the walk stops at a switch. The rule changed; n	the rule changed; the places that state it did not
+VD18-C4	2026-09-22-VD18-round.md	Closed	Open	`Edge.crossesASwitch` and five statements of the rule still say "switch" where a permanent turnout now bounds too
 VD18-C5	2026-09-22-VD18-code.md	Closed	The guard's condition changed and its message did not: it now says "this store holds no fi	`render_findings`' refusal message describes the old condition
 VD18-C5	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the refusal's condition was widened to a collapse and its message still said "holds no findings"
 VD18-C6	2026-09-22-VD18-code.md	Closed	"Twenty call sites" is seventeen. The load-bearing half ("four of them offer an accessory 	"twenty call sites" is seventeen
@@ -5213,8 +5233,8 @@ VD18-R1	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"Nine rows read `Open -
 VD18-R1	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - `behaviour.md:1983`: "Nine rows" is nine findings; the store holds 18 rows
 VD18-R2	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"five are verified still true" - four, since `IND9X-A2` closed when the berth walk was fixed
 VD18-R2	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - `behaviour.md:1990`: "five are verified still true"; the store holds four
-VD18-R3	2026-09-22-VD18-round.md	Open	Open	a bullet's line citations were wrong in the commit that wrote them
-VD18-R3	2026-09-22-VD18-tests-and-records.md	Open	low	(low) - the `VD17-R11` bullet was stale the moment it was written
+VD18-R3	2026-09-22-VD18-round.md	Closed	Open	a bullet's line citations were wrong in the commit that wrote them
+VD18-R3	2026-09-22-VD18-tests-and-records.md	Closed	low	(low) - the `VD17-R11` bullet was stale the moment it was written
 VD18-R4	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	`directionAllows` called "the walk's half" of `directionIsPossible`; they disagree about `NONE`
 VD18-R4	2026-09-22-VD18-tests-and-records.md	Closed	low	(low) - `directionAllows` is not the walk's half of `directionIsPossible`
 VD18-T1	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the new claim's stated MUTATION was false: dropping the `NONE` case leaves it green, because `NONE` then falls through to the `TOWARD_B` arm which is
@@ -5225,16 +5245,16 @@ VD18-T3	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	neither loop asserted i
 VD18-T3	2026-09-22-VD18-tests-and-records.md	Closed	medium	(medium) - the loops do not assert that they ran, and four types are uncovered
 VD18-T4	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	two rewritings that kept the log claim green and logged the wrong sentence: a line above both branches, and swapping only the lists
 VD18-T4	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - a rewriting that keeps the log-pairing rule green and logs the wrong sentence
-VD18-T5	2026-09-22-VD18-round.md	Open	Open	the menu will not offer `BOTH` on a permanent turnout while the arm mask will store it
-VD18-T5	2026-09-22-VD18-tests-and-records.md	Open	high	(high) - the click cycle: nothing was added for it, and what *was* added cannot run
+VD18-T5	2026-09-22-VD18-round.md	Closed	Open	the menu will not offer `BOTH` on a permanent turnout while the arm mask will store it
+VD18-T5	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - the click cycle: nothing was added for it, and what *was* added cannot run
 VD18-T6	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"Ten claims" over nine bullets, and the bullets are the numbering the MUTATION uses
 VD18-T6	2026-09-22-VD18-tests-and-records.md	Closed	medium	(medium) - "Ten claims" over a list of nine
 VD18-T7	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	as VD18-C6, in the test's own javadoc
 VD18-T7	2026-09-22-VD18-tests-and-records.md	Closed	medium	(medium) - `isSwitch()` has 17 call sites, not twenty
 VD18-T8	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"at the checkbox and at both load doors" - it is asked at seven
 VD18-T8	2026-09-22-VD18-tests-and-records.md	Closed	low	(low) - a stale door count in the counter's own javadoc
-VD18-T9	2026-09-22-VD18-round.md	Open	Open	a failure message names a remedy its assertion will not accept
-VD18-T9	2026-09-22-VD18-tests-and-records.md	Open	low	(low) - a failure message whose remedy the assertion will not accept
+VD18-T9	2026-09-22-VD18-round.md	Closed	Open	a failure message names a remedy its assertion will not accept
+VD18-T9	2026-09-22-VD18-tests-and-records.md	Closed	low	(low) - a failure message whose remedy the assertion will not accept
 VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it	`REL-C16` deleted two lines of a three-line sentence, and the retracted claim is now the last thing a reader sees before the code
 VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two	both runners' `INT`/`TERM` trap runs `on_the_way_out` twice
 VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 	`SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the half left unfixed
