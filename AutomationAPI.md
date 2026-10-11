@@ -14,6 +14,10 @@
 > the newer version behaves differently.  Changed in the API: a point's home locomotive (`getHomeLoc` / `setHomeLoc`) is
 > a `Locomotive` rather than a name, `importRoutes` returns how many routes it imported, and `Layout.getPossibleEdges`
 > is gone.
+>
+> To see the graph TrainControl builds from your track diagram, in the format this page describes, use Autonomy →
+> Export Raw Graph as JSON (Advanced Users).  It is offered once a configuration is loaded and has no errors; the
+> file is for reading, not one autonomy runs from.
 
 
 Beyond its GUI, the TrainControl software can be used to programmatically control your Marklin layout, and even fully automate it.  This means that you can specify exactly how and when you want your trains, switches, signals, and accessories to behave.
@@ -117,7 +121,7 @@ Notice the shared edge from "Main Track" to "Pre Arrival": this design ensures t
 
 ![Sample layout represented as a graph](assets/graph.png?raw=true)
 
-This graph representation can then easily be translated into code (full example can be found in `FullAutonomyExample.java`.  
+This graph representation can then easily be translated into code (the full example is in [`FullAutonomyExample.java`](src/org/traincontrol/examples/FullAutonomyExample.java)).  
 Note that the edge definitions also include accessory commands, such as setting turnouts and signals correctly.  
 These commands will execute before that edge is traversed by a locomotive.
 
@@ -225,7 +229,7 @@ This functionality is essential when your layout includes crossings, since these
 
 # Running and Visualizing via TrainControl UI
 
-> **Since v3.0.0 the "Autonomy" tab described here is gone.**  Download the layout (Layouts -> Download Central Station Layout Files), then import your `autonomy.json` from the autonomy menu and set the rest up on the track diagram (see [Automation.md](Automation.md)).
+> **Since v3.0.0 the "Autonomy" tab described here is gone.**  Download the layout (Layouts → Download Central Station Layout Files), then import your `autonomy.json` from the Autonomy menu and set the rest up on the track diagram (see [Automation.md](Automation.md)).  The import brings the points' names, trains and settings across; the timetable, the route activations (`activateRoutes`), and each edge's `commands`, `length` and `lockedges` - which the track diagram decides now - are left behind, and the import lists what it left.
 
 To make execution and modifications easier, the logic above can be expressed in a JSON format and executed via the TrainControl UI's "Autonomy" tab. 
 Moreover, to make it easier to create graphs, all state associated with graphs (Points, Edges, and Locomotives) can be edited via the TrainControl UI.  All locomotive settings can also be edited via the UI, which eliminates the need for you to ever touch the JSON except when backing up a graph.
@@ -394,14 +398,14 @@ Point shapes and sizes work together: the SHAPE says whether trains turn here, t
 
 * Circle - trains do not turn here.  A large circle is a regular station any train can stop at; a small circle is an ordinary point.
 * Diamond - trains MAY turn here, as a choice rather than a requirement - a reversing station (large) or reversing point (small).  Useful for shunting/parking.
-* Square - trains ALWAYS turn here on arrival - a terminus station (large) or a point where reversing is compulsory (small).  Full autonomy only sends reversible locomotives here; you can still send a non-reversible one yourself if the track lets it back in.  A station whose track runs out on one side is drawn as a square too, whatever its turning setting.
-* Orange circle with an X - out of service: nothing may pass or stop here.  A station's is solid orange with a white X; a point's is smaller, white inside an orange ring.
+* Square - trains ALWAYS turn here on arrival - a terminus station (large) or a point where reversing is compulsory (small).  Only reversible locomotives are sent here, unless it is a parking berth (see Terminus Stations below).  *Since v3.0.0*, on the track diagram, a station whose track runs out on one side is drawn as a square too, whatever its turning setting.
+* *Since v3.0.0*, on the track diagram, an orange circle with an X marks a square out of service: nothing may pass or stop there.  A station's is solid orange with a white X; a point's is smaller, white inside an orange ring.  (The graph window drew such a point orange - see Point colors above.)
 
 ![Sample layout](assets/graph2b.png?raw=true)
 
 # Prettifying the Graph Visualization
 
-> **The graph window described below was removed in v3.0.0.** Autonomy is now set up and watched on the track diagram (see [Automation.md](Automation.md)). The JSON format on this page is still what an older `autonomy.json` is written in, and the autonomy menu can import one; the coordinates and window instructions in this section no longer have anything to act on.
+> **The graph window described below was removed in v3.0.0.** Autonomy is now set up and watched on the track diagram (see [Automation.md](Automation.md)). The JSON format on this page is still what an older `autonomy.json` is written in, and the Autonomy menu can import one; the coordinates and window instructions in this section no longer have anything to act on.
 
 For each point, you can specify optional, relative `x` and `y` coordinates in the JSON: these will fix the points to a specific location on the graph.  If any point is missing a coordinate, the points on the graph will assume a random layout.
 
@@ -412,11 +416,11 @@ If you want to adjust the graph once created, maximize it, and simply use your m
 TrainControl supports terminus stations.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
 also specify `"terminus" : true`.  For the corresponding locomotive, set `"reversible" : true`, and it will automatically change direction after arrival.
 
-*Since v3.0.0*, **full autonomy only chooses a terminus for a reversible locomotive**, while a train you send by hand may still back into a terminus where the track allows it.
+*Since v3.0.0*, **a terminus is only for a reversible locomotive** - in full autonomy, and when you send a train by hand - unless it is a parking berth (`Can Be Chosen in Full Autonomy` unticked), where you may still back in a train that cannot reverse.
 
 The three tiers differ, and it is worth knowing which is which:
 
-* **By hand, from the route menu:** a terminus is offered to any locomotive, and running the route is not refused on reversibility grounds.  If a non-reversible train would have no way out once it is in there, that is your judgement to make, not the application's.
+* **By hand, from the right-click menu or the Auto tab:** a terminus autonomy may choose is not offered to a locomotive that cannot reverse, unless the track leads on through it, because the train could not leave again.  A parking berth - a terminus with `Can Be Chosen in Full Autonomy` unticked - is still offered to any locomotive the track can take there; whether a train that cannot reverse should go in is then your judgement.
 * **In full autonomy:** a terminus is never chosen for a locomotive that cannot reverse.
 * **Returning home:** a non-reversible locomotive may be homed at a terminus, and the planner insists the way there turns it round first - so it backs in and can leave forwards.  Where no such route exists it will not set off and fail; it simply finds no arrangement, and the message says that no plan was found rather than naming the locomotive.  (The planner only names a locomotive when it can prove there is no route at all, which is a claim about the track.)
 
@@ -442,9 +446,11 @@ This applies to reversing **stations** only.  A reversing point that is not a st
 
 # Advanced layouts and settings
 
-TrainControl's graph model can be used to automate layouts with complex designs and tons of switches. A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](cs2_sample_layout/config/)
+TrainControl's graph model can be used to automate layouts with complex designs and tons of switches. A more advanced example can be found in [cs2_sample_layout](cs2_sample_layout/config/): the automation JSON in this format is `autonomy_legacy/autonomy.json`, beside the CS2 layout files.  (Its `autonomy` folder holds the same railway set up in v3.0.0, which is a different format.)
 
 Since v3.0.0 most of what is described below is set in the autonomy editor on the track diagram - a station's settings by right-clicking its square, the rest in the autonomy settings; the JSON keys are what an older `autonomy.json` carries. 
+
+*Since v3.0.0* a point may also carry `autoDestination` (`false` keeps full autonomy from choosing it - Can Be Chosen in Full Autonomy), `protectingSignal` and `entrySignal` (its exit and entry guard signals: one name, or a list), and `blockedBy` (the stations that make it Unavailable While Occupied: one name, or a list).  At the top level, `pausedLocomotives` lists the names of the paused locomotives.
 
 ## Train lengths and non-atomic routes
 
@@ -465,6 +471,8 @@ Paths are selected at random from among the possible stations reachable by any g
     - A path with conflicting accessory commands will never be chosen 
     - You can specify an optional integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
+*Since v3.0.0* the optional top-level `pathPreference` key chooses how a route is picked when more than one will do: `RANDOM` (the default - at random, highest-priority stations first, as above), `RANDOM_ANY_STATION`, `FEWEST_STATIONS`, `MOST_STATIONS`, `SHORTEST_LENGTH`, `LONGEST_LENGTH`, `FEWEST_POINTS`, `MOST_POINTS`, `LEAST_RECENTLY_VISITED` or `BALANCED_PRIORITY` - the Routing Logic choices in [Automation.md](Automation.md#choosing-how-trains-pick-their-route).  A value this version does not know is ignored.  In code, `Layout.setPathPreference`.
+
 You can optionally mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  Since v3.0.0 a path chosen by hand may not pass through or end at one either; a train standing on an inactive point can still be driven away from it.
 
 ## Pace of operation
@@ -479,16 +487,16 @@ Locomotives inactive longer than `maxLocInactiveSeconds` seconds will be priorit
 TrainControl will enable/disable each locomotive's preferred functions, if any, before departure and upon arrival, respectively.  
 
 These preferred functions are set by right-clicking on any keyboard button in the Locomotive Control tab of the UI, and are automatically saved.  Therefore, they cannot be specified in the autonomy JSON.
-However, if you want to avoid turning on the functions on departure / turning off the functions on arrival, respectively, you can set `turnOnFunctionsOnDeparture` / `turnOffFunctionsOnArrival` to `false`.  A good reason to use these settings is to keep operating sounds / lights on between paths in the case of the latter,
+However, if you want to avoid turning on the functions on departure, set `turnOnFunctionsOnDeparture` to `false`; functions are turned off on arrival only while `turnOffFunctionsOnArrival` is `true`.  Left out of the JSON, the first counts as `true` and the second as `false`.  A good reason to use these settings is to keep operating sounds / lights on between paths in the case of the latter,
  or to skip running sound altogether in the case of the former.
 
-Unless the `speed` is specified within the `loc` array, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
+Unless the `speed` is specified within the `loc` object, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
 by right-clicking a station's square in the autonomy editor.
 
 ## Timetables  (v2.1.0+)
 
-TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
+TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This feature allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
 
 To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manually.  Note that in the latter case, you should ensure that all required points are marked as active, since inactive points cannot be passed through or sent to in either mode.  Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
 
@@ -501,7 +509,7 @@ You can keep locomotives off a given point by adding them to the list within the
 * On a station, the excluded locomotives may not stop there.  Autonomy never chooses it for them, and since v3.0.0 neither the Auto tab nor the track diagram's right-click menu offers it to them either (until then you could still send them there yourself).  They can still pass through it on the way somewhere else, and Return Home routes them through it too.
 * On a point that is not a station, the excluded locomotives may never pass it, on any path.
 
-*Since v3.0.0* the list can name the only locomotives allowed instead: add `"excludedLocsMode": "whitelist"` beside `excludedLocs` (in the autonomy editor, tick `Allow only the chosen locomotives`).  Every locomotive the list does not name is then excluded, including one added to the locomotive database later, by the same rules as above.  Without the key - or with `"blacklist"` - the list names the locomotives excluded.
+*Since v3.0.0* the list can name the only locomotives allowed instead: add `"excludedLocsMode": "whitelist"` beside `excludedLocs` (in the autonomy editor, choose `Allow only the chosen locomotives` under `Advanced Parameters...` → `Excluded Locomotives`; the item then reads `Allowed Locomotives Only`).  Every locomotive the list does not name is then excluded, including one added to the locomotive database later, by the same rules as above.  Without the key - or with `"blacklist"` - the list names the locomotives excluded.
 
 ## Ensuring network stability (v2.4.7+)
 
@@ -515,7 +523,7 @@ The lowest allowed nonzero threshold is 100ms.
 
 The `speedMultiplier` setting on any `Point` will adjust the speed of the incoming locomotive by the set value.
 
-The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the default.
+The allowed range is above 0 up to 2.0 (1 to 200 percent in the autonomy editor), with 1.0 (no change to the speed) being the default.
 
 ## Displaying locomotive locations on track diagrams (v2.4.9+)
 
@@ -541,7 +549,7 @@ The `Return Home` button in the autonomy tab sends every locomotive back to the 
 
 Unless you say otherwise, a locomotive's home is simply the station it occupied when the layout was loaded.  Locomotives placed afterwards claim the station they are placed on, provided no other locomotive has claimed it already - each station can be the home of only one locomotive, since two locomotives wanting the same station could never both get there.  A locomotive without a home is never asked to move.  In the locomotive list, `*` marks a locomotive standing at its timetable starting point.  A locomotive standing on a station it has been *assigned* to - see below - shows a small house beside its location; a home that was merely derived from where a locomotive started is not marked, since that would be every locomotive on an untouched layout.
 
-You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  In the autonomy tab, right-click a station and pick `Set Home Locomotive`, which names that station's current home and opens a chooser.  The blank entry at the top of the list is how a station gives up its locomotive.  The item is on every station, so there is always somewhere to make the first assignment.
+You can also say which locomotive belongs at a station, rather than letting it be decided by where trains happened to start.  In the autonomy editor, right-click a station and pick `Set Home Locomotive...` (Control+H), which names that station's current home and opens a chooser.  (Up to v2.8.2 this was on the Autonomy tab's graph.)  The blank entry at the top of the list is how a station gives up its locomotive.  The item is on every station, so there is always somewhere to make the first assignment.
 
 **Clear All Home Locomotives**, on the autonomy editor's Bulk Tools menu, clears every assignment at once and asks first.  A single station's assignment is cleared from its own right-click menu, and `Layout.clearHomeLocomotives` does the same thing programmatically.
 
