@@ -7604,8 +7604,8 @@ public class Layout
                             // When this entry first refused, so a parallel run can give up on time
                             long refusingSince = 0;
 
-                            // The power's cuts as this attempt began - see below (RSA62-C3)
-                            int cutsAtAttempt = this.control.getPowerCuts();
+                            // The power's epoch as this attempt began - see below (RSA62-C3)
+                            int powerAtAttempt = this.control.getPowerEpoch();
 
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(),
                                 ttp.getLoc().getPreferredSpeed(), ttp, playedBack(ttp), stopsAtChoice))
@@ -7654,7 +7654,10 @@ public class Layout
                                 // given back unrun (RSA61-C1), and that false is not the track refusing: counted, three cuts in
                                 // one leg's setting ended Return Home with "the path stayed blocked" and sent the operator to
                                 // move a train out of nobody's way.  Neither an attempt, nor the start of a parallel run's clock.
-                                boolean cut = this.control.getPowerCuts() != cutsAtAttempt || !this.control.getPowerState();
+                                // the epoch, read once each time: a STOP after the power wait and before the attempt's read
+                                // left the attempt begun with the power off, which is a cut too (RSA63-C1)
+                                boolean cut = this.control.getPowerEpoch() != powerAtAttempt || powerAtAttempt % 2 != 0
+                                    || !this.control.getPowerState();
 
                                 if (!cut)
                                 {
@@ -7728,7 +7731,7 @@ public class Layout
                                 // power, and the wait is not refusing - a parallel run's clock for giving up starts again.
                                 if (this.waitWhileThePowerIsOff()) refusingSince = 0;
 
-                                cutsAtAttempt = this.control.getPowerCuts();
+                                powerAtAttempt = this.control.getPowerEpoch();
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
@@ -9980,9 +9983,10 @@ public class Layout
         // wait seconds behind another train's switches.  A stop ordered since is one this journey obeys.
         final int stopsAtDispatch = stopsAtChoice < 0 ? this.stopsOrdered.get() : stopsAtChoice;
 
-        // AND THE POWER'S CUTS, here, before the route's first switch (RSA62-C2) - or none to agree with, where the power
-        // is off already and every switch would be commanded on a railway with no power to move it
-        final int cutsAtDispatch = this.control.getPowerState() ? this.control.getPowerCuts() : -1;
+        // AND THE POWER'S EPOCH, here, before the route's first switch (RSA62-C2): one read, which says whether the power is
+        // off now - odd - and, asked again once the route is set, whether it went off in between.  It was the state and
+        // then a count of cuts, and a STOP landing between the two reads passed as on (RSA63-C1).
+        final int powerAtDispatch = this.control.getPowerEpoch();
 
         // AND ONE ORDERED ALREADY SENDS NOTHING, and says so (RSA2-C2, RSA2-C8)
         if (this.stopsOrdered.get() != stopsAtDispatch)
@@ -10151,8 +10155,9 @@ public class Layout
             //
             // A CUT THAT CAME AND WENT TOO (RSA62-C2): asked only whether the power was on now, one begun and ended while the
             // route was set went unseen - the switches commanded during it had not moved, nothing commanded them again, and
-            // the train was given its speed over them.  So the cuts are counted, and compared with the count at dispatch.
-            if (!this.control.getPowerState() || this.control.getPowerCuts() != cutsAtDispatch)
+            // the train was given its speed over them.  So the power's epoch is compared with the one at dispatch, and one
+            // odd at dispatch - the power off already - gives it back too.
+            if (!this.control.getPowerState() || this.control.getPowerEpoch() != powerAtDispatch || powerAtDispatch % 2 != 0)
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
 

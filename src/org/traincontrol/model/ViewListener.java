@@ -90,15 +90,15 @@ public interface ViewListener
     public boolean getPowerState();
 
     /**
-     * How many times the track power has gone off, as the Central Station has reported it (RSA62-C2): read where a
-     * journey is dispatched and again once its route is set, so a cut that came and went in between is seen as well as
-     * one that lasts.
+     * The track power's epoch, as the Central Station has reported it (RSA62-C2, RSA63-C1): a number that moves at every
+     * cut and every return, odd while the power is off - so one read says whether it is off now, and two, at a journey's
+     * dispatch and once its route is set, whether it went off in between, even for a moment.
      *
-     * @return the cuts counted so far
+     * @return the epoch
      */
-    default int getPowerCuts()
+    default int getPowerEpoch()
     {
-        return 0;
+        return getPowerState() ? 0 : 1;
     }
     public void allFunctionsOff();
     public void locFunctionsOff(Locomotive l);

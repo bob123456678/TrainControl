@@ -11755,7 +11755,7 @@ public class AutonomySession
      *
      * Asked of the TRACK as drawn, not of the edges built from it: a one-way run or a barred arrival leaves trains one
      * way out of a station whose track carries on, and that station keeps its own shape.  The road is the badge's,
-     * `firstRoute`.
+     * `stationRoad` - on a double curve the curve with the contact, where it was the other (RSA63-C2).
      *
      * @param tile a sensor's square
      * @return the side, or null
@@ -11764,7 +11764,7 @@ public class AutonomySession
     {
         if (graph == null || reducer == null || tile == null) return null;
 
-        Route road = firstRoute(tile);
+        Route road = stationRoad(tile);
 
         if (road == null || road.getA() == null || road.getB() == null || road.getA() == road.getB()) return null;
 

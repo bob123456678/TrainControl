@@ -902,13 +902,18 @@ read"*).
 | a hexagon pointed at both ends | trains may turn round there |
 | two arrow-shaped halves back to back, pointing away from each other, white bars in them, the track's black line between them | trains must turn round there |
 | a hexagon flat at one end, with a bar at that end | a terminus: its track runs out on that side |
-| the orange X over a grey block | out of service |
+| a white circle with an orange ring and an orange X in it, whatever the square otherwise is | out of service: nothing may pass or stop there |
 
 Blue where autonomy uses the station, grey a berth it does not choose - a colour on whatever shape the station has
-(*"shouldn't parking have the same shape as terminus?"*); filled when the station is named, white ringed in the colour
-when it is not.  On straight track the icon covers the sensor's own contact with white, the track drawn back across it
-(*"make sure the white would cover an s88 circle"*).  A passing point - a sensor that is no station - keeps its small
-mark.
+(*"shouldn't parking have the same shape as terminus?"*); on the track diagram filled when the station is named, white
+ringed in the colour when it is not; in the autonomy editor every icon is white ringed in its colour, so that the direction
+arrows over it read clearly (Adam, 2026-10-10: *"Let's make all of the icons white with a blue border in the editor.
+That way, arrows can be seen clearly."*).  The icon covers the sensor's own contact with white, the track drawn back across
+it (*"make sure the white would cover an s88 circle"*).  A passing point - a sensor that is no station - keeps its small
+mark; where trains turn there, a little bigger, over its contact too (round 127).  A square out of service, a station of
+any kind or a passing point, is one sign: the white circle with the orange ring and X, the contact's size, inside the red
+arrows the sensor's art shows round its contact while it reads occupied, and no arrows on its square - nothing can pass it
+(rounds 127 and 128; Adam, 2026-10-10: *"regardless of the type of station or point it otherwise is"*).
 
 **A terminus is a station whose track runs out on one side** - at a buffer stop, or where the drawn track simply stops -
 before it reaches another sensor (Adam, 2026-10-09, asked *"a station with only one way out becomes a terminus,
@@ -916,15 +921,17 @@ correct?"*: yes).  It is drawn flat against that side whatever its turning setti
 station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
 its own shape.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
 
-On a curve the icon lies along the line between the curve's two ends, moved in off the corner until all of it is inside
-its square, smaller only where even in the middle it would not fit (MT-710: *"On curves, regular stations are now cut off
-in the corners"*); in the editor a station on a curve sits off the rails, clear of the direction arrows, as its badge
-always has.  The red and green arrows are drawn over the icon, on the diagram and in the editor (MT-710: *"We need to
+On a curve the icon lies along the line between the curve's two ends, on its rails and its full size; what falls outside
+its square is drawn over the squares beside it, under any caption there, and their arrows, arrival marks and outline are
+drawn again over it (Adam, 2026-10-10: *"can we instead make the stations spill over onto adjacent tiles?"*; RSA61-C2,
+RSA62-C1, RSA63-C4) - in the editor as on the track diagram since round 127.  On a double-curve sensor it is on the curve
+the art draws the contact on, and a terminus there faces where that curve's track runs out (MT-712, RSA63-C2).  The red and green arrows are drawn over the icon, on the diagram and in the editor (MT-710: *"We need to
 render red arrows on top of stations"*).  A may-turn hexagon is 24 pixels long at the small size and 47 at the large, a
 terminus 24 and 48, and the must-turn pair, both halves and the gap, no longer than the may-turn (MT-710).  The icons:
 `core.testAutonomyDiagramMonitor` - `testAStationIsARoundedBlock`, `testWhereTrainsMayTurnIsTheHexagon`,
 `testWhereTrainsMustTurnIsTwoTerminiBackToBack`, `testAStationAtADeadEndIsATerminusFacingIt`,
-`testParkingIsGreyInItsOwnShape`, `testAStationOutOfServiceIsTheXOverAGreyBlock`, `testAStationCoversTheSensorsContact`,
+`testParkingIsGreyInItsOwnShape`, `testASquareOutOfServiceIsAnOrangeRingedCircle`, `testAStationCoversTheSensorsContact`,
+`testTheEditorsIconsAreWhiteWithTheirColourRound`, `testTheEditorsIconOnACurveIsOnItsRails`,
 `testTheTurningIconsAreTheLengthsAdamAskedFor`, `testAStationOnACurveIsWhollyInsideItsSquare`,
 `testTheArrowsAreDrawnOverAStationsIcon`;
 the caption, `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` and `testAPillOnEndClearsTheStationsBesideIt`.
