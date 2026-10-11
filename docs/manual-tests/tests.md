@@ -27,9 +27,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-726](#mt-726) | 2026-10-11 | Round 135: FR-122, the Medium diagram size | fixed unvalidated | Adam, 2026-10-11: "Let's implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and phrasing to SizeList, and advise when ready.  Start with the cheap 60px scaling." |
 
-
-Everything else - 725 of 725 - needs nothing from you unless the area changes again:
+Everything else - 725 of 726 - needs nothing from you unless the area changes again:
 572 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34334,5 +34334,38 @@ it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.
 **Adam, 2026-10-11 (triage).** Works.
 
 *Run against commit 0c634f5c, in English - build\classes, compiled 11 Oct 14:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-726"></a>
+### MT-726 - 2026-10-11 - Round 135: FR-122, the Medium diagram size
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11: "Let's implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and phrasing to SizeList, and advise when ready.  Start with the cheap 60px scaling."
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. In the main window, choose Medium in the size list beside the page list, and look at a busy page: track, curves,
+   switches, signals, sensors, stations and their names, the arrows.
+2. Hover over the S, M and L pop-up buttons, then press M.
+3. Start autonomous operation and watch a train run, at Medium, in the main window and in the pop-up.
+4. Open the autonomy editor and the track diagram editor from the main window while Medium is chosen.
+5. Restart TrainControl in another language from the triage app's Tools menu, and look at the size list and the three
+   buttons.
+
+**Expected**
+
+- Step 1: the page is drawn between the Small and Large sizes, every square complete and in line with its neighbours.
+  The tile art is the Large art made smaller, so it may look a little softer than at Small or Large.
+- Step 2: each button's tooltip says which size it opens; M opens the page in a pop-up at Medium.
+- Step 3: trains, their lines, the highlights and the captions are drawn at Medium as at the other two sizes.
+- Step 4: both editors open at Medium, their windows between their Small and Large sizes.
+- Step 5: the list says Medium in that language, and the buttons show its initials (in German K, M and G).
+
+*What this is:* round 135 (`af2bf807`).  Claims in `ui.testDiagramLooksRight`:
+`testTheMediumSizeIsBetweenSmallAndLarge`, `testAMediumSquareIsTheLargeArtScaledDown`,
+`testTheMediumButtonOpensAMediumPopUp`.
 
 ---
