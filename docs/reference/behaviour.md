@@ -1796,7 +1796,10 @@ sensor answers - the safe reading for a release, where the walk that claims a ru
 one (the head at the square's far end).  It was counted one sensor short, and on a path of three edges or fewer the
 first edge was held to the end of the run whatever the train's length.  A Point with no sensor - a hand-written
 configuration may have one; the builder's all carry one - is passed without waiting, so the track to it is counted only
-once the next sensor answers.  `core.testTrainTailClearsEdges.testAnEdgeIsHandedBackOnceTheTailHasPassedIt`,
+once the next sensor answers - and so is the track to a sensor that already read occupied when its wait began, one two
+Points in a row share or one another train stands on, whose answer came before the head did (RSA61-A1,
+`testASensorTwoPointsShareIsNotProofTheHeadReachedTheSecond`).
+`core.testTrainTailClearsEdges.testAnEdgeIsHandedBackOnceTheTailHasPassedIt`,
 `testASensorsOwnSquareIsNotCountedBehindTheHeadYet`, `testAnEdgeIsNotHandedBackBeforeTheTailHasPassedIt`.
 
 **It is wrongly true in exactly two states, and both of them are ordinary.**

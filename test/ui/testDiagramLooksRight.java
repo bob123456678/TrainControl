@@ -3963,6 +3963,97 @@ public class testDiagramLooksRight
     }
 
     /**
+     * A caption over the square a curve's station spills onto stays in front of the spill, as it is in front of the icon
+     * on the station's own square (RSA61-C2; OB-117, captions in front of the tiles) - and the arrows drawn again over the
+     * spill go no further than the spill, so a caption stays in front of them too.  The spill was drawn once every square
+     * was, over every caption: on Adam's main page the icon at 13,9 was paled by its own pill and then drawn bright over
+     * the pill below.  Nine squares in the diagram's own container, a station on an E-S curve in the middle, the square to
+     * its right a one-way road under an opaque yellow caption covering the whole square: none of the station's blue and
+     * none of the arrows' red or green shows on that square.
+     *
+     * MUTATION: draw the spill over the captions again, or the arrows again over the whole square, and this fails.
+     */
+    @Test
+    public void testASpillIsDrawnUnderTheCaptionsOverIt()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        final int size = 30;
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        middle.setBounds(size, size, size, size);
+        middle.setAutonomyAnnotation(aCurvedStation());
+
+        org.traincontrol.gui.LayoutLabel right = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        right.setOpaque(true);
+        right.setBackground(java.awt.Color.WHITE);
+        right.setBounds(2 * size, size, size, size);
+        right.setAutonomyAnnotation(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
+            new org.traincontrol.automationui.TileAnnotation.Mark(org.traincontrol.automationui.TilePorts.Side.W,
+                org.traincontrol.automationui.TilePorts.Side.E, org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)),
+            -1, false, null, false, false, false, null, true, null));
+
+        org.traincontrol.gui.StationCaption caption = new org.traincontrol.gui.StationCaption();
+
+        caption.setOpaque(true);
+        caption.setBackground(new java.awt.Color(255, 220, 0));
+        caption.setBounds(2 * size, size, size, size);
+
+        // in the order the diagram builds them: a caption in front of every tile
+        grid.add(caption);
+        grid.add(right);
+        grid.add(middle);
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int blue = 0, arrows = 0;
+
+        for (int x = 2 * size; x < 3 * size; x++)
+        {
+            for (int y = size; y < 2 * size; y++)
+            {
+                int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                if (b > 150 && r < 90 && gr < 90) blue++;
+
+                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30 && Math.abs(gr - 205) < 30
+                    && Math.abs(b - 90) < 30)) arrows++;
+            }
+        }
+
+        assertEquals(blue, 0, "the curve's station spilled over the caption on the square beside it - " + blue + " pixels of"
+            + " its blue in front of the caption, where on its own square it is behind one (RSA61-C2)");
+
+        assertEquals(arrows, 0, "the arrows drawn again over the spill were drawn over the caption on their square - "
+            + arrows + " pixels of red and green in front of it (RSA61-C2)");
+    }
+
+    /**
      * A curve's station spills onto the squares beside it at the middle of their edges, which is where their arrows are
      * (Adam, 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*).  The
      * arrows of a square a spill reaches are drawn back over it.  Nine squares in the diagram's own container, a station

@@ -947,4 +947,136 @@ public class testTrainTailClearsEdges
             y.setTrainLength(yWas);
         }
     }
+
+    /**
+     * A sensor two Points in a row share is no proof the head has reached the second (RSA61-A1).  Its wait for the second
+     * Point begins with the sensor already reading occupied for the first, and returns at once - so since GS-B3 credited
+     * the head at the second sensor's square, the track behind was handed back with the whole train still on it: unlocked
+     * on a non-atomic railway, its switch unprotected on an atomic one.  The reducer calls a shared sensor legitimate (a
+     * station and its approach guards).  A 5-unit train on A-B-C-D, ten units an edge, C's square the last 3 of B-C, a
+     * road over A-B's switch: with the head only entering B's square, A-B is held and the road refused - and with B and C
+     * on their own sensors, the control, the same.
+     *
+     * MUTATION: credit a sensor that already read occupied when its wait began, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testASensorTwoPointsShareIsNotProofTheHeadReachedTheSecond() throws Exception
+    {
+        assertEquals(runPastASharedSensor(1781, false), "held and refused", "precondition: with B and C on their own"
+            + " sensors the first rail was not held while the head was only entering B's square, so this fixture cannot tell"
+            + " an early release from a broken one");
+
+        assertEquals(runPastASharedSensor(1791, true), "held and refused", "B and C share one sensor, and with the head"
+            + " only entering B's square the run handed back A-B - the whole 5-unit train still on it, and a road over its"
+            + " switch clear for another train (RSA61-A1)");
+    }
+
+    /**
+     * A 5-unit train sent A-B-C-D on a non-atomic railway, the head only entering B's square, beside a road that shares
+     * A-B's metal; B and C on one sensor, or each on its own.
+     *
+     * @param base the first of the six sensor addresses this run uses
+     * @param shared whether B and C share one sensor
+     * @return "held and refused" where A-B is still held and the road refused, else what was seen
+     * @throws Exception from the railway
+     */
+    private static String runPastASharedSensor(int base, boolean shared) throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] f = new org.traincontrol.marklin.MarklinFeedback[6];
+
+        for (int i = 0; i < 6; i++)
+        {
+            f[i] = model.newFeedback(base + i, null);
+            model.setFeedbackState(f[i].getName(), false);
+        }
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(shared ? 6 : 7));
+        final Locomotive y = model.getLocByName(model.getLocList().get(8));
+
+        final Integer xWas = x.getTrainLength();
+        final Integer yWas = y.getTrainLength();
+
+        final Layout rail = new Layout(model);
+        final String p = shared ? "SSS" : "SSD";
+
+        Thread driving = null;
+
+        try
+        {
+            x.setSpeed(0);
+            x.setTrainLength(5);
+            y.setTrainLength(1);
+
+            rail.createPoint(p + "A", true, f[0].getName());
+            rail.createPoint(p + "B", false, f[1].getName());
+            rail.createPoint(p + "C", false, shared ? f[1].getName() : f[2].getName());
+            rail.createPoint(p + "D", true, f[3].getName());
+            rail.createPoint(p + "Y", true, f[4].getName());
+            rail.createPoint(p + "Z", true, f[5].getName());
+            rail.createEdge(p + "A", p + "B");
+            rail.createEdge(p + "B", p + "C");
+            rail.createEdge(p + "C", p + "D");
+            rail.createEdge(p + "Y", p + "Z");
+
+            final Edge first = rail.getEdge(p + "A", p + "B");
+            final Edge second = rail.getEdge(p + "B", p + "C");
+            final Edge crossing = rail.getEdge(p + "Y", p + "Z");
+
+            final List<Edge> path = Arrays.asList(first, second, rail.getEdge(p + "C", p + "D"));
+
+            first.setLength(10);
+            second.setLength(10);
+            second.setPlaces(Arrays.asList(p + "B-C", p + "C"), Arrays.asList(7, 3));
+            path.get(2).setLength(10);
+            crossing.setLength(1);
+
+            // The road shares A-B's metal - the other leg of its switch - as the reducer's lock edges say
+            first.addLockEdge(crossing);
+            crossing.addLockEdge(first);
+
+            rail.setAtomicRoutes(false);
+            rail.makeCurrent();
+            rail.getPoint(p + "A").setLocomotive(x);
+
+            driving = new Thread(() -> rail.executePath(path, x, 30, null), "shared-sensor-claim-" + x.getName());
+            driving.setDaemon(true);
+            driving.start();
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!(x.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(rail.getActiveLocomotives().containsKey(x), "precondition: the 5-unit train was not dispatched: "
+                + Layout.getLastError());
+
+            // THE HEAD ENTERS B'S SQUARE: its sensor reads occupied, and stays so while the train runs over the contact
+            model.setFeedbackState(f[1].getName(), true);
+            Thread.sleep(1500);
+
+            boolean held = first.isLockHeld(y);
+            boolean refused = !rail.isPathClear(Arrays.asList(crossing), y, false);
+
+            return held && refused ? "held and refused" : "A-B held=" + held + ", road refused=" + refused;
+        }
+        finally
+        {
+            // It arrives
+            for (int i = 0; i < 3; i++) model.setFeedbackState(f[i].getName(), false);
+
+            model.setFeedbackState(f[3].getName(), true);
+
+            if (driving != null) driving.join(10000);
+
+            for (org.traincontrol.marklin.MarklinFeedback each : f) model.setFeedbackState(each.getName(), false);
+
+            x.setSpeed(0);
+            x.setTrainLength(xWas);
+            y.setTrainLength(yWas);
+        }
+    }
 }

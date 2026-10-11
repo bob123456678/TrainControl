@@ -864,7 +864,7 @@ public class LayoutGrid
      * which is the whole of what this has to get right and needs no railway to establish.
      *
      * @return a panel that draws its tiles, then its captions, then what its curves' stations spill onto the squares
-     *     beside them and those squares' arrows back over it, then its trains, then its addresses
+     *     beside them with those squares' arrows and the captions back over it, then its trains, then its addresses
      */
     public static JPanel newDiagramContainer()
     {
@@ -878,8 +878,8 @@ public class LayoutGrid
                 // A STATION ON A CURVE SPILLS ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead make the
                 // stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."),
                 // drawn here, once every square is drawn: its own square cuts it off at its edges, and a square painted
-                // after it would paint its white over what reached that far.  Under the trains and the addresses, as the
-                // icon on its own square is.
+                // after it would paint its white over what reached that far.  Under the captions, the trains and the
+                // addresses, as the icon on its own square is - the captions drawn again over it below (RSA61-C2).
                 java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
 
                 for (java.awt.Component child : getComponents())
@@ -896,12 +896,55 @@ public class LayoutGrid
                 // spill drew over the arrows that say which way a train may enter or leave the square beside it.
                 if (!spilt.isEmpty())
                 {
-                    for (java.awt.Component child : getComponents())
+                    // ONLY WHERE THE SPILL WAS DRAWN, and the captions over that again (RSA61-C2): everywhere else the
+                    // arrows and the captions are as the squares drew them - a caption in front of the tiles (OB-117) - and
+                    // drawn over the whole square, the arrows came out in front of a caption covering it.
+                    java.awt.geom.Area spilled = new java.awt.geom.Area();
+
+                    for (LayoutLabel label : spilt.keySet())
                     {
-                        if (child instanceof LayoutLabel)
+                        java.awt.Shape shape = label.spillShapeOnTheDiagram();
+
+                        if (shape != null) spilled.add(new java.awt.geom.Area(shape));
+                    }
+
+                    java.awt.Graphics2D under = (java.awt.Graphics2D) g.create();
+
+                    try
+                    {
+                        under.clip(spilled);
+
+                        for (java.awt.Component child : getComponents())
                         {
-                            ((LayoutLabel) child).paintArrowsOverSpill(g, spilt);
+                            if (child instanceof LayoutLabel)
+                            {
+                                ((LayoutLabel) child).paintArrowsOverSpill(under, spilt);
+                            }
                         }
+
+                        java.awt.Rectangle reach = spilled.getBounds();
+
+                        for (java.awt.Component child : getComponents())
+                        {
+                            if (child instanceof StationCaption && child.isVisible() && child.getBounds().intersects(reach))
+                            {
+                                java.awt.Graphics over = under.create(child.getX(), child.getY(), child.getWidth(),
+                                    child.getHeight());
+
+                                try
+                                {
+                                    child.paint(over);
+                                }
+                                finally
+                                {
+                                    over.dispose();
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        under.dispose();
                     }
                 }
 
