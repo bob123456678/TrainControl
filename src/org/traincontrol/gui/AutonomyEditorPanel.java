@@ -10175,11 +10175,19 @@ public class AutonomyEditorPanel extends JPanel
         if (component == null) return true;
 
         // A lamp carries no track at all - it is decoration on the diagram - so it is greyed with the
-        // route buttons and turntables rather than left looking like something to configure.
+        // route buttons beside the track and turntables rather than left looking like something to configure.
         if (component.getType() == LayoutDiagramComponent.componentType.LAMP) return true;
 
-        return org.traincontrol.automationui.TilePorts.isDisqualified(component.getType())
-            || org.traincontrol.automationui.TilePorts.isTransparent(component.getType());
+        // A ROUTE BUTTON ON A RUNNING LINE IS TRACK (OB-332; Adam, 2026-10-11: "sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.").
+        // The graph runs the line through it (`TileGraph.transparentRoutes`), so a direction is stored on it and its
+        // arrow drawn there - and greying every button left that arrow out of reach.  Only a button with no track
+        // through it, beside the rails, is greyed now.  A click sets the button alone: it is not part of a run.
+        if (org.traincontrol.automationui.TilePorts.isTransparent(component.getType()))
+        {
+            return session.getRoutes(tile).isEmpty();
+        }
+
+        return org.traincontrol.automationui.TilePorts.isDisqualified(component.getType());
     }
 
     /**
