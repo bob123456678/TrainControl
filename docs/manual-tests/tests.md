@@ -31,11 +31,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-717](#mt-717) | 2026-10-10 | Round 124: a double curve's station and arrows, its arrival arrows, the halo on all your writing, the house on the Auto tab | fixed unvalidated | Adam, 2026-10-10 - MT-712 (Does not work): "Direction arrows on the station end of course curve icons  point in the wrong direction where the sensor is.  They are not parallel with the track on one side.  Also, the station gets rendered on the track without the sensor rather than the one with the sensor."; MT-714: "when a double curve with a s88 has arrival directions set, the arrow icons may overlap."; MT-716 (Does not work): "I see this on some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have something else on them plus text."; MT-709: "on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in the same spot as the (i))." |
 | [MT-718](#mt-718) | 2026-10-10 | Round 126: FR-119, Show Trains in the autonomy editor | fixed unvalidated | Adam, 2026-10-10 - FR-119: "in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer." |
 | [MT-719](#mt-719) | 2026-10-10 | Round 126: FR-120, a sensor is named as it becomes a station | fixed unvalidated | Adam, 2026-10-10 - FR-120: "when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here." |
-| [MT-720](#mt-720) | 2026-10-10 | Round 127: the autonomy editor's icons white on their rails, no arrows out of service, the plain turn mark over the circle | fixed unvalidated | Adam, 2026-10-10, on the icon sheets: "Make the plain turn icon slightly bigger so it covers the circle."; "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly.  For ones out of service, should arrows be drawn at all, since no trains can pass?" - asked: no |
-| [MT-721](#mt-721) | 2026-10-10 | Round 128: every square out of service is one round sign, clear of the sensor's arrows | fixed unvalidated | Adam, 2026-10-10: "For simplicity, could an out of service station be made a round white circle with an orange border and X inside of it, regardless of the type of station or point it otherwise is?"; then "Make them small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the user to discern." |
+| [MT-722](#mt-722) | 2026-10-11 | Round 131: stations are circles, diamonds and squares again, and the orange signs out of service | fixed unvalidated | Adam, 2026-10-11: "The icons are hard to work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"; on the sheet: "The icons need to be bigger- make them bigger in both the non station (match radius of s88, so 2px more diameter) and station view (same as before, just ever slightly smaller)."; then "1px more radius on the non station out of service, and give the station out of service a solid orange fill, with a white X inside instead"; then "make sure that the diamonds are correctly aligned on curves" |
 
-Everything else - 715 of 721 - needs nothing from you unless the area changes again:
-564 **fixed validated** and 151 **superseded**.
+Everything else - 717 of 722 - needs nothing from you unless the area changes again:
+564 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34044,6 +34043,10 @@ curve stations at the Large size is gone with it.
 
 Round 129 (`1c124337`), with step 1: a double-curve station whose track runs out at one end of its curve is drawn as a terminus facing that end (RSA63-C2).
 
+**Claude, 2026-10-11.**
+
+Round 131 (`74f6b921`), on your revert to circles, diamonds and squares: step 1's station is the classic mark, on the curve with the sensor's circle; step 5 no longer applies, as nothing spills onto the squares beside it.  Steps 2 to 4 stand.
+
 ---
 
 <a id="mt-718"></a>
@@ -34108,7 +34111,7 @@ check for a name another square has is in this box only; renaming a sensor (Rena
 <a id="mt-720"></a>
 ### MT-720 - 2026-10-10 - Round 127: the autonomy editor's icons white on their rails, no arrows out of service, the plain turn mark over the circle
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam, 2026-10-10, on the icon sheets: "Make the plain turn icon slightly bigger so it covers the circle."; "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly.  For ones out of service, should arrows be drawn at all, since no trains can pass?" - asked: no
 
 **Written:** 2026-10-10
@@ -34135,12 +34138,16 @@ check for a name another square has is in this box only; renaming a sensor (Rena
 `testASquareOutOfServiceHasNoArrows`, `testAPlainTurnMarkCoversTheContact`.  In the editor a station with a name and
 one without now look alike; the name is on its caption.
 
+**Claude, 2026-10-11.**
+
+Superseded by MT-722, on your 2026-10-11 revert to circles, diamonds and squares (round 131, `74f6b921`): the editor draws every mark as the track diagram does, so its white icons are gone with FR-118's shapes; step 2 - no arrows on a square out of service - stands, and is MT-722 step 3.
+
 ---
 
 <a id="mt-721"></a>
 ### MT-721 - 2026-10-10 - Round 128: every square out of service is one round sign, clear of the sensor's arrows
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam, 2026-10-10: "For simplicity, could an out of service station be made a round white circle with an orange border and X inside of it, regardless of the type of station or point it otherwise is?"; then "Make them small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the user to discern."
 
 **Written:** 2026-10-10
@@ -34165,5 +34172,47 @@ kept, and come back with the station.
 **Claude, 2026-10-11.**
 
 Round 129 (`1c124337`): in the autonomy editor a square out of service shows no pointer for changing directions, and a click on it changes nothing and says why (RSA63-C5).
+
+**Claude, 2026-10-11.**
+
+Superseded by MT-722 (round 131, `74f6b921`): a station out of service is a solid orange circle with a white X, its icon's size, and a plain sensor a smaller white circle ringed in orange - your 2026-10-11 changes.
+
+---
+
+<a id="mt-722"></a>
+### MT-722 - 2026-10-11 - Round 131: stations are circles, diamonds and squares again, and the orange signs out of service
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11: "The icons are hard to work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"; on the sheet: "The icons need to be bigger- make them bigger in both the non station (match radius of s88, so 2px more diameter) and station view (same as before, just ever slightly smaller)."; then "1px more radius on the non station out of service, and give the station out of service a solid orange fill, with a white X inside instead"; then "make sure that the diamonds are correctly aligned on curves"
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. Look at stations of every kind - an ordinary one, named and not yet named, one where trains may turn, one where they
+   must, one whose track runs out, a parking berth - and at plain sensors where trains pass, may turn and must turn, on
+   straight track, on curves and on double curves, on the track diagram at the Small size and the Large.
+2. Open the autonomy editor with Track Directions showing and look at the same squares there.
+3. Put a station and a plain sensor out of service, and look at them on the track diagram and in the editor; then put
+   them back in service.
+4. Look at an ordinary station beside vertical track whose name stands on end beside it, at both sizes.
+
+**Expected**
+
+- Step 1: a circle where trains do not turn, a diamond where they may, a square where they must or where the track runs
+  out - big on a station, covering the sensor's circle; small on a plain sensor, filling the sensor's circle.  On a
+  curve each sits on the rails, a station's diamond a little smaller there.  Blue where
+  autonomy uses it, grey on a parking berth; filled when named, white with a ring in the colour when not.  Each stays
+  inside its own square, on a curve too.
+- Step 2: the editor draws every one exactly as the track diagram does, with the red and green arrows over it.
+- Step 3: the station is a solid orange circle with a white X, its icon's size; the sensor a smaller white circle ringed in
+  orange with an orange X; no arrows on either square.  Back in service, their marks and arrows are back.
+- Step 4: the name does not overlap the station's mark.
+
+*What this is:* round 131 (`74f6b921`).  FR-118's icons are kept in the code, one setting away, and still tested; this retests MT-720
+and MT-721 with the classic icons.  Claims in `core.testAutonomyDiagramMonitor`: `testTheClassicIconsAreTheGridAgain`,
+`testTheClassicIconsAreTheSizesAdamAskedFor`, `testTheClassicOutOfServiceSignIsAStationsOrASensors`,
+`testTheClassicIconsAreTheSameInTheEditor`, `testAClassicStationsDiamondOnACurveIsOnItsRails`,
+`testAStationOnACurveIsWhollyInsideItsSquare`.
 
 ---
