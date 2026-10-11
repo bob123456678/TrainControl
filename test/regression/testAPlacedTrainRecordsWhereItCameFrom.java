@@ -600,7 +600,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
         final GraphLocAssign[] built = new GraphLocAssign[1];
 
         SwingUtilities.invokeAndWait(() ->
-            built[0] = new GraphLocAssign(ui, nowhere, false, session, model.getAutoLayout()));
+            built[0] = new GraphLocAssign(ui, nowhere, session, model.getAutoLayout()));
 
         final GraphLocAssign edit = built[0];
 
@@ -733,7 +733,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
         final GraphLocAssign[] built = new GraphLocAssign[1];
 
         SwingUtilities.invokeAndWait(() ->
-            built[0] = new GraphLocAssign(ui, point, false, session, model.getAutoLayout()));
+            built[0] = new GraphLocAssign(ui, point, session, model.getAutoLayout()));
 
         assertEquals(built[0].getLoc(), train.getName(),
             "the dialog opened on a different locomotive from the one standing here, so what it "

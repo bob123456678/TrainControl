@@ -1181,39 +1181,6 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Whether the accessory this row names is a signal.
-     *
-     * @param row the row
-     * @return true only when there is an accessory at that address and it is a signal
-     */
-    private boolean isSignalAt(CommandRow row)
-    {
-        // The layout is what knows.  Without one - the editor opened from a test, or before a control
-        // station has answered - every accessory reads as a switch, which is what most of them are.
-        if (parent == null || parent.getModel() == null) return false;
-
-        try
-        {
-            Accessory accessory =
-                parent.getModel().getAccessoryByAddressIfPresent(
-                    // As typed.  getAccessoryByAddressIfPresent takes the address a user would say
-                    // and does the conversion to a UID itself, so subtracting here would look one
-                    // switch to the left - which for a signal beside a switch is a real address
-                    // holding the wrong kind of thing
-                    Integer.parseInt(row.getTarget().trim()),
-                    row.getProtocol() == null
-                        ? Accessory.DEFAULT_IMPLICIT_PROTOCOL : row.getProtocol());
-
-            return accessory != null && accessory.isSignal();
-        }
-        catch (NumberFormatException e)
-        {
-            // A row with nothing in its address column yet, which is every row the moment it is added
-            return false;
-        }
-    }
-
-    /**
      * The row of buttons under a section's table.
      *
      * Asked of the layout rather than counted off by index.  It WAS an index, and adding a heading

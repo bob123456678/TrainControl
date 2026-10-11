@@ -848,7 +848,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                             // THE SETUP GOES IN WITH IT (REV9-B2): the dialog offers the arrival
                             // side now, and works this square's sides out from the build to do it.
-                            GraphLocAssign edit = new GraphLocAssign(ui, current, false,
+                            GraphLocAssign edit = new GraphLocAssign(ui, current,
                                 ui.getAutonomySession(),
                                 ui.getModel() == null ? null : ui.getModel().getAutoLayout());
 

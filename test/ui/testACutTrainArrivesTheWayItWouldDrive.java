@@ -280,7 +280,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
                 session.setFacing(mainA, Side.W);
 
                 org.traincontrol.gui.GraphLocAssign edit =
-                    new org.traincontrol.gui.GraphLocAssign(ui, eastbound, false, session, layout);
+                    new org.traincontrol.gui.GraphLocAssign(ui, eastbound, session, layout);
 
                 try
                 {
