@@ -1842,6 +1842,25 @@ Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a
 
 Today the list under `Advanced Parameters...` -> `Excluded Locomotives` names the locomotives that may not stop at the station.  In the new mode the same list names the only ones that may, and every other locomotive is excluded - including one added to the locomotive database later, which a list of exclusions would let in.  The list is kept as chosen and read in its mode wherever an exclusion is asked, so changing the mode back keeps the choice.
 
+### FR-122 - 2026-10-11 - for 3.1.0: a Medium size for track diagrams, 46 pixels a square, between Small (30) and Large (60)
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11, asking how hard it would be to "add a medium size option in addition to small and large for our diagrams", then, having seen his Main page at 30, 40, 46, 50 and 60 pixels side by side (`Downloads/ClaudeProjects/traincontrol-tile-sizes.png`): "File an FR for 46px.  Don't build it yet- tag for 3.1.0".
+
+**For v3.1.0**, on Adam's word - not to be built for 3.0.0.
+
+What it takes, as surveyed on 2026-10-11:
+
+- **An icon set at 46** (`resources/icons46`, the 42 GIFs the other two sizes have).  The 28 curves and switches come from `docs/tools/tile-icons.py` (round 101); the other 14 - signals, sensors, tunnels, crossings, route buttons and the rest - scaled from the 60 set and touched up by hand, as the tunnel walls were.  Loading the 60 art and shrinking it works but is visibly softer on screen.
+- **The size choice**: `TrainControlUI.layoutSizes` (Small and Large), its two buttons, a `layout.ui.medium` key in the eight languages; the open windows are already remembered per size.
+- **The few places that assume two sizes**: the editor's starting size (`LayoutEditor`, `size == 60`) and two `tile >= 60` in `TileAnnotation` (FR-118's icons only).  Everything else - the classic icons, captions, halos, arrows, train marks, the out-of-service sign, the export - is drawn in proportion to the square already.
+- **The pictures' claims**: 37 loop over 30 and 60, many with exact pixel figures per size; each needs its 46 figure.  Then a look round on an icon sheet at 46.
+
+46 rather than 45 because the centring arithmetic is in whole pixels and an odd square puts the rails half a pixel off its middle.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
