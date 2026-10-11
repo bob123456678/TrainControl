@@ -9744,6 +9744,144 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The autonomy editor's Show Trains switch is on until it is turned off, and says what it is set to (FR-119) - what
+     * its diagram's squares ask as they paint.
+     *
+     * MUTATION: answer the squares anything but the switch's state, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTheEditorHasAShowTrainsSwitch() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+
+        final java.lang.reflect.Method box = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("getShowTrains");
+        final java.lang.reflect.Method showing = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("isShowingTrains");
+
+        final javax.swing.JCheckBox[] trains = new javax.swing.JCheckBox[1];
+        final boolean[] seen = new boolean[3];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                trains[0] = (javax.swing.JCheckBox) box.invoke(panel);
+
+                boolean was = trains[0].isSelected();
+
+                trains[0].setSelected(true);
+                seen[0] = (Boolean) showing.invoke(panel);
+
+                trains[0].setSelected(false);
+                seen[1] = (Boolean) showing.invoke(panel);
+
+                trains[0].setSelected(was);
+                seen[2] = was;
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new RuntimeException(failed);
+            }
+        });
+
+        assertTrue(seen[0], "the editor's Show Trains switch, ticked, says not to show the trains (FR-119)");
+        assertFalse(seen[1], "the editor's Show Trains switch, unticked, says to show the trains (FR-119)");
+        assertEquals(trains[0].getText(), org.traincontrol.util.I18n.t("autosetup.ui.btnShowTrains"), "the switch is not"
+            + " the one called Show Trains");
+    }
+
+    /**
+     * A sensor with no name is named as it becomes a station (FR-120; Adam, 2026-10-10: *"when an unnamed sensor is
+     * converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are
+     * remembered so future changes are applied.  we apply a name duplication check here."*).  Through the editor's own
+     * answer to the station menu, `setUsage`, with its question answered here: Cancel, and a blank name, leave the square a
+     * sensor and unnamed; a name another square has - in any case - is refused and asked for again, with the name typed
+     * and why; a free name makes it a station of that name; and a square with a name already is not asked.
+     *
+     * MUTATION: make an unnamed sensor a station without asking, or take a name another square has, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testAnUnnamedSensorIsNamedAsItBecomesAStation() throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
+
+        final TileKey unnamed = new TileKey("main", 5, 1);
+        final TileKey named = new TileKey("main", 1, 1);
+
+        session.setPointName(named, "North Yard");
+
+        final List<String[]> asked = new java.util.ArrayList<>();
+        final java.util.LinkedList<String> answers = new java.util.LinkedList<>();
+
+        java.lang.reflect.Field question = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("askForAName");
+
+        question.setAccessible(true);
+
+        question.set(panel, (java.util.function.BiFunction<String, String, String>) (message, typed) ->
+        {
+            asked.add(new String[] {message, typed});
+
+            return answers.isEmpty() ? null : answers.removeFirst();
+        });
+
+        // CANCEL: nothing changes
+        answers.add(null);
+        answerTheStationMenu(panel, unnamed, true);
+
+        assertEquals(asked.size(), 1, "an unnamed sensor was made a station without being asked its name - Adam: \"when"
+            + " an unnamed sensor is converted to a station, pop up a box to ask for its name\"");
+        assertFalse(session.getStore().isStation(unnamed), "Cancel made the unnamed sensor a station - Adam: \"if none is"
+            + " provided, changes are cancelled\"");
+
+        // BLANK: nothing changes
+        answers.add("   ");
+        answerTheStationMenu(panel, unnamed, true);
+
+        assertFalse(session.getStore().isStation(unnamed), "a blank name made the unnamed sensor a station");
+        assertNull(session.getStore().getPointName(unnamed), "a blank name named the sensor");
+
+        // ANOTHER SQUARE'S NAME, in another case: refused, and asked again with what was typed
+        asked.clear();
+        answers.add(" north yard ");
+        answers.add("Far Yard");
+        answerTheStationMenu(panel, unnamed, true);
+
+        assertEquals(asked.size(), 2, "a name another square has was taken, not refused and asked for again - Adam: \"we"
+            + " apply a name duplication check here\"");
+        assertEquals(asked.get(1)[1], "north yard", "asked again, the name typed was not kept for correcting");
+        assertTrue(asked.get(1)[0].contains(org.traincontrol.util.I18n.f("autosetup.ui.errorPointNameTaken", "north yard")),
+            "asked again without saying the name is taken: " + asked.get(1)[0]);
+
+        assertTrue(session.getStore().isStation(unnamed), "a free name did not make the sensor a station");
+        assertEquals(session.getStore().getPointName(unnamed), "Far Yard", "the station is not called what was typed");
+
+        // NAMED ALREADY: not asked
+        asked.clear();
+        answerTheStationMenu(panel, named, true);
+
+        assertTrue(asked.isEmpty(), "a sensor with a name was asked for one as it became a station - Adam: \"names are"
+            + " remembered so future changes are applied\"");
+        assertTrue(session.getStore().isStation(named), "a named sensor was not made a station");
+    }
+
+    /** The editor over `pageWithATwoEndedStation`, its three sensors plain points. */
+    private org.traincontrol.gui.AutonomyEditorPanel anEditorOverATwoEndedStation() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("Default");
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+        return panel[0];
+    }
+
+    /**
      * A two-ended station with a signal on each side of it, for every setting a station has and a plain point has not
      * (GSE-C4): the station at 3,1, entered from the west and from the east, and signals at 2,1 (address 21) and 4,1
      * (address 22) on the track either side, wired as parsing a real layout wires them.
@@ -9784,6 +9922,8 @@ public class testAutonomyDiagramSession
         TileKey entry = new TileKey("main", 4, 1);
 
         session.setStation(station, true);
+        // NAMED, as a station made one in the editor is now (FR-120) - so promoting it again asks nothing
+        session.setPointName(station, "Platform");
         session.setCaption(caption, station);
         session.setBarredArrivals(station, new LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
         session.setProtectingSignal(station, exit);

@@ -4417,6 +4417,93 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The autonomy editor's Show Trains switch hides the trains on its diagram (FR-119; Adam, 2026-10-10: *"in the autonomy
+     * editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."*).  A square
+     * with a train standing on it, in the diagram's own container: its train drawn while the square's switch says yes,
+     * nothing while it says no - and a square no switch was given, as on the track diagram, draws it.
+     *
+     * MUTATION: let a square draw its train whatever its switch says, and this fails.
+     *
+     * @throws Exception reflection
+     */
+    @Test
+    public void testTheEditorsShowTrainsSwitchHidesItsTrains() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        java.lang.reflect.Method shown = org.traincontrol.gui.LayoutLabel.class.getMethod("setTrainsShown",
+            java.util.function.BooleanSupplier.class);
+
+        for (int size : new int[] {30, 60})
+        {
+            int drawn = trainInk(size, null, shown);
+
+            assertTrue(drawn > 0, "precondition: a square with a train standing on it at " + size + " pixels drew nothing");
+
+            assertEquals(trainInk(size, (java.util.function.BooleanSupplier) () -> true, shown), drawn, "a square whose"
+                + " switch says to show the trains drew them differently at " + size + " pixels");
+
+            assertEquals(trainInk(size, (java.util.function.BooleanSupplier) () -> false, shown), 0, "a square whose switch"
+                + " says to hide the trains still drew its train at " + size + " pixels - Adam: \"have a \"show trains\""
+                + " checkbox that toggles the locomotive icons\"");
+        }
+    }
+
+    /**
+     * The non-white pixels of a diagram of one square with a train standing on it, the square given this switch, or none.
+     */
+    private static int trainInk(int size, java.util.function.BooleanSupplier switched, java.lang.reflect.Method shown)
+        throws Exception
+    {
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        org.traincontrol.gui.LayoutLabel square = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        square.setBounds(size, size, size, size);
+        square.setAutonomyOverlay(org.traincontrol.automationui.TileOverlay.parked(
+            org.traincontrol.automationui.TilePorts.Side.E));
+
+        if (switched != null) shown.invoke(square, switched);
+
+        grid.add(square);
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int ink = 0;
+
+        for (int x = 0; x < size * 3; x++)
+        {
+            for (int y = 0; y < size * 3; y++)
+            {
+                if ((shot.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) ink++;
+            }
+        }
+
+        return ink;
+    }
+
+    /**
      * And the halo is drawn round writing that shares its square with track (MT-716; Adam, 2026-10-10: *"I see this on
      * some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have
      * something else on them plus text."*).

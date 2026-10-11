@@ -1377,6 +1377,12 @@ public class LayoutGrid
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
                 grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor, gridLines);
 
+                // THE AUTONOMY EDITOR'S TRAINS FOLLOW ITS OWN SWITCH (FR-119), and no other diagram's do
+                if (autonomyEditor && ((LayoutEditor) master).getAutonomyPanel() != null)
+                {
+                    grid[x][y].setTrainsShown(((LayoutEditor) master).getAutonomyPanel()::isShowingTrains);
+                }
+
                 // The square it is drawing, so it can ask whether a train is lying across it.  The
                 // key is already built a few lines above for the caption lookup.
                 grid[x][y].setSquare(square);

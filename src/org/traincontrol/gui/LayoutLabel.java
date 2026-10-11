@@ -112,6 +112,22 @@ public final class LayoutLabel extends JLabel
      */
     private volatile TileOverlay autonomyOverlay;
 
+    /**
+     * Whether this square draws the trains on it - its icon and its tail - asked as it paints: the autonomy editor's Show
+     * Trains switch for that editor's squares (FR-119), and yes everywhere else.
+     */
+    private java.util.function.BooleanSupplier trainsShown = () -> true;
+
+    /**
+     * Has this square ask the given switch whether to draw the trains on it (FR-119).
+     *
+     * @param shown asked as the square paints
+     */
+    public void setTrainsShown(java.util.function.BooleanSupplier shown)
+    {
+        this.trainsShown = shown == null ? () -> true : shown;
+    }
+
     // What the autonomy editor draws here - directions, lengths, selection.  Separate from the overlay
     // because they answer different questions and are cleared at different times.
     private volatile org.traincontrol.automationui.TileAnnotation autonomyAnnotation;
@@ -1878,7 +1894,7 @@ public final class LayoutLabel extends JLabel
      */
     private void paintCoveredMark(java.awt.Graphics2D g)
     {
-        if (component == null || component.isText()) return;
+        if (component == null || component.isText() || !trainsShown.getAsBoolean()) return;
 
         // THE REFUSAL IS DRAWN IN `paintComponent`, NOT HERE, since MT-278 item 1.
         //
@@ -2207,7 +2223,7 @@ public final class LayoutLabel extends JLabel
     {
         TileOverlay overlay = autonomyOverlay;
 
-        if (overlay == null || overlay.isBlank() || !overlay.hasTrain()) return;
+        if (overlay == null || overlay.isBlank() || !overlay.hasTrain() || !trainsShown.getAsBoolean()) return;
 
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 

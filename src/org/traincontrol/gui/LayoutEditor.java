@@ -1991,6 +1991,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowUnmeasured().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowUnmeasured());
 
+                // AND THE TRAINS, this editor's own (FR-119), a subject of their own, so a gap above
+                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+
+                autonomyPanel.getShowTrains().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                visibility.add(autonomyPanel.getShowTrains());
+
                 // WHAT THE CAPTIONS SAY, as one choice (FR-061).
                 //
                 // Adam: "add a Text Labels label and dropdown right above Track Directions, with the

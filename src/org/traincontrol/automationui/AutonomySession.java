@@ -8559,6 +8559,31 @@ public class AutonomySession
     }
 
     /**
+     * Whether another square already has this name, in any case (FR-120) - asked as a sensor is named on becoming a station.
+     *
+     * @param name the name as typed
+     * @param except the square being named, whose own name does not count
+     * @return true where another square is called that
+     */
+    public boolean isPointNameTaken(String name, TileKey except)
+    {
+        if (name == null || name.trim().isEmpty()) return false;
+
+        String wanted = name.trim();
+
+        for (TileKey tile : store.getNamedTiles())
+        {
+            if (tile.equals(except)) continue;
+
+            String other = store.getPointName(tile);
+
+            if (other != null && other.trim().equalsIgnoreCase(wanted)) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Why a typed name may not be given to a square, or null when it may (TDR-C11).
      *
      * A name ending in the builder's own direction heading - "Main (eastbound)" - reads as another square
