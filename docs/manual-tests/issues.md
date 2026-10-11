@@ -1822,6 +1822,16 @@ in the autonomy editor, have a "show trains" checkbox that toggles the locomotiv
 
 when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here.
 
+### OB-332 - 2026-10-11 - A direction arrow on a route button is greyed out in the autonomy editor and cannot be clicked or changed
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.  Refer to route 41 in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox (located at 4,14).  Fix it now so I can MT"
+
+A route button drawn on a running line carries the line: the graph runs the track through it (`TileGraph.transparentRoutes`), so a direction can be stored on it and its arrow is drawn there.  The editor greyed every route button and refused its click (`AutonomyEditorPanel.isIgnored`), so that arrow could not be changed.  On the Oles kreds sandbox's page *0 komplet* six route buttons carry a stored one-way direction - routes 37, 41 (at 4,14, between signal 24 and sensor 15), 53, 50, 101 and 1019.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1838,6 +1848,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-11 | OB-332 | bug | A route button on a running line is track in the autonomy editor: not greyed, its arrows clickable, a click stepping its direction as on plain track - the button alone, as it is not part of a run; a button beside the line, with no track through it, is still greyed (round 132, `28e4e138`): `core.testAutonomyDiagramSession.testARouteButtonOnALineTakesADirectionClick`, red before (*"a route button on the line is greyed in the editor"*). | - | MT-723 |
 | 2026-10-10 | FR-120 | feature request | A sensor with no name is asked for one as it becomes a station, from the editor's and the track diagram's station menu: Cancel or a blank name leaves it a sensor; a name another square has, in any case, is refused and asked for again with what was typed; a named square is not asked (round 126, `8389b266`): `core.testAutonomyDiagramSession.testAnUnnamedSensorIsNamedAsItBecomesAStation`. | - | MT-719 |
 | 2026-10-10 | FR-119 | feature request | Show Trains in the autonomy editor, under Unmeasured Track: unticked, the editor draws no trains - icons or tails; the track diagram's are not its; remembered (round 126, `8389b266`): `ui.testDiagramLooksRight.testTheEditorsShowTrainsSwitchHidesItsTrains`, `core.testAutonomyDiagramSession.testTheEditorHasAShowTrainsSwitch`. | - | MT-718 |
 | 2026-09-25 | OB-305 | bug | Every placement door saves what it wrote before it asks the tail question, unless an editor is open or on its way, so a crash while the question waits no longer loses the train's place (round 115, `3ce4be42`): `regression.testTheTailIsPickedOnTheDiagram.testEveryPlacementDoorSavesBeforeItAsks`, `testThePlacementIsOnDiskWhileTheQuestionWaits`.  **Claude, 2026-10-10:** closed on its claims, verified on my end, on Adam's *"fix all the outstanding bugs in this round"* (2026-10-09). | fixed validated | - |

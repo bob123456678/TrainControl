@@ -32,8 +32,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-718](#mt-718) | 2026-10-10 | Round 126: FR-119, Show Trains in the autonomy editor | fixed unvalidated | Adam, 2026-10-10 - FR-119: "in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer." |
 | [MT-719](#mt-719) | 2026-10-10 | Round 126: FR-120, a sensor is named as it becomes a station | fixed unvalidated | Adam, 2026-10-10 - FR-120: "when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here." |
 | [MT-722](#mt-722) | 2026-10-11 | Round 131: stations are circles, diamonds and squares again, and the orange signs out of service | fixed unvalidated | Adam, 2026-10-11: "The icons are hard to work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"; on the sheet: "The icons need to be bigger- make them bigger in both the non station (match radius of s88, so 2px more diameter) and station view (same as before, just ever slightly smaller)."; then "1px more radius on the non station out of service, and give the station out of service a solid orange fill, with a white X inside instead"; then "make sure that the diamonds are correctly aligned on curves" |
+| [MT-723](#mt-723) | 2026-10-11 | Round 132: OB-332, a route button on a running line takes direction clicks | fixed unvalidated | Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.  Refer to route 41 in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox (located at 4,14).  Fix it now so I can MT" |
 
-Everything else - 717 of 722 - needs nothing from you unless the area changes again:
+Everything else - 717 of 723 - needs nothing from you unless the area changes again:
 564 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34214,5 +34215,34 @@ and MT-721 with the classic icons.  Claims in `core.testAutonomyDiagramMonitor`:
 `testTheClassicIconsAreTheSizesAdamAskedFor`, `testTheClassicOutOfServiceSignIsAStationsOrASensors`,
 `testTheClassicIconsAreTheSameInTheEditor`, `testAClassicStationsDiamondOnACurveIsOnItsRails`,
 `testAStationOnACurveIsWhollyInsideItsSquare`.
+
+---
+
+<a id="mt-723"></a>
+### MT-723 - 2026-10-11 - Round 132: OB-332, a route button on a running line takes direction clicks
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.  Refer to route 41 in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox (located at 4,14).  Fix it now so I can MT"
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. Open the Oles kreds sandbox, open the autonomy editor with Track Directions showing, and go to page *0 komplet*.
+   Look at route 41 at 4,14, between signal 24 and sensor 15, and hover over it.
+2. Click it a few times, watching its arrow and the message line.
+3. Look at a route button that is not on the track, and click it.
+
+**Expected**
+
+- Step 1: route 41 is not greyed out; its arrow shows; the pointer becomes a hand and the hint says a click changes
+  its directions, as on plain track.
+- Step 2: each click steps its direction through the same settings a plain track square goes through, and the message
+  line says what it is now.  Only the button changes - the track either side keeps its own setting.
+- Step 3: a route button with no track through it is still greyed, and a click on it changes nothing.
+
+*What this is:* round 132 (`28e4e138`).  Claim
+`core.testAutonomyDiagramSession.testARouteButtonOnALineTakesADirectionClick`.  The same goes for the five other route
+buttons on that page with a stored direction - routes 37, 50, 53, 101 and 1019.
 
 ---
