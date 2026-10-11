@@ -283,21 +283,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 locStation.setForeground(Color.WHITE);
                 locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), Color.LIGHT_GRAY, 1, 999));
             }
-            else if (atAssignedHome)
-            {
-                this.locName.setForeground(Color.BLACK);
-                this.pauseButton.setVisible(true);
-
-                // Standing on its home station, in the teal the graph outlines such a station with.
-                //
-                // White text like every other state of this badge.  The teal is a light colour - it was
-                // picked to read against the graph's dark blue fill - so this is the lowest-contrast
-                // pairing the badge has; it holds because the text is short and the badge is small, and
-                // a colour of its own for this one state would read as a different kind of thing.
-                locStation.setBackground(TrainControlUI.COLOR_AT_HOME);
-                locStation.setForeground(Color.WHITE);
-                locStation.setBorder(new FlatLineBorder(new Insets(0,2,0,2), TrainControlUI.COLOR_AT_HOME, 1, 999));
-            }
+            // STANDING ON ITS HOME STATION IS A HOUSE BESIDE THE SECOND LINE, NOT A TEAL BADGE (MT-709; Adam, 2026-10-10:
+            // "on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in
+            // the same spot as the (i))") - the badge the tab's blue as for any other station, and `markFor` below.
             else
             {
                 this.locName.setForeground(Color.BLACK);
@@ -404,7 +392,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // are new - there is no way to guess that resting the pointer here now answers
                     // the question the text raises.
                     this.locDest.setText(I18n.t("autolayout.ui.noAvailPaths"));
-                    this.locDest.setIcon(INFO_ICON);
 
                     // And WHY, on hover.  A FLAG here, and the reasons worked out when the pointer
                     // stops on the label - see the mouse listener in the constructor.
@@ -446,7 +433,109 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locAvailPaths.setVisible(true);
             }
 
+            // The (i) where there is a reason to hover for, and the house where the train stands at its home - both where
+            // both, beside the second line
+            this.locDest.setIcon(markFor(atAssignedHome && at.isActive(), this.noPathsNow));
+
             this.locAvailPaths.setModel(pathList);
+        }
+    }
+
+    /**
+     * The mark beside a card's second line: the house where its train stands at the home assigned to it (MT-709), the (i)
+     * where hovering there explains something, both side by side where both, and none otherwise.
+     *
+     * @param atHome whether the train stands at its assigned home
+     * @param whyNot whether the second line has a reason to show on hover
+     * @return the mark, or null
+     */
+    static javax.swing.Icon markFor(boolean atHome, boolean whyNot)
+    {
+        if (atHome && whyNot && INFO_ICON != null) return new BothMarks(HOUSE, INFO_ICON);
+
+        if (atHome) return HOUSE;
+
+        return whyNot ? INFO_ICON : null;
+    }
+
+    /**
+     * A little house, the (i)'s size, in the tab's blue: a roof and a body, with a door in it.
+     */
+    private static final javax.swing.Icon HOUSE = new javax.swing.Icon()
+    {
+        @Override
+        public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y)
+        {
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            try
+            {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.translate(x, y);
+                g2.setColor(TAB_BLUE);
+
+                java.awt.geom.Path2D roof = new java.awt.geom.Path2D.Double();
+
+                roof.moveTo(0.5, 7);
+                roof.lineTo(7, 0.5);
+                roof.lineTo(13.5, 7);
+                roof.closePath();
+
+                g2.fill(roof);
+                g2.fillRect(2, 6, 10, 8);
+
+                g2.setColor(Color.WHITE);
+                g2.fillRect(6, 9, 3, 5);
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
+
+        @Override
+        public int getIconWidth()
+        {
+            return 14;
+        }
+
+        @Override
+        public int getIconHeight()
+        {
+            return 14;
+        }
+    };
+
+    /**
+     * Two marks side by side, a little apart.
+     */
+    private static final class BothMarks implements javax.swing.Icon
+    {
+        private final javax.swing.Icon first, second;
+
+        BothMarks(javax.swing.Icon first, javax.swing.Icon second)
+        {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override
+        public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y)
+        {
+            first.paintIcon(c, g, x, y + (getIconHeight() - first.getIconHeight()) / 2);
+            second.paintIcon(c, g, x + first.getIconWidth() + 3, y + (getIconHeight() - second.getIconHeight()) / 2);
+        }
+
+        @Override
+        public int getIconWidth()
+        {
+            return first.getIconWidth() + 3 + second.getIconWidth();
+        }
+
+        @Override
+        public int getIconHeight()
+        {
+            return Math.max(first.getIconHeight(), second.getIconHeight());
         }
     }
     

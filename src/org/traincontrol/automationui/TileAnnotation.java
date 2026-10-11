@@ -1074,6 +1074,41 @@ public class TileAnnotation
     }
 
     /**
+     * The corner an arrival chevron on this side is pushed to - its side and the side it is pushed towards - by the same
+     * reckoning `paintArrivals` draws it with.
+     *
+     * @param side the side the chevron is on
+     * @param width the tile's width
+     * @param height the tile's height
+     * @return the two sides that meet at that corner, or null for a side with no midpoint
+     */
+    private java.util.Set<Side> cornerOf(Side side, int width, int height)
+    {
+        int[] at = midpoint(side, width, height);
+
+        if (at == null) return null;
+
+        double dx = width / 2.0 - at[0];
+        double dy = height / 2.0 - at[1];
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length < 1) return null;
+
+        double px = -dy / length;
+        double py = dx / length;
+
+        if (offsetCollidesWithTrack(side, px, py))
+        {
+            px = -px;
+            py = -py;
+        }
+
+        Side toward = Math.abs(px) > Math.abs(py) ? (px > 0 ? Side.E : Side.W) : (py > 0 ? Side.S : Side.N);
+
+        return java.util.EnumSet.of(side, toward);
+    }
+
+    /**
      * Whether nudging an arrival arrow this way puts it over the tile's own track (OB-175).
      *
      * An arrow on one side is pushed along that side, clear of the direction mark in the middle.  Which
@@ -1107,20 +1142,21 @@ public class TileAnnotation
         // The side the arrow is ON is not a collision - every arrow sits on one.
         if (toward == arriving) return false;
 
-        boolean used = false;
-        boolean opposite = false;
-
+        // THE ARROW'S OWN TRACK (MT-714; Adam, 2026-10-10: "when a double curve with a s88 has arrival directions set,
+        // the arrow icons may overlap").  The corner to keep clear of is the one the track through this side runs to.  It
+        // was asked of every road on the square - a side used, and its opposite not - and on a double curve every side has
+        // track and so has its opposite: nothing moved, each chevron went the same fixed way round, and half of them lay
+        // on their own curve, over its direction arrow.  On a curve the answer is the one it was, the corner its one road
+        // runs to; on straight track, whose road runs to neither corner, nothing moves - no existing mark moves.
         for (Mark mark : marks)
         {
-            if (mark.getA() == toward || mark.getB() == toward) used = true;
-
-            if (mark.getA() == opposite(toward) || mark.getB() == opposite(toward)) opposite = true;
+            if (mark.getA() == arriving && mark.getB() == toward || mark.getB() == arriving && mark.getA() == toward)
+            {
+                return true;
+            }
         }
 
-        // BOTH USED IS NOT A REASON TO MOVE, which is what makes this safe on straight track: a run
-        // from N to S touches both corners of an E arrow equally, and flipping would trade one overlap
-        // for another while moving a mark somebody is used to.
-        return used && !opposite;
+        return false;
     }
 
     /**
@@ -1172,6 +1208,18 @@ public class TileAnnotation
         // marks, and there is room: a tile edge is much wider than an arrowhead.
         double offset = span / 4.0;
 
+        // AND A LITTLE NEARER THE MIDDLE WHERE TWO SHARE A CORNER (MT-714).  On a double curve the free corners are
+        // between the two curves, and the chevrons of the two sides that meet there both go to it; a quarter of the
+        // square along, their points met.  A fifth keeps them apart and still clear of the arrows at the middles.
+        java.util.Map<java.util.Set<Side>, Integer> corners = new java.util.HashMap<>();
+
+        for (Arrival arrival : arrivals)
+        {
+            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+
+            if (corner != null) corners.put(corner, corners.containsKey(corner) ? corners.get(corner) + 1 : 1);
+        }
+
         g.setStroke(new BasicStroke(Math.max(1.2f, span / 22f),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -1180,6 +1228,10 @@ public class TileAnnotation
             int[] at = midpoint(arrival.getSide(), width, height);
 
             if (at == null) continue;
+
+            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+
+            double along = corner != null && corners.get(corner) > 1 ? span / 5.0 : offset;
 
             // Which way is "inward" from this side
             double dx = width / 2.0 - at[0];
@@ -1218,8 +1270,8 @@ public class TileAnnotation
 
             // Pulled off the edge itself, which is shared with the neighbouring square, and along
             // it, clear of the direction arrow in the middle
-            double baseX = at[0] + dx * 1.5 + px * offset;
-            double baseY = at[1] + dy * 1.5 + py * offset;
+            double baseX = at[0] + dx * 1.5 + px * along;
+            double baseY = at[1] + dy * 1.5 + py * along;
 
             double tipX = baseX + dx * depth;
             double tipY = baseY + dy * depth;
@@ -2255,13 +2307,28 @@ public class TileAnnotation
 
         badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
 
-        // WHAT IT COVERS, where it is drawn - for the diagram, which draws what lies over a spill again over it (RSA61-C2)
-        java.awt.geom.AffineTransform placed = java.awt.geom.AffineTransform.getTranslateInstance(at[0], at[1]);
+        // WHAT IT COVERS, where it is drawn - for the diagram, which draws what lies over a spill again over it (RSA61-C2):
+        // the icon's body and its outline, a pixel round for the soft edge, less the square (RSA62-C1: it was the outline's
+        // stroke alone, a ring, and the body inside it was drawn in front of the captions).  Built once for a size and kept
+        // (RSA62-B1): it was built on every paint, as a stroke of that stroke, and on Adam's main page two curve stations
+        // took 0.36 s each - the window stalled.  The annotation is replaced whenever what it draws changes.
+        if (spills && (spillFor == null || spillFor[0] != width || spillFor[1] != height))
+        {
+            java.awt.geom.AffineTransform placed = java.awt.geom.AffineTransform.getTranslateInstance(at[0], at[1]);
 
-        placed.rotate(angle);
-        placed.scale(scale, scale);
+            placed.rotate(angle);
+            placed.scale(scale, scale);
 
-        stationDrawn = placed.createTransformedShape(stroked);
+            java.awt.Shape body = placed.createTransformedShape(outline);
+
+            java.awt.geom.Area region = new java.awt.geom.Area(body);
+
+            region.add(new java.awt.geom.Area(new BasicStroke((float) (stroke * scale) + 2f).createStrokedShape(body)));
+            region.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
+
+            spillRegion = region;
+            spillFor = new int[] {width, height};
+        }
 
         // THE CONTACT COVERED ON A BEND TOO, as on straight track below - the icon is no taller than the contact, whose
         // ring showed round it.  On the chord's middle, where the curved sensor's art draws it, turned along the chord -
@@ -2404,14 +2471,18 @@ public class TileAnnotation
     /** Whether `paintSpill` is drawing - the station's part outside its square, without the contact's cover. */
     private boolean spilling;
 
-    /** The station's icon, outline and all, as `paintStation` last drew it, in the square's coordinates. */
-    private java.awt.Shape stationDrawn;
+    /** What the station's icon covers outside its square, as `paintStation` built it for the size in `spillFor`. */
+    private java.awt.Shape spillRegion;
+
+    /** The width and height `spillRegion` was built for, or null before the icon is first drawn. */
+    private int[] spillFor;
 
     /**
-     * What this square's spill covers, in the square's own coordinates: the station's icon as last drawn, a pixel round for
-     * its soft edge, less the square - null where nothing spills or nothing has been drawn yet.  The diagram draws what lies
-     * over that region again over the spill - the arrows of the square it reaches, then the captions - so the spill keeps
-     * the depth the icon has on its own square, under the captions (RSA61-C2).
+     * What this square's spill covers, in the square's own coordinates: the station's icon, body and outline, a pixel round
+     * for its soft edge, less the square - null where nothing spills or the icon has not been drawn at this size yet.  The
+     * diagram draws what lies over that region again over the spill - the arrows of the square it reaches, then the
+     * captions - so the spill keeps the depth the icon has on its own square, under the captions (RSA61-C2, RSA62-C1).
+     * Built once for a size (RSA62-B1).
      *
      * @param width the square's width
      * @param height the square's height
@@ -2419,16 +2490,11 @@ public class TileAnnotation
      */
     public java.awt.Shape spillShape(int width, int height)
     {
-        java.awt.Shape drawn = stationDrawn;
+        int[] built = spillFor;
 
-        if (drawn == null || !spillsOverItsSquare()) return null;
+        if (built == null || built[0] != width || built[1] != height || !spillsOverItsSquare()) return null;
 
-        java.awt.geom.Area area = new java.awt.geom.Area(drawn);
-
-        area.add(new java.awt.geom.Area(new BasicStroke(2f).createStrokedShape(drawn)));
-        area.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
-
-        return area;
+        return spillRegion;
     }
 
     /**

@@ -9753,23 +9753,11 @@ public class AutonomyEditorPanel extends JPanel
      */
     private boolean isCurved(TileKey tile)
     {
-        LayoutDiagramComponent component =
-            session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
-
-        if (component == null) return false;
-
-        LayoutDiagramComponent.componentType type = component.getType();
-
-        // Only the curves WITHOUT a sensor.
-        //
-        // Following the chord puts the arrow along the rail, which reads beautifully on plain track and
-        // disappears on a sensor: a feedback curve carries the heaviest art on the diagram, and a red
-        // arrow laid at forty-five degrees across it is the one thing on the page nobody can see.
-        // Square N/E/S/W arrows sit clear of the icon and are legible - which is what an arrow is for.
-        //
-        // The sensor tiles are also the ones that matter most to read: they are the Points.
-        return type == LayoutDiagramComponent.componentType.CURVE
-            || type == LayoutDiagramComponent.componentType.DOUBLE_CURVE;
+        // THE SENSOR CURVES TOO, as on the track diagram (MT-712; Adam, 2026-10-10: "They are not parallel with the track
+        // on one side.").  They were left out for square N/E/S/W arrows, which a curve's arrows have not been since they
+        // were aimed from the middle of its track (TD-4) - along its chord, with the flag or without.  What the flag still
+        // decided was a double curve's OTHER road, whose arrows were aimed from the badge's road, across their own rails.
+        return session.isCurveSquare(tile);
     }
 
     /**
@@ -9903,7 +9891,8 @@ public class AutonomyEditorPanel extends JPanel
 
         String name = session.getStore().getPointName(tile);
 
-        org.traincontrol.automationui.TilePorts.Route route = firstRoute(tile);
+        // the road its contact is on, as on the track diagram (MT-712)
+        org.traincontrol.automationui.TilePorts.Route route = session.stationRoad(tile);
 
         boolean station = session.getStore().isStation(tile);
 
@@ -9926,16 +9915,6 @@ public class AutonomyEditorPanel extends JPanel
             Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
             // which way a station's track runs out, for the terminus's flat end - as the diagram's badge (FR-118)
             station ? session.deadEndSide(tile) : null);
-    }
-
-    /**
-     * The tile's first route, which is where its badge is drawn.
-     */
-    private org.traincontrol.automationui.TilePorts.Route firstRoute(TileKey tile)
-    {
-        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
-
-        return routes.isEmpty() ? null : routes.values().iterator().next();
     }
 
     /**

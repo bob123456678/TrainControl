@@ -4075,4 +4075,132 @@ public class testAutonomyDiagramMonitor
 
         assertFalse(picture.get(key("main", 6, 1)).isPaused(), "a train on no Point that is not paused is drawn paused");
     }
+
+    /**
+     * A double-curve sensor's arrival chevrons keep off its direction arrows and off each other (MT-714; Adam, 2026-10-10:
+     * *"when a double curve with a s88 has arrival directions set, the arrow icons may overlap.  Hard to fix given how
+     * little space we have."*).
+     *
+     * A chevron is pushed along its side, off the middle where the direction arrow is - to the corner away from the track,
+     * which on a double curve was never asked: every side has track and so has its opposite, so each chevron went the same
+     * fixed way round and half of them landed on their own curve, over its arrow.  Pushed away from its OWN curve, two
+     * chevrons share each free corner, and are drawn in nearer the middles of their sides so they do not meet.
+     *
+     * MUTATION: push a double curve's chevrons the fixed way round again, and the overlap with the arrows fails; push them
+     * as far along as on any other square, and the overlap of two in one corner fails.
+     */
+    @Test
+    public void testADoubleCurvesArrivalArrowsKeepOffItsArrowsAndEachOther()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            for (int orientation = 0; orientation < 4; orientation++)
+            {
+                List<org.traincontrol.automationui.TilePorts.Route> roads = org.traincontrol.automationui.TilePorts.ports(
+                    componentType.FEEDBACK_DOUBLE_CURVE, orientation, 0);
+
+                for (boolean allowed : new boolean[] {true, false})
+                {
+                    List<TileAnnotation.Arrival> every = new ArrayList<>();
+
+                    for (Side side : Side.values()) every.add(new TileAnnotation.Arrival(side, allowed));
+
+                    // the arrows: every side's, both ways shown; the chevrons: drawn over roads that say nothing
+                    boolean[][] arrows = ink(new TileAnnotation(marksOf(roads, TileGraph.Direction.TOWARD_A), -1, false,
+                        null, false, true, false, null, false, null), size);
+
+                    boolean[][] chevrons = ink(chevronsOn(roads, every), size);
+
+                    int over = 0, chevronInk = 0;
+
+                    for (int x = 0; x < size; x++)
+                    {
+                        for (int y = 0; y < size; y++)
+                        {
+                            if (!chevrons[x][y]) continue;
+
+                            chevronInk++;
+
+                            if (arrows[x][y]) over++;
+                        }
+                    }
+
+                    assertTrue(chevronInk > 0, "precondition: no chevrons drawn at " + size + " pixels");
+
+                    assertTrue(over <= chevronInk / 50, "the double curve's arrival chevrons, turned " + orientation + ", "
+                        + (allowed ? "open" : "barred") + ", at " + size + " pixels lie over its direction arrows: " + over
+                        + " of their " + chevronInk + " pixels - Adam: \"when a double curve with a s88 has arrival"
+                        + " directions set, the arrow icons may overlap\"");
+
+                    int alone = 0;
+
+                    for (TileAnnotation.Arrival one : every)
+                    {
+                        boolean[][] single = ink(chevronsOn(roads, Arrays.asList(one)), size);
+
+                        for (boolean[] column : single) for (boolean on : column) if (on) alone++;
+                    }
+
+                    assertTrue(chevronInk >= alone * 0.97, "two of the double curve's arrival chevrons, turned "
+                        + orientation + ", " + (allowed ? "open" : "barred") + ", at " + size + " pixels lie over each other: "
+                        + chevronInk + " pixels drawn together against " + alone + " one at a time");
+                }
+            }
+        }
+    }
+
+    /** These roads, each one-way or both ways. */
+    private static List<TileAnnotation.Mark> marksOf(List<org.traincontrol.automationui.TilePorts.Route> roads,
+        TileGraph.Direction direction)
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        for (org.traincontrol.automationui.TilePorts.Route road : roads)
+        {
+            marks.add(new TileAnnotation.Mark(road.getA(), road.getB(), direction));
+        }
+
+        return marks;
+    }
+
+    /** Only these arrivals' chevrons: the roads open both ways, which the track diagram draws no arrow for. */
+    private static TileAnnotation chevronsOn(List<org.traincontrol.automationui.TilePorts.Route> roads,
+        List<TileAnnotation.Arrival> arrivals)
+    {
+        return new TileAnnotation(marksOf(roads, TileGraph.Direction.BOTH), -1, false, null, false, true, false, null, true,
+            arrivals);
+    }
+
+    /** Which pixels of a white square this annotation draws on. */
+    private static boolean[][] ink(TileAnnotation annotation, int size)
+    {
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(size, size,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            annotation.paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        boolean[][] on = new boolean[size][size];
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                on[x][y] = (shot.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF;
+            }
+        }
+
+        return on;
+    }
 }

@@ -4054,6 +4054,168 @@ public class testDiagramLooksRight
     }
 
     /**
+     * And the whole of every kind of station's spill is under the captions, at both sizes (RSA62-C1): round 123 kept only
+     * the icon's OUTLINE behind them - the region was the outline's stroke, a ring - so at 60 pixels the body of a block
+     * or a terminus was still drawn in front of a caption over the square it reaches, 44 and 64 pixels of it.  Nine
+     * squares in the diagram's own container, a station on an E-S curve in the middle, opaque yellow captions over the
+     * whole of the squares to its right and below: none of the station's blue on either.
+     *
+     * MUTATION: make the region the icon's outline alone again, and this fails at 60 pixels.
+     */
+    @Test
+    public void testEveryKindOfSpillIsUnderTheCaptionsAtBothSizes()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        java.util.List<String> wrong = new java.util.ArrayList<>();
+
+        for (int size : new int[] {30, 60})
+        {
+            for (org.traincontrol.automationui.TileAnnotation station : curvedStationsOfEveryKind())
+            {
+                int blue = spilledInFrontOfCaptions(size, station);
+
+                if (blue > 0) wrong.add(station + " at " + size + " pixels: " + blue + " pixels of its blue");
+            }
+        }
+
+        assertTrue(wrong.isEmpty(), "a curve's station spilled in front of the captions on the squares beside it, where on"
+            + " its own square it is behind one (RSA62-C1):\n  " + String.join("\n  ", wrong));
+    }
+
+    /**
+     * And its region is built once for a size, and quickly (RSA62-B1): it was built again on every paint, as an `Area` of
+     * a stroke of the icon's stroked outline, and on Adam's main page at 60 pixels two curve stations' took 0.36 s each -
+     * a repaint near them 0.7 s, the window stalled.  A named block on an N-E curve, as those two are: asked twice for its
+     * region, it answers the same region, built in well under a frame.
+     *
+     * MUTATION: build the region afresh on every call, and this fails.
+     */
+    @Test
+    public void testASpillsRegionIsBuiltOnceAndQuickly()
+    {
+        org.traincontrol.automationui.TilePorts.Side n = org.traincontrol.automationui.TilePorts.Side.N;
+        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
+
+        for (int size : new int[] {30, 60})
+        {
+            org.traincontrol.automationui.TileAnnotation station = new org.traincontrol.automationui.TileAnnotation(
+                java.util.Arrays.asList(new org.traincontrol.automationui.TileAnnotation.Mark(n, e, null)), -1, false,
+                new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, n, e, false, false,
+                    null), false, true, false, null, true, null);
+
+            BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            try
+            {
+                station.paint(g, size, size);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            long began = System.nanoTime();
+
+            java.awt.Shape first = station.spillShape(size, size);
+
+            long took = (System.nanoTime() - began) / 1_000_000;
+
+            assertNotNull(first, "precondition: a named block on an N-E curve at " + size + " pixels spills nothing");
+
+            assertSame(station.spillShape(size, size), first, "a station's spill region at " + size + " pixels is built"
+                + " again each time it is asked - on every paint of the diagram (RSA62-B1)");
+
+            assertTrue(took < 100, "a station's spill region at " + size + " pixels took " + took + " ms to build - Adam's"
+                + " window stalls while it does (RSA62-B1)");
+        }
+    }
+
+    /**
+     * The pixels of this station's blue on the squares to the right of and below the middle one, each under an opaque
+     * caption, in the diagram's own container with the station on an E-S curve in the middle.
+     */
+    private static int spilledInFrontOfCaptions(int size, org.traincontrol.automationui.TileAnnotation station)
+    {
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size * 3, size * 3);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        java.awt.Rectangle[] covered = {new java.awt.Rectangle(2 * size, size, size, size),
+            new java.awt.Rectangle(size, 2 * size, size, size)};
+
+        // in the order the diagram builds them: a caption in front of every tile
+        for (java.awt.Rectangle square : covered)
+        {
+            org.traincontrol.gui.StationCaption caption = new org.traincontrol.gui.StationCaption();
+
+            caption.setOpaque(true);
+            caption.setBackground(new java.awt.Color(255, 220, 0));
+            caption.setBounds(square);
+
+            grid.add(caption);
+        }
+
+        for (java.awt.Rectangle square : covered)
+        {
+            org.traincontrol.gui.LayoutLabel beside = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+            beside.setOpaque(true);
+            beside.setBackground(java.awt.Color.WHITE);
+            beside.setBounds(square);
+
+            grid.add(beside);
+        }
+
+        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        middle.setBounds(size, size, size, size);
+        middle.setAutonomyAnnotation(station);
+
+        grid.add(middle);
+
+        BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size * 3, size * 3);
+
+            grid.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int blue = 0;
+
+        for (java.awt.Rectangle square : covered)
+        {
+            for (int x = square.x; x < square.x + square.width; x++)
+            {
+                for (int y = square.y; y < square.y + square.height; y++)
+                {
+                    int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                    if (b > 150 && r < 90 && gr < 90) blue++;
+                }
+            }
+        }
+
+        return blue;
+    }
+
+    /**
      * A curve's station spills onto the squares beside it at the middle of their edges, which is where their arrows are
      * (Adam, 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*).  The
      * arrows of a square a spill reaches are drawn back over it.  Nine squares in the diagram's own container, a station
@@ -4252,6 +4414,166 @@ public class testDiagramLooksRight
             assertTrue(widest < text.getWidth() / 2, "the halo at " + size + " pixels ran " + widest + " pixels across in"
                 + " one row - a box behind the writing rather than a halo round its letters");
         }
+    }
+
+    /**
+     * And the halo is drawn round writing that shares its square with track (MT-716; Adam, 2026-10-10: *"I see this on
+     * some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have
+     * something else on them plus text."*).
+     *
+     * Writing on a square that also has track or a sensor is set as HTML - `<html><br>` and the words - to stand a line
+     * below the square; the halo was drawn from the label's text as plain words, so it skipped HTML.  Here it lies round
+     * the words where the HTML draws them: white on black, and the words' own blue inside it, a line down.
+     *
+     * MUTATION: skip HTML again, and this fails.
+     */
+    @Test
+    public void testWritingThatSharesItsSquareHasAHaloToo()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            org.traincontrol.gui.StationCaption text = new org.traincontrol.gui.StationCaption();
+
+            text.setText("<html><br>Yard&nbsp;Two</html>");
+            text.setForeground(java.awt.Color.BLUE);
+            text.setFont(new java.awt.Font(org.traincontrol.gui.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, size / 2));
+            text.setHalo(true);
+            text.setSize(text.getPreferredSize());
+
+            BufferedImage shot = new BufferedImage(text.getWidth(), text.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = shot.createGraphics();
+
+            try
+            {
+                g.setColor(java.awt.Color.BLACK);
+                g.fillRect(0, 0, shot.getWidth(), shot.getHeight());
+
+                text.paint(g);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            int white = 0, blue = 0, blueTop = Integer.MAX_VALUE, blueBottom = -1, whiteTop = Integer.MAX_VALUE,
+                whiteBottom = -1, blueLeft = Integer.MAX_VALUE, whiteLeft = Integer.MAX_VALUE;
+
+            for (int y = 0; y < shot.getHeight(); y++)
+            {
+                for (int x = 0; x < shot.getWidth(); x++)
+                {
+                    int rgb = shot.getRGB(x, y);
+                    int r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+
+                    if (r > 200 && gr > 200 && b > 200)
+                    {
+                        white++;
+                        whiteTop = Math.min(whiteTop, y);
+                        whiteBottom = Math.max(whiteBottom, y);
+                        whiteLeft = Math.min(whiteLeft, x);
+                    }
+                    else if (b > 200 && r < 90 && gr < 90)
+                    {
+                        blue++;
+                        blueTop = Math.min(blueTop, y);
+                        blueBottom = Math.max(blueBottom, y);
+                        blueLeft = Math.min(blueLeft, x);
+                    }
+                }
+            }
+
+            assertTrue(blue > 10, "precondition: the writing's own blue does not show at " + size + " pixels");
+
+            assertTrue(blueTop > text.getHeight() / 3, "precondition: the HTML did not put the writing a line down at "
+                + size + " pixels - its top is at " + blueTop + " of " + text.getHeight());
+
+            assertTrue(white > 20, "writing that shares its square with track, at " + size + " pixels, showed " + white
+                + " pixels of white over black - no halo (Adam: \"Check tiles that are not just only text, but have"
+                + " something else on them plus text.\")");
+
+            // round the words where they are drawn: its top and bottom a stroke beyond theirs, its left beside theirs
+            int reach = Math.max(2, size / 6) + 2;
+
+            assertTrue(whiteTop <= blueTop && blueTop - whiteTop <= reach && whiteBottom >= blueBottom
+                && whiteBottom - blueBottom <= reach && Math.abs(whiteLeft - blueLeft) <= reach,
+                "the halo at " + size + " pixels is not round the words: white rows " + whiteTop + "-" + whiteBottom
+                + " from column " + whiteLeft + ", the words' rows " + blueTop + "-" + blueBottom + " from column "
+                + blueLeft);
+        }
+    }
+
+    /**
+     * A train standing at its home is shown by a little house on the Auto tab, not by a teal badge (MT-709; Adam,
+     * 2026-10-10: *"on the autonomy commands page, instead of making home locations teal, put a little house icon below it
+     * (in the same spot as the (i))"*).
+     *
+     * The card's mark beside its second line is chosen by `AutoLocomotiveStatus.markFor`: the house at home, the (i) where
+     * there is a reason to hover for, both where both, nothing otherwise - and the badge is the tab's blue at home as
+     * everywhere else.
+     *
+     * MUTATION: put the teal back, or the house away, and this fails.
+     *
+     * @throws Exception reflection
+     */
+    @Test
+    public void testATrainAtHomeShowsAHouseNotTeal() throws Exception
+    {
+        java.lang.reflect.Method markFor = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredMethod("markFor",
+            boolean.class, boolean.class);
+
+        markFor.setAccessible(true);
+
+        javax.swing.Icon house = (javax.swing.Icon) markFor.invoke(null, true, false);
+        javax.swing.Icon info = (javax.swing.Icon) markFor.invoke(null, false, true);
+        javax.swing.Icon both = (javax.swing.Icon) markFor.invoke(null, true, true);
+
+        assertNull(markFor.invoke(null, false, false), "a card with nothing to say carries a mark");
+
+        assertNotNull(house, "a train at its home carries no mark - Adam: \"put a little house icon below it\"");
+        assertNotNull(info, "a card with a reason to hover for lost its (i)");
+        assertNotNull(both, "a train at its home with a reason to hover for carries no mark");
+
+        assertTrue(both.getIconWidth() > Math.max(house.getIconWidth(), info.getIconWidth()),
+            "a train at its home with a reason to hover for does not show both the house and the (i)");
+
+        assertTrue(house.getIconHeight() <= 16 && house.getIconHeight() >= 10, "the house is " + house.getIconHeight()
+            + " pixels tall, not the (i)'s size");
+
+        // drawn, and in the tab's blue
+        BufferedImage shot = new BufferedImage(house.getIconWidth(), house.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            house.paintIcon(null, g, 0, 0);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int ink = 0;
+
+        for (int x = 0; x < shot.getWidth(); x++)
+        {
+            for (int y = 0; y < shot.getHeight(); y++)
+            {
+                int argb = shot.getRGB(x, y);
+
+                if (((argb >>> 24) & 0xFF) > 200 && (argb & 0xFF) > ((argb >> 16) & 0xFF) + 60) ink++;
+            }
+        }
+
+        assertTrue(ink > 20, "the house draws " + ink + " pixels of blue");
+
+        // and no teal: the card's at-home branch no longer paints the badge in COLOR_AT_HOME
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutoLocomotiveStatus.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertFalse(source.contains("setBackground(TrainControlUI.COLOR_AT_HOME)"), "the Auto tab still paints a train at"
+            + " its home teal - Adam: \"instead of making home locations teal, put a little house icon\"");
     }
 
     /**

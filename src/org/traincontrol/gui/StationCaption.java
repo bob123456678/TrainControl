@@ -302,8 +302,15 @@ public class StationCaption extends JLabel
     {
         String text = getText();
 
-        if (text == null || text.isEmpty() || getFont() == null || javax.swing.plaf.basic.BasicHTML.isHTMLString(text))
+        if (text == null || text.isEmpty() || getFont() == null) return;
+
+        // WRITING SET AS HTML TOO (MT-716; Adam, 2026-10-10: "Many don't seem to have the halo.  Check tiles that are not
+        // just only text, but have something else on them plus text.").  Writing on a square that also has track is set as
+        // `<html><br>` and the words, to stand a line below the square, and this skipped it.
+        if (javax.swing.plaf.basic.BasicHTML.isHTMLString(text))
         {
+            paintHtmlHalo(g, text);
+
             return;
         }
 
@@ -337,6 +344,96 @@ public class StationCaption extends JLabel
             g2.setStroke(new java.awt.BasicStroke(haloWidth(), java.awt.BasicStroke.CAP_ROUND,
                 java.awt.BasicStroke.JOIN_ROUND));
             g2.draw(letters);
+        }
+        finally
+        {
+            g2.dispose();
+        }
+    }
+
+    /**
+     * The halo round writing set as HTML: each line of its words outlined where the HTML view draws it - the view's own
+     * answer for where a line starts, on its baseline in this label's font, which is the font the view is drawn in.
+     *
+     * @param g the label's graphics
+     * @param text the label's HTML
+     */
+    private void paintHtmlHalo(Graphics g, String text)
+    {
+        Object property = getClientProperty(javax.swing.plaf.basic.BasicHTML.propertyKey);
+
+        if (!(property instanceof javax.swing.text.View)) return;
+
+        javax.swing.text.View view = (javax.swing.text.View) property;
+
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        try
+        {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+            java.awt.FontMetrics fm = g2.getFontMetrics(getFont());
+
+            java.awt.Insets in = getInsets();
+
+            java.awt.Rectangle viewR = new java.awt.Rectangle(in.left, in.top, getWidth() - in.left - in.right,
+                getHeight() - in.top - in.bottom);
+
+            java.awt.Rectangle icon = new java.awt.Rectangle(), place = new java.awt.Rectangle();
+
+            // where JLabel's own painter puts the view
+            javax.swing.SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
+                getHorizontalAlignment(), getVerticalTextPosition(), getHorizontalTextPosition(), viewR, icon, place,
+                getIconTextGap());
+
+            javax.swing.text.Document document = view.getDocument();
+
+            String words = document.getText(0, document.getLength());
+
+            java.awt.geom.Path2D letters = new java.awt.geom.Path2D.Double();
+
+            int start = 0;
+
+            while (start < words.length())
+            {
+                int end = words.indexOf('\n', start);
+
+                if (end < 0) end = words.length();
+
+                // From its first letter: the space HTML leaves after a <br> ends the line above, not this one, and
+                // measured from it the halo was drawn a line too high
+                int first = start;
+
+                while (first < end && Character.isWhitespace(words.charAt(first))) first++;
+
+                String line = words.substring(first, end).replace('\u00a0', ' ');
+
+                if (!line.trim().isEmpty())
+                {
+                    java.awt.Shape where = view.modelToView(first, place, javax.swing.text.Position.Bias.Forward);
+
+                    if (where != null)
+                    {
+                        java.awt.Rectangle at = where.getBounds();
+
+                        letters.append(new java.awt.font.TextLayout(line, getFont(), g2.getFontRenderContext())
+                            .getOutline(java.awt.geom.AffineTransform.getTranslateInstance(at.x, at.y + fm.getAscent())),
+                            false);
+                    }
+                }
+
+                start = end + 1;
+            }
+
+            g2.setColor(AddressLabel.HALO);
+            g2.setStroke(new java.awt.BasicStroke(haloWidth(), java.awt.BasicStroke.CAP_ROUND,
+                java.awt.BasicStroke.JOIN_ROUND));
+            g2.draw(letters);
+        }
+        catch (javax.swing.text.BadLocationException e)
+        {
+            // no halo, as before: the words are drawn regardless
         }
         finally
         {

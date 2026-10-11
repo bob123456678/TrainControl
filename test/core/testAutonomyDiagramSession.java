@@ -4718,6 +4718,191 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station on a double-curve sensor is drawn on the curve that carries the contact (MT-712; Adam, 2026-10-10: *"the
+     * station gets rendered on the track without the sensor rather than the one with the sensor"*).
+     *
+     * The square is two curves and one contact, and its art draws the contact on one of them - the E-S curve as drawn,
+     * turned with the square.  The badge was put on the square's FIRST road, which is the other one.  Which curve has the
+     * contact is read here off the art itself - the white inside the contact's ring at the middle of its curve - so the
+     * claim cannot agree with a wrong rule about which road that is.
+     *
+     * MUTATION: badge the square's first road again, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADoubleCurveStationIsDrawnOnTheCurveWithTheContact() throws Exception
+    {
+        for (int orientation = 0; orientation < 4; orientation++)
+        {
+            session = new AutonomySession(layout);
+
+            LayoutDiagram page = doubleCurveCrossroads(orientation);
+
+            session.open(Arrays.asList(page));
+            session.initialize("contact " + orientation);
+
+            TileKey curve = new TileKey("main", 2, 2);
+
+            session.setStation(curve, true);
+
+            Set<Side> contact = contactRoadOnTheArt(page.getComponent(2, 2), orientation);
+
+            TileAnnotation annotation = session.staticAnnotationFor(curve, false, false);
+
+            assertNotNull(annotation, "precondition: the station at orientation " + orientation + " has no annotation");
+            assertNotNull(annotation.getBadge(), "precondition: the station at orientation " + orientation + " has no badge");
+
+            Set<Side> badged = new LinkedHashSet<>(Arrays.asList(annotation.getBadge().getA(), annotation.getBadge().getB()));
+
+            assertEquals(badged, contact, "a station on a double-curve sensor turned " + orientation + " is drawn on the curve"
+                + " " + badged + ", and the contact is on " + contact + " - Adam: \"the station gets rendered on the track"
+                + " without the sensor rather than the one with the sensor\"");
+        }
+    }
+
+    /**
+     * And the arrows on BOTH its curves lie along their rails (MT-712; Adam, 2026-10-10: *"They are not parallel with the
+     * track on one side."*).
+     *
+     * The track diagram's annotation of a sensor square said it was not curved, so an arrow was aimed from the middle of
+     * the badge's road - right on a curve, which has one road, and some thirty degrees off on a double curve's other one.
+     * Both roads one-way here, so each has a red arrow at its shut end; each arrow's ink is centred on its own curve's
+     * chord.
+     *
+     * MUTATION: annotate a sensor square as not curved again, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADoubleCurvesArrowsLieAlongBothItsCurves() throws Exception
+    {
+        int size = 60;
+
+        for (int orientation = 0; orientation < 4; orientation++)
+        {
+            session = new AutonomySession(layout);
+
+            LayoutDiagram page = doubleCurveCrossroads(orientation);
+
+            session.open(Arrays.asList(page));
+            session.initialize("arrows " + orientation);
+
+            TileKey curve = new TileKey("main", 2, 2);
+
+            for (java.util.Map.Entry<RouteId, Route> route : session.getGraph().getRoutes(curve).entrySet())
+            {
+                session.setDirection(curve, route.getKey(), Direction.TOWARD_A);
+            }
+
+            TileAnnotation annotation = session.staticAnnotationFor(curve, true, false);
+
+            assertNotNull(annotation, "precondition: the square at orientation " + orientation + " has no annotation");
+
+            BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+
+            Graphics2D g = shot.createGraphics();
+
+            try
+            {
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, size, size);
+
+                annotation.paint(g, size, size);
+            }
+            finally
+            {
+                g.dispose();
+            }
+
+            for (Route road : session.getGraph().getRoutes(curve).values())
+            {
+                double[] a = midpointOf(road.getA(), size), b = midpointOf(road.getB(), size);
+
+                double sumX = 0, sumY = 0;
+                int red = 0;
+
+                for (int x = 0; x < size; x++)
+                {
+                    for (int y = 0; y < size; y++)
+                    {
+                        int rgb = shot.getRGB(x, y);
+
+                        if (((rgb >> 16) & 0xFF) < 150 || ((rgb >> 8) & 0xFF) > 90 || (rgb & 0xFF) > 90) continue;
+
+                        if (Math.hypot(x + 0.5 - b[0], y + 0.5 - b[1]) > size * 0.4) continue;
+
+                        sumX += x + 0.5;
+                        sumY += y + 0.5;
+                        red++;
+                    }
+                }
+
+                assertTrue(red > 10, "precondition: no red arrow at the shut end " + road.getB() + " of the curve "
+                    + road.getA() + "-" + road.getB() + " at orientation " + orientation);
+
+                double cx = sumX / red, cy = sumY / red;
+
+                // distance of the arrow's middle from the line through the curve's two edge midpoints
+                double dx = b[0] - a[0], dy = b[1] - a[1];
+                double off = Math.abs(dy * (cx - a[0]) - dx * (cy - a[1])) / Math.hypot(dx, dy);
+
+                assertTrue(off <= 3, "the red arrow at " + road.getB() + " on the double curve's " + road.getA() + "-"
+                    + road.getB() + " curve, turned " + orientation + ", is centred " + Math.round(off) + " pixels off its"
+                    + " rail - Adam: \"They are not parallel with the track on one side.\"");
+            }
+        }
+    }
+
+    /**
+     * Which of a double-curve sensor's two roads its art draws the contact on: the one whose middle - the middle of the
+     * chord between its two sides - is the white inside the contact's ring.
+     */
+    private static Set<Side> contactRoadOnTheArt(org.traincontrol.base.LayoutDiagramComponent square, int orientation)
+        throws IOException
+    {
+        int size = 60;
+
+        BufferedImage art = org.traincontrol.base.LayoutDiagramComponent.toBufferedImage(square.getImage(size, true));
+
+        Set<Side> found = null;
+
+        for (Route road : org.traincontrol.automationui.TilePorts.ports(componentType.FEEDBACK_DOUBLE_CURVE, orientation, 0))
+        {
+            double[] a = midpointOf(road.getA(), size), b = midpointOf(road.getB(), size);
+
+            int rgb = art.getRGB((int) ((a[0] + b[0]) / 2), (int) ((a[1] + b[1]) / 2));
+
+            boolean white = ((rgb >> 16) & 0xFF) > 230 && ((rgb >> 8) & 0xFF) > 230 && (rgb & 0xFF) > 230
+                && ((rgb >>> 24) & 0xFF) > 200;
+
+            if (!white) continue;
+
+            assertNull(found, "precondition: both curves of the double-curve art turned " + orientation + " are white in"
+                + " the middle");
+
+            found = new LinkedHashSet<>(Arrays.asList(road.getA(), road.getB()));
+        }
+
+        assertNotNull(found, "precondition: neither curve of the double-curve art turned " + orientation + " has the"
+            + " contact's white in its middle");
+
+        return found;
+    }
+
+    /** The middle of a side of a square this size, x and y. */
+    private static double[] midpointOf(Side side, int size)
+    {
+        switch (side)
+        {
+            case N: return new double[] {size / 2.0, 0};
+            case E: return new double[] {size, size / 2.0};
+            case S: return new double[] {size / 2.0, size};
+            default: return new double[] {0, size / 2.0};
+        }
+    }
+
+    /**
      * A double-curve sensor with track on both of its arcs: north, west, east and south all reachable.
      *
      * @return the page
@@ -4730,6 +4915,29 @@ public class testAutonomyDiagramSession
         page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 25, 25,
+            accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    /**
+     * The same, the double curve turned to this orientation - every orientation has track on all four sides.
+     *
+     * @param orientation the double curve's orientation
+     * @return the page
+     * @throws IOException from the diagram
+     */
+    private LayoutDiagram doubleCurveCrossroads(int orientation) throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25,
             accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
