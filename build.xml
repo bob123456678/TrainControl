@@ -380,7 +380,6 @@
         <test-one-class class="testBusyDialogInteraction"/>
         <test-one-class class="testCommandRow"/>
         <test-one-class class="testConditionOutline"/>
-        <test-one-class class="testConditionRows"/>
         <test-one-class class="testControlStationFaults"/>
         <test-one-class class="testDiagramExport"/>
         <test-one-class class="testDiagramResize"/>

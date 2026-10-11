@@ -183,8 +183,8 @@ public class testCommandRow
             "and triggering another route");
 
         assertNotNull(CommandRow.of(RouteCommand.RouteCommandAutoLocomotive("some train", 21)),
-            "and the auto-locomotive condition, which is the one ConditionRows uses as its own "
-            + "example - the editor could not build the row its documentation illustrates");
+            "and the auto-locomotive condition, which is the one the route editor's documentation used as its "
+            + "example - the editor could not build the row it illustrated");
     }
 
     /**

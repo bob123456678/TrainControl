@@ -2255,6 +2255,14 @@ public class TileAnnotation
 
         badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
 
+        // WHAT IT COVERS, where it is drawn - for the diagram, which draws what lies over a spill again over it (RSA61-C2)
+        java.awt.geom.AffineTransform placed = java.awt.geom.AffineTransform.getTranslateInstance(at[0], at[1]);
+
+        placed.rotate(angle);
+        placed.scale(scale, scale);
+
+        stationDrawn = placed.createTransformedShape(stroked);
+
         // THE CONTACT COVERED ON A BEND TOO, as on straight track below - the icon is no taller than the contact, whose
         // ring showed round it.  On the chord's middle, where the curved sensor's art draws it, turned along the chord -
         // and kept inside the square, which turned it overhangs at two edges.  Once: not again with the spill.
@@ -2395,6 +2403,33 @@ public class TileAnnotation
 
     /** Whether `paintSpill` is drawing - the station's part outside its square, without the contact's cover. */
     private boolean spilling;
+
+    /** The station's icon, outline and all, as `paintStation` last drew it, in the square's coordinates. */
+    private java.awt.Shape stationDrawn;
+
+    /**
+     * What this square's spill covers, in the square's own coordinates: the station's icon as last drawn, a pixel round for
+     * its soft edge, less the square - null where nothing spills or nothing has been drawn yet.  The diagram draws what lies
+     * over that region again over the spill - the arrows of the square it reaches, then the captions - so the spill keeps
+     * the depth the icon has on its own square, under the captions (RSA61-C2).
+     *
+     * @param width the square's width
+     * @param height the square's height
+     * @return the region, or null
+     */
+    public java.awt.Shape spillShape(int width, int height)
+    {
+        java.awt.Shape drawn = stationDrawn;
+
+        if (drawn == null || !spillsOverItsSquare()) return null;
+
+        java.awt.geom.Area area = new java.awt.geom.Area(drawn);
+
+        area.add(new java.awt.geom.Area(new BasicStroke(2f).createStrokedShape(drawn)));
+        area.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
+
+        return area;
+    }
 
     /**
      * This square's arrows and barred-arrival marks again, over a neighbour's station that spilled onto it (Adam,

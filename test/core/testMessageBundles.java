@@ -1246,4 +1246,30 @@ public class testMessageBundles
             "the right-click menu's item does not say what it places - Adam asked for it to read Place All Trains at"
             + " Their Homes");
     }
+
+    /**
+     * The question before closing TrainControl with trains running names everything the exit leaves unsaved: where the
+     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (RSA49-C1; Adam,
+     * 2026-10-10, asked: *"b, easier to manage edge cases.  document as a future item to revisit"* - keep 2.8.x's exit,
+     * which saves nothing while anything runs, and say so).  It named the timetable and not the settings.
+     *
+     * MUTATION: leave the settings out of the English sentence again, and this fails.
+     *
+     * @throws Exception from reading the bundle
+     */
+    @Test
+    public void testTheExitWarningNamesEverythingItLeavesUnsaved() throws Exception
+    {
+        java.util.Properties english = valuesOf(new File(new File("src" + BUNDLE_DIR), ENGLISH_BUNDLE));
+
+        String said = english.getProperty("autolayout.ui.confirmExitAutonomyRunning");
+
+        assertNotNull(said, "precondition: the bundle has no exit warning");
+
+        assertTrue(said.contains("Where they are") && said.contains("timetable"), "the exit warning no longer says"
+            + " where the trains are and the timetable are lost: " + said);
+
+        assertTrue(said.contains("autonomy settings"), "the exit warning does not say that changes to the autonomy"
+            + " settings are lost too, though the exit saves nothing while trains run (RSA49-C1): " + said);
+    }
 }

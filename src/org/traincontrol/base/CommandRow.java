@@ -59,8 +59,8 @@ public final class CommandRow
 
         // The rest of what a route can do.  These were all readable and none of them buildable: a
         // route that used one could be opened, and the row was kept greyed and untouched, but there
-        // was no way to add one.  AUTO_LOCOMOTIVE is the condition ConditionRows' own header uses as
-        // its example, so until now the editor could not build the row its documentation illustrates.
+        // was no way to add one.  AUTO_LOCOMOTIVE - a train at a sensor - is the condition the route editor's
+        // documentation used as its example, so until then the editor could not build the row it illustrated.
         LIGHTS_ON,
         AUTONOMY_LIGHTS_ON,
         ROUTE,
@@ -279,7 +279,7 @@ public final class CommandRow
      * the first locomotive now, like every other kind starts on something"* - and
      * `RouteEditorFrame.conditionKindChanged` supplies both halves the old sentence said the row could
      * not have: the first locomotive for the target, and sensor 1 for the setting.  So the editor does
-     * build the row `ConditionRows`' own header uses as its example.
+     * build the row the route editor's documentation used as its example.
      *
      * **By method name, not by line** (`VD9-C12`): the first version of this paragraph cited
      * `RouteEditorFrame:3415-3419`, which was already wrong when it was copied here out of a review,

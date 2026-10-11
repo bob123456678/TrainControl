@@ -5673,7 +5673,7 @@ public class AutonomyEditorPanel extends JPanel
             // work out this square's sides to do that (REV9-B2).  This panel edits the session it was
             // constructed with, which is not always the main window's, so it is handed over rather
             // than fetched.
-            GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, false, session,
+            GraphLocAssign edit = new GraphLocAssign(parentWindow(), point, session,
                 runningLayout == null ? null : runningLayout.get());
 
             // `asDialogContent`, not the panel: the arrival side sits under the form, and the dialog

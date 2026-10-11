@@ -2321,6 +2321,21 @@ public final class LayoutLabel extends JLabel
         super.repaint(tm, x, y, width, height);
     }
 
+    /**
+     * What this square's spill covers, in the diagram's coordinates, or null (RSA61-C2) - `TileAnnotation.spillShape`.
+     *
+     * @return the region, or null
+     */
+    java.awt.Shape spillShapeOnTheDiagram()
+    {
+        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
+
+        java.awt.Shape shape = annotation == null ? null : annotation.spillShape(getWidth(), getHeight());
+
+        return shape == null ? null
+            : java.awt.geom.AffineTransform.getTranslateInstance(getX(), getY()).createTransformedShape(shape);
+    }
+
     /** Whether an annotation's station spills past its square (`TileAnnotation.spillsOverItsSquare`). */
     private static boolean spills(org.traincontrol.automationui.TileAnnotation annotation)
     {

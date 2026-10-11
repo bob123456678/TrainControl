@@ -2730,6 +2730,82 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /**
+     * Nor is a journey set going when the track power goes off while its route is being set (RSA61-C1, GST-B1).  The loop
+     * asks the power before it chooses, and setting a long route takes a second and more - a switch every
+     * `CONFIGURE_SLEEP` - so a power cut in that window left the journey to throw the rest of its switches and give its
+     * train its speed, to take effect the moment the power came back.  With Path Integrity Validation off - a preference,
+     * and skipped in simulation; with it on, the commands the cut swallowed fail the check and the journey ends unrun.
+     * Eight edges, a switch on each; the power cut as the route is set: the train is given no speed, and the journey is
+     * not under way.
+     *
+     * MUTATION: drop the power's second question, after the route is set, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAJourneyIsNotSetGoingIfThePowerWentOffWhileItsRouteWasSet() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2061, 9);
+
+        final Locomotive v = model.getLocByName(model.getLocList().get(18));
+
+        String[] names = {"PRA", "PR1", "PR2", "PR3", "PR4", "PR5", "PR6", "PR7", "PRB"};
+
+        final Layout rail = aLine(s, names);
+
+        final List<Edge> path = through(rail, names);
+
+        for (int i = 0; i < path.size(); i++)
+        {
+            org.traincontrol.marklin.MarklinAccessory turnout =
+                model.newSwitch(241 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+            path.get(i).addConfigCommand(turnout.getName(), org.traincontrol.base.Accessory.accessorySetting.TURN);
+        }
+
+        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        Thread journey = null;
+
+        final boolean validatingWas = Layout.PATH_INTEGRITY_VALIDATION;
+
+        try
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = false;
+
+            v.setSpeed(0);
+
+            rail.getPoint("PRA").setLocomotive(v);
+
+            journey = sendOn(rail, path, v);
+
+            // ITS ROUTE BEING SET, a switch every CONFIGURE_SLEEP - and the power cut, as the Central Station's STOP leaves it
+            Thread.sleep(300);
+
+            power.setBoolean(model, false);
+
+            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey whose route was being set when the power went"
+                + " off gave its train its speed during the cut, to take effect the moment the power came back (RSA61-C1)");
+
+            final Thread running = journey;
+
+            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+                + " whose route was being set when the power went off is still under way, waiting to set off when the"
+                + " power comes back (RSA61-C1)");
+        }
+        finally
+        {
+            power.setBoolean(model, true);
+
+            Layout.PATH_INTEGRITY_VALIDATION = validatingWas;
+
+            letGo(s, v, journey);
+        }
+    }
+
     /** A handler on the model's own logger, collecting every message into `into` - removed by the caller. */
     private static java.util.logging.Handler aTapOn(final List<String> into)
     {

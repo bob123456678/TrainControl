@@ -83,11 +83,10 @@ public class GraphLocAssign extends javax.swing.JPanel
      * Creates new form GraphLocAssign
      * @param parent
      * @param p
-     * @param newOnly - do we allow the selection of locomotives not currently on the graph?
      * @param session the setup being edited, or null when there is none
      * @param running the running layout, for working out where a train's tail lies
      */
-    public GraphLocAssign(TrainControlUI parent, Point p, boolean newOnly,
+    public GraphLocAssign(TrainControlUI parent, Point p,
         org.traincontrol.automationui.AutonomySession session,
         org.traincontrol.automation.Layout running)
     {
@@ -102,24 +101,13 @@ public class GraphLocAssign extends javax.swing.JPanel
 
         this.trainLength.setModel(new javax.swing.DefaultComboBoxModel<>(lengths));
         
-        List<String> locs;
-        if (newOnly)
+        // THE TRAINS AUTONOMY RUNS.  A `newOnly` flag offered the database's other trains instead, for a caller that was
+        // deleted (DD-C4); every door that opens this asks about a train already on the graph.
+        List<String> locs = new LinkedList<>();
+
+        for (Locomotive l : parent.getModel().getAutoLayout().getLocomotivesToRun())
         {
-            locs = new LinkedList<>(parent.getModel().getLocList());
-            
-            for (Locomotive l : parent.getModel().getAutoLayout().getLocomotivesToRun())
-            {
-                locs.remove(l.getName());
-            }
-        }
-        else
-        {
-            locs = new LinkedList<>();
-            
-            for (Locomotive l : parent.getModel().getAutoLayout().getLocomotivesToRun())
-            {
-                locs.add(l.getName());
-            }
+            locs.add(l.getName());
         }
         
         Collections.sort(locs);
@@ -134,13 +122,6 @@ public class GraphLocAssign extends javax.swing.JPanel
         if (p.getCurrentLocomotive() != null)
         {
             this.locAssign.setSelectedItem(p.getCurrentLocomotive().getName());
-        }
-        
-        if (newOnly)
-        {
-            this.arrivalFunc.setSelectedIndex(0);
-            this.departureFunc.setSelectedIndex(0);
-            this.trainLength.setSelectedIndex(0);
         }
         
         buildArrivalSide();

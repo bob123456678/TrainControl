@@ -10125,6 +10125,17 @@ public class Layout
                 return false;
             }
 
+            // NOR IF THE TRACK POWER WENT OFF WHILE ITS ROUTE WAS SET (RSA61-C1, GST-B1).  The loop asks the power before it
+            // chooses, and setting a long route takes a second and more - a switch every `CONFIGURE_SLEEP` - so a cut in that
+            // window left the train to be given its speed, to take effect the moment the power came back.  Given back unrun,
+            // as a stop ordered in the same window is; autonomy's loop and the timetable's wait for the power and go on.
+            if (!this.control.getPowerState())
+            {
+                giveBackUnrun(path, loc);
+
+                return false;
+            }
+
             synchronized (this.activeLocomotives)
             {                
                 // CopyOnWriteArrayList: this list is only ever appended to (below) and read by the UI
@@ -10247,6 +10258,11 @@ public class Layout
                 // Intermediate points - wait for feedback to be triggered and to clear
                 if (current.hasS88() && isCurrentLayout())
                 {
+                    // ALREADY OCCUPIED WHEN ITS WAIT BEGINS, the answer is no proof of where the head is (RSA61-A1): a
+                    // sensor two Points in a row share, or one another train stands on, reads occupied before this train's
+                    // head is anywhere near it, and the wait returns at once.  Asked before simulation announces the train.
+                    boolean occupiedAlready = loc.isFeedbackSet(current.getS88()) && loc.getFeedbackState(current.getS88());
+
                     long simEpoch = 0;
 
                     if (this.simulate)
@@ -10267,8 +10283,10 @@ public class Layout
                     loc.waitForOccupiedFeedback(current.getS88(),
                         Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS, this.retiredRailway);
 
-                    // SEEN HERE (GS-B3) - unless the wait was given up for a retired railway, which goes no further
-                    seenHere = this.isCurrentLayout();
+                    // SEEN HERE (GS-B3) - unless the wait was given up for a retired railway, which goes no further, or the
+                    // sensor already read occupied when it began (RSA61-A1): then the head is credited where the next sensor
+                    // answers, as at a Point with no sensor
+                    seenHere = this.isCurrentLayout() && !occupiedAlready;
                     
                     if (this.simulate)
                     {            
@@ -10430,7 +10448,9 @@ public class Layout
                         // ONLY AS FAR AS A SENSOR HAS SEEN THE HEAD.  A Point with no sensor - a hand-written configuration
                         // may have one; every Point the builder makes carries one - is passed without waiting, and nothing
                         // says the head is there: `headSeenAt` moves only where a sensor answered, and the track to a Point
-                        // nobody saw is counted when the next sensor answers.  Counting it at once, as the one-line fix
+                        // nobody saw is counted when the next sensor answers.  So too a sensor that already read occupied
+                        // when its wait began - one two Points in a row share, or one another train stands on - whose answer
+                        // came before the head did (RSA61-A1).  Counting it at once, as the one-line fix
                         // first filed for this did, hands an edge back with the tail on it.  The edge still joins the
                         // queue here, so the unmeasured escape and a train with no length hand it back as they always did.
                         //
