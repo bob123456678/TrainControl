@@ -890,7 +890,36 @@ names it in the "Stop Showing" item, and the tooltip explains the rest.
 
 ## 4b. A station's icon: what the shape says
 
-FR-118 (Adam, 2026-10-09, choosing on the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB): every
+**Circles, diamonds and squares again** (round 131; Adam, 2026-10-11: *"The icons are hard to work with in reality, because
+they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"*).
+`TileAnnotation.StationIcons.CLASSIC`, the default; FR-118's icons, described below, are kept whole behind
+`TileAnnotation.setStationIcons(StationIcons.SHAPES)`.
+
+| | trains do not turn | trains may turn | trains must turn, or its track runs out |
+|---|---|---|---|
+| a station | big circle | big diamond | big square |
+| a sensor that is no station | small circle | small diamond | small square |
+
+Blue where autonomy uses it, grey a berth it does not choose (*"no change here"*); filled when named, white ringed in the
+colour when not; the same in the autonomy editor as on the track diagram (*"same appearance in editor as viewer"*).  A
+station's mark is 14 pixels across at the small size and 28 at the large, its diamond 17 and 36 - a pixel under the badges
+before FR-118 (*"same as before, just ever slightly smaller"*) - and it covers the sensor's contact, the track drawn back
+across it.  A sensor's mark is 10 and 20, its diamond 13 and 26, the inside of the contact's ring (*"match radius of s88,
+so 2px more diameter"*).  A square out of service is an orange sign, with no arrows
+on its square: on a station a solid orange circle with a white X, its mark's size (*"larger (same size a normal station)
+if a station"*; *"give the station out of service a solid orange fill, with a white X inside instead"*); on a sensor the
+white circle ringed in orange with an orange X, 12 and 24 (*"smaller if just a sensor"*; *"1px more radius on the non
+station out of service"*).
+The red and green arrows are drawn over the mark (MT-710).  A mark stays inside its square, on the middle of its track,
+on a curve too: nothing spills.  On a curve a station's diamond is 15 and 29, a pixel in from the middle of its rails as
+the circles are - a curve has no room on its rails for 17 and 36, and kept inside its square at that size it sat 3 and 5
+pixels off them (*"make sure that the diamonds are correctly aligned on curves"*; shown three ways, Adam chose it a
+little smaller there) - `testAClassicStationsDiamondOnACurveIsOnItsRails`.  `TileAnnotation.classicBox`; `core.testAutonomyDiagramMonitor` -
+`testTheClassicIconsAreTheGridAgain`, `testTheClassicIconsAreTheSizesAdamAskedFor`,
+`testTheClassicOutOfServiceSignIsAStationsOrASensors`, `testTheClassicIconsAreTheSameInTheEditor`,
+`testAStationOnACurveIsWhollyInsideItsSquare`; FR-118's own claims are marked `@DrawsFR118Icons` and drawn with its icons.
+
+**With FR-118's icons** (Adam, 2026-10-09, choosing on the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB): every
 station's icon is no taller across its track than the sensor's contact under it - 13 pixels at the small size, 26 at the
 large - and longer along the track, so a caption stood on end beside it is full size again (OB-327 had drawn it 15%
 smaller to clear the old badges, half a square across; *"the small font on the vertical labels is really hard to
@@ -919,7 +948,7 @@ arrows the sensor's art shows round its contact while it reads occupied, and no 
 before it reaches another sensor (Adam, 2026-10-09, asked *"a station with only one way out becomes a terminus,
 correct?"*: yes).  It is drawn flat against that side whatever its turning setting.  The TRACK is asked, not the setup: a
 station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
-its own shape.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
+its own shape.  With the classic icons it is the big square.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
 
 On a curve the icon lies along the line between the curve's two ends, on its rails and its full size; what falls outside
 its square is drawn over the squares beside it, under any caption there, and their arrows, arrival marks and outline are

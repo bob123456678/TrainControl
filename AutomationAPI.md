@@ -394,7 +394,8 @@ Point shapes and sizes work together: the SHAPE says whether trains turn here, t
 
 * Circle - trains do not turn here.  A large circle is a regular station any train can stop at; a small circle is an ordinary point.
 * Diamond - trains MAY turn here, as a choice rather than a requirement - a reversing station (large) or reversing point (small).  Useful for shunting/parking.
-* Square - trains ALWAYS turn here on arrival - a terminus station (large) or a point where reversing is compulsory (small).  Full autonomy only sends reversible locomotives here; you can still send a non-reversible one yourself if the track lets it back in.
+* Square - trains ALWAYS turn here on arrival - a terminus station (large) or a point where reversing is compulsory (small).  Full autonomy only sends reversible locomotives here; you can still send a non-reversible one yourself if the track lets it back in.  A station whose track runs out on one side is drawn as a square too, whatever its turning setting.
+* Orange circle with an X - out of service: nothing may pass or stop here.  A station's is solid orange with a white X; a point's is smaller, white inside an orange ring.
 
 ![Sample layout](assets/graph2b.png?raw=true)
 

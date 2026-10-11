@@ -9822,10 +9822,10 @@ public class AutonomyEditorPanel extends JPanel
             traces.get(tile), directionsView() == 1,
             ignored ? null
                 : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS))
-            // Which draws every point's icon white with its colour round it - see
+            // Which, with FR-118's icons, draws every point's icon white with its colour round it - see
             // TileAnnotation.inTheEditor.  Here and nowhere else: this is the surface the direction
-            // arrows are read on, and they are drawn over the icon.  On a diagram a named point's
-            // icon is filled with its colour.
+            // arrows are read on, and they are drawn over the icon.  With the classic icons, what stations
+            // are drawn with, the editor's marks are the diagram's (round 131).
             .inTheEditor();
 
         // NONE WHERE A CROSSING'S SQUARES MEET, as on the track diagram (OB-322)

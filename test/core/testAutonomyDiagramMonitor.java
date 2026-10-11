@@ -36,6 +36,28 @@ import org.traincontrol.automationui.TilePorts.Side;
  */
 public class testAutonomyDiagramMonitor
 {
+
+    /**
+     * The icons each claim draws (round 131): FR-118's for a claim marked `@DrawsFR118Icons`, the classic ones - what
+     * stations are drawn with - for every other.
+     *
+     * @param claim the claim about to run
+     */
+    @org.testng.annotations.BeforeMethod(alwaysRun = true)
+    public void theIconsItDraws(java.lang.reflect.Method claim)
+    {
+        org.traincontrol.automationui.TileAnnotation.setStationIcons(claim.isAnnotationPresent(support.DrawsFR118Icons.class)
+            ? org.traincontrol.automationui.TileAnnotation.StationIcons.SHAPES
+            : org.traincontrol.automationui.TileAnnotation.StationIcons.CLASSIC);
+    }
+
+    /** And the classic icons again after it, whatever it set. */
+    @org.testng.annotations.AfterMethod(alwaysRun = true)
+    public void theClassicIconsAgain()
+    {
+        org.traincontrol.automationui.TileAnnotation.setStationIcons(null);
+    }
+
     /**
      * A tile that qualifies twice shows the more urgent claim.
      *
@@ -1703,6 +1725,7 @@ public class testAutonomyDiagramMonitor
      * the third.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testASquareNothingCanUseIsDrawnAsACross() throws Exception
     {
         int size = 40;
@@ -1860,6 +1883,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the tile art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testAStationIsARoundedBlock() throws Exception
     {
         for (int size : new int[] {30, 60})
@@ -1902,6 +1926,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the tile art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testWhereTrainsMayTurnIsTheHexagon() throws Exception
     {
         double[] points = new double[2];
@@ -1957,6 +1982,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the tile art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testWhereTrainsMustTurnIsTwoTerminiBackToBack() throws Exception
     {
         for (int size : new int[] {30, 60})
@@ -2020,6 +2046,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the tile art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testAStationAtADeadEndIsATerminusFacingIt() throws Exception
     {
         for (int size : new int[] {30, 60})
@@ -2051,6 +2078,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the tile art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testParkingIsGreyInItsOwnShape() throws Exception
     {
         for (int size : new int[] {30, 60})
@@ -2087,6 +2115,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testASquareOutOfServiceIsAnOrangeRingedCircle() throws Exception
     {
         Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}};
@@ -2313,6 +2342,7 @@ public class testAutonomyDiagramMonitor
      * MUTATION: put any of the three lengths back and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testTheTurningIconsAreTheLengthsAdamAskedFor()
     {
         for (int size : new int[] {30, 60})
@@ -2352,8 +2382,11 @@ public class testAutonomyDiagramMonitor
      * loses: painted here with nothing to cut it, on a canvas three squares across, nothing may land outside the
      * middle one.  On straight track too.
      *
+     * With the classic icons as with FR-118's (round 131): a classic station's mark a pixel from the edge put the outer half
+     * of its outline past it.
+     *
      * MUTATION: let the square's own paint of a curve's icon run past its edges - not cut off there, where the spill
-     * draws the rest - and this fails.
+     * draws the rest - and this fails.  So does clamping a classic station's mark a pixel from the edge again.
      */
     @Test
     public void testAStationOnACurveIsWhollyInsideItsSquare()
@@ -2361,57 +2394,71 @@ public class testAutonomyDiagramMonitor
         Side[][] roads = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}, {Side.W, Side.E},
             {Side.N, Side.S}};
 
-        for (int size : new int[] {30, 60})
+        // with the classic icons and with FR-118's alike (round 131)
+        for (TileAnnotation.StationIcons icons : TileAnnotation.StationIcons.values())
         {
-            for (Side[] road : roads)
+            TileAnnotation.setStationIcons(icons);
+
+            for (int size : new int[] {30, 60})
             {
-                TileAnnotation.Badge[] kinds = {
-                    station(road[0], road[1], false, false, false, false, null),
-                    station(road[0], road[1], true, true, false, false, null),
-                    station(road[0], road[1], true, false, false, false, null),
-                    station(road[0], road[1], false, false, false, false, road[0]),
-                    station(road[0], road[1], false, false, false, false, road[1]),
-                    station(road[0], road[1], false, false, true, true, null)};
-
-                for (TileAnnotation.Badge badge : kinds)
+                for (Side[] road : roads)
                 {
-                    for (boolean editor : new boolean[] {false, true})
+                    TileAnnotation.Badge[] kinds = {
+                        station(road[0], road[1], false, false, false, false, null),
+                        station(road[0], road[1], true, true, false, false, null),
+                        station(road[0], road[1], true, false, false, false, null),
+                        station(road[0], road[1], false, false, false, false, road[0]),
+                        station(road[0], road[1], false, false, false, false, road[1]),
+                        station(road[0], road[1], false, false, true, true, null)};
+
+                    for (TileAnnotation.Badge badge : kinds)
                     {
-                        java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
-                            java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-                        java.awt.Graphics2D g = canvas.createGraphics();
-
-                        try
+                        for (boolean editor : new boolean[] {false, true})
                         {
-                            g.translate(size, size);
+                            java.awt.image.BufferedImage canvas = new java.awt.image.BufferedImage(size * 3, size * 3,
+                                java.awt.image.BufferedImage.TYPE_INT_ARGB);
 
-                            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
-                                road[1], null)), 0, false, badge, false, false, false, null, true, null);
+                            java.awt.Graphics2D g = canvas.createGraphics();
 
-                            (editor ? annotation.inTheEditor() : annotation).paintBadgeOverRun(g, size, size);
-                        }
-                        finally
-                        {
-                            g.dispose();
-                        }
-
-                        int outside = 0;
-
-                        for (int x = 0; x < canvas.getWidth(); x++)
-                        {
-                            for (int y = 0; y < canvas.getHeight(); y++)
+                            try
                             {
-                                boolean in = x >= size && x < 2 * size && y >= size && y < 2 * size;
+                                g.translate(size, size);
 
-                                if (!in && (canvas.getRGB(x, y) >>> 24) > 40) outside++;
+                                TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
+                                    road[1], null)), 0, false, badge, false, false, false, null, true, null);
+
+                                (editor ? annotation.inTheEditor() : annotation).paintBadgeOverRun(g, size, size);
+
+                                // and with the classic icons nothing is left for a spill to draw (round 131)
+                                if (icons == TileAnnotation.StationIcons.CLASSIC)
+                                {
+                                    assertFalse(annotation.spillsOverItsSquare(), badge + " on a road " + road[0] + "-"
+                                        + road[1] + " at " + size + " pixels spills with the classic icons");
+                                }
                             }
-                        }
+                            finally
+                            {
+                                g.dispose();
+                            }
 
-                        assertEquals(outside, 0, badge + " on a road " + road[0] + "-" + road[1] + " at " + size
-                            + " pixels" + (editor ? " in the editor" : "") + " puts " + outside + " pixels outside its"
-                            + " square, where the diagram cuts it off - Adam: \"On curves, regular stations are now cut"
-                            + " off in the corners\"");
+                            int outside = 0;
+
+                            for (int x = 0; x < canvas.getWidth(); x++)
+                            {
+                                for (int y = 0; y < canvas.getHeight(); y++)
+                                {
+                                    boolean in = x >= size && x < 2 * size && y >= size && y < 2 * size;
+
+                                    if (!in && (canvas.getRGB(x, y) >>> 24) > 40) outside++;
+                                }
+                            }
+
+                            assertEquals(outside, 0, badge + " on a road " + road[0] + "-" + road[1] + " at " + size
+                                + " pixels" + (editor ? " in the editor" : "") + " with the " + icons + " icons puts " + outside
+                            + " pixels outside its"
+                                + " square, where the diagram cuts it off - Adam: \"On curves, regular stations are now cut"
+                                + " off in the corners\"");
+                        }
                     }
                 }
             }
@@ -2436,6 +2483,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testAStationOnACurveIsFullSizeOnItsRails() throws Exception
     {
         Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
@@ -2482,6 +2530,7 @@ public class testAutonomyDiagramMonitor
      * MUTATION: let the spill draw inside the square too, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testTheSpillIsOnlyWhatFallsOutsideTheSquare()
     {
         Side[][] roads = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}, {Side.W, Side.E}};
@@ -2663,6 +2712,7 @@ public class testAutonomyDiagramMonitor
      * @throws Exception from reading the art
      */
     @Test
+    @support.DrawsFR118Icons
     public void testAPlainTurnMarkCoversTheContact() throws Exception
     {
         Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
@@ -2735,6 +2785,7 @@ public class testAutonomyDiagramMonitor
      * MUTATION: fill the editor's icons in their colour again, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testTheEditorsIconsAreWhiteWithTheirColourRound()
     {
         Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}};
@@ -2785,6 +2836,7 @@ public class testAutonomyDiagramMonitor
      * MUTATION: put the editor's icon on a bend back in the corner, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testTheEditorsIconOnACurveIsOnItsRails()
     {
         Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
@@ -2807,6 +2859,326 @@ public class testAutonomyDiagramMonitor
                     assertTrue(Math.hypot(middle[0] - cx, middle[1] - cy) <= size / 8.0, badge + " on a curve " + road[0]
                         + "-" + road[1] + " at " + size + " pixels in the editor is centred at " + Math.round(middle[0])
                         + "," + Math.round(middle[1]) + ", not on its rails at " + cx + "," + cy);
+                }
+            }
+        }
+    }
+
+    /**
+     * The classic icons are the grid again (round 131; Adam, 2026-10-11: *"large circles for normal stations"*, *"diamond
+     * for reversing, larger if station, smaller if not"*, *"square for terminus"*): a circle where trains do not turn, a
+     * diamond where they may, a square where they must - and where a station's track runs out, whatever its turning
+     * setting - on a station and on a sensor that is no station alike.  Drawn at 150 pixels a square, so the shape is read
+     * off the picture without a pixel's doubt: inside its colour's own extent a square is filled to its corners, a circle
+     * short of them but past a diamond's sides.
+     *
+     * MUTATION: draw a classic station where trains may turn as a square, and this fails.
+     */
+    @Test
+    public void testTheClassicIconsAreTheGridAgain()
+    {
+        Side[] road = {Side.W, Side.E};
+
+        for (boolean isStation : new boolean[] {true, false})
+        {
+            String what = isStation ? "a station" : "a sensor that is no station";
+
+            assertEquals(classicShape(new TileAnnotation.Badge(isStation, false, false, false, true, road[0], road[1], false,
+                false, null)), "circle", what + " where trains do not turn - Adam: \"large circles for normal stations\"");
+
+            assertEquals(classicShape(new TileAnnotation.Badge(isStation, true, false, false, true, road[0], road[1], true,
+                false, null)), "diamond", what + " where trains may turn - Adam: \"diamond for reversing\"");
+
+            assertEquals(classicShape(new TileAnnotation.Badge(isStation, true, false, false, true, road[0], road[1], false,
+                false, null)), "square", what + " where trains must turn - Adam: \"square for terminus\"");
+        }
+
+        for (boolean may : new boolean[] {false, true})
+        {
+            assertEquals(classicShape(new TileAnnotation.Badge(true, may, false, false, true, road[0], road[1], may, false,
+                Side.W)), "square", "a station whose track runs out" + (may ? ", where trains may turn," : "") + " is not"
+                + " the terminus's square (FR-118: a station with one way out is a terminus)");
+        }
+    }
+
+    /** The classic shape a named badge is drawn as, read off a square 150 pixels across. */
+    private static String classicShape(TileAnnotation.Badge badge)
+    {
+        int size = 150;
+
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)), -1, false, badge,
+                false, false, false, null, true, null).paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        java.awt.Rectangle fill = extent(image, BLUE);
+
+        assertNotNull(fill, "precondition: " + badge + " drew none of its colour");
+
+        double cx = fill.x + (fill.width - 1) / 2.0, cy = fill.y + (fill.height - 1) / 2.0, r = fill.width / 2.0;
+
+        boolean inside = BLUE.test(image.getRGB((int) Math.round(cx - 0.6 * r), (int) Math.round(cy - 0.6 * r)));
+        boolean corner = BLUE.test(image.getRGB((int) Math.round(cx - 0.9 * r), (int) Math.round(cy - 0.9 * r)));
+
+        return corner ? "square" : inside ? "circle" : "diamond";
+    }
+
+    /**
+     * A classic station's diamond on a curve sits on its rails (round 131; Adam, 2026-10-11: *"make sure that the diamonds
+     * are correctly aligned on curves"* - shown three ways, he chose it a little smaller there): the middle of its colour
+     * within a pixel and a half of the middle of the curve's chord, every way a curve turns, at both sizes - the clamp that
+     * kept it inside its square had pushed it 3 pixels in at 30 and 5 at 60, toward the inside of the curve.  And it is
+     * still bigger than a sensor's diamond on the same curve (*"larger if station, smaller if not"*).
+     *
+     * MUTATION: let a classic station's diamond on a curve be clamped like any other mark again, and this fails.
+     */
+    @Test
+    public void testAClassicStationsDiamondOnACurveIsOnItsRails()
+    {
+        Side[][] curves = {{Side.E, Side.S}, {Side.S, Side.W}, {Side.W, Side.N}, {Side.N, Side.E}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : curves)
+            {
+                TileAnnotation.Badge station = new TileAnnotation.Badge(true, true, false, false, true, road[0], road[1],
+                    true, false, null);
+                TileAnnotation.Badge sensor = new TileAnnotation.Badge(false, true, false, false, true, road[0], road[1],
+                    true, false, null);
+
+                java.awt.Rectangle fill = extent(paintedOn(station, size), BLUE);
+
+                assertNotNull(fill, "precondition: a may-turn station on " + road[0] + "-" + road[1] + " at " + size
+                    + " pixels drew none of its colour");
+
+                double[] chord = {(midpointOf(road[0], size)[0] + midpointOf(road[1], size)[0]) / 2.0,
+                    (midpointOf(road[0], size)[1] + midpointOf(road[1], size)[1]) / 2.0};
+
+                double cx = fill.x + (fill.width - 1) / 2.0, cy = fill.y + (fill.height - 1) / 2.0;
+
+                assertTrue(Math.abs(cx - chord[0]) <= 1.5 && Math.abs(cy - chord[1]) <= 1.5, "a may-turn station on "
+                    + road[0] + "-" + road[1] + " at " + size + " pixels has its diamond's middle at " + cx + "," + cy
+                    + ", off its rails, whose middle is " + chord[0] + "," + chord[1] + " - Adam: \"make sure that the"
+                    + " diamonds are correctly aligned on curves\"");
+
+                java.awt.Rectangle small = extent(paintedOn(sensor, size), BLUE);
+
+                assertNotNull(small, "precondition: a may-turn sensor on " + road[0] + "-" + road[1] + " at " + size
+                    + " pixels drew none of its colour");
+
+                assertTrue(fill.width > small.width, "a may-turn station's diamond on " + road[0] + "-" + road[1] + " at "
+                    + size + " pixels is " + fill.width + " across, no bigger than a sensor's, " + small.width + " - Adam:"
+                    + " \"larger if station, smaller if not\"");
+            }
+        }
+    }
+
+    /**
+     * The classic icons are the sizes Adam set (round 131, 2026-10-11): a station's mark 14 pixels across at 30 and 28 at 60,
+     * a pixel under the badges before FR-118 (*"same as before, just ever slightly smaller"*); a sensor's 10 and 20, the
+     * inside of its contact's ring (*"match radius of s88, so 2px more diameter"*) - drawn, its outline's outer half and
+     * all, a pixel more: 15 and 29, 11 and 21, the circle and the square alike.  A diamond is drawn bigger than the circle
+     * beside it, as it always was, and a station's bigger than a sensor's (*"larger if station, smaller if not"*).
+     *
+     * MUTATION: draw a classic station's mark a pixel smaller again, and this fails.
+     */
+    @Test
+    public void testTheClassicIconsAreTheSizesAdamAskedFor()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            int big = size == 30 ? 15 : 29, small = size == 30 ? 11 : 21;
+
+            for (boolean isStation : new boolean[] {true, false})
+            {
+                int expected = isStation ? big : small;
+
+                String what = (isStation ? "a station's" : "a sensor's") + " classic mark at " + size + " pixels";
+
+                assertEquals(ringAcross(isStation, false, false, size), expected, what + ", a circle, is drawn this wide -"
+                    + " Adam: " + (isStation ? "\"same as before, just ever slightly smaller\""
+                    : "\"match radius of s88, so 2px more diameter\""));
+
+                assertEquals(ringAcross(isStation, true, false, size), expected, what + ", a square, is not the circle's"
+                    + " width");
+
+                assertTrue(ringAcross(isStation, true, true, size) > expected, what + ", a diamond, is no bigger than the"
+                    + " circle beside it");
+            }
+
+            assertTrue(ringAcross(true, true, true, size) > ringAcross(false, true, true, size), "a station's diamond at "
+                + size + " pixels is no bigger than a sensor's - Adam: \"larger if station, smaller if not\"");
+        }
+    }
+
+    /** How wide an unnamed classic mark's ring is drawn on straight track, in solid blue. */
+    private static int ringAcross(boolean isStation, boolean turns, boolean may, int size)
+    {
+        TileAnnotation.Badge badge = new TileAnnotation.Badge(isStation, turns, false, false, false, Side.W, Side.E,
+            turns && may, false, null);
+
+        java.awt.Rectangle ring = extent(paintedOn(badge, size), BLUE);
+
+        assertNotNull(ring, "precondition: " + badge + " at " + size + " pixels drew none of its colour");
+
+        assertEquals(ring.width, ring.height, "precondition: " + badge + " at " + size + " pixels is not as tall as it is"
+            + " wide");
+
+        return ring.width;
+    }
+
+    /** A badge painted alone on a square of white, on straight track. */
+    private static java.awt.image.BufferedImage paintedOn(TileAnnotation.Badge badge, int size)
+    {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size,
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)), -1, false, badge,
+                false, false, false, null, true, null).paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /**
+     * With the classic icons a square out of service is an orange sign at a station's size on a station and a smaller one
+     * on a sensor that is no station (round 131; Adam, 2026-10-11: *"Keep existing orange "inactive" icon, larger (same
+     * size a normal station) if a station, smaller if just a sensor (matching the radius of a sensor)"*, then *"1px more
+     * radius on the non station out of service"*): 14 pixels across at 30 and 28 at 60 on a station, its mark's size, and
+     * 12 and 24 on a sensor.  A station's is solid orange with a white X (*"give the station out of service a solid orange
+     * fill, with a white X inside instead"*); a sensor's keeps the white circle, ringed in orange, with an orange X.
+     *
+     * MUTATION: draw every classic square out of service at FR-118's one size, or a station's white again, and this fails.
+     */
+    @Test
+    public void testTheClassicOutOfServiceSignIsAStationsOrASensors()
+    {
+        for (int size : new int[] {30, 60})
+        {
+            for (boolean isStation : new boolean[] {true, false})
+            {
+                TileAnnotation.Badge badge = new TileAnnotation.Badge(isStation, false, false, true, false, Side.W, Side.E,
+                    false, true, null);
+
+                java.awt.Rectangle sign = extent(paintedOn(badge, size), ORANGE);
+
+                assertNotNull(sign, "precondition: a " + (isStation ? "station" : "sensor") + " out of service at " + size
+                    + " pixels drew no orange");
+
+                int expected = isStation ? (size == 30 ? 14 : 28) : (size == 30 ? 12 : 24);
+
+                String what = "a " + (isStation ? "station" : "sensor that is no station") + " out of service at " + size
+                    + " pixels";
+
+                assertEquals(sign.width, expected, what + " has its sign this wide - Adam: " + (isStation
+                    ? "\"larger (same size a normal station) if a station\""
+                    : "\"1px more radius on the non station out of service\""));
+
+                // between the X's arms, on the level with its middle: orange on a station's, white inside a sensor's ring
+                java.awt.image.BufferedImage image = paintedOn(badge, size);
+
+                double cx = sign.x + (sign.width - 1) / 2.0, cy = sign.y + (sign.height - 1) / 2.0;
+
+                int between = image.getRGB((int) Math.round(cx + 0.3 * sign.width), (int) Math.round(cy));
+                int middle = image.getRGB((int) Math.round(cx), (int) Math.round(cy));
+
+                java.util.function.IntPredicate whitish = rgb -> channel(rgb, 16) > 200 && channel(rgb, 8) > 200
+                    && channel(rgb, 0) > 200;
+
+                if (isStation)
+                {
+                    assertTrue(ORANGE.test(between), what + " is " + new java.awt.Color(between) + " between its X's"
+                        + " arms, not solid orange - Adam: \"give the station out of service a solid orange fill\"");
+
+                    assertTrue(whitish.test(middle), what + " has an X that is " + new java.awt.Color(middle) + ", not"
+                        + " white - Adam: \"with a white X inside instead\"");
+                }
+                else
+                {
+                    assertTrue(PURE_WHITE.test(between), what + " is " + new java.awt.Color(between) + " between its X's"
+                        + " arms, not the white inside its orange ring");
+
+                    assertTrue(ORANGE.test(middle), what + " has an X that is " + new java.awt.Color(middle) + ", not"
+                        + " orange");
+                }
+            }
+        }
+    }
+
+    /**
+     * With the classic icons the autonomy editor draws every mark exactly as the track diagram does (round 131; Adam,
+     * 2026-10-11: *"same appearance in editor as viewer"*): every kind, a station's and a sensor's, named and not, on
+     * straight track and on a curve, at both sizes, the same pixels.
+     *
+     * MUTATION: draw the editor's marks white again with the classic icons, and this fails.
+     */
+    @Test
+    public void testTheClassicIconsAreTheSameInTheEditor()
+    {
+        Side[][] roads = {{Side.W, Side.E}, {Side.E, Side.S}};
+
+        for (int size : new int[] {30, 60})
+        {
+            for (Side[] road : roads)
+            {
+                java.util.List<TileAnnotation.Badge> kinds = new java.util.ArrayList<>(Arrays.asList(everyKind(road[0],
+                    road[1])));
+
+                for (boolean named : new boolean[] {true, false})
+                {
+                    kinds.add(new TileAnnotation.Badge(true, false, false, false, named, road[0], road[1], false, false,
+                        null));
+                    kinds.add(new TileAnnotation.Badge(false, false, false, false, named, road[0], road[1], false, false,
+                        null));
+                    kinds.add(new TileAnnotation.Badge(false, true, false, false, named, road[0], road[1], true, false,
+                        null));
+                    kinds.add(new TileAnnotation.Badge(false, true, false, false, named, road[0], road[1], false, false,
+                        null));
+                    kinds.add(new TileAnnotation.Badge(false, false, false, true, named, road[0], road[1], false, true,
+                        null));
+                }
+
+                for (TileAnnotation.Badge badge : kinds)
+                {
+                    java.awt.image.BufferedImage diagram = wholeIcon(badge, road, size, false);
+                    java.awt.image.BufferedImage editor = wholeIcon(badge, road, size, true);
+
+                    int differ = 0;
+
+                    for (int x = 0; x < diagram.getWidth(); x++)
+                    {
+                        for (int y = 0; y < diagram.getHeight(); y++)
+                        {
+                            if (diagram.getRGB(x, y) != editor.getRGB(x, y)) differ++;
+                        }
+                    }
+
+                    assertEquals(differ, 0, badge + " on " + road[0] + "-" + road[1] + " at " + size + " pixels is drawn"
+                        + " differently in the editor - Adam: \"same appearance in editor as viewer\"");
                 }
             }
         }
@@ -2951,6 +3323,7 @@ public class testAutonomyDiagramMonitor
      * MUTATION: let a shaded square spill again, and this fails.
      */
     @Test
+    @support.DrawsFR118Icons
     public void testAShadedStationSpillsNothing()
     {
         for (int size : new int[] {30, 60})
