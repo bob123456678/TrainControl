@@ -27,16 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-715](#mt-715) | 2026-10-10 | Round 116: autonomy waits while the track power is off | fixed unvalidated | Adam, 2026-10-10 - GST-B1, "stop autonomy when power is off", into 3.0.0 |
-| [MT-717](#mt-717) | 2026-10-10 | Round 124: a double curve's station and arrows, its arrival arrows, the halo on all your writing, the house on the Auto tab | fixed unvalidated | Adam, 2026-10-10 - MT-712 (Does not work): "Direction arrows on the station end of course curve icons  point in the wrong direction where the sensor is.  They are not parallel with the track on one side.  Also, the station gets rendered on the track without the sensor rather than the one with the sensor."; MT-714: "when a double curve with a s88 has arrival directions set, the arrow icons may overlap."; MT-716 (Does not work): "I see this on some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have something else on them plus text."; MT-709: "on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in the same spot as the (i))." |
-| [MT-718](#mt-718) | 2026-10-10 | Round 126: FR-119, Show Trains in the autonomy editor | fixed unvalidated | Adam, 2026-10-10 - FR-119: "in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer." |
-| [MT-719](#mt-719) | 2026-10-10 | Round 126: FR-120, a sensor is named as it becomes a station | fixed unvalidated | Adam, 2026-10-10 - FR-120: "when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here." |
-| [MT-722](#mt-722) | 2026-10-11 | Round 131: stations are circles, diamonds and squares again, and the orange signs out of service | fixed unvalidated | Adam, 2026-10-11: "The icons are hard to work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"; on the sheet: "The icons need to be bigger- make them bigger in both the non station (match radius of s88, so 2px more diameter) and station view (same as before, just ever slightly smaller)."; then "1px more radius on the non station out of service, and give the station out of service a solid orange fill, with a white X inside instead"; then "make sure that the diamonds are correctly aligned on curves" |
-| [MT-723](#mt-723) | 2026-10-11 | Round 132: OB-332, a route button on a running line takes direction clicks | fixed unvalidated | Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.  Refer to route 41 in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox (located at 4,14).  Fix it now so I can MT" |
-| [MT-724](#mt-724) | 2026-10-11 | Round 133: FR-121, a station that allows only the locomotives you choose | fixed unvalidated | Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on." |
 
-Everything else - 717 of 724 - needs nothing from you unless the area changes again:
-564 **fixed validated** and 153 **superseded**.
+
+Everything else - 724 of 724 - needs nothing from you unless the area changes again:
+571 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -33943,7 +33937,7 @@ Validated on your *Works* of 2026-10-10.  Your note on the double curve's arriva
 <a id="mt-715"></a>
 ### MT-715 - 2026-10-10 - Round 116: autonomy waits while the track power is off
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-10 - GST-B1, "stop autonomy when power is off", into 3.0.0
 
 **Written:** 2026-10-10
@@ -34015,7 +34009,7 @@ Superseded by MT-717, which retests it with round 124 (`128aed37`): writing on a
 <a id="mt-717"></a>
 ### MT-717 - 2026-10-10 - Round 124: a double curve's station and arrows, its arrival arrows, the halo on all your writing, the house on the Auto tab
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-10 - MT-712 (Does not work): "Direction arrows on the station end of course curve icons  point in the wrong direction where the sensor is.  They are not parallel with the track on one side.  Also, the station gets rendered on the track without the sensor rather than the one with the sensor."; MT-714: "when a double curve with a s88 has arrival directions set, the arrow icons may overlap."; MT-716 (Does not work): "I see this on some labels, but not others.  Many don't seem to have the halo.  Check tiles that are not just only text, but have something else on them plus text."; MT-709: "on the autonomy commands page, instead of making home locations teal, put a little house icon below it (in the same spot as the (i))."
 
 **Written:** 2026-10-10
@@ -34064,7 +34058,7 @@ Round 131 (`74f6b921`), on your revert to circles, diamonds and squares: step 1'
 <a id="mt-718"></a>
 ### MT-718 - 2026-10-10 - Round 126: FR-119, Show Trains in the autonomy editor
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-10 - FR-119: "in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."
 
 **Written:** 2026-10-10
@@ -34097,7 +34091,7 @@ Round 129 (`1c124337`), with step 2: unticked, the editor also hides its own mar
 <a id="mt-719"></a>
 ### MT-719 - 2026-10-10 - Round 126: FR-120, a sensor is named as it becomes a station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-10 - FR-120: "when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here."
 
 **Written:** 2026-10-10
@@ -34202,7 +34196,7 @@ Superseded by MT-722 (round 131, `74f6b921`): a station out of service is a soli
 <a id="mt-722"></a>
 ### MT-722 - 2026-10-11 - Round 131: stations are circles, diamonds and squares again, and the orange signs out of service
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11: "The icons are hard to work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"; on the sheet: "The icons need to be bigger- make them bigger in both the non station (match radius of s88, so 2px more diameter) and station view (same as before, just ever slightly smaller)."; then "1px more radius on the non station out of service, and give the station out of service a solid orange fill, with a white X inside instead"; then "make sure that the diamonds are correctly aligned on curves"
 
 **Written:** 2026-10-11
@@ -34244,7 +34238,7 @@ and MT-721 with the classic icons.  Claims in `core.testAutonomyDiagramMonitor`:
 <a id="mt-723"></a>
 ### MT-723 - 2026-10-11 - Round 132: OB-332, a route button on a running line takes direction clicks
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.  Refer to route 41 in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox (located at 4,14).  Fix it now so I can MT"
 
 **Written:** 2026-10-11
@@ -34277,7 +34271,7 @@ buttons on that page with a stored direction - routes 37, 50, 53, 101 and 1019.
 <a id="mt-724"></a>
 ### MT-724 - 2026-10-11 - Round 133: FR-121, a station that allows only the locomotives you choose
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."
 
 **Written:** 2026-10-11
