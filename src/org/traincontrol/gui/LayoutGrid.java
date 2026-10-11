@@ -665,6 +665,21 @@ public class LayoutGrid
     public static final String CAPTIONS_REGISTERED = "TrainControl.captionsRegistered";
 
     /**
+     * Makes a diagram's window scroll a square at a time on both axes, at the size it is drawn: each step of the mouse
+     * wheel and each press of a scroll bar's arrow moves the diagram one square (MT-726; Adam, 2026-10-11: "make
+     * scrolling in the track diagram viewer faster on both axes").  The panel a diagram sits in is not Scrollable, so
+     * its scroll bars stepped one pixel at a time - three a notch of the wheel.
+     *
+     * @param pane the scroll pane the diagram is in
+     * @param size the square's edge in pixels
+     */
+    public static void scrollASquareAtATime(javax.swing.JScrollPane pane, int size)
+    {
+        pane.getVerticalScrollBar().setUnitIncrement(size);
+        pane.getHorizontalScrollBar().setUnitIncrement(size);
+    }
+
+    /**
      * Where a container remembers the grid that built it - for the window to ask whether the grid on screen is still the
      * setup's (MT-670).  Hung on the container for the reason `CAPTIONS_REGISTERED` is: a map of containers to grids kept
      * every grid the window ever built, as each grid holds its container (RSA38-C3).

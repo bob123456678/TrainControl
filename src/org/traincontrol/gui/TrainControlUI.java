@@ -33849,6 +33849,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     
                     InnerLayoutPanel.setVisible(true);
 
+                    // A square at a time at the size shown, from the page cache too (MT-726)
+                    LayoutGrid.scrollASquareAtATime(this.LayoutArea,
+                        this.layoutSizes.get(this.SizeList.getSelectedItem().toString()));
+
                     // Important!
                     this.KeyboardTab.repaint();
                     
