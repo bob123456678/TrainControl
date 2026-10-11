@@ -333,6 +333,89 @@ public class testLayoutTiles
     }
 
     /**
+     * And the second highlight is DRAWN (OB-333, OB-334; Adam, 2026-10-11: *"when autonomy is running, I don't see yellow
+     * highlights for switches and signals on my track diagram"*).  A square changed again while its first highlight was
+     * up laid the new yellow over its picture and then ended the first highlight - whose end puts the plain picture back,
+     * over the yellow just laid - so it showed nothing for the whole hold while a highlight was armed.  Autonomy changes
+     * a square twice inside the hold, and at the Large size the picture is slow enough to arrive that it always did.
+     *
+     * The test above counts restores, which this left right; this one looks at the picture.
+     *
+     * MUTATION: end the first highlight after laying the second's yellow again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testASecondHighlightIsDrawnYellow() throws Exception
+    {
+        LayoutLabel label = warmedSignalLabel();
+
+        SwingUtilities.invokeAndWait(() -> label.updateImage(true));
+
+        assertTrue(awaitHighlight(label), "precondition: the first highlight never went up");
+
+        final javax.swing.Icon first = label.getIcon();
+
+        assertTrue(yellowIn(first) > 0, "precondition: the first highlight is not yellow, so the second proves nothing");
+
+        SwingUtilities.invokeAndWait(() -> label.updateImage(true));
+
+        // the second picture is set through invokeLater: waited for, as a different icon from the first highlight's
+        long deadline = System.currentTimeMillis() + 5000;
+
+        while (label.getIcon() == first && System.currentTimeMillis() < deadline)
+        {
+            SwingUtilities.invokeAndWait(() -> { });
+            Thread.sleep(20);
+        }
+
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(label.isAccessoryHighlightOutstanding(), "precondition: the second highlight is not armed");
+
+        assertTrue(yellowIn(label.getIcon()) > 0, "a square changed again while its first highlight was up shows no"
+            + " yellow, though a highlight is armed - Adam: \"when autonomy is running, I don't see yellow highlights for"
+            + " switches and signals on my track diagram\"");
+    }
+
+    /** How many pixels of an icon the highlight's yellow is on. */
+    private static int yellowIn(javax.swing.Icon icon)
+    {
+        if (!(icon instanceof javax.swing.ImageIcon)) return 0;
+
+        java.awt.Image image = ((javax.swing.ImageIcon) icon).getImage();
+
+        java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        try
+        {
+            g.drawImage(image, 0, 0, null);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int n = 0;
+
+        for (int x = 0; x < drawn.getWidth(); x++)
+        {
+            for (int y = 0; y < drawn.getHeight(); y++)
+            {
+                int argb = drawn.getRGB(x, y);
+                int a = (argb >>> 24), r = (argb >> 16) & 0xFF, gr = (argb >> 8) & 0xFF, b = argb & 0xFF;
+
+                if (a > 60 && r > 200 && gr > 200 && b < 160) n++;
+            }
+        }
+
+        return n;
+    }
+
+    /**
      * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal (SVB-B1).
      *
      * The first fix dropped the flash inside the accessory-highlight branch, which two ordinary cases never reach:

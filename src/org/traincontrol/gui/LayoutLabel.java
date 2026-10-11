@@ -1070,16 +1070,21 @@ public final class LayoutLabel extends JLabel
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
                         if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
+                            // THE ONE BEFORE IT IS STOPPED FIRST (VC2-C3; OB-333, OB-334).  Nulling the field said
+                            // "no restore is armed" while the old timer was still counting down, and it fired
+                            // `setIcon(lastIcon)` over whatever was drawn by then - a three-way's second highlight,
+                            // or a flash.  And FIRST, before this highlight's yellow goes on: ending a highlight puts
+                            // the plain picture back (UIX-B2), and ended after the yellow was laid it put the plain
+                            // picture back over it - a square changed twice inside the hold, which autonomy does,
+                            // showed no yellow at all (Adam, 2026-10-11: "when autonomy is running, I don't see
+                            // yellow highlights for switches and signals on my track diagram").
+                            endAccessoryHighlight();
+
                             // Both of these run on the EDT: this block already does, and a Swing Timer
                             // fires there too.  The overlay and the restore used to be applied from a
                             // raw thread, mutating a Swing component off the EDT - the one place in this
                             // class that did not marshal its work.
                             this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
-
-                            // AND THE ONE BEFORE IT IS STOPPED (VC2-C3).  Nulling the field said "no restore is
-                            // armed" while the old timer was still counting down, and it fires `setIcon(lastIcon)`
-                            // over whatever is drawn by then - a three-way's second highlight, or a flash.
-                            endAccessoryHighlight();
 
                             final javax.swing.Timer[] mine = new javax.swing.Timer[1];
 
