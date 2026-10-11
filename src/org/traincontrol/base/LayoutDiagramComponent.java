@@ -381,7 +381,7 @@ public class LayoutDiagramComponent
                     
         // TODO - check if folder exists, else use a default
         // TODO - switch to /gbsicons/ 
-        return RESOURCE_PATH + Integer.toString(size) + "/" + this.getTypeName() + stateString + ".gif";
+        return RESOURCE_PATH + Integer.toString(artSize(size)) + "/" + this.getTypeName() + stateString + ".gif";
     }
     
     public Image getImage(int size, boolean ignoreState) throws IOException
@@ -406,7 +406,8 @@ public class LayoutDiagramComponent
          {
             float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
 
-            img = img.getScaledInstance(size, (int) (size * aspect), 1);
+            // Smoothly: a set scaled down to a size of its own (FR-122) is a picture somebody looks at, not a stopgap
+            img = img.getScaledInstance(size, (int) (size * aspect), Image.SCALE_SMOOTH);
          }
          
          // Rotate
@@ -777,7 +778,21 @@ public class LayoutDiagramComponent
      */
     public String getImageKey(int size, boolean ignoreState)
     {
-        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation);
+        // and the size it is drawn at: two sizes drawn from one icon set are two pictures (FR-122)
+        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
+    }
+
+    /**
+     * Which icon set a square of this size is drawn from: the size's own where there is one - 30 and 60 - and
+     * otherwise the next larger, scaled down (FR-122: the Medium size, 46, from the 60 set; Adam, 2026-10-11: "Start
+     * with the cheap 60px scaling").  Scaling down keeps the detail a smaller set never had.
+     *
+     * @param size the square's edge in pixels
+     * @return the icon set's size
+     */
+    public static int artSize(int size)
+    {
+        return size <= 30 ? 30 : 60;
     } 
     
     /**

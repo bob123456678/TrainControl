@@ -17331,7 +17331,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         mediumButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         mediumButton.setText(bundle.getString("ui.main.mediumLayout")); // NOI18N
-        mediumButton.setToolTipText(bundle.getString("ui.main.tooltip.smallPopup")); // NOI18N
+        mediumButton.setToolTipText(bundle.getString("ui.main.tooltip.mediumPopup")); // NOI18N
         mediumButton.setFocusable(false);
         mediumButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -29681,7 +29681,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_gracefulStopActionPerformed
 
     private void mediumButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mediumButtonActionPerformed
-        // TODO add your handling code here:
+
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.medium")));
     }//GEN-LAST:event_mediumButtonActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
@@ -33392,10 +33393,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JCheckBoxMenuItem windowAlwaysOnTopMenuItem;
     // End of variables declaration//GEN-END:variables
 
+    /**
+     * The Medium size, between Small (30) and Large (60): 46 pixels a square (FR-122; Adam, 2026-10-11: "Let's implement
+     * the 46px diagram"), even so that the rails' middle falls on a whole pixel.
+     */
+    public static final int MEDIUM_TILE_SIZE = 46;
+
     // Lap strings in the size dropdown to icon sizes
     Map<String, Integer> layoutSizes = Stream.of(new String[][] 
         {
             { I18n.t("layout.ui.small"), "30" },
+            // FR-122: drawn from the Large art scaled down until it has its own (LayoutDiagramComponent.artSize)
+            { I18n.t("layout.ui.medium"), String.valueOf(MEDIUM_TILE_SIZE) },
             { I18n.t("layout.ui.large"), "60" }
         })
         .collect(Collectors.toMap(
