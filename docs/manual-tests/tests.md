@@ -33,8 +33,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-719](#mt-719) | 2026-10-10 | Round 126: FR-120, a sensor is named as it becomes a station | fixed unvalidated | Adam, 2026-10-10 - FR-120: "when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here." |
 | [MT-722](#mt-722) | 2026-10-11 | Round 131: stations are circles, diamonds and squares again, and the orange signs out of service | fixed unvalidated | Adam, 2026-10-11: "The icons are hard to work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"; on the sheet: "The icons need to be bigger- make them bigger in both the non station (match radius of s88, so 2px more diameter) and station view (same as before, just ever slightly smaller)."; then "1px more radius on the non station out of service, and give the station out of service a solid orange fill, with a white X inside instead"; then "make sure that the diamonds are correctly aligned on curves" |
 | [MT-723](#mt-723) | 2026-10-11 | Round 132: OB-332, a route button on a running line takes direction clicks | fixed unvalidated | Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.  Refer to route 41 in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox (located at 4,14).  Fix it now so I can MT" |
+| [MT-724](#mt-724) | 2026-10-11 | Round 133: FR-121, a station that allows only the locomotives you choose | fixed unvalidated | Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on." |
 
-Everything else - 717 of 723 - needs nothing from you unless the area changes again:
+Everything else - 717 of 724 - needs nothing from you unless the area changes again:
 564 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34244,5 +34245,41 @@ and MT-721 with the classic icons.  Claims in `core.testAutonomyDiagramMonitor`:
 *What this is:* round 132 (`28e4e138`).  Claim
 `core.testAutonomyDiagramSession.testARouteButtonOnALineTakesADirectionClick`.  The same goes for the five other route
 buttons on that page with a stored direction - routes 37, 50, 53, 101 and 1019.
+
+---
+
+<a id="mt-724"></a>
+### MT-724 - 2026-10-11 - Round 133: FR-121, a station that allows only the locomotives you choose
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. In the autonomy editor, right-click a station that excludes nothing, and choose `Advanced Parameters...` ->
+   `Excluded Locomotives`.
+2. Tick `Allow only the chosen locomotives`, choose one locomotive, and press OK.  Look at the menu again.
+3. Close the editor and look at the Auto tab: the chosen train's destinations, and another train's.
+4. Add a new locomotive to the database, place it where the station can be reached, and look at its destinations
+   and at Why Not Moving? for it.
+5. Open the window again, tick `Exclude the chosen locomotives`, and press OK.  Look at the Auto tab again.
+6. On a station that is a train's home, tick `Allow only the chosen locomotives` and choose a different train.
+
+**Expected**
+
+- Step 1: the window has the two choices above the list, `Exclude the chosen locomotives` ticked.
+- Step 2: the menu item reads `Allowed Locomotives Only (1)`.
+- Step 3: the chosen train can be sent to the station; the other train cannot, and Why Not Moving? says the station
+  does not accept it.
+- Step 4: the new locomotive cannot be sent there either.
+- Step 5: the same locomotive is still chosen; now it is the one kept out, and every other train may stop there.  The
+  menu reads `Excluded Locomotives (1)`.
+- Step 6: you are warned that this shuts the station's home train out of its own home, and asked whether to go ahead.
+
+*What this is:* round 133 (`f68aabbc`).  On a sensor that is not a station the same list decides who may pass
+it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.testAutonomyDiagramSession` and
+`regression.testHomeAssignmentRules`.
 
 ---
