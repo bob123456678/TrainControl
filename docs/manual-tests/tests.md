@@ -34515,6 +34515,10 @@ Your note ("Make it half a square at a time.") is round 140 (`afa263f5`): each s
 
 After your Works, round 142 (`7873e860`) changed what step 2 counts as a way to back a train in, on the validator's finding RSA66-C3: it is now how Return Home actually does it - another terminus that leads straight to the berth, where the train is rested first and then backed in (your two-step parking).  A reversing point on the way no longer counts: no door drives a route on through one and back.  Step 1 (BottomMainC, active: no warning) is unchanged.  MT-731 has the new step.
 
+**Claude, 2026-10-11.**
+
+Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts as a way to back a train into a berth: the turns on the way are counted.  A train rested on another terminus sets off turned, and each reversing point it passes turns it again, so a reversing point passed on the way in (S - reversing M - terminus T, as MT-245) counts once more; one on a stub, which sends the train straight back, does not.  Step 1 (BottomMainC, active: no warning) is unchanged.
+
 ---
 
 <a id="mt-731"></a>
@@ -34546,5 +34550,9 @@ After your Works, round 142 (`7873e860`) changed what step 2 counts as a way to 
 Claims `ui.testTheTrainIsShownAsALine.testAStandingTrainsOwnSquareIsOneOrange`,
 `core.testAutonomyDiagramSession.testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto`.  Also in round 142,
 not something to see: a route may set a guard signal its train's path holds green (RSA66-C1).
+
+**Claude, 2026-10-11.**
+
+Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts as a way to back a train into a berth: the turns on the way are counted.  A train rested on another terminus sets off turned, and each reversing point it passes turns it again, so a reversing point passed on the way in (S - reversing M - terminus T, as MT-245) counts once more; one on a stub, which sends the train straight back, does not.  So in step 3 the warning shows only where neither a terminus leading straight to BottomMainC nor a reversing point on the way in brings a train there tail first.
 
 ---
