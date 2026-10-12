@@ -1889,6 +1889,18 @@ Adam, 2026-10-11, in the session after OB-333 and OB-334: "I also didn't see hig
 
 Not reproduced: run on a copy of his layout at the Large size, three routes clicked as a click runs them each lit every switch they changed, and yellow on screen.  The defect behind OB-333 is the likely cause - a square changed again inside its highlight showed no yellow - and a route that changes a square twice, or one autonomy has just changed, meets it.  Fixed with it in round 134; MT-725 asks for a route clicked on the diagram.
 
+### FR-123 - 2026-10-11 - for 3.1.0: a fullscreen mode, and ways to resize the main window
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11: *"FR for 3.1.0: add a fullscreen mode and options to resize the main window."*
+
+**For v3.1.0**, on Adam's word.  The main window is a fixed size today (`TrainControlUI` calls `setResizable(false)`), so the track diagram, the keyboard pages and the Auto tab never grow with the screen.  Add a fullscreen mode, and options to resize the main window.
+
+To settle when it is built: how fullscreen is entered and left (a menu item, a key such as F11, Escape - which already powers off); whether resizing is free dragging, a few preset sizes, or both; what grows with the window (the track diagram's area, the keyboard, the lists) and what stays fixed; that the size and mode are remembered, per screen; and that the pop-up windows, dialogs and always-on-top keep working over a fullscreen window.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
