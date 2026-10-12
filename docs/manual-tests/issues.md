@@ -352,6 +352,18 @@ Found by the per-fix check of OB-337: at the end of `MarklinControlStation.init`
 
 **For v3.0.1**, on Adam's word.  A simulation start keeps the saved address; a real start that does not connect, and Exit in OB-338's question, still forget it, as before.
 
+### OB-340 - 2026-10-12 - for 3.0.1: departing a terminus, autonomy leaves its exit guard red, so a train the guard stops stays there
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Adam, 2026-10-12: *"when departing a terminus, autonomy should make its exit guard green.  otherwise, trains stopped by that guard would remain stuck.  it can flip back to red after the run ends (if wiring already exists for this), otherwise keep it at green."*
+
+**For v3.0.1**, on Adam's word.  behaviour.md 7c: an exit guard is RED while its platform is claimed - a train standing there, or a locked path that starts or ends there - and a route over the guard sets it GREEN as it is claimed edge by edge, which is how a train leaving a through station by its exit signal gets a green.  At a terminus the exit guard is often on the station's own track, where no departing route commands it, so the departing train's own claim holds it red; where the signal cuts power to a stop section, the train cannot leave.
+
+Wanted: when autonomy sends a train out of a terminus, the terminus's exit guard is turned green for it.  After the run it may go back to red where something already does that; otherwise it stays green.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
