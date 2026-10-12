@@ -665,18 +665,21 @@ public class LayoutGrid
     public static final String CAPTIONS_REGISTERED = "TrainControl.captionsRegistered";
 
     /**
-     * Makes a diagram's window scroll a square at a time on both axes, at the size it is drawn: each step of the mouse
-     * wheel and each press of a scroll bar's arrow moves the diagram one square (MT-726; Adam, 2026-10-11: "make
-     * scrolling in the track diagram viewer faster on both axes").  The panel a diagram sits in is not Scrollable, so
-     * its scroll bars stepped one pixel at a time - three a notch of the wheel.
+     * Makes a diagram's window scroll half a square at a time on both axes, at the size it is drawn: each step of the
+     * mouse wheel and each press of a scroll bar's arrow moves the diagram half a square (MT-726; Adam, 2026-10-11: "make
+     * scrolling in the track diagram viewer faster on both axes", and on MT-727, where it moved a whole square: "Make it
+     * half a square at a time").  The panel a diagram sits in is not Scrollable, so its scroll bars stepped one pixel at
+     * a time - three a notch of the wheel.
      *
      * @param pane the scroll pane the diagram is in
      * @param size the square's edge in pixels
      */
-    public static void scrollASquareAtATime(javax.swing.JScrollPane pane, int size)
+    public static void scrollHalfASquareAtATime(javax.swing.JScrollPane pane, int size)
     {
-        pane.getVerticalScrollBar().setUnitIncrement(size);
-        pane.getHorizontalScrollBar().setUnitIncrement(size);
+        int step = Math.max(1, size / 2);
+
+        pane.getVerticalScrollBar().setUnitIncrement(step);
+        pane.getHorizontalScrollBar().setUnitIncrement(step);
     }
 
     /**
