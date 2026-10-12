@@ -5296,11 +5296,12 @@ public class AutonomySession
     }
 
     /**
-     * The termini a route can back a train into: reached after it has turned at a reversing point on the way, so it
-     * arrives tail first and can leave forwards - what `HomeStaging.turnedOnTheWay` calls turning on the way, and Adam's
-     * ruling of 2026-09-01 that non-reversing trains *"must be able to back into a terminus if the graph makes that
-     * possible"*.  Walked over the build: a terminus is never driven through, a square out of service never entered.  A
-     * train standing on a reversing point sets off turned, as staging seeds it.
+     * The termini a train that cannot reverse can be backed into: those another terminus leads straight to.  Return Home
+     * rests such a train on a terminus and drives it home from there tail first - Adam's two-step parking (AMH-B1: "That's
+     * why we started the 2 step process for parking, which is OK in my opinion.") - so a berth reached from another
+     * terminus, not through a terminus or a reversing point, is one it can back in to.  A reversing point passed on the way
+     * is not a way in: no door drives a route on through one and back (RSA66-C3).  Walked over the build; a square out of
+     * service is never entered, and a berth is not its own way in.
      *
      * @param built the built configuration, or null
      * @param tiles each point's square, by name
@@ -5336,41 +5337,43 @@ public class AutonomySession
         }
 
         java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
-        java.util.Set<String> seen = new java.util.HashSet<>();
-        java.util.Deque<Object[]> queue = new java.util.ArrayDeque<>();
 
-        for (org.json.JSONObject point : byName.values())
+        for (org.json.JSONObject rest : byName.values())
         {
-            if (!point.optBoolean("active", true)) continue;
+            // where a train is rested: a terminus in service
+            if (!rest.optBoolean("terminus", false) || !rest.optBoolean("active", true)) continue;
 
-            boolean turned = point.optBoolean("reversing", false);
+            TileKey restedOn = tiles.get(rest.getString("name"));
 
-            if (seen.add(point.getString("name") + "|" + turned)) queue.add(new Object[] {point.getString("name"), turned});
-        }
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            java.util.Deque<String> queue = new java.util.ArrayDeque<>();
 
-        while (!queue.isEmpty())
-        {
-            Object[] at = queue.poll();
+            queue.add(rest.getString("name"));
+            seen.add(rest.getString("name"));
 
-            boolean turned = (Boolean) at[1];
-
-            for (String name : onwards.getOrDefault((String) at[0], java.util.Collections.emptyList()))
+            while (!queue.isEmpty())
             {
-                org.json.JSONObject next = byName.get(name);
-
-                if (next == null || !next.optBoolean("active", true)) continue;
-
-                if (next.optBoolean("terminus", false))
+                for (String name : onwards.getOrDefault(queue.poll(), java.util.Collections.emptyList()))
                 {
-                    if (turned && tiles.get(name) != null) out.add(tiles.get(name));
+                    org.json.JSONObject next = byName.get(name);
 
-                    // a terminus is arrived at, never driven through
-                    continue;
+                    if (next == null || !next.optBoolean("active", true)) continue;
+
+                    if (next.optBoolean("terminus", false))
+                    {
+                        TileKey home = tiles.get(name);
+
+                        if (home != null && !home.equals(restedOn)) out.add(home);
+
+                        // a terminus is arrived at, never driven through
+                        continue;
+                    }
+
+                    // nor is a reversing point: a route on through one and back is not driven
+                    if (next.optBoolean("reversing", false)) continue;
+
+                    if (seen.add(name)) queue.add(name);
                 }
-
-                boolean onwardTurned = turned || next.optBoolean("reversing", false);
-
-                if (seen.add(name + "|" + onwardTurned)) queue.add(new Object[] {name, onwardTurned});
             }
         }
 

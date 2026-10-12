@@ -414,6 +414,91 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * A route may set a guard a locked path holds green to that green (RSA66-C1): the exit guard of the platform the
+     * path's train leaves, and the home signal of the one it is bound for, are held accessories too, and Adam's rule
+     * reaches them (2026-10-11: *"make sure the code allows switching to the correct (same) setting that autonomy is
+     * using"*).  The control: a guard no path holds, over the platform the train is bound for, is still refused green.
+     *
+     * MUTATION: ask the protecting-signal rule whatever the path holds, and this fails.
+     *
+     * @throws Exception from the dispatch
+     */
+    @Test
+    public void testARouteMaySetAGuardTheGreenItsPathHolds() throws Exception
+    {
+        for (String s : new String[] {S88, S88_MID})
+        {
+            if (!model.isFeedbackSet(s)) model.newFeedback(Integer.parseInt(s), null);
+
+            model.setFeedbackState(s, false);
+        }
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("RG_A", true, S88_MID);
+        layout.createPoint("RG_B", true, S88);
+
+        Edge ab = layout.createEdge("RG_A", "RG_B");
+
+        // the guard of the platform the train leaves, which its path holds green
+        MarklinAccessory guard = model.newSwitch(SIGNAL_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        // and one no path holds, over the platform it is bound for
+        MarklinAccessory other = model.newSwitch(GUARD_UNHELD, Accessory.accessoryDecoderType.MM2, false);
+
+        ab.addConfigCommand(guard.getName(), Accessory.accessorySetting.GREEN);
+
+        layout.getPoint("RG_A").setProtectingSignal(guard.getName());
+        layout.getPoint("RG_B").setProtectingSignal(other.getName());
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("RG_A").setLocomotive(loc);
+
+        final boolean[] asked = {false};
+        final String[] held = {"not asked"};
+        final String[] unheld = {"not asked"};
+
+        layout.setCallback("held guard probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || asked[0] || !layout.getActiveAccs().contains(guard)) return null;
+
+            asked[0] = true;
+
+            String[] a = accessoryRoute(84953, SIGNAL_ADDRESS, false).conflictingAccessoryAndReason();
+            String[] b = accessoryRoute(84954, GUARD_UNHELD, false).conflictingAccessoryAndReason();
+
+            held[0] = a == null ? null : Arrays.toString(a);
+            unheld[0] = b == null ? null : Arrays.toString(b);
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(asked[0], "precondition: while the train was under way the path must hold the guard");
+
+            assertNull(held[0], "a route setting the guard of the platform the train leaves GREEN - the setting its path"
+                + " holds it at - was refused: " + held[0] + ".  Adam: \"make sure the code allows switching to the correct"
+                + " (same) setting that autonomy is using\"");
+
+            assertNotNull(unheld[0], "the control: a route setting GREEN a guard no path holds, over the platform the"
+                + " train is bound for, was not refused");
+        }
+        finally
+        {
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A route already under way when a dispatch begins does not set the accessory either.
      *
      * Found by an independent review, which reproduced it with a timestamped log: the route committed
@@ -1951,6 +2036,27 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             Accessory.accessoryDecoderType.MM2, turn));
 
         return new MarklinRoute(model, "RG switch " + id, id, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
+    /** A second protecting signal, which no path holds. */
+    private static final int GUARD_UNHELD = 87;
+
+    /**
+     * A one-command route setting an accessory by address.
+     *
+     * @param id a route id nothing else uses
+     * @param address the accessory's address
+     * @param throwIt true for TURN or RED, false for STRAIGHT or GREEN
+     * @return the route, not executed
+     */
+    private static MarklinRoute accessoryRoute(int id, int address, boolean throwIt)
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandAccessory(address, Accessory.accessoryDecoderType.MM2, throwIt));
+
+        return new MarklinRoute(model, "RG accessory " + id, id, commands, 0,
             MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
     }
 

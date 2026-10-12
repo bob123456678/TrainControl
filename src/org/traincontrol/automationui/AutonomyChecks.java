@@ -507,8 +507,8 @@ public class AutonomyChecks
      * @param berthsGivenNoRoom parking berths whose track before the stop was all answered 0 (TDA4-C2)
      * @param terminiWithTwoWaysIn stations every train must turn round at that have more than one
      *        unbarred way in, mapped to how many (MT-361)
-     * @param berthsBackedInto the squares a route can back a train into, turning it at a reversing point on the way, off
-     *        the build; null where the setup does not build (Adam, 2026-10-11)
+     * @param berthsBackedInto the squares a train can be backed into - another terminus leads straight there, where
+     *        Return Home rests it first - off the build; null where the setup does not build (Adam, 2026-10-11)
      *
      * The two halves of the length comparison, supplied rather than derived: one lives on the
      * Locomotive in the model and the other is a point property, and neither is visible from the graph.
@@ -1113,8 +1113,8 @@ public class AutonomyChecks
      * terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus,
      * not chooseable by autonomy) without a way to reverse in"*).  A terminus autonomy may choose is neither chosen for
      * nor offered to a locomotive that cannot reverse, so the warning was moot there; at a parking berth a train can be
-     * backed into - a route turning it at a reversing point on the way - it is moot too (MT-552; Adam, 2026-09-24:
-     * *"Non-reversible trains can still be backed in there."*).
+     * backed into - rested first on another terminus that leads straight there, as Return Home does - it is moot too
+     * (MT-552; Adam, 2026-09-24: *"Non-reversible trains can still be backed in there."*).  RSA66-C3.
      *
      * @param homes the squares carrying an authored home
      * @param mustTurn the squares where turning round is compulsory

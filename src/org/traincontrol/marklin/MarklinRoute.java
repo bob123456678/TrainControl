@@ -645,7 +645,11 @@ public class MarklinRoute extends Route
         // accessory tile - which asks the locked-path half two lines above - never got this half at
         // all: a route setting a platform's signal green was refused while clicking the same signal
         // green by hand was not.  One rule now, in the one place both can reach.
-        if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory))
+        //
+        // A GREEN THE TRAIN'S OWN PATH HOLDS IS NO CHANGE (RSA66-C1): the exit guard of the platform a path leaves and the
+        // home signal of the one it is bound for are held accessories too, and Adam's rule reaches them (2026-10-11: "make
+        // sure the code allows switching to the correct (same) setting that autonomy is using")
+        if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory) && !Boolean.FALSE.equals(locked.get(accessory)))
         {
             // STANDING, OR ONLY RESERVED (GSR-C2).  A locked path reserves every point along it for its train, its
             // destination included, so a platform holds this signal red before any train is at it - and "a train is

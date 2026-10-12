@@ -7358,15 +7358,17 @@ public class testAutonomyDiagramSession
      * (Adam, 2026-10-11, of BottomMainC: *"we get a 'every train must turn around... and would have to back out...'
      * warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should
      * only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"*).  A way to
-     * reverse in is a route that turns the train at a reversing point before it arrives, so it backs in (his ruling of
-     * 2026-09-01: non-reversing trains *"must be able to back into a terminus if the graph makes that possible"*); with
-     * one, MT-552's *"Non-reversible trains can still be backed in there"* holds.
+     * reverse in is another terminus that leads straight to the berth: Return Home rests a train that cannot reverse
+     * there and drives it home tail first - Adam's two-step parking (AMH-B1: *"That's why we started the 2 step process
+     * for parking, which is OK in my opinion."*) - and with one, MT-552's *"Non-reversible trains can still be backed in
+     * there"* holds.  A reversing point on the way is not one: no door drives a route on through it and back (RSA66-C3).
      *
      * A line B - X - R: B the home, every train turning there.  Active: no warning.  A parking berth with R a plain
-     * sensor: the warning.  R a reversing point - a train runs X to R, turns, and backs into B: no warning.
+     * sensor: the warning.  R a reversing point: still the warning.  R a terminus - a train rested there is backed into
+     * B: no warning.
      *
-     * MUTATION: warn at an active terminus again, or at a berth a train can back into, or at no berth at all, and this
-     * fails.
+     * MUTATION: warn at an active terminus again, or at a berth a train can back into, or at no berth at all, or count a
+     * reversing point on the way as a way in, and this fails.
      *
      * @throws Exception from the fixture
      */
@@ -7397,11 +7399,20 @@ public class testAutonomyDiagramSession
             + " warned about - Adam: \"The warning should only be shown for a parking spot ... without a way to reverse"
             + " in\"");
 
+        // A reversing point beyond it is not a way in: no door drives a route on through one and back (RSA66-C3)
         session.setPointFlag(far, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, true);
         session.rebuild();
 
-        assertEquals(findingsAbout(key, berth), 0, "a home on a parking berth a train can back into - turning at the"
-            + " reversing point beyond it - is still warned about turning round");
+        assertEquals(findingsAbout(key, berth), 1, "a reversing point beyond a parking berth is taken for a way to back a"
+            + " train in, which no door drives: Return Home drives the train straight in, nose first (RSA66-C3)");
+
+        // A terminus beyond it is: Return Home rests the train there and backs it home (Adam's two-step parking)
+        session.setPointName(far, "HomeFar");
+        session.setStation(far, true);
+        session.rebuild();
+
+        assertEquals(findingsAbout(key, berth), 0, "a home on a parking berth a train can be backed into - rested at the"
+            + " terminus beyond it, as Return Home does - is still warned about turning round");
     }
 
     /** B (1,1) - X (4,1) - R (7,1), track between: a berth at one end of a run past it. */

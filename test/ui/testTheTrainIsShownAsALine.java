@@ -681,6 +681,104 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
+     * A standing train's own square is one orange (RSA66-C5).  The line is drawn again over a run line; the overlay of a
+     * standing train's own square - the diagram's mark for the train - has none, and drawn there the second line lay over
+     * the first: rgb(239,134,65) beside rgb(209,125,69) on the train's other squares.  The same on the part of a run's
+     * first or last square its run line does not reach.
+     *
+     * MUTATION: draw the second line over the whole of any square with an overlay again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
+    public void testAStandingTrainsOwnSquareIsOneOrange() throws Exception
+    {
+        train.setTrainLength(4);
+
+        refreshCoveredTrack();
+
+        SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
+
+        pump();
+
+        try
+        {
+            assertTrue(ui.isTrackCovered(covered), "precondition: the train's length back, the square is not covered");
+
+            BufferedImage once = paint(tile);
+
+            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
+
+            roads.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
+                (java.util.List<org.traincontrol.automationui.TilePorts.Route>) roads.invoke(tile);
+
+            org.traincontrol.automationui.TilePorts.Route road = covering.get(0);
+
+            // the mark of a train standing on the square
+            SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(
+                org.traincontrol.automationui.TileOverlay.parked(road.getB())));
+
+            pump();
+
+            int standing = laidTwice(paint(tile), once);
+
+            assertTrue(standing <= 3, standing + " pixels of the train's line on " + covered + " are laid twice under the"
+                + " mark of a train standing there - a second orange beside " + rgbOf(commonestOrange(once)) + " (RSA66-C5)");
+
+            // and a run that ends on the square, its line along half the road
+            SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+                org.traincontrol.automationui.TileOverlay.State.REACHED, true, false, java.util.Arrays.asList(
+                    new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), null,
+                        org.traincontrol.automationui.TileOverlay.State.REACHED)))));
+
+            pump();
+
+            int ending = laidTwice(paint(tile), once);
+
+            assertTrue(ending <= 3, ending + " pixels of the train's line on " + covered + " are laid twice where a run"
+                + " that ends there does not reach (RSA66-C5)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(null));
+
+            train.setTrainLength(0);
+
+            refreshCoveredTrack();
+
+            SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
+
+            pump();
+        }
+    }
+
+    /**
+     * The pixels of a train's line laid twice: against the same square painted with its line laid once, pixel by pixel,
+     * orange in both and redder by 15 or more - and not paled toward white as a chevron under the line is.  Compared
+     * pixel by pixel because the line laid once is not one colour: a sensor's light contact shows through it lighter.
+     */
+    private static int laidTwice(BufferedImage shot, BufferedImage once)
+    {
+        int count = 0;
+
+        for (int y = 0; y < shot.getHeight(); y++)
+        {
+            for (int x = 0; x < shot.getWidth(); x++)
+            {
+                int rgb = shot.getRGB(x, y) & 0xFFFFFF, was = once.getRGB(x, y) & 0xFFFFFF;
+
+                if (isOrange(rgb) && isOrange(was) && ((rgb >> 16) & 0xFF) - ((was >> 16) & 0xFF) >= 15
+                    && ((rgb >> 8) & 0xFF) < 160) count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
      * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
      * edge, so the gaps fall at
      * the joins on a curve as on a straight and no coach is ever cut short (T2 of the look's train tails; Adam,
