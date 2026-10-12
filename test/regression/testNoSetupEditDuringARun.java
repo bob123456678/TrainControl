@@ -66,9 +66,9 @@ public class testNoSetupEditDuringARun
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final java.io.File mt491 = new java.io.File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json");
+        final java.io.File mt491 = new java.io.File("test/autonomy_formats/autonomy-2.7.4c.json");
 
-        assertTrue(mt491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(mt491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         final String combined = "4 - Combined";
 
