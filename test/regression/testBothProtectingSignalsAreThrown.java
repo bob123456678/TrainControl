@@ -1622,6 +1622,314 @@ public class testBothProtectingSignalsAreThrown
         return Arrays.asList(read);
     }
 
+    /** What every reading of `raceTheRefresh` is: GREEN and held GREEN as the train sets off, and GREEN after the refresh */
+    private static final String STAYS_GREEN = "GREEN, the train holding the platform, held GREEN; after the other thread's"
+        + " refresh: GREEN, the train holding the platform";
+
+    /** How long any one step of `raceTheRefresh` may wait, so that a wrong answer is a failure and never a hang */
+    private static final long RACE_BOUND_MS = 20000;
+
+    /**
+     * A protection refresh on another train's thread that has read the holds BEFORE a departure claims its route does not
+     * turn the leaving train's exit guard RED after the departure has set it GREEN, with Atomic Routes off - nor does the
+     * same refresh made after the claim (RSA67-C1, OB-340).  The refresh reads the holds and commands the signal as one
+     * step against the departure's GREEN, so it either commands first and the GREEN lands last, or reads the hold.
+     *
+     * MUTATION: take the signal's lock out of `Layout.refreshOneSignal`, or out of the departure's GREEN in
+     * `configureAndLockPath`, and the forced reading goes RED after the refresh.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff() throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, false), raceTheRefresh(false, false)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform, the"
+            + " leaving train's exit guard, as it sets off and once another thread's refresh of it is done - that refresh"
+            + " forced to read the holds before the claim and to finish after the departure, and then made after the claim"
+            + " (RSA67-C1)");
+    }
+
+    /**
+     * The same with Atomic Routes on (RSA67-C1, OB-340).
+     *
+     * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff`.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOn() throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, true), raceTheRefresh(false, true)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform, the"
+            + " leaving train's exit guard, as it sets off and once another thread's refresh of it is done - that refresh"
+            + " forced to read the holds before the claim and to finish after the departure, and then made after the claim"
+            + " (RSA67-C1)");
+    }
+
+    /**
+     * A train leaves RR S for RR N by RR M while another thread refreshes `near`, the guard RR S shares with RR P; this
+     * class's own feedbacks 47491-47496 (RSA67-C1).
+     *
+     * Another train is under way on one held edge, RR X to RR Y, put among the journeys directly, so that a refresh walks
+     * that edge's commands as it reads the holds.  Forced, the refresh runs on a thread of its own before the departure,
+     * and that walk waits there, once, until the departure has been handed over - its guard set GREEN, its speed not yet
+     * given - or until the departure is waiting for a monitor the refresh holds: so the refresh has read the holds before
+     * the claim, and finishes after the GREEN unless the departure waits for it.  Unforced, the same refresh is made on
+     * the departing thread at the hand-over, after the claim.
+     *
+     * @param forced whether the refresh straddles the claim
+     * @param atomic Atomic Routes
+     * @return the guard as `aspectOver` reads it, with the setting the paths hold it at, as the train sets off; and as
+     *         `aspectOver` reads it once the refresh is done
+     */
+    private String raceTheRefresh(final boolean forced, boolean atomic) throws Exception
+    {
+        String[] names = {"RR S", "RR M", "RR N", "RR P", "RR X", "RR Y"};
+
+        final Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+        layout.setAtomicRoutes(atomic);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            String feedback = Integer.toString(47491 + i);
+
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(47491 + i, null);
+
+            model.setFeedbackState(feedback, false);
+
+            layout.createPoint(names[i], true, feedback);
+        }
+
+        layout.getPoint("RR S").setProtectingSignal(near.getName());
+        layout.getPoint("RR P").setProtectingSignal(near.getName());
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.createEdge("RR S", "RR M"));
+        path.add(layout.createEdge("RR M", "RR N"));
+
+        final Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+        final Locomotive other = model.getLocByName(model.getLocList().get(1));
+
+        assertNotEquals(leaving.getName(), other.getName(), "this test needs two different locomotives");
+
+        layout.getPoint("RR S").setLocomotive(leaving);
+
+        final java.util.concurrent.CountDownLatch refreshIsReading = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch letTheRefreshGo = new java.util.concurrent.CountDownLatch(1);
+        final Thread[] refresher = {null};
+        final String[] read = {"not read", "not read", "not refreshed"};
+
+        // The other train's one held edge: on the refresh's thread, the first walk of its commands waits
+        Edge held = new Edge(layout.getPoint("RR X"), layout.getPoint("RR Y"))
+        {
+            @Override
+            public java.util.Map<String, Accessory.accessorySetting> getConfigCommands()
+            {
+                if (Thread.currentThread() == refresher[0] && refreshIsReading.getCount() > 0)
+                {
+                    refreshIsReading.countDown();
+
+                    try
+                    {
+                        letTheRefreshGo.await(RACE_BOUND_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return super.getConfigCommands();
+            }
+        };
+
+        held.setOccupied();
+
+        journeys(layout).put(other, Arrays.asList(held));
+
+        near.setState(Accessory.accessorySetting.RED);
+
+        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
+            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        leaving.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            java.util.Map<Accessory, Boolean> holds = layout.getActiveAccSettings();
+
+            read[0] = aspectOver(layout, "RR S", leaving, near) + ", " + (!holds.containsKey(near) ? "not held"
+                : holds.get(near) == null ? "held both ways" : holds.get(near) ? "held RED" : "held GREEN");
+
+            if (forced)
+            {
+                letTheRefreshGo.countDown();
+
+                try
+                {
+                    refresher[0].join(RACE_BOUND_MS);
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            else
+            {
+                read[2] = refreshOn(layout, "RR P");
+            }
+
+            read[1] = aspectOver(layout, "RR S", leaving, near);
+
+            startWas.accept(l);
+        });
+
+        Thread watcher = null;
+
+        boolean ran;
+
+        try
+        {
+            if (forced)
+            {
+                refresher[0] = new Thread(() -> read[2] = refreshOn(layout, "RR P"), "RSA67-C1 refresh");
+                refresher[0].setDaemon(true);
+                refresher[0].start();
+
+                assertTrue(refreshIsReading.await(RACE_BOUND_MS, java.util.concurrent.TimeUnit.MILLISECONDS),
+                    "precondition: the other thread's refresh must be reading the holds before the claim");
+
+                // Lets the refresh go once the departure is waiting for it, where it can never reach its hand-over
+                final Thread departing = Thread.currentThread();
+
+                watcher = new Thread(() ->
+                {
+                    long until = System.currentTimeMillis() + RACE_BOUND_MS;
+
+                    while (letTheRefreshGo.getCount() > 0 && System.currentTimeMillis() < until)
+                    {
+                        if (waitsForAMonitorHeldBy(departing, refresher[0]))
+                        {
+                            letTheRefreshGo.countDown();
+                        }
+
+                        try
+                        {
+                            Thread.sleep(1);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            return;
+                        }
+                    }
+                }, "RSA67-C1 watcher");
+
+                watcher.setDaemon(true);
+                watcher.start();
+            }
+
+            ran = layout.executePath(path, leaving, 30, null);
+        }
+        finally
+        {
+            letTheRefreshGo.countDown();
+
+            leaving.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            if (watcher != null)
+            {
+                watcher.interrupt();
+                watcher.join(RACE_BOUND_MS);
+            }
+
+            if (refresher[0] != null) refresher[0].join(RACE_BOUND_MS);
+
+            journeys(layout).remove(other);
+
+            held.setUnoccupied();
+
+            for (String name : names) layout.getPoint(name).setLocomotive(null);
+        }
+
+        assertTrue(ran, "the dispatch did not complete, so nothing tests anything");
+
+        assertEquals(read[2], "refreshed", "the other thread's refresh must have run to its end");
+
+        return (forced ? "forced: " : "after the claim: ") + read[0] + "; after the other thread's refresh: " + read[1];
+    }
+
+    /**
+     * A protection refresh of one Point, as an occupancy change there makes it (RSA67-C1).
+     *
+     * @param layout the railway
+     * @param point the Point
+     * @return "refreshed", or what it threw
+     */
+    private static String refreshOn(Layout layout, String point)
+    {
+        try
+        {
+            java.lang.reflect.Method refresh = Layout.class.getDeclaredMethod("refreshProtectingSignal",
+                org.traincontrol.automation.Point.class);
+
+            refresh.setAccessible(true);
+            refresh.invoke(layout, layout.getPoint(point));
+
+            return "refreshed";
+        }
+        catch (Exception e)
+        {
+            return "the refresh threw " + e;
+        }
+    }
+
+    /**
+     * The railway's journeys under way, so that a test can put a train among them without running it (RSA67-C1).
+     *
+     * @param layout the railway
+     * @return its live map of each train under way to its path
+     */
+    @SuppressWarnings("unchecked")
+    private static java.util.Map<Locomotive, List<Edge>> journeys(Layout layout) throws Exception
+    {
+        java.lang.reflect.Field active = Layout.class.getDeclaredField("activeLocomotives");
+
+        active.setAccessible(true);
+
+        return (java.util.Map<Locomotive, List<Edge>>) active.get(layout);
+    }
+
+    /**
+     * Whether one thread is BLOCKED entering a monitor another thread holds - the departure waiting for the refresh, which
+     * is the fix's shape and which the forcing must let through rather than deadlock on (RSA67-C1).
+     *
+     * @param waiting the thread that may be waiting
+     * @param holding the thread that may hold what it waits for
+     * @return true when it does
+     */
+    private static boolean waitsForAMonitorHeldBy(Thread waiting, Thread holding)
+    {
+        java.lang.management.ThreadMXBean threads = java.lang.management.ManagementFactory.getThreadMXBean();
+
+        java.lang.management.ThreadInfo blocked = threads.getThreadInfo(new long[] {waiting.getId()}, false, false)[0];
+
+        if (blocked == null || blocked.getThreadState() != Thread.State.BLOCKED || blocked.getLockInfo() == null) return false;
+
+        java.lang.management.ThreadInfo holder = threads.getThreadInfo(new long[] {holding.getId()}, true, false)[0];
+
+        if (holder == null) return false;
+
+        for (java.lang.management.MonitorInfo monitor : holder.getLockedMonitors())
+        {
+            if (monitor.getIdentityHashCode() == blocked.getLockInfo().getIdentityHashCode()) return true;
+        }
+
+        return false;
+    }
+
     /**
      * Where the first edge out commands its own station's exit guard, the edge's setting stands (OB-340): one commanding it
      * RED - under one spelling of its name where the station uses the other, one accessory - leaves it RED, held RED.

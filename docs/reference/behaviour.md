@@ -2600,6 +2600,9 @@ holds them as it holds those: any station, from whichever copy of the square the
 commands one of them itself its own setting stands.  And protection leaves a signal an active path holds green: it does
 not turn it red while that edge is held, though a platform the signal guards is claimed - the leaving train's own, or,
 on a guard shared with another platform, another train's (Adam ruled that a shared guard is green while a train leaves).
+A refresh on another train's thread keeps to this too: it reads the holds and commands the signal as one step, and the
+departure sets its guards GREEN only once its hold can be read, so that GREEN lands after any red decided before it
+(RSA67-C1).
 The hold lapses when the train's tail has passed the first edge.  With Atomic Routes off the start is given back then,
 and its guards are asked again at once; with them on, they are asked at the next change of occupancy at a platform they
 guard, or when the run's track is given back - so a shared guard can stay GREEN over a train at its other platform until
