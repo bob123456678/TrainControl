@@ -650,6 +650,284 @@ public class testControlStationFaults
     }
 
     /**
+     * A first sync that fails is asked about until it works (OB-338).
+     *
+     * Adam: "there is no warning popup in the UI, and no way to reattempt a connection, if the cs3 ip is reachable but
+     * the initial DB sync fails."  The start-up synced once; a failure left the application running with communication
+     * off for good, because the one place it was switched on was the line after that sync.  Now the user is asked after
+     * each failure, with that failure's reason, and the sync is made again for as long as the answer is to try again.
+     *
+     * Staged with a sync that fails twice and then works, so the claim is the sequence: two questions, each carrying
+     * its own attempt's reason, three syncs, no exit, and a result that is a connection - which is what the
+     * constructor turns communication on for.
+     *
+     * MUTATION: sync only once, or ask with the first failure's reason both times, and this fails.
+     */
+    @Test
+    public void testAFirstSyncThatFailsTwiceIsAskedAboutTwiceThenConnects()
+    {
+        final int[] syncs = {0};
+        final int[] exits = {0};
+        final java.util.List<String> asked = new java.util.ArrayList<>();
+        final String[] reason = {null};
+
+        int result = MarklinControlStation.syncUntilConnected(
+            () ->
+            {
+                syncs[0]++;
+
+                if (syncs[0] < 3)
+                {
+                    reason[0] = "attempt " + syncs[0] + " failed";
+
+                    return -1;
+                }
+
+                reason[0] = null;
+
+                return 4;
+            },
+            () -> reason[0],
+            error ->
+            {
+                asked.add(error);
+
+                return true;
+            },
+            () -> exits[0]++);
+
+        assertEquals(asked, java.util.Arrays.asList("attempt 1 failed", "attempt 2 failed"),
+            "each failure must be asked about once, with the reason that failure gave");
+        assertEquals(syncs[0], 3, "the sync must be made again after each Resync, until it works");
+        assertEquals(exits[0], 0, "nobody chose Exit, so nothing may exit");
+        assertTrue(result >= 0, "the third sync worked, so the start must end connected: the constructor turns"
+            + " communication on for a result that is not negative");
+    }
+
+    /**
+     * Choosing Exit exits, once, and syncs no more (OB-338).
+     *
+     * Two shapes of it: Exit on the first failure, and Exit after one Resync has failed as well.  The sync never works
+     * here, so a helper that went on syncing after the answer, or asked again after the exit, would show as a count.
+     *
+     * MUTATION: sync again after Exit, or never call the exit, and this fails.
+     */
+    @Test
+    public void testChoosingExitExitsOnceAndSyncsNoMore()
+    {
+        final int[] syncs = {0};
+        final int[] exits = {0};
+        final java.util.List<String> asked = new java.util.ArrayList<>();
+
+        int result = MarklinControlStation.syncUntilConnected(
+            () ->
+            {
+                syncs[0]++;
+
+                return -1;
+            },
+            () -> "the station said no",
+            error ->
+            {
+                asked.add(error);
+
+                return false;
+            },
+            () -> exits[0]++);
+
+        assertEquals(exits[0], 1, "Exit on the first failure must exit, once");
+        assertEquals(syncs[0], 1, "and not sync again once the user has chosen to leave");
+        assertEquals(asked.size(), 1, "nor ask again");
+        assertTrue(result < 0, "an exit is not a connection");
+
+        syncs[0] = 0;
+        exits[0] = 0;
+        asked.clear();
+
+        final java.util.Iterator<Boolean> answers = java.util.Arrays.asList(true, false).iterator();
+
+        result = MarklinControlStation.syncUntilConnected(
+            () ->
+            {
+                syncs[0]++;
+
+                return -1;
+            },
+            () -> "still no",
+            error ->
+            {
+                asked.add(error);
+
+                return answers.next();
+            },
+            () -> exits[0]++);
+
+        assertEquals(syncs[0], 2, "one Resync is one more sync, and the Exit after it is no more");
+        assertEquals(asked.size(), 2, "two failures, two questions");
+        assertEquals(exits[0], 1, "and the Exit exits once");
+        assertTrue(result < 0, "still not a connection");
+    }
+
+    /**
+     * A first sync that works asks nothing (OB-338).
+     *
+     * The common start.  Zero is a success - a station with nothing new to add syncs to zero - so it is tried as well
+     * as a positive count.
+     *
+     * MUTATION: ask when the result is zero, or ask before the first sync, and this fails.
+     */
+    @Test
+    public void testAFirstSyncThatWorksAsksNothing()
+    {
+        for (int worked : new int[]{0, 7})
+        {
+            final int[] syncs = {0};
+            final int[] asks = {0};
+            final int[] exits = {0};
+
+            int result = MarklinControlStation.syncUntilConnected(
+                () ->
+                {
+                    syncs[0]++;
+
+                    return worked;
+                },
+                () -> null,
+                error ->
+                {
+                    asks[0]++;
+
+                    return true;
+                },
+                () -> exits[0]++);
+
+            assertEquals(result, worked, "the sync's own result must come back unchanged");
+            assertEquals(syncs[0], 1, "a sync that worked is not repeated");
+            assertEquals(asks[0], 0, "a sync that worked leaves nothing to ask (result " + worked + ")");
+            assertEquals(exits[0], 0, "and nothing to exit");
+        }
+    }
+
+    /**
+     * Nothing is asked without a station to reach, a window to ask in, or in a simulation (OB-338).
+     *
+     * A simulation has no Central Station, so its sync fails by design and every test builds one; a model with no
+     * window has nobody to ask.  Either would otherwise put a dialog in front of a suite - or loop for ever in one -
+     * so each is its own case, with the other two things present so that only one differs.  The control is the full
+     * case, which must ask, and must pass the reason and the answer through unchanged.
+     *
+     * MUTATION: ask in a simulation, or without a window, or without an address, and this fails.
+     */
+    @Test
+    public void testNothingIsAskedWithoutAStationAWindowOrInASimulation()
+    {
+        final java.util.List<String> viewAsked = new java.util.ArrayList<>();
+        final boolean[] viewAnswer = {true};
+        org.traincontrol.model.View view = recordingView(viewAsked, viewAnswer);
+
+        java.util.function.Predicate<String> noStation = MarklinControlStation.resyncAsker(null, false, view);
+        java.util.function.Predicate<String> blankStation = MarklinControlStation.resyncAsker("  ", false, view);
+        java.util.function.Predicate<String> simulated = MarklinControlStation.resyncAsker("192.168.1.5", true, view);
+        java.util.function.Predicate<String> noWindow = MarklinControlStation.resyncAsker("192.168.1.5", false, null);
+
+        assertNull(noStation, "no address is no station to reach");
+        assertNull(blankStation, "and a blank one is no address");
+        assertNull(simulated, "a simulation has no station, so a sync that fails there is the expected result");
+        assertNull(noWindow, "with no window there is nobody to ask");
+
+        // And run through the loop, which is what the constructor does with them: one sync, no question, no exit
+        for (java.util.function.Predicate<String> asker : java.util.Arrays.asList(noStation, blankStation, simulated, noWindow))
+        {
+            final int[] syncs = {0};
+            final int[] exits = {0};
+
+            int result = MarklinControlStation.syncUntilConnected(
+                () ->
+                {
+                    syncs[0]++;
+
+                    return -1;
+                },
+                () -> "unreachable", asker, () -> exits[0]++);
+
+            assertEquals(syncs[0], 1, "with nobody to ask, the one sync is all there is");
+            assertEquals(exits[0], 0, "and a failure then is not an exit: the application starts without the station");
+            assertTrue(result < 0, "and reports that it did not connect");
+        }
+
+        assertTrue(viewAsked.isEmpty(), "the window must not have been asked in any of those cases");
+
+        // The control: a station, a window, a real start
+        java.util.function.Predicate<String> asker = MarklinControlStation.resyncAsker("192.168.1.5", false, view);
+
+        assertNotNull(asker, "with a station, a window and a real start, there is somebody to ask");
+        assertTrue(asker.test("connection refused"), "the window's answer to resync must come back as true");
+
+        viewAnswer[0] = false;
+
+        assertFalse(asker.test("timed out"), "and its answer to exit as false");
+        assertEquals(viewAsked, java.util.Arrays.asList("connection refused", "timed out"),
+            "the window must be given the reason, as it was");
+    }
+
+    /**
+     * A failed sync keeps its reason where the start-up can read it (OB-338).
+     *
+     * The sync logged the exception and returned minus one, so the caller knew it had failed and not why.  Pointed at
+     * a port nothing listens on, which is a station that is there and will not talk.
+     *
+     * MUTATION: leave the field unset in the catch, and this fails.
+     */
+    @Test
+    public void testAFailedSyncKeepsItsReason()
+    {
+        String was = support.TestStationAddress.get();
+
+        try
+        {
+            support.TestStationAddress.set("127.0.0.1:1");
+
+            assertTrue(model.syncWithCS2() < 0, "a station that refuses every connection cannot be synced with");
+
+            String reason = model.getLastSyncError();
+
+            assertNotNull(reason, "the failure's reason must be kept");
+            assertFalse(reason.trim().isEmpty(), "and must say something");
+        }
+        finally
+        {
+            support.TestStationAddress.set(was);
+        }
+    }
+
+    /**
+     * A view that records what it is asked to resync about and answers as told; every other call does nothing.
+     */
+    private static org.traincontrol.model.View recordingView(java.util.List<String> asked, boolean[] answer)
+    {
+        return (org.traincontrol.model.View) java.lang.reflect.Proxy.newProxyInstance(
+            org.traincontrol.model.View.class.getClassLoader(), new Class<?>[]{ org.traincontrol.model.View.class },
+            (proxy, method, args) ->
+            {
+                if (method.getName().equals("offerResync"))
+                {
+                    asked.add((String) args[0]);
+
+                    return answer[0];
+                }
+
+                Class<?> type = method.getReturnType();
+
+                if (type == boolean.class) return false;
+                if (type == int.class) return 0;
+                if (type == long.class) return 0L;
+                if (type == double.class) return 0.0;
+
+                return null;
+            });
+    }
+
+    /**
      * The run's own copy of a data file, or a skip where the run has none: these tests write the file.
      */
     private static java.io.File runsOwnFile(String name)

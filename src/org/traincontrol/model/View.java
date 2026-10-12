@@ -140,6 +140,14 @@ public interface View
      */
     public void showAutonomyAlert(String message);
 
+    /**
+     * Tells the user the first sync with the Central Station failed and asks whether to try it again (OB-338).
+     * Called on the start-up thread, which waits for the answer.
+     * @param error what went wrong
+     * @return true to sync again; false to exit, which is also what closing the window means
+     */
+    public boolean offerResync(String error);
+
     // Tells us which key(s) a locomotive is bound to
     public List<String> getAllLocButtonMappings(Locomotive l);
 }

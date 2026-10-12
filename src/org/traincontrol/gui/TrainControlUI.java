@@ -32167,6 +32167,64 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     @Override
+    public boolean offerResync(String error)
+    {
+        // Asked from the start-up thread, which waits here, so the dialog goes up on the event thread (OB-338).
+        // No model yet at this point: the window is only showing its connecting notice.
+        final boolean[] resync = {false};
+
+        Runnable ask = () ->
+        {
+            Object[] options = { I18n.t("ui.startupSyncResync"), I18n.t("ui.main.toolbar.exit") };
+
+            // A long reason wraps at a word instead of widening the dialog past the screen
+            JOptionPane pane = new JOptionPane(I18n.f("ui.startupSyncFailed", error == null ? "" : error),
+                JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION, null, options, options[0])
+            {
+                @Override
+                public int getMaxCharactersPerLineCount()
+                {
+                    return 70;
+                }
+            };
+
+            JDialog dialog = pane.createDialog(this, I18n.t("ui.startupSyncFailedTitle"));
+
+            applyWindowIcon(dialog);
+
+            // Owned by this window, which is already on screen with the connecting notice, and on top besides: the
+            // application may not hold the foreground yet while it starts
+            dialog.setAlwaysOnTop(true);
+            dialog.setVisible(true);
+            dialog.dispose();
+
+            // Only the first button syncs again; the close box and Escape leave
+            resync[0] = options[0].equals(pane.getValue());
+        };
+
+        try
+        {
+            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
+            else javax.swing.SwingUtilities.invokeAndWait(ask);
+        }
+        catch (InterruptedException interrupted)
+        {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
+        catch (java.lang.reflect.InvocationTargetException couldNotAsk)
+        {
+            // A question nobody could be asked is not a Resync: asking again would spin, so the start-up leaves
+            System.out.println(couldNotAsk.getCause());
+
+            return false;
+        }
+
+        return resync[0];
+    }
+
+    @Override
     public void showAutonomyAlert(String message)
     {
         // Non-blocking so the autonomy thread that raised the alert is not held up

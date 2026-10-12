@@ -34,6 +34,9 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.IntSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -404,6 +407,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
                     
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
+    {
+        this(network, view, autoPowerOn, debug, false);
+    }
+
+    /**
+     * Builds the station and makes the first sync.
+     *
+     * @param network the connection to the Central Station
+     * @param view the window, or null when there is none
+     * @param autoPowerOn whether to turn the track power on once connected
+     * @param debug whether debug mode is on
+     * @param simulate whether there is no Central Station to reach, in which case a failed first sync is never asked about
+     */
+    public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug, boolean simulate)
     {       
         // Configure logger
         log.setUseParentHandlers(false);
@@ -486,7 +503,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 
         this.logf("log.restored");
         
-        if (syncWithCS2() >= 0)
+        // Asked again until it connects or the user exits, where a window can ask (OB-338)
+        Predicate<String> asker = resyncAsker(this.cs2Address(), simulate, GraphicsEnvironment.isHeadless() ? null : view);
+
+        if (syncUntilConnected(this::syncWithCS2, this::getLastSyncError, asker, MarklinControlStation::exitUnconnected) >= 0)
         {
             this.logf("log.csDataImported", network.getIP());
 
@@ -1509,12 +1529,111 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
+     * What the last sync failed with, in words, or null when the last sync did not fail.
+     */
+    private volatile String lastSyncError = null;
+
+    /**
+     * What the last sync failed with (OB-338).
+     *
+     * @return the failure, or null when the last sync did not fail
+     */
+    public String getLastSyncError()
+    {
+        return this.lastSyncError;
+    }
+
+    /**
+     * Syncs, and while the sync fails asks whether to try it again (OB-338).
+     *
+     * The first sync is the only thing that brings communication up, so a failure here left the application running
+     * with no way to connect.  The question is put after every failure, with that failure's reason, until a sync works
+     * or the answer is to exit.  With nobody to ask the sync is made once, as it always was.
+     *
+     * @param sync the sync; negative when it failed
+     * @param lastError the reason the sync that just failed gave
+     * @param asker given that reason, true to sync again and false to exit; null when nothing can be asked
+     * @param exit what to do when the answer is to exit
+     * @return the last sync's result, or -1 when the answer was to exit
+     */
+    public static int syncUntilConnected(IntSupplier sync, Supplier<String> lastError, Predicate<String> asker, Runnable exit)
+    {
+        int result = sync.getAsInt();
+
+        while (result < 0 && asker != null)
+        {
+            if (!asker.test(lastError.get()))
+            {
+                exit.run();
+
+                return -1;
+            }
+
+            result = sync.getAsInt();
+        }
+
+        return result;
+    }
+
+    /**
+     * Who to ask when the first sync fails (OB-338).
+     *
+     * There is somebody to ask only when there is a Central Station to reach and a window to ask in.  A simulation has
+     * no station, so its sync is expected to fail and must never raise a question.
+     *
+     * @param address the Central Station's address
+     * @param simulate whether this is a simulation
+     * @param view the window, or null when there is none
+     * @return the question for the user, or null when nothing is to be asked
+     */
+    public static Predicate<String> resyncAsker(String address, boolean simulate, View view)
+    {
+        if (simulate || view == null || address == null || address.trim().isEmpty()) return null;
+
+        return view::offerResync;
+    }
+
+    /**
+     * Ends the application when the user gave up on the first sync (OB-338).
+     *
+     * The saved address is forgotten, so that the next start asks for one: it may be the wrong one, and a saved address
+     * that cannot sync would otherwise lead to this question on every start.  The exit code is the one the address
+     * prompt gives for leaving the start-up.
+     */
+    private static void exitUnconnected()
+    {
+        try
+        {
+            TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
+        }
+        catch (Exception ex)
+        {
+            System.out.println(I18n.t("ui.errorUpdatingPreferences"));
+        }
+
+        System.exit(1);
+    }
+
+    /**
+     * A failure in a few words: what kind it was, and what it said.
+     */
+    private static String describe(Exception failure)
+    {
+        String said = failure.getMessage();
+        String kind = failure.getClass().getSimpleName();
+
+        return said == null || said.trim().isEmpty() ? kind : kind + ": " + said.trim();
+    }
+
+    /**
      * Synchronizes CS2 state
      * @return 
      */
     @Override
     public final int syncWithCS2()
     {        
+        this.lastSyncError = null;
+
         // Read remote config files
         this.fileParser = new CS2File(cs2Address(), this);
              
@@ -1663,6 +1782,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (Exception e)
         {
+            this.lastSyncError = describe(e);
+
             this.logf("loc.dbSyncFailed");
             this.log(e);
              
@@ -5142,7 +5263,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             proxy = new NetworkProxy(InetAddress.getByName(initIP));
 
             // Initialize the central station
-            model = new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
+            model = new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug, simulate);
         }
         catch (Exception ex)
         {
