@@ -274,6 +274,12 @@ Every write backs the target file up first and replaces it atomically, and the a
 not changed on disk since it was loaded before writing to it, so a round running in one window and
 triage.py open in another cannot silently overwrite each other.
 
+**The store is tracked, and it is a binary (since 2026-09-08).** The `finding` table is the only place the review
+items and their dispositions live together, so `triage.db` is committed; `tests.md` and `issues.md` are rendered from
+it.  Expect a diff from any triage action, and never resolve a merge conflict in it: rebuild instead, with
+`triagedb.py build` for the tests and issues and `docs/tools/catalog-findings.py` for the findings.  Both read files
+git can merge.
+
 ### The query API
 
 Everything triage.py can show on screen it can also print as JSON, from a terminal, with no GUI

@@ -22,57 +22,41 @@
 /nbproject/private/
 /nbproject/configs/
 
-# Written for inspection: the derived graph, by core.testAutonomyDiagramSampleLayout and the autonomy viewer's inspect()
+# The derived graph, written for inspection by a test and by the autonomy viewer
 autonomy-derived.json
 autonomy-derived-open.json
 
-# TestNG writes this when a suite is run from the command line in the project directory.
-# The batteries write into the scratchpad instead; this only appears when one is run by hand.
+# TestNG's output when a suite is run by hand from the project folder
 test-output/
 
-# Unpacked by the legacy track diagram editor, which has been withdrawn - see removeLegacyEditorItem
+# Unpacked by the withdrawn legacy track diagram editor
 TrackDiagramEditor.exe
 
-# The diagram editor writes one of these beside a page before it saves over it
+# The diagram editor's copy of a page from before it saves over it
 *.cs2.bak
 
-# triage.py's own scratch: session drafts/marks (not part of the record), file backups it takes
-# before every write, and console logs from TrainControl runs launched through it
+# The triage app's scratch, on the development branch
 /docs/manual-tests/.triage-state.json
 /docs/manual-tests/.triage-backups/
 /docs/manual-tests/.triage-runs/
 /docs/manual-tests/__pycache__/
 
-# The triage store IS tracked, as of 2026-09-08.  It stopped being purely derived when the review
-# catalogue went into it (MON-C11): tests.md and issues.md are still rendered from it, but the
-# `finding` table is the only place the 1,464 review items and their dispositions live together,
-# and a record nobody else can open is not a record.  See docs/manual-tests/triagedb.py.
-#
-# It is a binary, so it churns - expect a diff from any triage action, and do not try to resolve a
-# conflict in it.  Rebuild instead: `triagedb.py build` for the tests and issues,
-# `docs/tools/catalog-findings.py` for the findings.  Both read files git CAN merge.
-
-# JVM crash dumps.  A test JVM that is killed - which is how a battery is stopped - leaves a pair
-# of these in the project root, and they are worth reading once and never committing.
+# JVM crash dumps, left by a test JVM that is stopped
 hs_err_pid*.log
 replay_pid*.log
 
-# Python bytecode - the triage app and the tools
+# Python bytecode
 __pycache__/
 *.pyc
 
-# The locomotive icon crops TrainControl writes at runtime (RC-C13).
-#
-# Swept into a commit by a `git add -A` on 2026-08-30.  They are the operator's own data, rewritten
-# whenever an icon is cropped, so tracking them means every crop turns up as an uncommitted change or
-# gets committed by accident.
+# The locomotive icon crops TrainControl writes at runtime
 /tc_loc_icons/
 
-# Untracked 2026-09-19: swept in by a `git add -A` after a test run wrote them (OP3-C3).
-# The scratch layout a probe builds, never part of the record:
+# The scratch layout a test probe builds
 /random_test_layout/
-# A crash dump Git Bash drops at the root:
+
+# Git Bash's crash dump
 bash.exe.stackdump
-# The backup the application writes beside the blessed fixture while a test drives it.
-# Narrow on purpose: real changes to cs2_sample_layout must still show up as changes.
+
+# The application's backup beside the sample layout's setup, written while a test drives it
 /cs2_sample_layout/config/autonomy/*_bak.json
