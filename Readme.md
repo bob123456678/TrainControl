@@ -169,7 +169,7 @@ Monitor the usage of different locomotives.
     * Pair a station with signals that turn red while a train is standing there, and back to green when it leaves
     * Restrict which directions a station will accept trains from
     * Record and play back timetables, and send every train back home
-    * Hide the names of stations autonomy never uses
+    * Hide the names of stations autonomy will never send a train to
 * Back up everything in one archive (locomotives, keyboard mappings, track diagrams, routes and
   autonomy setups) and restore it on another machine
 * Programmatic layout control via Java API (uses CAN protocol; [see documentation](AutomationAPI.md)) 
@@ -278,7 +278,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 ## Requirements
 
-* Install Java 8 on your computer (on Java 17 and later, the file chooser cannot list your drives)
+* Install Java 8 on your computer (on Java 17 and later, the file chooser shows only the Desktop)
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network and layout
 * The computer running TrainControl must be on the same network as your CS2/CS3 (Wi-Fi or Ethernet)
 * Ensure that your firewall allows TrainControl/Java to access the local network
@@ -408,7 +408,7 @@ Tab icons provided by Freepik.
                 - Arrival and departure functions are ticked on the function itself, and a train's length is set from the locomotive's right-click menu.
                 - On the track diagram, Control+X, Control+V and Delete pick up, put down and remove the train at the station under the pointer.
                 - The autonomy editor can hide its trains (Show Trains), and asks for a name when you make an unnamed sensor a station.
-                - Bulk Tools can walk you through every missing track, station and train length, and clear every track length or station's longest train at once.
+                - Bulk Tools can walk you through a page's missing track and station lengths and every train's missing length, and clear every track length or station's longest train at once.
                 - Bulk Tools has Allow Every Path, which reopens every one-way or closed piece of track at once.
                 - Bulk Tools can make each train's present station its home, or put every train back on its home without moving anything.
             - Stations and Trains
@@ -421,7 +421,7 @@ Tab icons provided by Freepik.
             - Routing Logic
                 - You can choose how trains pick their route when more than one will do, such as over the shortest track, past the fewest stations, or to the station that has waited longest.
                 - Track with no recorded length now counts as one unit, so the shortest and longest track options still work on an unmeasured layout.
-                - Right-clicking a train lists the stations autonomy chooses from first, and parking tracks under More Destinations.
+                - Right-clicking a train lists the stations autonomy chooses from first, and those it never chooses, such as parking tracks, under More Destinations.
                 - Atomic Routes stays on until every track and train autonomy uses has a length.
                 - Switches without a decoder can be drawn as Static switches, which autonomy runs through from the legs towards the points only.
             - Running and Watching
@@ -433,7 +433,7 @@ Tab icons provided by Freepik.
                 - Names of stations autonomy will never choose can be hidden (Preferences → Autonomy → Show Inactive Labels).
         - Routes
             - Safety
-                - While autonomy runs, a route no longer changes a switch under a train or turns a signal green at an occupied platform.
+                - While autonomy runs, a route asks before changing a switch under a train or turning a signal green at an occupied platform, and a route fired by a sensor skips them.
                 - A route with an emergency stop can no longer hold other commands, and older ones are split in two automatically.
             - Editing Routes
                 - A new route editor builds each command from dropdowns instead of typed text.
@@ -442,7 +442,7 @@ Tab icons provided by Freepik.
             - Running and Finding Routes
                 - Every route in the Routes tab has a play button that runs it straight away.
                 - Find Route on the Routes menu accepts a full or partial name.
-                - Imported routes arrive with automatic firing switched off, and you are asked whether to turn it back on.
+                - Imported routes arrive with automatic firing switched off, and you are asked whether to turn it back on for any that were saved with it on.
                 - Deleting or saving a route created in TrainControl no longer forces a full sync with the Central Station.
         - Track Diagrams
             - Viewing
@@ -478,7 +478,7 @@ Tab icons provided by Freepik.
             - Fixed bug where a path that failed part way through stopped routes waiting on its sensor from firing.
             - Fixed bug where autonomy could get stuck in a running state when every locomotive was skipped at startup.
             - Fixed bug where a train's right-click menu on the track diagram listed two fewer destinations than it should.
-            - Fixed bug where "return home" refused to run when two home stations share a track sensor.
+            - Fixed bug where "return home" refused to run, naming two trains already at home, when their home stations share a track sensor.
             - Fixed bug where "return home" could plan an impossible move onto track sharing the train's own sensor.
         - Track Diagrams
             - Fixed bug where one unreadable page stopped a whole layout folder from loading.
@@ -511,7 +511,7 @@ Tab icons provided by Freepik.
         - Importing routes no longer garbles accented letters in route and locomotive names
         - Routes and autonomy files exported by TrainControl 2.7.3 or earlier also import with their accented letters intact
     - Locomotive Bug Fixes
-        - If the locomotive list or keyboard pages cannot be read at startup, a copy of the file is now kept in the tc_backup folder instead of being saved over as empty
+        - If the locomotive list or keyboard pages cannot be read at startup, a copy of the file is now kept in the tc_backup folder before it is saved over
         - Page names are no longer lost when going back to 2.8 after using TrainControl 3.0 with fewer than ten pages
     - Central Station Bug Fixes
         - After a short network drop, TrainControl no longer reports the connection as lost until restarted, and autonomy no longer keeps cutting the track power because of it
@@ -588,7 +588,7 @@ Tab icons provided by Freepik.
         - Fixed bug where capturing a 3-way switch by clicking it on the track diagram could record its two commands in the wrong order
         - Pauses in routes imported from a Central Station 2 no longer lose their fraction of a second, and pauses shorter than one second are no longer dropped
         - Fixed bug where a pause on a route step was applied to an earlier step instead, if both steps used the same switch or signal
-        - Fixed bug where opening and saving a route with certain combinations of AND and OR conditions could change when it fires
+        - Fixed bug where opening and saving a route with certain combinations of AND and OR conditions could change when it fires (only with condition logic written directly into the configuration file)
     - Locomotive Bug Fixes
         - Fixed bug where changing a locomotive to a decoder type with fewer functions could make it impossible to edit or place on the autonomy graph
         - Fixed bug where clearing a locomotive’s custom icon while not connected to the Central Station left it with no image for the rest of the session
