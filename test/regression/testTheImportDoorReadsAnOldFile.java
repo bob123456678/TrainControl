@@ -41,9 +41,9 @@ import org.traincontrol.util.I18n;
  */
 public class testTheImportDoorReadsAnOldFile
 {
-    /** His 2.7.4c file, as the MTs hand it to him. */
-    private static final File MT491 = new File("docs/manual-tests/files/MT-491-autonomy-2.7.4c.json");
-    private static final File MT298 = new File("docs/manual-tests/files/MT-298-autonomy-2.7.4c.json");
+    /** His 2.7.4c file, the one MT-491 and MT-298 hand him. */
+    private static final File MT491 = new File("test/autonomy_formats/autonomy-2.7.4c.json");
+    private static final File MT298 = MT491;
 
     /**
      * An old autonomy.json imported from the menu into a new configuration: the message says it placed his four trains
@@ -61,7 +61,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -217,7 +217,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in docs/manual-tests/files");
+        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -414,7 +414,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in docs/manual-tests/files");
+        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -537,7 +537,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -624,7 +624,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -709,7 +709,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -802,7 +802,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -959,7 +959,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in docs/manual-tests/files");
+        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -1050,7 +1050,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -1142,7 +1142,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -1223,7 +1223,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -1505,7 +1505,7 @@ public class testTheImportDoorReadsAnOldFile
     @Test
     public void testChoosingAnotherConfigurationWhileAnEditWaitsKeepsWhereTheRunLeftTheTrains() throws Exception
     {
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
@@ -2091,7 +2091,7 @@ public class testTheImportDoorReadsAnOldFile
     @Test
     public void testChoosingAnotherConfigurationWhileATrainIsUnderWayStandsItOnce() throws Exception
     {
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
@@ -2197,7 +2197,7 @@ public class testTheImportDoorReadsAnOldFile
     @Test
     public void testChoosingAnotherConfigurationWhileAnEditThatBreaksTheOneRunningWaitsIsRefused() throws Exception
     {
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
@@ -4397,7 +4397,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 
@@ -4497,7 +4497,7 @@ public class testTheImportDoorReadsAnOldFile
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in docs/manual-tests/files");
+        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in test/autonomy_formats");
 
         support.LayoutSandbox sandbox = null;
 

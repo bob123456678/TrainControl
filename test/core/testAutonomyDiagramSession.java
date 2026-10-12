@@ -7415,6 +7415,95 @@ public class testAutonomyDiagramSession
             + " terminus beyond it, as Return Home does - is still warned about turning round");
     }
 
+    /**
+     * A way to back a train into a berth counts the turns on the way (the fix-validation fanout's C3-B, on RSA66-C3).  A
+     * train rested on a terminus sets off turned, and each reversing point it passes turns it again; an odd count brings
+     * it in tail first - backed in.  A reversing point passed inline (MT-245's S - reversing M - terminus T, which Return
+     * Home drives) is a way in; one on a stub, which turns the train back where it came from, is not, nor is a rest
+     * followed by one turn, which brings it in nose first again.  Asked of small graphs written as the build writes them.
+     *
+     * MUTATION: drop the stub rule, ignore a reversing point's turn, seed a rest unturned, count any turn rather than an
+     * odd number, or walk through a square out of service, and this fails.
+     */
+    @Test
+    public void testAWayToBackInCountsTheTurnsOnTheWay()
+    {
+        // inline: S - M (reversing) - T
+        assertTrue(backedInto(new String[][] {{"S", ""}, {"M", "reversing"}, {"T", "terminus"}},
+            new String[][] {{"S", "M"}, {"M", "T"}}).contains("T"), "a reversing point passed inline, as Return Home"
+            + " drives it (MT-245), is not counted as a way to back a train into the berth beyond it");
+
+        // a stub: X - R (reversing) and back, then X - B
+        assertFalse(backedInto(new String[][] {{"X", ""}, {"R", "reversing"}, {"B", "terminus"}},
+            new String[][] {{"X", "R"}, {"R", "X"}, {"X", "B"}}).contains("B"), "a reversing point on a stub - turned"
+            + " straight back where it came from, which no door drives - is counted as a way in (RSA66-C3)");
+
+        // a rest: R2 (terminus) - X - B
+        assertTrue(backedInto(new String[][] {{"R2", "terminus"}, {"X", ""}, {"B", "terminus"}},
+            new String[][] {{"R2", "X"}, {"X", "B"}}).contains("B"), "a rest on another terminus that leads straight to the"
+            + " berth is not counted as a way in - Adam's two-step parking");
+
+        // direct only: X - B
+        assertFalse(backedInto(new String[][] {{"X", ""}, {"B", "terminus"}}, new String[][] {{"X", "B"}}).contains("B"),
+            "a berth reached only nose first is counted as one a train can be backed into");
+
+        // a rest and two turns: tail first
+        assertTrue(backedInto(new String[][] {{"T2", "terminus"}, {"R1", "reversing"}, {"R2", "reversing"},
+            {"B", "terminus"}}, new String[][] {{"T2", "R1"}, {"R1", "R2"}, {"R2", "B"}}).contains("B"), "a rest and two"
+            + " turns - three in all, tail first - is not counted as a way in");
+
+        // a rest and one turn: nose first again
+        assertFalse(backedInto(new String[][] {{"T2", "terminus"}, {"R1", "reversing"}, {"B", "terminus"}},
+            new String[][] {{"T2", "R1"}, {"R1", "B"}}).contains("B"), "a rest and one turn - nose first again - is"
+            + " counted as a way to back a train in");
+
+        // a reversing point out of service is not passed
+        assertFalse(backedInto(new String[][] {{"S", ""}, {"M", "reversing shut"}, {"T", "terminus"}},
+            new String[][] {{"S", "M"}, {"M", "T"}}).contains("T"), "a reversing point out of service is passed on the"
+            + " way in");
+    }
+
+    /**
+     * The berths a train can be backed into, on a graph written as the build writes one: each point {name, kind}, kind
+     * holding "terminus", "reversing" and "shut" as it is; each edge {start, end}.  Each point on its own square.
+     */
+    private static java.util.Set<String> backedInto(String[][] points, String[][] edges)
+    {
+        org.json.JSONArray pointList = new org.json.JSONArray();
+        java.util.Map<String, TileKey> tiles = new java.util.HashMap<>();
+
+        int x = 1;
+
+        for (String[] point : points)
+        {
+            org.json.JSONObject json = new org.json.JSONObject().put("name", point[0]);
+
+            if (point[1].contains("terminus")) json.put("terminus", true);
+            if (point[1].contains("reversing")) json.put("reversing", true);
+            if (point[1].contains("shut")) json.put("active", false);
+
+            pointList.put(json);
+
+            tiles.put(point[0], new TileKey("main", x++, 1));
+        }
+
+        org.json.JSONArray edgeList = new org.json.JSONArray();
+
+        for (String[] edge : edges) edgeList.put(new org.json.JSONObject().put("start", edge[0]).put("end", edge[1]));
+
+        java.util.Set<TileKey> squares = org.traincontrol.automationui.AutonomySession.berthsATrainCanBackInto(
+            new org.json.JSONObject().put("points", pointList).put("edges", edgeList), tiles);
+
+        java.util.Set<String> names = new java.util.HashSet<>();
+
+        for (java.util.Map.Entry<String, TileKey> tile : tiles.entrySet())
+        {
+            if (squares.contains(tile.getValue())) names.add(tile.getKey());
+        }
+
+        return names;
+    }
+
     /** B (1,1) - X (4,1) - R (7,1), track between: a berth at one end of a run past it. */
     private LayoutDiagram aBerthWithARunPast() throws IOException
     {

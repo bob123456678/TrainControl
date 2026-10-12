@@ -45,7 +45,7 @@ import org.traincontrol.util.I18n;
 public class testASetupMovesToAOnePageLayout
 {
     /** The layout MT-380's files ship, with one page, 1 - Main. */
-    private static final File ONE_PAGE = new File("docs/manual-tests/files/MT-380-one-page-layout/layout");
+    private static final File ONE_PAGE = new File("test/layouts/one-page");
 
     /**
      * MT-512: on the one-page layout with nothing set up, the Autonomy menu offers Import... live.  MT-513: importing his
@@ -63,7 +63,7 @@ public class testASetupMovesToAOnePageLayout
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
         assertTrue(new File(ONE_PAGE, "config/gleisbild.cs2").isFile(), "precondition: MT-380's one-page layout is not in"
-            + " docs/manual-tests/files");
+            + " test/layouts");
 
         String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 

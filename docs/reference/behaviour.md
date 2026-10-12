@@ -2484,7 +2484,8 @@ neither refused nor asked about. A route reaches such a switch during a run only
 or armed it as a conditional route and answered Yes to Start's warning that conditional routes are active - Adam
 ruled that the operator's to control.
 
-**Only the switch under the train is refused. Everything else in the route runs.** Adam, 2026-09-08:
+**Only the accessory a train needs is refused - the switch under it, or a signal turned green over a platform it
+stands at or is bound for. Everything else in the route runs.** Adam, 2026-09-08:
 *"don't run the conflicting switch commands, but do run the power off and others."* Each accessory is
 asked about immediately before it goes out, so one held turnout costs that turnout and nothing else -
 the power still cuts, the functions still fire, and every other switch is thrown. Until MT-247 the

@@ -5296,18 +5296,21 @@ public class AutonomySession
     }
 
     /**
-     * The termini a train that cannot reverse can be backed into: those another terminus leads straight to.  Return Home
-     * rests such a train on a terminus and drives it home from there tail first - Adam's two-step parking (AMH-B1: "That's
-     * why we started the 2 step process for parking, which is OK in my opinion.") - so a berth reached from another
-     * terminus, not through a terminus or a reversing point, is one it can back in to.  A reversing point passed on the way
-     * is not a way in: no door drives a route on through one and back (RSA66-C3).  Walked over the build; a square out of
-     * service is never entered, and a berth is not its own way in.
+     * The termini a train that cannot reverse can be backed into: reached tail first, after an odd number of turns on the
+     * way.  A train rested on a terminus sets off turned - Return Home's two-step parking (AMH-B1: "That's why we started
+     * the 2 step process for parking, which is OK in my opinion.") - and each reversing point it passes turns it again,
+     * as MT-245's S - reversing M - terminus T, which Return Home drives (HomeStaging's turn-on-the-way).  A reversing
+     * point on a stub is no way in: a train turned there and sent straight back where it came from is a route no door
+     * drives (RSA66-C3).  So: counted from every square, the turns on the way, odd at a terminus not the one set off
+     * from; never through a terminus, never into a square out of service, never straight back from a reversing point to
+     * the square before it (the fix-validation fanout's C3-B).
      *
      * @param built the built configuration, or null
      * @param tiles each point's square, by name
      * @return the squares, or null where there is no build to walk
      */
-    private java.util.Set<TileKey> berthsATrainCanBackInto(org.json.JSONObject built, java.util.Map<String, TileKey> tiles)
+    public static java.util.Set<TileKey> berthsATrainCanBackInto(org.json.JSONObject built,
+        java.util.Map<String, TileKey> tiles)
     {
         if (built == null || tiles == null) return null;
 
@@ -5316,7 +5319,7 @@ public class AutonomySession
 
         if (points == null || edges == null) return null;
 
-        java.util.Map<String, org.json.JSONObject> byName = new java.util.HashMap<>();
+        java.util.Map<String, org.json.JSONObject> byName = new java.util.LinkedHashMap<>();
 
         for (int i = 0; i < points.length(); i++)
         {
@@ -5338,41 +5341,58 @@ public class AutonomySession
 
         java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
 
-        for (org.json.JSONObject rest : byName.values())
+        for (org.json.JSONObject start : byName.values())
         {
-            // where a train is rested: a terminus in service
-            if (!rest.optBoolean("terminus", false) || !rest.optBoolean("active", true)) continue;
+            if (!start.optBoolean("active", true)) continue;
 
-            TileKey restedOn = tiles.get(rest.getString("name"));
+            String from = start.getString("name");
 
+            TileKey setOffFrom = tiles.get(from);
+
+            // a train rested on a terminus sets off turned
+            boolean turned = start.optBoolean("terminus", false);
+
+            // each state: where, turned an odd number of times, and the square before it
             java.util.Set<String> seen = new java.util.HashSet<>();
-            java.util.Deque<String> queue = new java.util.ArrayDeque<>();
+            java.util.Deque<Object[]> queue = new java.util.ArrayDeque<>();
 
-            queue.add(rest.getString("name"));
-            seen.add(rest.getString("name"));
+            queue.add(new Object[] {from, turned, null});
+            seen.add(from + "|" + turned + "|null");
 
             while (!queue.isEmpty())
             {
-                for (String name : onwards.getOrDefault(queue.poll(), java.util.Collections.emptyList()))
+                Object[] at = queue.poll();
+
+                String here = (String) at[0];
+                boolean odd = (Boolean) at[1];
+                TileKey before = (TileKey) at[2];
+
+                boolean turnsHere = byName.get(here).optBoolean("reversing", false);
+
+                for (String name : onwards.getOrDefault(here, java.util.Collections.emptyList()))
                 {
                     org.json.JSONObject next = byName.get(name);
 
                     if (next == null || !next.optBoolean("active", true)) continue;
 
+                    TileKey square = tiles.get(name);
+
+                    // not straight back from a reversing point to the square before it: a stub
+                    if (turnsHere && before != null && before.equals(square)) continue;
+
                     if (next.optBoolean("terminus", false))
                     {
-                        TileKey home = tiles.get(name);
-
-                        if (home != null && !home.equals(restedOn)) out.add(home);
+                        if (odd && square != null && !square.equals(setOffFrom)) out.add(square);
 
                         // a terminus is arrived at, never driven through
                         continue;
                     }
 
-                    // nor is a reversing point: a route on through one and back is not driven
-                    if (next.optBoolean("reversing", false)) continue;
+                    boolean onwardOdd = odd ^ next.optBoolean("reversing", false);
 
-                    if (seen.add(name)) queue.add(name);
+                    String key = name + "|" + onwardOdd + "|" + tiles.get(here);
+
+                    if (seen.add(key)) queue.add(new Object[] {name, onwardOdd, tiles.get(here)});
                 }
             }
         }
