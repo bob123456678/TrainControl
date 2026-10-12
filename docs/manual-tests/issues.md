@@ -1947,6 +1947,18 @@ Adam, 2026-10-11: *"For 3.0.1, file an OB - the autonomy readme should tell the 
 
 What the guide should say, near where it first asks the user to run a setup: why to simulate (try a setup and watch the trains route with no Central Station and nothing moving); how to start TrainControl that way (the command, and a `.bat` or `.sh` file beside the jar for those who double-click); then tick `Simulate` on the Settings tab and start autonomy; and what simulation does - after a wait between the configured minimum and maximum delays each sensor on a train's route is reported occupied and then cleared behind it, the trains themselves do not run, and Path Integrity Validation is skipped - and that it cannot be changed while trains are running.  The Readme's Download and Run section can link to it.
 
+### OB-338 - 2026-10-12 - No warning and no way to retry when the Central Station answers but the first database sync fails
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Adam, 2026-10-12: *"File OB: there is no warning popup in the UI, and no way to reattempt a connection, if the cs3 ip is reachable but the initial DB sync fails.  if this happens, show a popup with the error and offer a resync.  keep re-prompting as needed until a connection is established or the user exits."*
+
+Today, at start-up `MarklinControlStation` runs `syncWithCS2()`; when it fails (it returns -1 on any exception while reading the Central Station's database) the only sign is the log line `log.csNotConnected` (*"Central Station network connection not established."*) and TrainControl carries on with communication off.  That start-up block is the only place communication is turned on (`this.on = true`), so a later sync from the menu cannot bring the connection up: the user has to notice the log line and restart.
+
+Wanted: when the address answers but the first sync fails, a popup with the error and a Resync choice; on a failed resync, ask again, until the sync succeeds (communication on, as after a good start) or the user exits.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
