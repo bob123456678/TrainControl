@@ -45,7 +45,7 @@ import org.traincontrol.util.I18n;
 public class testASetupMovesToAOnePageLayout
 {
     /** The layout MT-380's files ship, with one page, 1 - Main. */
-    private static final File ONE_PAGE = new File("test/layouts/one-page");
+    private static final File ONE_PAGE = support.Scenario.folderFor("one-page");
 
     /**
      * MT-512: on the one-page layout with nothing set up, the Autonomy menu offers Import... live.  MT-513: importing his
