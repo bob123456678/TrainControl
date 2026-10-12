@@ -342,6 +342,16 @@ Wanted: when the address answers but the first sync fails, a popup with the erro
 
 **For v3.0.1**, on Adam's word (2026-10-12: *"Yes, 3.0.1."*).
 
+### OB-339 - 2026-10-12 - for 3.0.1: a simulation start forgets the saved Central Station address
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Found by the per-fix check of OB-337: at the end of `MarklinControlStation.init`, *"Connection failed - ask for IP on next run"* removes the saved address (`IP_PREF`) whenever communication did not come on - and a start in simulation never turns it on, so after every simulation session the next normal start asks for the Central Station's address again.  Adam, 2026-10-12, asked whether to keep it: *"Sure, avoid clearing the address from simulation sessions"*.
+
+**For v3.0.1**, on Adam's word.  A simulation start keeps the saved address; a real start that does not connect, and Exit in OB-338's question, still forget it, as before.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
