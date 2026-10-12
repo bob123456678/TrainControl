@@ -481,7 +481,7 @@ Autonomy can run in simulation: trains move on the diagram, but nothing is sent 
 
 **What happens.** Trains are sent as usual, but TrainControl answers for the sensors: after a random wait between `Minimum Action Delay` and `Maximum Action Delay` (in seconds) it reports each sensor on a train's route as occupied, and after another such wait it clears it behind the train. Lower the delays to go faster, and put them back before you run real trains: they also set how long a real train waits before leaving. Nothing on your layout takes part, so a simulation checks your setup and not your hardware: a sensor drawn on the wrong square, a dead sensor or a switch that does not answer will not show up, and `Path Integrity Validation` is skipped.
 
-**Afterward.** Your real trains have not moved, but TrainControl saves where the simulated ones finished: stop autonomy and use `Return Home` before you close, or place the trains again where they really stand. `Simulate` is saved with the configuration; when you start TrainControl normally, it loads unticked and the log says why. To go back to normal, close TrainControl and start it as you usually do. It will ask for your Central Station's address again, because a start without one forgets it (`Auto-Detect` can find it).
+**Afterward.** Your real trains have not moved, but TrainControl saves where the simulated ones finished: stop autonomy and use `Return Home` before you close, or place the trains again where they really stand. `Simulate` is saved with the configuration; when you start TrainControl normally, it loads unticked and the log says why. To go back to normal, close TrainControl and start it as you usually do.
 
 ---
 

@@ -1001,11 +1001,13 @@ public class testControlStationFaults
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the popup needs a display");
 
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
         final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
 
         try
         {
+            sandbox = support.LayoutSandbox.open();
+
             javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.TrainControlUI());
 
             assertTrue(askAndAnswer(made[0], "ui.startupSyncResync"), "Resync must come back as an answer to sync again");
@@ -1033,7 +1035,7 @@ public class testControlStationFaults
                 }
             });
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

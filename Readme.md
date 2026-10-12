@@ -388,6 +388,11 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.1
+    - Central Station Bug Fixes
+        - If the Central Station answers but its data cannot be loaded at startup, TrainControl now says why and offers to try again until it connects or you exit
+        - Starting TrainControl in simulation no longer makes it forget your Central Station's address
+    - Documentation
+        - The autonomy guide explains how to start TrainControl in simulation, to try a setup without a Central Station
 * v3.0.0 [10/12/2026]
     - Features
         - Autonomy
