@@ -1901,6 +1901,18 @@ Adam, 2026-10-11: *"FR for 3.1.0: add a fullscreen mode and options to resize th
 
 To settle when it is built: how fullscreen is entered and left (a menu item, a key such as F11, Escape - which already powers off); whether resizing is free dragging, a few preset sizes, or both; what grows with the window (the track diagram's area, the keyboard, the lists) and what stays fixed; that the size and mode are remembered, per screen; and that the pop-up windows, dialogs and always-on-top keep working over a fullscreen window.
 
+### FR-124 - 2026-10-11 - for 3.1.0: Restore from Backup in the File menu
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11: *"FR for 3.1.0: a restore from backup option in the file menu"*
+
+**For v3.1.0**, on Adam's word.  File > Backup TrainControl Data writes one zip into the `tc_backup` folder - the locomotive database (`LocDB.data`), the window state and keyboard pages (`UIState.data`), the locomotive icons, the routes, and for a layout stored on this computer its track diagram folder with the autonomy setups - but nothing reads one back: the Readme's restore is by hand (close TrainControl, unzip beside the JAR, start it again).  Add a Restore from Backup item to the File menu that does it.
+
+To settle when it is built: choosing the archive (opening on `tc_backup`); showing what it holds and what it will replace before anything is written; backing up the current data first, so a restore can be undone; where the layout folder goes (back where it was, or a folder the user picks) and pointing TrainControl at it; refusing while autonomy or a timetable is running; restarting, or reloading everything, afterwards; an archive from an older or newer version; and the CS3's own locomotive, route and accessory files, which a backup carries but TrainControl does not read.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
