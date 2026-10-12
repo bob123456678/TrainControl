@@ -408,7 +408,7 @@ Tab icons provided by Freepik.
                 - Arrival and departure functions are ticked on the function itself, and a train's length is set from the locomotive's right-click menu.
                 - On the track diagram, Control+X, Control+V and Delete pick up, put down and remove the train at the station under the pointer.
                 - The autonomy editor can hide its trains (Show Trains), and asks for a name when you make an unnamed sensor a station.
-                - Bulk Tools can walk you through every missing track, station and train length, or clear them all.
+                - Bulk Tools can walk you through every missing track, station and train length, and clear every track length or station's longest train at once.
                 - Bulk Tools has Allow Every Path, which reopens every one-way or closed piece of track at once.
                 - Bulk Tools can make each train's present station its home, or put every train back on its home without moving anything.
             - Stations and Trains
@@ -433,7 +433,7 @@ Tab icons provided by Freepik.
                 - Names of stations autonomy will never choose can be hidden (Preferences → Autonomy → Show Inactive Labels).
         - Routes
             - Safety
-                - While autonomy runs, a route no longer throws a switch under a train or turns a signal green at an occupied platform.
+                - While autonomy runs, a route no longer changes a switch under a train or turns a signal green at an occupied platform.
                 - A route with an emergency stop can no longer hold other commands, and older ones are split in two automatically.
             - Editing Routes
                 - A new route editor builds each command from dropdowns instead of typed text.
