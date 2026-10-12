@@ -1923,6 +1923,18 @@ Adam, 2026-10-11: "Small issue: we get a 'every train must turn around... and wo
 
 The setup check's `autosetup.ui.checkHomeNeedsReversible` ("Every train must turn round at {0}.  A locomotive that cannot change direction enters this home nose first and has to be backed out by hand.") was given for a home on any square every train turns at except a parking berth (MT-552) - so on BottomMainC (1 - Main:20,14, EN57-947's home), a terminus autonomy may choose, where a locomotive that cannot reverse is neither chosen nor offered by hand (OB-205).  It belongs only at a parking berth no route can back a train into.
 
+### FR-125 - 2026-10-11 - for 3.1.0: one-click updates - download, swap the jar, restart
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11: *"FR for 3.1.0: one-click updates.  Downloads the new jar, makes a script to swap it with the current one in the current folder (if it exists), and runs that script then exits so it can be done, then restarts."*
+
+**For v3.1.0**, on Adam's word.  Today Check for Updates (Preferences > Startup) finds a newer release, and the main window's Download Update saves the new jar and ends with *"Replace your existing .jar with the new file"* (`ui.infoDownloadedUpdateReplaceExistingJar`): the swap and the restart are the user's.  One click should do all of it: download the jar, write a small script that waits for TrainControl to close, replaces the jar it is running from in the current folder with the new one (where that jar exists), and starts TrainControl again; run the script, and exit.
+
+To settle when it is built: a .bat on Windows and a shell script on macOS and Linux; how the script knows TrainControl has really exited (its process, or the jar no longer locked) before it swaps; keeping the old jar (renamed, say) until the new one has started, so a bad download can be undone; checking the download is whole (size, or a checksum from the release) before anything is replaced; running from somewhere other than a jar (an IDE, build\classes), where there is nothing to swap and it should say so; a jar the user cannot write over; starting again with the same Java and arguments (IP address, debug, simulate, a forced language); refusing while autonomy, a timetable or a route is running, and saving everything first; and the LocDB.data and UIState.data beside the jar, which must be left alone.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
