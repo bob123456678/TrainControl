@@ -1058,7 +1058,7 @@ public class Layout
     }
     
     /**
-     * Returns all accessories along active routes
+     * Returns all accessories along active routes, the exit guards each path's first edge sets among them (OB-340)
      *
      * NOT synchronized, deliberately (IAR-B2).
      *
@@ -1089,7 +1089,8 @@ public class Layout
      * Every accessory along an active route, with the setting its route holds it at: true for TURN and RED, the sense
      * `RouteCommand.getSetting` and `Accessory.isSwitched` use - so that a route's command can be told from the one
      * the path is holding (Adam, 2026-10-11: "make sure the code allows switching to the correct (same) setting that
-     * autonomy is using").  Null for an accessory two routes underway ask different settings of.
+     * autonomy is using").  Null for an accessory two routes underway ask different settings of.  A path's first edge
+     * holds the exit guards of the station it leaves at GREEN, with its own accessories (OB-340).
      *
      * Not synchronized, for the reason `getActiveAccs` gives.
      *
@@ -11896,7 +11897,9 @@ public class Layout
     /**
      * Sets a station's protecting signal to match whether its platform is claimed.
      *
-     * Red when a train is standing there or a locked path has reserved it, green when it is free.
+     * Red when a train is standing there or a locked path has reserved it, green when it is free - and
+     * never turned red while an active path holds it green, as a path's first edge holds the guards of
+     * the station it leaves (OB-340).
      * Derived rather than remembered, so nothing has to undo it: a path released after a failure
      * clears the reservation, and the signal follows on the same call.
      *

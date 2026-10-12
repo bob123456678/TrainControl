@@ -2572,7 +2572,8 @@ entry guards and exit guards are"*).
 
 **The exit guard** - *Exit Guard Signal...* on the menu (Adam, 2026-09-23: *"rename it, but add Signal at the end
 (Exit Guard Signal, Entry Guard Signal)"*; it was *Signal Protecting This Station*).  Its signals are RED while the platform is claimed - a train
-standing there, or a locked path that starts or ends there - and GREEN when it is free.  **A train only passing through
+standing there, or a locked path that starts or ends there - and GREEN when it is free, except that the first edge of
+the path a train leaves by holds it GREEN for that train (OB-340, below).  **A train only passing through
 leaves it alone** (OB-315, OB-316; Adam, 2026-10-03: *"the exit guard signals are applied for more than just the arrival
 station"*): a locked path reserves every station along it, and those it only passes do not count (`Layout.onlyPassing`).  An aspect DERIVED from the
 platform, asked again on every change of occupancy (`Layout.refreshProtectingSignal`), and asked per SIGNAL: one paired
@@ -2585,8 +2586,8 @@ set.  So a train leaving by its station's exit signal turns it green as it goes 
 asked for - and it stays green while that edge is held, though the departing train still holds the platform.  A
 guard that routes to other stations cross is turned green the same way, over a train standing at its station.  And a
 guard on a way INTO its station - a home signal - is turned green by the arriving route on its last edge, and stays green
-over the train once it stands there; one an edge further out is turned green by its edge, and stays green while that
-edge is held (OB-340, below).  Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal
+over the train once it stands there; one an edge further out is turned green by its edge, and stays green through the
+approach (OB-340, below).  Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal
 protecting a station are two different signals on a railway wired as he intends; the signal on the way in is the entry
 guard's.  The runtime does not choose between a route and protection; the editor's notices say which case a guard is in.
 
@@ -2599,7 +2600,18 @@ holds them as it holds those: any station, from whichever copy of the square the
 commands one of them itself its own setting stands.  And protection leaves a signal an active path holds green: it does
 not turn it red while that edge is held, though a platform the signal guards is claimed - the leaving train's own, or,
 on a guard shared with another platform, another train's (Adam ruled that a shared guard is green while a train leaves).
-Once the edge is given back, the next change of occupancy at a platform it guards asks it again as before.
+The hold lapses when the train's tail has passed the first edge.  With Atomic Routes off the start is given back then,
+and its guards are asked again at once; with them on, they are asked at the next change of occupancy at a platform they
+guard, or when the run's track is given back - so a shared guard can stay GREEN over a train at its other platform until
+then.  The protection rule is general: a signal any active path holds GREEN is not turned red under it.  So a home
+signal an edge further out stays GREEN through the approach, no longer turned red in front of the arriving train by the
+claim of the station beyond (the half of RSA42-C1 that described that), and, as the last edge's home signal already did,
+over the train once it stands there until that station next changes.  The guards are set GREEN before the train is given
+its speed - commanded, not confirmed: they are not among the accessories `Layout.validatePathActuation` waits for, so a
+departure that fails that check leaves them green while it waits and red once its route is given back.  And a signal
+that is one station's entry guard and another's exit guard is thrown RED by an arrival at the first
+(`Layout.throwEntryGuard`), whatever a path holds; this rule does not override that, and the editor's notice for an exit
+guard that routes to other stations cross already points at such wiring.
 
 **The entry guard** - *Entry Guard Signal...* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
 final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are
