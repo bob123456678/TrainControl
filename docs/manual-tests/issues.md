@@ -1935,6 +1935,18 @@ Adam, 2026-10-11: *"FR for 3.1.0: one-click updates.  Downloads the new jar, mak
 
 To settle when it is built: a .bat on Windows and a shell script on macOS and Linux; how the script knows TrainControl has really exited (its process, or the jar no longer locked) before it swaps; keeping the old jar (renamed, say) until the new one has started, so a bad download can be undone; checking the download is whole (size, or a checksum from the release) before anything is replaced; running from somewhere other than a jar (an IDE, build\classes), where there is nothing to swap and it should say so; a jar the user cannot write over; starting again with the same Java and arguments (IP address, debug, simulate, a forced language); refusing while autonomy, a timetable or a route is running, and saving everything first; and the LocDB.data and UIState.data beside the jar, which must be left alone.
 
+### OB-337 - 2026-10-11 - for 3.0.1: the autonomy guide does not say how to start TrainControl for simulation
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11: *"For 3.0.1, file an OB - the autonomy readme should tell the user how to start the app in debug mode so they can do simulations.  That is critical to testing autonomy.  Right now, there is just a quick mention of the simulate setting."*
+
+**For v3.0.1**, on Adam's word.  Automation.md's only word on it is one line under Preferences > Autonomy: *"(`Simulate`, on the Settings tab, is only for testing without a Central Station.)"*  The box is refused unless TrainControl was started in debug mode and is not connected to a Central Station (`Layout.setSimulate`), and the refusal (`autolayout.errorSimulationModeDebugOnly`) is the only place a user is told that debug mode means *"passing a second argument via the command line"*.  The Readme's Download and Run section has the command, `java -jar TrainControl.jar 0 debug simulate` (`TrainControl.main` counts the arguments: a second one turns on debug mode and a third simulation, whatever they say), but Automation.md does not point to it, and a user who double-clicks the jar passes none.
+
+What the guide should say, near where it first asks the user to run a setup: why to simulate (try a setup and watch the trains route with no Central Station and nothing moving); how to start TrainControl that way (the command, and a `.bat` or `.sh` file beside the jar for those who double-click); then tick `Simulate` on the Settings tab and start autonomy; and what simulation does - after a wait between the configured minimum and maximum delays each sensor on a train's route is reported occupied and then cleared behind it, the trains themselves do not run, and Path Integrity Validation is skipped - and that it cannot be changed while trains are running.  The Readme's Download and Run section can link to it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
