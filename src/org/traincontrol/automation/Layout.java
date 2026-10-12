@@ -1082,7 +1082,22 @@ public class Layout
      */
     public Set<Accessory> getActiveAccs()
     {
-        Set<Accessory> activeAccessories = new HashSet<>();
+        return new HashSet<>(getActiveAccSettings().keySet());
+    }
+
+    /**
+     * Every accessory along an active route, with the setting its route holds it at: true for TURN and RED, the sense
+     * `RouteCommand.getSetting` and `Accessory.isSwitched` use - so that a route's command can be told from the one
+     * the path is holding (Adam, 2026-10-11: "make sure the code allows switching to the correct (same) setting that
+     * autonomy is using").  Null for an accessory two routes underway ask different settings of.
+     *
+     * Not synchronized, for the reason `getActiveAccs` gives.
+     *
+     * @return each accessory held, and the setting it is held at
+     */
+    public Map<Accessory, Boolean> getActiveAccSettings()
+    {
+        Map<Accessory, Boolean> activeAccessories = new HashMap<>();
 
         // EVERY TRAIN UNDERWAY, INCLUDING ONE STILL BEING DISPATCHED (RC-A10).
         //
@@ -1162,11 +1177,23 @@ public class Layout
 
                 if (cleared != null && cleared.contains(e)) continue;
 
-                for (String acc : e.getConfigCommands().keySet())
+                for (Map.Entry<String, Accessory.accessorySetting> acc : e.getConfigCommands().entrySet())
                 {
-                    Accessory a = this.control.getAccessoryByName(acc);
-                    
-                    if (a != null) activeAccessories.add(a);
+                    Accessory a = this.control.getAccessoryByName(acc.getKey());
+
+                    if (a == null) continue;
+
+                    Boolean setting = Accessory.isThrow(acc.getValue());
+
+                    // Two routes asking different settings of one accessory: neither is the one it is held at
+                    if (activeAccessories.containsKey(a) && !setting.equals(activeAccessories.get(a)))
+                    {
+                        activeAccessories.put(a, null);
+                    }
+                    else if (!activeAccessories.containsKey(a))
+                    {
+                        activeAccessories.put(a, setting);
+                    }
                 }
             }
         }
