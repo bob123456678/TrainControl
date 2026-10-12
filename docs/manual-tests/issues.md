@@ -253,60 +253,6 @@ From the popups sweep of 2026-10-07, on Adam's note on MT-703 (*"Do a sweep for 
 
 The page windows now follow the main window's always-on-top (round 85), which is what makes owning their own messages safe.  The sweep's table, with each place in the code, is section B of the round's notes.
 
-### FR-114 - 2026-10-08 - for 3.1.0: import locomotive data from a CSV file, as Export to CSV writes it
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-08  
-**Filed:** 2026-10-08  
-
-Adam, 2026-10-08: *"Add a FR for 3.1.0 of locomotive data import via csv (similar to current export)"*
-
-**For v3.1.0**, on Adam's word.  Locomotives > Export to CSV writes the locomotive database to a file - Name, ButtonMappings, DecoderType, Address, PreferredSpeed, TotalRuntime, Start Year, End Year, RailwayName, Notes - and nothing reads one back.  Add an import that reads a file in the same format, so the locomotive data can be edited in a spreadsheet, or carried from one computer to another, and brought back in.
-
-To settle when it is built: how a row finds its locomotive (by name, or by name with decoder type and address); which columns it writes and which it only reads (the running time is a statistic, not a setting); what happens to a row that names no locomotive in the database, and to a locomotive the file leaves out; whether the button mappings come back too; and a preview of what will change before anything is written.
-
-### FR-117 - 2026-10-09 - An autonomy configuration remembers which locomotives are paused, as set on the autonomy locomotive controls tab
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-09  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09: *“Additional FR (don't build yet): in autonomy configs, track the paused/unpaused status of locomotives, as designated on the autonomy locomotive controls tab.”*
-
-**Not to be built yet**, on Adam's word.  The autonomy locomotive controls tab lets a locomotive be paused, so that autonomy leaves it standing while it runs the others.  Today that choice is not kept with the configuration, so it is lost when the configuration is closed, switched or reopened.  Keep it in the configuration, so each configuration comes back with the same locomotives paused.
-
-To settle when it is built: whether the pause belongs to the configuration or to the locomotive (a locomotive paused in one configuration and running in another); what happens to a paused locomotive the configuration no longer has placed; and whether Return Home and the right-click send respect it.
-
-**Adam, 2026-10-09, added:** *“To FR-117, add a requirement to add an ‘active’ checkbox to the right click autonomy menu (also accessible via track diagram).  Show it if there is a locomotive at that station.  On the track diagram viewer, inactive locomotive icons go from black to gray on the track diagram.”*  So: an **Active** tick on the autonomy right-click menu, the diagram's included, offered on a station with a locomotive standing on it and setting the same paused or unpaused state the locomotive controls tab sets; and on the track diagram viewer a paused locomotive's icon is drawn grey where an active one is black.
-
-**Built in round 107** (`ed0d310d`), on Adam's answers of 2026-10-09: the tick is offered only while autonomy is stopped (*“Only when stopped”*), and a paused train is kept out of autonomy and Return Home (*“Autonomy and Return Home”*) - a train can still be sent by hand.  What was left to settle above: the pause belongs to the configuration, which lists its paused trains with its settings and sets every train paused or not as it loads; a paused train taken off the diagram stays paused in that configuration.  And on his later word, *“Make sure the log shows what locomotive are paused when the autonomy import happens”*, the log names the paused trains whenever a configuration loads, an import's included.
-
-### FR-118 - 2026-10-09 - Captions stood on end back to full size, with a redesign of the station icons
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-09  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09: *“the small font on the vertical labels is really hard to read.  Add an FR to revert their size, paired with a redesign of station icons, but for later.”*
-
-**Not to be built yet**, on Adam's word.  OB-327 (round 104) made a caption stood on end beside a vertical track 15% smaller, and its pill only as thick as its letters, so that it clears the station badge or buffer stop on the next square; the smaller letters are hard to read.  Put them back to full size - and redesign the station icons with them, so that a full-size caption on end still has room beside the station and whatever stands next to it.
-
-**Adam, 2026-10-09, choosing among six options drawn for him (the station icon page, https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB):** *“For stations, can we do a hybrid of the D station for normal stations, B hexagon for reversing, and the B flat terminus hexagon?   since we don't differentiate icons for ‘must turn’, can we use just the B hexagon for those for now?”*  So, each no taller than the sensor's contact under it (13 pixels at 30, 26 at 60) and wider along the track: a station is a rounded block half as wide again as it is tall; where trains may turn, an elongated hexagon, pointed at both ends, with a U-turn arrow in it; where they must turn, the same hexagon with nothing in it; at a terminus, the hexagon flat against the buffer stop with a bar there.  Named in blue, unnamed in white ringed in blue, parking in grey, as now; the sensor's own contact painted over as plain track where the icon does not cover it.
-
-**Adam, 2026-10-09, then:** *“Swap the may and must turn icons.  What about inactive stations- do those just keep the X? Also, arrow in may turn is still hard to see.  just add some white chevrons inside it instead.”*  So where trains may turn, the plain hexagon; where they must, the hexagon with white chevrons pointing out (the U-turn arrow did not read at 30 pixels).  A square out of service keeps its orange X, drawn instead of any station shape as now, at the same height as the new icons (13 pixels at 30, 26 at 60; it was 15 and 30); a station autonomy does not choose keeps the grey of its own shape.
-
-**Adam, 2026-10-09, then:** *“shouldn't parking have the same shape as terminus?  Can can we separate the arrows in must turn a bit more, and make the hexagon more pointy in 30px?  Last, does the code have the logic to know how to orient the now asymmetrical terminus icons?”*  Parking is a colour, not a shape: a berth is grey in whatever shape it has - at a dead end, the grey terminus hexagon; on through track, the grey block.  The hexagon is more pointed at 30 pixels (its points two thirds of its height long, where at 60 they are half), and the chevrons stand further apart.  **To build:** the badge does not know which way a terminus faces.  It knows whether the square is a station, whether trains may or must turn there, and the two sides of its road; and what the code calls a terminus is a station where trains turn, which need not be a dead end.  So the setup has to work out, as it builds each badge, whether one side of the road runs to the end of the track (followed from that side until it reaches another sensor or runs out) and hand that side to the badge, which puts the flat end and the bar there.  A dead end draws the terminus icon whatever the turning setting; a station where trains must turn on through track, the hexagon with chevrons; may turn, the plain hexagon.
-
-**Adam, 2026-10-09, then:** *“For FR-118, make the inactive station have a gray rectangle below the X.  Make reversing must turn be two of the terminus shapes, slightly narrower, pointing away from each other, with a gap in between them.  And to confirm, a station with only one way out becomes a terminus, correct?”*  So a square out of service is the orange X over a grey block (the station's own shape); where trains must turn, two terminus shapes back to back - flat ends towards each other across a gap, each with its bar, points outward - the pair as wide as the square, since a badge draws inside its own square (about 28 pixels at 30, 56 at 60; the chevron hexagon above is replaced).  And yes: a station whose track on one side runs out at a buffer stop, however far beyond it, is drawn as the terminus with its flat end that way, whatever its turning setting.  A station with one way out only because of a setting - a barred arrival, a one-way run - while its track carries on keeps its own shape, unless Adam says otherwise.
-
-**Adam, 2026-10-09, then:** *“On the must turn icon, make the white like thinner so there's more visible blue, and make the two halves 2px wider”*  The bars one pixel wide at 30 and two at 60; the pair edge to edge of the square with a 2-pixel gap - each half 14 pixels at 30 (one wider: two would cross the square's edge, where a badge's paint is cut off) and 29 at 60 (two wider, the gap narrowed from 4 to 2 to keep it in the square).
-
-**Adam, 2026-10-09, then, of the 30-pixel must-turn:** *“model the 30px version after the 60px version you made, with the white gap and black line in the middle.  make sure the white would cover an s88 circle.”*  So at 30 pixels the gap is 4 pixels, wide enough for the track's black line to show through it between white, as at 60; each half 13 pixels.  And every badge of the new set covers the sensor's own contact itself - the s88 tile's circle is 14 x 14 pixels at 30 and 26 x 26 at 60 - with white a pixel wider all round (16 and 28), the track's black band drawn back across it, and then its shape: the page now draws the chosen icons straight over the real s88 tile to show it.
-
-**Adam, 2026-10-09, then:** *“the lines on the blue arrows in 30px "reversing must turn" should be white, not gray.  60px lost the black line in between, too - go back to exactly what the 60px was before.  make the middle of reversing may turn in 30px slightly wider, matching the 60px hexagon's shape as closely as possible.”*  So at 60 pixels the must-turn is again the one before the halves were widened - a 4-pixel gap with the track's black line showing through it, each half 27 pixels, the bars 5 pixels wide (pixel for pixel the same): widening the halves had narrowed the gap to 2, and the white outlines met across it.  At 30 pixels each bar is one pixel set on whole pixels, so it is white; drawn inside its half, which sits on a half pixel, it had spread over two columns and showed grey.  And the may-turn hexagon is the same shape at 30 pixels as at 60 - a 45-degree point, the middle half the width - rather than more pointed; the terminus keeps its sharper point at 30.
-
-**Built in round 110** (`67cf6045`), on Adam's *“Ok, now implement FR-118”* (2026-10-09): the icons as the page last showed them, the terminus wherever a station's track runs out before another sensor - asked of the track as drawn, so a station with one way out only because of a setting keeps its own shape - and captions on end at full size, their pills still only as thick as their letters.  On a curve the icon lies along the curve's chord, smaller where it would not fit; in the editor a curved station sits off the rails as its badge always has.  MT-710.
-
 ### OB-330 - 2026-10-10 - for 3.1.0: save the timetable and the autonomy settings on an exit with trains running
 
 **Kind:** bug  
@@ -412,6 +358,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-08 | FR-114 | feature request | Import locomotive data from a CSV file, as Export to CSV writes it.  Closed as a duplicate of FR-049 on Adam's word (2026-10-12: *"close FR-114 as a duplicate."*); FR-049, for v3.1.0, carries it. | declined | - |
 | 2026-10-11 | OB-336 | bug | The turn-round warning on a home only at a parking berth (not an autonomy destination) no route can back a train into - one turning it at a reversing point on the way (`AutonomySession.berthsATrainCanBackInto`, off the build); no longer at an active terminus such as BottomMainC (round 141, `5526ba19`): `core.testAutonomyDiagramSession.testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto`, red before (*"a home on a terminus autonomy may choose is warned"*). | - | MT-730 |
 | 2026-10-11 | FR-122 | feature request | Built for 3.0.0 on Adam's word of 2026-10-11 ("Let's implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and phrasing to SizeList, and advise when ready.  Start with the cheap 60px scaling."), where it was filed for 3.1.0: a Medium size, 46 pixels a square, in the main window's size list between Small and Large and as a pop-up button beside theirs (his, the three labelled S, M and L - initials in the other languages too), in the eight languages; drawn from the Large art scaled down smoothly (`LayoutDiagramComponent.artSize`), each size's pictures cached apart; the editor's window sized in proportion (round 135, `af2bf807`): `ui.testDiagramLooksRight` - `testTheMediumSizeIsBetweenSmallAndLarge`, `testAMediumSquareIsTheLargeArtScaledDown`, `testTheMediumButtonOpensAMediumPopUp`.  Its own 46 pixel icon set, drawn rather than scaled, is still to come. | - | MT-726 |
 | 2026-10-11 | OB-335 | bug | Not reproduced - three routes clicked on a copy of Adam's layout at Large lit every switch they changed.  Covered by OB-333's fix, the likely cause (round 134, `d28e2de1`). | fixed validated | MT-725 |
@@ -648,7 +595,7 @@ not, never both.
 | 2026-08-31 | OB-165 | bug | Return Home stayed dark after a train left its claimed home | - | [MT-165](tests.md#mt-165) |
 | 2026-08-31 | OB-164 | bug | the diagram right-click menu offers no destinations in non-atomic mode - closed as a known limitation | declined | - |
 | 2026-08-31 | FR-048 | feature request | easier locomotive editing - **for v3.1.0**, on Adam's word of 2026-10-10 (*"Yes, mark them for 3.1.0"*). **Claude, 2026-09-14.** Picked up 2026-09-14 and not built - no code change found. | pending | - |
-| 2026-08-31 | FR-049 | feature request | locomotive import and export - **for v3.1.0**, on Adam's word of 2026-10-10 (*"Yes, mark them for 3.1.0"*). **Claude, 2026-09-14.** Picked up 2026-09-14 and not built - no code change found. | pending | - |
+| 2026-08-31 | FR-049 | feature request | locomotive import and export - **for v3.1.0**, on Adam's word of 2026-10-10 (*"Yes, mark them for 3.1.0"*). **Claude, 2026-09-14.** Picked up 2026-09-14 and not built - no code change found.  FR-114 (2026-10-08) was closed as its duplicate: the import reads a file in the format Locomotives > Export to CSV writes - Name, ButtonMappings, DecoderType, Address, PreferredSpeed, TotalRuntime, Start Year, End Year, RailwayName, Notes. | pending | - |
 | 2026-08-31 | FR-050 | feature request | modernize keyboard tab - **for v3.1.0**, on Adam's word of 2026-10-10 (*"Yes, mark them for 3.1.0"*). **Claude, 2026-09-14.** Picked up 2026-09-14 and not built - no code change found. | pending | - |
 | 2026-08-31 | FR-051 | feature request | improved log - **for v3.1.0**, on Adam's word of 2026-10-10 (*"Yes, mark them for 3.1.0"*). **Claude, 2026-09-14.** Picked up 2026-09-14 and not built - no code change found. | pending | - |
 | 2026-08-31 | FR-052 | feature request | autonomy editor bulk mark stations - **for v3.1.0**, on Adam's word of 2026-10-10 (*"Yes, mark them for 3.1.0"*). **Claude, 2026-09-14.** Picked up 2026-09-14 and not built - no code change found. | pending | - |
