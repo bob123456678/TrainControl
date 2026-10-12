@@ -404,107 +404,107 @@ Tab icons provided by Freepik.
     - Features
         - Autonomy
             - Basics
-                - Automation is now set up on the track diagram itself, and the separate autonomy graph is gone.  TrainControl reads the track you have already drawn and works out for itself which squares connect to which, so there is no graph to build and no JSON file to write: stations, directions and settings are all edited by right-clicking a square.
-                - Autonomy needs a track diagram stored on this computer.  Without one, the Autonomy menu's "Autonomy needs a layout stored on this computer" offers to download it from your Central Station, as Layouts → Download Central Station Layout Files does, or to create a new one.  The old Load Autonomy Configuration tab is gone, and TrainControl no longer reads or writes an autonomy.json of its own; the setup is saved in the layout folder.
-                - Autonomy setups are saved as named configurations that can be copied, renamed, deleted, exported and imported.  New Configuration asks whether where the trains stand and the timetable come too, and the one you were last using is loaded when TrainControl starts, unless Load Autonomy has been unticked.  An autonomy.json from an older version can be imported from the same menu.
-                - Station names you had typed onto the track diagram in an earlier version (the ones written as "Point:name") are taken over by the new setup the first time it opens, and removed from the page file so they are not shown twice.  Each page that is changed gets a .bak file beside it holding the page as it stood the first time this version rewrote it, and the log says which pages were changed.  A name that no longer matches any station is left exactly where it is.
+                - Autonomy is now set up directly on your track diagram, so there is no separate graph to build or JSON file to write.
+                - Autonomy needs a track diagram stored on this computer, and offers to download it from your Central Station if there is none.
+                - Autonomy setups are saved as named configurations that can be copied, renamed, exported and imported, including an autonomy.json from an older version.
+                - Station names typed onto the diagram in an earlier version (as "Point:name") are taken over by the new setup the first time it opens.
                 - The Autonomy menu has a Documentation item that opens the automation guide.
             - Checking the Setup
-                - The setup is checked before it can run, and every finding can be clicked to jump to the square it is about.  Among the things now checked for: two pages sharing one s88 address, a page link that track runs into but which is not paired, a place where trains turn round that leads nowhere, and a train or a station with no length set.  A train left facing a way its station no longer has, and a station at the end of a line where trains may not change direction, are errors; track made one way towards a standing train is a warning.  No setup change is refused because a train is standing in the way.
-                - The autonomy button on the track diagram offers to Fix a setup that has errors, opening the editor at the first thing to deal with, rather than staying green and refusing every time it is pressed.
-                - When the setup has changes the railway has not taken yet, such as a link left unpaired while you edit, the strip above the track diagram says "Setup changes not applied yet", and the last setup that worked stays loaded until the setup builds again.
-                - Nothing that changes the setup can be used while trains are running.  The Autonomy and Layouts menus grey whatever would change the setup or the track diagram, saying why (Open CS3 Web App, the pop-up pages and the picture export stay available), and the Auto tab's settings, Execute Timetable and Capture Locomotive Commands are greyed until the trains have stopped.
+                - The setup is checked before it can run, and clicking any finding jumps to the square it is about.
+                - When the setup has errors, the autonomy button offers to fix them instead of refusing to start.
+                - Until your changes can be built, the last setup that worked stays loaded, and the strip above the diagram says so.
+                - Anything that would change the setup is greyed out while trains are running.
             - Editing the Setup
-                - The track diagram's Autonomy Setup menu opens the full editor on the page and square you right-clicked, and every item on it names the square it is about.
-                - Station labels can be dragged onto another square in the autonomy editor, and the station chooser opens on the nearest station on that page.
-                - "Unavailable while occupied" can be answered by clicking the square on the diagram instead of finding it in a list, in the same way a station's signal is paired.
-                - Which function autonomy fires on departure and on arrival is ticked on the function itself, from its own right-click menu, and a train's length is set from a dropdown on the locomotive's right-click menu.
-                - With the pointer over a station on the track diagram, Control+X picks up the train standing there, Control+V puts it down, and Delete takes it off.
-                - The autonomy editor can hide the trains on its own diagram (Show Trains), and making an unnamed sensor a station asks for its name there and then.
-                - The autonomy editor's Bulk Tools menu can walk a page asking for each missing track length and each station's missing longest train, and walk every train autonomy would run that has no length of its own.  It can also clear every track length, or every station's longest train, at once.
-                - Bulk Tools has Allow Every Path, which opens every one-way or closed piece of track again in one go, asking first.
-                - The autonomy editor's Bulk Tools can make every train's present station its home (Home All Trains Where They Stand), or put every train back on its home without moving anything on the railway (Place All Trains at Their Homes).
+                - The track diagram's Autonomy Setup menu opens the full editor on the square you right-clicked.
+                - Station labels can be dragged onto another square in the autonomy editor.
+                - The stations that make one Unavailable While Occupied can be picked by clicking them on the diagram.
+                - Arrival and departure functions are ticked on the function itself, and a train's length is set from the locomotive's right-click menu.
+                - On the track diagram, Control+X, Control+V and Delete pick up, put down and remove the train at the station under the pointer.
+                - The autonomy editor can hide its trains (Show Trains), and asks for a name when you make an unnamed sensor a station.
+                - Bulk Tools can walk you through every missing track, station and train length, or clear them all.
+                - Bulk Tools has Allow Every Path, which reopens every one-way or closed piece of track at once.
+                - Bulk Tools can make each train's present station its home, or put every train back on its home without moving anything.
             - Stations and Trains
-                - A station can be paired with signals, which are set to red while a train is standing at that station and back to green once it leaves ("Exit Guard Signal" on the station's right-click menu).  Pick each signal by clicking it on the diagram, or by typing its address.
-                - A station can also have entry guard signals, set to red when a train arrives there at the end of its journey ("Entry Guard Signal" on the same menu).  The next route that needs one sets it green again.
-                - Stations can say which directions trains are allowed to arrive from, and one-way travel restrictions are now drawn on the ordinary track diagram as well as in the editor.
-                - A station taken out of service on its Station menu can no longer be sent to by hand, nor driven through.  Out of service now means nothing may be sent to it or through it, though a train already standing on one can still be driven away.  To keep a parking track reachable by hand but out of autonomy's choices, leave it in service and untick Can Be Chosen in Full Autonomy on its right-click menu.
-                - A station's excluded locomotives can instead be the only locomotives allowed there, so any other, including one you add later, is kept out.  Choose Allow only the chosen locomotives under Advanced Parameters → Excluded Locomotives.
-                - A train can be paused by unticking its Is Active tick on the right-click menu of the station it stands at, as well as with the pause button on its card on the Auto tab.  Autonomy and Return Home leave a paused train where it stands, it is drawn grey on the track diagram, and each configuration remembers which of its trains are paused.
+                - Stations can have exit guard signals, held at red while a train stands there.
+                - Stations can also have entry guard signals, set to red when a train arrives.
+                - Stations can limit which side trains arrive from, and one-way restrictions are now drawn on the ordinary track diagram too.
+                - A station out of service can no longer be sent to or driven through, even by hand.  To keep a parking track reachable by hand, untick Can Be Chosen in Full Autonomy instead.
+                - A station's excluded locomotives can instead be the only ones allowed, which keeps out any locomotive added later.
+                - A train can be paused from its station's right-click menu (Is Active), and each configuration remembers which trains are paused.
             - Routing Logic
-                - You can now choose how trains pick their route when more than one will do: at random respecting station priority (the default, and how earlier versions behaved), completely at random, past the fewest or the most stations, over the shortest or the longest track, across the fewest or the most sensors, by whichever station has gone longest without a train, or by weighing a station's priority against how far away it is.  The choice is stored with the autonomy configuration, so two configurations can use different rules.
-                - Track with no recorded length now counts as one, so the shortest-track and longest-track rules give different answers on a railway where most sections are unmeasured.
-                - Right-clicking a train on the track diagram puts the stations autonomy chooses from at the top.  The stations you have unticked "Can Be Chosen in Full Autonomy" on, such as parking tracks, are under "More Destinations", which is not shortened.
-                - Atomic Routes stays switched on while any track autonomy runs over, or any train, has no length recorded, because releasing track behind a train depends on knowing how long both are.  It can be switched off once everything is measured.
-                - Switches without a decoder can be drawn with the Static switch tiles.  Autonomy runs trains through them from the legs towards the points only, and two Static Y switches drawn point to point act as a crossing.
+                - You can choose how trains pick their route when more than one will do, such as over the shortest track, past the fewest stations, or to the station that has waited longest.
+                - Track with no recorded length now counts as one, so the shortest and longest track rules still differ on an unmeasured railway.
+                - Right-clicking a train lists the stations autonomy chooses from first, and parking tracks under More Destinations.
+                - Atomic Routes stays on until every track and train autonomy uses has a length.
+                - Switches without a decoder can be drawn as Static switches, which autonomy runs through from the legs towards the points only.
             - Running and Watching
-                - A running train draws its route along the track, following the rails through curves and switches: the stations' blue for the track ahead of it, dark grey for the track it has driven and still holds, white arrows showing which way it is going, and the train itself in orange along the length of track it covers.  Where routes are not atomic, the grey goes as the train gives the track behind it back.
-                - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused: occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why not Moving?" tool that draws every route the train could take on the diagram and lists the reasons for the rest underneath.
-                - If the track power goes off while autonomy, a timetable or Return Home is running, nothing new is sent until it comes back on, and the log says so; the run then carries on by itself.
-                - In autonomy mode, a link switched off in autonomy is greyed out on the track diagram, not only while editing.
-                - The autonomy editor's Track Directions can show only the directions trains may run, and the track diagram can draw them in green (Preferences → Autonomy → Display Allowed Directions).
-                - Station names can be hidden for stations autonomy will never choose, such as ones out of service or not marked as automatic destinations, under Preferences → Autonomy → Show Inactive Labels.
+                - A running train's route is drawn along the track: blue ahead, grey behind, and the train itself in orange.
+                - When a train is not going anywhere, TrainControl now says why, in the locomotive list and with the editor's Why not Moving? tool.
+                - If the track power goes off during a run, autonomy waits and carries on by itself once it is back.
+                - A page link switched off for autonomy is greyed out on the track diagram, not only while editing.
+                - The editor can show only the directions trains may run, and the track diagram can draw them in green.
+                - Names of stations autonomy will never choose can be hidden (Preferences → Autonomy → Show Inactive Labels).
         - Routes
             - Safety
-                - A route will no longer throw a switch on track a train is running over, nor turn a signal green at a platform a train is standing at.  From the Routes tab and from a route tile on the diagram you are asked whether to go ahead anyway, once per route.  A route fired by a sensor skips only the switches and signals a train is on or standing at, because there is nobody there to ask; the rest of it, such as speeds, functions and its other switches, still runs.  A route with an emergency stop in it runs without asking: its stop is always sent, and a switch under a train is still left alone.  Each command is checked again immediately before it is sent, so a train dispatched while a route is part way through is not missed.  Routes that touch nothing a train is using run exactly as before, and nothing changes at all when autonomy is stopped.
-                - A route with an emergency stop can no longer have other commands in it.  A route that has both is split automatically when it is loaded or imported: it keeps everything else, and fires a new route named after it that is only the emergency stop.
+                - While autonomy runs, a route no longer throws a switch under a train or turns a signal green at an occupied platform.
+                - A route with an emergency stop can no longer hold other commands, and older ones are split in two automatically.
             - Editing Routes
-                - A new route editor built from dropdowns rather than typed commands.  Each command is a row saying what kind of thing, which one, what to do to it, which decoder it speaks to, and how long to wait afterwards, so a route can be built and read without knowing the command syntax.  Rows are added, duplicated, deleted and reordered from marks in the rows themselves.
-                - Conditions are written as an indented list instead of with brackets.  Each line is either a condition or the word joining it to the line before, and both can be indented, so "sensor 1 occupied, and either sensor 2 or sensor 3" is written by indenting the two sensors under the word that joins them.  A word that disagrees with the others at its level is shown in red until it is indented or changed.
-                - Capturing commands by working the railway still works exactly as before, and can now be pointed at the conditions instead, so "run this route when these points are already set the way I have just set them" can be built by setting them.  Routes that came from the Central Station open read-only.
+                - A new route editor builds each command from dropdowns instead of typed text.
+                - Route conditions are written as an indented list instead of with brackets.
+                - Commands captured by working the railway can now go into a route's conditions, and routes from the Central Station open read-only.
             - Running and Finding Routes
-                - Every route in the Routes tab now has a play button that runs it straight away, while a click elsewhere on the route still asks first and a right-click still opens the menu.
-                - Find Route on the Routes menu takes a name or part of one: an exact name goes straight to that route in the list, and a fragment matching several offers the choice.
-                - Routes read from a file with Import Routes arrive with automatic firing switched off, so nothing starts firing before you are ready.  If the file has routes that were saved with it on, you are asked whether to turn it back on for those.  Otherwise turn on the ones you want from their right-click menu, or all at once with Bulk Enable.
+                - Every route in the Routes tab has a play button that runs it straight away.
+                - Find Route on the Routes menu accepts a full or partial name.
+                - Imported routes arrive with automatic firing switched off, and you are asked whether to turn it back on.
                 - Deleting or saving a route created in TrainControl no longer forces a full sync with the Central Station.
         - Track Diagrams
             - Viewing
-                - Each station is now marked on the track diagram, and the same way in the autonomy editor: a circle where trains do not turn round, a diamond where they may, and a square where they must or where the track runs out.  A sensor where trains turn round gets a smaller mark of the same kind.  A station or sensor that is out of service shows a round orange sign with an X.
-                - A small locomotive marks each train on the track diagram, facing the way it is going: on the sensor a running train is passing, and on the station where a train is standing, laid along the rail on a curve.  A train passing through a station shows an arrow for its direction of travel, and a train standing still on a route it holds is drawn where it stands.
-                - Station labels are now light grey ovals rather than names in square brackets (or blue with white lettering, if you untick Grey Station Labels), and the direction a train is facing is drawn as an arrow instead of a chevron.  They sit just below an east-west track and read upwards beside a north-south one, so they no longer cover the square they name.
-                - Track diagrams have a Medium size between Small and Large, in the size list and as a pop-up button; the pop-up buttons are now S, M and L.
-                - Track diagrams scroll faster: a square at a time, both up and down and across (hold Shift to scroll across with the mouse wheel).
-                - Track diagrams now show a spinner while they are being drawn, instead of the text labels appearing about a second before the track did, and loading a layout from disk shows what it is doing rather than appearing to do nothing until the finished diagram arrives.
+                - Stations are marked on the track diagram with a circle, diamond or square, showing whether trains turn round there, and with an orange sign when out of service.
+                - A small locomotive marks each train on the track diagram, pointing the way it faces.
+                - Station labels are now light grey ovals (or blue, if you untick Grey Station Labels) that no longer cover the square they name.
+                - Track diagrams have a Medium size between Small and Large, with S, M and L pop-up buttons.
+                - Track diagrams scroll faster, a square at a time in both directions.
+                - Track diagrams show a spinner while they are being drawn or loaded.
                 - The tunnel and overpass squares have new, cleaner icons.
             - Editing
-                - You can now pick out several squares at once in the track diagram editor.  Shift-click picks a square, shift-click again unpicks it, and Escape lets everything go; a picked group can then be dragged, copied, pasted, rotated or deleted as one, and one press of undo takes the whole thing back.  A group dragged or pasted past the edge of the diagram is refused rather than losing the part that would fall off.
-                - In the track diagram editor, Control+M, or Select by Dragging a Box on the right-click menu, picks out several squares by dragging a box round them.
-                - The editor now has a matching pair of size controls: one adds a column on the right and a row at the bottom, the other takes the same two away.  Shrinking is refused if either of those edges still holds track.
-                - Removed the "paste entire row" and "paste entire column" options, which each filled from the pasted tile to the edge of the diagram.  Picking the squares you mean and dragging them does the same job, visibly, and can be corrected before it happens rather than after.
+                - In the track diagram editor, Shift+click picks several squares to drag, copy, rotate or delete together, and one undo takes it all back.
+                - Control+M, or Select by Dragging a Box, picks squares by dragging a box round them.
+                - The track diagram editor can add or remove a column and a row with a matching pair of controls.
+                - The "paste entire row" and "paste entire column" options were removed.
             - Pages
-                - The + and - keys step through the pages in both the track diagram editor and the autonomy editor.
-                - Layouts → Manage Pages → Combine Linked Pages... makes one new page showing this page and every page its links lead to.
-                - A track diagram page can now be saved as a picture.  The Layouts menu offers the page you are looking at in one click, and writes the whole of it at whatever size you choose, not just the part scrolled into view, and without the window around it.
+                - The + and - keys step through the pages in both editors.
+                - Layouts → Manage Pages → Combine Linked Pages... makes one page from a page and every page its links lead to.
+                - A track diagram page can be saved as a picture, whole and at any size.
         - Central Station
-            - Backing up TrainControl now writes a single archive holding everything (the locomotive database, the window layout, the autonomy setups and the routes), and offers to download the track diagram first if it lives on the Central Station rather than on this computer.  The dialog offers to show you the file when it is done, and says so if anything could not be copied.
-            - Syncing with the Central Station no longer freezes the interface.  A spinner appears while it works, from every place a sync can start, and a second sync started while one is running is turned away rather than run alongside it.
-            - The Layouts menu now says where the track diagram is coming from: a folder on this computer, the Central Station, or nowhere yet.
+            - Backups are now a single archive of everything, and can download the track diagram from the Central Station first.
+            - Syncing with the Central Station no longer freezes the interface.
+            - The Layouts menu says where the track diagram comes from: this computer, the Central Station, or nowhere yet.
         - Interface
-            - The seven sidebar icons have been redrawn as plain, flat marks in dark grey.  The autonomy tab is now a play symbol rather than a diagram of the old autonomy graph, and the routes tab shows a path with an arrow on it rather than a set of points.  The locomotive is drawn larger so that the keyboard page number sitting on top of it can be read.
-            - Local locomotive icons can be cropped and panned when you pick them, with a tick box in the file chooser that is off until you turn it on.  The crop is written as a new file beside the locomotive database rather than over your own picture, and re-cropping an icon reopens at the framing and zoom it was taken with.
-            - Locomotive keyboard pages are now capped at fifty.  Add New Page is greyed out with the limit in its tooltip once you get there, and an installation that already holds more than fifty still loads all of them.
-            - **If you ever go back to v2.8.2 or earlier after using this version, keep a copy of your settings first.**  This version allows up to fifty locomotive keyboard pages and those versions read only the first ten, so opening your settings in the older version and closing it again discards pages 11 and up for good.
+            - The sidebar icons have been redrawn as plain, flat marks.
+            - Locomotive icons can be cropped and panned when you pick them, without changing your own picture.
+            - Locomotive keyboard pages are now capped at fifty.
+            - **If you go back to v2.8.2 or earlier, keep a copy of your settings first:** those versions read only the first ten keyboard pages, and discard the rest when they save.
             - The autonomy setup is translated into all eight languages.
     - Bug Fixes
         - Autonomy
-            - Fixed a long-standing bug in how a train's length is accounted for as it runs.  Track behind the locomotive was released as soon as the edges waiting to be released added up to the train's length, and the newest of those is one edge behind the engine, so any track section shorter than the train was handed back while the train was still standing on it.  With atomic routes off that offered occupied track to another train.  It only bit layouts that have both track lengths and train lengths recorded, which is why it went unnoticed.
-            - Fixed bug where a path that failed part way through left the sensor it was heading for waiting for ever, so any route whose condition asked whether a train had reached that sensor quietly stopped firing.
-            - Fixed bug where starting autonomy with every locomotive skipped (because its starting point was switched off, or because no speed had been chosen for it) left the layout believing it was running with nothing running, refusing placements, point renames and simulation until it was stopped.  It now says why nothing started, and Start comes straight back.
-            - Fixed bug where the list of places a train could be sent to, on the track diagram's right-click menu, showed two fewer than it should.
-            - Fixed bug where "return home" refused the entire run, naming two trains that were already standing at home, when their two home stations share a track sensor.
-            - Fixed bug where "return home" planned a move onto a piece of track sharing the sensor the train was already standing on, which the railway then refused.
+            - Fixed a long-standing bug where track shorter than a train was released while the train still stood on it.
+            - Fixed bug where a path that failed part way through stopped routes waiting on its sensor from firing.
+            - Fixed bug where starting autonomy with every locomotive skipped left it stuck believing it was running.
+            - Fixed bug where a train's right-click menu on the track diagram listed two fewer destinations than it should.
+            - Fixed bug where "return home" refused to run when two home stations share a track sensor.
+            - Fixed bug where "return home" planned a move onto track sharing the train's own sensor, which the railway then refused.
         - Track Diagrams
-            - Fixed bug where a layout folder with one page that could not be read was thrown away whole, along with your choice of folder.  The other pages now load, and the one that failed is named.
+            - Fixed bug where one unreadable page stopped a whole layout folder from loading.
         - Central Station
-            - Fixed bug where a short message from anything else on the CAN bus was read as an emergency stop, so TrainControl believed the power had been cut while the layout was still running.
-            - Fixed bug where a layout download interrupted part way through left a half-written diagram file that the next sync then treated as the real one.
-            - Fixed bug where importing an MFX locomotive whose record has no address gave it an address no decoder can have, so nothing sent to it arrived.
-            - Fixed bug where, when the same accessory was set to the same position twice, TrainControl ignored the Central Station's report of the second command.
-            - Pressing Stop while TrainControl is not connected now says so in the log instead of doing nothing silently.
+            - Fixed bug where a short message from another device on the CAN bus was mistaken for an emergency stop.
+            - Fixed bug where an interrupted layout download left a half-written file behind.
+            - Fixed bug where an imported MFX locomotive with no address was given one no decoder can have.
+            - Fixed bug where TrainControl ignored the Central Station's report of an accessory set to the same position twice.
+            - Pressing Stop while not connected now says so in the log.
         - Interface
-            - Confirmations that delete or overwrite something no longer open with Yes already selected: deleting a route, a locomotive or a track diagram page; clearing or replacing a page's key mappings; clearing the timetable; resetting a locomotive's functions to the Central Station's; and leaving the track diagram editor without saving.
+            - Confirmations that delete or overwrite something no longer have Yes selected by default.
     - Code
-        - Updated JSON library to json-20260814.jar and FlatLaf to 3.7.2, and dropped the GraphStream libraries that the old autonomy graph needed.
+        - Updated the JSON library to json-20260814.jar and FlatLaf to 3.7.2, and dropped the GraphStream libraries the old autonomy graph needed.
 
 * v2.8.2 [9/25/2026]
     - Autonomy Bug Fixes
@@ -566,7 +566,7 @@ Tab icons provided by Freepik.
         - Stations that have a home locomotive are outlined in the graph: solid when that locomotive is standing there, dotted when it is elsewhere.  Can be switched off under Display Options
         - Double-clicking a locomotive in a station's excluded-locomotives window now moves it to the other side
         - New Display Options setting hides the connections leading into reversing points, which tidies up a busy graph.  Unlike hiding the reversing points themselves, the points stay on the graph and can still be clicked
-        - Reversing stations are no longer used when autonomy is running on its own, neither as a destination nor as somewhere to drive through on the way elsewhere.  They are meant for parking and shunting, so trains were being parked there at random, and were stopping and changing direction inside the parking area while on their way somewhere else.  You can still send a train to one yourself from the route menu, and “return home” can still park trains there.  Reversing points that are not stations, such as reversing loops, are unaffected
+        - Reversing stations are no longer used when autonomy is running on its own, neither as a destination nor as somewhere to drive through on the way elsewhere.  You can still send a train to one yourself from the route menu, and “return home” can still park trains there; reversing points that are not stations, such as reversing loops, are unaffected
         - The route list now marks a station autonomy will never send the locomotive to with a dash, whether because the station excludes that locomotive or because it is a reversing station
         - A route you pick yourself can no longer run a train through a point you switched off.  Switching a point off now always keeps trains from crossing it; you can still send a train to a switched-off station, and still drive one away from it, so a deactivated parking track stays reachable by hand
     - Central Station Sync Bug Fixes
