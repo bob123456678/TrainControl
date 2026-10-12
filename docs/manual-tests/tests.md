@@ -27,10 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-727](#mt-727) | 2026-10-11 | Round 136: the track diagram scrolls a square at a time | fixed unvalidated | Adam, 2026-10-11, on MT-726: "Just make scrolling in the track diagram viewer faster on both axes." |
+| [MT-728](#mt-728) | 2026-10-11 | Round 139: a running train's tail is the orange of a standing one's | fixed unvalidated | Adam, 2026-10-11: "Can we brighten the color of the orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen against the dark gray track color with chevrons." |
+| [MT-729](#mt-729) | 2026-10-11 | Round 140: the track diagram scrolls half a square at a time | fixed unvalidated | Adam, 2026-10-11, on MT-727: "Make it half a square at a time." |
 
-Everything else - 726 of 727 - needs nothing from you unless the area changes again:
-573 **fixed validated** and 153 **superseded**.
+Everything else - 727 of 729 - needs nothing from you unless the area changes again:
+574 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34383,7 +34384,7 @@ Your note ("Just make scrolling in the track diagram viewer faster on both axes.
 <a id="mt-727"></a>
 ### MT-727 - 2026-10-11 - Round 136: the track diagram scrolls a square at a time
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11, on MT-726: "Just make scrolling in the track diagram viewer faster on both axes."
 
 **Written:** 2026-10-11
@@ -34407,5 +34408,68 @@ Your note ("Just make scrolling in the track diagram viewer faster on both axes.
 
 *What this is:* round 136 (`98c1072f`), `LayoutGrid.scrollASquareAtATime`.  Claims in `ui.testDiagramLooksRight`:
 `testTheDiagramScrollsASquareAtATime`, `testAPoppedOutDiagramScrollsASquareAtATime`.
+
+**Adam, 2026-10-11 (triage).** Works, with notes.
+
+Make it half a square at a time.
+
+*Run against commit 0667c7ee, in English - build\classes, compiled 11 Oct 17:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-11.**
+
+Your note ("Make it half a square at a time.") is round 140 (`afa263f5`): each step of the wheel and each click of a scroll bar's arrow now moves the diagram half a square - 15, 23 and 30 pixels at Small, Medium and Large.  To try in MT-729.
+
+---
+
+<a id="mt-728"></a>
+### MT-728 - 2026-10-11 - Round 139: a running train's tail is the orange of a standing one's
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11: "Can we brighten the color of the orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen against the dark gray track color with chevrons."
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. With autonomy loaded and stopped, look at a train standing at a station, and at the orange line along the track it
+   covers.
+2. Start autonomous operation and watch a train run, at Small, Medium and Large: look at its orange line over the dark
+   grey track it has driven, and at the white arrows along that track.
+3. Let it arrive, and look at it standing again.
+
+**Expected**
+
+- Step 2: the running train's orange line is the same orange as in step 1 - not the darker brown it was - and the white
+  arrows still show through it, lighter.
+- Step 3: the standing train looks as it did in step 1.
+
+*What this is:* round 139 (`d3526ef8`), `DiagramColours.TRAIN_OVER_RUN`.  Claim in
+`ui.testTheTrainIsShownAsALine`: `testARunningTrainIsTheOrangeOfAStandingOne`.
+
+---
+
+<a id="mt-729"></a>
+### MT-729 - 2026-10-11 - Round 140: the track diagram scrolls half a square at a time
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11, on MT-727: "Make it half a square at a time."
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. In the main window, choose Small in the size list and a page bigger than the window.  Turn the mouse wheel one notch
+   down, then one notch up; hold Shift and do the same to scroll across.
+2. Click the small arrows at the ends of both scroll bars.
+3. Do steps 1 and 2 again at Medium and at Large, and in a pop-up opened with S, M and L.
+
+**Expected**
+
+- Step 1: each notch moves the diagram a square and a half (three half squares), the same down and across.
+- Step 2: each click moves it half a square.
+- Step 3: the same at every size and in every pop-up, in half squares of that size.
+
+*What this is:* round 140 (`afa263f5`), `LayoutGrid.scrollHalfASquareAtATime`.  Claims in
+`ui.testDiagramLooksRight`: `testTheDiagramScrollsHalfASquareAtATime`, `testAPoppedOutDiagramScrollsHalfASquareAtATime`.
 
 ---

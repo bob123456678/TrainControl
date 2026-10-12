@@ -450,7 +450,7 @@ Tab icons provided by Freepik.
                 - A small locomotive marks each train on the track diagram, pointing the way it faces.
                 - Station labels are now light grey ovals (or blue, if you untick Grey Station Labels) that no longer cover the square they name.
                 - Track diagrams have a Medium size between Small and Large, with S, M and L pop-up buttons.
-                - Track diagrams scroll faster, a square at a time in both directions.
+                - Track diagrams scroll faster, half a square at a time in both directions.
                 - Track diagrams show a spinner while they are being drawn or loaded.
                 - The tunnel and overpass squares have new, cleaner icons.
             - Editing
