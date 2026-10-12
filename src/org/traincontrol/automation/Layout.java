@@ -1195,10 +1195,46 @@ public class Layout
                         activeAccessories.put(a, setting);
                     }
                 }
+
+                // AND THE EXIT GUARDS ITS FIRST EDGE SETS GREEN, held with that edge's own accessories (OB-340)
+                if (e == active.getValue().get(0))
+                {
+                    for (Accessory guard : this.exitGuardsLeftBy(e))
+                    {
+                        activeAccessories.put(guard, activeAccessories.containsKey(guard)
+                            && !Boolean.FALSE.equals(activeAccessories.get(guard)) ? null : Boolean.FALSE);
+                    }
+                }
             }
         }
         
         return activeAccessories;
+    }
+
+    /**
+     * The exit guards of the station a path's first edge leaves, which that edge sets GREEN with its own accessories and
+     * holds as it holds them (OB-340): each resolved to its accessory, and left out where the edge commands it itself.
+     *
+     * @param first the first edge of a path
+     * @return the guards
+     */
+    private Set<Accessory> exitGuardsLeftBy(Edge first)
+    {
+        Set<Accessory> guards = new LinkedHashSet<>();
+
+        for (String name : first.getStart().getProtectingSignals())
+        {
+            Accessory guard = this.control.getAccessoryByName(name);
+
+            if (guard != null) guards.add(guard);
+        }
+
+        for (String name : first.getConfigCommands().keySet())
+        {
+            guards.remove(this.control.getAccessoryByName(name));
+        }
+
+        return guards;
     }
     
     /**
@@ -4803,6 +4839,13 @@ public class Layout
                     break;
                 }
 
+                // AND THE FIRST EDGE SETS THE EXIT GUARDS OF THE STATION IT LEAVES GREEN, with its own accessories
+                // (OB-340)
+                if (e == path.get(0))
+                {
+                    for (Accessory guard : this.exitGuardsLeftBy(e)) guard.setState(Accessory.accessorySetting.GREEN);
+                }
+
                 loc.delay(CONFIGURE_SLEEP);
             }
             }
@@ -5139,12 +5182,13 @@ public class Layout
 
             if (this.atomicRoutes && heldItAll)
             {            
+                // THE EDGE GIVEN BACK FIRST, so the start's guards are asked with this path no longer holding them (OB-340)
+                e.setUnoccupied();
+
                 if (i == 0)
                 {
                     e.getStart().setLocomotive(null);
                 }
-
-                e.setUnoccupied();
 
                 if (i < path.size() - 1)
                 {
@@ -11948,6 +11992,9 @@ public class Layout
             Accessory acc = this.control.getAccessoryByName(accessory);
 
             if (acc == null) return;
+
+            // NOT RED UNDER A PATH THAT HOLDS IT GREEN (OB-340): the train it lets go goes first
+            if (claimed && Boolean.FALSE.equals(this.getActiveAccSettings().get(acc))) return;
 
             Boolean showing = this.signalAspects.get(accessory);
 

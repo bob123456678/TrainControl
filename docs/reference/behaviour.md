@@ -2582,13 +2582,24 @@ moves no hardware.
 **A route over a guard sets it as it sets any signal on it** (RSA41-C2, -C3; RSA42-C1): GREEN, with the edge's other
 accessories, as the route is claimed edge by edge - each edge's end claimed, which asks protection, and then the edge
 set.  So a train leaving by its station's exit signal turns it green as it goes - which is what it needs, and what OB-315
-asked for - and it stays green until that station next changes, though the departing train still holds the platform.  A
+asked for - and it stays green while that edge is held, though the departing train still holds the platform.  A
 guard that routes to other stations cross is turned green the same way, over a train standing at its station.  And a
 guard on a way INTO its station - a home signal - is turned green by the arriving route on its last edge, and stays green
-over the train once it stands there; one an edge further out is turned green by its edge and then red by the claim of
-the station beyond, in front of the train.  Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal
+over the train once it stands there; one an edge further out is turned green by its edge, and stays green while that
+edge is held (OB-340, below).  Adam's ruling of 2026-08-23 is that a signal a path crosses and a signal
 protecting a station are two different signals on a railway wired as he intends; the signal on the way in is the entry
 guard's.  The runtime does not choose between a route and protection; the editor's notices say which case a guard is in.
+
+**A train leaving a station turns its exit guards green** (OB-340; Adam, 2026-10-12: *"when departing a terminus,
+autonomy should make its exit guard green.  otherwise, trains stopped by that guard would remain stuck."*, then *"extend
+the rule to MAY TURN stations too.  just make the exit guard green when something departs."*, and *"this is essentially
+just adding the exit guard into the config commands of the path out of the terminus, so that it turns green on the way
+out."*).  The first edge of every path sets the exit guards of the station it leaves GREEN with its own accessories, and
+holds them as it holds those: any station, from whichever copy of the square the train stands on, and where the edge
+commands one of them itself its own setting stands.  And protection leaves a signal an active path holds green: it does
+not turn it red while that edge is held, though a platform the signal guards is claimed - the leaving train's own, or,
+on a guard shared with another platform, another train's (Adam ruled that a shared guard is green while a train leaves).
+Once the edge is given back, the next change of occupancy at a platform it guards asks it again as before.
 
 **The entry guard** - *Entry Guard Signal...* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
 final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are

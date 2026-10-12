@@ -515,6 +515,95 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * The exit guard of a terminus a train is leaving is held GREEN by its journey's first edge (OB-340): a route may not
+     * turn it red in front of the train, and may set the green it shows.  No route out commands that guard - it stands on
+     * the station's own track - so the first edge out sets it green with its own accessories, and holds it as it holds
+     * them.
+     *
+     * Asked at the first station on the way, the first edge still held.
+     *
+     * MUTATION: leave the guard out of what the first edge holds, and both claims fail.
+     *
+     * @throws Exception from the dispatch
+     */
+    @Test
+    public void testARouteMayNotTurnRedTheGuardATrainLeavingATerminusHolds() throws Exception
+    {
+        for (String s : new String[] {S88, S88_MID, S88_MID2})
+        {
+            if (!model.isFeedbackSet(s)) model.newFeedback(Integer.parseInt(s), null);
+
+            model.setFeedbackState(s, false);
+        }
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("RT_T", true, S88_MID);
+        layout.createPoint("RT_M", true, S88_MID2);
+        layout.createPoint("RT_B", true, S88);
+
+        layout.getPoint("RT_T").setTerminus(true);
+
+        Edge tm = layout.createEdge("RT_T", "RT_M");
+        Edge mb = layout.createEdge("RT_M", "RT_B");
+
+        // the terminus's exit guard, which no edge commands
+        MarklinAccessory guard = model.newSwitch(SIGNAL_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        layout.getPoint("RT_T").setProtectingSignal(guard.getName());
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("RT_T").setLocomotive(loc);
+
+        // RED, as protection holds it over the train standing there
+        guard.setState(Accessory.accessorySetting.RED);
+
+        final int[] starts = {0};
+        final String[] showing = {"not asked"};
+        final String[] red = {"not asked"};
+        final String[] green = {"not asked"};
+
+        layout.setCallback("leaving guard probe", (edges, l, started) ->
+        {
+            // the second start: the train at RT_M, its journey still holding the terminus
+            if (!Boolean.TRUE.equals(started) || ++starts[0] != 2) return null;
+
+            showing[0] = guard.isSwitched() ? "RED" : "GREEN";
+
+            String[] a = accessoryRoute(84971, SIGNAL_ADDRESS, true).conflictingAccessoryAndReason();
+            String[] b = accessoryRoute(84972, SIGNAL_ADDRESS, false).conflictingAccessoryAndReason();
+
+            red[0] = a == null ? null : Arrays.toString(a);
+            green[0] = b == null ? null : Arrays.toString(b);
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(tm, mb), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertEquals(showing[0], "GREEN", "precondition: the train leaving the terminus must find its exit guard green");
+
+            assertNotNull(red[0], "a route turning RED the exit guard of the terminus a train is leaving was not refused -"
+                + " the train is held by it in front of the platform it is leaving (OB-340)");
+
+            assertNull(green[0], "a route setting GREEN the exit guard a train leaving the terminus holds green, and that"
+                + " shows green, was refused: " + green[0]);
+        }
+        finally
+        {
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A route already under way when a dispatch begins does not set the accessory either.
      *
      * Found by an independent review, which reproduced it with a timestamped log: the route committed
