@@ -507,6 +507,8 @@ public class AutonomyChecks
      * @param berthsGivenNoRoom parking berths whose track before the stop was all answered 0 (TDA4-C2)
      * @param terminiWithTwoWaysIn stations every train must turn round at that have more than one
      *        unbarred way in, mapped to how many (MT-361)
+     * @param berthsBackedInto the squares a route can back a train into, turning it at a reversing point on the way, off
+     *        the build; null where the setup does not build (Adam, 2026-10-11)
      *
      * The two halves of the length comparison, supplied rather than derived: one lives on the
      * Locomotive in the model and the other is a point property, and neither is visible from the graph.
@@ -522,7 +524,7 @@ public class AutonomyChecks
         Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom, Map<TileKey, Integer> halfMeasured,
         Map<TileKey, Integer> terminiWithTwoWaysIn,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
-        Set<TileKey> notAutoDestinations,
+        Set<TileKey> notAutoDestinations, Set<TileKey> berthsBackedInto,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
         Map<TileKey, String> copiesReachingNoStation,
         Map<TileKey, Map<TileKey, String>> guardsOnBothLists, Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn,
@@ -567,7 +569,7 @@ public class AutonomyChecks
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
-        findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn, notAutoDestinations));
+        findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn, notAutoDestinations, berthsBackedInto));
         findings.addAll(checkReversalsWithoutLength(reducer, reversalsWithoutLength));
         findings.addAll(checkBadCopies(copiesWithNoWayOut, COPY_NO_WAY_OUT));
         findings.addAll(checkBadCopies(copiesWithNoWayIn, COPY_NO_WAY_IN));
@@ -1107,15 +1109,21 @@ public class AutonomyChecks
      * real place, and a home there is a reasonable thing to want.  It is said out loud so the
      * limitation is read here rather than discovered at the end of a session.
      *
-     * **Not at a parking berth** (MT-552; Adam, 2026-09-24, of TopMainR0Park: *"moot since it is a parking berth.
-     * Non-reversible trains can still be backed in there."*).
+     * **ONLY AT A PARKING BERTH NO ROUTE CAN BACK A TRAIN INTO** (Adam, 2026-10-11, of BottomMainC: *"it is an active
+     * terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus,
+     * not chooseable by autonomy) without a way to reverse in"*).  A terminus autonomy may choose is neither chosen for
+     * nor offered to a locomotive that cannot reverse, so the warning was moot there; at a parking berth a train can be
+     * backed into - a route turning it at a reversing point on the way - it is moot too (MT-552; Adam, 2026-09-24:
+     * *"Non-reversible trains can still be backed in there."*).
      *
      * @param homes the squares carrying an authored home
      * @param mustTurn the squares where turning round is compulsory
      * @param notAutoDestinations the stations autonomy never chooses - the parking berths
+     * @param berthsBackedInto the squares a route can back a train into; null where the setup does not build, and then
+     *        nothing is said
      */
     private static List<Finding> checkHomesThatNeedReversing(GraphReducer reducer,
-        Set<TileKey> homes, Set<TileKey> mustTurn, Set<TileKey> notAutoDestinations)
+        Set<TileKey> homes, Set<TileKey> mustTurn, Set<TileKey> notAutoDestinations, Set<TileKey> berthsBackedInto)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -1125,7 +1133,11 @@ public class AutonomyChecks
         {
             if (!mustTurn.contains(tile)) continue;
 
-            if (notAutoDestinations != null && notAutoDestinations.contains(tile)) continue;
+            // a parking berth, or nothing to say
+            if (notAutoDestinations == null || !notAutoDestinations.contains(tile)) continue;
+
+            // and one no route backs a train into
+            if (berthsBackedInto == null || berthsBackedInto.contains(tile)) continue;
 
             ReducedPoint point = reducer.getPoints().get(tile);
 
