@@ -1611,16 +1611,30 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private static void exitUnconnected()
     {
+        exitUnconnected(TrainControlUI.getPrefs(), () -> System.exit(1));
+    }
+
+    /**
+     * Forgets the saved address in the given preferences, then runs the exit (OB-338, RSA67-C3).
+     *
+     * Both halves are arguments so that a claim can run Exit without ending the JVM or touching the operator's own
+     * preferences.  The address is forgotten first, and the exit runs even when the preferences refuse the removal.
+     *
+     * @param prefs where the address is saved
+     * @param exit what ends the application
+     */
+    public static void exitUnconnected(java.util.prefs.Preferences prefs, Runnable exit)
+    {
         try
         {
-            TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
+            prefs.remove(TrainControlUI.IP_PREF);
         }
         catch (Exception ex)
         {
             System.out.println(I18n.t("ui.errorUpdatingPreferences"));
         }
 
-        System.exit(1);
+        exit.run();
     }
 
     /**

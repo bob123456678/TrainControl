@@ -985,6 +985,113 @@ public class testControlStationFaults
     }
 
     /**
+     * Exit forgets the saved address, then ends the application, once each (OB-338, RSA67-C3).
+     *
+     * The owner's rule is that Exit forgets the saved Central Station address, as a start that does not connect always
+     * has.  The claims above run the loop with an exit of their own and read only that the constructor names the
+     * method, so nothing ran the method itself: an Exit that left the address in place, or forgot it and did not exit,
+     * kept every one of them green.  This runs the two halves through the arguments the method now takes, on a
+     * throwaway node under a test-only path and with an exit that only counts, so the operator's own preferences are
+     * not read and the JVM does not end.  The address must already be gone when the exit runs, since after
+     * `System.exit` nothing does, and the exit must still run when the preferences refuse the removal (a node that
+     * has been removed does), or the dialog's Exit would leave the application open.  Other settings in the node stay.
+     *
+     * MUTATION: drop the `remove`, drop the `exit.run()`, run it before the `remove`, or take the `try` off the
+     * `remove`, and this fails.
+     *
+     * @throws Exception from the preferences
+     */
+    @Test
+    public void testExitForgetsTheSavedAddressAndEnds() throws Exception
+    {
+        // Under the run's own preferences only, never the operator's: a node the runner made for this JVM
+        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY) == null)
+        {
+            throw new org.testng.SkipException("Not run here: this writes preferences, so it runs only where the run has"
+                + " its own (one.sh, battery.sh)");
+        }
+
+        java.util.prefs.Preferences root = org.traincontrol.gui.TrainControlUI.getPrefs();
+        java.util.prefs.Preferences scratch = root.node("exitUnconnected");
+        java.util.prefs.Preferences gone = root.node("exitUnconnectedRemoved");
+
+        final String key = org.traincontrol.gui.TrainControlUI.IP_PREF;
+
+        try
+        {
+            scratch.put(key, "192.168.0.99");
+            scratch.put("exitUnconnectedOther", "kept");
+
+            final int[] exits = { 0 };
+            final String[] addressWhenItEnded = { "not run" };
+
+            MarklinControlStation.exitUnconnected(scratch, () ->
+            {
+                exits[0]++;
+                addressWhenItEnded[0] = scratch.get(key, null);
+            });
+
+            assertNull(scratch.get(key, null), "Exit leaves the saved address in place, so the next start asks the same"
+                + " question about the same address");
+            assertEquals(exits[0], 1, "Exit must end the application exactly once");
+            assertNull(addressWhenItEnded[0], "the address is forgotten after the application has ended, which means"
+                + " never");
+            assertEquals(scratch.get("exitUnconnectedOther", null), "kept", "Exit forgets the address and nothing else");
+
+            gone.removeNode();
+
+            exits[0] = 0;
+
+            MarklinControlStation.exitUnconnected(gone, () -> exits[0]++);
+
+            assertEquals(exits[0], 1, "preferences that refuse the removal must not stop Exit from ending the"
+                + " application");
+        }
+        finally
+        {
+            scratch.removeNode();
+
+            try
+            {
+                gone.removeNode();
+            }
+            catch (IllegalStateException alreadyGone)
+            {
+                // The claim removed it
+            }
+
+            root.flush();
+        }
+    }
+
+    /**
+     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338, RSA67-C3).
+     *
+     * The claim above runs the halves on a node of its own.  What makes them Exit's is the constructor naming the
+     * no-argument method and that method passing the operator's preferences and `System.exit(1)` - the exit code the
+     * address prompt gives for leaving the start-up.  Pass another node or another code and the claim above stays
+     * green, so the text is read, with the comments out of it, as `testTheFirstSyncOfAStartGoesThroughTheQuestion`
+     * reads the constructor's.
+     *
+     * MUTATION: wire the constructor to anything but `exitUnconnected`, or pass another node, another code or another
+     * exit in the no-argument method, and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testExitUnconnectedForgetsTheRealAddressAndEndsWithCodeOne() throws Exception
+    {
+        String code = codeOf("src/org/traincontrol/marklin/MarklinControlStation.java");
+
+        assertTrue(code.contains("asker, MarklinControlStation::exitUnconnected)"),
+            "an Exit answer is not wired to the method that forgets the saved address");
+        assertTrue(code.contains("private static void exitUnconnected() {"
+            + " exitUnconnected(TrainControlUI.getPrefs(), () -> System.exit(1)); }"),
+            "the method an Exit answer reaches does not forget the address in the operator's preferences and end with"
+            + " code 1");
+    }
+
+    /**
      * The popup answers by its buttons: Resync resyncs, and Exit or the close box leave (OB-338).
      *
      * The loop's claims put a recording view in the window's place, so nothing above has ever pressed a button.  This
