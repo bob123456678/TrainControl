@@ -418,8 +418,11 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * path's train leaves, and the home signal of the one it is bound for, are held accessories too, and Adam's rule
      * reaches them (2026-10-11: *"make sure the code allows switching to the correct (same) setting that autonomy is
      * using"*).  The control: a guard no path holds, over the platform the train is bound for, is still refused green.
+     * And one the path holds green but that shows red - protection set it so for a train standing beside it, one signal
+     * guarding two platforms - is refused too: green is a change there (the fix-validation fanout's C1-B).
      *
-     * MUTATION: ask the protecting-signal rule whatever the path holds, and this fails.
+     * MUTATION: ask the protecting-signal rule whatever the path holds, or let a held green through whatever the guard
+     * shows, and this fails.
      *
      * @throws Exception from the dispatch
      */
@@ -462,6 +465,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
         final boolean[] asked = {false};
         final String[] held = {"not asked"};
         final String[] unheld = {"not asked"};
+        final String[] showingRed = {"not asked"};
 
         layout.setCallback("held guard probe", (edges, l, started) ->
         {
@@ -474,6 +478,15 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
             held[0] = a == null ? null : Arrays.toString(a);
             unheld[0] = b == null ? null : Arrays.toString(b);
+
+            // held green, but showing red
+            guard.setSwitched(true);
+
+            String[] c = accessoryRoute(84955, SIGNAL_ADDRESS, false).conflictingAccessoryAndReason();
+
+            showingRed[0] = c == null ? null : Arrays.toString(c);
+
+            guard.setSwitched(false);
 
             return null;
         });
@@ -491,6 +504,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
 
             assertNotNull(unheld[0], "the control: a route setting GREEN a guard no path holds, over the platform the"
                 + " train is bound for, was not refused");
+
+            assertNotNull(showingRed[0], "a route setting GREEN a guard its path holds green but that shows RED - set so to"
+                + " protect a train beside it - was not refused: green is a change there (C1-B)");
         }
         finally
         {

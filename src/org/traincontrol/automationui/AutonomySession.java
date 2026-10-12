@@ -5307,7 +5307,8 @@ public class AutonomySession
      * @param tiles each point's square, by name
      * @return the squares, or null where there is no build to walk
      */
-    private java.util.Set<TileKey> berthsATrainCanBackInto(org.json.JSONObject built, java.util.Map<String, TileKey> tiles)
+    public static java.util.Set<TileKey> berthsATrainCanBackInto(org.json.JSONObject built,
+        java.util.Map<String, TileKey> tiles)
     {
         if (built == null || tiles == null) return null;
 
