@@ -5296,20 +5296,6 @@ public class AutonomySession
     }
 
     /**
-     * The built graph as JSON, or null when the setup will not build.
-     *
-     * FOR INSPECTION, which is what the copy checks are.  buildConfiguration() answers for a
-     * configuration that has been initialised and saved; asked on a session that has not, it came back
-     * with the stations and no edges at all - and on a test machine it reached the DEFAULT layout to
-     * find them, which on Adam's is his real railway.  The suite wrote to that folder once before
-     * one.sh's fingerprint caught it.
-     *
-     * A setup that will not build has louder problems than a trapped arrival, and every one of them is
-     * already reported.  Saying nothing is better than saying something wrong.
-     *
-     * @return the configuration the graph window would draw, or null
-     */
-    /**
      * The termini a route can back a train into: reached after it has turned at a reversing point on the way, so it
      * arrives tail first and can leave forwards - what `HomeStaging.turnedOnTheWay` calls turning on the way, and Adam's
      * ruling of 2026-09-01 that non-reversing trains *"must be able to back into a terminus if the graph makes that
@@ -5391,6 +5377,20 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * The built graph as JSON, or null when the setup will not build.
+     *
+     * FOR INSPECTION, which is what the copy checks are.  buildConfiguration() answers for a
+     * configuration that has been initialised and saved; asked on a session that has not, it came back
+     * with the stations and no edges at all - and on a test machine it reached the DEFAULT layout to
+     * find them, which on Adam's is his real railway.  The suite wrote to that folder once before
+     * one.sh's fingerprint caught it.
+     *
+     * A setup that will not build has louder problems than a trapped arrival, and every one of them is
+     * already reported.  Saying nothing is better than saying something wrong.
+     *
+     * @return the configuration the graph window would draw, or null
+     */
     private org.json.JSONObject builtForInspection()
     {
         try
