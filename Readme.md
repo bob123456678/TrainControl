@@ -388,6 +388,8 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.0.1
+    - Autonomy Bug Fixes
+        - A train leaving a station now turns that station's exit guard signals green, so a guard that stops trains no longer holds it there
     - Central Station Bug Fixes
         - If the Central Station answers but its data cannot be loaded at startup, TrainControl now says why and offers to try again until it connects or you exit
         - Starting TrainControl in simulation no longer makes it forget your Central Station's address
