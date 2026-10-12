@@ -79,7 +79,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 - **The strip above the track diagram.** When the setup has something to fix it shows how many errors and warnings there are, and how many of them are on this page, with a `Fix it` button in place of Start. Either opens the editor on the first thing to deal with.
 - **Right-click a square on the track diagram** → `Autonomy Setup` → `Open the Full Editor...` opens the editor on that square.
 - **Inside the editor**, the sidebar on the left switches between `Track Diagram` and `Autonomy Setup`, and between pages.
-- The `Autonomy Settings` tab has `Edit Autonomy Paths in Track Diagram`, which opens the autonomy editor.
+- The Auto tab's Settings has `Edit Autonomy Paths in Track Diagram`, which opens the autonomy editor.
 - The diagram's `Edit` button and `Layouts` → `Edit Layout Page` open whichever editor you used last: the track diagram or the autonomy setup.
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
@@ -455,9 +455,9 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **The Auto tab** (the third icon on the left of the main window) is greyed until a configuration is loaded; when none is (after `Stop Using Autonomy`, or with `Load Autonomy` unticked under Preferences → Startup), the strip above the track diagram offers `Load this configuration`. Once one is loaded, the Auto tab has three tabs:
 
-- **Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
+- **Autonomous Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
 - **Timetable**: see [Timetables](#timetables-recording-a-sequence-and-playing-it-back).
-- **Autonomy Settings**: see [Settings](#settings-and-what-each-one-is-for).
+- **Settings**: see [Settings](#settings-and-what-each-one-is-for).
 
 ![The Auto tab while autonomy runs: Graceful Stop, and a card for each train](assets/automation/13-auto-tab.png)
 
@@ -475,7 +475,7 @@ The diagram's right-click `Autonomy Setup` menu has the same station settings as
 
 Autonomy can run in simulation: trains move on the diagram, but nothing is sent to a Central Station and no real train moves. It shows whether your stations, routes and settings do what you meant, without powering up the layout.
 
-1. **Start TrainControl with debug and simulation on.** Open the folder you normally start TrainControl from, the one with `TrainControl.jar` (your locomotives and window settings are kept there). On Windows, click the File Explorer address bar, type `cmd` and press Enter. In the window that opens, run `java -jar TrainControl.jar 0 debug simulate`. If it says `java` is not recognized, install Java first ([details](Readme.md#download-and-run-traincontrol)). All 3 words after the jar's name must be there: the first stands for the Central Station's address and is not used, the second turns on debug mode and the third simulation. Double-clicking the jar passes none of them, so to start this way again, save the command as a `.bat` file (`.sh` on Mac and Linux) in that same folder.
+1. **Start TrainControl with debug and simulation on.** Open the folder you normally start TrainControl from, the one with `TrainControl.jar` (your locomotives and window settings are kept there). On Windows, click the File Explorer address bar, type `cmd` and press Enter. In the window that opens, run `java -jar TrainControl.jar 0 debug simulate`. If it says `java` is not recognized, install Java first ([Requirements](Readme.md#requirements)). All 3 words after the jar's name must be there: the first stands for the Central Station's address and is not used, the second turns on debug mode and the third simulation. Double-clicking the jar passes none of them, so to start this way again, save the command as a `.bat` file (`.sh` on Mac and Linux) in that same folder.
 2. **Tick `Simulate`.** With a configuration loaded, open `Autonomy` → `Autonomy Settings...` and tick it. It is greyed out while trains are running, and refused if TrainControl was not started as in step 1. TrainControl may tell you it has turned on `Echo Sent Commands` (Preferences → Debug); simulation needs it.
 3. **Start autonomy as usual.** If `Simulate` is not ticked, Start warns that the trains will never move and asks whether to go ahead.
 
@@ -487,7 +487,7 @@ Autonomy can run in simulation: trains move on the diagram, but nothing is sent 
 
 ## Choosing how trains pick their route
 
-When more than one route will do, TrainControl has to choose. The **Routing Logic** dropdown on the `Autonomy Settings` tab (`Autonomy` → `Autonomy Settings...`) says how:
+When more than one route will do, TrainControl has to choose. The **Routing Logic** dropdown on the Auto tab's Settings (`Autonomy` → `Autonomy Settings...`) says how:
 
 | Setting | What it does |
 | --- | --- |
@@ -540,7 +540,7 @@ To see the homes on the diagram, set `Text Labels` to **Home Locs**: each statio
 
 ## Settings, and what each one is for
 
-These live on the Auto tab's **Autonomy Settings** tab; `Autonomy` → `Autonomy Settings...` opens it. They are saved with the configuration. Most layouts need to change two or three of them at most, and none can be changed while trains are running.
+These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings...` opens it. They are saved with the configuration. Most layouts need to change two or three of them at most, and none can be changed while trains are running.
 
 **Timing and speed**
 
