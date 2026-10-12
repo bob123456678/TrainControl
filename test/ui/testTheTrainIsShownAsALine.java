@@ -705,7 +705,7 @@ public class testTheTrainIsShownAsALine
         {
             assertTrue(ui.isTrackCovered(covered), "precondition: the train's length back, the square is not covered");
 
-            int once = commonestOrange(paint(tile));
+            BufferedImage once = paint(tile);
 
             java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
 
@@ -726,7 +726,7 @@ public class testTheTrainIsShownAsALine
             int standing = laidTwice(paint(tile), once);
 
             assertTrue(standing <= 3, standing + " pixels of the train's line on " + covered + " are laid twice under the"
-                + " mark of a train standing there - a second orange beside " + rgbOf(once) + " (RSA66-C5)");
+                + " mark of a train standing there - a second orange beside " + rgbOf(commonestOrange(once)) + " (RSA66-C5)");
 
             // and a run that ends on the square, its line along half the road
             SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
@@ -756,20 +756,22 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The pixels of a train's line laid twice: orange, redder than the line laid once by more than 15 and not paled
-     * toward white as an anti-aliased edge or a chevron under the line is.
+     * The pixels of a train's line laid twice: against the same square painted with its line laid once, pixel by pixel,
+     * orange in both and redder by 15 or more - and not paled toward white as a chevron under the line is.  Compared
+     * pixel by pixel because the line laid once is not one colour: a sensor's light contact shows through it lighter.
      */
-    private static int laidTwice(BufferedImage shot, int once)
+    private static int laidTwice(BufferedImage shot, BufferedImage once)
     {
-        int red = (once >> 16) & 0xFF, count = 0;
+        int count = 0;
 
         for (int y = 0; y < shot.getHeight(); y++)
         {
             for (int x = 0; x < shot.getWidth(); x++)
             {
-                int rgb = shot.getRGB(x, y) & 0xFFFFFF;
+                int rgb = shot.getRGB(x, y) & 0xFFFFFF, was = once.getRGB(x, y) & 0xFFFFFF;
 
-                if (isOrange(rgb) && ((rgb >> 16) & 0xFF) >= red + 15 && ((rgb >> 8) & 0xFF) < 160) count++;
+                if (isOrange(rgb) && isOrange(was) && ((rgb >> 16) & 0xFF) - ((was >> 16) & 0xFF) >= 15
+                    && ((rgb >> 8) & 0xFF) < 160) count++;
             }
         }
 
