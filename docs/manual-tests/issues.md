@@ -1913,6 +1913,16 @@ Adam, 2026-10-11: *"FR for 3.1.0: a restore from backup option in the file menu"
 
 To settle when it is built: choosing the archive (opening on `tc_backup`); showing what it holds and what it will replace before anything is written; backing up the current data first, so a restore can be undone; where the layout folder goes (back where it was, or a folder the user picks) and pointing TrainControl at it; refusing while autonomy or a timetable is running; restarting, or reloading everything, afterwards; an archive from an older or newer version; and the CS3's own locomotive, route and accessory files, which a backup carries but TrainControl does not read.
 
+### OB-336 - 2026-10-11 - A home on an active terminus is warned that every train must turn round and be backed out
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-11  
+**Filed:** 2026-10-11  
+
+Adam, 2026-10-11: "Small issue: we get a 'every train must turn around... and would have to back out...' warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"
+
+The setup check's `autosetup.ui.checkHomeNeedsReversible` ("Every train must turn round at {0}.  A locomotive that cannot change direction enters this home nose first and has to be backed out by hand.") was given for a home on any square every train turns at except a parking berth (MT-552) - so on BottomMainC (1 - Main:20,14, EN57-947's home), a terminus autonomy may choose, where a locomotive that cannot reverse is neither chosen nor offered by hand (OB-205).  It belongs only at a parking berth no route can back a train into.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1929,6 +1939,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-11 | OB-336 | bug | The turn-round warning on a home only at a parking berth (not an autonomy destination) no route can back a train into - one turning it at a reversing point on the way (`AutonomySession.berthsATrainCanBackInto`, off the build); no longer at an active terminus such as BottomMainC (round 141, `5526ba19`): `core.testAutonomyDiagramSession.testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto`, red before (*"a home on a terminus autonomy may choose is warned"*). | - | MT-730 |
 | 2026-10-11 | FR-122 | feature request | Built for 3.0.0 on Adam's word of 2026-10-11 ("Let's implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and phrasing to SizeList, and advise when ready.  Start with the cheap 60px scaling."), where it was filed for 3.1.0: a Medium size, 46 pixels a square, in the main window's size list between Small and Large and as a pop-up button beside theirs (his, the three labelled S, M and L - initials in the other languages too), in the eight languages; drawn from the Large art scaled down smoothly (`LayoutDiagramComponent.artSize`), each size's pictures cached apart; the editor's window sized in proportion (round 135, `af2bf807`): `ui.testDiagramLooksRight` - `testTheMediumSizeIsBetweenSmallAndLarge`, `testAMediumSquareIsTheLargeArtScaledDown`, `testTheMediumButtonOpensAMediumPopUp`.  Its own 46 pixel icon set, drawn rather than scaled, is still to come. | - | MT-726 |
 | 2026-10-11 | OB-335 | bug | Not reproduced - three routes clicked on a copy of Adam's layout at Large lit every switch they changed.  Covered by OB-333's fix, the likely cause (round 134, `d28e2de1`). | fixed validated | MT-725 |
 | 2026-10-11 | OB-334 | bug | The same defect as OB-333, filed twice from MT-715.  The highlight is drawn again when a square changes twice inside it: the first highlight ended before the second's yellow goes on, where ending it afterwards put the plain picture back over the yellow (round 134, `d28e2de1`): `core.testLayoutTiles.testASecondHighlightIsDrawnYellow`, red before.  Reproduced on a copy of Adam's layout at the Large size: every switch and signal autonomy changed had a highlight armed and none showed yellow; with the fix they do. | fixed validated | MT-725 |

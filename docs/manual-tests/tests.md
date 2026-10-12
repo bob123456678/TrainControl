@@ -29,8 +29,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-728](#mt-728) | 2026-10-11 | Round 139: a running train's tail is the orange of a standing one's | fixed unvalidated | Adam, 2026-10-11: "Can we brighten the color of the orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen against the dark gray track color with chevrons." |
 | [MT-729](#mt-729) | 2026-10-11 | Round 140: the track diagram scrolls half a square at a time | fixed unvalidated | Adam, 2026-10-11, on MT-727: "Make it half a square at a time." |
+| [MT-730](#mt-730) | 2026-10-11 | Round 141: OB-336, the turn-round warning only at a parking berth no train can be backed into | fixed unvalidated | Adam, 2026-10-11: "Small issue: we get a 'every train must turn around... and would have to back out...' warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in" |
 
-Everything else - 727 of 729 - needs nothing from you unless the area changes again:
+Everything else - 727 of 730 - needs nothing from you unless the area changes again:
 574 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34471,5 +34472,33 @@ Your note ("Make it half a square at a time.") is round 140 (`afa263f5`): each s
 
 *What this is:* round 140 (`afa263f5`), `LayoutGrid.scrollHalfASquareAtATime`.  Claims in
 `ui.testDiagramLooksRight`: `testTheDiagramScrollsHalfASquareAtATime`, `testAPoppedOutDiagramScrollsHalfASquareAtATime`.
+
+---
+
+<a id="mt-730"></a>
+### MT-730 - 2026-10-11 - Round 141: OB-336, the turn-round warning only at a parking berth no train can be backed into
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11: "Small issue: we get a 'every train must turn around... and would have to back out...' warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. Open the autonomy editor on your railway and read the setup check's list (Things to look at).
+2. Right-click BottomMainC, open `Station (...)`, and untick `Can Be Chosen in Full Autonomy`.  Read the list again.
+3. Tick `Can Be Chosen in Full Autonomy` again (or Cancel), and read the list once more.
+
+**Expected**
+
+- Step 1: no "Every train must turn round at BottomMainC ... has to be backed out by hand" warning - it is a terminus
+  autonomy may choose, which a locomotive that cannot reverse is never sent to.
+- Step 2: as a parking berth, BottomMainC is warned about only if no route can back a train into it (one turning it at a
+  reversing point on the way).  If such a route exists, there is still no warning.
+- Step 3: as step 1.
+
+*What this is:* round 141 (`5526ba19`), `AutonomyChecks.checkHomesThatNeedReversing` and
+`AutonomySession.berthsATrainCanBackInto`.  Claim
+`core.testAutonomyDiagramSession.testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto`.
 
 ---
