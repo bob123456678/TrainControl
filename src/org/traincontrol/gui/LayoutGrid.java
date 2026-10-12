@@ -37,18 +37,1036 @@ public class LayoutGrid
     
     // Prefix that denotes a station label
     // Used to show autonomy locations on the layout
-    public static final String LAYOUT_STATION_PREFIX = "Point:"; // todo use layout.ui.autonomyStationPrefix and use non static import
-    public static final String LAYOUT_STATION_EMPTY = "[---]";
-    public static final String LAYOUT_STATION_OCCUPIED = "[xxx]";
+    //
+    // Taken from the setup layer rather than declared here, so the side that decides whether a station
+    // HAS a label and the side that draws it cannot drift apart.  Every existing reference to this name
+    // still works; only where the string is defined has moved.
+    public static final String LAYOUT_STATION_PREFIX =
+        org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX;
+    /**
+     * A station with nothing standing on it.
+     *
+     * An em dash rather than "[---]" (FR-028).  The brackets were the caption's shape - "a caption is
+     * about the same width whatever is in it" - and the pill is its shape now, so what is left inside
+     * is only what the caption has to SAY, which for an empty platform is "nothing here".
+     */
+    public static final String LAYOUT_STATION_EMPTY = "\u2014";
+    /**
+     * A train passing through a station it was not sent to.
+     *
+     * Three dots rather than "[xxx]" (FR-028): the brackets were the caption’s shape and the
+     * pill is its shape now, and three dots say "something is here, and it is not stopping"
+     * without looking like a placeholder somebody forgot to fill in.
+     */
+    public static final String LAYOUT_STATION_OCCUPIED = "\u2022\u2022\u2022";
     public static final int LAYOUT_STATION_MAX_LENGTH = 10;
     public static final int LAYOUT_STATION_OPACITY = 210;
-    public static final int LAYOUT_ADDRESS_OPACITY = 200;
+
+    /**
+     * The pill under a home locomotive that is not standing at its home (MT-261 ruling 2).
+     *
+     * Adam: "labels show the home locomotive in white to indicate it's not there."  The colour that
+     * makes a name white is the one BEHIND it - `StationCaption.onPill` chooses a foreground that
+     * reads on whatever fill it is handed - so this is a dark fill rather than a white foreground,
+     * which on the pale resting pill would have been an invisible caption.
+     *
+     * Translucent to the same degree as its sibling, so the tile art still shows through it and an
+     * away-from-home platform does not become a solid block on the diagram.
+     */
+    public static final Color AWAY_FROM_HOME_FILL = new Color(60, 60, 60, LAYOUT_STATION_OPACITY);
+
+    /**
+     * Whether the column and row numbers are drawn at all: exactly when the grid is (OB-179).
+     *
+     * Adam: **"coordinates should always be on with the grid, off without, and the menu option
+     * gone."**  The numbers are scenery for reading coordinates off a grid, so a ruler round a diagram
+     * with no grid in it is numbering nothing, and a grid whose squares cannot be named is half of
+     * what a grid is for.  They are one thing to look at and now one thing to switch.
+     *
+     * ONE SETTING, NOT TWO ANDED TOGETHER (which is what OB-172 left behind).  That build had the
+     * operator's own switch and the grid, and the pair could disagree: with the numbers turned off and
+     * the grid on, turning the grid off and on again changed nothing on screen, and the only way to
+     * find out why was to open a right-click menu and read a tick.  It also made "on by default" a lie
+     * for anybody who had ever turned them off, because the stored `false` outlived every later change
+     * of mind about the grid.
+     *
+     * So this holds no preference of its own.  It delegates, and it exists so that the rule has one
+     * name and one sentence: the ruler's call site asks whether coordinates are visible, which is not
+     * obviously the same question as whether a grid is drawn until this method says that it is.
+     *
+     * The retired preference key is described at `TrainControlUI`, beside the other retired ones.  Its
+     * stored value is deliberately still on the operator's machine and deliberately not read.
+     *
+     * @return true when the numbers should be drawn
+     */
+    public static boolean coordinatesVisible()
+    {
+        return LayoutEditor.showGrid();
+    }
+
+    /**
+     * Whether station captions are left off this diagram entirely (FR-030).
+     *
+     * Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
+     * where the rails are. A caption there is an autonomy object drawn over the thing being moved: it
+     * cannot be edited from that window, it covers the square underneath, and every one of them is in
+     * the way of the one job that window has.
+     *
+     * The RUNNING diagram keeps them - that is where they say something - and so does the autonomy
+     * editor, which is where they are set.
+     *
+     * **And a page left out of autonomy draws none either** (B6, Adam: "hide captions"). There is no
+     * Point behind a caption on an excluded page - the graph is built without that page entirely - so
+     * it was a station name that named nothing, wired to nothing, and neither of the two visibility
+     * switches could reach it: both work by walking the registry of captions, and an excluded page's
+     * caption is never registered in it. So the one case where autonomy will most certainly never use
+     * a square was the one case whose label could not be turned off. That is FR-023's original
+     * complaint, surviving inside its own fix.
+     *
+     * A method rather than a line of `&&`, so the rule can be asked its truth table without building a
+     * window. What that leaves uncovered is whether the caller passes the right THREE booleans (DOC-C5:
+     * this used to say "two", from before {@code pageExcluded} was added), which is the usual price of
+     * pulling a rule out of its call site - `testEditorSurfaceRules` reads the call for exactly that
+     * reason.
+     *
+     * @param inEditor whether this grid is inside an editor at all
+     * @param autonomyMode whether that editor is the autonomy one
+     * @param pageExcluded whether this page is excluded from the active autonomy configuration - the
+     *                     argument that decides the result outright, added by {@code 453a3ef4}
+     * @return true when no caption should be drawn
+     */
+    public static boolean hidesStationCaptions(boolean inEditor, boolean autonomyMode,
+        boolean pageExcluded)
+    {
+        return pageExcluded || (inEditor && !autonomyMode);
+    }
+
+    /**
+     * Lets one station caption be dragged to another square (FR-035).
+     *
+     * Adam: "in the autonomy editor ONLY, make it possible to move around station labels (only) by
+     * clicking and dragging them", and then: "have it fire on the label or the tile, so the mouse icon
+     * is more clearly shown.  Snapshot the label so users can see it is being moved."
+     *
+     * Installed TWICE per caption - once on the pill, once on the square beneath it - which is why
+     * the thing being moved and the thing the events arrive on are separate parameters. Both hands
+     * move the same label.
+     *
+     * What happens on release is `moveCaption`, which is the caption command the right-click menu
+     * already runs. So a dragged label stores nothing new and cannot fall out of step with the menu
+     * about where a name may go.
+     *
+     * A drag is told from a CLICK by distance. A caption answers a double-click and a square answers a
+     * plain one, and turning every press into a drag would take both away; a few pixels of movement is
+     * the difference between pointing at something and moving it.
+     *
+     * @param caption the label being moved, and the thing photographed
+     * @param handle what the pointer takes hold of - the label itself, or the square under it
+     * @param square the square under the caption, which is what the hover outline is drawn on
+     * @param on the square the caption sits on
+     * @param editor the window, for the drop mark, the floating copy, and the coordinates
+     * @param container the grid, whose tiles are searched for the one under the pointer
+     */
+    private static void dragCaption(final StationCaption caption, final javax.swing.JLabel handle,
+        final LayoutLabel square, final org.traincontrol.automationui.TileGraph.TileKey on,
+        final LayoutEditor editor, final Container container)
+    {
+        // At REST, not only while dragging.  The pointer is how the diagram says a thing can be picked
+        // up, and saying it only once the drag has started is saying it too late.
+        handle.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR));
+
+        final java.awt.Point[] began = new java.awt.Point[1];
+        final boolean[] dragging = new boolean[1];
+
+        java.awt.event.MouseAdapter gesture = new java.awt.event.MouseAdapter()
+        {
+            // The blue outline follows the pointer onto the NAME (Adam, 2026-08-27: "make sure
+            // hovering the label triggers the cell hover effect").
+            //
+            // A caption is stacked on top of its square, so moving onto the name sends the square a
+            // mouseExited and the outline goes out - on the bigger and more obvious of the two things
+            // to point at. Forwarded to the method the tiles call rather than drawing a second
+            // outline here, so there is one appearance to keep right instead of two.
+            //
+            // Only from the caption. On the square this is already happening, and doing it again
+            // would draw the same outline twice for one movement.
+            @Override
+            public void mouseEntered(MouseEvent e)
+            {
+                if (handle != square) editor.receiveMoveEvent(e, square);
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e)
+            {
+                if (handle != square) editor.receiveMoveEvent(e, square);
+            }
+
+            // A RIGHT-CLICK belongs to the square, not to the name lying on top of it.
+            //
+            // The caption covers the middle of its square and takes every click there, so the autonomy
+            // menu - which is how everything about a square is set - simply did not open on the part
+            // of the diagram people aim at. Handed to `receiveClickEvent`, which is the method the
+            // tile's own listener calls, so the menu is the same menu rather than a second one built
+            // to match.
+            //
+            // The event is CONVERTED first: the menu opens at the coordinates it is given, and the
+            // caption's coordinates are not the square's - the popup would appear offset by however
+            // far the label sits from the corner of its tile.
+            @Override
+            public void mouseClicked(MouseEvent e)
+            {
+                if (handle != square && javax.swing.SwingUtilities.isRightMouseButton(e))
+                {
+                    editor.receiveClickEvent(
+                        javax.swing.SwingUtilities.convertMouseEvent(handle, e, square), square);
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                // THE LEFT BUTTON ONLY (reviewer, 2026-08-28).
+                //
+                // Every button started a drag. Right-press a captioned square meaning to open the
+                // properties menu, let the pointer wander four pixels before letting go, and the label
+                // was picked up and dropped wherever the cursor happened to be - while `mouseClicked`
+                // never fired, so the menu did not open either. The gesture that was meant to ASK
+                // about a square silently rearranged it.
+                //
+                // The distinction was already made on the click path a few lines above, which tests
+                // `isRightMouseButton`. It was missed here. LayoutEditor carries the comment for the
+                // identical fault one level down: "without this branch a right-click ran the tool as
+                // well, which looked like a menu that failed to appear".
+                if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
+                {
+                    // BOTH cleared, not just the start point.
+                    //
+                    // Clearing only `began` left `dragging` true, so a right-press part way through a
+                    // left-drag froze the ghost and the drop mark - `mouseDragged` returns on a null
+                    // start - while the right RELEASE still committed the move, at wherever the pointer
+                    // had got to. Pressing the other button mid-drag is what a person does to cancel.
+                    began[0] = null;
+                    dragging[0] = false;
+
+                    return;
+                }
+
+                began[0] = e.getPoint();
+                dragging[0] = false;
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e)
+            {
+                if (began[0] == null) return;
+
+                // Far enough to mean it.  Below this a press is a click, and both of these answer
+                // clicks already.
+                if (!dragging[0] && began[0].distance(e.getPoint()) < DRAG_SLOP) return;
+
+                if (!dragging[0])
+                {
+                    dragging[0] = true;
+
+                    pickUp(caption, handle, began[0], editor);
+                }
+
+                editor.moveCaptionGhost(javax.swing.SwingUtilities.convertPoint(
+                    handle, e.getPoint(), editor.getLayeredPane()));
+
+                LayoutLabel over = tileUnder(container, handle, e);
+
+                // The mark asks the DROP's own question, so what is shown green is exactly what will
+                // be accepted.  A highlight with a rule of its own is the fault OB-057 and OB-090 were
+                // both filed for: an affordance that offers what the action then refuses.
+                editor.showCaptionDropTarget(over, over != null && editor.getAutonomyPanel() != null
+                    && editor.getAutonomyPanel().canDropCaption(on, tileOf(editor, over, on),
+                        over.getComponent()));
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e)
+            {
+                // The LEFT button finishes a drag; any other one cancels it.
+                //
+                // This had no button test at all: the guard went on `mousePressed` only, so a release
+                // of some other button still read `dragging` and committed the drop. Found by a
+                // reviewer, and neither of the tests written with that guard could see it - both
+                // asserted the presence of a token in `mousePressed` and neither mentioned this method.
+                if (!javax.swing.SwingUtilities.isLeftMouseButton(e))
+                {
+                    began[0] = null;
+                    dragging[0] = false;
+
+                    editor.hideCaptionGhost();
+                    editor.clearCaptionDropTarget();
+
+                    return;
+                }
+
+                boolean moved = dragging[0];
+
+                began[0] = null;
+                dragging[0] = false;
+
+                // Put down FIRST, and unconditionally.  A release arrives whether or not a drag ever
+                // started, and a floating label left on the drag layer would sit over the diagram with
+                // nothing moving it.
+                editor.hideCaptionGhost();
+                editor.clearCaptionDropTarget();
+
+                if (!moved || editor.getAutonomyPanel() == null) return;
+
+                LayoutLabel over = tileUnder(container, handle, e);
+
+                editor.getAutonomyPanel().moveCaption(on, tileOf(editor, over, on),
+                    over == null ? null : over.getComponent());
+            }
+        };
+
+        handle.addMouseListener(gesture);
+        handle.addMouseMotionListener(gesture);
+    }
+
+    /**
+     * Photographs the caption and hands it to the window to carry (FR-035).
+     *
+     * Cropped to the PILL. A caption's cell runs to the bottom of the diagram, so a picture of the
+     * whole component would be mostly empty and the part you can see would hang a long way from the
+     * pointer.
+     *
+     * Taken hold of where it was grabbed when the pointer is on the label itself, and by the middle
+     * when the drag started on the square - where there is no corresponding spot.
+     *
+     * @param caption the label being moved
+     * @param handle what the pointer took hold of
+     * @param at where on the handle it was taken hold of
+     * @param editor the window that carries the floating copy
+     */
+    private static void pickUp(StationCaption caption, javax.swing.JLabel handle,
+        java.awt.Point at, LayoutEditor editor)
+    {
+        java.awt.Rectangle pill = caption.drawnBounds();
+
+        if (pill == null || pill.width <= 0 || pill.height <= 0) return;
+
+        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
+            pill.width, pill.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = shot.createGraphics();
+
+        try
+        {
+            // Slightly see-through, so the diagram underneath stays readable while something is being
+            // carried over it - the point of the drag is to choose a square, and the label must not
+            // hide the squares.
+            g.setComposite(java.awt.AlphaComposite.getInstance(
+                java.awt.AlphaComposite.SRC_OVER, 0.8f));
+
+            g.translate(-pill.x, -pill.y);
+
+            caption.paint(g);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        java.awt.Point grab = handle == caption
+            ? new java.awt.Point(at.x - pill.x, at.y - pill.y)
+            : new java.awt.Point(pill.width / 2, pill.height / 2);
+
+        // Held INSIDE the picture whichever way it started: a grab point outside it would swing the
+        // label away from the pointer instead of hanging it off the spot it was taken by.
+        grab.x = Math.max(0, Math.min(pill.width, grab.x));
+        grab.y = Math.max(0, Math.min(pill.height, grab.y));
+
+        editor.showCaptionGhost(shot, grab.x, grab.y);
+    }
+
+    /**
+     * A tile turned back into a square on the page, or null when it has no coordinates.
+     *
+     * @param editor the window, which knows where its labels sit
+     * @param label the tile
+     * @param samePage any square on the page being looked at, for its name
+     * @return the square, or null
+     */
+    private static org.traincontrol.automationui.TileGraph.TileKey tileOf(LayoutEditor editor,
+        LayoutLabel label, org.traincontrol.automationui.TileGraph.TileKey samePage)
+    {
+        if (label == null) return null;
+
+        int x = editor.getGridX(label);
+        int y = editor.getGridY(label);
+
+        if (x < 0 || y < 0) return null;
+
+        return new org.traincontrol.automationui.TileGraph.TileKey(samePage.getPage(), x, y);
+    }
+
+    /**
+     * The TILE under the pointer, asked of the tiles rather than of Swing.
+     *
+     * `getDeepestComponentAt` answers with whatever is topmost, and captions are deliberately
+     * z-ordered in front of the diagram - so a drag passing over another station's name would be told
+     * the pointer was over that name rather than over the square beneath it. The tiles are the only
+     * components that cover the page without overlapping each other, which makes them the right thing
+     * to ask.
+     *
+     * @param container the grid
+     * @param from the component the event arrived on
+     * @param e the event
+     * @return the tile under the pointer, or null when the pointer is off the diagram
+     */
+    private static LayoutLabel tileUnder(Container container, java.awt.Component from, MouseEvent e)
+    {
+        java.awt.Point at = javax.swing.SwingUtilities.convertPoint(from, e.getPoint(), container);
+
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof LayoutLabel && child.getBounds().contains(at))
+            {
+                // NOT the spacers, which are not squares (reviewer, 2026-08-27).
+                //
+                // The grid ends in a dummy row and a dummy column that exist to stop long labels
+                // misaligning it, and they are LayoutLabels with real bounds like any other. A label
+                // dropped on one was accepted - the drop mark even showed GREEN, because the spacer
+                // carries no component and a square with nothing on it may hold a caption - and the
+                // caption was then stored against a square the drawing loop skips before it ever looks
+                // for one. It vanished, and the setup carried an entry nothing could show.
+                //
+                // The strip along the bottom runs the full width of the diagram, directly under the
+                // last row of track, which is exactly where somebody would drop a label for a station
+                // on that row.
+                if (((LayoutLabel) child).isSpacer()) continue;
+
+                return (LayoutLabel) child;
+            }
+        }
+
+        return null;
+    }
+
+    /** How far the mouse moves before a press on a caption counts as a drag rather than a click. */
+    private static final int DRAG_SLOP = 4;
+
+    /**
+     * Whether the track on this square runs up and down rather than across (FR-028).
+     *
+     * Asked of the geometry rather than of the tile's name or its rotation number: the same question
+     * the autonomy graph asks when it works out which ways a train may leave a square, so a caption
+     * and the path drawn through it cannot disagree about which way the rails go.
+     *
+     * False for a crossing or a curve, and false when the geometry cannot be had at all: those squares
+     * have no single direction for a caption to be placed against, and the answer for them is where
+     * captions have always been.
+     *
+     * NOT false for a switch, which this sentence used to claim (reviewer, 2026-08-28). A switch in its
+     * straight position offers one route north to south, so it answers TRUE. Little reaches that today
+     * because `mayCarryACaption` refuses captions on switches and signals - but two identical switches
+     * saved in different states would be captioned differently, and the sentence was what a reader
+     * would have trusted.
+     *
+     * Public so the one thing worth checking about it can be checked - which way it answers for a
+     * straight rail and for the same rail turned a quarter - without building a grid and reading
+     * constraints off it. The same reason `stationCaption` above is public: where a caption goes is a
+     * question about geometry, and geometry can be asked without a window.
+     *
+     * @param c what is drawn on the square
+     * @return true when the rails run north to south and nothing else
+     */
+    public static boolean runsNorthSouth(LayoutDiagramComponent c)
+    {
+        if (c == null) return false;
+
+        boolean acrossTheSquare = false;
+        boolean upTheSquare = false;
+
+        try
+        {
+            // A SENSOR'S STATE IS NOT A SHAPE (OB-263): it has one state in the port table, and the state a Central Station
+            // saves for it is whether a train stood on it - 1 found no ports, and a vertical station saved occupied read
+            // as running east to west, its caption flat
+            for (org.traincontrol.automationui.TilePorts.Route route
+                : org.traincontrol.automationui.TilePorts.ports(
+                    c.getType(), c.getOrientation(), c.isFeedback() ? 0 : c.getState()))
+            {
+                if (route.touches(org.traincontrol.automationui.TilePorts.Side.E)
+                    || route.touches(org.traincontrol.automationui.TilePorts.Side.W))
+                {
+                    acrossTheSquare = true;
+                }
+
+                if (route.touches(org.traincontrol.automationui.TilePorts.Side.N)
+                    || route.touches(org.traincontrol.automationui.TilePorts.Side.S))
+                {
+                    upTheSquare = true;
+                }
+            }
+        }
+        catch (RuntimeException e)
+        {
+            // A tile type the port table does not describe.  Not knowing which way the rails run is a
+            // fine reason to leave the caption where it was, and no reason at all to stop drawing it.
+            return false;
+        }
+
+        return upTheSquare && !acrossTheSquare;
+    }
+
+    /**
+     * How a station caption is spelled when a train is standing on it.
+     *
+     * A name cut to LAYOUT_STATION_MAX_LENGTH, then the facing arrow.
+     *
+     * The brackets that used to be here were the caption's SHAPE, and the reason given for them was
+     * that "a caption is about the same width whatever is in it", so that an empty platform and an
+     * occupied one did not change the tile underneath. FR-028 gave the caption a shape of its own -
+     * a pill - and the width now belongs to that, so the brackets were two characters of a name that
+     * had already been cut to fit.
+     *
+     * Written down here because it was written down in the running diagram only, and the autonomy
+     * editor - added later, drawing the same placements - spelled it as a bare untruncated name. That
+     * label was as wide as the name, so it covered the tiles either side of it, and did not look like
+     * the diagram it was meant to match.
+     *
+     * @param name the locomotive
+     * @param arrow the facing arrow, already carrying its own leading space, or "" for none
+     * @return the caption
+     */
+    public static String stationCaption(String name, String arrow)
+    {
+        if (name == null) return LAYOUT_STATION_EMPTY;
+
+        String cut = name.substring(0, Math.min(name.length(), LAYOUT_STATION_MAX_LENGTH)).trim();
+
+        // No brackets since FR-028: the pill draws the shape they were standing in for.
+        //
+        // Joined through StationCaption rather than with `+`, because which SIDE the arrow goes on
+        // depends on which way it points (Adam, 2026-08-27) and that rule has to be the same here and
+        // in the crowded caption.
+        return StationCaption.withArrow(cut, arrow);
+    }
 
     // Component that holds the layout
     private JPanel container;
+
+    /**
+     * The spinner this grid put into the panel, and the panel it went into (VLD-C2).
+     *
+     * Held so that `discard()` can take it out again.  The spinner is added by the grace timer and
+     * removed by the reveal, and discarding cancels the reveal - so a grid discarded between those two
+     * moments left its spinner mounted in a panel it no longer owns.
+     *
+     * That was survivable while the panel was emptied a statement later.  It stopped being survivable
+     * when the emptying moved to the end of the build: the outgoing spinner now sits beside the
+     * outgoing diagram for the whole rebuild, and `parent` is a FlowLayout, so it sits beside it
+     * rather than behind it.  `LayoutEditor.drawGrid`'s own comment names that artefact as the reason
+     * `discard()` exists - "a FlowLayout with an extra component in it pushes the tiles along" - so
+     * the fix belongs here rather than in a second removeAll.
+     */
+    private LoadingSpinner mountedSpinner;
+
+    /**
+     * Whether this grid's container ever reached the panel (VLD-C2).
+     *
+     * The panel is emptied and the new container added at the very end of the build, so anything that
+     * throws before then leaves the panel holding the OLD container - visible, its timers stopped by
+     * `discard()`, its captions handed back.  `LayoutEditor.drawGrid` catches and logs, so the window
+     * stays up showing a diagram that looks live and is not.
+     *
+     * That is a worse failure than the one it replaced.  Emptying the panel first meant a throw left
+     * it obviously blank; this leaves it convincingly wrong, which is the fault `OB-128` was filed
+     * about - *"the grid stayed mounted, so anything that reached this tab showed the railway that
+     * had just been unloaded, looking entirely live"*.
+     *
+     * No throw is known on this path.  "Nothing known" is the same reason the reveal has a failsafe.
+     */
+    private boolean swapped = false;
+
+    private JPanel spinnerPanel;
+
+    /**
+     * Whether this grid has been replaced by another on the same panel.
+     *
+     * A grid hides itself until its tiles have finished decoding, and shows a spinner in the meantime
+     * - which means two timers and a callback holding the PANEL, still due to fire after the grid
+     * that armed them has gone.  Rebuilding the diagram calls parent.removeAll(), so those three then
+     * act on somebody else's grid: the grace timer adds a spinner into the middle of it, and because
+     * the panel is a FlowLayout an extra component there pushes the tiles along and the last row comes
+     * out short.  A half-drawn row appearing after a resize is exactly that.
+     *
+     * So a replaced grid is told, and its three stragglers do nothing.
+     */
+    private volatile boolean discarded = false;
+
+    /**
+     * The panel this grid was built into.
+     *
+     * (DOC-B16: assigned once, in the constructor, and never read anywhere in this file.) This used to
+     * be how discard() found the labels to hand back - "the labels this grid owns" answered by asking
+     * which grid was built over this panel - which is the approach `registeredCaptions`'s own javadoc
+     * says was tried and was wrong: one panel serves every page, so forgetting by panel forgets every
+     * page's captions, not just the retired grid's. discard() now uses `registeredCaptions` instead.
+     * This field is a leftover of the design that lost; nothing should be reintroduced that reads it
+     * as if it still decided anything.
+     */
+    private JPanel owner;
+
+    private TrainControlUI window;
+
+    /**
+     * The captions this grid was built with: each square it drew, to the station whose caption it carries or null, and
+     * each of those stations to the name it gave (MT-670).  They are the setup's answers a grid cannot be told again once
+     * it is built - a caption is a label of its own, in a cell laid out wider - so a setup change asks them to know
+     * whether building the grid again would draw anything different.
+     */
+    private final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        org.traincontrol.automationui.TileGraph.TileKey> captionsAsBuilt = new java.util.HashMap<>();
+
+    private final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, String> captionNamesAsBuilt =
+        new java.util.HashMap<>();
+
+    /**
+     * Each tile this grid registered with the window's registry, by its square (MT-670).  The registry lets go of a tile
+     * whose panel is hidden as it annotates, and only building the grid again registered it anew; a grid kept with a
+     * tile let go would go on showing that square as it was, so a grid is kept only while all of them are registered.
+     */
+    private final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, LayoutLabel> tilesAsRegistered =
+        new java.util.HashMap<>();
+
+    /** What the grid was built of, for the same question: the page, whether in an editor, and the window it is in. */
+    private String builtPage;
+    private boolean builtInEditor;
+    private Container builtMaster;
+
+    /**
+     * The caption labels THIS grid registered, so discarding it can hand back exactly those.
+     *
+     * Not "everything registered against the panel", which was the first attempt and was wrong in a way
+     * the repaint code warns about three lines from where it is called: the main window has ONE panel
+     * for every page, so forgetting by panel forgot the captions of every page there is - and a page
+     * served from the grid cache registers nothing on the way back, so its captions were blank for
+     * good.  That is the defect "dropping labels wholesale on a repaint" describes, reached through a
+     * different door.
+     */
+    private final java.util.List<javax.swing.JLabel> registeredCaptions = new java.util.ArrayList<>();
+
+    /**
+     * Where a container remembers the caption labels the grid inside it registered.
+     *
+     * The page cache holds CONTAINERS, and when it is emptied those grids are finished with for good -
+     * but a container is all the window has at that moment, so it has to be able to get from one to the
+     * labels.  Hung on the container rather than kept in a map here, so it cannot outlive what it is
+     * about.
+     */
+    public static final String CAPTIONS_REGISTERED = "TrainControl.captionsRegistered";
+
+    /**
+     * Makes a diagram's window scroll half a square at a time on both axes, at the size it is drawn: each step of the
+     * mouse wheel and each press of a scroll bar's arrow moves the diagram half a square (MT-726; Adam, 2026-10-11: "make
+     * scrolling in the track diagram viewer faster on both axes", and on MT-727, where it moved a whole square: "Make it
+     * half a square at a time").  The panel a diagram sits in is not Scrollable, so its scroll bars stepped one pixel at
+     * a time - three a notch of the wheel.
+     *
+     * @param pane the scroll pane the diagram is in
+     * @param size the square's edge in pixels
+     */
+    public static void scrollHalfASquareAtATime(javax.swing.JScrollPane pane, int size)
+    {
+        int step = Math.max(1, size / 2);
+
+        pane.getVerticalScrollBar().setUnitIncrement(step);
+        pane.getHorizontalScrollBar().setUnitIncrement(step);
+    }
+
+    /**
+     * Where a container remembers the grid that built it - for the window to ask whether the grid on screen is still the
+     * setup's (MT-670).  Hung on the container for the reason `CAPTIONS_REGISTERED` is: a map of containers to grids kept
+     * every grid the window ever built, as each grid holds its container (RSA38-C3).
+     */
+    private static final String GRID = "TrainControl.layoutGrid";
+
+    /**
+     * The grid that built a container.
+     *
+     * @param container a container on screen, or null
+     * @return its grid, or null where it is no grid's
+     */
+    public static LayoutGrid of(java.awt.Component container)
+    {
+        Object grid = container instanceof JPanel ? ((JPanel) container).getClientProperty(GRID) : null;
+
+        return grid instanceof LayoutGrid ? (LayoutGrid) grid : null;
+    }
+
+    /**
+     * The grid currently drawn into each panel, so that building a new one can retire the old one.
+     *
+     * DD-B3: four places build a grid over an existing panel and three of them remembered to discard
+     * the outgoing one first. The fourth was found by `174178c5`, whose comment is the finding - "both
+     * other places that build a grid over an existing panel call this; this one did not" - and the
+     * symptom was a spinner dropped into the middle of the page the NEW grid had just drawn.
+     *
+     * Being remembered at three of four call sites is what a rule looks like just before it is missed
+     * at the fourth. So the rule lives here instead, where building a grid IS retiring the one it
+     * replaces and there is nothing left to remember.
+     *
+     * Weak keys: a panel that has gone away takes its entry with it, and nothing here keeps a window
+     * alive that the application has finished with.
+     */
+    /**
+     * Weakly on BOTH sides.
+     *
+     * A WeakHashMap only collects an entry when nothing else reaches the key, and a LayoutGrid reaches
+     * its own panel - it holds `container` and adds it to the parent. So a plain grid as the value kept
+     * its own key alive and no entry was ever collected: one page retained per editor, popup or export.
+     * Found in review, before it grew into anything.
+     */
+    private static final java.util.Map<JPanel, java.lang.ref.WeakReference<LayoutGrid>> LIVE =
+        java.util.Collections.synchronizedMap(
+            new java.util.WeakHashMap<JPanel, java.lang.ref.WeakReference<LayoutGrid>>());
+
+    /**
+     * Retires whatever grid is registered against this panel, whether or not the caller ever got a reference
+     * to it (FNL-C1).
+     *
+     * **A constructor that throws part-way has already registered.**  `LIVE.put` is the first thing the
+     * constructor does, before a tile is built or a caption registered - so a build that fails later leaves a
+     * grid holding captions with no reference anywhere for a `finally` to discard.  The diagram export's
+     * bracket had exactly that hole: it discards `grid[0]`, and `grid[0]` is only assigned if the constructor
+     * returned.
+     *
+     * Idempotent, and safe on a panel that never had a grid.
+     *
+     * @param host the panel a grid was built into
+     */
+    public static void retire(JPanel host)
+    {
+        if (host == null) return;
+
+        java.lang.ref.WeakReference<LayoutGrid> was = LIVE.get(host);
+
+        LayoutGrid standing = was == null ? null : was.get();
+
+        if (standing != null && !standing.isDiscarded()) standing.discard();
+    }
+
+    /**
+     * @return whether this grid has been retired and should not touch its panel again
+     */
+    public boolean isDiscarded()
+    {
+        return discarded;
+    }
+
+    /**
+     * Whether this grid took its panel over from one that was already drawn on it.
+     *
+     * Read from the LIVE registry in the constructor, where the outgoing grid is discarded - so it
+     * costs nothing and cannot disagree with what actually happened.
+     */
+    private boolean replacing = false;
+
+    /**
+     * The tile size this grid was built at, and whether the grid it replaced was built at the same
+     * one (MT-273).
+     *
+     * A REBUILD AT THE SAME SIZE IS NOT AN ARRIVAL.  Every tile it draws is already in the cache at
+     * that key, so the page it puts up is complete the moment it is mounted - and the one or two
+     * squares that are not (a tile type newly placed) arrive within a frame or two.
+     *
+     * A rebuild at a DIFFERENT size is an arrival wearing a rebuild's clothes: changing the size
+     * re-keys every image, so nothing is cached and the page really does come in square by square.
+     * That is the case the hold-back and the spinner were written for, and it keeps them.
+     */
+    private final int tileSize;
+
+    private boolean sameSizeRebuild = false;
+
+    private javax.swing.Timer failsafe;
+
+    private javax.swing.Timer grace;
+
+    /**
+     * Stops this grid from touching its panel again.
+     *
+     * Called on the OUTGOING grid before a new one is built over the same panel.  Idempotent, and
+     * safe on a grid that never had a spinner.
+     */
+    public void discard()
+    {
+        discarded = true;
+
+        // The caption labels this grid registered, handed back.
+        //
+        // addLayoutStation prunes LAZILY - a stale label goes only when a successor for the same square
+        // with the same owner is registered - so a caption that is CLEARED left its label in the map for
+        // good: nothing is registered for that square again, so no successor ever arrives.  The label is
+        // still a child of the retired container, which keeps the whole previous grid reachable, every
+        // tile and listener on that page with it.  The same held for every square on a page that was
+        // renamed or deleted, since the key carries the page name.
+        //
+        // Here because this is the one moment something knows a grid is finished with.  It runs before
+        // the replacement registers anything - LIVE.put and this call are the first thing the new
+        // constructor does - so it cannot take the new grid's labels with it.
+        // Its own labels, and only if this grid is really finished with - which the WINDOW decides,
+        // because it owns the page cache and this does not.  A grid whose container is cached is coming
+        // back: the cache re-attaches the container without building anything or registering anything,
+        // so labels dropped here would be gone for the session and that page's captions blank.
+        if (window != null) window.forgetLayoutStations(registeredCaptions, container);
+
+        // Null only for a grid whose constructor did not reach the panel - it registers itself against
+        // that panel before it builds, so a failure part way through leaves one here to be discarded by
+        // the next grid over the same panel.  Nothing on that path throws today; guarded so that a
+        // failure stays the failure it was rather than becoming an NPE in the recovery.
+        if (container == null) return;
+
+        // Shown, whatever state the reveal had reached.  A grid is HIDDEN while its tiles decode and
+        // shown again by the reveal - which discarding cancels - so a grid discarded while it was
+        // still decoding stayed hidden for good.  It may already be in the page cache, and coming
+        // back to that page then showed an empty diagram until something rebuilt the cache.
+        container.setVisible(true);
+
+        if (failsafe != null) failsafe.stop();
+        if (grace != null) grace.stop();
+
+        // AND THE SPINNER THIS GRID MOUNTED, if the reveal never ran to take it out (VLD-C2).
+        //
+        // Stopping the timers stops a spinner being added; it does nothing about one already there.
+        // The panel is no longer emptied a statement after this call, so an outgoing spinner would
+        // otherwise stand beside the outgoing diagram for the length of a whole rebuild.
+        if (mountedSpinner != null && spinnerPanel != null)
+        {
+            spinnerPanel.remove(mountedSpinner);
+
+            mountedSpinner = null;
+        }
+
+        // AND A PANEL LEFT HOLDING SOMETHING THIS GRID NEVER REPLACED (VLD-C2).
+        //
+        // Reached when a build threw before the swap: the panel still holds the container of the grid
+        // BEFORE that one, whose timers are stopped and whose captions are gone.  Emptying it here
+        // makes the failure look like a failure, which is what it was before the swap moved.
+        //
+        // At discard rather than in a catch, because there are three callers that build a grid over
+        // an existing panel and only one of them catches - and this is the one place all three go
+        // through on the way to the next attempt.
+        if (!swapped && owner != null)
+        {
+            owner.removeAll();
+            owner.revalidate();
+            owner.repaint();
+        }
+    }
     
     private boolean cacheable = false;
     
+    /**
+     * The panel a diagram is built into, which paints the trains last (OB-159).
+     *
+     * Adam: "it is a z order issue.  The stations paint over the locomotives."
+     *
+     * Swing paints children in one order and has no notion of layers, and the two things that want to
+     * be in front - the station caption and the locomotive standing under it - are on different
+     * components.  Whichever is given the front, one of Adam's two reports comes back: captions in
+     * front and the locomotive is painted over (OB-159); the tile in front and the NAME is painted
+     * out, because a tile is opaque (OB-117).
+     *
+     * So the trains are not a component's z-order at all.  The children paint in the order they
+     * always did, and then every tile is asked for its train, which lands over both.
+     *
+     * Public and static so a test can build one out of plain components and look at what comes out -
+     * which is the whole of what this has to get right and needs no railway to establish.
+     *
+     * @return a panel that draws its tiles, then its captions, then what its curves' stations spill onto the squares
+     *     beside them with those squares' arrows and the captions back over it, then its trains, then its addresses
+     */
+    public static JPanel newDiagramContainer()
+    {
+        return new JPanel()
+        {
+            @Override
+            protected void paintChildren(java.awt.Graphics g)
+            {
+                super.paintChildren(g);
+
+                // A STATION ON A CURVE SPILLS ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead make the
+                // stations spill over onto adjacent tiles?  This would look much better than trying to reduce the size."),
+                // drawn here, once every square is drawn: its own square cuts it off at its edges, and a square painted
+                // after it would paint its white over what reached that far.  Under the captions, the trains and the
+                // addresses, as the icon on its own square is - the captions drawn again over it below (RSA61-C2).
+                java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
+
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof LayoutLabel && ((LayoutLabel) child).paintStationSpill(g))
+                    {
+                        spilt.put((LayoutLabel) child, ((LayoutLabel) child).spillReach());
+                    }
+                }
+
+                // AND THE ARROWS OF THE SQUARES A SPILL REACHED, BACK OVER IT (Adam, 2026-10-10: "make sure that the
+                // optional ingress/egress arrows remain visible, especially on curves").  A square's arrows sit at the
+                // middle of its edges, and a curve's station reaches its neighbours at exactly those two places - so the
+                // spill drew over the arrows that say which way a train may enter or leave the square beside it.
+                if (!spilt.isEmpty())
+                {
+                    // ONLY WHERE THE SPILL WAS DRAWN, and the captions over that again (RSA61-C2): everywhere else the
+                    // arrows and the captions are as the squares drew them - a caption in front of the tiles (OB-117) - and
+                    // drawn over the whole square, the arrows came out in front of a caption covering it.
+                    java.awt.geom.Area spilled = new java.awt.geom.Area();
+
+                    for (LayoutLabel label : spilt.keySet())
+                    {
+                        java.awt.Shape shape = label.spillShapeOnTheDiagram();
+
+                        if (shape != null) spilled.add(new java.awt.geom.Area(shape));
+                    }
+
+                    java.awt.Graphics2D under = (java.awt.Graphics2D) g.create();
+
+                    try
+                    {
+                        under.clip(spilled);
+
+                        for (java.awt.Component child : getComponents())
+                        {
+                            if (child instanceof LayoutLabel)
+                            {
+                                ((LayoutLabel) child).paintArrowsOverSpill(under, spilt);
+                            }
+                        }
+
+                        java.awt.Rectangle reach = spilled.getBounds();
+
+                        for (java.awt.Component child : getComponents())
+                        {
+                            if (child instanceof StationCaption && child.isVisible() && child.getBounds().intersects(reach))
+                            {
+                                java.awt.Graphics over = under.create(child.getX(), child.getY(), child.getWidth(),
+                                    child.getHeight());
+
+                                try
+                                {
+                                    child.paint(over);
+                                }
+                                finally
+                                {
+                                    over.dispose();
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        under.dispose();
+                    }
+                }
+
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof LayoutLabel)
+                    {
+                        ((LayoutLabel) child).paintTrainOverCaptions(g);
+                    }
+                }
+
+                // AND THE ADDRESSES OVER THE TRAINS (FR-116; Adam, 2026-10-09: "Red address labels look good, but make
+                // sure they are rendered on top of the autonomy locomotive icons").  An address is what the operator
+                // turned Show Addresses on to read, and the pass above drew every icon over it.  Since round 102 it
+                // covers only its letters and their halo, so drawn last it hides nothing of the icon but the number.
+                // ONLY THOSE IN WHAT IS BEING REPAINTED (RSA60-C1): a hover repaints three squares by three, and with Show
+                // Addresses on this pass painted every address on the page each time, clipped to nothing - about eighteen
+                // times the cost on Adam's main page.  The pass above already skips what the clip misses.
+                java.awt.Rectangle clip = g.getClipBounds();
+
+                for (java.awt.Component child : getComponents())
+                {
+                    if (child instanceof AddressLabel && child.isVisible()
+                        && (clip == null || clip.intersects(child.getBounds())))
+                    {
+                        java.awt.Graphics over = g.create(child.getX(), child.getY(), child.getWidth(), child.getHeight());
+
+                        try
+                        {
+                            child.paint(over);
+                        }
+                        finally
+                        {
+                            over.dispose();
+                        }
+                    }
+                }
+
+            }
+
+            /**
+             * These children DO overlap, and Swing has to be told (OB-172, third report).
+             *
+             * Adam: *"it must be the drawing order, because minimizing and then maximizing the window
+             * fixes it."*  That is the whole diagnosis.  A full repaint goes through this container's
+             * `paint`, which redraws the ruler last and is correct.  An ordinary repaint does not:
+             * `isOptimizedDrawingEnabled` defaults to TRUE, which promises Swing that no two children
+             * overlap - so it repaints a dirty child DIRECTLY, without the parent, and a caption that
+             * reaches into the gutter paints over the numbers with nothing to put them back.
+             *
+             * The promise was false here.  A `StationCaption` is 38 pixels tall and up to 55 wide
+             * against a 30-pixel cell; overlapping is what this container is for.  Saying so is not a
+             * trick - it is the flag that exists for exactly this arrangement, and it makes every
+             * repaint go through the parent, which is what the numbers need.
+             *
+             * It costs repaint area.  `testRenderingCost` is the measure of that and is part of this
+             * change's evidence.
+             */
+            @Override
+            public boolean isOptimizedDrawingEnabled()
+            {
+                return false;
+            }
+
+            /**
+             * The axis numbers, drawn last of all (OB-172).
+             *
+             * In `paint` rather than at the end of `paintChildren`, which was the first attempt and
+             * did not work: the override ran, the border was the ruler and the clip was the whole
+             * component, and the numbers were still rubbed out - 69 pixels of ink left of 3024.
+             * Swing gives each child its own scratch graphics inside `paintChildren`, and what that
+             * costs is not worth working out when there is a place that is unambiguously after
+             * everything.
+             *
+             * **Why the numbers vanish without it.**  A `Border` is painted by `JComponent.paint`
+             * BEFORE the children, so every child reaching into the eighteen pixels the ruler reserves
+             * is drawn over the number underneath.  A `StationCaption` is 38 pixels tall and up to 55
+             * wide against a 30-pixel cell, which is why one of them takes out the numbers for two
+             * rows - and why Adam saw numbers missing on rows carrying no caption of their own.
+             *
+             * Measured before it was changed, because two guesses before this one were wrong: on his
+             * own `1 - Main` every cell the ruler measures is exactly 30x30 with none absent, against
+             * a 14-pixel font, so not one of `paintBorder`'s three skip clauses can fire there.  The
+             * numbers were never being skipped.  They were being covered.
+             *
+             * Painted a second time rather than moved out of the border: the border is what RESERVES
+             * the gutter, and a ruler that stopped being one would take the room away with it.
+             *
+             * `super.paint` runs the whole sequence - background, border, children - and then this
+             * puts the ruler back over the top.
+             */
+            @Override
+            public void paint(java.awt.Graphics g)
+            {
+                super.paint(g);
+
+                if (getBorder() instanceof AxisRuler)
+                {
+                    getBorder().paintBorder(this, g, 0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+    }
+
     /**
      * This class draws the train layout and ensures that proper event references are set in the model
      * @param layout reference to the layout from the model
@@ -59,7 +1077,66 @@ public class LayoutGrid
      * @param ui
      */
     public LayoutGrid(LayoutDiagram layout, int size, JPanel parent, Container master, boolean popup, TrainControlUI ui)
-    {          
+    {
+        // Is THIS grid inside an editor - not "is an editor open somewhere".
+        //
+        // layout.getEdit() alone is the second question. It is the flag the two editors share for their
+        // mutual exclusion, so while either was open every grid on screen answered yes, the viewer
+        // included: it drew the editor's grey grid around its squares (Adam: "the BUG where the VIEWER
+        // gets a grid is still there"), greyed its captions, dropped its hand cursors and its tooltips,
+        // and attached mouse listeners that cast their parent to LayoutEditor - which the viewer is not.
+        //
+        // One line above already asked it this way, as a conjunction, and was right. Everything else in
+        // this constructor asked the short version and was wrong in the viewer.
+        final boolean inEditor = layout.getEdit() && master instanceof LayoutEditor;
+
+        this.builtPage = layout.getName();
+        this.builtInEditor = inEditor;
+        this.builtMaster = master;
+
+        // Before anything else touches the panel: whatever was drawn here is being replaced, and a
+        // replaced grid with timers still armed fires into a panel that is no longer its own.
+        this.owner = parent;
+        this.window = ui;
+        this.tileSize = size;
+
+        if (parent != null)
+        {
+            java.lang.ref.WeakReference<LayoutGrid> was =
+                LIVE.put(parent, new java.lang.ref.WeakReference<>(this));
+
+            LayoutGrid outgoing = was == null ? null : was.get();
+
+            replacing = outgoing != null && outgoing != this;
+
+            // Asked BEFORE the discard, because it is a question about the grid being replaced and
+            // the discard is what finishes with it.
+            sameSizeRebuild = replacing && outgoing.tileSize == size;
+
+            if (replacing) outgoing.discard();
+        }
+
+        // Which editor this is.  layout.getEdit() is true in BOTH - the autonomy editor borrows the
+        // diagram editor's edit flag for its mutual exclusion - so keying label rendering on it changed
+        // the track diagram editor as well, where the raw "Point:" text is exactly what the user needs
+        // to see and edit.
+        // No station captions at all in the TRACK diagram editor (FR-030).
+        //
+        // Adam: "in the track diagram editor, hide autonomy labels completely."  That editor is about
+        // where the rails are, and a caption there is an autonomy object drawn over the thing being
+        // moved - it cannot be edited from that window, it covers the square underneath, and every
+        // one of them is in the way of the one job that window has.
+        //
+        // Decided before `captioned` is read rather than at each of the four places that draw one:
+        // a rule enforced at the point of use is a rule with four chances to be forgotten, and this
+        // file has form.
+        final boolean hidesCaptions = hidesStationCaptions(inEditor,
+            master instanceof LayoutEditor && ((LayoutEditor) master).isAutonomyMode(),
+            ui != null && ui.isPageExcludedFromAutonomy(layout.getName()));
+
+        boolean autonomyEditor = master instanceof LayoutEditor
+            && ((LayoutEditor) master).isAutonomyMode();
+
         // Calculate boundaries
         int offsetX = layout.getMinx();
         int offsetY = layout.getMiny();
@@ -74,16 +1151,50 @@ public class LayoutGrid
         // Create layout                      
         // JPanel container; // no longer needed - included as class field for caching
         
-        parent.removeAll();
+        // NOT EMPTIED YET - see the swap below (Adam, 2026-09-04: "less flickering").
+        //
+        // This used to empty the panel HERE, eight hundred lines before the replacement is added to
+        // it, and everything between is the build: every tile, every image decode, every caption.  So
+        // the panel stood EMPTY for the whole rebuild, and any paint landing in that window - and
+        // there are many, because decoding pumps the event queue - drew a blank page.
+        //
+        // That is the flicker on a re-render: not the diagram being redrawn, but nothing being drawn
+        // in its place first.  The old diagram stays up until the new one is ready.
         
         // We need a non scaling panel for small layouts
         // if (width * size < parent.getWidth() || height * size < parent.getHeight() || popup)
         // {
-            container = new JPanel();
+            container = newDiagramContainer();
             container.setBackground(Color.white);
+
+            // The live list, so whatever this grid registers later is reachable from the container
+            container.putClientProperty(CAPTIONS_REGISTERED, registeredCaptions);
+
+            // And the grid itself, for the window's question whether it is still the setup's (MT-670)
+            container.putClientProperty(GRID, this);
             
             // Things mess up without this
-            if (LayoutDiagram.IGNORE_PADDING || layout.getEdit())
+            //
+            // "Being edited" is a fact about the DIAGRAM and is therefore true in both windows at once
+            // - the main window shares the LayoutDiagram with the editor - and it is the wrong question
+            // for anything about THIS grid, which is what LAYOUT is: how this particular grid is
+            // arranged.
+            //
+            // This used to add "that is right for clickability below, where the viewer's tiles must
+            // stop routing clicks while an editor owns the page". It is not right any more and was not
+            // meant to be: the line it points at passes `inEditor`, so the viewer's tiles stay
+            // clickable while an editor is open, which is the whole point of asking the longer
+            // question. Corrected rather than deleted because this is the only written record of why
+            // the flag is shared at all (NR-7).
+            //
+            // MT-106: the two were the same flag, so any repaint of the viewer while an editor was
+            // open re-laid the viewer the editor's way. It went unnoticed while the viewer was only
+            // ever rebuilt after the editor closed; the editor now stays open across a page or mode
+            // switch, and the teardown that runs on each one rebuilds it.
+            //
+            // So this asks whether THIS grid is in an editor, which is the question it was always
+            // trying to ask.
+            if (LayoutDiagram.IGNORE_PADDING || inEditor)
             {
                 parent.setLayout(new FlowLayout());
             }
@@ -101,16 +1212,142 @@ public class LayoutGrid
         //     container = parent;
         // }
 
+        // THE COLUMN AND ROW NUMBERS, in the margin the border reserves (FR-057).
+        //
+        // Adam: "coordinates are referenced in issues but not visible to the user.  add a grid around
+        // the diagram."  Drawn as a border rather than as two more rows of cells - see AxisRuler for
+        // why - so the grid inside is exactly what it was and every caller that addresses it by
+        // coordinate is unaffected.
+        //
+        // The numbers are the DIAGRAM's, not the cell indices: `offsetX`/`offsetY` are where its
+        // left-most and top-most track actually are, which is what makes the printed number the one an
+        // issue would quote.  `width` and `height` have already been incremented for the spacer row and
+        // column, which hold nothing, so the ruler is told the real counts.
+        //
+        // Asked on every build, which is what makes the toggle a redraw rather than a special case.
+        // IN THE EDITORS, NOT IN THE VIEWER (Adam: "they are visible in the track diagram viewer when
+        // they shouldn't be").
+        //
+        // The preference was asked and the window was not, so every grid drew them.  He asked for the
+        // numbers "in both autonomy editor and track diagram editor" and the viewer is neither: it is
+        // where trains are watched, and a ruler there is scenery over the railway.
+        //
+        // `master instanceof LayoutEditor` rather than `inEditor`, and NOT because the flag is unset
+        // in autonomy mode - it is set there (RGD-C6).  `LayoutEditor.render()` calls
+        // `layout.setEdit()` unconditionally and `setAutonomyMode` runs before it, so `getEdit()` is
+        // true in both editors; `setAutonomyMode`'s own javadoc says it "does not call setEdit", which
+        // is true of that method and false of the window it runs in, and that sentence is where the
+        // opposite claim that used to stand here came from.
+        //
+        // The window test is used because it is the one that answers the question actually being
+        // asked - is this an editor at all - rather than borrowing a flag that means "the diagram is
+        // editable" and happens to agree.
+        //
+        // AND ONLY WITH THE GRID ON, which is the whole of what `coordinatesVisible` now answers - see
+        // it for why the numbers stopped being a setting of their own.  Asked through that method
+        // rather than as `LayoutEditor.showGrid()` here, so there is one place to read the rule and one
+        // place to change it.
+        if (master instanceof LayoutEditor && coordinatesVisible())
+        {
+            // MEASURED, NOT MULTIPLIED (Adam: "the axis numbers drift and are out of alignment.
+            // The first few are centered, but the rest aren't").
+            //
+            // The first version worked the positions out as `column * size`, which is right only while
+            // every cell is exactly a tile wide - and with the grey grid on each square wears a line
+            // border that reserves room, so the real pitch is a pixel or two more.  The error is
+            // cumulative: the first few numbers sit over their squares and the twentieth is a whole
+            // square out, which is why it read as "off by one" at the end.
+            //
+            // These two lambdas are asked at PAINT time, when the layout has run and a square's bounds
+            // are what they really are.  `grid` is filled in below, after this line, and that is fine
+            // for the same reason.
+            final LayoutGrid drawing = this;
+
+            // MORE THAN ONE ROW TO MEASURE FROM (OB-172).
+            //
+            // This asked `getValueAt(column, 0)` and nothing else, so a column whose top square was
+            // absent - or had not been given its bounds yet, which is what an editor swap can leave
+            // behind for a moment - lost its number entirely.  The first three rows and columns are
+            // offered; they are all the same column, so any of them gives the same x.
+            java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> columnSources =
+                new java.util.ArrayList<>();
+
+            java.util.List<java.util.function.IntFunction<java.awt.Rectangle>> rowSources =
+                new java.util.ArrayList<>();
+
+            // Six rather than three: the candidates are now compared by size rather than taken in
+            // order, so a wider sweep costs a few lambda calls at paint time and buys immunity to a
+            // run of spacers at the edge of the diagram.
+            for (int probe = 0; probe < Math.min(6, Math.max(width, height)); probe++)
+            {
+                final int which = probe;
+
+                columnSources.add(column ->
+                {
+                    LayoutLabel cell = drawing.getValueAt(column, which);
+
+                    return cell == null ? null : cell.getBounds();
+                });
+
+                rowSources.add(row ->
+                {
+                    LayoutLabel cell = drawing.getValueAt(which, row);
+
+                    return cell == null ? null : cell.getBounds();
+                });
+            }
+
+            container.setBorder(AxisRuler.overRows(offsetX, offsetY, width - 1, height - 1,
+                columnSources, rowSources));
+        }
+        else
+        {
+            container.setBorder(null);
+        }
+
         // Generate grid
         container.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints(); 
-        container.setSize(width * size, height * size);
-        container.setMaximumSize(new Dimension(width * size, height * size));
-        
-        maxWidth = width * size;
-        maxHeight = height * size;
+
+        // AND THE ROOM THE RULER ASKED FOR, added to the panel rather than taken out of the diagram
+        // (FR-057, Adam: "I don't see the axis labels in the editor grid").
+        //
+        // A border paints inside the component's own bounds, so the eighteen pixels it reserves come
+        // out of whatever the component was given.  These three numbers were all `width * size` by
+        // `height * size` - the grid exactly - so the gutter was carved out of the diagram: the tiles
+        // were pushed right and down inside a panel that had not grown, and the numbers went under the
+        // edge of the scroll pane.  The border was there the whole time and could not be seen, which
+        // is a worse failure than not drawing it at all.
+        //
+        // `maxWidth` and `maxHeight` are what the EDITOR sizes its own panel from, so they have to
+        // carry the gutter too - otherwise the panel is the old size and the container overflows it.
+        java.awt.Insets gutter = container.getBorder() == null
+            ? new java.awt.Insets(0, 0, 0, 0) : container.getBorder().getBorderInsets(container);
+
+        // THE SPACER IS PAID FOR, and `width`/`height` already include it.
+        //
+        // Adam asked why the numbers stop one short of the last row and column.  They do not: the ruler
+        // numbers every real square, measured on his own `1 - Main` - 23 columns and 15 rows, all of
+        // them.  What has no number is the dummy column and row GridBagLayout is given so that an
+        // overflowing text label cannot widen its neighbours, and those are not squares.
+        //
+        // Sizing the container without them was tried and reverted the same day; `LayoutLabel.markSpacer`
+        // carries what happened.
+        int fullWidth = width * size + gutter.left + gutter.right;
+        int fullHeight = height * size + gutter.top + gutter.bottom;
+
+        container.setSize(fullWidth, fullHeight);
+        container.setMaximumSize(new Dimension(fullWidth, fullHeight));
+
+        maxWidth = fullWidth;
+        maxHeight = fullHeight;
                
         grid = new LayoutLabel[width][height];
+
+        // ASKED ONCE A BUILD, AND HANDED TO EACH SQUARE (speed, 2026-10-04): the editor's grid setting is a preference, a
+        // Windows registry read of 22 microseconds that nothing caches, and every square asked it as it was made - one read
+        // per square on every redraw of the editor's diagram.
+        final Boolean gridLines = inEditor ? LayoutEditor.showGrid() : null;
                        
         for(int y = 0; y < height; y++)
         {
@@ -120,6 +1357,15 @@ public class LayoutGrid
                 if (x == (width - 1) || y == (height - 1))
                 {
                     grid[x][y] = new LayoutLabel(null, master, size, ui, false);
+
+                    // Not a square, so not part of the grey grid (OB-055).
+                    //
+                    // Adam: "when grid is turned on, there is a grid on an extra row at the bottom, and
+                    // an extra half column on the right.  the half column starts halfway down and has
+                    // the same number of cells, but each is only at half height."  That is this row and
+                    // this column: they hold nothing, so GridBagLayout gives them whatever is left
+                    // rather than a square's worth, and the border made them visible.
+                    grid[x][y].markSpacer();
                     gbc.gridwidth = 0;
                     gbc.gridheight = 0;
                     gbc.gridx = x;
@@ -130,12 +1376,41 @@ public class LayoutGrid
                 // End GBC fix
                 
                 LayoutDiagramComponent c = layout.getComponent(x + offsetX, y  + offsetY);
-                                
+
+                // The square this cell is, and the station whose caption belongs on it.
+                //
+                // A caption is no longer text drawn into the diagram - it is part of the autonomy setup,
+                // pointing at the sensor's square - so it is asked for rather than found by reading a
+                // prefix off a label.  It can therefore sit on a square carrying no component at all,
+                // which is why the text below is drawn for a caption as well as for a label.
+                final org.traincontrol.automationui.TileGraph.TileKey square =
+                    new org.traincontrol.automationui.TileGraph.TileKey(
+                        layout.getName(), x + offsetX, y + offsetY);
+
+                final org.traincontrol.automationui.TileGraph.TileKey captioned =
+                    hidesCaptions ? null : (ui == null ? null : ui.autonomyCaptionAt(square));
+
+                captionsAsBuilt.put(square, captioned);
+
                 // The edit value ensures that the icon is disabled in edit mode, and it disables clickability/events
-                grid[x][y] = new LayoutLabel(c, master, size, ui, layout.getEdit());
+                grid[x][y] = new LayoutLabel(c, master, size, ui, inEditor, gridLines);
+
+                // THE AUTONOMY EDITOR'S TRAINS FOLLOW ITS OWN SWITCH (FR-119), and no other diagram's do
+                if (autonomyEditor && ((LayoutEditor) master).getAutonomyPanel() != null)
+                {
+                    grid[x][y].setTrainsShown(((LayoutEditor) master).getAutonomyPanel()::isShowingTrains);
+                }
+
+                // The square it is drawing, so it can ask whether a train is lying across it.  The
+                // key is already built a few lines above for the caption lookup.
+                grid[x][y].setSquare(square);
                 gbc.anchor = GridBagConstraints.BASELINE_LEADING;
 
-                if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
+                boolean drawsText = captioned != null
+                    || (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel()
+                        || !ALLOW_TEXT_ANYWHERE && c.isText()));
+
+                if (drawsText)
                 {
                     // Text labels can overflow.  This ensures that they don't widen other cells.
                     gbc.gridwidth = 0;
@@ -154,73 +1429,473 @@ public class LayoutGrid
                 container.add(grid[x][y], gbc);  
                 
                 // Render text separately
-                if (c != null && (ALLOW_TEXT_ANYWHERE && c.hasLabel() || !ALLOW_TEXT_ANYWHERE && c.isText()))
+                if (drawsText)
                 {
-                    JLabel text = new JLabel();
-                    
-                    // Autonomy Station label 
-                    if (c.getLabel().startsWith(LAYOUT_STATION_PREFIX) && !layout.getEdit())
-                    {
-                        // Hide text initially
-                        text.setText("");
-                        
-                        // This callback will populate the label
-                        ui.addLayoutStation(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""), text);
-                        text.setToolTipText(c.getLabel().replace(LAYOUT_STATION_PREFIX, ""));
-                        
-                        text.addMouseListener(new MouseAdapter()  
-                        {  
-                            @Override
-                            public void mouseClicked(MouseEvent e)  
-                            {  
-                                if (e.getButton() == MouseEvent.BUTTON3)
-                                {                              
-                                    javax.swing.SwingUtilities.invokeLater(() ->
-                                    {
-                                        LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, text.getToolTipText());
+                    // A StationCaption, which is a JLabel that can draw itself as a pill (FR-028).
+                    //
+                    // Every text label on the diagram is built here - captions, station names, and the
+                    // user's own writing - and only the first of those becomes a pill. The rest are
+                    // JLabels behaving exactly as they did, which is why this is a subclass and not a
+                    // separate component: one place builds them, one place decides which is which.
+                    StationCaption text = new StationCaption();
 
-                                        menu.show(e.getComponent(), e.getX(), e.getY());      
-                                    });
+                    // Set by the autonomy editor's placed-train branch below, and read after the
+                    // generic label styling, which would otherwise take the translucency back.
+                    boolean standingTrain = false;
+
+                    // Whether this caption names a home locomotive that is somewhere else (MT-261
+                    // ruling 2).  It picks the pill's fill, which is what makes the name read white.
+                    boolean awayFromHome = false;
+
+                    // Black unless something below has a reason to say otherwise
+                    Color labelColour = Color.BLACK;
+                    
+                    // What the user wrote on this square, which is a different thing from the caption
+                    final String own = c == null || c.getLabel() == null ? "" : c.getLabel();
+
+                    // The station name, for a caption to show when no train is standing on it
+                    final String captionName = captioned == null
+                        ? null : ui.autonomyStationNameAt(captioned);
+
+                    if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
+
+                    // WHETHER THIS LABEL IS DRAWN AT ALL (OB-272).  In the autonomy editor a CAPTION follows
+                    // the caption dropdown and the user's own writing follows the text switch, which only
+                    // Labels Only turns on - Adam, 2026-09-23: *"make text labels be a dedicated setting, and
+                    // hide the text labels unless it is selected."*  Everywhere else one switch decides both,
+                    // as it always has.
+                    final AutonomyEditorPanel captionPanel = autonomyEditor && master instanceof LayoutEditor
+                        ? ((LayoutEditor) master).getAutonomyPanel() : null;
+
+                    final boolean drawn = captioned != null && autonomyEditor && captionPanel != null
+                        ? captionPanel.isDrawingCaptions() : !layout.getEditHideText();
+
+                    // Autonomy station caption, live.
+                    //
+                    // An excluded page is already gone by here, and the clause that used to say so has
+                    // been removed with this comment (review, 2026-08-26).  `hidesStationCaptions`
+                    // takes the decision once, three hundred lines up, and nulls `captioned` for an
+                    // excluded page - so asking again was dead, and the dead half of a condition is
+                    // where a rule quietly stops being enforced when the live half changes.
+                    //
+                    // This also used to promise "the name is still drawn, below, as ordinary text",
+                    // which stopped being true when B6 routed exclusion through that one decision:
+                    // nothing autonomy knows is drawn on an excluded page now, which is what Adam asked
+                    // for ("hide captions", 2026-08-25).  Writing of the user's OWN is untouched - it
+                    // was never autonomy's to hide.
+                    if (captioned != null && !inEditor)
+                    {
+                        // Blank until autonomy says otherwise.
+                        //
+                        // A caption belongs to the running setup: it shows what is standing at that
+                        // station, and with nothing loaded there is no answer to give.  Seeding it
+                        // with the station's name instead was tried and was worse - an unloaded
+                        // diagram covered in names that look like live captions and are not, which is
+                        // the placeholder state this comment exists to stop somebody restoring.
+                        text.setText("");
+
+                        // Of this build, so registering its other caption of the same station spares it (RSA40-C1)
+                        text.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, registeredCaptions);
+
+                        // This callback will populate the label
+                        ui.addLayoutStation(captioned, text, parent);
+
+                        registeredCaptions.add(text);
+                        text.setToolTipText(captionName);
+
+                        final org.traincontrol.automationui.TileGraph.TileKey station = captioned;
+
+                        text.addMouseListener(new MouseAdapter()
+                        {
+                            // The name is a component of its own, stacked on top of the square, and the
+                            // keyboard's idea of what is hovered comes from the square's listener - which
+                            // gets mouseEXITED the moment the pointer moves onto the name.  So Control+V
+                            // over the platform worked and Control+V over the name did nothing, when the
+                            // name is the larger and more obvious of the two things to aim at.
+                            //
+                            // Reports the STATION rather than whichever square the text happens to sit on:
+                            // a caption may be drawn on blank space beside its platform, and pointing at a
+                            // station's name means that station either way.
+                            @Override
+                            public void mouseEntered(MouseEvent e)
+                            {
+                                ui.setHoveredDiagramTile(station.getPage(), station.getX(), station.getY());
+                            }
+
+                            @Override
+                            public void mouseExited(MouseEvent e)
+                            {
+                                ui.setHoveredDiagramTile(null, -1, -1);
+                            }
+
+                            @Override
+                            public void mouseClicked(MouseEvent e)
+                            {
+                                // A DOUBLE-CLICK IS TWO CLICKS, and each activates (OB-138).
+                                //
+                                // Adam: "double clicking station label in track viewer should activate
+                                // that locomotive (as if it was selected on the key mappings) if it is
+                                // mapped, not open the editor."
+                                //
+                                // This used to open the autonomy setup at the station, deliberately.
+                                // He has ruled the other way, so the branch is gone rather than given
+                                // another condition - what is left is the ordinary left-click path
+                                // below, which is exactly the behaviour he describes: jumpToLocomotive
+                                // switches to the locomotive\u2019s mapping page and selects its button, and
+                                // does nothing when it has no mapping.
+                                //
+                                // The setup is not stranded. The right-click menu on this same square
+                                // still opens the full editor, and it is the door that explains itself
+                                // when it has to refuse - which is why the removed branch had to carry
+                                // a copy of that reasoning, and why the copy goes with it.
+
+                                if (e.getButton() == MouseEvent.BUTTON3)
+                                {
+                                    LayoutRightclickAutonomyMenu.showFor(ui, station, station,
+                                        e.getComponent(), e.getX(), e.getY());
                                 }
                                 // Left-clicking a station will activate its locomotive
                                 else
                                 {
-                                    if (ui.getModel().hasAutoLayout() &&
-                                            ui.getModel().getAutoLayout().getPoint(text.getToolTipText()) != null)
+                                    // By SQUARE.  A square where trains may turn round is several
+                                    // Points, none of them called what the diagram says, and a lookup
+                                    // by the text of the caption simply returned null.
+                                    org.traincontrol.automation.Point standing =
+                                        ui.getAutonomyPointForTile(station);
+
+                                    if (standing != null)
                                     {
-                                        Locomotive atStation = ui.getModel().getAutoLayout().getPoint(text.getToolTipText()).getCurrentLocomotive();
+                                        Locomotive atStation = standing.getCurrentLocomotive();
                                         Locomotive active = ui.getActiveLoc();
-                                        
+
                                         if (atStation != null && !atStation.equals(active))
                                         {
                                             ui.jumpToLocomotive(atStation.getName());
-                                        }                                        
+                                        }
                                     }
                                 }
-                            }  
-                        }); 
+                            }
+                        });
                     }
                     // Regular labels
-                    else if (!layout.getEditHideText())
+                    else if (drawn)
                     {
-                        text.setText(c.getLabel());
+                        if (captioned != null && autonomyEditor)
+                        {
+                            // The STATION by default, the parked train on request (FR-030).
+                            //
+                            // Adam: "in the autonomy editor, have them show the station name by
+                            // default ... rather than the parked train."  This is the window where a
+                            // railway is named, and a caption saying which locomotive happens to be
+                            // standing somewhere answers a question about right now in a window about
+                            // how things are arranged. The running diagram is where the trains are.
+                            boolean naming = !(master instanceof LayoutEditor)
+                                || ((LayoutEditor) master).getAutonomyPanel() == null
+                                || !((LayoutEditor) master).getAutonomyPanel().isShowingParkedTrains();
+
+                            // WHERE THE TRAIN LIVES, if that is what has been asked for (MT-261
+                            // ruling 2, R28-C3).
+                            //
+                            // Adam: "labels show the home locomotive in white to indicate it's not
+                            // there (and black/no change if it's there)."  Nothing in 3.0.0 drew the
+                            // home assignment at all, so the only way to see where a locomotive
+                            // belonged was to open one square's menu at a time.
+                            //
+                            // Asked FIRST, because it is the more specific question: a caption has
+                            // room for one name, and somebody who has turned this on is looking at
+                            // homes rather than at station names or at what happens to be parked.
+                            // Squares with no home fall through to whichever of the other two is on.
+                            boolean homes = master instanceof LayoutEditor
+                                && ((LayoutEditor) master).getAutonomyPanel() != null
+                                && ((LayoutEditor) master).getAutonomyPanel().isShowingHomeLocomotives();
+
+                            String home = homes ? ui.autonomyHomeAt(captioned) : null;
+
+                            if (home != null)
+                            {
+                                text.setText(stationCaption(home, ""));
+
+                                // AWAY IS THE DARK ONE, which is how the name comes out white.
+                                //
+                                // `StationCaption.onPill` picks a foreground that reads on whatever
+                                // fill it is given, so the colour is chosen by naming the FILL rather
+                                // than by hard-coding a white that would vanish on the resting pill.
+                                // Home and standing here gets the ordinary resting fill and its
+                                // ordinary near-black text - "no change if it's there".
+                                String standing = ui.autonomyLocomotiveAt(captioned);
+
+                                boolean athome = home.equals(standing);
+
+                                standingTrain = true;
+
+                                labelColour = athome ? Color.BLACK : Color.WHITE;
+
+                                awayFromHome = !athome;
+                            }
+                            else if (homes)
+                            {
+                                // NO HOME, NO LABEL (Adam, 2026-09-07: "if there are no home
+                                // locomotives, just hide the label at that station, rather than still
+                                // showing the station name").
+                                //
+                                // While this was a tick box layered over station names, falling
+                                // through to the station name was right - the box added an answer
+                                // rather than replacing one. As one of five options that exclude each
+                                // other it is wrong: a mode that quietly shows another mode's content
+                                // is indistinguishable from a control that does not work, which is how
+                                // it was reported.
+                                //
+                                // Nothing at all rather than the empty placeholder, which is what he
+                                // asked for: the placeholder means "a station with no name", and these
+                                // squares have names - they have no HOME, and a label saying nothing
+                                // about homes is the thing being removed.
+                                text.setText("");
+
+                                text.setOpaque(false);
+
+                                standingTrain = false;
+                            }
+                            else if (naming)
+                            {
+                                // The station's own name, which is what the track editor used to show
+                                // and what this window is for. Greyed like the placeholder was: it is
+                                // a label on the diagram rather than something set here.
+                                text.setText(captionName == null ? LAYOUT_STATION_EMPTY : captionName);
+
+                                labelColour = captionName == null
+                                    ? new Color(150, 150, 150) : Color.BLACK;
+
+                                standingTrain = captionName != null;
+                            }
+                            else
+                            // What the SETUP puts on this square, which is the question the editor is
+                            // about.  The running diagram shows what is on the rails; here there may be
+                            // no run at all, and a platform with a train assigned to it was drawing the
+                            // empty placeholder - so the one view where placements are made was the one
+                            // view that did not show them.
+                            {
+                            String placed = ui.autonomyCaptionTextAt(captioned);
+
+                            if (placed != null)
+                            {
+                                text.setText(placed);
+
+                                // The running diagram's own style for a named train: black on
+                                // translucent white, so it reads over whatever tile art is underneath.
+                                //
+                                // Applied AFTER the generic setBackground(WHITE) below rather than
+                                // here.  Set here it was overwritten by it - and because this is the
+                                // one branch that also turns opacity ON, the result was the only
+                                // label on the diagram painting a solid white rectangle, which is the
+                                // exact thing a translucent style exists to avoid.
+                                standingTrain = true;
+
+                                labelColour = Color.BLACK;
+                            }
+                            else
+                            {
+                                // NO LOCOMOTIVE, NO LABEL (OB-312; Adam, 2026-10-03: "When in text
+                                // labels-parked locomotive, dont show labels without a locomotive"), as
+                                // Home Locs draws nothing where there is no home.  The placeholder used
+                                // to be kept here, to show where the captions land - Station Names does
+                                // that.
+                                text.setText("");
+
+                                text.setOpaque(false);
+
+                                standingTrain = false;
+                            }
+                            }
+                        }
+                        else if (captioned != null)
+                        {
+                            // A caption the diagram cannot act on: an excluded page, or the TRACK
+                            // DIAGRAM editor, where it is drawn so the square is visibly spoken for
+                            // but is not that editor to change - captions are edited where autonomy
+                            // is edited.
+                            text.setText(captionName == null ? LAYOUT_STATION_EMPTY : captionName);
+
+                            if (inEditor) labelColour = new Color(150, 150, 150);
+                        }
+                        else if (own != null && own.startsWith(LAYOUT_STATION_PREFIX))
+                        {
+                            // A station label on a diagram autonomy cannot act on.
+                            //
+                            // These come from the old autonomy, which wrote "Point:Bahnhof" straight
+                            // onto the diagram, and they are still there on a layout served by the
+                            // Central Station - where there is no local folder, so no setup, so nothing
+                            // ever turns them into captions.  Drawn raw they showed the user an
+                            // internal marker they never typed and cannot remove from that machine.
+                            //
+                            // The name without its marker is what they meant by it, and is what the
+                            // caption would have said had autonomy been able to read it.
+                            text.setText(own.substring(LAYOUT_STATION_PREFIX.length()));
+
+                            if (autonomyEditor) labelColour = new Color(150, 150, 150);
+                        }
+                        else
+                        {
+                            // Everything else: what the user wrote there.
+                            text.setText(own);
+
+                            // Writing of their own, greyed while autonomy is being edited: it is still
+                            // worth seeing - it says what part of the railway this is - and it is not
+                            // what the editor is for.
+                            if (autonomyEditor) labelColour = new Color(150, 150, 150);
+                        }
+                    }
+
+
+                    text.setForeground(labelColour);
+                    text.setBackground(Color.WHITE);
+                    // StationCaption.LABEL_FONT, not "Segoe UI" - it is the same typeface for every
+                    // word on a diagram and additionally has the four matched arrows (OB-116).
+                    text.setFont(new Font(StationCaption.LABEL_FONT, Font.PLAIN, size / 2));
+
+                    // A caption is a pill; writing of the user's own is not (FR-028).
+                    //
+                    // `captioned` is the whole test: it is the square autonomy has been told to draw a
+                    // station on. A yard name somebody typed is text on a diagram and stays text.
+                    if (captioned != null)
+                    {
+                        text.setPill(true);
+                        text.setBackground(StationCaption.restingFill());
+                        // onPill and not readableOn: the branches above choose a grey for a
+                        // placeholder and a black for a name, deliberately, and readableOn threw both
+                        // away because its condition is a superset of all of them.
+                        //
+                        // This said "the distinction survives now" for two days before it was true.
+                        // onPill kept RED and let grey fall through to the same readableOn, so a
+                        // placeholder and a name came out the identical colour - found by a review that
+                        // did not believe the comment and ran it.  onPill dims a neutral grey towards
+                        // the pill now, and `testAPlaceholderStaysDimmerThanAName` is what keeps this
+                        // sentence honest.
+                        text.setForeground(
+                            StationCaption.onPill(StationCaption.restingFill(), labelColour));
+
+                        // A tenth smaller than the diagram's other text: the pill is taller than what
+                        // it holds, and the rows of a diagram are one tile apart.
+                        text.setFont(text.getFont().deriveFont(
+                            text.getFont().getSize2D() * StationCaption.FONT_SCALE));
+                    }
+
+                    // AND A HALO ROUND EVERY LABEL THAT IS NOT A PILL (Adam, 2026-10-10: "Give regular text labels on
+                    // the track diagram (.text) the same halo as address labels (possibly a smaller outline) so that
+                    // labels are visible against black backgrounds like tracks.") - the user's own writing, and an old
+                    // file's station label; a pill has its own fill.
+                    text.setHalo(!text.isPill());
+
+                    // The one label drawn ON something rather than beside it.  Opaque, so the name
+                    // reads over the tile art; translucent, so the tile art still shows through.  It
+                    // has to come after the WHITE above, which is the whole reason it is down here.
+                    if (standingTrain)
+                    {
+                        // A pill paints its own fill and must stay transparent, or Swing draws the
+                        // rectangle underneath it that the pill exists to replace.
+                        text.setOpaque(!text.isPill());
+
+                        // A HOME THAT IS EMPTY GETS THE DARK PILL (MT-261 ruling 2).
+                        //
+                        // Adam asked for the name "in white to indicate it's not there".  White ink on
+                        // the resting pill - which is pale - would be invisible, so the fill is what
+                        // changes and `onPill` below picks the readable foreground for it.  The result
+                        // is the white he asked for, on a caption that can still be read.
+                        Color fill = text.isPill()
+                            ? (awayFromHome ? AWAY_FROM_HOME_FILL : StationCaption.restingFill())
+                            : new Color(255, 255, 255, LAYOUT_STATION_OPACITY);
+
+                        text.setBackground(fill);
+
+                        text.setForeground(
+                            StationCaption.onPill(text.getBackground(), labelColour));
                     }
                     
-                    text.setForeground(Color.BLACK);
-                    text.setBackground(Color.WHITE);
-                    text.setFont(new Font("Segoe UI", Font.PLAIN, size / 2));
-                    
+                    // Where a pill lands, and out of the row's baseline - for EVERY caption.
+                    //
+                    // This lived inside the branch below, which asks `c != null`: a caption drawn on a
+                    // BLANK square therefore kept the baseline anchor and got no placement at all,
+                    // which is both the wrong position and the live half of OB-115. Blank squares are
+                    // not a curiosity - the caption placer calls one "the most readable place of all"
+                    // and picks it second.
+                    if (text.isPill())
+                    {
+                        // Adam: "land them so that they align just below straight tracks if the track
+                        // goes east to west, or centered over the track if north to south." An
+                        // east-west rail runs across the middle of the square, so a caption on the
+                        // middle would sit on it; a north-south rail runs UP it, and a caption beneath
+                        // would be beside the track rather than on it. A blank square has no rails to
+                        // be placed against, so it takes the east-west answer.
+                        //
+                        // A border and not gbc.anchor: this cell is declared gridheight = 0 -
+                        // REMAINDER - so it runs from this row to the bottom of the diagram, and
+                        // anchoring SOUTH inside it means the bottom of the PAGE.
+                        //
+                        // NORTHWEST because a caption has no business voting on the row's baseline.
+                        // BASELINE_LEADING lines up every component anchored that way, so a caption
+                        // whose height changed moved the row's baseline and took its neighbours with
+                        // it - three pixels, on labels nobody had touched (OB-115).
+                        // ROTATED for track that runs up the square (Adam, 2026-08-27), which is
+                        // also what decides which way the caption is centred and which way it is
+                        // offset - so the orientation is asked once, here, and the caption is told.
+                        boolean onEnd = runsNorthSouth(c);
+
+                        text.setRotated(onEnd);
+
+                        int offset = StationCaption.captionOffset(size, text.lineHeight());
+
+                        // A column of room to the left, so the caption can be CENTRED on its square
+                        // rather than starting at it. Centring means beginning left of the square, and
+                        // no border can say that - insets cannot be negative - so the cell is moved
+                        // back a column and the label pays the difference back as a left inset.
+                        //
+                        // Not at the left edge, where there is no column to move into: a caption there
+                        // starts at its own square exactly as it did before.
+                        int backShift = onEnd || x == 0 ? 0 : size;
+
+                        // And a row of room ABOVE for a rotated one, which is the same trick turned a
+                        // quarter: it is centred along a rail that runs up the square, so centring
+                        // means starting above that square, and insets cannot say that either.
+                        //
+                        // Only one of the two is ever bought. A flat caption needs no vertical room
+                        // and a rotated one needs no horizontal room, and buying both would move the
+                        // cell diagonally away from the square it names.
+                        int upShift = onEnd && y > 0 ? size : 0;
+
+                        gbc.gridx = x - (backShift > 0 ? 1 : 0);
+                        gbc.gridy = y - (upShift > 0 ? 1 : 0);
+
+                        text.setTileGeometry(size, backShift, upShift, offset);
+
+                        gbc.anchor = GridBagConstraints.NORTHWEST;
+                    }
+
                     // Shift on-tile labels down
                     // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
                     // , they both get shifted down by the same amount.  Therefore, do this multiline hack.
-                    if (!c.isText() && !layout.getEditHideText())
+                    if (c != null && !c.isText() && drawn)
                     {
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                         gbc.gridheight = 0;
-                        text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");      
-                        
+
+                        // A caption with a train on it is left as PLAIN text, which is the one thing
+                        // that made the editor's version of this label look different from the running
+                        // diagram's.  It is the same label, with the same styling; what differed was
+                        // the string.
+                        //
+                        // On the running diagram the caption is registered EMPTY here and its text set
+                        // afterwards by updateStationLabels, so it never reaches the wrap below.  The
+                        // editor has no run to wait for, so it sets the text now - and picked up the
+                        // wrap on the way past.  A leading <br> makes the label two lines tall and the
+                        // &nbsp; stops it wrapping, so an OPAQUE label - which this is the only one of
+                        // - painted its background as a block a tile tall and three wide, over
+                        // whatever was beside it.
+                        if (!text.isPill() && !standingTrain)
+                        {
+                            text.setText("<html><br>" + text.getText().replaceAll(" ", "&nbsp;") + "</html>");
+                        }
+
                         // Show the correct cursor
-                        if (c.isClickable() && !layout.getEdit()) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        if (c.isClickable() && !inEditor) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
                     else
                     {
@@ -229,8 +1904,64 @@ public class LayoutGrid
                         gbc.gridheight = 0;    
                     }
                     
+                    // DRAGGABLE, in the autonomy editor, and only a square that carries a caption
+                    // (FR-035).  Not tiles and not the user's own writing: Adam asked for station
+                    // labels only.
+                    // AND THE LABELS ARE ACTUALLY DRAWN (OB-139).
+                    //
+                    // `captioned` is the caption OBJECT, which exists whether or not the text layer is
+                    // showing - so with Text Labels unticked the pills disappear and every square that
+                    // had one went on offering a move cursor for something invisible. A drag begun
+                    // there would move a label the user cannot see.
+                    //
+                    // Not installed at all rather than installed without its cursor: the cursor IS the
+                    // diagram saying the thing can be picked up, and the two must not disagree. The
+                    // grid is rebuilt when the box is toggled, so ticking it back restores the drag.
+                    if (autonomyEditor && captioned != null && master instanceof LayoutEditor
+                        && drawn)
+                    {
+                        org.traincontrol.automationui.TileGraph.TileKey here =
+                            new org.traincontrol.automationui.TileGraph.TileKey(
+                                layout.getName(), x, y);
+
+                        // The station this label NAMES, which is usually not the square it is on.
+                        //
+                        // A caption goes on blank space beside its platform, because a platform road
+                        // rarely has room for the text - so asking the square underneath what station
+                        // it is answers "none" for precisely the labels worth asking about. What the
+                        // caption was built from is the answer.
+                        text.setToolTipText(captionName);
+
+                        // BOTH the label and the square under it (Adam, 2026-08-27: "have it fire on
+                        // the label or the tile, so the mouse icon is more clearly shown").  A pill is
+                        // a small target, and a move cursor that only appears over those few pixels
+                        // gives the diagram almost no way of saying a label can be picked up.
+                        dragCaption(text, text, grid[x][y], here, (LayoutEditor) master, container);
+                        dragCaption(text, grid[x][y], grid[x][y], here, (LayoutEditor) master,
+                            container);
+                    }
+
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
+
+                    // And back to this square's own column.
+                    //
+                    // Centring a caption moves gbc.gridx a column LEFT so the pill can start before
+                    // its square. gbc is then reused by the address label below, which pays nothing
+                    // back - so on every captioned, clickable square the sensor's number was drawn a
+                    // whole tile away from the sensor, over its neighbour's. Fifteen of them on one
+                    // page of the operator's layout.
+                    //
+                    // The bounds harness that checked FR-028 could not see this: it built its grids
+                    // with the address labels switched OFF, so it measured a diagram this cannot
+                    // happen on and reported that nothing had moved. A harness only answers about the
+                    // diagram you point it at.
+                    //
+                    // gridy is paid back for exactly the same reason, and was added with the rotation
+                    // that first moved it (2026-08-27). The bug above is what this line is: a shift
+                    // taken out for the caption and left in the constraints for whoever came next.
+                    gbc.gridx = x;
+                    gbc.gridy = y;
                 }
                 
                 // Show address labels
@@ -238,12 +1969,12 @@ public class LayoutGrid
                         layout.getShowAddress() &&
                         !c.isText() && c.isClickable())
                 {
-                    JLabel text = new JLabel();
+                    AddressLabel text = new AddressLabel();
                     
                     // Cascade click event
                     final JLabel outer = grid[x][y];
                     
-                    if (!layout.getEdit())
+                    if (!inEditor)
                     {
                         text.setCursor(new Cursor(Cursor.HAND_CURSOR));
                     }
@@ -269,15 +2000,27 @@ public class LayoutGrid
                                 listener.mouseEntered(e);
                             }
                         }
+
+                        // AND ITS EXIT (RSA46-C1): the label covers the top left of its square, and a pointer that left
+                        // the squares from here told no square - the track editor's outline stayed on it, and the main
+                        // window's keys still aimed at it
+                        @Override
+                        public void mouseExited(MouseEvent e)
+                        {
+                            for (MouseListener listener : outer.getMouseListeners())
+                            {
+                                listener.mouseExited(e);
+                            }
+                        }
                     });
 
+                    // RED LETTERS ON A WHITE HALO, NOT IN A BOX (Adam, 2026-10-09: "Can we prettify address labels to have a
+                    // white halo outline around the red text rather than a rectangle around them?") - see AddressLabel
                     text.setForeground(Color.RED);
-                    text.setOpaque(true);
-                    text.setBackground(new Color(255, 255, 255, LayoutGrid.LAYOUT_ADDRESS_OPACITY)); // yellow
                     text.setFont(new Font("Segoe UI", Font.PLAIN, size / 3)); 
                     
                     // To avoid a bug where feedback doesn't yet exist, turn off tooltips in the editor
-                    if (!layout.getEdit())
+                    if (!inEditor)
                     {
                         text.setToolTipText(c.toSimpleString());
                     }
@@ -306,15 +2049,48 @@ public class LayoutGrid
 
                     if (c.getProtocol() != null && c.getProtocol() != Accessory.accessoryDecoderType.MM2)
                     {
-                        protocol = "<br>" + c.getProtocol().toString().toLowerCase() + "";
+                        protocol = c.getProtocol().toString().toLowerCase();
                     }
                     
-                    text.setText("<html>" + c.getLogicalAddress() + redOrGreen + protocol + "</html>");      
+                    // The address, and the protocol on a second line where it is not MM2
+                    text.setLines(c.getLogicalAddress() + redOrGreen, protocol);
                     
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
                 }
                                                                               
+                // Register the tile with autonomy, if it is watching.
+                //
+                // Here because this is the only place that knows both the page and the square: a
+                // LayoutLabel is told neither, and LayoutGrid keeps no reference to the LayoutDiagram
+                // after the constructor returns.
+                // Which SQUARE this label is, told to the label itself - every label, including the
+                // ones with nothing drawn on them.
+                //
+                // Its right-click menu used to ask the main window which page was showing, which is the
+                // wrong page in every popup window; and the keyboard shortcuts ask which square the
+                // pointer is over, which a blank label could not answer at all.  A station's name is
+                // usually drawn on blank space beside the platform, so those blanks are exactly the
+                // squares somebody aims at.
+                if (ui != null)
+                {
+                    grid[x][y].setAutonomySquare(layout.getName(), x + offsetX, y + offsetY);
+                }
+
+                if (c != null && ui != null)
+                {
+
+                    if (ui.getDiagramTileRegistry() != null)
+                    {
+                        org.traincontrol.automationui.TileGraph.TileKey tile =
+                            new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), c.getX(), c.getY());
+
+                        ui.getDiagramTileRegistry().register(tile, grid[x][y]);
+
+                        tilesAsRegistered.put(tile, grid[x][y]);
+                    }
+                }
+
                 // Set references for each tile accessory
                 if (c != null)
                 {
@@ -344,10 +2120,222 @@ public class LayoutGrid
         
         if (!container.equals(parent))
         {
+            // ONE PASS: the old diagram comes off and the new one goes on with no layout between
+            // them, so the panel is never painted empty.
+            parent.removeAll();
+
             parent.add(container);
+
+            swapped = true;
+
+            showWhenTilesAreReady(parent, ui);
         } 
+    }
+
+    /**
+     * Holds the diagram back until its track has been decoded, showing a spinner in the meantime.
+     *
+     * A diagram used to arrive in two stages: text labels immediately, because text needs no image,
+     * then the track a second or so later as the decodes came back off the pool.  The staging is an
+     * accident of how the work is split, not something the user asked to watch, and while it lasts the
+     * labels appear to float on nothing.
+     *
+     * Only when there is actually a wait.  The second time a page is opened every tile is a cache hit,
+     * whenTilesSettled runs on the next EDT pass, and swapping a spinner in and straight out again
+     * would be a flicker where there had been none - so the spinner is only mounted if the tiles are
+     * still not ready a moment later.
+     *
+     * @param parent the panel the grid was just added to
+     * @param ui the window whose tile loader is doing the decoding
+     */
+    private void showWhenTilesAreReady(JPanel parent, TrainControlUI ui)
+    {
+        if (ui == null) return;
+
+        // Nothing to wait for, so nothing to hide (OB-109).
+        //
+        // Adam: "when placing new tiles in the track diagram editor, the diagram sometimes flickers."
+        // Every placement rebuilds the whole grid, and on the second and every later build each tile
+        // is a cache hit - so this hid the diagram and whenTilesSettled gave it back on the next EDT
+        // pass. A paint landing between those two is the blink, and whether one does depends on where
+        // the event thread happens to be, which is the "sometimes".
+        //
+        // It has to be asked HERE and not earlier: LayoutLabel counts a decode before submitting it,
+        // deliberately, so that a grid asking this question after building its labels cannot see zero
+        // while work it caused is still on its way to the pool. Every label above is built by now.
+        //
+        // A cold build is untouched - the count is not zero, and the diagram is held back and the
+        // spinner armed exactly as before. Making the HIDE wait alongside the spinner instead would
+        // have cost that: 120ms of labels floating on nothing, which is the fault the hold-back was
+        // written to remove.
+        if (ui.tilesAreSettled()) return;
+
+        // And a diagram already on screen is not taken away to be rebuilt (OB-109).
+        //
+        // The hold-back was written for a page ARRIVING - "a diagram used to arrive in two stages" -
+        // and hiding one that is already drawn is the opposite of what it is for. The editor rebuilds
+        // the whole grid after every placement, so the first tile of a type nobody has drawn at this
+        // size is one decode, and one decode was taking the entire page off the screen.
+        //
+        // Not "never hide" on a replacement either: changing the tile SIZE re-keys every image, and a
+        // page arriving square by square is the thing the spinner exists for. So a replacement waits
+        // with the spinner instead. If the rebuild is quick - which every placement is - the reveal
+        // gets there first and nothing is ever hidden; if it is slow, the diagram goes behind the
+        // spinner 120ms in, exactly as a cold page does.
+        // A REBUILD AT THE SAME SIZE IS LEFT ALONE ENTIRELY (MT-273).
+        //
+        // Adam, 2026-09-04, testing MT-273: "Track diagram viewer works.  The editor and autonomy
+        // still has the flicker."
+        //
+        // `replacing` already stopped the page being hidden HERE - that was OB-109 - and the grace
+        // timer below was never told.  So a rebuild with one decode outstanding stayed up for 120ms
+        // and was then taken away and put behind a spinner anyway.  The editor rebuilds the whole
+        // grid after every placement, and the tile just placed is exactly the decode that keeps the
+        // count above zero, so this fired on the commonest action in the editor.
+        //
+        // Measured rather than reasoned: a probe built a grid, let the tiles settle, held one decode
+        // open and rebuilt over the same panel at the same size.  Visible immediately, one child;
+        // 400ms later invisible, two children.  The page had been taken off the screen and a spinner
+        // put over it.
+        //
+        // Half a fix is what made it hard to see.  OB-109 fixed the hide and left the timer, so the
+        // symptom moved from "instant blink" to "blink 120ms later" - still there, and no longer
+        // matching the description of the bug that had been closed.
+        if (sameSizeRebuild) return;
+
+        if (!replacing) container.setVisible(false);
+
+        final LoadingSpinner spinner = new LoadingSpinner();
+
+        // Sized to the space the diagram will take, so nothing jumps when the two are swapped - and
+        // so the glass lands in the MIDDLE of it (OB-129).
+        //
+        // The 400 cap that used to be here defeated both. The parent is laid out with FlowLayout,
+        // which aligns to the top, so a 400-square box over a larger diagram sat at the top of the
+        // page rather than over the middle of it. The glass is centred within this component already;
+        // what was wrong is how much of the page the component covered. Its drawn size no longer
+        // follows the component - see MAX_GLASS_H.
+        spinner.setPreferredSize(new Dimension(maxWidth, maxHeight));
+
+        final boolean[] revealed = {false};
+
+        final Runnable reveal = () ->
+        {
+            // Nothing from a grid that has been replaced.  See discard().
+            if (revealed[0] || discarded) return;
+
+            revealed[0] = true;
+
+            parent.remove(spinner);
+
+            mountedSpinner = null;
+
+            container.setVisible(true);
+
+            parent.revalidate();
+            parent.repaint();
+        };
+
+        ui.whenTilesSettled(reveal);
+
+        // And revealed anyway after a few seconds, whatever the count says.
+        //
+        // Hiding the diagram until a signal arrives means a signal that never arrives hides the diagram
+        // for the rest of the session, and a blank window is a far worse fault than the flicker this
+        // exists to remove.  Nothing known can swallow the count - the decrement is in a finally - but
+        // "nothing known" is not a good enough reason to make the diagram depend on it.
+        failsafe = new javax.swing.Timer(8000, e -> reveal.run());
+
+        failsafe.setRepeats(false);
+        failsafe.start();
+
+        // A short grace period before the spinner is shown at all - see above
+        grace = new javax.swing.Timer(120, e ->
+        {
+            if (revealed[0] || discarded) return;
+
+            // Idempotent on a grid that was hidden up front; the one that matters is a replacement,
+            // which was left showing and has now been slow enough to be worth a spinner.
+            container.setVisible(false);
+
+            parent.add(spinner);
+
+            // Remembered so discard() can take it out - see the field.
+            mountedSpinner = spinner;
+            spinnerPanel = parent;
+
+            parent.revalidate();
+            parent.repaint();
+        });
+
+        grace.setRepeats(false);
+        grace.start();
     } 
     
+    /**
+     * Whether the setup still gives every square this grid drew the caption it was built with, and every caption its name,
+     * so building the grid again would draw the same one (MT-670).  Asked as the grid asked: the same rule for hiding
+     * captions, the same two questions of the window.
+     *
+     * @return true where nothing about the captions has changed; false for a grid built with no window to ask
+     */
+    public boolean captionsAreAsBuilt()
+    {
+        if (window == null || builtPage == null || captionsAsBuilt.isEmpty()) return false;
+
+        boolean hides = hidesStationCaptions(builtInEditor,
+            builtMaster instanceof LayoutEditor && ((LayoutEditor) builtMaster).isAutonomyMode(),
+            window.isPageExcludedFromAutonomy(builtPage));
+
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey,
+            org.traincontrol.automationui.TileGraph.TileKey> cell : captionsAsBuilt.entrySet())
+        {
+            org.traincontrol.automationui.TileGraph.TileKey now = hides ? null : window.autonomyCaptionAt(cell.getKey());
+
+            if (!java.util.Objects.equals(now, cell.getValue())) return false;
+
+            if (now != null && !java.util.Objects.equals(window.autonomyStationNameAt(now), captionNamesAsBuilt.get(now)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether every tile this grid registered is registered still, so what the window tells the registry reaches every
+     * square of it (MT-670).
+     *
+     * @return false where one has been let go, or there is no registry to ask
+     */
+    public boolean tilesAreStillRegistered()
+    {
+        DiagramTileRegistry registry = window == null ? null : window.getDiagramTileRegistry();
+
+        if (registry == null) return false;
+
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, LayoutLabel> tile
+            : tilesAsRegistered.entrySet())
+        {
+            java.util.Set<LayoutLabel> here = registry.labelsFor(tile.getKey());
+
+            if (here == null || !here.contains(tile.getValue())) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param page a page's name
+     * @param size a tile size
+     * @return whether this grid draws that page at that size
+     */
+    public boolean draws(String page, int size)
+    {
+        return page != null && page.equals(builtPage) && size == tileSize;
+    }
+
     /**
      * Return the container that was generated
      * @return 

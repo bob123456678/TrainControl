@@ -151,7 +151,25 @@ public class RouteCommand implements java.io.Serializable
     public static RouteCommand RouteCommandLocomotiveSpeed(String name, int speed)
     {
         RouteCommand r = new RouteCommand(TYPE_LOCOMOTIVE);
-        
+
+        // CLAMPED HERE, WHICH IS WHERE EVERY DOOR MEETS (S14-B2).
+        //
+        // fromLine clamped and fromJSON did not, so a route imported from a hand-edited or shared JSON
+        // file could carry a speed of 150.  execRoute passes it to setSpeed, and _setSpeed DISCARDS an
+        // out-of-range value rather than clamping it - so the head re-transmitted its previous speed
+        // while every member was sent min(150 x multiplier, 100), which is the two engines of one
+        // consist pulling against each other.
+        //
+        // There is a third door neither parser covers: the CS3 route import computes a speed as
+        // wert / 1000 * 100, with a comment promising a range it does not enforce.  All three build the
+        // command here.
+        //
+        // A NEGATIVE IS NOT CLAMPED TO ZERO.  fromLine normalises any negative to -1 and execRoute reads
+        // -1 as an instant stop, so clamping to 0 would turn a stop into a speed command.  This is
+        // fromLine's rule, moved to where both parsers pass through.
+        if (speed < 0) speed = -1;
+        if (speed > 100) speed = 100;
+
         r.commandConfig.put(KEY_NAME, name);
         r.commandConfig.put(KEY_SPEED, Integer.toString(speed));
         
@@ -580,13 +598,33 @@ public class RouteCommand implements java.io.Serializable
      * Whether a locomotive name can survive this class's text format.
      *
      * A command is written as "prefix,name,value" and read back by splitting on commas, so a name
-     * carrying one comes back as a different locomotive at a different speed.  A condition goes
-     * further: NodeExpression rewrites every bracket into a line break to find its grouping, so a name
-     * carrying one is torn into pieces and the whole expression fails to parse.
+     * carrying one comes back as a different locomotive at a different speed.  That is still true and
+     * is the whole of what this refuses.
      *
-     * The rule lives here, next to the format that imposes it, because three separate doors have to
-     * agree about it - the route editor's two, and the rename dialog - and when only one of them knew,
-     * the other two let names through that broke routes which had been working.
+     * **BRACKETS ARE ALLOWED AGAIN** (Adam, 2026-09-04: *"bracketed loc names should just be
+     * allowed"*).  They were refused because `NodeExpression` rewrites a bracket into a line break to
+     * find its grouping, so a condition naming `SBB 460 (2)` was torn into pieces - and that mattered
+     * while conditions were stored as text.  They are not: `MarklinRoute.fromJSON` reads them through
+     * `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/` at all.
+     *
+     * So the restriction outlived its reason, and what it cost was real: a 2.7.4c route naming such a
+     * locomotive could not be saved at all, not even to change the route's own name (RGN-C3).
+     *
+     * The text form survives in `toTextRepresentation`, which feeds the CSV export and the read-only
+     * display of a condition the outline cannot draw.  A bracketed name will read oddly there.  That
+     * is a display quirk on a path nothing parses back, which is a different thing from a route that
+     * will not load.
+     *
+     * The rule lives here, next to the format that imposes it, because several doors have to agree
+     * about it, and when only one of them knew, the others let names through that broke routes which
+     * had been working.
+     *
+     * **The doors that ask are still not all of them** (RGN-C3): the route editor and the two rename
+     * dialogs ask; `AddLocomotive` and the Central Station sync do not.  That mattered while the rule
+     * refused brackets, because a name could arrive by a door that did not ask and then poison every
+     * route mentioning it.  With only the comma left it matters much less - a comma in a locomotive
+     * name is not something anybody types by accident - and closing those doors would now cost more
+     * than it buys.
      *
      * A null name is not this method's problem, and is reported usable.
      *
@@ -597,7 +635,7 @@ public class RouteCommand implements java.io.Serializable
     {
         if (name == null) return true;
 
-        return !name.contains(",") && !name.contains("(") && !name.contains(")");
+        return !name.contains(",");
     }
 
     public String toLine(Accessory linkedAccessory)
@@ -726,24 +764,34 @@ public class RouteCommand implements java.io.Serializable
     private static RouteCommand parseLine(String line, boolean extractAccessoryType) throws Exception
     {
         line = line.trim();
-        
-        if (COMMAND_EMERGENCY_STOP.equals(line))
+
+        // CASE DOES NOT DECIDE WHETHER A COMMAND IS A COMMAND (WP-C19d, ruled 2026-09-08).
+        //
+        // `Feedback` was already matched through `toLowerCase()` and every other command name was not,
+        // so "feedback 12,1" parsed and "emergency stop" did not - in the same file, in the same list,
+        // typed by the same person.  A format that accepts one spelling of one word and not another is
+        // a format nobody can learn.
+        //
+        // Forgiving rather than strict, and it cannot break a file this program wrote: the exporter
+        // emits the canonical casing, so every existing route still matches exactly as before.  What
+        // changes is only that a hand-typed line now works where it used to fail with "unrecognised".
+        if (COMMAND_EMERGENCY_STOP.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandStop();
         }
-        else if (COMMAND_ALL_LIGHTS_ON.equals(line))
+        else if (COMMAND_ALL_LIGHTS_ON.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandLightsOn();
         }
-        else if (COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY.equals(line))
+        else if (COMMAND_ALL_LIGHTS_ON_AUTONOMY_LOCOMOTIVES_ONLY.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandAutonomyLightsOn();
         }
-        else if (COMMAND_ALL_FUNCTIONS_OFF.equals(line))
+        else if (COMMAND_ALL_FUNCTIONS_OFF.equalsIgnoreCase(line))
         {
             return RouteCommand.RouteCommandFunctionsOff();
         }
-        else if (line.startsWith(COMMAND_ROUTE_PREFIX))
+        else if (line.toLowerCase().startsWith((COMMAND_ROUTE_PREFIX).toLowerCase()))
         {
             String routeName = line.replaceFirst(COMMAND_ROUTE_PREFIX, "").trim();
             
@@ -756,7 +804,7 @@ public class RouteCommand implements java.io.Serializable
             
             return RouteCommand.RouteCommandRoute(routeName);
         }
-        else if (line.startsWith(LOC_DIRECTION_PREFIX + ",")) 
+        else if (line.toLowerCase().startsWith((LOC_DIRECTION_PREFIX + ",").toLowerCase())) 
         {
             String[] parts = line.split(",");
 

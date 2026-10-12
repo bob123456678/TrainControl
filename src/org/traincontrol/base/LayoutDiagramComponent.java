@@ -6,6 +6,10 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import javax.imageio.ImageIO;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.util.I18n;
@@ -103,6 +107,27 @@ public class LayoutDiagramComponent
         this(original.type, original.x, original.y, original.orientation, original.state, original.address, original.rawAddress, original.protocol);
         
         this.label = original.label;
+
+        // What the file said and this class cannot express.  Without these a copy is a component with
+        // its verbatim record removed, and the editor copies constantly - deepCopyLayout builds every
+        // undo state through this constructor, so a single undo replaced the whole page with stripped
+        // components and the next Save deleted from the file everything they had been carrying.  From
+        // a gesture nobody would think of as destructive, on a page that need never have touched
+        // autonomy.
+        this.originalTyp = original.originalTyp;
+
+        this.unmodelledKeys = original.unmodelledKeys == null
+            ? null : new TreeMap<>(original.unmodelledKeys);
+
+        // AND WHAT THE TILE IS TIED TO (found by RSA36, outside its rounds).  These are set when a page is read, by the
+        // address, and nothing in the editor sets them again - so a copy without them was a switch tied to no accessory:
+        // after one undo every switch and signal of the page did nothing when clicked on the main window's diagram, and
+        // the setup counted each one as unaddressed, until the page was read again.  The copy keeps the address, so it is
+        // tied to what the address was tied to.
+        this.accessory = original.accessory;
+        this.accessory2 = original.accessory2;
+        this.feedback = original.feedback;
+        this.route = original.route;
     }
     
     /**
@@ -356,7 +381,7 @@ public class LayoutDiagramComponent
                     
         // TODO - check if folder exists, else use a default
         // TODO - switch to /gbsicons/ 
-        return RESOURCE_PATH + Integer.toString(size) + "/" + this.getTypeName() + stateString + ".gif";
+        return RESOURCE_PATH + Integer.toString(artSize(size)) + "/" + this.getTypeName() + stateString + ".gif";
     }
     
     public Image getImage(int size, boolean ignoreState) throws IOException
@@ -381,7 +406,8 @@ public class LayoutDiagramComponent
          {
             float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
 
-            img = img.getScaledInstance(size, (int) (size * aspect), 1);
+            // Smoothly: a set scaled down to a size of its own (FR-122) is a picture somebody looks at, not a stopgap
+            img = img.getScaledInstance(size, (int) (size * aspect), Image.SCALE_SMOOTH);
          }
          
          // Rotate
@@ -537,6 +563,39 @@ public class LayoutDiagramComponent
     public int getRawAddress()
     {
         return rawAddress;
+    }
+
+    /**
+     * Points a link tile at a page, by its place in the name-sorted page list, or at nothing.
+     *
+     * **A LINK HOLDS A POSITION, and the positions move.**  Adam, 2026-09-10: *"right now, let's make
+     * artikel be the sorted index of the page"*.  So adding, renaming, duplicating, deleting or
+     * combining a page changes what every arrow on the layout means, and the operations that do it call
+     * `LayoutDiagram.repointPageLinks` to rewrite the numbers - which needs a way in, since
+     * `setLogicalAddress` is the operator's door and refuses what this must be able to write.
+     *
+     * **-1 IS A LINK TO NOTHING**, which is what an arrow becomes when the page it pointed at is
+     * deleted.  Adam, same ruling: *"set the ID to -1.  This shouldn't throw any errors, and simply
+     * resolve to nothing when clicked.  Then, the user can set it to the right page on their next
+     * edit."*  Clicking it does nothing, the tooltip says so, and `.artikel=-1` is already the file's
+     * own way of writing "no address" - it is what a text tile carries.
+     *
+     * @param index the page's place in the name-sorted list, or -1 for no page
+     */
+    public void setLinkedPageIndex(int index)
+    {
+        if (!this.isLink()) return;
+
+        this.rawAddress = index < 0 ? -1 : index;
+        this.address = this.rawAddress;
+    }
+
+    /**
+     * @return true when this is a link tile that points at no page
+     */
+    public boolean linksNowhere()
+    {
+        return this.isLink() && this.rawAddress < 0;
     }
     
     public Accessory getAccessory()
@@ -698,6 +757,11 @@ public class LayoutDiagramComponent
         }
         else if (this.isLink())
         {
+            // The page it pointed at was deleted, and the operator sets it again when they next edit
+            // the square (Adam, 2026-09-10).  Saying so is the whole of what "resolves to nothing"
+            // looks like from the outside - an arrow that silently did nothing would read as broken.
+            if (this.linksNowhere()) return I18n.t("layout.linkPageNone");
+
             return I18n.f("layout.linkPage", this.getRawAddress() + 1);
         }
         else
@@ -714,14 +778,100 @@ public class LayoutDiagramComponent
      */
     public String getImageKey(int size, boolean ignoreState)
     {
-        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation);
+        // and the size it is drawn at: two sizes drawn from one icon set are two pictures (FR-122)
+        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
+    }
+
+    /**
+     * Which icon set a square of this size is drawn from: the size's own where there is one - 30 and 60 - and
+     * otherwise the next larger, scaled down (FR-122: the Medium size, 46, from the 60 set; Adam, 2026-10-11: "Start
+     * with the cheap 60px scaling").  Scaling down keeps the detail a smaller set never had.
+     *
+     * @param size the square's edge in pixels
+     * @return the icon set's size
+     */
+    public static int artSize(int size)
+    {
+        return size <= 30 ? 30 : 60;
     } 
     
+    /**
+     * Everything the file said about this square that this class has no field for.
+     *
+     * Kept only so that it can be written back.  Saving a layout regenerates the whole file from this
+     * model, so any key the model does not carry was quietly deleted from the user's diagram - and
+     * saving is not always something they asked for: naming a station writes the page out.  What
+     * TrainControl does not understand it is not entitled to throw away.
+     */
+    private Map<String, String> unmodelledKeys = null;
+
+    /**
+     * The word the file used for this component, or null for one this program created.
+     *
+     * Kept for the same reason unmodelledKeys are: saving regenerates the page, and what the model
+     * cannot express it must not silently replace.  See exportToCS2TextFormat.
+     */
+    private String originalTyp;
+
+    /**
+     * @param typ the file's own type word
+     */
+    public void setOriginalTyp(String typ)
+    {
+        this.originalTyp = typ;
+    }
+
+    /**
+     * Whether the given file word still maps to this component's type.  Set by the parser via
+     * setOriginalFileForm; null when nothing was read, in which case the canonical word is used.
+     */
+    private componentType getComponentTypeOf(String typ)
+    {
+        return typeOfFileWord == null ? null : typeOfFileWord.apply(typ);
+    }
+
+    /**
+     * How to turn a file word back into a type - supplied by the parser, which owns that mapping.
+     */
+    private static java.util.function.Function<String, componentType> typeOfFileWord;
+
+    /**
+     * @param mapping the parser's own typ-to-type function, so this class need not duplicate it
+     */
+    public static void setFileWordMapping(java.util.function.Function<String, componentType> mapping)
+    {
+        typeOfFileWord = mapping;
+    }
+
+    /**
+     * @param keys the file's keys for this element, from which the ones this class models are dropped
+     */
+    public void setUnmodelledKeys(Map<String, String> keys)
+    {
+        if (keys == null || keys.isEmpty())
+        {
+            this.unmodelledKeys = null;
+            return;
+        }
+
+        Map<String, String> kept = new TreeMap<>(keys);
+
+        for (String known : MODELLED_KEYS) kept.remove(known);
+
+        this.unmodelledKeys = kept.isEmpty() ? null : kept;
+    }
+
+    /**
+     * The keys this class reads out of a CS2 element and can therefore write back on its own.
+     */
+    private static final List<String> MODELLED_KEYS = Arrays.asList(
+        "_type", "id", "typ", "drehung", "prot", "artikel", "zustand", "text");
+
     /**
      * Exports this component in the CS2 file format
      * Limited to the component types supported in TrainControl
      * @return
-     * @throws Exception 
+     * @throws Exception
      */
     public String exportToCS2TextFormat() throws Exception
     {
@@ -731,7 +881,10 @@ public class LayoutDiagramComponent
         // isEmpty() call - as written before, && bound tighter than ||, so a null label dropped a
         // component of ANY type from the export.  Unreachable today (the field starts as "" and both
         // setLabel callers guard against null), but the guard did not mean what its comment says.
-        if (this.type == componentType.TEXT && (this.label == null || this.label.isEmpty())) return "";
+        // An empty text square is nothing, and is not written - unless the file said something about it
+        // that this class has no field for, in which case dropping it would delete that too.
+        if (this.type == componentType.TEXT && (this.label == null || this.label.isEmpty())
+            && this.unmodelledKeys == null) return "";
         
         // Add "element"
         builder.append("element\n");
@@ -742,16 +895,46 @@ public class LayoutDiagramComponent
             builder.append(" .id=0x").append(String.format("%x", this.x + (this.y << 8))).append("\n");
         }
         
-        // Add .typ
+        // Add .typ - the file's own word for it wherever this component still IS what was read.
+        //
+        // getComponentType is many-to-one and getTypeString is one word per type, so writing the
+        // canonical name back collapsed every variant the file distinguished: fifteen signal types
+        // became "signal", the four coloured lamps and the level crossing became "lampe", a CS3 double
+        // slip half became an ordinary switch.  Worse for signals, the parser subtracts one from the
+        // rotation of any type whose name contains "_f_" to correct the artwork - and the canonical
+        // name does not, so the correction was baked in and the signal came back turned a step.
+        //
+        // Only while the type is unchanged.  Once the user redraws the square in the diagram editor it
+        // is a different component and the canonical name is the honest one.
+        // Decided before the rotation is written, because a rotation number only means anything
+        // relative to the word standing beside it.
+        String writtenTyp = originalTyp != null && getComponentTypeOf(originalTyp) == this.type
+            ? originalTyp : getTypeString(this.type);
+
         if (this.type != componentType.TEXT)
         {
-            builder.append(" .typ=").append(getTypeString(this.type)).append("\n");
+            builder.append(" .typ=").append(writtenTyp).append("\n");
         }
         
-        // Add .drehung only if orientation is not 0
-        if (this.orientation != 0)
+        // Back into the file's own space.  The parser turns any type whose word contains "_f_" back
+        // by a quarter on the way in, to correct artwork the CS2 draws rotated - so writing the
+        // corrected orientation out under such a word applies that correction a second time on the
+        // next load, and the signal creeps a step with every save.  Inverting it here, against the
+        // word actually being written rather than the one that was read, reproduces the file's own
+        // number exactly in every case - including "no .drehung at all", which is how a file spells
+        // rotation 0.
+        //
+        // This replaced a pair of branches: write back what was read when the orientation looked
+        // untouched, otherwise write the current one.  Two rules that had to agree and did not.  A
+        // semaphore the file gave no rotation, and any semaphore the user turned, both fell to the
+        // second branch and drifted a quarter - which was the very defect the first branch was added
+        // to prevent.
+        int fileRotation = writtenTyp.contains("_f_")
+            ? Math.floorMod(this.orientation + 1, 4) : this.orientation;
+
+        if (fileRotation != 0)
         {
-            builder.append(" .drehung=").append(this.orientation).append("\n");
+            builder.append(" .drehung=").append(fileRotation).append("\n");
         }
         
         // Custom state
@@ -782,9 +965,71 @@ public class LayoutDiagramComponent
             builder.append(" .text=").append(this.label).append("\n");
         }
 
+        // And back out again, everything the file said that this class has no field for
+        if (this.unmodelledKeys != null)
+        {
+            for (Map.Entry<String, String> extra : this.unmodelledKeys.entrySet())
+            {
+                appendPreservedKey(builder, extra.getKey(), extra.getValue());
+            }
+        }
+
         return builder.toString().trim();
     }
     
+
+    /**
+     * Writes one key of an unmodelled element or block back in the syntax it was read in.
+     *
+     * The parser folds a CS2 array - a key line followed by " ..sub=value" lines - into ONE map entry
+     * holding "{a=b,c=d}|{e=f}".  Writing that back as a single " .key=..." line preserves the text and
+     * loses the syntax: the Central Station, and any parser including this one, would read it as a
+     * scalar whose value happens to contain braces.  Since the whole point of keeping unmodelled
+     * content is that a later firmware's file survives a round trip, the one shape most likely to BE a
+     * later firmware's is the one that must not be mangled.
+     *
+     * Unfolded back into the same shape it came from.  The parser used a HashMap for the entries, so
+     * their order within a group is already lost - what is restored is the structure, not the ordering.
+     *
+     * @param builder where the lines go
+     * @param key the key name, without its leading dot
+     * @param value the value as the parser left it
+     */
+    static void appendPreservedKey(StringBuilder builder, String key, String value)
+    {
+        int brace = value == null ? -1 : value.indexOf('{');
+
+        if (brace < 0 || !value.endsWith("}"))
+        {
+            builder.append(" .").append(key).append('=').append(value).append("\n");
+            return;
+        }
+
+        // Whatever preceded the first group was the key's own scalar value
+        String scalar = value.substring(0, brace);
+
+        builder.append(" .").append(key);
+
+        if (!scalar.isEmpty()) builder.append('=').append(scalar);
+
+        builder.append("\n");
+
+        for (String group : value.substring(brace).split("\\|"))
+        {
+            String inner = group.trim();
+
+            if (inner.startsWith("{")) inner = inner.substring(1);
+            if (inner.endsWith("}")) inner = inner.substring(0, inner.length() - 1);
+
+            if (inner.isEmpty()) continue;
+
+            for (String entry : inner.split(","))
+            {
+                if (!entry.isEmpty()) builder.append(" ..").append(entry).append("\n");
+            }
+        }
+    }
+
     /**
      * Converts the internal type to the Marklin format
      * @param type
@@ -862,16 +1107,31 @@ public class LayoutDiagramComponent
      * @return 
      */
     public int getNumOrientations()
-    {        
+    {
+        return getNumOrientations(this.type);
+    }
+
+    /**
+     * The same, for a type with no instance to hand.
+     *
+     * Static because the port map needs the answer while it is BUILDING the table, before any component
+     * exists - and it had a verbatim copy of the rule to get it (DD-C10). Two copies of "how many ways
+     * up can this tile be" is two chances to disagree about a tile somebody has just added.
+     *
+     * @param type the tile type
+     * @return how many distinct orientations it has
+     */
+    public static int getNumOrientations(componentType type)
+    {
         // y axis symmetry - limit rotation options
-        if (this.type == componentType.STRAIGHT || this.type == componentType.FEEDBACK 
-                || this.type == componentType.ROUTE || this.type == componentType.SWITCH_CROSSING
-                || this.type == componentType.OVERPASS)
+        if (type == componentType.STRAIGHT || type == componentType.FEEDBACK
+                || type == componentType.ROUTE || type == componentType.SWITCH_CROSSING
+                || type == componentType.OVERPASS)
         {
             return 2;
         }
         // x and y symmetry - rotation not needed
-        else if (this.type == componentType.TURNTABLE || this.type == componentType.CROSSING)
+        else if (type == componentType.TURNTABLE || type == componentType.CROSSING)
         {
             return 1;
         }
@@ -979,6 +1239,36 @@ public class LayoutDiagramComponent
     public accessoryDecoderType getProtocol()
     {
         return protocol;
+    }
+
+    /**
+     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder (GUI-C5).
+     *
+     * **A three-way is two decoders**, at its address and the next - `layout.switchThreeWayAddr` prints both, and
+     * a CS2 route sets the other diverging road by commanding the second.  Only the first is the logical address,
+     * so matching on that alone lit nothing for a route commanding only the second.
+     *
+     * **And an address is one per protocol**: an MM2 turnout 5 and a DCC turnout 5 are two decoders.  A null
+     * protocol, on either side, is the implicit one - which is what the parser and a route command both read a
+     * missing protocol as.
+     *
+     * The address half only: whether this tile is an accessory at all is the caller's question
+     * (`TrainControlUI.answersTo`), since every kind of tile carries a number.
+     *
+     * @param address the logical address the command names
+     * @param protocol the protocol it is sent in
+     * @return whether it reaches this tile
+     */
+    public boolean answersToAccessoryAddress(int address, accessoryDecoderType protocol)
+    {
+        int own = this.getLogicalAddress();
+
+        if (address != own && !(this.isThreeWay() && address == own + 1)) return false;
+
+        accessoryDecoderType mine = this.protocol != null ? this.protocol : Accessory.DEFAULT_IMPLICIT_PROTOCOL;
+        accessoryDecoderType asked = protocol != null ? protocol : Accessory.DEFAULT_IMPLICIT_PROTOCOL;
+
+        return mine == asked;
     }
 
     public void setProtocol(accessoryDecoderType protocol)

@@ -22,10 +22,47 @@ import org.traincontrol.util.I18n;
  */
 public class LocomotiveFunctionAssign extends javax.swing.JPanel
 {
+    /**
+     * The file a stored image URL names, or null when it does not name one.
+     *
+     * A locomotive's local image is stored as a URL string, so `new File(...)` on it is wrong.
+     *
+     * @param url the stored value
+     * @return the file, or null for anything that is not a readable file: URL
+     */
+    private static File fileOf(String url)
+    {
+        if (url == null) return null;
+
+        try
+        {
+            java.net.URI uri = new java.net.URI(url);
+
+            if (!"file".equalsIgnoreCase(uri.getScheme())) return null;
+
+            return new File(uri);
+        }
+        catch (java.net.URISyntaxException | IllegalArgumentException notAFileUrl)
+        {
+            return null;
+        }
+    }
+
+
     Locomotive loc;
     TrainControlUI parent;
     String customIconPath;
     
+    /**
+     * What Copy Customizations overwrote, or null if it was never pressed (GUX-C3, MT-466).
+     *
+     * One value rather than the three fields this was: the types, the triggers and the custom flag
+     * were remembered and put back one by one, and the custom ICONS - the other half of what the
+     * button copies - were in neither list.  `Locomotive.Customizations` is now the single statement
+     * of what a customization is, so the copy and this undo cannot disagree again.
+     */
+    private Locomotive.Customizations beforeACopy;
+
     /**
      * Creates new form LocomotiveFunctionAssign
      * @param l
@@ -80,6 +117,33 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             new javax.swing.DefaultComboBoxModel(iconModel.toArray(new Object[0])) 
         );
                 
+        // THE TRIGGER-TYPE COMBO IS LOCALISED BEFORE ANYTHING IS SELECTED IN IT (W21-C8).
+        //
+        // These four lines stood at the END of the constructor, after `fNoItemStateChanged` and
+        // `setSelectedIndex` had already chosen the current function's trigger type.
+        // `DefaultComboBoxModel.removeElementAt` MOVES the selection when the element it removes is the
+        // selected one - and for a momentary function the third statement removes exactly that. The
+        // selection fell to 0, and `applyButton` reads the index and writes `FUNCTION_TOGGLE`: every
+        // momentary function became a toggle on Apply.
+        //
+        // Measured on the model alone, walking all four starting selections: start=1 (Momentary) ended
+        // at index 0 (Umschalten). Toggle survived by luck, being moved away and back.
+        //
+        // It did not reach the operator, because a deferred `fNoItemStateChanged(null)` queued in the
+        // constructor re-derived the type afterwards - a corrupted state with an accidental repair
+        // standing over it. Moving the localisation above the selection removes the corruption instead
+        // of relying on the repair.
+        javax.swing.DefaultComboBoxModel<String> defaultModel =
+            (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
+
+        // Replace item at index 0 with localized "Toggle"
+        defaultModel.removeElementAt(0);
+        defaultModel.insertElementAt(I18n.t("function.ui.toggle"), 0);
+
+        // Replace item at index 1 with localized "Momentary"
+        defaultModel.removeElementAt(1);
+        defaultModel.insertElementAt(I18n.t("function.ui.momentary"), 1);
+
         // Display current icon
         fNoItemStateChanged(null);
         
@@ -129,6 +193,14 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
         // Show custom icon and controls
         displayCustomizationButtons();
+
+        // APPLY ONLY WHILE THERE IS SOMETHING TO APPLY (FR-098; Adam, on MT-466: *"just make sure apply is greyed out
+        // if there is nothing to apply"*).  Asked whenever the icon or the trigger on show changes, and whenever
+        // another function is shown.
+        this.fIcon.addItemListener(event -> refreshApply());
+        this.functionTriggerType.addItemListener(event -> refreshApply());
+
+        refreshApply();
                
         this.customFunctionIcon.setMinimumSize(new Dimension(50, 33));
         
@@ -178,15 +250,6 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             displayCustomizationButtons();
         });
         
-        javax.swing.DefaultComboBoxModel<String> defaultModel = (javax.swing.DefaultComboBoxModel<String>) functionTriggerType.getModel();
-
-        // Replace item at index 0 with localized "Toggle"
-        defaultModel.removeElementAt(0);
-        defaultModel.insertElementAt(I18n.t("function.ui.toggle"), 0);
-
-        // Replace item at index 1 with localized "Momentary"
-        defaultModel.removeElementAt(1);
-        defaultModel.insertElementAt(I18n.t("function.ui.momentary"), 1);
     }
     
     /**
@@ -218,6 +281,40 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         this.fIcon.requestFocus();
     }
     
+    /**
+     * Remembers what a Copy Customizations press is about to overwrite, the first time it is pressed.
+     *
+     * **This door does not wait for OK, and the dialog's Cancel branch says everything does** (GUX-C3).
+     * The copy writes the other locomotive's function types, triggers and custom flag straight onto
+     * this one so the panel can show them at once, which is the same reason the two autonomy slots
+     * write straight through - and those are restored on Cancel.  These were not, so Cancel kept the
+     * copied functions and the comment beside it in `RightClickFunctionMenu` said nothing had changed.
+     *
+     * Only the FIRST press is remembered: two copies in a row still have to undo to what was there
+     * before either of them.
+     */
+    private void rememberBeforeACopy()
+    {
+        if (this.beforeACopy != null) return;
+
+        this.beforeACopy = this.loc.captureCustomizations();
+    }
+
+    /**
+     * Puts back what Copy Customizations overwrote, and does nothing if it was never pressed.
+     *
+     * Restored rather than deferred, which is the shape the slots beside it already use: the preview
+     * stays honest while the dialog is open, and Cancel still means cancel.
+     */
+    public void undoCopiedCustomizations()
+    {
+        if (this.beforeACopy == null) return;
+
+        this.loc.applyCustomizations(this.beforeACopy);
+
+        this.beforeACopy = null;
+    }
+
     /**
      * External call to apply shown values
      */
@@ -419,70 +516,133 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         parent.repaintLoc(true, null);
             
         this.fNo.setSelectedIndex((this.fNo.getSelectedIndex() + 1) % this.fNo.getItemCount());
+
+        refreshApply();
     }//GEN-LAST:event_applyButtonActionPerformed
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
-        
+
+        // ON THE EVENT THREAD (VB-B1), and the thread now holds the only slow thing here.
+        //
+        // The thread existed to hold a modal confirm - everything the answer led to was already being
+        // marshalled straight back with invokeLater, which is the tell: the background thread was
+        // doing no background work at all. What IS slow is syncWithCS2, which talks to the station,
+        // so that is what runs off the event thread now.
         this.resetButton.setEnabled(false);
 
-        new Thread(() ->
-        {  
-            int dialogResult = JOptionPane.showOptionDialog(
-                this,
-                I18n.t("loc.ui.confirmResetFunctionsToCentralStation"),
-                I18n.t("loc.ui.dialogConfirmReset"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                TrainControlUI.YES_NO_OPTS,
-                TrainControlUI.YES_NO_OPTS[0] // default selection = "Yes"
-            );
+        int dialogResult = JOptionPane.showOptionDialog(
+            this,
+            I18n.t("loc.ui.confirmResetFunctionsToCentralStation"),
+            I18n.t("loc.ui.dialogConfirmReset"),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            TrainControlUI.YES_NO_OPTS,
+            // NOT [0] (VB-B2): Yes here throws away every custom function and icon on this
+            // locomotive, so it is not the answer a reflexive Enter should give.
+            TrainControlUI.YES_NO_OPTS[1]
+        );
 
-            if (dialogResult == JOptionPane.YES_OPTION)
-            {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    this.loc.setCustomFunctions(false);
-                    this.loc.unsetLocalFunctionImageURLs();
-                    this.parent.getModel().syncWithCS2();
-                    this.parent.repaintLoc(true, null);
-                    this.customIconPath = null;
+        if (dialogResult == JOptionPane.YES_OPTION)
+        {
+            this.loc.setCustomFunctions(false);
+            this.loc.unsetLocalFunctionImageURLs();
+            this.parent.repaintLoc(true, null);
+            this.customIconPath = null;
 
-                    updateFNumber(this.fNo.getSelectedIndex());
-                });
-            }
+            updateFNumber(this.fNo.getSelectedIndex());
 
-            // The button was only disabled to keep a second dialog from opening, so restore its correct state
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                displayCustomizationButtons();
-            });
+            new Thread(() -> this.parent.syncWithCS2()).start();
+        }
 
-        }).start();
+        // The button was only disabled to keep a second dialog from opening, so restore its correct state
+        displayCustomizationButtons();
     }//GEN-LAST:event_resetButtonActionPerformed
+
+    /**
+     * Told when the function this panel is editing changes (FR-045).
+     *
+     * The panel is a form, so anything added to it has to go through the designer - which is why the
+     * autonomy slot ticks live on the DIALOG around it instead. They still have to follow the fNo
+     * dropdown, because switching function inside the panel changes what a tick would be about, and a
+     * tick about a function nobody is looking at is worse than no tick.
+     *
+     * A hook rather than a public getter the dialog polls: there is no moment the dialog could poll at.
+     */
+    private java.util.function.IntConsumer onFunctionChanged;
+
+    /**
+     * @param listener told the new function number whenever it changes, or null
+     */
+    public void setOnFunctionChanged(java.util.function.IntConsumer listener)
+    {
+        this.onFunctionChanged = listener;
+    }
 
     private void updateFNumber(int targetFNo)
     {
+        if (this.onFunctionChanged != null) this.onFunctionChanged.accept(targetFNo);
+
         this.fIcon.setSelectedIndex(this.loc.sanitizeFIconIndex(this.loc.getFunctionType(targetFNo)));
-        
-        if (loc.isFunctionTimed(targetFNo) > 0)
-        {
-            this.functionTriggerType.setSelectedIndex(Math.min(loc.isFunctionTimed(targetFNo) + 1, this.functionTriggerType.getItemCount() - 1));
-        }
-        else if (loc.isFunctionPulse(targetFNo))
-        {
-            this.functionTriggerType.setSelectedIndex(1);
-        }
-        else
-        {
-            this.functionTriggerType.setSelectedIndex(0);
-        }  
-        
+
+        this.functionTriggerType.setSelectedIndex(triggerShownFor(targetFNo));
+
         this.fIconlabel.setText(
             I18n.f("loc.ui.functionIconLoading", targetFNo, "")
         );
-        
+
         displayCustomizationButtons();
+
+        refreshApply();
+    }
+
+    /**
+     * Where the trigger list shows a function's stored trigger: its timing, momentary, or toggle.
+     *
+     * @param function the function number
+     * @return the index in the trigger list
+     */
+    private int triggerShownFor(int function)
+    {
+        if (loc.isFunctionTimed(function) > 0)
+        {
+            return Math.min(loc.isFunctionTimed(function) + 1, this.functionTriggerType.getItemCount() - 1);
+        }
+
+        return loc.isFunctionPulse(function) ? 1 : 0;
+    }
+
+    /**
+     * Whether the function on show differs from what the locomotive holds for it - what Apply would write (FR-098).
+     *
+     * Its icon, its trigger, and its custom picture: a picture chosen that it does not have, or one it has taken off.
+     *
+     * @return true when Apply has something to write
+     */
+    private boolean somethingToApply()
+    {
+        int function = getFNo();
+
+        if (function < 0) return false;
+
+        if (this.fIcon.getSelectedIndex() != this.loc.sanitizeFIconIndex(this.loc.getFunctionType(function))) return true;
+
+        if (this.functionTriggerType.getSelectedIndex() != triggerShownFor(function)) return true;
+
+        String stored = this.loc.getLocalFunctionImageURL(function);
+
+        if ("reset".equals(this.customIconPath)) return stored != null;
+
+        return this.customIconPath != null && !this.customIconPath.equals(stored);
+    }
+
+    /**
+     * Greys Apply while there is nothing to apply (FR-098).  External applies - `doApply`, the standalone window's OK -
+     * are not affected: they call the handler, not the button.
+     */
+    private void refreshApply()
+    {
+        if (this.applyButton != null) this.applyButton.setEnabled(somethingToApply());
     }
     
     private void fNoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_fNoItemStateChanged
@@ -491,59 +651,72 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     }//GEN-LAST:event_fNoItemStateChanged
 
     private void useCustomFunctionIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useCustomFunctionIconActionPerformed
-        
-        new Thread(() ->
-        {     
-            String currentPath = null;
 
-            if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
+        // NO THREAD AT ALL (VB-B1).
+        //
+        // A modal JFileChooser opened on a raw thread, and so did every setEnabled, the icon preview
+        // and the repaint that followed it. Nothing in this handler is slow: it reads a preference,
+        // opens a chooser, and shows the chosen image. The thread bought nothing and cost correctness.
+        String currentPath = null;
+
+        if (this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()) != null)
+        {
+            // Through a URI, because that is what the value IS (validation pass).
+            //
+            // `getLocalFunctionImageURL` returns what `.toUri().toString()` produced twenty lines
+            // below, so `new File(String)` on it makes a path with the scheme still on the front,
+            // which never exists.  currentPath was therefore always null and the chooser never
+            // opened where the current icon lives - a silent no-op since the day it was written.
+            // The identical mistake was fixed in TrainControlUI's locomotive-icon chooser; this is
+            // its twin, one class over.
+            File currentIcon = fileOf(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
+
+            if (currentIcon != null && currentIcon.exists())
             {
-                File currentIcon = new File(this.loc.getLocalFunctionImageURL(this.fNo.getSelectedIndex()));
-
-                if (currentIcon.exists())
-                {
-                    currentPath = currentIcon.getParent();
-                }
+                currentPath = currentIcon.getParent();
             }
+        }
 
-            this.useCustomFunctionIcon.setEnabled(false);
-            this.deleteCustomIcon.setEnabled(false);
-            
-            JFileChooser fc = new JFileChooser(
-                currentPath != null ? currentPath : TrainControlUI.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
-            );
+        this.useCustomFunctionIcon.setEnabled(false);
+        this.deleteCustomIcon.setEnabled(false);
 
-            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
-            fc.setFileFilter(filter);
+        JFileChooser fc = new QuickFileChooser(
+            currentPath != null ? currentPath : TrainControlUI.getPrefs().get(LAST_USED_ICON_FOLDER, new File(".").getAbsolutePath())
+        );
 
-            fc.setAcceptAllFileFilterUsed(false);
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        FileFilter filter = new FileNameExtensionFilter("JPEG, PNG, GIF, BMP " + I18n.t("ui.images"), "jpg", "png", "gif", "jpeg", "jpe", "bmp");
+        fc.setFileFilter(filter);
 
-            int i = fc.showOpenDialog(this);
+        fc.setAcceptAllFileFilterUsed(false);
 
-            if (i == JFileChooser.APPROVE_OPTION)
-            {
-                File f = fc.getSelectedFile();
+        int i = fc.showOpenDialog(this);
 
-                TrainControlUI.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
+        if (i == JFileChooser.APPROVE_OPTION)
+        {
+            File f = fc.getSelectedFile();
 
-                customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
-                this.displayCustomFunctionIcon(customIconPath);
-            } 
-            
-            this.useCustomFunctionIcon.setEnabled(true);
-            this.deleteCustomIcon.setEnabled(true);
-            parent.repaintLoc(true, null);
+            TrainControlUI.getPrefs().put(LAST_USED_ICON_FOLDER, f.getParent());
 
-        }).start();
+            customIconPath = Paths.get(f.getAbsolutePath()).toUri().toString();
+            this.displayCustomFunctionIcon(customIconPath);
+        }
+
+        refreshApply();
+
+        this.useCustomFunctionIcon.setEnabled(true);
+        this.deleteCustomIcon.setEnabled(true);
+        parent.repaintLoc(true, null);
     }//GEN-LAST:event_useCustomFunctionIconActionPerformed
 
     private void deleteCustomIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteCustomIconActionPerformed
         
         // This allows us to delay the change until the OK button is pressed
-        this.customIconPath = "reset";       
-        
+        this.customIconPath = "reset";
+
         this.displayCustomFunctionIcon(null);
+
+        refreshApply();
     }//GEN-LAST:event_deleteCustomIconActionPerformed
 
     private void copyCustomizationsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyCustomizationsActionPerformed
@@ -552,8 +725,20 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         
         if (copyFrom != null)
         {
-            this.loc.setFunctionTypes(copyFrom.getFunctionTypes(), copyFrom.getFunctionTriggerTypes());
+            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back (GUX-C3), icons
+            // included since MT-466.
+            rememberBeforeACopy();
+
+            // THE ICONS AS WELL AS THE TYPES (MT-466).  This wrote the types and set the flag, so a
+            // source locomotive whose F0 carried a custom icon copied everything about F0 except the
+            // icon - while the type change altered every other button's picture.
+            this.loc.copyCustomizationsFrom(copyFrom);
+
+            // Kept though `copyCustomizationsFrom` copies the source's flag: a source that is not
+            // itself marked customized still leaves this one customized, because it now carries
+            // somebody else's functions.
             this.loc.setCustomFunctions(true);
+
             parent.repaintLoc(true, null);
 
             updateFNumber(this.fNo.getSelectedIndex()); 

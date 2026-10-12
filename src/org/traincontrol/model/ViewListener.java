@@ -26,7 +26,6 @@ public interface ViewListener
     public void go();
     public void stop();
     public void showAutonomyAlert(String message);
-    public void showAutonomyAlert(String title, String message);
     public List<String> getLocList();
     public List<String> getRouteList();
     public Locomotive getLocByName(String name);
@@ -41,7 +40,43 @@ public interface ViewListener
     public void setAccessoryState(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     public void execRoute(String name);
     public void deleteRoute(String name);
+
+    /**
+     * Every other route with a command that runs this one, by name (GSR-B4) - what the route delete door counts before
+     * it asks.
+     *
+     * @param name the route
+     * @return the routes that run it, empty when none does or there is no such route
+     */
+    public List<String> routesCalling(String name);
+
+    /**
+     * Deletes a route and takes every command that runs it out of every other route, logging each route that lost one
+     * (GSR-B4) - the route delete door's delete.  `deleteRoute` leaves the other routes alone, because `editRoute`
+     * deletes and re-adds through it.
+     *
+     * @param name the route
+     * @return how many routes lost a command that ran it
+     */
+    public int deleteRouteAndItsCalls(String name);
+
     public boolean getAccessoryState(int address, Accessory.accessoryDecoderType decoderType);
+
+    /**
+     * The same state, WITHOUT registering an accessory that is not there (C13).
+     *
+     * `getAccessoryState` creates a switch on a miss.  That is deliberate on a command path and wrong
+     * on every path that is only looking: evaluating a route condition, or painting a keyboard key,
+     * registered every address it asked about and the invented accessories persisted.
+     *
+     * The ANSWER is identical - `getAccessoryState` creates the switch unswitched and then returns
+     * false, so an absent accessory has always read as not switched.  Only the side effect differs.
+     *
+     * @param address
+     * @param decoderType
+     * @return whether the accessory is switched; false when there is no such accessory
+     */
+    public boolean getAccessoryStateIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public Accessory getAccessoryByAddress(int address, Accessory.accessoryDecoderType decoderType);
 
     /**
@@ -53,6 +88,18 @@ public interface ViewListener
      */
     public Accessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public boolean getPowerState();
+
+    /**
+     * The track power's epoch, as the Central Station has reported it (RSA62-C2, RSA63-C1): a number that moves at every
+     * cut and every return, odd while the power is off - so one read says whether it is off now, and two, at a journey's
+     * dispatch and once its route is set, whether it went off in between, even for a moment.
+     *
+     * @return the epoch
+     */
+    default int getPowerEpoch()
+    {
+        return getPowerState() ? 0 : 1;
+    }
     public void allFunctionsOff();
     public void locFunctionsOff(Locomotive l);
     public void lightsOn(List<String> locomotives);
@@ -83,22 +130,87 @@ public interface ViewListener
     public void parseAuto(String s);
     public void applyAutonomyRouteActivations();
     public Layout getAutoLayout();
+
+    /**
+     * The auto layout if one is loaded, or null - never making one, as getAutoLayout does (RLV7-C2, CS3-C4).  In one
+     * step, so a clear cannot fall between asking and getting.
+     * @return the layout, or null
+     */
+    public Layout getAutoLayoutIfLoaded();
     public boolean hasAutoLayout();
+
+    /**
+     * Forgets the automation graph, so that nothing is loaded.  Everything else here either replaces one
+     * graph with another or creates one on demand, so without this a layout given a configuration could
+     * never be returned to having none.
+     */
+    public void clearAutoLayout();
 
     /**
      * Reloads the track diagrams only, without re-importing routes or locomotives
      */
     public void refreshLayouts();
+    /**
+     * The route now executing that drives this locomotive, or null (CS3-B1).
+     *
+     * Asked by the doors that edit or delete a locomotive: a route part-way through its commands is about to send
+     * this one a speed, and a route runs by hand or from an s88 with autonomy idle, so `isAutonomyRunning` does not
+     * cover it.
+     *
+     * @param name the locomotive
+     * @return the route, or null when no running route names it
+     */
+    public Route runningRouteDriving(String name);
+
     public boolean isAutonomyRunning();
     public boolean isDebug();
     Accessory newSignal(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     Accessory newSwitch(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     public boolean getNetworkCommState();
+
+    /**
+     * Whether this session is simulating rather than driving a real Central Station.
+     * @return
+     */
+    public boolean isSimulation();
     public int getNumMessagesProcessed();
     public boolean changeRouteId(String name, int newId);
     public void clearLayouts();
     public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception;
-    public void importRoutes(String json);
+    /**
+     * Replaces every route with those in a route export, each arriving with its automatic firing off.
+     *
+     * @param json the export
+     * @return how many routes were added
+     */
+    public int importRoutes(String json);
+
+    /**
+     * The same, turning automatic firing back on for the routes the file saved with it on, when the operator said so
+     * (REG2-C7).
+     *
+     * @param json the export
+     * @param armAsSaved whether a route saved armed arrives armed
+     * @return how many routes were added
+     */
+    public int importRoutes(String json, boolean armAsSaved);
+
+    /**
+     * The routes a route export saved with their automatic firing on and a sensor to watch, by name (REG2-C7, RLU-C2) -
+     * the ones the import arms again when asked, and what its door asks about before anything is replaced.
+     *
+     * @param json the export
+     * @return their names, empty when there are none or the file cannot be read
+     */
+    public List<String> routesSavedArmed(String json);
+
+    /**
+     * The routes the last import split because each put an emergency stop among other commands, each with the stop route
+     * it now fires in the stop's place (Adam, 2026-09-25).
+     *
+     * @return pairs of route and stop route; empty when the last import split nothing
+     */
+    public List<String[]> getRoutesSplitByLastImport();
     public List<Locomotive> getLocomotives();
     public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
     public void sendPing(boolean force);
@@ -108,6 +220,16 @@ public interface ViewListener
     public int getTotalLocStats(int days, long offset);
     public Locomotive isLocLinkedToOthers(Locomotive l);
     public void waitForPowerState(boolean state) throws InterruptedException;
+
+    /**
+     * The same, with a deadline.
+     *
+     * @param state the state to wait for
+     * @param timeoutMs how long to allow the Central Station to answer
+     * @return whether the state was reached
+     * @throws InterruptedException
+     */
+    public boolean waitForPowerState(boolean state, long timeoutMs) throws InterruptedException;
     public void downloadLayout(File path) throws Exception;
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception;
 

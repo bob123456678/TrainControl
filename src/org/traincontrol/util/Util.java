@@ -14,6 +14,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.IntConsumer;
 import org.json.JSONObject;
 import org.traincontrol.marklin.file.CS2File;
@@ -65,6 +68,110 @@ public class Util
     public static final String BACKUP_FOLDER = "tc_backup";
 
     /**
+     * Folder (relative to the working directory) that cropped locomotive icons are written to.
+     *
+     * Local locomotive icons had no storage of their own before FR-022: setLocIcon simply remembered
+     * the path of the file the user picked, and the picture stayed wherever the user keeps their
+     * pictures.  A CROP has to live somewhere, because it is a new picture that did not exist before,
+     * and it must not be written next to - still less over - the original.  Adam picks these out of
+     * his own photo folders, and a program that quietly deposits files there, or edits the photo it
+     * was shown, has done something he did not ask for and cannot easily undo.
+     *
+     * So it goes beside the application's own data, in the working directory, next to the locomotive
+     * database whose lifetime it shares: an icon is only meaningful while the locomotive that
+     * references it exists, and both are lost together if the folder is moved without the other.
+     */
+    public static final String LOC_ICON_FOLDER = "tc_loc_icons";
+
+    /**
+     * The system property a test run names its own data folder with - see `dataPath`.
+     */
+    public static final String DATA_DIR_PROPERTY = "traincontrol.dataDir";
+
+    /**
+     * The system property a test run names its own preference node with - see `preferencesFor`.
+     */
+    public static final String PREFERENCES_PROPERTY = "traincontrol.preferences";
+
+    /**
+     * Where a test run's own preference nodes live, one per run, under the user root.
+     */
+    public static final String ISOLATED_PREFERENCES_ROOT = "traincontrol-test-runs";
+
+    /**
+     * Where one of the application's data files is: the working directory - unless a test run has named a folder of
+     * its own.
+     *
+     * Adam, 2026-09-23: *"does my app really have to stay closed? I thought the battery got isolated earlier."*  Every
+     * test JVM read and wrote the working directory's `LocDB.data` and `UIState.data`, which his running application
+     * keeps there too.  `docs/tools/one.sh` and `battery.sh` copy the two into a folder of the run's own and name it in
+     * `traincontrol.dataDir`; with the property unset this is the bare name, exactly what every call site used before.
+     *
+     * @param name the file's name - `LocDB.data`, `UIState.data`, the backup folder
+     * @return its path
+     */
+    public static String dataPath(String name)
+    {
+        String folder = System.getProperty(DATA_DIR_PROPERTY);
+
+        if (folder == null || folder.trim().isEmpty()) return name;
+
+        return new File(folder.trim(), name).getPath();
+    }
+
+    /**
+     * The preference node for a class's package: the user node - unless a test run has named a node of its own.
+     *
+     * The same reason as `dataPath`, and a sharper one: `LayoutSandbox` points this node's layout path at a sandbox for
+     * the length of a test class, and an application starting meanwhile would open the sandbox.  A run names itself in
+     * `traincontrol.preferences`, and gets `traincontrol-test-runs/<run>/<package path>`, which starts as a copy of the
+     * real node - so a class sees the settings it always saw - and which the runner deletes at the end.  The real node
+     * is only ever read.
+     *
+     * A run that cannot build its node does not fall back to the real one, which is the sharing this exists to end.
+     *
+     * @param owner a class in the package
+     * @return the node
+     */
+    public static java.util.prefs.Preferences preferencesFor(Class<?> owner)
+    {
+        java.util.prefs.Preferences real = java.util.prefs.Preferences.userNodeForPackage(owner);
+
+        String run = System.getProperty(PREFERENCES_PROPERTY);
+
+        if (run == null || run.trim().isEmpty()) return real;
+
+        String path = ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + real.absolutePath();
+
+        try
+        {
+            java.util.prefs.Preferences root = java.util.prefs.Preferences.userRoot();
+
+            boolean fresh = !root.nodeExists(path);
+
+            java.util.prefs.Preferences isolated = root.node(path);
+
+            if (fresh)
+            {
+                for (String key : real.keys())
+                {
+                    String value = real.get(key, null);
+
+                    if (value != null) isolated.put(key, value);
+                }
+
+                isolated.flush();
+            }
+
+            return isolated;
+        }
+        catch (java.util.prefs.BackingStoreException | IllegalArgumentException | IllegalStateException cannot)
+        {
+            throw new IllegalStateException("could not build this run's own preference node " + path, cannot);
+        }
+    }
+
+    /**
      * Returns the path a backup file should be written to.  Backups go into a dedicated subfolder
      * ({@link #BACKUP_FOLDER}), which is created if it does not exist.  If the folder cannot be
      * created, the original file name is returned so the backup falls back to the current directory.
@@ -73,7 +180,7 @@ public class Util
      */
     public static String getBackupPath(String fileName)
     {
-        File dir = new File(BACKUP_FOLDER);
+        File dir = new File(dataPath(BACKUP_FOLDER));
 
         if (dir.isDirectory() || dir.mkdirs())
         {
@@ -82,6 +189,357 @@ public class Util
 
         // Folder unavailable - fall back to the current directory (the original behaviour)
         return fileName;
+    }
+
+    /**
+     * Returns the file a cropped locomotive icon should be written to, creating
+     * {@link #LOC_ICON_FOLDER} if it is not there yet.
+     *
+     * Unlike getBackupPath there is no fall back to the current directory.  A backup that lands
+     * beside the file it protects is still a backup; an icon written into the working directory
+     * would sit among the application's own data files under a name nobody would recognise as ours,
+     * and it would never be cleaned up.  Null instead, so the caller can leave the locomotive
+     * pointing at the uncropped original - which is exactly what it did before this existed.
+     *
+     * @param fileName the intended file name, already sanitised
+     * @return the file to write to, or null if the folder could not be created
+     */
+    public static File getLocIconFile(String fileName)
+    {
+        File dir = new File(LOC_ICON_FOLDER);
+
+        if (dir.isDirectory() || dir.mkdirs())
+        {
+            return new File(dir, fileName);
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether a URL points at a file this application wrote into {@link #LOC_ICON_FOLDER}.
+     *
+     * The one question that decides whether a locomotive icon file may be DELETED.  Everything in
+     * that folder was written by us and is disposable; everything outside it is the user's own
+     * picture, picked out of their own folders, and is never ours to touch.  Asked before replacing
+     * a crop and before clearing an icon, so that re-cropping a locomotive twenty times leaves one
+     * file rather than twenty.
+     *
+     * @param url the locomotive's local image URL, may be null
+     * @return true only if the URL resolves to a file inside the icon folder
+     */
+    public static boolean isLocIconFile(String url)
+    {
+        if (url == null) return false;
+
+        try
+        {
+            File file = new File(new URI(url));
+
+            File dir = new File(LOC_ICON_FOLDER).getCanonicalFile();
+
+            // Canonical on both sides, and the parent rather than the path: a name that walks out of
+            // the folder ("..") resolves before the comparison, so it cannot be smuggled past this.
+            File parent = file.getCanonicalFile().getParentFile();
+
+            return parent != null && parent.equals(dir);
+        }
+        catch (URISyntaxException | IllegalArgumentException | IOException e)
+        {
+            // Not a file URL, or unreadable.  Anything we cannot positively identify as ours is
+            // treated as the user's, which is the safe direction for a question that gates a delete.
+            return false;
+        }
+    }
+
+    /**
+     * Removes a file, or a folder and everything under it.
+     *
+     * Written for FR-020's temporary download: the Central Station layout is fetched into a scratch
+     * folder, zipped, and then has no reason to exist.  Leaving it would put a stale copy of the
+     * diagram somewhere nobody is looking, which is its own hazard on a machine where the whole point
+     * is knowing which copy is current.
+     *
+     * Depth-guarded like addToZip, for the same reason: a symlink loop would otherwise recurse for
+     * ever, and this one DELETES.
+     *
+     * Never throws.  Failing to tidy up must not turn a completed backup into an error.
+     *
+     * @param file what to remove
+     * @param depth recursion guard
+     * @return whether everything asked for is gone
+     */
+    public static boolean deleteTree(File file, int depth)
+    {
+        if (file == null || !file.exists() || depth > 32) return false;
+
+        try
+        {
+            if (file.isDirectory())
+            {
+                File[] children = file.listFiles();
+
+                if (children != null)
+                {
+                    for (File child : children) deleteTree(child, depth + 1);
+                }
+            }
+
+            return file.delete();
+        }
+        catch (RuntimeException e)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * For tests: told what `showInFileManager` would do - "open <folder>" or "select <file>" - instead of a file manager
+     * being started on the desktop.  Null for the real one.
+     */
+    private static volatile java.util.function.Consumer<String> fileManagerForTests;
+
+    /**
+     * @param recorder what `showInFileManager` tells instead of starting a file manager, or null for the real one
+     */
+    public static void fileManagerForTests(java.util.function.Consumer<String> recorder)
+    {
+        fileManagerForTests = recorder;
+    }
+
+    /**
+     * Opens the operating system's file manager on the folder a file is in (FR-019).
+     *
+     * THE FOLDER ITSELF, NOT THE FILE SELECTED IN IT (OB-311; Adam, 2026-10-03: "show files after backup opened by
+     * documents folder, not the tc_backup folder").  On Windows this asked Explorer to select the file
+     * (`explorer /select,`), and an Explorer that cannot take the path it is given - spaces, a folder it will not resolve
+     * - opens its default place instead, Documents, with nothing said.  Opened as a folder, it cannot land anywhere else;
+     * the backups are named by date, so the newest sorts last.
+     *
+     * Never throws.  Failing to open a file manager must not turn a successful backup into an error
+     * dialog; the path is already in the log either way.
+     *
+     * @param file the file whose folder to open, or null to open the folder given
+     * @param folder the folder to fall back to
+     */
+    public static void showInFileManager(File file, String folder)
+    {
+        try
+        {
+            File open = file != null && file.isFile() ? file.getAbsoluteFile().getParentFile()
+                : (folder == null ? null : new File(folder).getAbsoluteFile());
+
+            if (open == null || !open.isDirectory()) return;
+
+            if (fileManagerForTests != null)
+            {
+                fileManagerForTests.accept("open " + open.getAbsolutePath());
+
+                return;
+            }
+
+            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().open(open);
+        }
+        catch (java.io.IOException | RuntimeException e)
+        {
+            // Deliberately silent beyond the log. The backup succeeded; not being able to show it is
+            // not a failure of the backup, and a second dialog saying so would be noise on top of the
+            // one the user just dismissed.
+        }
+    }
+
+    /**
+     * Writes a set of files and folders into one zip.
+     *
+     * FR-015, Adam: "the backup menu option should export a zip file with the locdb and uistate files,
+     * track diagram files, and autonomy files - effectively, all state."
+     *
+     * The argument for one archive rather than a folder of copies is the 23 August restore. The
+     * autonomy setup is keyed by PAGE ID, and those ids are defined by `config/gleisbild.cs2` - so
+     * `setup.json` on its own means nothing, and a `gleisbild.cs2` from a different day silently
+     * reattaches every station to the wrong page. The pieces are only a backup together, and an
+     * archive is the only form that cannot be half-copied, half-restored, or separated on the way to
+     * wherever the user keeps it.
+     *
+     * A source that does not exist is skipped rather than failing the whole archive: a layout held on
+     * the Central Station has no local config folder, and a first run has no UI state yet. Neither is
+     * an error, and neither should cost the user the rest of their backup.
+     *
+     * @param zip where to write
+     * @param sources entry name inside the archive -> file or folder on disk
+     * @return what could not be added, empty when everything was
+     */
+    public static List<String> zipInto(File zip, java.util.Map<String, File> sources)
+    {
+        List<String> failed = new ArrayList<>();
+
+        if (zip == null || sources == null) return failed;
+
+        File parent = zip.getAbsoluteFile().getParentFile();
+
+        if (parent != null) parent.mkdirs();
+
+        try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
+            new java.io.BufferedOutputStream(new java.io.FileOutputStream(zip))))
+        {
+            for (java.util.Map.Entry<String, File> source : sources.entrySet())
+            {
+                if (source.getValue() == null || !source.getValue().exists()) continue;
+
+                addToZip(out, source.getValue(), source.getKey(), failed, 0);
+            }
+        }
+        catch (IOException | RuntimeException e)
+        {
+            failed.add(zip.getName() + ": " + e);
+        }
+
+        return failed;
+    }
+
+    /**
+     * One file, or one folder and everything under it.
+     *
+     * @param depth guards against a symlink loop, the same way copyInto does
+     */
+    private static void addToZip(java.util.zip.ZipOutputStream out, File source, String name,
+        List<String> failed, int depth)
+    {
+        if (depth > 32) return;
+
+        try
+        {
+            if (source.isDirectory())
+            {
+                File[] children = source.listFiles();
+
+                if (children == null) return;
+
+                for (File child : children)
+                {
+                    addToZip(out, child, name + "/" + child.getName(), failed, depth + 1);
+                }
+
+                return;
+            }
+
+            out.putNextEntry(new java.util.zip.ZipEntry(name));
+
+            java.nio.file.Files.copy(source.toPath(), out);
+
+            out.closeEntry();
+        }
+        catch (IOException | RuntimeException e)
+        {
+            // Named individually, so "some files could not be copied" can say which - a file held open
+            // by a sync client is the everyday case here and the user can act on it.
+            failed.add(name + ": " + e);
+        }
+    }
+
+    /**
+     * Copies a folder and everything under it into the backup area.
+     *
+     * Added because the backup did not cover the track diagrams or the autonomy setup - it saved the
+     * locomotive database, the window state and autonomy.json, which was the whole story while the
+     * diagram lived on the Central Station and autonomy lived in one file.  It is not the whole story
+     * now: station captions, names, directions and every configuration live in config/autonomy beside
+     * the diagram, and for a locally stored layout that folder is the only copy there is.
+     *
+     * Best effort per file.  A backup that stops at the first unreadable file is a backup of nothing,
+     * and the names of what it could not take are more use than an exception.
+     *
+     * @param source the folder to copy
+     * @param intoName what to call it inside the backup folder
+     * @return the files it could not copy, empty when all was well
+     */
+    public static List<String> backupFolder(File source, String intoName)
+    {
+        List<String> failed = new ArrayList<>();
+
+        if (source == null || !source.isDirectory()) return failed;
+
+        File target = new File(getBackupPath(intoName));
+
+        copyInto(source, target, failed, new java.util.HashSet<String>(), 0);
+
+        return failed;
+    }
+
+    /**
+     * The deepest a backup will go.
+     *
+     * A guard against a directory tree that is not a tree.  The visited set below catches a junction
+     * that points at one of its own ancestors, which is the ordinary case; this catches the ones it
+     * cannot - a pair of junctions pointing at each other through paths that never repeat, and simply
+     * absurd nesting.  Recursion here runs on the backup thread, and a StackOverflowError there would
+     * take the whole backup down mid-copy.
+     */
+    private static final int MAX_BACKUP_DEPTH = 64;
+
+    private static void copyInto(File source, File target, List<String> failed,
+        Set<String> visited, int depth)
+    {
+        if (source.isDirectory())
+        {
+            if (depth > MAX_BACKUP_DEPTH)
+            {
+                failed.add(source.getPath());
+                return;
+            }
+
+            // Followed once.  isDirectory follows junctions and symbolic links, so one pointing back up
+            // its own tree is an infinite walk that ends in a path too long to create - a spray of
+            // failures naming directories the user never made - or, with long paths enabled, in a stack
+            // overflow.  The real path is what tells two names for one directory apart.
+            String real;
+
+            try
+            {
+                real = source.getCanonicalPath();
+            }
+            catch (IOException e)
+            {
+                failed.add(source.getPath());
+                return;
+            }
+
+            if (!visited.add(real)) return;
+
+            if (!target.isDirectory() && !target.mkdirs())
+            {
+                failed.add(target.getPath());
+                return;
+            }
+
+            File[] children = source.listFiles();
+
+            if (children == null)
+            {
+                failed.add(source.getPath());
+                return;
+            }
+
+            for (File child : children)
+            {
+                copyInto(child, new File(target, child.getName()), failed, visited, depth + 1);
+            }
+
+            return;
+        }
+
+        try
+        {
+            java.nio.file.Files.copy(source.toPath(), target.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch (IOException e)
+        {
+            // The path, not just the name.  Two files called the same thing in different folders are
+            // one line each and indistinguishable, which is no use to somebody trying to find out what
+            // did not get backed up.
+            failed.add(source.getPath());
+        }
     }
 
     // Timeouts for downloads.  The read timeout applies to each individual read, so a stalled transfer
@@ -97,6 +555,35 @@ public class Util
     public interface StreamWriter
     {
         void write(OutputStream out) throws IOException;
+    }
+
+    /**
+     * Makes a page name safe to use as a local filename.
+     *
+     * Page names are free text - they come out of the Central Station index, or out of the rename box -
+     * and one carrying a path separator or a character the filesystem forbids used to be joined
+     * straight onto the layouts folder.  On download that made the write land outside the folder, or
+     * fail part way through and leave a half-written layout the next sync reads as authoritative.
+     *
+     * Applied on BOTH sides on purpose.  The local read locates a page by the name in the index, so
+     * sanitizing only the write produces a file the reader cannot find.
+     *
+     * Here in Util rather than on CS2File, which is where it started, because there are three writers
+     * and one of them is LayoutDiagram - which is in base and must not reach into the Marklin
+     * package to ask.  CS2File.sanitizeFilename now delegates here, so every existing caller is
+     * unchanged and there is still one implementation.
+     *
+     * Only characters that are actually unusable are replaced, so ordinary names with spaces, dashes
+     * and accented letters are returned untouched and existing local layouts load exactly as before.
+     *
+     * @param name the page name
+     * @return the name with anything unusable replaced by an underscore
+     */
+    public static String sanitizeFilename(String name)
+    {
+        if (name == null) return null;
+
+        return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
     }
 
     /**
@@ -142,7 +629,34 @@ public class Util
             throw e;
         }
 
-        Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        // AND THE STAGING FILE GOES EITHER WAY (AC3-C1).
+        //
+        // The catch above deletes it when the WRITE fails, with a comment about a half-written file
+        // accumulating beside the target.  The move was outside that, so the Windows failure - a
+        // target somebody holds open - left the staging file behind, which is how AC3-B1's probe
+        // found a `LocDB.data.part` sitting next to a corrupt `LocDB.data`.
+        //
+        // Deleted rather than kept as a recovery artefact.  It holds the GOOD data, which is an
+        // argument for keeping it - but a file nothing reads, nothing mentions, and nothing cleans
+        // up is litter whatever it contains, and the caller is told the save failed.
+        try
+        {
+            Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch (IOException moveFailed)
+        {
+            try
+            {
+                staging.delete();
+            }
+            catch (RuntimeException cannotTidy)
+            {
+                // Nothing.  The move's failure is what the caller needs to hear about, and losing it
+                // behind a failure to tidy up after it would be the worse trade.
+            }
+
+            throw moveFailed;
+        }
     }
 
     /**
@@ -217,13 +731,65 @@ public class Util
     }
     
     /**
-     * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0)
+     * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0).
+     *
+     * FOUND BY THE NUMBER, NOT BY THE LETTER (C5).  This was split("v")[1], which assumes the name
+     * carries exactly one "v" and that it is the one in front of the version.  Neither holds: a name
+     * with no "v" threw, and a name with any other "v" - "TrainControl Preview v3.0.0" - handed back a
+     * piece of the name itself, which is the worse of the two.  A throw at least reaches the caller's
+     * catch and is logged; "iew " compares as older than the running version, so the update check
+     * decides there is nothing new and says nothing at all.
+     *
+     * Release names are typed by hand at tag time, which is what makes this reachable.
+     *
      * @param gitHubReleaseInfo
-     * @return 
+     * @return the version, or null when the name carries no number
      */
     public static String parseReleaseVersion(JSONObject gitHubReleaseInfo)
     {
-        return gitHubReleaseInfo.getString("name").split("v")[1];
+        String name = gitHubReleaseInfo.getString("name");
+
+        // THE ONE AFTER THE "v" FIRST (IND9-C2).  Matching the first number outright was the same
+        // mistake as the original, pointing the other way: "TrainControl 2026 Edition v3.0.0" gave
+        // "2026" - newer than anything, so the menu offers an update that does not exist - and
+        // "Build 1 v3.0.0" gave "1", which compares as older and hides a real release in silence.
+        // Release names are typed by hand at tag time and carry both a "v" and, sometimes, other
+        // numbers.
+        // The "v" has to BE the tag marker, not the last letter of a word (VAL9-B3).  Without the left
+        // boundary "Nov2026 build - TrainControl v3.0.0" matched the v of "Nov" and invented 2026, and
+        // taking the FIRST anchored match made "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0"
+        // report 2.6, which compares older and hides the release. Longest wins among the anchored ones,
+        // for the same reason it does among the bare numbers below.
+        java.util.regex.Matcher tagged = java.util.regex.Pattern
+            .compile("(?<![A-Za-z0-9])[vV]([0-9]+(?:[.][0-9]+)*)").matcher(name);
+
+        String anchored = null;
+
+        while (tagged.find())
+        {
+            if (anchored == null || tagged.group(1).length() > anchored.length())
+            {
+                anchored = tagged.group(1);
+            }
+        }
+
+        if (anchored != null) return anchored;
+
+        // No "v" at all, which used to throw.  Then the longest version-shaped number wins, so a
+        // three-part version beats a stray year or build number beside it.
+        java.util.regex.Matcher version =
+            java.util.regex.Pattern.compile("[0-9]+(?:[.][0-9]+)*").matcher(name);
+
+        // Null rather than a guess.  A name with no number in it has no version to report, and the
+        // caller can say so; handing back part of the name is how this went silent.
+        String best = null;
+
+        while (version.find())
+        {
+            if (best == null || version.group().length() > best.length()) best = version.group();
+        }
+
+        return best;
     }
     
     /**
@@ -256,16 +822,23 @@ public class Util
     {
         String apiUrl = "https://api.github.com/repos/" + repo + "/releases/latest";
 
-        BufferedReader in = CS2File.fetchURL(apiUrl);
         StringBuilder content = new StringBuilder();
-        String inputLine;
 
-        while ((inputLine = in.readLine()) != null)
+        // TRY-WITH-RESOURCES, so a bad response does not keep the connection (AC2-C4).
+        //
+        // The plain close() at the end was skipped by anything thrown from readLine, which leaked the
+        // reader and the HTTPS connection under it.  Every other fetch in this project was converted
+        // for exactly this reason - CS2File.parseFile, parseJSONArray, ping and isCS3 each carry the
+        // note - and this one was missed because it is the only fetch outside CS2File.
+        try (BufferedReader in = CS2File.fetchURL(apiUrl))
         {
-            content.append(inputLine);
-        }
+            String inputLine;
 
-        in.close();
+            while ((inputLine = in.readLine()) != null)
+            {
+                content.append(inputLine);
+            }
+        }
 
         // Parse the JSON response to get the tag_name
         return new JSONObject(content.toString());

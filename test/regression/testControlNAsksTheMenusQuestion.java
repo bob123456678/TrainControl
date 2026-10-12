@@ -1,0 +1,563 @@
+package regression;
+
+import java.util.Arrays;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
+import org.testng.SkipException;
+import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.util.I18n;
+
+/**
+ * Control+N offers a station name exactly where the right-click menu does (MFR-B3).
+ *
+ * FR-086 (Adam, on MT-397, 2026-09-15): *"let's add a hotkey for 'show station name here' too"*.  The key's javadoc
+ * says it asks what the menu asks; it did not ask `isIgnored`, so on an ignored square - a page left out of autonomy,
+ * say - it opened the station chooser and wrote a caption where the menu offers nothing but the bulk tools.  The shape
+ * `testControlEAsksTheMenusQuestion` already holds for Control+E: the guard and the affordance asking one question,
+ * put side by side through a public predicate because the key itself opens a modal dialog.
+ *
+ * Read-only: its own diagram in a temporary folder.
+ *
+ * @author Adam
+ */
+public class testControlNAsksTheMenusQuestion
+{
+    /**
+     * On plain track the menu offers a name and so does the key; on the same track on an ignored page, neither does.
+     *
+     * @throws Exception from the session or the reflection
+     */
+    @Test
+    public void testTheKeyOffersNoNameWhereTheMenuOffersNone() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            TileKey track = new TileKey("main", 3, 1);
+
+            // THE CONTROL: a square the menu offers a name on, and the key agrees.
+            javax.swing.JPopupMenu menu = panel.buildTileMenu(track, null);
+
+            assertNotNull(menu, "precondition: no menu on the plain track at " + track);
+
+            assertTrue(offersAName(menu), "precondition: the menu on plain track offers no station name - "
+                + itemNames(menu) + " - so there is nothing for the key to agree with");
+
+            assertTrue(keyOffersAName(panel, track),
+                "the key offers no station name on plain track where the menu does: " + itemNames(menu));
+
+            // AND THE SQUARES THE MENU SENDS TO ITS TEXT MENU (MFV-C3): a label and an empty square, which carry no
+            // track - an empty square counts as ignored, so a predicate that asked `isIgnored` before the text branch
+            // would refuse the very square a station name is usually put on, and the two squares above would not see it.
+            for (TileKey square : new TileKey[] { new TileKey("main", 3, 3), new TileKey("main", 9, 2) })
+            {
+                javax.swing.JPopupMenu there = panel.buildTileMenu(square, null);
+
+                assertTrue(there != null && offersAName(there),
+                    "precondition: the menu offers no station name on the text or empty square " + square + ": "
+                    + itemNames(there));
+
+                assertTrue(keyOffersAName(panel, square),
+                    "Control+N offers no station name on " + square + ", a text or empty square, where the menu offers "
+                    + itemNames(there) + " (MFV-C3)");
+            }
+
+            // AN IGNORED SQUARE: the same track, its page left out of autonomy.
+            session.setPageExcluded("main", true);
+
+            javax.swing.JPopupMenu ignored = panel.buildTileMenu(track, null);
+
+            assertFalse(ignored != null && offersAName(ignored),
+                "precondition: the menu still offers a station name on an ignored square: " + itemNames(ignored));
+
+            assertFalse(keyOffersAName(panel, track),
+                "Control+N offers the station chooser on " + track + ", a square on a page left out of autonomy, where"
+                + " the right-click menu offers " + (ignored == null ? "nothing" : itemNames(ignored).toString())
+                + " (MFR-B3)");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * Every key in the editor puts down a gesture in progress, as the right-click menu does (MFV-C4).
+     *
+     * The menu abandons an armed tool before it offers anything - opening it is how somebody says "not that, this
+     * instead".  Control+N does the same since MFR-B3; Control+S and Control+E did not, so with Test a Path armed one
+     * key disarmed it and the next two left it waiting for a click.  Asked on a page left out of autonomy, where no key
+     * opens a dialog - each key's own predicate is checked first, so a key that would open one fails a precondition
+     * rather than hanging the run.
+     *
+     * @throws Exception from the session or the reflection
+     */
+    @Test
+    public void testEveryEditorKeyPutsDownAGestureAsTheMenuDoes() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-keys").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            final TileKey track = new TileKey("main", 3, 1);
+
+            session.setPageExcluded("main", true);
+
+            assertFalse(asked(panel, "canBeNamed", track), "precondition: Control+S would open a dialog on " + track);
+            assertFalse(panel.offersALength(track), "precondition: Control+E would open a dialog on " + track);
+            assertFalse(keyOffersAName(panel, track), "precondition: Control+N would open a dialog on " + track);
+            assertFalse(panel.offersAMaximumTrainLength(track), "precondition: Control+B would open a dialog on " + track);
+            assertFalse(keyOffers(panel, "offersAHome", track), "precondition: Control+H would open a dialog on " + track);
+
+            // EVERY KEY THAT IS A DOOR ONTO THE MENU (MFW-C1): S, E, N, and B and H, which the first version left out.
+            String[] keys = { "Control+S", "Control+E", "Control+N", "Control+B", "Control+H" };
+            Runnable[] presses = { () -> panel.promptNameFor(track), () -> panel.promptLengthFor(track),
+                () -> panel.showStationNameFor(track), () -> panel.promptMaxTrainLengthFor(track),
+                () -> panel.promptHomeFor(track) };
+
+            // ARMED THROUGH THE PANEL'S OWN FIELD, not its button: on an ignored page the panel's refresh disables Test a
+            // Path (`testButton.setEnabled(!ignored)`), so after the first click every further doClick did nothing and
+            // the claim failed on its own precondition.  The state a click leaves is what the keys are asked about.
+            final java.lang.reflect.Field tool = AutonomyEditorPanel.class.getDeclaredField("tool");
+
+            tool.setAccessible(true);
+
+            @SuppressWarnings({ "unchecked", "rawtypes" })
+            final Object testTool = Enum.valueOf((Class) tool.getType(), "TEST");
+
+            for (int i = 0; i < keys.length; i++)
+            {
+                if (!asked(panel, "anythingIsArmed", null)) tool.set(panel, testTool);
+
+                assertTrue(asked(panel, "anythingIsArmed", null), "precondition: Test a Path did not arm before " + keys[i]);
+
+                presses[i].run();
+
+                assertFalse(asked(panel, "anythingIsArmed", null),
+                    keys[i] + " left Test a Path armed, where the right-click menu puts it down before offering anything"
+                    + " - one key disarms a gesture and another leaves it waiting for a click (MFV-C4)");
+            }
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * A station square showing another station's only name asks before it shows its own, and No leaves that name where it
+     * is (GSE-C5); Yes still shows its own, the item being live there since SVV-C6 and SVX-B2.
+     *
+     * A drag can leave a station square showing ANOTHER station's caption, and "Show a Station Name Here" on it captioned
+     * the square with itself and asked nothing - so the other station was then named nowhere on the diagram, which the
+     * setup's checks call an error (`AutonomyChecks.checkStationLabels`).  The drop refuses the same loss outright
+     * (`refuseCaptionDrop`).  Driven through Control+N, which opens what the menu item opens, and answered through
+     * `answerTakeAnotherNameForTests`, so no dialog is put on screen.
+     *
+     * MUTATION: drop the question from `promptStationLabel`'s station branch, and the No half fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationSquareAsksBeforeTakingAnotherStationsOnlyName() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-other").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            TileKey here = new TileKey("main", 1, 1);
+            TileKey other = new TileKey("main", 6, 1);
+
+            session.setStation(here, true);
+            session.setStation(other, true);
+
+            // THE OTHER STATION'S NAME ON THIS STATION'S SQUARE, and nowhere else - as a drag leaves it
+            session.setCaption(here, other);
+
+            assertEquals(session.captionsFor(other), java.util.Collections.singleton(here),
+                "precondition: the other station is not named on this square alone: " + session.captionsFor(other));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            assertTrue(panel.offersAStationName(here), "precondition: the menu offers no live Show a Station Name Here on a"
+                + " station square showing another station's name, which SVV-C6 and SVX-B2 made live");
+
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(false);
+
+            panel.showStationNameFor(here);
+
+            assertEquals(session.getCaptionTarget(here), other, "Show a Station Name Here took the only name another"
+                + " station had off the diagram without asking, or after being answered No (GSE-C5)");
+
+            // AND YES STILL SHOWS ITS OWN: the item is live, and asking is not refusing
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(true);
+
+            panel.showStationNameFor(here);
+
+            assertEquals(session.getCaptionTarget(here), here, "answered Yes, the station square still does not show its"
+                + " own name - the question became a refusal, which SVV-C6 and SVX-B2 ruled out");
+        }
+        finally
+        {
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
+
+            deleteRecursively(folder);
+        }
+    }
+
+    /** A private boolean question of the panel's, with the square or with nothing. */
+    private static boolean asked(AutonomyEditorPanel panel, String name, TileKey tile) throws Exception
+    {
+        java.lang.reflect.Method method = tile == null
+            ? AutonomyEditorPanel.class.getDeclaredMethod(name)
+            : AutonomyEditorPanel.class.getDeclaredMethod(name, TileKey.class);
+
+        method.setAccessible(true);
+
+        return (Boolean) (tile == null ? method.invoke(panel) : method.invoke(panel, tile));
+    }
+
+    private static Object field(Object on, String name) throws Exception
+    {
+        java.lang.reflect.Field f = on.getClass().getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return f.get(on);
+    }
+
+    /**
+     * Control+H offers a home exactly where the right-click menu does (MFW-B1).
+     *
+     * R28-C5 restored the key at Adam's word (*"set control+H for home"*) as one line that asked nothing, so on plain
+     * track, a switch or a page left out of autonomy it opened the home chooser and wrote a home onto a square that is
+     * not a station - taking the locomotive's home off the platform it had.  The menu offers the item only on a station.
+     *
+     * @throws Exception from the session or the reflection
+     */
+    @Test
+    public void testControlHOffersAHomeOnlyWhereTheMenuDoes() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-h").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            TileKey station = new TileKey("main", 1, 1);
+            TileKey track = new TileKey("main", 3, 1);
+
+            session.setStation(station, true);
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            // THE CONTROL: a station, where the menu offers a home and so must the key.
+            javax.swing.JPopupMenu atTheStation = panel.buildTileMenu(station, null);
+
+            assertTrue(offersAHome(atTheStation), "precondition: the menu offers no home on the station at " + station
+                + ": " + itemNames(atTheStation));
+
+            assertTrue(keyOffers(panel, "offersAHome", station),
+                "Control+H offers no home on the station at " + station + ", where the menu does");
+
+            // PLAIN TRACK: no home on the menu, none from the key.
+            javax.swing.JPopupMenu onTrack = panel.buildTileMenu(track, null);
+
+            assertFalse(offersAHome(onTrack), "precondition: the menu offers a home on plain track: " + itemNames(onTrack));
+
+            assertFalse(keyOffers(panel, "offersAHome", track),
+                "Control+H offers a home on the plain track at " + track + ", where the menu offers " + itemNames(onTrack)
+                + " - a home written onto a square that is not a station (MFW-B1)");
+
+            // AND THE STATION ON A PAGE LEFT OUT OF AUTONOMY: only the bulk tools on the menu.
+            session.setPageExcluded("main", true);
+
+            javax.swing.JPopupMenu ignored = panel.buildTileMenu(station, null);
+
+            assertFalse(offersAHome(ignored), "precondition: the menu offers a home on an ignored square: " + itemNames(ignored));
+
+            assertFalse(keyOffers(panel, "offersAHome", station),
+                "Control+H offers a home on " + station + ", on a page left out of autonomy, where the menu offers "
+                + itemNames(ignored) + " (MFW-B1)");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * Control+H refused on a square that is not a station says why in its own words (MFX-C1).
+     *
+     * MFW-B1's refusal borrowed Control+B's sentence, which explains a maximum train length - the right remedy, make it a
+     * station, under the wrong reason.
+     *
+     * @throws Exception from the session or the reflection
+     */
+    @Test
+    public void testControlHSaysWhyItOffersNoHome() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-h-why").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            TileKey track = new TileKey("main", 3, 1);
+
+            assertFalse(keyOffers(panel, "offersAHome", track), "precondition: Control+H would open a dialog on " + track);
+
+            panel.promptHomeFor(track);
+
+            Object hint = field(panel, "hint");
+            String shown = hint instanceof javax.swing.JLabel ? String.valueOf(((javax.swing.JLabel) hint).getText()) : "";
+
+            String borrowed = I18n.t("autosetup.ui.infoNotAStationHere");
+            String borrowedStart = borrowed.substring(0, borrowed.indexOf('.'));
+
+            assertFalse(shown.contains(borrowedStart),
+                "Control+H refused a home on plain track with Control+B's reason, about a maximum train length: " + shown
+                + " (MFX-C1)");
+
+            String own = I18n.t("autosetup.ui.infoNotAStationForAHome");
+            String ownStart = own.substring(0, Math.max(0, own.indexOf('.')));
+
+            assertTrue(!ownStart.isEmpty() && shown.contains(ownStart),
+                "Control+H refused a home on plain track without saying a home needs a station: " + shown);
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * The main window's menu does not name Control+N, which is the notes key there (MFX-C3).
+     *
+     * The same menu is built for the main window's track diagram with `setMenuOnly`, and on a text or empty square it
+     * carries the caption items - whose tooltip named the editor's key.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheMainWindowsMenuDoesNotNameTheEditorsKey() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-main").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            TileKey empty = new TileKey("main", 9, 2);
+
+            // THE CONTROL: the editor's menu names the key.
+            AutonomyEditorPanel editor = new AutonomyEditorPanel(session, "main", () -> { });
+
+            String inTheEditor = nameTooltip(editor.buildTileMenu(empty, null));
+
+            assertTrue(inTheEditor != null && inTheEditor.contains(AutonomyEditorPanel.SHORTCUT_STATION),
+                "precondition: the editor's menu does not name " + AutonomyEditorPanel.SHORTCUT_STATION + " on " + empty
+                + ": " + inTheEditor);
+
+            // THE MAIN WINDOW'S: the same menu, menu-only.
+            AutonomyEditorPanel mainWindow = new AutonomyEditorPanel(session, "main", () -> { });
+
+            mainWindow.setMenuOnly(true);
+
+            String inTheMainWindow = nameTooltip(mainWindow.buildTileMenu(empty, null));
+
+            assertNotNull(inTheMainWindow, "precondition: the main window's menu offers no station name on " + empty);
+
+            assertFalse(inTheMainWindow.contains(AutonomyEditorPanel.SHORTCUT_STATION),
+                "the main window's menu names " + AutonomyEditorPanel.SHORTCUT_STATION + ", which is the notes key in that"
+                + " window: " + inTheMainWindow + " (MFX-C3)");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /** The tooltip of the Show a Station Name Here item, in any of its three wordings, or null. */
+    private static String nameTooltip(javax.swing.JPopupMenu menu)
+    {
+        if (menu == null) return null;
+
+        java.util.List<String> names = java.util.Arrays.asList(I18n.t("autosetup.ui.menuShowStationHere"),
+            I18n.t("autosetup.ui.menuShowStationHereNamed"), I18n.t("autosetup.ui.menuStationShowsItself"));
+
+        for (java.awt.Component each : menu.getComponents())
+        {
+            if (each instanceof javax.swing.JMenuItem && names.contains(((javax.swing.JMenuItem) each).getText()))
+            {
+                return ((javax.swing.JMenuItem) each).getToolTipText();
+            }
+        }
+
+        return null;
+    }
+
+    /** A public question of the panel's by name, failing plainly where the panel does not have it. */
+    private static boolean keyOffers(AutonomyEditorPanel panel, String name, TileKey tile) throws Exception
+    {
+        java.lang.reflect.Method asked;
+
+        try
+        {
+            asked = AutonomyEditorPanel.class.getMethod(name, TileKey.class);
+        }
+        catch (NoSuchMethodException none)
+        {
+            fail("AutonomyEditorPanel has no " + name + ": the key asks its own question, not the menu's");
+
+            return false;
+        }
+
+        return (Boolean) asked.invoke(panel, tile);
+    }
+
+    private static boolean offersAHome(javax.swing.JPopupMenu menu)
+    {
+        String none = I18n.t("autosetup.ui.menuHomeNone");
+        String named = I18n.t("autosetup.ui.menuHomeFor");
+        String namedStart = named.contains("{0}") ? named.substring(0, named.indexOf("{0}")) : named;
+
+        for (String name : itemNames(menu))
+        {
+            if (name == null) continue;
+
+            if (name.equals(none) || (!namedStart.isEmpty() && name.startsWith(namedStart))) return true;
+        }
+
+        return false;
+    }
+
+    /** What the key acts on - public, so the two doors can be put side by side. */
+    private static boolean keyOffersAName(AutonomyEditorPanel panel, TileKey tile) throws Exception
+    {
+        java.lang.reflect.Method asked;
+
+        try
+        {
+            asked = AutonomyEditorPanel.class.getMethod("offersAStationName", TileKey.class);
+        }
+        catch (NoSuchMethodException none)
+        {
+            fail("AutonomyEditorPanel has no offersAStationName: Control+N asks its own question, which is not the"
+                + " menu's - it does not ask isIgnored (MFR-B3)");
+
+            return false;
+        }
+
+        return (Boolean) asked.invoke(panel, tile);
+    }
+
+    private static boolean offersAName(javax.swing.JPopupMenu menu)
+    {
+        java.util.List<String> names = itemNames(menu);
+
+        return names.contains(I18n.t("autosetup.ui.menuShowStationHere"))
+            || names.contains(I18n.t("autosetup.ui.menuShowStationHereNamed"));
+    }
+
+    private static LayoutDiagram aPageWithARun(String name) throws java.io.IOException
+    {
+        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+
+        for (int x = 2; x <= 5; x++)
+        {
+            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
+        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        // A label, the other square the menu sends to its text menu; (9,2) is left empty.
+        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
+
+        page.setPageId(name);
+
+        return page;
+    }
+
+    private static java.util.List<String> itemNames(javax.swing.JPopupMenu menu)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        if (menu == null) return out;
+
+        for (java.awt.Component each : menu.getComponents())
+        {
+            if (each instanceof javax.swing.JMenuItem) out.add(((javax.swing.JMenuItem) each).getText());
+        }
+
+        return out;
+    }
+
+    private static void needsADisplay()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a display");
+        }
+    }
+
+    private static void deleteRecursively(java.io.File file)
+    {
+        java.io.File[] children = file.listFiles();
+
+        if (children != null)
+        {
+            for (java.io.File child : children) deleteRecursively(child);
+        }
+
+        file.delete();
+    }
+}

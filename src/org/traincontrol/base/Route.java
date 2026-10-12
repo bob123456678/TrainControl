@@ -145,23 +145,184 @@ abstract public class Route
     }
     
     /**
+     * Whether a command in this route runs the named route (GSR-B4).
+     *
+     * Asked before that route is deleted, for the count the delete's question gives: `otherRouteDeleted` removes the
+     * commands, and afterwards there is nothing left to count.
+     *
+     * @param name the route that may be deleted
+     * @return true when at least one command here runs it
+     */
+    public boolean callsRoute(String name)
+    {
+        if (name == null) return false;
+
+        for (RouteCommand rc : this.route)
+        {
+            if (rc != null && rc.isRoute() && name.equals(rc.getName())) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Takes every command that runs a deleted route out of this one (GSR-B4).
+     *
+     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' calls to it, as deleting a locomotive
+     * removes the commands that drive it (`locomotiveDeleted`).  A command naming a route that is not there does nothing
+     * when this one fires - and then runs whatever route is next given that name, which nobody put here.  The wait the
+     * command carried goes with it, as a deleted locomotive's commands take theirs.
+     *
+     * Through the iterator, on the live list, as `locomotiveDeleted` does: a route already running walks a copy taken
+     * when it started (CS3-B1), so it finishes the commands it began with.
+     *
+     * @param name the route that has been deleted
+     * @return true when a command was removed, so the caller can say which route lost it
+     */
+    public boolean otherRouteDeleted(String name)
+    {
+        if (name == null) return false;
+
+        boolean any = false;
+
+        for (java.util.Iterator<RouteCommand> commands = this.route.iterator(); commands.hasNext();)
+        {
+            RouteCommand rc = commands.next();
+
+            if (rc != null && rc.isRoute() && name.equals(rc.getName()))
+            {
+                commands.remove();
+
+                any = true;
+            }
+        }
+
+        return any;
+    }
+
+    /**
      * This will update route commands when a locomotive is renamed
      * @param oldName
      * @param newName 
      */
     public void locomotiveRenamed(String oldName, String newName)
     {
-        if (oldName != null && newName != null && !oldName.equals(newName))
+        if (oldName == null || newName == null || oldName.equals(newName)) return;
+
+        for (RouteCommand rc : namesLocomotives())
         {
-            for (RouteCommand rc : this.route)
+            if (oldName.equals(rc.getName())) rc.setName(newName);
+        }
+    }
+
+    /**
+     * Takes a deleted locomotive out of this route's COMMANDS, and reports its conditions.
+     *
+     * Renaming has always been followed into a route and deleting never was, so a route went on naming
+     * a locomotive that is not in the database - and what that does is quiet.  A command for a
+     * locomotive that cannot be resolved does nothing when the route fires, and a route is a list of
+     * commands: one of them silently not applying looks exactly like a route that ran.  So the command
+     * is removed: it cannot do anything, and leaving it keeps the route looking complete while it is
+     * not.
+     *
+     * **The conditions are deliberately left alone, and an earlier version of this comment was wrong
+     * to say otherwise.**  It reasoned that a condition which can never be true is a route that can
+     * never run, and should go the same way.  That is true and the remedy is worse than the fault.
+     * Conditions are combined with AND - see NodeExpression.fromList - so a term naming a deleted
+     * locomotive makes the whole condition false, and the route stops firing.  Removing the term does
+     * not restore the route the operator had: it creates a route that fires on what is LEFT, which is a
+     * weaker condition than they ever wrote.  These routes throw switches and signals ahead of moving
+     * trains, so a route that has quietly stopped firing is safe and a route that quietly starts firing
+     * on a condition nobody agreed to is not.
+     *
+     * A term inside an OR could be dropped safely, since false is its identity there - but a rule that
+     * depends on where in the tree a term sits is one nobody can predict from the outside, and the
+     * caller is told either way.
+     *
+     * @param name the locomotive that no longer exists
+     * @return true if a CONDITION still names it, so the caller can say so - this route will not fire
+     *         until somebody edits it
+     */
+    public boolean locomotiveDeleted(String name)
+    {
+        if (name == null) return false;
+
+        for (java.util.Iterator<RouteCommand> commands = this.route.iterator(); commands.hasNext();)
+        {
+            RouteCommand rc = commands.next();
+
+            if (namesALocomotive(rc) && name.equals(rc.getName())) commands.remove();
+        }
+
+        if (this.getConditions() == null) return false;
+
+        for (RouteCommand rc : NodeExpression.toList(this.getConditions()))
+        {
+            if (namesALocomotive(rc) && name.equals(rc.getName())) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Every command in this route that names a locomotive - in its COMMANDS and in its CONDITIONS.
+     *
+     * The conditions were missed for as long as this rule has existed.  They are RouteCommands too -
+     * "has locomotive X reached sensor Y" is one - and NodeExpression.toList hands back the objects
+     * themselves rather than copies, so changing one here changes the condition.
+     *
+     * A renamed locomotive left in a condition is the worst of the shapes this can take: the condition
+     * cannot be satisfied, so the route stops firing, and nothing anywhere says that a rename did it.
+     *
+     * @return the commands naming a locomotive, live
+     */
+    private java.util.List<RouteCommand> namesLocomotives()
+    {
+        java.util.List<RouteCommand> out = new java.util.ArrayList<>();
+
+        for (RouteCommand rc : this.route)
+        {
+            if (namesALocomotive(rc)) out.add(rc);
+        }
+
+        if (this.getConditions() != null)
+        {
+            for (RouteCommand rc : NodeExpression.toList(this.getConditions()))
             {
-                // Route command references old locomotive name
-                if ((rc.isLocomotiveSpeed() || rc.isFunction() || rc.isAutoLocomotive() || rc.isLocomotiveDirection()) && oldName.equals(rc.getName()))
-                {
-                    rc.setName(newName);
-                }
+                if (namesALocomotive(rc)) out.add(rc);
             }
         }
+
+        return out;
+    }
+
+    /**
+     * Whether this route's COMMANDS drive the named locomotive, so deleting it would take them away.
+     *
+     * Asked before the deletion rather than after, because `locomotiveDeleted` removes them silently
+     * and there is then nothing left to count.  Commands only: a CONDITION naming the locomotive is
+     * left alone by that method and reported separately, so counting it here would say a route is about
+     * to lose something it keeps.
+     *
+     * @param name the locomotive that may be deleted
+     * @return true when at least one command in this route drives it
+     */
+    public boolean commandsDrive(String name)
+    {
+        if (name == null) return false;
+
+        for (RouteCommand rc : this.route)
+        {
+            if (namesALocomotive(rc) && name.equals(rc.getName())) return true;
+        }
+
+        return false;
+    }
+
+    private static boolean namesALocomotive(RouteCommand rc)
+    {
+        return rc != null && (rc.isLocomotiveSpeed() || rc.isFunction()
+            || rc.isAutoLocomotive() || rc.isLocomotiveDirection());
     }
     
     /**
@@ -216,7 +377,20 @@ abstract public class Route
         if (rc.isAccessory())
         {
             // TODO rc should maintain the accessory type
-            return control.getAccessoryState(rc.getAddress(), rc.getProtocol()) == rc.getSetting();
+
+            // ASKED WITHOUT REGISTERING (C13).  getAccessoryState creates a switch on a miss, so
+            // merely evaluating a condition against an address the Central Station has never mentioned
+            // invented that accessory - and conditions are evaluated on a timer while a route waits,
+            // so one typo made a permanent one.
+            //
+            // toCSV already used the non-creating lookup for exactly this reason, and NodeExpression
+            // was fixed for it with a comment naming "this display path".  This path was next door to
+            // both and was not swept.
+            //
+            // The verdict is unchanged: the created switch was created UNSWITCHED and then read back
+            // as false, which is what an absent one reads as now.
+            return control.getAccessoryStateIfPresent(rc.getAddress(), rc.getProtocol())
+                == rc.getSetting();
         }
         else if (rc.isFeedback())
         {
@@ -224,7 +398,10 @@ abstract public class Route
         }
         else if (rc.isAutoLocomotive())
         {
-            if (!control.hasAutoLayout())
+            // ASKED ONCE, NOT BUILT (RLV11-C5): a route's conditions are asked on its own thread
+            Layout layout = control.getAutoLayoutIfLoaded();
+
+            if (layout == null)
             {
                 return false;
             }
@@ -235,12 +412,12 @@ abstract public class Route
             {
                 return false;
             }
-
-            Layout layout = control.getAutoLayout();
             String s88 = Integer.toString(rc.getAddress());
 
-            // Avoid a race condition and ensure the autonomy resolution finishes first
-            layout.waitForS88Reached(loc, s88);
+            // THE RUN'S BOOKKEEPING CAUGHT UP WITH THE TRAIN FIRST, and no longer (RSA56-C1): while the train stands on
+            // the sensor its run has not yet recorded - the gap in which a route fired by that sensor asks - and not at all
+            // for a sensor it has not reached, which this used to wait for, untimed, until the train got there
+            layout.waitForTheRunToRecord(loc, 3000);
 
             // The last milestone reached, while the locomotive is running a path
             if (s88.equals(layout.getLatestMilestoneS88(loc)))
@@ -248,10 +425,12 @@ abstract public class Route
                 return true;
             }
 
-            // Otherwise wherever the locomotive is standing, for a path that has completed.  A
-            // locomotive that is not on the autonomy graph at all has no location, and so simply does
-            // not satisfy this condition
-            Point location = layout.getLocomotiveLocation(loc);
+            // Otherwise WHERE THE TRAIN IS NOW (OB-250; Adam, 2026-10-08: "250- the first" - the last sensor it
+            // reached, or where it stands): the start of the road it was given until it reaches a sensor, and wherever
+            // it stands once a path has completed.  This asked which Point holds the train, and every Point of a locked
+            // path holds it - the first in hash order, which could be one the train had not reached.  A locomotive that
+            // is not on the autonomy graph at all is nowhere, and so simply does not satisfy this condition
+            Point location = layout.whereTheTrainIs(loc);
 
             return location != null && s88.equals(location.getS88());
         }

@@ -103,7 +103,46 @@
       alternative is a shutdown path on MarklinControlStation that releases the socket, which would
       let the whole suite share one JVM and make this list unnecessary.
     -->
+    <!--
+      THE ONE FLAG `ant test` CAN BE GIVEN FROM HERE (TSX-C20).
+
+      Every class that builds a MarklinControlStation binds UDP 15730 unless told otherwise, so
+      without this `ant test` cannot run while TrainControl is open and no two of its classes can
+      overlap.  The failure is a nasty one to read: a bind failure comes out of @BeforeClass as
+      "Total tests run: 16, Failures: 0, Skips: 16", which looks like a class nobody wrote tests for
+      rather than one that could not start.  Both runners in docs/tools/ have passed this since they
+      were written; this file never had it.
+
+      Through `test-sys-prop.`, which the TestNG macro in nbproject/build-impl.xml maps onto system
+      properties of the forked JVM.
+
+      -Xmx IS reachable and this comment used to say it was not (VD9-B4).  NetBeans' generated
+      j2seproject3:test macro fills its <customize> element with the run.jvmargs property, test-impl
+      forwards that into the testng task's own <customize/>, and run.jvmargs defaults to empty inside
+      a target - so a top-level property here would win.
+
+      By macro name rather than by line (VD10-C9): the round that adopted "cite by name, a line number
+      in a comment outlives every edit above it" wrote six line citations into this very comment, all
+      pointing into a file the next paragraph says NetBeans regenerates.
+
+      It is deliberately not set through run.jvmargs, because that property also feeds the java macro
+      the Run and Debug targets use - bounding it would bound TrainControl itself, and capping the
+      application to make `ant test` tidier is the wrong trade.
+
+      The narrower route was NOT taken and is worth naming so nobody re-derives it (VD10-C9): the
+      test-one-class macrodef below is ours, and could pass a nested jvmarg through test-impl's own
+      customize element, reaching the fork and nothing else.  What stops that being worth doing is
+      that `ant test` runs one JVM at a time, which is not the pressure the bound exists for -
+      docs/tools/battery.sh runs many and does set it.  battery.sh remains the gate.
+
+      The skipped-class rule is the one leg with no door at all: TestNG's ant task has no way to fail
+      a run for a class that reported only skips.
+    -->
+    <property name="test-sys-prop.traincontrol.anyReceivePort" value="true"/>
     <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-run">
+        <!-- The tests live in test/core, test/ui, test/regression and test/support since 2026-08-22 -
+             see test/README.md for which folder a new one belongs in.  These entries do not name the
+             folder, because testincludes below is a FILE pattern and **/ already spans it. -->
         <macrodef name="test-one-class">
             <attribute name="class"/>
             <sequential>
@@ -113,17 +152,60 @@
         </macrodef>
 
         <test-one-class class="testAccessory"/>
+        <test-one-class class="testStagingSkipsALegWithNoSpeed"/>
+        <test-one-class class="testStagingOutcomeMessages"/>
+        <test-one-class class="testTimetableColumnHeadings"/>
+        <test-one-class class="testRoutingRuleTooltips"/>
+        <test-one-class class="testLockEdgesSurviveTheFile"/>
+        <test-one-class class="testEveryLanguageFits"/>
+        <test-one-class class="testTheStationGoingAwayDoesNotJamSwitching"/>
+        <test-one-class class="testARenameReachesTheTimetableOnScreen"/>
+        <test-one-class class="testALocomotiveDoesNotEvictItself"/>
+        <test-one-class class="testThePlaceholderLocomotive"/>
+        <test-one-class class="testDiagramLooksRight"/>
+        <test-one-class class="testTheShadingIsRedrawnWhenATrainMoves"/>
+        <test-one-class class="testSidebarIcons"/>
+        <test-one-class class="testTheWaitMarkIsAnHourglass"/>
+        <test-one-class class="testTheRebuildIsOnePass"/>
+        <test-one-class class="testTheBuildSaysWhatItIs"/>
+        <test-one-class class="testLocIconCrop"/>
+        <test-one-class class="testLocMappingPages"/>
+        <test-one-class class="testTheKeyboardDrag"/>
+        <test-one-class class="testCentralStationDetection"/>
+        <test-one-class class="testRouteEditorShading"/>
+        <test-one-class class="testStationLabelPrefill"/>
+        <test-one-class class="testStationLabelDrag"/>
+        <test-one-class class="testEveryWindowWearsTheIcon"/>
+        <test-one-class class="testDiagramDrawingSettings"/>
+        <test-one-class class="testTrainTailClearsEdges"/>
+        <test-one-class class="testTheGoldenLayoutHoldsTogether"/>
+        <test-one-class class="testARouteDoesNotThrowSwitchesUnderATrain"/>
+        <test-one-class class="testAConflictSkipsOnlyTheSwitchUnderTheTrain"/>
+        <test-one-class class="testDeleteAndInsertKeepTheSetup"/>
+        <test-one-class class="testRouteEditorRoundTripCases"/>
+        <test-one-class class="testBarredArrivalIsNotADestination"/>
+        <test-one-class class="testEveryTestIsInTheBattery"/>
+        <test-one-class class="testAutonomyLabelShowsLocomotiveName"/>
+        <test-one-class class="testCancelRestoresPlacements"/>
+        <test-one-class class="testAnEditedPlacementSurvivesTheRebuild"/>
+        <test-one-class class="testAPendingTurnSurvivesTheRebuild"/>
+        <test-one-class class="testTheGraphIsToldWhenARunEnds"/>
+        <test-one-class class="testTheTurnAtTheDestinationReachesTheDiagram"/>
+        <test-one-class class="testAReversalCommandIsEmitted"/>
+        <test-one-class class="testTheReversalReachesTheTracks"/>
+        <test-one-class class="testTheTurnRuleDoesNotChangeTheRealRailway"/>
+        <test-one-class class="testControlSNamesOnlyASensor"/>
+        <test-one-class class="testDataSafetyRoundTrips"/>
+        <test-one-class class="testEditorSwitchClearsPageState"/>
+        <test-one-class class="testLocomotiveAddressRules"/>
+        <test-one-class class="testTrainMarkIsNotBlank"/>
         <test-one-class class="testAdvancedRoutes"/>
-        <test-one-class class="testAPathThatFailsPartWay"/>
         <test-one-class class="testAutoLayout"/>
         <test-one-class class="testAutoLayoutRace"/>
         <test-one-class class="testAutonomyPathValidation"/>
         <test-one-class class="testAutonomySimulationSanity"/>
-        <test-one-class class="testCentralStationDetection"/>
         <test-one-class class="testCS2Message"/>
-        <test-one-class class="testControlStationFaults"/>
         <test-one-class class="testFeedback"/>
-        <test-one-class class="testFilesAndMessagesMeetTheirReaders"/>
         <test-one-class class="testImportRename"/>
         <test-one-class class="testHomeStaging"/>
         <test-one-class class="testReturnHomeOnRealLayout"/>
@@ -139,7 +221,6 @@
         <test-one-class class="testLoadData"/>
         <test-one-class class="testLocDB"/>
         <test-one-class class="testLocomotive"/>
-        <test-one-class class="testMainWindowFaults"/>
         <test-one-class class="testMessageBundles"/>
         <test-one-class class="testMultiUnitMembership"/>
         <test-one-class class="testNetworkProxy"/>
@@ -150,7 +231,339 @@
         <test-one-class class="testParseWebServer"/>
         <test-one-class class="testRouteRoundTrip"/>
         <test-one-class class="testRoutes"/>
-        <test-one-class class="testStagingSkipsALegWithNoSpeed"/>
+
+        <!-- Autonomy from the track diagram: the port map, then everything built on it, then
+             the whole chain against a real layout with a hand-built graph beside it. -->
+        <test-one-class class="testAutonomyDiagramPorts"/>
+        <test-one-class class="testAutonomyDiagramTiles"/>
+        <test-one-class class="testAutonomyDiagramReducer"/>
+        <test-one-class class="testAutonomyDiagramStore"/>
+        <test-one-class class="testAutonomyDiagramSession"/>
+        <test-one-class class="testMassAssignLengths"/>
+        <test-one-class class="testAutonomyDiagramMonitor"/>
+        <test-one-class class="testAutonomyDiagramReversal"/>
+        <test-one-class class="testAutonomyDiagramSampleLayout"/>
+
+        <!-- The scenario library: checked-in railways named for the SHAPE they are, under
+             test/layouts, opened through support.Scenario.  Added 2026-09-09 because every
+             hand-built fixture in this suite was a straight chain of ordinary points and the
+             realistic geometry all came from the operator's live railway, whose ground truth moves
+             as he operates it.  The last of these is the guard that stops a scenario going orphan
+             or a scenario README going stale about who uses it. -->
+        <test-one-class class="testTwoRoutesShareOneSwitch"/>
+        <test-one-class class="testACoveredSwitchClosesTheOtherRoad"/>
+        <test-one-class class="testALongTrainIsOfferedNothingOnAOneUnitRailway"/>
+        <test-one-class class="testACurvedPlatformRecordsASideTheBuildUses"/>
+        <test-one-class class="testTheFrozenRailwayIsStillTheRailway"/>
+        <test-one-class class="testEveryScenarioIsUsedAndSaysSo"/>
+
+        <!-- Added 2026-09-09, with Adam's two rulings of that day.
+
+             testATrainIsJudgedOnlyWhereItStops (testATrainMustFitEverySquareOnItsRoute until 2026-09-14)
+             is the room rule on the single-switch scenario - asked at every square a route ran through
+             from ruling 1b, and since MT-333 only where the train comes to rest - whose one turnout is
+             what lets a short stretch sit EARLY on a route.
+
+             testACompulsoryTurnIsChosenLikeAnyOtherStation is OB-195, on the same scenario, which is
+             the only fixture where the two markings can disagree: on Adam's own railway every
+             compulsory turn is also marked manual-only.
+
+             testNoTwoShortcutsShareAKey is the reading FR-066 needed done by hand. -->
+        <test-one-class class="testATrainIsJudgedOnlyWhereItStops"/>
+        <test-one-class class="testACompulsoryTurnIsChosenLikeAnyOtherStation"/>
+        <test-one-class class="testNoTwoShortcutsShareAKey"/>
+        <test-one-class class="testAShortTrainDoesNotBlockTheWholeRun"/>
+        <test-one-class class="testTheGreyNamesTheRoadOnADoubleCurve"/>
+        <test-one-class class="testTheLoaderDoesNotCallAStationANonStation"/>
+        <test-one-class class="testATurnedTrainIsNotSentIntoAnotherTail"/>
+        <test-one-class class="testATrainDoesNotRunIntoItsOwnTail"/>
+        <test-one-class class="testATailIsNotHiddenByAnother"/>
+        <test-one-class class="testTheOwnTailArithmetic"/>
+        <test-one-class class="testABerthAndAPlatformJudgeAnOverhangDifferently"/>
+        <test-one-class class="testAMayTurnStationIsNotATerminus"/>
+        <test-one-class class="testTheArrivalHonoursTheAnswer"/>
+        <test-one-class class="testAPasteDoesNotTurnTheTrainRound"/>
+        <test-one-class class="testAStationsSizeIsAnAllowance"/>
+        <test-one-class class="testAnAnsweredZeroIsNotMissing"/>
+        <test-one-class class="testWhatCountsAsAParkingSquare"/>
+        <test-one-class class="testWhatHasAWayThrough"/>
+        <test-one-class class="testAPastedTrainFacesTheWayTheOperatorChose"/>
+        <test-one-class class="testACutTrainArrivesTheWayItWouldDrive"/>
+        <test-one-class class="testThePlaceDoorsKeepTheHeading"/>
+        <test-one-class class="testWhereHisTrainsMayBeSent"/>
+        <test-one-class class="testARouteOverATrainAtItsDoors"/>
+        <test-one-class class="testAnImportKeepsOnlyThisLayoutsPages"/>
+        <test-one-class class="testTheLeftAloneWarningIsSaidOnce"/>
+        <test-one-class class="testATailFollowsTheRouteItCameIn"/>
+        <test-one-class class="testATailRouteIsKept"/>
+        <test-one-class class="testTheTailCrossedQuestion"/>
+        <test-one-class class="testATailPastASwitchIsAskedAbout"/>
+        <test-one-class class="testTheTailIsPickedOnTheDiagram"/>
+        <test-one-class class="testARouteDrivenLocomotiveIsNotEdited"/>
+        <test-one-class class="testApplyIsGreyedWithNothingToApply"/>
+        <test-one-class class="testAThreeWayIsLitOnce"/>
+        <test-one-class class="testReturnHomeKeepsClearOfTheTailsItLeaves"/>
+        <test-one-class class="testATestedPathStaysOnItsRail"/>
+        <test-one-class class="testBulkToolsHoldsTheWholeLayoutTools"/>
+        <test-one-class class="testReturnHomeSaysWhy"/>
+        <test-one-class class="testTheEditorNamesItsShortcuts"/>
+        <test-one-class class="testOnlyAStationHoldsAnotherBack"/>
+        <test-one-class class="testReturnHomeShowsItIsWorking"/>
+        <test-one-class class="testARefusalNamesTheSquare"/>
+        <test-one-class class="testANameCannotEndInAHeading"/>
+        <test-one-class class="testFiftyLocomotiveMappingPages"/>
+        <test-one-class class="testALegacyImportMatchesTheFileItCameFrom"/>
+        <test-one-class class="testAnImportDoesNotSwitchYourRoutesOff"/>
+        <test-one-class class="testAFailedDispatchSaysWhichKindItWas"/>
+        <test-one-class class="testControlBAsksTheMenusQuestion"/>
+        <test-one-class class="testTheAutonomyMenuHoldsItsSlot"/>
+        <test-one-class class="testControlEAsksTheMenusQuestion"/>
+        <test-one-class class="testControlNAsksTheMenusQuestion"/>
+
+        <!-- Added 2026-09-10 out of the Opus review of 5948a88a.  The first is the number a journey
+             census cannot see - which SQUARES the room rule closes off completely; the second is the
+             two doors onto Set Length agreeing about which square they measure. -->
+        <test-one-class class="testWhichSquaresTheRoomRuleClosesOff"/>
+        <test-one-class class="testWhatReachesTheTracksAtEachKindOfArrival"/>
+
+        <!-- Added 2026-09-10: FR-069's bulk clear, and OB-198's one question about which square the
+             pointer is over - three shortcuts used to ask it three ways and keep a stale answer. -->
+        <test-one-class class="testClearAllTrackLengths"/>
+        <test-one-class class="testAWalkMovesTheFlashOn"/>
+        <test-one-class class="testCutWithNothingHovered"/>
+        <test-one-class class="testDeleteForgetsTheWholeSquare"/>
+        <test-one-class class="testTheDiagramCeiling"/>
+        <test-one-class class="testTheArrowsKeepTheirAim"/>
+
+        <!-- Added 2026-09-11: REV9-B2, Adam's ruling that a hand-placed train must record which way it
+             came in - the assign dialog now offers it as a combo and both its menus write it. -->
+        <test-one-class class="testAPlacedTrainRecordsWhereItCameFrom"/>
+
+        <!-- Added 2026-09-11: Adam's ruling that the locomotive keys work from any part of the app,
+             which focus alone could never deliver. -->
+        <test-one-class class="testTheKeyMapReachesTheWholeWindow"/>
+
+        <!-- Added 2026-09-11: REG9-A2 and REG9V-B2, the dispatch guard that nothing asserted. -->
+        <test-one-class class="testATrainIsDispatchedOnce"/>
+        <test-one-class class="testTheRefusalsAreAskedAtTheDoors"/>
+        <test-one-class class="testTheSandboxPutsThePreferenceBack"/>
+
+        <!-- Added 2026-09-11: Adam - the menu font differed between test windows and the production
+             app, because a window built cold installed no look and feel at all. -->
+        <test-one-class class="testEveryWindowWearsTheApplicationsLook"/>
+
+        <!-- Added 2026-09-11: TWV-C5 - two of that round's fixes shipped with no test. -->
+        <test-one-class class="testAFeedbackChangeIsAnnounced"/>
+        <test-one-class class="testTheHoveredSquareIsForgotten"/>
+        <test-one-class class="testAShutStationIsOneAutonomyWillNotChoose"/>
+        <test-one-class class="testTwoCentralStationMultiUnitsShareAMember"/>
+
+        <!-- Added 2026-08-22.  Everything below was on disk and not in this list, so "ant test" was
+             running 41 of the 76 test classes and reporting success for the whole suite.
+
+             Among the missing were testAutonomyStoreSettingsMatrix - which exists specifically to catch
+             the setup-collection bug class that has produced five defects this month - the whole of the
+             route editor's suite, and every test written in the week to 2026-08-22.  A gate that runs
+             half the tests is not a gate; it is a gate-shaped thing that says yes.
+
+             This costs wall-clock: several of these need a display and skip without one, and a few are
+             slow.  That is the right trade against a green build that means nothing.  See the note above
+             about the shutdown path that would make this list unnecessary - MarklinControlStation.shutdown
+             now exists, so that is a real option rather than a hypothetical one.
+
+             Not added: TestStationAddress, which is a helper rather than a test - it reaches past the
+             front of MarklinControlStation to point the suite at a local server, and holds no @Test. -->
+        <test-one-class class="testAutonomyGroundTruth"/>
+        <test-one-class class="testAutonomyStoreSettingsMatrix"/>
+        <test-one-class class="testAutonomyTileMove"/>
+        <test-one-class class="testBusyDialogInteraction"/>
+        <test-one-class class="testCommandRow"/>
+        <test-one-class class="testConditionOutline"/>
+        <test-one-class class="testControlStationFaults"/>
+        <test-one-class class="testDiagramExport"/>
+        <test-one-class class="testDiagramResize"/>
+        <test-one-class class="testDiagramShiftKeepsSetup"/>
+        <test-one-class class="testDiscardedEditsDoNotDeleteSetup"/>
+        <test-one-class class="testLayoutEditorBulkEdits"/>
+        <test-one-class class="testLayoutFolderRobustness"/>
+        <test-one-class class="testMaxActiveTrains"/>
+        <test-one-class class="testMockCentralStation"/>
+        <test-one-class class="testNoSelfRecursiveWrappers"/>
+        <test-one-class class="testThePaletteStillPlacesTiles"/>
+        <test-one-class class="testEditorSurfaceRules"/>
+        <test-one-class class="testSwitchingToACentralStationLayout"/>
+        <test-one-class class="testErrorsStopTheSetupRunning"/>
+        <test-one-class class="testRenameRoundTripThroughTheUIPath"/>
+        <test-one-class class="testTimetableCaptureThroughARealRun"/>
+        <test-one-class class="testTheWindowAttachesItsRefreshCallback"/>
+        <test-one-class class="testTheWindowTakesTheKeyboard"/>
+        <test-one-class class="testTheToolbarButtonsHonourTheirTooltips"/>
+        <test-one-class class="testEveryMessageKeyIsAskedFor"/>
+        <test-one-class class="testCancelUndoesACustomizationCopy"/>
+        <test-one-class class="testTheExportRetiresItsGrid"/>
+        <test-one-class class="testTheRefusalToStartSaysWhichThing"/>
+        <test-one-class class="testASecondImportFillsGapsAndDoesNotOverwrite"/>
+        <test-one-class class="testADeclinedSetupEditSaysSoAndSurvivesTheExit"/>
+        <test-one-class class="testTheMenuShowsWhereALinkGoes"/>
+        <test-one-class class="testTheAutonomyEditorKnowsWhichSquare"/>
+        <test-one-class class="testTheDiagramPrintsItsCoordinates"/>
+        <test-one-class class="testAMovedTileCarriesItsSetup"/>
+        <test-one-class class="testBackupArchiveNamesTheLayout"/>
+        <test-one-class class="testARunSurvivesAPageRename"/>
+        <test-one-class class="testARunSurvivesADiagramEdit"/>
+        <test-one-class class="testTheEditorTellsAutonomy"/>
+        <test-one-class class="testLocomotiveExclusions"/>
+        <test-one-class class="testTheRoutingChoiceSurvivesTheUpgrade"/>
+        <test-one-class class="testStationPriorityDistribution"/>
+        <test-one-class class="testRouteTilePlacement"/>
+        <test-one-class class="testTheRoutePlayButton"/>
+        <test-one-class class="testFindRoute"/>
+        <test-one-class class="testUdpMessagesReachTheWire"/>
+        <test-one-class class="testCS3NotFoundDetection"/>
+        <test-one-class class="testStoreCollectionsAreHandledEverywhere"/>
+        <test-one-class class="testFacingFollowsTheTrack"/>
+        <test-one-class class="testTheCheckerAgreesWithTheBuild"/>
+        <test-one-class class="testBothProtectingSignalsAreThrown"/>
+        <test-one-class class="testCommandTableMarks"/>
+        <test-one-class class="testHomeAssignmentRules"/>
+        <test-one-class class="testTriggerWaitsSayNothing"/>
+        <test-one-class class="testConfirmedGoodState"/>
+        <test-one-class class="testJavadocsAreAttached"/>
+        <test-one-class class="testStationBlockedByAnotherPoint"/>
+        <test-one-class class="testPageIdsAreDurable"/>
+        <test-one-class class="testTimetableCapture"/>
+        <test-one-class class="testLocomotiveIdentityPropagates"/>
+        <test-one-class class="testNonReversibleTrains"/>
+        <test-one-class class="testRenderingCost"/>
+        <test-one-class class="testReturnHomeSequencesAReversal"/>
+        <!-- GREEN, and this comment is why it says so (DY3-C10, corrected 2026-09-03).
+
+             It read "RED ON PURPOSE" - Adam, 2026-09-01: "ok, so that test should then be red" -
+             because Return Home found no arrangement for his five-train parking berths.  The commit
+             an hour later retargeted the class onto five plain through platforms with no parking
+             flag, no compulsory reversal and nothing out of service, and it has been green since;
+             two later commits changed the fixture again.  The comment named the arrangement the
+             class had been moved away from, and its exit condition pointed at one it no longer
+             builds.
+
+             That mattered more than the average stale comment: this was the only place in the
+             repository telling somebody a red battery is expected rather than broken, and it is the
+             first thing a person reads when the battery goes red.  If this class fails now, it is a
+             failure. -->
+        <test-one-class class="testTrainsComeHomeToTheirPlatforms"/>
+
+        <!-- AND THE PINNED HALF OF THE SAME CLAIM, which Adam asked for on 2026-09-15: "make a pinned
+             version and keep the current version, aiming for both to be true.  normal autonomy runs
+             should always have a solution."
+
+             The class above lets autonomy rearrange the railway for twenty seconds and then sends
+             everybody home, so it starts somewhere different on every run.  That is the realistic
+             question and an ambiguous verdict - during the AMW round it failed once and passed once on
+             identical code, and a red from it cannot be told from chance without re-running.  The class
+             below displaces the same five trains to an arrangement that does not move, so a red there is
+             always a regression.
+
+             Both are expected to be true.  A red from the pinned one is a defect; a red from the live one
+             is an arrangement autonomy can reach and Return Home cannot solve, which by his ruling is
+             also a defect - it just needs the arrangement printed before anyone can act on it. -->
+        <test-one-class class="testTrainsComeHomeFromAPinnedArrangement"/>
+        <test-one-class class="testReturnHomeFindsAPlanOnAFullRailway"/>
+        <test-one-class class="testATrainComesHomeFacingTheWayItWasHomed"/>
+        <test-one-class class="testPlaceAllAtTheirHomes"/>
+        <test-one-class class="testAPausedTrainStaysPaused"/>
+        <test-one-class class="testTheActiveTickPausesATrain"/>
+        <test-one-class class="testAMaximisedWindowComesForward"/>
+        <test-one-class class="testRouteCapture"/>
+        <test-one-class class="testRouteCommandParity"/>
+        <test-one-class class="testRouteEditorLocked"/>
+        <test-one-class class="testRouteEditorValidation"/>
+        <test-one-class class="testYourOwnRoutesToggleWithoutASync"/>
+        <test-one-class class="testTheLengthPromptHasTheKeyboard"/>
+        <test-one-class class="testTheGuardWindowIsNotTooWide"/>
+        <test-one-class class="testARunKeepsItsOwnState"/>
+        <test-one-class class="testAnUnlockGivesBackOnlyWhatItHolds"/>
+        <test-one-class class="testATrainIsPutOnlyWhereItCanStart"/>
+        <test-one-class class="testAnImportedFacingGuessCanStart"/>
+        <test-one-class class="testAnImportSaysItsRoutesAreOff"/>
+        <test-one-class class="testAStopRouteStandsAlone"/>
+        <test-one-class class="testTheFindingsAreWorkedOutOncePerEvent"/>
+        <test-one-class class="testRouteInventory"/>
+        <test-one-class class="testRoutePicking"/>
+        <test-one-class class="testRouteReachesTheRails"/>
+        <test-one-class class="testStationLabelsFollowMoves"/>
+        <test-one-class class="testStuckTrainAdvisory"/>
+        <test-one-class class="testThreeWaySwitch"/>
+        <test-one-class class="testTileSelection"/>
+        <test-one-class class="testTimetableOnDerivedGraph"/>
+        <test-one-class class="testTracedPathIsContinuous"/>
+        <test-one-class class="testManualOnlyPathsAreADifferentColour"/>
+        <test-one-class class="testUiStateIsNotLostWhenUnreadable"/>
+        <test-one-class class="testWhyStuck"/>
+        <test-one-class class="testARouteIsFoundPastATerminus"/>
+        <test-one-class class="testACompulsoryTurnIsNotAQuestion"/>
+        <test-one-class class="testADirectionChangeIsNotSwallowed"/>
+        <test-one-class class="testAPastedTrainKeepsItsDirection"/>
+        <test-one-class class="testATrainCoversTheTrackBehindIt"/>
+        <test-one-class class="testOneChangeSticks"/>
+        <test-one-class class="testATrainTooLongIsRefusedTheBerth"/>
+        <test-one-class class="testAManualSendIsRefusedABerthTooShort"/>
+        <test-one-class class="testDismissingTheReversalPromptKeepsTheDirection"/>
+        <test-one-class class="testLengthRulesUnderRandomLayouts"/>
+        <test-one-class class="testTheAutoTierScopeMatchesTheRuntime"/>
+        <test-one-class class="testTheLengthGuardsOnTheRealLayout"/>
+        <test-one-class class="testEverySquareBuildsToTheCopiesTheSetupImplies"/>
+        <test-one-class class="testTheRoomRuleCensusOnTheRealLayout"/>
+        <test-one-class class="testTheShadingFollowsTheTrain"/>
+        <test-one-class class="testTheHomeShortcutsDoNotTouch"/>
+        <test-one-class class="testTheHomeLabelIsDrawnOnce"/>
+        <test-one-class class="testARememberedNoneOpensWithTheCaptionsOff"/>
+        <test-one-class class="testANewStraightJoinsTheTrackBesideIt"/>
+        <test-one-class class="testTheEditorSaysWhatItsToolsDo"/>
+        <test-one-class class="testTheDestinationDoorsAgree"/>
+        <test-one-class class="testTheFunctionButtonsFollowTheConsist"/>
+        <test-one-class class="testTheBulkClearSaysWhatCancelDoes"/>
+        <test-one-class class="testTheWashIsNoLongerThanTheTrain"/>
+        <test-one-class class="testTheDiagramIsNotRebuiltForAnArrow"/>
+        <test-one-class class="testTheTrainIsShownAsALine"/>
+        <test-one-class class="testBlockedTrackIsGreyWhileAutonomyRuns"/>
+        <test-one-class class="testARunsCaptionsSpeakInItsColours"/>
+        <test-one-class class="testTheGreyAppearsAtIdleToo"/>
+        <test-one-class class="testTheWashDoesNotStack"/>
+        <test-one-class class="testTheGreyDoesNotRebuildTheDiagram"/>
+        <test-one-class class="testTheDiagramRefreshDoesNotWaitOnTheRailway"/>
+        <test-one-class class="testNothingOnTheEventThreadTakesTheRailwaysMonitor"/>
+        <test-one-class class="testEscapeClosesTheEditor"/>
+        <test-one-class class="testCancelUndoesAutonomyEdits"/>
+        <test-one-class class="testAPassingTrainMayStandAcrossThePoints"/>
+        <test-one-class class="testTheTailCanBeGivenInTheEditor"/>
+        <test-one-class class="testTheFacingMenuIsAboutTheTrainThere"/>
+        <test-one-class class="testALegacyImportLeavesLoadAutonomyAlone"/>
+        <test-one-class class="testALocalLayoutNeverWritesAutonomyJson"/>
+        <test-one-class class="testTheOldAutonomyTabIsGone"/>
+        <test-one-class class="testTheAutonomyMenuLinksItsDocumentation"/>
+        <test-one-class class="testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch"/>
+        <test-one-class class="testAHandSendIsRefusedWhileTheSetupIsBroken"/>
+        <test-one-class class="testTheImportDoorReadsAnOldFile"/>
+        <test-one-class class="testNoSetupEditDuringARun"/>
+        <test-one-class class="testTheAutoTabWaitsForTheTrains"/>
+        <test-one-class class="testTheWordingSaysWhatIsThere"/>
+        <test-one-class class="testTheRoutesImportDoorAsksByName"/>
+        <test-one-class class="testASetupMovesToAOnePageLayout"/>
+        <test-one-class class="testAThrottleReversalIsFollowedFromItsEcho"/>
+        <test-one-class class="testTheDebugMenuSwitchesTheEcho"/>
+        <test-one-class class="testTheVisibleElementsHeadingIsSpacedLikeTheOthers"/>
+        <test-one-class class="testPathTypeRedrawsTheTestInTheEditor"/>
+        <test-one-class class="testTheWhyAnswerIsOnScreen"/>
+        <test-one-class class="testTheMenusComeBackAtOneMoment"/>
+        <test-one-class class="testARunningTrainHasOneTail"/>
+        <test-one-class class="testACopiedCustomizationBringsTheIcons"/>
+        <test-one-class class="testTheRouteHighlightAsksWhatATileIs"/>
+        <test-one-class class="testTheRouteEditorAsksHowManyFunctionsALocomotiveHas"/>
+        <test-one-class class="testNonAtomicRoutesNeedTheirLengths"/>
+        <test-one-class class="testALockReachesTheRailBeingRunOver"/>
+        <test-one-class class="testSwingSpeaksOurLanguage"/>
+        <test-one-class class="testDeleteAsksWhichConfiguration"/>
+        <test-one-class class="testTwoYsMakeACrossing"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
@@ -161,7 +574,18 @@
         <mkdir dir="${store.dir}"/>
         <jar destfile="${store.dir}/temp_final.jar" filesetmanifest="skip">
             <zipgroupfileset dir="dist" includes="*.jar"/>
-            <zipgroupfileset dir="resources" includes="*.jar"/>
+            <!-- NAMED, not globbed.  This used to be includes="*.jar", so whatever happened to be
+                 sitting in resources/ went into the release - and two library upgrades removed the old
+                 jars from git without removing them from the working tree, while a third deleted the
+                 code that used GraphStream and left 9.4 MB of it there.  A jar built that way carried
+                 two copies of FlatLaf and two of org.json, and which one loaded was decided by zip
+                 entry order: alphabetically the SUPERSEDED ones come first, so the upgrade was
+                 probably not in the shipped jar at all (TD-7).
+
+                 These two must match file.reference.* in nbproject/project.properties, which is what
+                 the code is compiled against.  Naming them means adding a file to the directory can no
+                 longer change what ships. -->
+            <zipgroupfileset dir="resources" includes="flatlaf-3.7.2.jar,json-20260814.jar"/>
             <manifest>
                 <attribute name="Main-Class" value="${main.class}"/>
             </manifest>

@@ -24,6 +24,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * Marklin Central Station 2/3 config file parser
@@ -276,9 +277,8 @@ public final class CS2File
      */
     public static String sanitizeFilename(String name)
     {
-        if (name == null) return null;
-
-        return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
+        // One implementation, in Util, because LayoutDiagram is a writer too and cannot reach in here
+        return org.traincontrol.util.Util.sanitizeFilename(name);
     }
     
     /**
@@ -453,6 +453,9 @@ public final class CS2File
         String s;
         String lastKey = null;
         Map<String, String> item = null;
+
+        // Keys at the left margin, which arrive before any block is opened (X8-A1).
+        Map<String, String> bare = null;
         
         Map<String, String> array = new HashMap<>();
         
@@ -469,7 +472,7 @@ public final class CS2File
             // F17-32 get a different key on the CS2
             s = s.replace(".funktionen_2", ".funktionen");
                         
-            if (s.matches("^ \\.\\.[a-z]+=.+$"))
+            if (s.matches("^ \\.\\.[a-z0-9A-Z]+=.+$"))
             {
                 // Limit of 2, for the same reason as the ordinary key=value branch below: the one array
                 // key that carries free text is lokname, the name of a multi-unit member, which
@@ -490,27 +493,93 @@ public final class CS2File
                         current = item.get(lastKey);
                     }
                     
-                    String arrayString = current + array.toString();
+                    // Joined by hand rather than through HashMap.toString().
+                    //
+                    // toString() separates entries with ", ", and the repair that turned that back into
+                    // "," could not tell the separator from a ", " INSIDE a value.  Exactly one array
+                    // key carries free text - lokname, the name of a multi-unit member - so a member
+                    // called "BR 50, Ep. III" was stored as "BR 50,Ep. III", matched no locomotive in
+                    // the database, and was dropped from its consist with only a log line.  Commanding
+                    // the head then moved one engine of two.
+                    //
+                    // This is the twin of the defect the split limit above was added for, in the same
+                    // block: that one was a name containing "=", this one a name containing ", ".
+                    //
+                    // The map is still walked in ITS order, not insertion order, because parseLocomotives
+                    // recovers the members by splitting on ",lok=" - which needs lokname to come first,
+                    // and it does only because that is how these two keys hash.  Building the string
+                    // from the same iteration keeps that exactly as it was.
+                    StringBuilder entries = new StringBuilder();
+
+                    for (Map.Entry<String, String> pair : array.entrySet())
+                    {
+                        if (entries.length() > 0) entries.append(',');
+
+                        entries.append(pair.getKey()).append('=').append(pair.getValue());
+                    }
+
+                    String arrayString = current + "{" + entries + "}";
                     
                     // A dirty but effective workaround
                     arrayString = arrayString.replace("}{", "|");
-                    arrayString = arrayString.replace(", ", ",");
 
                     item.put(lastKey, arrayString);
                     
                     array.clear();
                 }
                 
-                if (s.matches("^[a-z]+$"))
-                {                
+                // CASE-INSENSITIVE, LIKE THE OTHER READER OF THIS FILE (T10-C6, after X8V-C4).
+                //
+                // `X8V-C4` made LayoutDiagram.readLayoutIndexIds match the block name without regard to
+                // case, on the measured ground that "an index spelling the block `Seite` gave no page an
+                // id at all".  Its twin here was not swept, and this one is worse: a capitalised block
+                // is not a block to this parser, so the file comes back with ZERO pages and ZERO
+                // unreadable pages - and the guard that reverts to the Central Station asks whether
+                // anything failed, not whether anything was expected.  The operator would get an empty
+                // diagram with no message, and then be asked whether the pages they were looking at a
+                // moment ago are deleted.
+                //
+                // The premise is this project's own files: `sample_layout` spells its version block
+                // `Version` and `cs2_sample_layout` spells it `version`, so the station's casing is not
+                // uniform across firmware.  No `gleisbild.cs2` here spells `Seite` with a capital, so
+                // this is a trap rather than a live defect - and it is the same trap X8V-C4 accepted the
+                // premise of and half-fixed.
+                if (s.matches("^[a-zA-Z]+$"))
+                {
                     if (item != null)
                     {
                         items.add(item);
                     }
 
+                    // THE BARE KEYS GO FIRST, because that is where the file has them: they sit
+                    // between the header and the first block (X8-A1).
+                    if (bare != null)
+                    {
+                        bare.put("_type", "_bareKeys");
+
+                        items.add(bare);
+
+                        bare = null;
+                    }
+
                     item = new HashMap<>();
 
-                    item.put("_type", s);
+                    // LOWER-CASED, so that the twelve `"xxx".equals(m.get("_type"))` readers keep
+                    // working whatever the file's casing (T10-C6).
+                    item.put("_type", s.toLowerCase());
+
+                    // AND THE SPELLING THE FILE USED IS KEPT (TWV-C1).
+                    //
+                    // `exportToCS2TextFormat` writes `_type` back as the block name for every block this
+                    // program does not model, and that machinery exists to put back what the file said -
+                    // "what TrainControl does not understand it is not entitled to throw away".  Case is
+                    // part of what it said, so lower-casing alone would silently rewrite a block spelled
+                    // `Version` as `version` on the first save.
+                    //
+                    // Two keys rather than case-insensitive comparisons at the readers: there are twelve
+                    // of those, and a rule applied to eleven of twelve is this project's most repeated
+                    // defect.
+                    if (!s.equals(s.toLowerCase())) item.put("_typeAsWritten", s);
                 }
                 else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
                 {
@@ -522,20 +591,69 @@ public final class CS2File
                         item.put(parts[0], parts[1]);
                     }
                 }   
-                else if (s.matches("^ \\.[a-z]+$"))
+                else if (s.matches("^ \\.[a-z0-9A-Z]+$"))
                 {
+                    // THE SAME CHARACTER CLASS AS THE ARM ABOVE (X8-B3).
+                    //
+                    // It read `[a-z]+` while its sibling nine lines up read `[a-z0-9A-Z]+`, and the
+                    // Central Station spells a route's condition block ` .S88Flag`.  That line has no
+                    // `=`, so it lands here, failed the class, and `lastKey` was NOT updated - so the
+                    // `..kont=` / `..hi=` group that follows was flushed under whatever key the file
+                    // had set earlier.
+                    //
+                    // The shipped fixture survives it by accident: its first route has no conditions
+                    // and opens with ` .item`, so `lastKey` is already "item" when the first condition
+                    // arrives, and `parseRoutes` sorts the pieces out by asking each for `kont`.  A
+                    // file whose FIRST route is conditional flushes into `item.put(null, ...)`, and
+                    // `parseRoutes` drops a route with no `item` outright - its commands as well as
+                    // its conditions - with one log line.  Route ids are not ordered in these files
+                    // and the operator decides which route is first.
                     lastKey = s.substring(2);
+                }
+                else if (s.matches("^[a-zA-Z0-9_]+=.*$"))
+                {
+                    // A KEY AT THE LEFT MARGIN (X8-A1).
+                    //
+                    // `page=1` is the second line of a genuine Central Station page export, and it
+                    // matched none of the three arms above: it carries an `=`, so it is not a block
+                    // name, and it has no leading " .", so it is neither a key nor an array header.
+                    // It was dropped on read - and the writer regenerates the whole file from the
+                    // model, so the line was deleted the first time the application saved the page.
+                    //
+                    // Measured on this repository's own exports: every untouched page carries it, and
+                    // the pages the application has worked on do not.
+                    //
+                    // This shape fell between the two preservers the same rule already has - one for a
+                    // block a later firmware adds, one for an element - because it is neither.  It is
+                    // collected into an item of its own so that nothing downstream has to guess where
+                    // it belongs; `LayoutDiagram.addBareKey` puts it back after the header.
+                    if (bare == null) bare = new java.util.LinkedHashMap<>();
+
+                    String[] parts = s.split("=", 2);
+
+                    bare.put(parts[0], parts.length > 1 ? parts[1] : "");
                 }
             } 
             
             // We need to add the current item to the list...
             if (s.equals("__done"))
-            {   
+            {
                 if (item != null)
                 {
                     items.add(item);
                 }
-                
+
+                // And bare keys that no block ever followed (X8-A1), which is what a file holding
+                // nothing but a header and a `page=` line is.
+                if (bare != null)
+                {
+                    bare.put("_type", "_bareKeys");
+
+                    items.add(bare);
+
+                    bare = null;
+                }
+
                 break;
             }
         }
@@ -687,19 +805,37 @@ public final class CS2File
                     continue;
                 }
                 
-                MarklinAccessory acc = new MarklinAccessory(control, 
-                    Integer.parseInt(m.get("id")),
-                    m.get("typ").contains("weiche") ? 
-                        Accessory.accessoryType.SWITCH :
-                        Accessory.accessoryType.SIGNAL, 
-                    m.get("dectyp") != null ?
-                        MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
-                        Accessory.accessoryDecoderType.MM2,
-                    m.get("name"), 
-                    !"0".equals(m.get("stellung")), 
-                    0);
-                            
-                out.add(acc);       
+                try
+                {
+                    MarklinAccessory acc = new MarklinAccessory(control, 
+                        Integer.parseInt(m.get("id")),
+                        m.get("typ").contains("weiche") ? 
+                            Accessory.accessoryType.SWITCH :
+                            Accessory.accessoryType.SIGNAL, 
+                        m.get("dectyp") != null ?
+                            MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
+                            Accessory.accessoryDecoderType.MM2,
+                        m.get("name"), 
+                        !"0".equals(m.get("stellung")), 
+                        0);
+
+                    out.add(acc);
+                }
+                catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
+                {
+                    // SKIP THE RECORD, NOT THE IMPORT (AC2-C2).
+                    //
+                    // The three sibling parsers were each given this guard with a comment explaining
+                    // the blast radius - `parseRoutes`, `parseLocomotives`, `parseLocomotivesCS3` -
+                    // and this one was not swept.  The null-field guard above covers a MISSING key;
+                    // a key with a non-numeric value, or `id=` with nothing after it, lands here.
+                    //
+                    // What it costs unguarded: `parseRoutes` calls `getMagList(false)`, which fetches
+                    // from the station itself, so the throw reaches `syncWithCS2`'s outer catch, the
+                    // whole sync returns -1, and at start-up that reads as "not connected".  One
+                    // malformed accessory would take every route and locomotive with it.
+                    control.logf("acc.invalidCs2Accessory", m.toString());
+                }
              }
         }
         
@@ -745,7 +881,32 @@ public final class CS2File
                 {
                     MarklinRoute r = new MarklinRoute(control, m.get("name"), Integer.parseInt(m.get("id")));
 
-                    String route = m.get("item").replace("{", "").replace("}","");
+                    // THE CONDITIONS AND THE COMMANDS, IN FILE ORDER (X8-B3).
+                    //
+                    // A route file writes its conditions under ` .S88Flag` and its commands under
+                    // ` .item`, and this method used to read `item` alone.  It got the conditions
+                    // anyway, by accident: the array-header regex did not recognise ` .S88Flag`, so
+                    // `lastKey` was left holding "item" and the condition group was flushed in beside
+                    // the commands.  The loop below tells the two apart by asking each piece whether it
+                    // carries `kont`, so the result was right.
+                    //
+                    // That accident is what broke when the regex was corrected, and it is why the two
+                    // halves had to be done together: with the header recognised, the conditions arrive
+                    // under their own key, and a route read from `item` alone keeps every command and
+                    // silently loses every condition.
+                    //
+                    // Conditions first, which is the order the file has them in and the order
+                    // `addConditionS88` records.
+                    StringBuilder both = new StringBuilder();
+
+                    if (m.get("S88Flag") != null)
+                    {
+                        both.append(m.get("S88Flag")).append("|");
+                    }
+
+                    both.append(m.get("item"));
+
+                    String route = both.toString().replace("{", "").replace("}","");
                     String[] pieces = route.split("\\|");
 
                     if (m.containsKey("s88"))
@@ -1749,6 +1910,20 @@ public final class CS2File
                         if ("mfx".equals(m.get("typ")))
                         {
                             type = MarklinLocomotive.decoderType.MFX;
+
+                            // The same correction the DCC branch below has carried all along, and for
+                            // the same reason: with no address field in the file the UID was used
+                            // instead, and a UID is the address plus the type's base.  Left
+                            // uncorrected it is past the highest MFX address there is, so the
+                            // locomotive was created pointing at a decoder that cannot exist - every
+                            // command sent into nothing, every state update from the real one
+                            // unmatched, and the bad address written into the database.  The
+                            // constructor does not validate; only setAddress does, so this bit
+                            // existing locomotives not at all and new ones every time.
+                            if (address > MarklinLocomotive.MFX_MAX_ADDR)
+                            {
+                                address -= MarklinLocomotive.MFX_BASE;
+                            }
                         }
                         else if ("dcc".equals(m.get("typ")))
                         {
@@ -1831,25 +2006,22 @@ public final class CS2File
             configDir.mkdirs();
         }
         
+        // Staged and moved into place, all three of these.
+        //
+        // Opening the destination truncates it at once, so a transfer that stopped part way - the
+        // fifteen second read timeout, a station rebooted mid-sync, a cable - closed and COMMITTED a
+        // half-written file.  When the destination is the local layout folder, which is what this
+        // download is for, the next sync reads that truncation as the authoritative diagram: a page
+        // missing most of its track, and nothing to say so.  The hazard is named in this file's own
+        // comments; only the filename half of it was fixed.
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
-        try (BufferedReader reader = fetchURL(gleisbild);
-        
-        // Files.newBufferedWriter, not FileWriter: FileWriter encodes in the platform default charset
-        // (Cp1252 on the Windows/Java 8 configuration this targets), while the only reader of these
-        // files - CS2File.fetchURL - decodes UTF-8 unconditionally.  A layout page whose name contains
-        // a non-ASCII character was written in one encoding and read back in another, so the name came
+        // UTF-8 explicitly, not the platform default: FileWriter would encode in Cp1252 on the
+        // Windows/Java 8 configuration this targets, while the only reader of these files -
+        // CS2File.fetchURL - decodes UTF-8 unconditionally.  A layout page whose name contains a
+        // non-ASCII character was written in one encoding and read back in another, so the name came
         // back mangled, the file it pointed at could not be found, and syncWithCS2 responded by
-        // silently clearing the local-layout override.  LayoutDiagram.saveChanges already wrote page
-        // content this way; these three writers did not.
-        BufferedWriter writer = Files.newBufferedWriter(masterLayoutFile.toPath()))
-        {
-            String line;
-            while ((line = reader.readLine()) != null)
-            {
-                writer.write(line);
-                writer.newLine();
-            }
-        }
+        // silently clearing the local-layout override.
+        copyAtomically(gleisbild, masterLayoutFile);
         
         // Process layout list and write files to localPath/config/gleisbilder/<layoutName>.cs2
         File layoutsDir = new File(configDir, "gleisbilder");
@@ -1863,34 +2035,140 @@ public final class CS2File
             // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
-            try (BufferedReader reader = fetchURL(getLayoutURL(layoutName));
-            BufferedWriter writer = Files.newBufferedWriter(layoutFile.toPath()))
-            {
-                String line;
-                while ((line = reader.readLine()) != null)
-                {
-                    writer.write(line);
-                    writer.newLine();
-                }
-            }
+
+            copyAtomically(getLayoutURL(layoutName), layoutFile);
         }
         
         // Download the accessory file      
         File magsFile = new File(configDir, "magnetartikel.cs2");
 
-        try (BufferedReader reader = fetchURL(this.getMagURL(false));
-        
-        BufferedWriter writer = Files.newBufferedWriter(magsFile.toPath()))
+        copyAtomically(this.getMagURL(false), magsFile);
+
+        // And the ROUTES, which this did not fetch (FR-021).
+        //
+        // Adam asked whether the current route config is exported when a backup is requested. For a
+        // local layout it always was - the archive copies the whole `config` folder, and
+        // `fahrstrassen.cs2` sits in it. For a layout read from the Central Station the backup
+        // downloads a copy first, and this method is that download: it took the track diagram, the
+        // pages and the accessories, and left the routes behind. So a Central Station backup was
+        // missing them, and so was the local copy this menu makes when it switches over.
+        //
+        // Tolerated when absent, unlike the three above. A Central Station with no routes defined is
+        // an ordinary thing, and the whole download should not fail because there is nothing to
+        // fetch - which is a different judgement from the accessory file, whose absence would mean
+        // the station is not answering properly.
+        try
         {
-            String line;
-            while ((line = reader.readLine()) != null)
+            copyAtomically(this.getRouteURL(), new File(configDir, "fahrstrassen.cs2"));
+        }
+        catch (Exception noRoutes)
+        {
+            logMessage("No routes were downloaded from the Central Station.", noRoutes, false);
+        }
+
+        // Adam, after running this against a CS3: "if the user confirms the CS download, we should
+        // also download CS3 data files if using a CS3."
+        //
+        // Everything above is the CS2-format /config/ export, which a CS3 also serves for the track
+        // diagram itself - see getCS3LayoutUrl(), whose own comment records that this app displays
+        // those offline CS2 files rather than parsing the CS3's native /app/api/gbs layout data.  But
+        // MarklinControlStation does NOT trust the same /config/ export for accessories and routes on
+        // a CS3: getRenameProposals and the sync path both branch on isCS3() to read parseRoutesCS3()
+        // /parseLocomotivesCS3() from the JSON API instead, which is the app's own admission that
+        // magnetartikel.cs2 and fahrstrassen.cs2 are not authoritative there. So a CS3 backup taken
+        // above is missing exactly the two file types it just fetched - mirrored here from the
+        // already-used getCS3MagDBUrl()/getCS3RouteDBUrl() (see fetchCS3LocDB, parseRoutesCS3), not
+        // invented for this fix.
+        //
+        // this.control can be null (unit tests build a CS2File with no station attached), and a
+        // Central Station that never answers the device-info probe leaves isCS3() at its default of
+        // false, so a plain CS2 - or a test fixture - takes none of this path.
+        if (this.control != null && this.control.isCS3())
+        {
+            // Tolerated exactly like fahrstrassen.cs2 above, and for the same reason: an empty
+            // accessory or route list is a real station state, not a fetch problem, and should not
+            // fail a backup that already succeeded at the CS2-format files.
+            try
             {
-                writer.write(line);
-                writer.newLine();
+                copyAtomically(this.getCS3MagDBUrl(), new File(configDir, "CS3_mags.json"));
+            }
+            catch (Exception noCS3Mags)
+            {
+                logMessage("No CS3 accessory data was downloaded from the Central Station.", noCS3Mags, false);
+            }
+
+            try
+            {
+                copyAtomically(this.getCS3RouteDBUrl(), new File(configDir, "CS3_automatics.json"));
+            }
+            catch (Exception noCS3Routes)
+            {
+                logMessage("No CS3 route data was downloaded from the Central Station.", noCS3Routes, false);
+            }
+
+            // And the locomotives (OB-099).
+            //
+            // Adam listed all three endpoints - /app/api/locos, /app/api/automatics, /app/api/mags -
+            // as "files that should be downloaded when connected to a CS3 only". Two were added; this
+            // was left out on the argument that downloadCS2Layout never fetched lokomotive.cs2 for a
+            // CS2 either, so adding only the CS3 side would put the two out of step.
+            //
+            // That argument is about tidiness and his is about what a backup is FOR. A CS3 keeps its
+            // locomotive database in this JSON and nowhere else this application reads, so an archive
+            // without it is missing the half a rebuilt railway would need most - and "the CS2 path
+            // does not have one either" is a reason to look at the CS2 path, not to leave this one
+            // short.
+            try
+            {
+                copyAtomically(this.getCS3LocDBUrl(), new File(configDir, "CS3_locos.json"));
+            }
+            catch (Exception noCS3Locs)
+            {
+                logMessage("No CS3 locomotive data was downloaded from the Central Station.",
+                    noCS3Locs, false);
             }
         }
     }
-    
+
+    /**
+     * Fetches a URL and writes it to a file, all of it or none of it.
+     *
+     * Staged through a sibling file and moved into place, so a transfer that stops part way leaves
+     * whatever was there before rather than a truncated file that the next sync will read as the
+     * whole truth.
+     *
+     * @param url what to fetch
+     * @param target where it goes
+     * @throws Exception if the fetch or the write fails, with the previous file untouched
+     */
+    private void copyAtomically(String url, File target) throws Exception
+    {
+        try (BufferedReader reader = fetchURL(url))
+        {
+            Util.writeAtomically(target, out ->
+            {
+                try (BufferedWriter writer = new BufferedWriter(
+                    new java.io.OutputStreamWriter(out, java.nio.charset.StandardCharsets.UTF_8)))
+                {
+                    String line;
+
+                    while ((line = reader.readLine()) != null)
+                    {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                }
+                catch (Exception e)
+                {
+                    // As an IOException, because that is what the staging write contracts to throw -
+                    // and throwing at all is the point: the staged file is discarded and the previous
+                    // one stays where it is.
+                    throw new java.io.IOException(e);
+                }
+            });
+        }
+    }
+
     /**
      * Reads the list of layouts
      * @return
@@ -1898,18 +2176,72 @@ public final class CS2File
      */
     private List<String> parseLayoutList() throws Exception
     {
-        List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
-        
         List<String> out = new ArrayList<>();
-        
+
+        for (Map<String, String> page : parseLayoutIndex())
+        {
+            out.add(page.get("name"));
+        }
+
+        return out;
+    }
+
+    /**
+     * The pages named in gleisbild.cs2, with the id each carries.
+     *
+     * The id is what the Central Station orders pages by, and TrainControl has never used it.  Autonomy
+     * does: it stores its setup against pages, and a page name is something a user renames while an id
+     * is not, so keeping the id lets a setup survive a rename.
+     *
+     * A page that carries no `.id` of its own has id ZERO - Adam, 2026-09-10: *"no .id means id 0
+     * implicitly"*, the ordinary CS2 convention that an omitted key is the zero value.  This used to
+     * say it was page 1, which gave the first page of every genuine export the number the SECOND page
+     * states - two pages holding one id, and one page's autonomy setup coming back on the other's
+     * track.  See `LayoutDiagram.pageIdOrPosition`, which both readers of this file ask.
+     *
+     * A list rather than a map from name to id: two pages may carry the same name, and collapsing them
+     * here would silently drop one from every caller, including the download that writes the files back.
+     * Duplicate names already alias later, in layoutDB, but that is a decision made elsewhere and this
+     * method should not make it for it.
+     *
+     * @return one entry per page, in file order, each with "name" and "id"
+     * @throws Exception
+     */
+    private List<Map<String, String>> parseLayoutIndex() throws Exception
+    {
+        List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
+
+        List<Map<String, String>> out = new ArrayList<>();
+
+        int position = 0;
+
         for (Map<String, String> m : l)
         {
             if ("seite".equals(m.get("_type")))
             {
-                out.add(m.get("name"));
+                position++;
+
+                String name = m.get("name");
+
+                if (name == null) continue;
+
+                Map<String, String> page = new java.util.LinkedHashMap<>();
+                page.put("name", name);
+                // Through LayoutDiagram's rule rather than a second copy of it (DR-B4).
+                //
+                // This said `m.get("id") != null ? m.get("id") : position`, which is the same rule for
+                // an ABSENT id and a different one for a corrupt id: a `.id=` line that is not a
+                // number came through here unchanged and came out of readLayoutIndexIds as the page's
+                // position. The autonomy setup is keyed by whatever this says, and the id allocator by
+                // whatever that says, so the two disagreeing means a setup keyed to ids the index does
+                // not believe.
+                page.put("id", String.valueOf(
+                    org.traincontrol.base.LayoutDiagram.pageIdOrPosition(m.get("id"), position)));
+
+                out.add(page);
             }
-        }        
-        
+        }
+
         return out;
     }
     
@@ -2087,6 +2419,41 @@ public final class CS2File
     }
     
     /**
+     * How many pages the last parseLayout could not read (RC-A3).
+     *
+     * Not a total across the life of the parser - parseLayout resets it - so it always describes the
+     * list it just handed back.  A caller holding that list has no other way to tell a complete railway
+     * from most of one, and two things downstream were quietly assuming complete.
+     */
+    private int pagesThatCouldNotBeRead;
+
+    // How many pages the index named, which is what "did anything read" is asked against (T10-C6).
+    private int pagesTheIndexNamed;
+
+    /**
+     * @return how many pages the last parseLayout could not read
+     */
+    public int getPagesThatCouldNotBeRead()
+    {
+        return this.pagesThatCouldNotBeRead;
+    }
+
+    /**
+     * How many pages the index NAMED, whether or not any of them arrived.
+     *
+     * The caller's "did anything read" guard needs something to ask against (T10-C6).  A page can fail
+     * loudly - it throws, and is counted as unread - or it can simply never be recognised, which is what
+     * an index this parser does not understand produces: zero pages AND zero failures, a layout that
+     * read nothing at all and reported no fault.  The index is the statement of what should be there.
+     *
+     * @return the page count of the last parseLayout's index
+     */
+    public int getPagesTheIndexNamed()
+    {
+        return this.pagesTheIndexNamed;
+    }
+
+    /**
      * Processes a layout
      * @param accDB
      * @return
@@ -2094,188 +2461,347 @@ public final class CS2File
      */
     public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
-        List<String> names = this.parseLayoutList();
+        // Answers about THIS parse, not about every parse this object has ever done (RC-A3).
+        this.pagesThatCouldNotBeRead = 0;
+
+        this.pagesTheIndexNamed = 0;
+
+        // How a file word maps to a type, handed to the component class so that its export can tell
+        // "still what was read" from "redrawn by the user" without owning a second copy of this table.
+        // The address is irrelevant to the question being asked - whether the word still means this type
+        // - and the two switch entries that depend on it agree for everything except a permanent
+        // crossing, which is a different type either way.
+        LayoutDiagramComponent.setFileWordMapping(word ->
+        {
+            try
+            {
+                return getComponentType(word, 1);
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        });
+
+        List<Map<String, String>> index = this.parseLayoutIndex();
+
+        List<String> names = new ArrayList<>();
+
+        for (Map<String, String> page : index)
+        {
+            names.add(page.get("name"));
+        }
+
+        this.pagesTheIndexNamed = names.size();
         
         List<LayoutDiagram> out = new ArrayList<>();
         
+        // by position, not by looking the name up: two pages may share a name, and a lookup would give
+        // them both the first one's id
+        int pageIndex = -1;
+        
         for (String name : names)
-        { 
-            String url = getLayoutURL(name);
+        {
+            pageIndex++;
 
-            // Null-checked, as every other logging call in this class is - they all go through the
-            // null-safe logMessage and this one did not.  A CS2File built without a control station is
-            // a perfectly ordinary thing to make: it is how a layout is parsed on its own, with no
-            // hardware and no model behind it (testParseCS2Layout builds one, and failed here).
-            if (control != null && control.isDebug())
+            // One page that will not parse costs THAT page, not the layout.
+            //
+            // Nothing here caught a per-page failure, while both sibling parsers in this file were
+            // given per-record guards - parseLocomotives says why: one bad locomotive used to abort
+            // the entire Central Station sync.  Here it was worse than an abort, because the caller
+            // answers a failed parse by clearing the local-layout folder preference: a single
+            // malformed element, or a page the index names and the folder does not hold, silently
+            // discarded the user's choice of where their layout lives.
+            //
+            // pageIndex is advanced ABOVE this, so a skipped page does not renumber the ones after
+            // it.  That matters more than it looks: the autonomy setup is keyed by page id.
+            try
             {
-                control.logf(
-                    "layout.loadingFromUrl",
-                    url
-                );            
-            }
+ 
+                String url = getLayoutURL(name);
             
-            List<Map<String, String> > l = parseFile(fetchURL(url));
-                        
-            Map<Integer, MarklinAccessory> addressMap = accDB.stream()
-                .collect(Collectors.toMap(
-                        MarklinAccessory::getAddress, 
-                        accessory -> accessory,
-                        (existing, replacement) -> existing // uncouplers will have the same ID
-                ));
-            
-            int maxX = 0;
-            int maxY = 0;
-            
-            for (Map<String, String> m : l)
-            {
-                if ("element".equals(m.get("_type")))
+                // Null-checked, as every other logging call in this class is - they all go through the
+                // null-safe logMessage and this one did not.  A CS2File built without a control station is
+                // a perfectly ordinary thing to make: it is how a layout is parsed on its own, with no
+                // hardware and no model behind it.
+                if (control != null && control.isDebug())
                 {
-                    Integer coord = 0;
-
-                    if (m.get("id") != null)
-                    {
-                        coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                    }
-                    else
-                    {
-                        logMessage(
-                            I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
-                            null,
-                            true
-                        );
-                    }
-                    
-                    Integer x = coord % 256;
-                    Integer y = (coord >> 8) % 256;
-
-                    if (x > maxX)
-                    {
-                        maxX = x;
-                    }
-
-                    if (y > maxY)
-                    {
-                        maxY = y;
-                    }
+                    control.logf(
+                        "layout.loadingFromUrl",
+                        url
+                    );            
                 }
-            }
             
-            LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
+                List<Map<String, String> > l = parseFile(fetchURL(url));
                         
-            for (Map<String, String> m : l)
-            {
-                if ("element".equals(m.get("_type")))
+                Map<Integer, MarklinAccessory> addressMap = accDB.stream()
+                    .collect(Collectors.toMap(
+                            MarklinAccessory::getAddress, 
+                            accessory -> accessory,
+                            (existing, replacement) -> existing // uncouplers will have the same ID
+                    ));
+            
+                int maxX = 0;
+                int maxY = 0;
+            
+                for (Map<String, String> m : l)
                 {
-                    Integer coord = 0;
-                    
-                    if (m.get("id") != null)
+                    if ("element".equals(m.get("_type")))
                     {
-                        coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                    }
+                        Integer coord = 0;
 
-                    Integer x = coord % 256;
-                    Integer y = (coord >> 8) % 256;
-                    
-                    Integer orient = 0;
-                    Integer state = 0;
-                    String type = m.get("typ");
-                    
-                    // Handle missing type
-                    if (type == null)
-                    {
-                        if (m.get("text") != null)
+                        if (m.get("id") != null)
                         {
-                            type = "text";
+                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
                         }
                         else
-                        {
-                            type = "unknown";
-                        }
-                    }
-                    
-                    Integer rawAddress = 0;
-                    
-                    try
-                    {
-                        rawAddress = Integer.valueOf(m.get("artikel"));
-                    }
-                    catch (NumberFormatException e)
-                    {
-                        if (!"text".equals(type))
                         {
                             logMessage(
-                                I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
+                                I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
+                                null,
+                                true
                             );
                         }
+                    
+                        Integer x = coord % 256;
+                        Integer y = (coord >> 8) % 256;
+
+                        if (x > maxX)
+                        {
+                            maxX = x;
+                        }
+
+                        if (y > maxY)
+                        {
+                            maxY = y;
+                        }
                     }
-                    
-                    Integer address = rawAddress;
-                    
-                    if (!"fahrstrasse".equals(type))
+                }
+            
+                LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
+
+                layout.setPageId(index.get(pageIndex).get("id"));
+                        
+                for (Map<String, String> m : l)
+                {
+                    // The left-margin keys, which are not a block and must not be written as one
+                    // (X8-A1).  `page=1` is the only one a real export carries.
+                    if ("_bareKeys".equals(m.get("_type")))
                     {
-                        if (address % 2 == 0)
+                        for (Map.Entry<String, String> bare : m.entrySet())
                         {
-                            address = (address / 2);
+                            layout.addBareKey(bare.getKey(), bare.getValue());
                         }
-                        else
-                        {
-                            address = (address - 1) / 2;
-                        }
+
+                        continue;
                     }
+
+                    // The blocks above the elements - version, groesse, anything a later firmware adds -
+                    // kept so that saving the page does not delete them.  The exporter used to write a
+                    // hardcoded version block in their place.
+                    if (!"element".equals(m.get("_type")))
+                    {
+                        layout.addUnmodelledBlock(m);
+                        continue;
+                    }
+
+                    if ("element".equals(m.get("_type")))
+                    {
+                        Integer coord = 0;
+
+                        if (m.get("id") != null)
+                        {
+                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
+                        }
+
+                        Integer x = coord % 256;
+                        Integer y = (coord >> 8) % 256;
+
+                        Integer orient = 0;
+                        Integer state = 0;
+                        String type = m.get("typ");
+                    
+                        // Handle missing type
+                        if (type == null)
+                        {
+                            if (m.get("text") != null)
+                            {
+                                type = "text";
+                            }
+                            else
+                            {
+                                type = "unknown";
+                            }
+                        }
+                    
+                        Integer rawAddress = 0;
+                    
+                        try
+                        {
+                            rawAddress = Integer.valueOf(m.get("artikel"));
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            if (!"text".equals(type))
+                            {
+                                logMessage(
+                                    I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
+                                );
+                            }
+                        }
+                    
+                        Integer address = rawAddress;
+                    
+                        if (!"fahrstrasse".equals(type))
+                        {
+                            if (address % 2 == 0)
+                            {
+                                address = (address / 2);
+                            }
+                            else
+                            {
+                                address = (address - 1) / 2;
+                            }
+                        }
                                         
-                    if (m.get("drehung") != null)
-                    {
-                        orient = Integer.valueOf(m.get("drehung")); 
-                    }
-                   
-                    if (m.get("zustand") != null)
-                    {
-                        state = Integer.valueOf(m.get("zustand"));
-                    }
-                    
-                    // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
-                    if (type.contains("_f_"))
-                    {
-                        orient = Math.floorMod(orient - 1, 4);
-                    }
-                    
-                    Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
-                    
-                    // Read protocol from mags file
-                    if (addressMap.get(address) != null)
-                    {
-                        protocol = addressMap.get(address).getDecoderType();
-                    }
-                    
-                    // Custom - read protocol from the local layout files
-                    if (m.get("prot") != null)
-                    {
-                        if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
+                        if (m.get("drehung") != null)
                         {
-                            protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
+                            orient = Integer.valueOf(m.get("drehung")); 
+                        }
+                   
+                        if (m.get("zustand") != null)
+                        {
+                            state = Integer.valueOf(m.get("zustand"));
+                        }
+                    
+                        // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
+                        if (type.contains("_f_"))
+                        {
+                            orient = Math.floorMod(orient - 1, 4);
+                        }
+                    
+                        Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
+                    
+                        // Read protocol from mags file
+                        if (addressMap.get(address) != null)
+                        {
+                            protocol = addressMap.get(address).getDecoderType();
+                        }
+                    
+                        // Custom - read protocol from the local layout files
+                        if (m.get("prot") != null)
+                        {
+                            if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
+                            {
+                                protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
+                            }
+                            else
+                            {
+                                logMessage(
+                                    I18n.f("acc.errorUnknownProtocol", m.get("prot"))
+                                );
+                            }
+                        }
+                    
+                        LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
+
+                        if (modelled != null)
+                        {
+                            layout.addComponent(
+                               modelled,
+                               x, y, orient, state, address, rawAddress, protocol, m.get("text")
+                            );
+
+                            // Anything the file said about this square that the component has no field for.
+                            // Saving regenerates the page from the model, so a key nobody carries is a key
+                            // deleted from the user's diagram.
+                            LayoutDiagramComponent added = layout.getComponent(x, y);
+
+                            if (added != null)
+                            {
+                                added.setUnmodelledKeys(m);
+
+                                // And the file's own word for the type, plus its rotation exactly as given.
+                                // Both ARE modelled, and both are lossy: the type mapping is many-to-one, so
+                                // writing the canonical word back collapses every variant the file
+                                // distinguished, and the rotation of a semaphore signal is corrected on the
+                                // way in by a rule keyed on the word that has just been thrown away.
+                                // Only the word.  The rotation used to be kept too, so that an
+                                // untouched component could be written back verbatim, but the export now
+                                // derives the file's number from the word it is writing - which is exact,
+                                // and cannot disagree with a second rule.
+                                added.setOriginalTyp(m.get("typ"));
+                            }
                         }
                         else
                         {
-                            logMessage(
-                                I18n.f("acc.errorUnknownProtocol", m.get("prot"))
-                            );
+                            // Not a component this program knows, and therefore not one it may delete.  Kept
+                            // verbatim so that saving the page - which naming a station does, unasked - puts
+                            // it back rather than dropping it.
+                            layout.addUnmodelledElement(m);
                         }
                     }
-                    
-                    // This will fail for unknown components.  Catch errors?
-                    if (getComponentType(type, address) != null)
-                    {
-                        layout.addComponent(
-                           getComponentType(type, address),
-                           x, y, orient, state, address, rawAddress, protocol, m.get("text")
-                        );
-                    }
+                }
+            
+                layout.checkBounds();
+            
+                out.add(layout);
+            }
+            catch (Exception | Error bad)
+            {
+                // COUNTED, AND SAID OUT LOUD (RC-A3, RC-A5).
+                //
+                // This was debugOnly, so the one thing that explains an incomplete railway was
+                // invisible unless debug mode happened to be on.  A page that will not read is a fault
+                // the user can act on - re-copy the file, check the folder - which is what separates a
+                // warning worth showing from noise.
+                //
+                // The count is what everything downstream needs.  A caller that prunes, or reverts, is
+                // entitled to know it is not looking at the whole railway, and until RC-A3 nothing
+                // could tell: most of a railway and all of one came back the same way.
+                this.pagesThatCouldNotBeRead++;
+
+                logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
+                    null, false);
+
+                // AND THE PAGE KEEPS ITS PLACE IN THE LIST (NSV-B3, Adam's ruling of 2026-09-10).
+                //
+                // Skipping it entirely left `getLayoutList()` one entry short, and a link tile holds a
+                // POSITION in that list - so every arrow at or past this page resolved one page early,
+                // with nobody having edited anything.  An unhydrated OneDrive placeholder is enough to
+                // cause it, which `readLayoutIndexIds`'s own comment calls an ordinary Tuesday on this
+                // railway.  It also reaches a railway decision: `TileGraph.leadsOutsideAutonomy` asks
+                // where a link goes, and what it answers decides whether an unpaired portal blocks an
+                // autonomy build or only warns.
+                //
+                // *"Make the page blank and put a text label in it saying it could not be loaded (label
+                // as a tile itself, as if you had parsed a .text at 1,1 with that message."*  So the
+                // operator opens the page and reads what happened, rather than finding it missing.
+                //
+                // It carries the page's ID, so the autonomy setup stays attached to it, and it is marked
+                // unreadable so that nothing can save a blank page over the file being recovered.
+                try
+                {
+                    LayoutDiagram missing = new LayoutDiagram(name, 16, 8, getLayoutURL(name),
+                        this.control);
+
+                    missing.setPageId(index.get(pageIndex).get("id"));
+
+                    missing.markUnreadable();
+
+                    missing.addComponent(LayoutDiagramComponent.componentType.TEXT, 1, 1, 0, 0, 0, -1,
+                        null, I18n.f("layout.pageCouldNotBeReadTile", name));
+
+                    out.add(missing);
+                }
+                catch (Exception | Error worse)
+                {
+                    // The placeholder is a courtesy; a failure to build one must not cost the rest of
+                    // the layout, which is the same rule the catch above it exists for.
+                    logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(worse)),
+                        null, true);
                 }
             }
-            
-            layout.checkBounds();
-            
-            out.add(layout);
         }
         
         return out;

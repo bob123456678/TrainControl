@@ -1,0 +1,1665 @@
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.LayoutDiagramComponent;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.traincontrol.base.Accessory.accessorySetting;
+import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import org.traincontrol.automationui.TileGraph.Exit;
+import org.traincontrol.automationui.TileGraph.Landing;
+import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.AccessorySlot;
+import org.traincontrol.automationui.TilePorts.Route;
+import org.traincontrol.automationui.TilePorts.Side;
+
+/**
+ * Layer 2: contracts the tile graph into the graph the autonomy model actually wants.
+ *
+ * Only feedback tiles survive as nodes - a feedback signal has no other way into the model, so every s88
+ * becomes a Point whether or not the user thinks of it as a station.  Everything between two of them
+ * collapses: a run of plain track becomes one edge, and a switch is not a node at all but a branch point
+ * that forks the walk and contributes the accessory settings its position requires.
+ *
+ * What each edge keeps is the tiles it covers.  That is what monitoring lights up, and what lock
+ * derivation intersects: two edges that share a tile cannot run at once, because they are the same piece
+ * of railway.
+ *
+ * @author Adam
+ */
+public class GraphReducer
+{
+    /**
+     * A stop on an edge's path: the tile, and which of its routes was used.
+     *
+     * The route matters for exactly one thing - an overpass carries two tracks at different heights, so
+     * two edges crossing it by different routes do not conflict, while every other shared tile does.
+     */
+    public static class TileStep
+    {
+        private final TileKey tile;
+        private final RouteId routeId;
+        private final int state;
+
+        TileStep(TileKey tile, RouteId routeId, int state)
+        {
+            this.tile = tile;
+            this.routeId = routeId;
+            this.state = state;
+        }
+
+        public TileKey getTile()
+        {
+            return tile;
+        }
+
+        public RouteId getRouteId()
+        {
+            return routeId;
+        }
+
+        public int getState()
+        {
+            return state;
+        }
+
+        @Override
+        public String toString()
+        {
+            return tile + "/" + routeId;
+        }
+    }
+
+    /**
+     * A Point: one feedback tile, with the s88 it carries.
+     */
+    public static class ReducedPoint
+    {
+        private final TileKey tile;
+        private final int s88;
+        private final String name;
+        private final boolean station;
+
+        ReducedPoint(TileKey tile, int s88, String name, boolean station)
+        {
+            this.tile = tile;
+            this.s88 = s88;
+            this.name = name;
+            this.station = station;
+        }
+
+        public TileKey getTile()
+        {
+            return tile;
+        }
+
+        public int getS88()
+        {
+            return s88;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        /**
+         * Whether the user designated this Point a station.  Only s88 tiles can be, which is the model's
+         * own rule - Point refuses a destination without a sensor.
+         * @return
+         */
+        public boolean isStation()
+        {
+            return station;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
+        }
+    }
+
+    /**
+     * A directed edge between two Points, with everything the autonomy model needs to run it.
+     */
+    public static class ReducedEdge
+    {
+        private final TileKey start;
+        private final TileKey end;
+        private final List<TileStep> path;
+        private final Map<String, accessorySetting> commands;
+        private final int length;
+
+        /**
+         * The track from the last SWITCH on this edge to its far end, which is the room a train has to
+         * stop in without standing on the points (Adam's ruling, 2026-09-02).
+         *
+         * `Integer.MIN_VALUE` when this edge crosses no switch at all, which is not the same thing as
+         * zero and not the same thing as unmeasured: such an edge does not bound the room and the
+         * caller keeps walking back through the route.  `-1` when it does cross one and some tile in
+         * the stretch after it has no length recorded - bounded, but unknown.
+         */
+        private final int roomAtTheEnd;
+
+        /**
+         * Which side of the start tile this edge leaves by, and which side of the end tile it arrives
+         * at.  Null for a move through a portal, which has no side on the grid.
+         *
+         * The reduction is otherwise Point-to-Point and forgets this, which is exactly what makes a
+         * reversal inexpressible: leaving by the side you came in on and carrying straight on look the
+         * same once both are "an edge from T".  Anything that has to tell those apart - see
+         * AutonomyBuilder's split - needs the sides, so they are kept.
+         */
+        private final Side exitSide;
+        private final Side entrySide;
+
+        ReducedEdge(TileKey start, TileKey end, List<TileStep> path,
+            Map<String, accessorySetting> commands, int length, Side exitSide, Side entrySide,
+            int roomAtTheEnd)
+        {
+            this.start = start;
+            this.end = end;
+            this.path = Collections.unmodifiableList(path);
+            this.commands = Collections.unmodifiableMap(commands);
+            this.length = length;
+            this.exitSide = exitSide;
+            this.entrySide = entrySide;
+            this.roomAtTheEnd = roomAtTheEnd;
+        }
+
+        /**
+         * The room after the last switch on this edge.
+         *
+         * `Integer.MIN_VALUE` when it crosses no switch; `-1` when it crosses one and NOTHING in the
+         * stretch is measured.  Partly measured answers with the total of what is - the all-or-nothing
+         * reading was Adam's rule until 2026-09-06 and this line until 2026-09-08.
+         *
+         * @return the room, or one of the two sentinels above
+         */
+        public int getRoomAtTheEnd()
+        {
+            return roomAtTheEnd;
+        }
+
+        /**
+         * @return whether this edge crosses a switch, and so bounds where a train may come to rest
+         */
+        public boolean crossesASwitch()
+        {
+            return roomAtTheEnd != Integer.MIN_VALUE;
+        }
+
+        /**
+         * @return the side of the start tile the train leaves by, or null through a portal
+         */
+        public Side getExitSide()
+        {
+            return exitSide;
+        }
+
+        /**
+         * @return the side of the end tile the train arrives at, or null through a portal
+         */
+        public Side getEntrySide()
+        {
+            return entrySide;
+        }
+
+        public TileKey getStart()
+        {
+            return start;
+        }
+
+        public TileKey getEnd()
+        {
+            return end;
+        }
+
+        /**
+         * The tiles between the two Points, endpoints excluded.  Monitoring lights these; lock derivation
+         * intersects them.
+         * @return
+         */
+        public List<TileStep> getPath()
+        {
+            return path;
+        }
+
+        /**
+         * Accessory settings this edge requires, keyed by accessory name as the autonomy model expects -
+         * switch positions and signal greens together, gathered the same way.
+         * @return
+         */
+        public Map<String, accessorySetting> getCommands()
+        {
+            return commands;
+        }
+
+        /**
+         * The sum of the lengths assigned to the tiles this edge covers.  Zero unless the user assigned
+         * lengths, which keeps train-length accounting inert until they opt in.
+         * @return
+         */
+        public int getLength()
+        {
+            return length;
+        }
+
+        @Override
+        public String toString()
+        {
+            return start + " -> " + end;
+        }
+    }
+
+    /**
+     * Supplies what geometry cannot: the names the user gave, which Points are stations, and how long
+     * each tile is.  The companion files provide this in production; tests provide it directly.
+     */
+    public interface Authored
+    {
+        /**
+         * @param tile
+         * @return the user's name for this Point, or null to generate one from the coordinate
+         */
+        String getPointName(TileKey tile);
+
+        /**
+         * @param tile
+         * @return whether the user designated this Point a station
+         */
+        boolean isStation(TileKey tile);
+
+        /**
+         * @param tile
+         * @return the length assigned to this tile; 0 by default, which disables length accounting
+         */
+        int getTileLength(TileKey tile);
+
+        /**
+         * Whether this tile's 0 was answered on purpose (OB-274) - measured track of no length to every length rule but
+         * the own-tail one (OB-300)
+         * (TDU-C6; Adam, 2026-09-25), and not listed as missing (Adam, 2026-09-23).
+         *
+         * @param tile the square
+         * @return true when its length was answered 0; false by default
+         */
+        default boolean isTileLengthAnswered(TileKey tile)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * Authored data with nothing authored: generated names, no stations, no lengths.
+     */
+    public static class NothingAuthored implements Authored
+    {
+        @Override
+        public String getPointName(TileKey tile)
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isStation(TileKey tile)
+        {
+            return false;
+        }
+
+        @Override
+        public int getTileLength(TileKey tile)
+        {
+            return 0;
+        }
+    }
+
+    // A walk that runs longer than this is a diagram pathology, not a route
+    private static final int MAX_PATH_TILES = 2000;
+
+
+    private final TileGraph graph;
+    private final Authored authored;
+
+    // NOT FINAL, AND NEVER CHANGED ONCE HANDED OUT (OB-298): `reduce` builds new ones and swaps them in whole, so a reader
+    // walking these - `AutonomyBuilder.splitSides` was one, on another thread - finishes on the railway it began on.
+    private volatile Map<TileKey, ReducedPoint> points = new LinkedHashMap<>();
+    private volatile List<ReducedEdge> edges = new ArrayList<>();
+    private volatile Map<ReducedEdge, Set<ReducedEdge>> locks = new LinkedHashMap<>();
+
+    /**
+     * Sensors where a branch was refused because its switch settings contradicted the path to it.
+     *
+     * Recorded rather than warned about at the time.  A fork whose two legs need one switch two ways is
+     * ORDINARY - it is what a switch is - and warning per branch would put a line on the findings list
+     * for every turnout on the layout.  What is worth saying is the case where the refusal was the only
+     * way through: a wye or a folded loop with no sensor between the two crossings leaves the two ends
+     * with no edge between them at all, and the user's first sight of that is a connectivity test
+     * answering no.  So the note is kept and read at the end, when it is known whether anything else
+     * got out of that sensor.
+     */
+    private volatile Set<TileKey> refusedForConflict = new LinkedHashSet<>();
+    private volatile List<TileGraph.Problem> problems = new ArrayList<>();
+    private volatile int isolatedFeedbackTiles = 0;
+
+    // One edge per ordered pair of Points, because that is the model's own notion of edge identity.
+    private volatile Map<String, ReducedEdge> edgeByPair = new LinkedHashMap<>();
+
+    /**
+     * Two physical routes join the same pair of sensors; only the shorter is used.
+     */
+    public static final String WARN_PARALLEL_ROUTE = "autosetup.ui.warnParallelRoute";
+
+    /**
+     * A run of track leaves a sensor and returns to it without passing another - a balloon loop.
+     */
+    public static final String WARN_SELF_LOOP = "autosetup.ui.warnSelfLoop";
+
+    /**
+     * A run that exists on the diagram but cannot be driven, because it needs one switch two ways.
+     */
+    public static final String WARN_SWITCH_NEEDED_TWICE = "autosetup.ui.warnSwitchNeededTwice";
+
+    /**
+     * A double-curve sensor with track on both of its curves.  The s88 is on ONE of them; the other is
+     * a second track that happens to cross the same square.
+     */
+
+    public GraphReducer(TileGraph graph, Authored authored)
+    {
+        this.graph = graph;
+        this.authored = authored == null ? new NothingAuthored() : authored;
+    }
+
+    /**
+     * Runs the contraction.  Deterministic: the same diagram and the same authored data produce the same
+     * graph, in the same order, so two builds are comparable.
+     */
+    public void reduce()
+    {
+        // BUILT APART AND HANDED OVER WHOLE (OB-298).  This cleared and refilled the lists in place, so a reader walking
+        // them while a rebuild ran - `AutonomyBuilder.splitSides` over `getEdges()`, in a test that edited the setup off
+        // the event thread - threw `ConcurrentModificationException`, or read half a rebuild.  A fresh reducer over the
+        // same diagram and settings does the work, and its lists replace these only once they are complete; a list
+        // handed out before is never changed again.  The edges go last, as the thing most readers start from.
+        GraphReducer fresh = new GraphReducer(graph, authored);
+
+        fresh.buildPoints();
+        fresh.walkEdges();
+        fresh.reportRunsNoSwitchCanServe();
+        fresh.deriveLocks();
+
+        this.refusedForConflict = fresh.refusedForConflict;
+        this.problems = fresh.problems;
+        this.isolatedFeedbackTiles = fresh.isolatedFeedbackTiles;
+        this.edgeByPair = fresh.edgeByPair;
+        this.locks = fresh.locks;
+        this.points = fresh.points;
+        this.edges = fresh.edges;
+    }
+
+    /**
+     * @return the Points, one per feedback tile that is connected to anything
+     */
+    public Map<TileKey, ReducedPoint> getPoints()
+    {
+        return Collections.unmodifiableMap(points);
+    }
+
+    /**
+     * @return every directed edge found
+     */
+    public List<ReducedEdge> getEdges()
+    {
+        return Collections.unmodifiableList(edges);
+    }
+
+    /**
+     * Which edges cannot run at the same time as which.  Derived from shared tiles, so a diagram-built
+     * configuration cannot have the coverage gaps a hand-written one can.
+     * @return
+     */
+    public Map<ReducedEdge, Set<ReducedEdge>> getLocks()
+    {
+        return Collections.unmodifiableMap(locks);
+    }
+
+    /**
+     * @return feedback tiles left out because nothing connects to them
+     */
+    public int getIsolatedFeedbackTiles()
+    {
+        return isolatedFeedbackTiles;
+    }
+
+    /**
+     * Whether, and how, a train could get from one Point to another.
+     *
+     * Breadth-first over the directed edges, so what comes back is a shortest run in edges - the one a
+     * user can most easily check against the diagram.  This is the connectivity TEST the editor offers;
+     * it deliberately ignores lengths, exclusions and locks, because the question it answers is "does
+     * the track as authored allow this at all", and a "no" from a longer answer would leave the user
+     * unsure which rule said it.
+     *
+     * @param from the tile of the starting Point
+     * @param to the tile of the destination Point
+     * @return the edges of a shortest run in order, or null when no run exists (or either end is not a
+     *         Point of this reduction)
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to)
+    {
+        return findPath(from, to, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param mayTurn the squares where a train is allowed to change direction, so a run through one of
+     *        them may leave by the side it arrived at.  Everywhere else it may not: a train is pointing
+     *        away from where it came from, and it can only go forwards.
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn)
+    {
+        return findPath(from, to, mayTurn, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * @param mustTurn the squares where changing direction is not optional.  Carrying straight on is not
+     *        a move at one of these - the build emits no straight-through copy - so a run that passed
+     *        through one would be a run no train could make.  Listing a square here overrides mayTurn.
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn)
+    {
+        return findPath(from, to, mayTurn, mustTurn, Collections.<TileKey, Set<Side>>emptyMap());
+    }
+
+    /**
+     * @param barred the sides each square refuses arrivals by - the red arrows on the diagram (OB-120).
+     *
+     * WHAT A BARRED SIDE MEANS: a train may not come in and STOP that way. The build says so plainly -
+     * `AutonomyBuilder` emits the barred copy as a non-station and notes that it "still carries
+     * traffic; it is simply not somewhere a train can be sent" - and the chevrons drawn for it are
+     * documented the same way.
+     *
+     * An earlier version of this javadoc claimed the build dropped those copies entirely, and the code
+     * under it refused the move wherever it appeared. That described a railway more restricted than the
+     * one that exists, and this walk feeds the editor's path test: it drew no route for journeys the
+     * railway would happily run. Corrected 2026-08-28 after an independent review.
+     *
+     * The START is exempt, as it is in the build: a train standing at a square did not arrive there by
+     * any side, and refusing it would make a restricted station unable to SEND trains rather than
+     * unable to receive them.
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred)
+    {
+        return findPath(from, to, mayTurn, mustTurn, barred, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * The same, with squares that are CLOSED rather than merely barred (DIR-B1).
+     *
+     * **The sibling learned this and this did not.** `reachableTiles` gained a `closed` set on
+     * 2026-09-06 so the findings panel would stop routing through squares switched out of service.
+     * This method is the editor's *test a path* tool, called three lines away in the same file on the
+     * same turn sets - and it was left walking the old railway.
+     *
+     * Two comments in this tree state the invariant that broke.  `AutonomyEditorPanel`: *"The same
+     * turn sets the reachability check uses, from the one place that computes them, so the path test
+     * and the findings panel cannot disagree about which way a train may go."*  `AutonomyChecks`:
+     * *"reachableTiles answers the split-aware question instead, which is the same one Layout.bfs and
+     * the editor's path test ask."*  Both were true when written; neither was after that change.
+     *
+     * Measured before the fix: a three-sensor run A-B-C with B closed gave `reachableWithClosed=[A,
+     * B]` and `findPathAtoC=FOUND (through the closed square)` - the tool drew a route the runtime
+     * refuses.
+     *
+     * Same semantics as the sibling, for the same reason: `isPathClear` refuses a closed square as an
+     * INTERMEDIATE and not at either end, so it is a valid destination and never a way through.
+     *
+     * **`isPathClear` refuses a closed FINAL point in EVERY tier, and this paragraph said otherwise
+     * for four days (DIR-C10, corrected by E8V-C2).**  It read "but only `if (this.isAutoRunning())`",
+     * and concluded that treating a closed square as a valid destination merely overstates what
+     * AUTONOMY can reach.  That fence went on 2026-09-06, on Adam's ruling: *"in manual mode, inactive
+     * endpoints and intermediates should be refused as well.  Just not inactive start points.
+     * Inactive really means nothing can pass."*
+     *
+     * So the overstatement is wider than it was: a route this walk draws to a closed square is refused
+     * at every door there is, not only autonomy's.  While autonomy runs, the railway additionally
+     * refuses any edge with a closed endpoint.
+     *
+     * Left as it is deliberately, and the reason survives the correction: the overstatement is in the
+     * safe direction - the checks may call a closed station reachable when nothing may be sent there,
+     * which hides nothing that was not hidden before - and the alternative is a second walk with a
+     * second rule, which is how the two walks came to disagree in the first place.  What the checks do
+     * NOT do any more is explain such a leg with the wrong sentence: the Auto-tier note tells a shut
+     * square apart from a manual-only one (E8V-B1).
+     *
+     * @param from where the train is
+     * @param to where it should go
+     * @param mayTurn squares where turning round is allowed
+     * @param mustTurn squares where it is compulsory
+     * @param barred arrival sides closed off - passed through, not stopped at
+     * @param closed squares nothing may pass through
+     * @return the path, or null when there is none
+     */
+    public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
+    {
+        if (!points.containsKey(from) || !points.containsKey(to)) return null;
+
+        if (from.equals(to)) return new ArrayList<ReducedEdge>();
+
+        // The search state is a Point AND the side the train reached it by, not the Point alone.  Those
+        // are genuinely different situations - what a train may do next depends on which way it is
+        // pointing - and searching over Points alone produced runs that reversed at squares where no
+        // train can, which is what the test told the user the railway would do.
+        //
+        // The starting Point has no arrival side: the train is already standing there, and the test
+        // question is whether the TRACK allows the journey at all.
+        Map<String, ReducedEdge> arrivedBy = new LinkedHashMap<>();
+        Map<String, String> cameFrom = new LinkedHashMap<>();
+        Map<String, TileKey> tileOf = new LinkedHashMap<>();
+        Map<String, Side> sideOf = new LinkedHashMap<>();
+
+        String start = searchKey(from, null);
+
+        arrivedBy.put(start, null);
+        tileOf.put(start, from);
+        sideOf.put(start, null);
+
+        java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
+        frontier.add(start);
+
+        while (!frontier.isEmpty())
+        {
+            String here = frontier.poll();
+
+            TileKey at = tileOf.get(here);
+            Side arrived = sideOf.get(here);
+
+            for (ReducedEdge edge : edges)
+            {
+                if (!edge.getStart().equals(at)) continue;
+
+                if (arrived != null)
+                {
+                    boolean back = edge.getExitSide() == arrived;
+
+                    // Where turning is compulsory, going back is the ONLY move: the build emits no
+                    // straight-through copy of such a square, so a run that carried on through one is a
+                    // run no train could make.
+                    if (mustTurn.contains(at))
+                    {
+                        if (!back) continue;
+                    }
+                    else if (back)
+                    {
+                        if (!mayTurn.contains(at)) continue;
+                    }
+                    // Carrying on has to be carrying on along the SAME TRACK.  Comparing sides alone was
+                    // not enough at a double-curve sensor, which is two curves crossing in one square
+                    // with no connection between them: a train arriving on one of them was allowed onto
+                    // any edge that did not leave by the side it came in at, including the edges of the
+                    // other curve - a run that jumps tracks in mid-square, which is the same class of
+                    // impossible move the arrival-side search was written to get rid of.
+                    else if (!onwardSides(at, arrived).contains(edge.getExitSide()))
+                    {
+                        continue;
+                    }
+                }
+
+                // The red arrows, and only where they mean something (OB-120, corrected 2026-08-28).
+                //
+                // A barred side says a train may not COME IN AND STOP that way. It does not say the
+                // square cannot be passed through: `AutonomyBuilder` still emits the barred copy, and
+                // its own comment says so - "the copy still exists and still carries traffic; it is
+                // simply not somewhere a train can be sent". This used to refuse the move outright,
+                // on a javadoc of mine claiming the build dropped such copies, which it does not.
+                //
+                // So the refusal belongs on the DESTINATION hop, which is what OB-120 was filed about:
+                // "Test a path drew routes INTO stations that refuse arrivals from that side."
+                String next = searchKey(edge.getEnd(), edge.getEntrySide());
+
+                if (arrivedBy.containsKey(next)) continue;
+
+                arrivedBy.put(next, edge);
+                cameFrom.put(next, here);
+                tileOf.put(next, edge.getEnd());
+                sideOf.put(next, edge.getEntrySide());
+
+                // ARRIVED, unless the square refuses to be arrived at that way.
+                //
+                // Tested HERE and not at the hop above (validator, 2026-08-28). Refusing the hop threw
+                // away the search state for this square entirely, so the track BEYOND it was never
+                // explored either - and a station reached first by a barred side and afterwards by an
+                // open one, which is any station with a reversing point past it, became unroutable.
+                // `reachableTiles` gates only its `reached.add` and walks on, so the two answered
+                // differently about the same railway, which is the thing OB-120 was filed to stop.
+                //
+                // The search continues through this square below either way; what is refused is
+                // stopping here by this side.
+                // NOT A DESTINATION EITHER (Adam, 2026-09-06): "inactive really means nothing can
+                // pass".  Asked before the arrival test, not after it - after, the square is accepted
+                // as the destination and the search returns before the closure is ever consulted.
+                if (closed != null && closed.contains(edge.getEnd())) continue;
+
+                if (edge.getEnd().equals(to)
+                    && !refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
+                {
+                    List<ReducedEdge> path = new ArrayList<>();
+
+                    for (String step = next; arrivedBy.get(step) != null; step = cameFrom.get(step))
+                    {
+                        path.add(0, arrivedBy.get(step));
+                    }
+
+                    return path;
+                }
+
+                frontier.add(next);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether a square refuses trains arriving by a given side (OB-120).
+     *
+     * The same test `AutonomyBuilder.arrivalAllowed` makes when it decides whether a copy of a split
+     * square is a STATION - somewhere a train may be sent to stop. It does not decide which copies are
+     * emitted: the barred copy is emitted and still carries traffic, which is why the callers refuse
+     * only a destination hop and walk through everything else.
+     *
+     * An earlier version of this sentence said the build dropped those copies entirely. It does not,
+     * and the code written to match that sentence refused runs the railway makes every day.
+     *
+     * A null side is the starting square, which has no arrival and is never barred.
+     *
+     * @param barred square to the sides it refuses, never null
+     * @param tile the square being arrived at
+     * @param by the side it is being arrived by
+     * @return true when the arrival is not allowed
+     */
+    private boolean refusesArrival(java.util.Map<TileKey, Set<Side>> barred, TileKey tile, Side by)
+    {
+        if (by == null || barred == null || barred.isEmpty()) return false;
+
+        Set<Side> sides = barred.get(tile);
+
+        return sides != null && sides.contains(by);
+    }
+
+    /**
+     * The sides a train that arrived at this square by the given side can carry on out of - the track it
+     * is actually standing on, rather than every side the square happens to have.
+     *
+     * Never includes the arrival side: the tile graph builds its exits from routes, and a route never
+     * leads back out the way it came in.  Turning round is therefore always the separate case.
+     */
+    /**
+     * Every tile a train standing at {@code from} can reach, honouring the arrival-side split exactly as
+     * findPath does.
+     *
+     * The plain adjacency over getEdges() over-reports this: it lets a run cross between the two
+     * independent curves of a double-curve sensor, because a Point alone does not remember which side a
+     * train came in by.  This is one (tile, arrival-side) BFS - the same frontier discipline findPath
+     * uses - collecting the tiles reached rather than reconstructing one path, so the reachability it
+     * reports is the reachability the emitted split graph and Layout.bfs actually have.
+     *
+     * @param from the square a train is standing on
+     * @param mayTurn squares where a train may turn round (reversal permitted)
+     * @param mustTurn squares where every arriving train must turn round
+     * @return the tiles reachable, including {@code from} itself
+     */
+    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
+    {
+        return reachableTiles(from, mayTurn, mustTurn, Collections.<TileKey, Set<Side>>emptyMap());
+    }
+
+    /**
+     * @param barred the sides each square refuses arrivals by (OB-120), as findPath takes them - so the
+     *        two walks cannot disagree about which runs exist
+     */
+    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        java.util.Map<TileKey, Set<Side>> barred)
+    {
+        return reachableTiles(from, mayTurn, mustTurn, barred, Collections.<TileKey>emptySet());
+    }
+
+    /**
+     * The same, with squares that are CLOSED rather than merely barred (V31-C3).
+     *
+     * **The two are different claims and this walk already made one of them.** A barred side says
+     * "trains may pass through here but not stop", which is why the loop below reaches past it - that
+     * is `OB-120`, and it is right. A square switched out of service says "nothing may pass here" -
+     * the cross drawn on it says exactly that, and `Layout.isPathClear` enforces it for every path,
+     * manual routes included.
+     *
+     * Barring every side of a closed square does NOT express that, which is what the first attempt at
+     * this finding did: the square stopped counting as reachable and the walk went straight on through
+     * it, so the station beyond stayed reachable and the finding never fired. The test written for the
+     * rule passed; the one written for the behaviour is what caught it.
+     *
+     * @param from where the train is
+     * @param mayTurn squares where turning round is allowed
+     * @param mustTurn squares where it is compulsory
+     * @param barred arrival sides closed off - passed through, not stopped at
+     * @param closed squares nothing may enter at all
+     * @return the squares a train could be sent to
+     */
+    public Set<TileKey> reachableTiles(TileKey from, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
+    {
+        Set<TileKey> reached = new java.util.LinkedHashSet<>();
+
+        if (from == null || !points.containsKey(from)) return reached;
+
+
+        // The starting Point has no arrival side - the train is already standing there, and the
+        // question is whether the TRACK allows the journey onward.  Same as findPath's start state.
+        reached.add(from);
+
+        Set<String> visited = new java.util.LinkedHashSet<>();
+        Map<String, TileKey> tileOf = new LinkedHashMap<>();
+        Map<String, Side> sideOf = new LinkedHashMap<>();
+
+        String start = searchKey(from, null);
+        visited.add(start);
+        tileOf.put(start, from);
+        sideOf.put(start, null);
+
+        java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
+        frontier.add(start);
+
+        while (!frontier.isEmpty())
+        {
+            String here = frontier.poll();
+
+            TileKey at = tileOf.get(here);
+            Side arrived = sideOf.get(here);
+
+            for (ReducedEdge edge : edges)
+            {
+                if (!edge.getStart().equals(at)) continue;
+
+                if (arrived != null)
+                {
+                    boolean back = edge.getExitSide() == arrived;
+
+                    // The same three-way rule findPath walks: where turning is compulsory the only move
+                    // is back; where it is optional, going back needs permission; otherwise the move
+                    // has to carry on along the track actually arrived on, not merely leave by some
+                    // other side - which is what confines a double curve to its own arm.
+                    if (mustTurn.contains(at))
+                    {
+                        if (!back) continue;
+                    }
+                    else if (back)
+                    {
+                        if (!mayTurn.contains(at)) continue;
+                    }
+                    else if (!onwardSides(at, arrived).contains(edge.getExitSide()))
+                    {
+                        continue;
+                    }
+                }
+
+                // THROUGH a barred side, but not TO it (OB-120, corrected 2026-08-28).
+                //
+                // Reached means "a train could be sent here", which is the question both callers ask -
+                // can this station reach another, can this reversing point reach anything. A square a
+                // train may pass through but not stop at is not an answer to that, and the track beyond
+                // it is still perfectly reachable.
+                //
+                // Refusing the move outright, which is what this did, made the findings describe a
+                // more restricted railway than the one that exists: a station whose only route ran
+                // through a barred side was reported as reaching nothing, and Adam acts on those
+                // warnings by editing his diagram.
+                // NEITHER REACHED NOR ENTERED (Adam, 2026-09-06).
+                //
+                // **"Inactive really means nothing can pass."**  An earlier version of this let a
+                // closed square be a DESTINATION, on the strength of `isPathClear` refusing it only
+                // as an intermediate - and that fence has been taken off the destination rule, so the
+                // walk follows.
+                //
+                // The START is still exempt, and needs no clause: `from` is seeded before this loop
+                // and never tested here.  That is the one case Adam kept - a train standing on a
+                // square that has been switched off is driven out by hand.
+                if (closed != null && closed.contains(edge.getEnd())) continue;
+
+                if (!refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
+                {
+                    reached.add(edge.getEnd());
+                }
+
+
+                String next = searchKey(edge.getEnd(), edge.getEntrySide());
+
+                if (visited.add(next))
+                {
+                    tileOf.put(next, edge.getEnd());
+                    sideOf.put(next, edge.getEntrySide());
+                    frontier.add(next);
+                }
+            }
+        }
+
+        return reached;
+    }
+
+    private Set<Side> onwardSides(TileKey tile, Side arrival)
+    {
+        Set<Side> out = new java.util.LinkedHashSet<>();
+
+        for (TileGraph.Exit exit : graph.exits(tile, arrival))
+        {
+            if (exit.getSide() != null) out.add(exit.getSide());
+        }
+
+        return out;
+    }
+
+    /**
+     * A square together with the side a train reached it by, which is what the path search walks over.
+     */
+    private static String searchKey(TileKey tile, Side arrival)
+    {
+        return tile + "|" + (arrival == null ? "-" : arrival.name());
+    }
+
+    /**
+     * The tile graph this reduction was made from.
+     *
+     * Exposed because the reduction is Point-to-Point and cannot say which of a square's tracks an edge
+     * runs on: two sides of one tile may belong to two routes that never meet.  Anything that has to
+     * tell a through move from a track change - the split, the path test - has to ask the graph.
+     *
+     * @return
+     */
+    public TileGraph getGraph()
+    {
+        return graph;
+    }
+
+    public List<TileGraph.Problem> getProblems()
+    {
+        return Collections.unmodifiableList(problems);
+    }
+
+    // --- points -----------------------------------------------------------------------------------
+
+    private void buildPoints()
+    {
+        for (TileKey tile : graph.getFeedbackTiles())
+        {
+            LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+            if (component == null) continue;
+
+            // A sensor nothing connects to would only be an unreachable node, so it is counted and left
+            // out rather than emitted to fail validation later
+            if (!hasAnyConnection(tile))
+            {
+                isolatedFeedbackTiles++;
+                continue;
+            }
+
+            // A DOUBLE-CURVE SENSOR IS NO LONGER REPORTED, and the reasoning is worth keeping.
+            //
+            // Such a square draws two curves, the reduction makes ONE Point of it, and that Point
+            // carries one s88. If the physical contact is on only one of the two tracks, a train
+            // routed over the other passes without triggering it and autonomy waits for an arrival
+            // that never reports. That was the warning, and it was a real hazard to describe.
+            //
+            // It could never be turned into a finding, because WHICH track carries the contact is not
+            // in the diagram. The .cs2 records one tile, one type, one article number; the wiring is
+            // in the layout and nowhere this program can read. So the check could only say "two curves
+            // and one sensor, and I do not know whether that matters" - to every such square, every
+            // time, whether or not anything was wrong.
+            //
+            // Adam, asked for a failure scenario and given none: "I don't see any problem with such
+            // tiles, unless you can point out a specific failure scenario.  No warning needed
+            // otherwise."  The only one on his railway sits on a page normally excluded from autonomy,
+            // with track on all four sides, so it fired and said nothing he did not know.
+            //
+            // WHAT WOULD BRING IT BACK: a way to record which curve carries the contact - a per-tile
+            // setting, or a second Point for the second curve. The check then becomes "a route uses
+            // the curve without the sensor", which has a remedy. Until then this is a guess dressed as
+            // a warning.
+
+            String name = authored.getPointName(tile);
+
+            if (name == null || name.trim().isEmpty())
+            {
+                name = generatedName(tile);
+            }
+
+            // Feedback is keyed on the RAW address, not the halved one.  CS2File divides the artikel
+            // value by two for everything except routes, giving accessories their logical address, but
+            // MarklinControlStation registers and looks up feedback by getRawAddress() - so that is the
+            // number an autonomy Point's s88 has always meant.
+            points.put(tile, new ReducedPoint(tile, component.getRawAddress(), name,
+                authored.isStation(tile)));
+        }
+    }
+
+    /**
+     * A default name from the coordinate, which is unique by construction.  The s88 address is not usable
+     * here - a station and its approach guards legitimately share one sensor, so several Points would
+     * collide on the same name.
+     */
+    public static String generatedName(TileKey tile)
+    {
+        return tile.getPage() + " " + tile.getX() + "," + tile.getY();
+    }
+
+    /**
+     * Whether anything at all adjoins this tile.
+     *
+     * Physical connection, not traversability: a sensor whose neighbours are all one-way away from it is
+     * still part of the layout and should be a Point, whereas a sensor drawn on its own in a blank area
+     * is not.  landing() already refuses a neighbour with no facing port, so this is exactly "is there
+     * track on the other side".
+     */
+
+    private boolean hasAnyConnection(TileKey tile)
+    {
+        for (Side side : Side.values())
+        {
+            if (graph.landing(tile, side) != null) return true;
+        }
+
+        return false;
+    }
+
+    // --- edges ------------------------------------------------------------------------------------
+
+    /**
+     * Records a problem unless the same one is already recorded.
+     *
+     * walkEdges launches one walk per side of every Point and per exit of every side, so one FACT is
+     * reached several times: a balloon loop carrying a single sensor is walked out east and back by
+     * west, then out west and back by east, and reported twice.  N reconverging routes between one pair
+     * of Points report N-1 times, all against the same square.
+     *
+     * The rule and the reasoning are TileGraph.validatePortals's, which filters on tile and key for
+     * exactly this: "the same tile and the same message twice is one problem reported twice - which
+     * reads as two things to fix and cannot be, since fixing it makes both disappear."
+     *
+     * @param problem the problem to record
+     */
+    private void noteOnce(TileGraph.Problem problem)
+    {
+        for (TileGraph.Problem seen : problems)
+        {
+            if (seen.getTile() != null && seen.getTile().equals(problem.getTile())
+                && seen.getMessageKey().equals(problem.getMessageKey())) return;
+        }
+
+        problems.add(problem);
+    }
+
+    private void walkEdges()
+    {
+        for (TileKey start : points.keySet())
+        {
+            // A train standing here may leave by any side its own routes allow.  Leaving by X is the same
+            // traversal as entering by the other side of that route, so the tile's direction governs.
+            for (Side entry : Side.values())
+            {
+                for (Exit exit : graph.exits(start, entry))
+                {
+                    List<TileStep> path = new ArrayList<>();
+                    Map<String, accessorySetting> commands = new LinkedHashMap<>();
+
+                    // the starting tile's own position counts: leaving a switch by a branch requires it
+                    if (!collectCommands(start, exit.getState(), commands)) continue;
+
+                    walk(start, exit, path, commands);
+
+                }
+            }
+        }
+    }
+
+    /**
+     * Follows one route out of a Point until it reaches the next Point, forking at every switch.
+     */
+    private void walk(TileKey start, Exit firstExit, List<TileStep> path,
+        Map<String, accessorySetting> commands)
+    {
+        Landing landing = graph.landing(start, firstExit.getSide());
+
+        if (landing == null) return;
+
+        // Empty, deliberately.  Seeding it with the start tile did nothing: the start is a Point, so a
+        // walk that came back to it is caught by the self-loop test above the circle test and never
+        // reaches this set.
+        Set<String> visited = new HashSet<>();
+
+        continueWalk(start, firstExit.getSide(), landing, path, commands, visited);
+    }
+
+    /**
+     * @param exitSide which side of the START tile this walk left by, carried the whole way so the edge
+     *        that eventually lands can record where it began
+     */
+    private void continueWalk(TileKey start, Side exitSide, Landing landing, List<TileStep> path,
+        Map<String, accessorySetting> commands, Set<String> visited)
+    {
+        if (path.size() > MAX_PATH_TILES) return;
+
+        TileKey tile = landing.getTile();
+
+        // Reached the next Point: the edge is everything between the two
+        if (points.containsKey(tile))
+        {
+            // An edge's identity in the autonomy model is its pair of Point NAMES, so two physical
+            // routes between the same two sensors - a passing loop, a double-track section - cannot
+            // both be emitted: createEdge throws on the second and parseAuto invalidates the entire
+            // configuration, reporting only edge JSON with nothing pointing back at the diagram.
+            //
+            // A self-loop is the same problem in one tile: a balloon loop returns to its own sensor and
+            // the model has no edge from a Point to itself.
+            if (tile.equals(start))
+            {
+                noteOnce(new TileGraph.Problem(start, WARN_SELF_LOOP, false));
+                return;
+            }
+
+            String pair = start.toString() + " -> " + tile.toString();
+
+            ReducedEdge existing = edgeByPair.get(pair);
+
+            if (existing != null)
+            {
+                // Keep the shorter route, which is the one a train would be given anyway, and say that
+                // the other exists - silently dropping half a layout's track would be worse than the
+                // duplicate was.
+                if (path.size() >= existing.getPath().size())
+                {
+                    noteOnce(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
+                    return;
+                }
+
+                edges.remove(existing);
+
+                noteOnce(new TileGraph.Problem(start, WARN_PARALLEL_ROUTE, false));
+            }
+
+            ReducedEdge edge = new ReducedEdge(start, tile, new ArrayList<>(path),
+                new LinkedHashMap<>(commands), sumLength(path) + lengthOf(tile),
+                exitSide, landing.getEntrySide(), roomAfterTheLastSwitch(path, tile));
+
+            edges.add(edge);
+            edgeByPair.put(pair, edge);
+
+            return;
+        }
+
+        // Going in circles - but judged by the tile AND the side entered by, not the tile alone.
+        //
+        // A square can legitimately be crossed twice by one run, on two different tracks: a crossing or
+        // an overpass carries two routes that never meet, so a line that passes over one and comes back
+        // through the other is ordinary railway, not a loop.  Keyed on the tile alone, the second
+        // arrival looked identical to the first and the walk simply stopped - the run vanished and
+        // nothing was reported, which is the worst of the three possible outcomes.  It also contradicted
+        // locationsOf, which goes out of its way to treat an overpass's two routes as independent for
+        // locking: the model already says the two levels are separate.
+        //
+        // Still terminates: a genuine circle re-enters a tile by the same side it did before, so it is
+        // caught on that pass, and there are only four sides.
+        //
+        // AND BY THE TRACK, on a two-square crossing (OB-320).  Its two tracks share the side its squares meet at, so a
+        // square entered by that side is told which track the walk came along - the square before and its road there -
+        // and is remembered by it: a walk that crossed on one track and came back over the other is not going in circles.
+        TileStep before = path.isEmpty() ? null : path.get(path.size() - 1);
+
+        TileKey previous = before == null ? null : before.getTile();
+        RouteId previousRoute = before == null ? null : before.getRouteId();
+
+        Side lane = graph.legAcross(tile, landing.getEntrySide(), previous, previousRoute);
+
+        if (!visited.add(tile.toString() + "|" + landing.getEntrySide() + (lane == null ? "" : "|" + lane))) return;
+
+        for (Exit exit : graph.exits(tile, landing.getEntrySide(), previous, previousRoute))
+        {
+            Map<String, accessorySetting> branchCommands = new LinkedHashMap<>(commands);
+
+            // A branch whose settings contradict the path so far cannot be taken - the same rule the
+            // autonomy model applies when it refuses a path with conflicting accessory commands
+            if (!collectCommands(tile, exit.getState(), branchCommands))
+            {
+                refusedForConflict.add(start);
+                continue;
+            }
+
+            Landing next = graph.landing(tile, exit.getSide());
+
+            if (next == null) continue;
+
+            List<TileStep> branchPath = new ArrayList<>(path);
+            branchPath.add(new TileStep(tile, exit.getRouteId(), exit.getState()));
+
+            // each branch gets its own visited set, so one fork cannot block another
+            continueWalk(start, exitSide, next, branchPath, branchCommands, new HashSet<>(visited));
+        }
+    }
+
+    /**
+     * Adds the settings a tile's position requires, refusing the path if they contradict what it already
+     * carries.
+     *
+     * Switch positions and signal greens are gathered identically here: the port map states what each
+     * position needs, and the tile supplies the accessory it needs it from.
+     *
+     * @return false if this position conflicts with the path so far
+     */
+    private boolean collectCommands(TileKey tile, int state, Map<String, accessorySetting> into)
+    {
+        LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+        if (component == null) return true;
+
+        Map<AccessorySlot, accessorySetting> required = TilePorts.commands(component.getType(), state);
+
+        for (Map.Entry<AccessorySlot, accessorySetting> entry : required.entrySet())
+        {
+            Accessory accessory = entry.getKey() == AccessorySlot.PRIMARY
+                ? component.getAccessory() : component.getAccessory2();
+
+            // A tile whose position needs commanding but has no address wired cannot be commanded, so
+            // this position is not usable.  Skipping the command instead would route trains over a switch
+            // TrainControl is unable to throw, trusting it to already be lying the right way - which is
+            // exactly the danger CUSTOM_PERM_* exists to describe, except here nobody said so.
+            // TileGraph already raised a blocking error for this tile, scanning every tile rather than
+            // only the ones a walk reaches.  Refusing the position here as well keeps the reducer honest
+            // if it is ever run on a graph whose problems were ignored.
+            if (accessory == null) return false;
+
+            String name = accessory.getName();
+            accessorySetting wanted = entry.getValue();
+            accessorySetting already = into.get(name);
+
+            if (already != null && already != wanted) return false;
+
+            into.put(name, wanted);
+        }
+
+        return true;
+    }
+
+    /**
+     * The length assigned to one tile.
+     *
+     * The END of an edge is included in that edge's length, and the start is not.  A route is a chain
+     * of edges, so counting the tile a train ARRIVES on gives every tile along the way exactly once -
+     * and it is what makes a length set on a station count for anything.
+     *
+     * Without it the sum covered only the track strictly BETWEEN two sensors, and a user who set
+     * lengths on their platforms - which is where the length of a train matters, and the first place
+     * anybody would put them - saw every edge come out as zero.
+     */
+    private int lengthOf(TileKey tile)
+    {
+        return Math.max(0, authored.getTileLength(tile));
+    }
+
+    /**
+     * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set.
+     *
+     * **A PERMANENT TURNOUT IS STILL THE LAST SWITCH** (OB-233 / IND9X-A2, and Adam's ruling of
+     * 2026-09-22: *"Leave them as declared and warned - fix the berth walk"*).  Topologically it is not
+     * a choice - nothing can throw it, and every train over it takes the same road - but it is shared
+     * metal, and a train standing across it fouls the merge exactly as it would foul a throwable one.
+     * `behaviour.md` 5a's rule is about where the train comes to REST, not about what can be commanded.
+     *
+     * **It is `isSwitch()` plus the declared permanent types, and `isSwitch()` is left alone.**  That
+     * method has seventeen call sites and four of them ask it in order to offer an accessory address
+     * (`MarklinControlStation`, `LayoutEditorAddressPopup`); a permanent turnout has none by
+     * definition, so widening it there would offer address dialogs for track nothing can throw.
+     *
+     * **A TWO-SQUARE CROSSING IS A CROSSING** (OB-320): its squares are permanent Ys, but nothing merges at them, and a
+     * crossing does not end the room.
+     *
+     * @param tile the square
+     * @param component the tile, or null where the diagram has none
+     * @return true when the room ends here
+     */
+    private boolean boundsTheRoom(TileKey tile, LayoutDiagramComponent component)
+    {
+        if (graph.crossingPartner(tile) != null) return false;
+
+        return component != null
+            && (component.isSwitch() || TileGraph.isPermanentTurnout(component.getType()));
+    }
+
+    /**
+     * The track between the last switch on this edge and the square it ends at, endpoint included.
+     *
+     * Adam's ruling of 2026-09-02: the room a train needs is measured "between the switch and the
+     * station", not over the whole route - and *"for the switches, for simplicity, let's use any
+     * direction, that way we are guaranteed to be safe"*, so which way the path crosses the points
+     * does not enter into it.
+     *
+     * The switch tile itself is NOT counted.  The whole point of the rule is that the train comes to
+     * rest clear of the points; track the train would be standing on while fouling them is not room.
+     *
+     * "A switch" here is what `boundsTheRoom` says: a switch or a permanent turnout, and not a two-square
+     * crossing - `Edge.crossesASwitch` (VD18-C4).
+     *
+     * Walks backwards and stops at the first switch, because that is the binding one: a train that
+     * fits between the last switch and the station also fits between any earlier switch and it.
+     *
+     * @param path the tiles between the two Points, endpoints excluded
+     * @param end the square the edge arrives at, whose own length is part of the room
+     * @return the measured room, or `Integer.MIN_VALUE` when this edge crosses no switch at all; `-1` when it crosses one
+     *  and NOT ONE tile of the stretch is measured, which is the only case that is genuinely no information - and 0, not
+     *  `-1`, where every one was answered 0 on purpose, which is a room of no length (Adam, 2026-09-25)
+     */
+    private int roomAfterTheLastSwitch(List<TileStep> path, TileKey end)
+    {
+        // THE TOTAL, NOT AN ALL-OR-NOTHING (Adam, 2026-09-06).
+        //
+        // **"You need to measure total distance between points, not validate that every edge has a
+        // length > 0.  It is only indeterminate if the entire logical segment has length 0."**
+        //
+        // This kept a `measured` flag that any single unmeasured tile cleared, and then threw away
+        // every unit it had counted: `return measured ? room : -1`.  On his railway the run into
+        // BottomMainPost is twelve tiles with one of them measured at 1, so the answer was -1 -
+        // "bounded but unmeasured" - and `measuredRoomAtTheEndOf` declined to judge, which let a
+        // four-unit train into one unit of room.  The measured tile was right there and was discarded
+        // for the company it kept.
+        //
+        // Unmeasured tiles now contribute nothing, which is the same doctrine as the protrusion walk
+        // and the berth rule: only positive lengths are determinate.  A stretch where NOTHING is
+        // measured still answers -1, because that is genuinely no information rather than a small
+        // number.
+        //
+        // This UNDER-states the room by however much is unmeasured, and that is the safe direction:
+        // it refuses a train that might have fitted rather than admitting one that does not.  The
+        // editor already names the unmeasured tiles - `unmeasuredAfterTheLastSwitch`, just below - so
+        // the way to a bigger number is to measure them.
+        int atTheEnd = authored.getTileLength(end);
+
+        int room = Math.max(0, atTheEnd);
+
+        // AND WHETHER EVERY TILE IS KNOWN - a length, or a 0 answered on purpose.  A stretch answered 0 throughout is a
+        // room of 0, not no information (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*); the runtime's room walk reads it so.
+        boolean known = atTheEnd > 0 || answeredAtZero(end);
+
+        for (int i = path.size() - 1; i >= 0; i--)
+        {
+            TileKey tile = path.get(i).getTile();
+
+            LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+            if (boundsTheRoom(tile, component))
+            {
+                return room > 0 ? room : known ? 0 : -1;
+            }
+
+            int here = authored.getTileLength(tile);
+
+            if (here > 0) room += here;
+            else if (!answeredAtZero(tile)) known = false;
+        }
+
+        return Integer.MIN_VALUE;
+    }
+
+    /**
+     * The squares in an edge's bounding stretch that nobody has measured (Adam's ruling 2, 2026-09-02).
+     *
+     * The mirror of `roomAfterTheLastSwitch`: that one adds the lengths up, this one names the tiles
+     * that have none, so the editor can ask for exactly what the guard needs and no more.
+     *
+     * The switch tile itself is not asked for - it is not part of the room - and the far endpoint is,
+     * because it is where the train comes to rest.
+     *
+     * An edge that crosses no switch has its WHOLE length asked for and the walk stops at its start.
+     * Strictly the bounding stretch then runs back through earlier edges, but asking for a whole route
+     * is a nag rather than a notice, and the guard declines to judge what it cannot measure - so the
+     * cost of stopping here is a guard that stays quiet, not one that gets it wrong.
+     *
+     * @param edge the edge arriving at the square trains turn round on
+     * @return the unmeasured tiles, in no particular order, empty when the stretch is fully measured
+     */
+    public List<TileKey> unmeasuredAfterTheLastSwitch(ReducedEdge edge)
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        if (edge == null) return out;
+
+        // AND IT STOPS ASKING ONCE THE STRETCH IS MEASURED AT ALL (Adam, MT-364, 2026-09-12).
+        //
+        // *"I set the track at 10,10 to length 2, so now we know that the track to TunnelLongPark is
+        // 2.  But it is still asking for the tile at 10,9 (TunnelLongPark) to get a length.  The
+        // calculation should add 10,10's length plus 10,9's length, both of which are past the switch
+        // at 10,8."*
+        //
+        // **The notice and the guard disagreed about what "measured" means.**  `roomAfterTheLastSwitch`
+        // just above has followed his ruling of 2026-09-06 since it was written - *"It is only
+        // indeterminate if the entire logical segment has length 0"* - so a partly measured stretch
+        // answers with what it knows and binds on it.  This walk went on naming every square with no
+        // number of its own, so a stretch the guard could already judge still carried a notice asking
+        // for the rest of it.
+        //
+        // The call site's own comment put that question to him on `MT-305`, saying the cost had
+        // *"changed shape"* - a half-measured stretch makes the guard pessimistic rather than blind -
+        // and that whether it still earned a place *"in a list Adam has called a wall is his call"*.
+        // This is the call.
+        //
+        // **A stretch with nothing measured still names every square**, which is the other half of the
+        // same ruling and the case this notice exists for: there the guard is blind, not pessimistic,
+        // and somebody clearing the list would otherwise be left with a guard that judges nothing.
+        int measured = Math.max(0, authored.getTileLength(edge.getEnd()));
+
+        if (measured <= 0) out.add(edge.getEnd());
+
+        List<TileStep> path = edge.getPath();
+
+        for (int i = path.size() - 1; i >= 0; i--)
+        {
+            TileKey tile = path.get(i).getTile();
+
+            LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+            if (boundsTheRoom(tile, component)) break;
+
+            int here = authored.getTileLength(tile);
+
+            // A ROUTE TILE IS NOT TRACK TO MEASURE (OB-273), so it is never the square asked for: it takes no
+            // length and a length rule does not read one.
+            if (here > 0) measured += here;
+            else if (!takesNoLength(tile)) out.add(tile);
+        }
+
+        return measured > 0 ? new ArrayList<TileKey>() : out;
+    }
+
+    /**
+     * @param tile a square
+     * @return whether it takes no length (`TilePorts.takesNoLength`), so is never asked for one
+     */
+    private boolean takesNoLength(TileKey tile)
+    {
+        LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+        return component != null && TilePorts.takesNoLength(component.getType());
+    }
+
+    private int sumLength(List<TileStep> path)
+    {
+        int total = 0;
+
+        for (TileStep step : path)
+        {
+            total += Math.max(0, authored.getTileLength(step.getTile()));
+        }
+
+        return total;
+    }
+
+    // --- locks ------------------------------------------------------------------------------------
+
+    /**
+     * Two edges that share a tile are the same piece of railway and cannot run at once.
+     *
+     * The exceptions are the three tile types whose roads never meet - an overpass, where the two tracks are at
+     * different heights, and the two kinds of double curve, whose curves sit in opposite corners (AUR-B1, OP2-C3).  Crossing one by
+     * different routes is not a conflict, though crossing it by the same one still is.  Getting that
+     * backwards is costly either way - treating it as a conflict needlessly serialises two independent
+     * routes, while treating a same-route share as safe would allow a real collision.
+     */
+    /**
+     * Says so where a sensor lost its only way out to a switch it needed two ways.
+     *
+     * Only where NOTHING got out.  A fork refusing one of its legs is what a switch is for, and warning
+     * about that would put a line on the findings list for every turnout on the layout.  A sensor with
+     * no edge at all, whose branches were all refused for contradicting themselves, is the case the
+     * user cannot otherwise see: the track is drawn, the route is physically there, and the graph simply
+     * has no edge - first noticed when a connectivity test says no.
+     */
+    private void reportRunsNoSwitchCanServe()
+    {
+        for (TileKey start : refusedForConflict)
+        {
+            boolean gotOut = false;
+
+            for (ReducedEdge edge : edges)
+            {
+                if (edge.getStart().equals(start))
+                {
+                    gotOut = true;
+                    break;
+                }
+            }
+
+            if (!gotOut) problems.add(new TileGraph.Problem(start, WARN_SWITCH_NEEDED_TWICE, false));
+        }
+    }
+
+    private void deriveLocks()
+    {
+        // index every edge by the locations it occupies
+        Map<String, List<ReducedEdge>> byLocation = new LinkedHashMap<>();
+
+        for (ReducedEdge edge : edges)
+        {
+            for (TileStep step : edge.getPath())
+            {
+                for (String location : locationsOf(step))
+                {
+                    List<ReducedEdge> here = byLocation.get(location);
+
+                    if (here == null)
+                    {
+                        here = new ArrayList<>();
+                        byLocation.put(location, here);
+                    }
+
+                    here.add(edge);
+                }
+            }
+        }
+
+        for (List<ReducedEdge> sharing : byLocation.values())
+        {
+            for (ReducedEdge a : sharing)
+            {
+                for (ReducedEdge b : sharing)
+                {
+                    if (a == b) continue;
+
+                    // the two directions of one run are not rivals for the track; they are the same track
+                    if (a.getStart().equals(b.getEnd()) && a.getEnd().equals(b.getStart())) continue;
+
+                    lock(a, b);
+                }
+            }
+        }
+    }
+
+    /**
+     * The location identifiers a step occupies.
+     *
+     * Normally the tile itself.  Three tile types are identified per route instead, so their roads are separate
+     * places - and so is a DOUBLE CURVE, and a feedback double curve, for the same reason (AUR-B1, 2026-09-19).
+     *
+     * **Two roads that never meet must not be one place.**  `TilePorts` gives a double curve `route(N, W)` and
+     * `route(E, S)`: two curves in opposite corners of the square, with no rail between them.  Keyed by the tile
+     * alone they became one location, so `deriveLocks` made the two curves rivals for the same track and a
+     * route over one refused a route over the other; once lengths are recorded, the tail walk and
+     * `whyABerthCannotHoldIt` then blamed the road the train is not on.  Adam has three of these on 1 - Main.
+     * A CROSSING is different and stays one place: its two roads cross, so a train on one really is on the
+     * other's metal.
+     *
+     * A paired portal is NOT unioned with its partner here, although a tunnel and its far end are one
+     * piece of track drawn twice.  It does not need to be, and the reason is worth writing down because
+     * the next reader will otherwise assume the union is missing: a portal tile carries no feedback, so
+     * it is never a Point, so a walk that crosses the jump records BOTH tiles as steps - and the two
+     * edges then share the first tile's location key anyway.  Adding the union would be redundant
+     * rather than a correction.
+     *
+     * This comment used to describe the union as something the method did.  It never has.
+     */
+    private List<String> locationsOf(TileStep step)
+    {
+        List<String> out = new ArrayList<>();
+
+        LayoutDiagramComponent component = graph.getTiles().get(step.getTile());
+
+        if (component != null && (component.getType() == componentType.OVERPASS
+            || component.getType() == componentType.DOUBLE_CURVE
+            || component.getType() == componentType.FEEDBACK_DOUBLE_CURVE))
+        {
+            out.add(step.getTile().toString() + "/" + step.getRouteId());
+        }
+        else
+        {
+            out.add(step.getTile().toString());
+        }
+
+        return out;
+    }
+
+    /**
+     * One place an edge runs over, and what it measures.
+     */
+    public static final class Place
+    {
+        private final String id;
+
+        private final int length;
+
+        /** Measures 0 because it was answered 0 on purpose, rather than because nobody has measured it */
+        private final boolean answered;
+
+        /** The square the place is on - an overpass's two levels are two places on one square */
+        private final TileKey tile;
+
+        Place(String id, int length)
+        {
+            this(id, length, false, null);
+        }
+
+        Place(String id, int length, boolean answered, TileKey tile)
+        {
+            this.id = id;
+            this.length = length;
+            this.answered = answered;
+            this.tile = tile;
+        }
+
+        /**
+         * @return the square this place is on, or null where it was not said
+         */
+        public TileKey getTile()
+        {
+            return this.tile;
+        }
+
+        /**
+         * @return whether this place measures 0 because it was answered 0 on purpose (Adam, 2026-09-23)
+         */
+        public boolean isAnswered()
+        {
+            return this.answered;
+        }
+
+        /**
+         * @return the location identifier, as `locationsOf` names it
+         */
+        public String getId()
+        {
+            return this.id;
+        }
+
+        /**
+         * @return what this place measures, never negative
+         */
+        public int getLength()
+        {
+            return this.length;
+        }
+    }
+
+    /**
+     * The places an edge runs over, in order from its start, each with what it measures (OB-207).
+     *
+     * **The reduction has always known this and never said it.** `locationsOf` gives every step a place
+     * id - the tile, or tile/route on an overpass - and `deriveLocks` builds the whole shared-metal
+     * relation by intersecting those sets between edges. What reached the runtime was only the RESULT,
+     * "edge A cannot run with edge B", so `Layout` could answer at whole-edge grain and no finer: a
+     * one-unit train lying in the FIRST tile of a twelve-tile run refused every path that shared any of
+     * the other eleven, and made a station on the far side unreachable from anywhere.
+     *
+     * Adam, 2026-09-12, proposing the fix as extra nodes: *"Wouldn't the best solution be to create /
+     * leverage additional edges, as there has to be a computed pre-reduction point where the switch
+     * is?"* There is, and this is it without the nodes - a Point in this model is a SENSOR, and an
+     * edge's identity is the pair of Point names, so splitting the graph at switches would rename every
+     * edge that crosses one and put a Point with no feedback in the middle of the clearance check.
+     *
+     * **The far endpoint is included and the near one is not**, which is exactly how an edge's length is
+     * built a few lines up: `sumLength(path) + lengthOf(tile)`. So these lengths sum to `getLength()`,
+     * and the runtime can walk them against a train's length without a second convention to keep in
+     * step. See `lengthOf` for why the arriving tile is the one that counts.
+     *
+     * @param edge the edge
+     * @return its places, in path order, empty for a null edge
+     */
+    public List<Place> placesAlong(ReducedEdge edge)
+    {
+        List<Place> out = new ArrayList<>();
+
+        if (edge == null) return out;
+
+        for (TileStep step : edge.getPath())
+        {
+            for (String id : locationsOf(step))
+            {
+                out.add(new Place(id, lengthOf(step.getTile()), answeredAtZero(step.getTile()), step.getTile()));
+            }
+        }
+
+        out.add(new Place(edge.getEnd().toString(), lengthOf(edge.getEnd()), answeredAtZero(edge.getEnd()),
+            edge.getEnd()));
+
+        return out;
+    }
+
+    /**
+     * Whether a square measures 0 because it was answered 0, which the runtime is told so as not to call it missing - or
+     * because it takes no length at all, a route tile (OB-273), which nobody is ever asked about.  Unmarked, a leg answered
+     * 0 around a route tile read as unmeasured track to every rule that asks `Edge.isMeasured` (TDU-C6).
+     */
+    private boolean answeredAtZero(TileKey tile)
+    {
+        return lengthOf(tile) == 0 && (takesNoLength(tile) || authored.isTileLengthAnswered(tile));
+    }
+
+    private void lock(ReducedEdge a, ReducedEdge b)
+    {
+        Set<ReducedEdge> set = locks.get(a);
+
+        if (set == null)
+        {
+            set = new LinkedHashSet<>();
+            locks.put(a, set);
+        }
+
+        set.add(b);
+    }
+}

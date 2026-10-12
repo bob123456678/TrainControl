@@ -1,0 +1,940 @@
+package core;
+
+import java.util.Map;
+import static org.testng.Assert.*;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
+import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinFeedback;
+import org.traincontrol.marklin.MarklinLocomotive;
+import static org.traincontrol.marklin.MarklinControlStation.init;
+
+/**
+ * Why a train is not moving, said in words.
+ *
+ * "I pressed start and nothing happened" is the commonest thing a new user asks, and until now nothing
+ * in TrainControl could answer it. All of the information existed and was thrown away on every
+ * attempt: pickPath rejects a destination with one conjunction of seven terms and records nothing,
+ * and isPathClear names its reasons properly but is called with logging turned off, so its message
+ * went into lastError and was overwritten by the next candidate.
+ *
+ * What matters here is that each reason DISCRIMINATES. A "why not" that says the same thing whatever
+ * is wrong is worse than none: it looks like an answer and sends the user to check the wrong thing.
+ * So each test sets up exactly one obstacle and asserts that the reason names THAT one.
+ */
+public class testWhyStuck
+{
+    private static MarklinControlStation model;
+
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        model = init(null, true, false, false, true);
+        model.stop();
+    }
+
+    /**
+     * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is (MFR-B1).
+     *
+     * Adam, on MT-434 (2026-09-15), asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
+     * a hand-driven send.  `reversesAlongTheWay` is autonomy's rule - its own javadoc: *"NOT asked by isPathClear, so a
+     * hand-driven move ... can still use a headshunt"* - and `firstClearOrWhyNot` still asked it by hand, so a station
+     * the menu offers read as "cannot be sent" through a reversing station.
+     *
+     * A -> R -> B, R a reversing square, nothing measured.  On its own sensors.
+     */
+    @Test
+    public void testByHandAStationBeyondAHeadshuntIsSomewhereToGo() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "WSH_A", "WSH_R", "WSH_B" };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(3100 + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], true, sensor.getName());
+        }
+
+        layout.getPoint("WSH_R").setReversing(true);
+
+        layout.createEdge("WSH_A", "WSH_R");
+        layout.createEdge("WSH_R", "WSH_B");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean reversibleWas = loc.isReversible();
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(true);
+            loc.setTrainLength(0);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSH_A", false), "could not stand the train at WSH_A");
+
+            boolean offered = false;
+
+            for (java.util.List<org.traincontrol.automation.Edge> path : layout.getPossiblePaths(loc, true))
+            {
+                if ("WSH_B".equals(path.get(path.size() - 1).getEnd().getName())) offered = true;
+            }
+
+            assertTrue(offered, "precondition: the right-click menu does not offer WSH_B through the headshunt, so the"
+                + " Manual answer has nothing to agree with");
+
+            assertNotNull(layout.explainDestinations(loc).get("WSH_B"),
+                "precondition: autonomy would choose WSH_B through a reversing square, so the tiers do not differ here");
+
+            String byHand = layout.explainDestinations(loc, true).get("WSH_B");
+
+            assertNull(byHand, "the right-click menu offers WSH_B and Why Not Moving? on Manual says it cannot be sent there:"
+                + " '" + byHand + "' - the headshunt is autonomy's rule, not a hand-driven send's");
+        }
+        finally
+        {
+            loc.setReversible(reversibleWas);
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
+     * A station with a train standing on it says so, and names the train.
+     */
+    @Test
+    public void testAnOccupiedStationNamesWhoIsThere() throws Exception
+    {
+        Layout layout = twoStations("WS1");
+
+        MarklinLocomotive first = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive second = model.getLocByName(model.getLocList().get(1));
+
+        layout.moveLocomotive(first.getName(), "WS1_A", false);
+        layout.moveLocomotive(second.getName(), "WS1_B", false);
+
+        Map<String, String> why = layout.explainDestinations(first);
+
+        assertNotNull(why.get("WS1_B"), "B holds a train, so it cannot be available");
+
+        assertTrue(why.get("WS1_B").contains(second.getName()),
+            "the reason must NAME the train standing in the way - a bare refusal sends the user "
+            + "looking at the track instead of at the other locomotive.  Got: " + why.get("WS1_B"));
+    }
+
+    /**
+     * A station switched off says that, and not something else.
+     */
+    @Test
+    public void testAnInactiveStationSaysItIsSwitchedOff() throws Exception
+    {
+        Layout layout = twoStations("WS2");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "WS2_A", false);
+
+        layout.getPoint("WS2_B").setActive(false);
+
+        String reason = layout.explainDestinations(loc).get("WS2_B");
+
+        assertNotNull(reason, "a switched-off station is not available");
+
+        assertEquals(reason, org.traincontrol.util.I18n.t("autolayout.why.inactive"),
+            "the reason for a switched-off station must be that it is switched off, not a generic "
+            + "refusal - got: " + reason);
+    }
+
+    /**
+     * A station that excludes this locomotive says so, and names it.
+     */
+    @Test
+    public void testAnExcludedLocomotiveIsToldWhy() throws Exception
+    {
+        Layout layout = twoStations("WS3");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "WS3_A", false);
+
+        java.util.Set<org.traincontrol.base.Locomotive> excluded = new java.util.HashSet<>();
+        excluded.add(loc);
+        layout.getPoint("WS3_B").setExcludedLocs(excluded);
+
+        String reason = layout.explainDestinations(loc).get("WS3_B");
+
+        assertNotNull(reason, "a station that excludes this locomotive is not available to it");
+
+        assertTrue(reason.contains(loc.getName()),
+            "the reason must name the locomotive that is excluded, since a station may exclude several "
+            + "and only one of them is standing here.  Got: " + reason);
+    }
+
+    /**
+     * By hand, a station the right-click menu does not offer is not listed as somewhere to go (AMR-B2).
+     *
+     * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
+     * route search does.  The menu itself asks one more question first - `isOfferableToOperator` - and leaves out two
+     * kinds of station: one that excludes this train (Adam, 2026-09-04: *"if it excludes the loc, don't even include it
+     * in the list"*), and a compulsory turn autonomy may choose for a train that cannot reverse (OB-205, MT-367).  The
+     * Manual answer asked neither, so it said "may go" of stations the menu never offers - the button and the
+     * explanation answering one question two ways (OB-057).
+     *
+     * THE CONTROL is the same station with nothing set: offered, and nothing said against it.
+     */
+    @Test
+    public void testByHandAStationTheMenuDoesNotOfferSaysWhy() throws Exception
+    {
+        Layout layout = twoStations("WSX");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean reversibleWas = loc.isReversible();
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(true);
+            loc.setTrainLength(0);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSX_A", false), "could not stand the train at WSX_A");
+
+            Point b = layout.getPoint("WSX_B");
+
+            assertTrue(layout.isOfferableToOperator(b, loc), "precondition: the menu does not offer WSX_B with nothing set");
+            assertNull(layout.explainDestinations(loc, true).get("WSX_B"),
+                "control: with nothing set, Why Not Moving? on Manual has a reason against WSX_B");
+
+            // A STATION THAT EXCLUDES THE TRAIN.
+            java.util.Set<org.traincontrol.base.Locomotive> excluded = new java.util.HashSet<>();
+            excluded.add(loc);
+            b.setExcludedLocs(excluded);
+
+            assertFalse(layout.isOfferableToOperator(b, loc), "precondition: the menu offers a station that excludes the train");
+
+            String excludedWhy = layout.explainDestinations(loc, true).get("WSX_B");
+
+            assertNotNull(excludedWhy,
+                "WSX_B excludes " + loc.getName() + " and the menu does not offer it, yet Why Not Moving? on Manual lists it"
+                + " as somewhere to go (AMR-B2)");
+            assertTrue(excludedWhy.contains(loc.getName()), "the reason does not name the excluded train: " + excludedWhy);
+
+            b.setExcludedLocs(new java.util.HashSet<org.traincontrol.base.Locomotive>());
+
+            // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (OB-205).
+            loc.setReversible(false);
+            b.setTerminus(true);
+
+            assertFalse(layout.isOfferableToOperator(b, loc),
+                "precondition: the menu offers an ordinary terminus to a train that cannot reverse");
+
+            assertNotNull(layout.explainDestinations(loc, true).get("WSX_B"),
+                "WSX_B is a terminus autonomy may choose, " + loc.getName() + " cannot reverse and the menu does not offer"
+                + " it, yet Why Not Moving? on Manual lists it as somewhere to go (AMR-B2, OB-205)");
+        }
+        finally
+        {
+            loc.setReversible(reversibleWas);
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
+     * By hand, the menu's own reason outranks being too short (Adam, 2026-09-15, AMV-C5).
+     *
+     * A physical refusal outranks a preference (MT-262), so a standing bar is replaced by "too long for the berth"
+     * where the train would not fit.  That is right for autonomy's bars and wrong for the menu's: a station the menu
+     * does not offer at all is not a station whose length matters.  Asked which the operator should see: **"The menu's
+     * reason."**
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testByHandTheMenusReasonOutranksBeingTooShort() throws Exception
+    {
+        Layout layout = twoStations("WSM");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSM_A", false), "could not stand the train at WSM_A");
+
+            Point b = layout.getPoint("WSM_B");
+
+            java.util.Set<org.traincontrol.base.Locomotive> excluded = new java.util.HashSet<>();
+            excluded.add(loc);
+            b.setExcludedLocs(excluded);
+
+            // AND too short for it, which is the combination that answered the wrong one.
+            loc.setTrainLength(9);
+            b.setMaxTrainLength(1);
+
+            String reason = layout.explainDestinations(loc, true).get("WSM_B");
+
+            assertEquals(reason, org.traincontrol.util.I18n.f("autolayout.why.excluded", loc.getName()),
+                "WSM_B excludes " + loc.getName() + ", so the right-click menu does not offer it at all - and Why Not"
+                + " Moving? on Manual answers about its length instead.  Adam: the menu's reason (AMV-C5).  Got: " + reason);
+        }
+        finally
+        {
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
+     * A train with no length recorded is not an error against a station with a stated limit (AMR-C1).
+     *
+     * `Point.validateTrainLength` unboxed the train's length, where every other reader of it treats null as nothing
+     * known.  Its callers ask it inside route checks, so a null reached a dispatch as a NullPointerException.
+     */
+    @Test
+    public void testATrainWithNoLengthRecordedFitsAStationWithALimit() throws Exception
+    {
+        Layout layout = twoStations("WSN");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSN_A", false), "could not stand the train at WSN_A");
+
+            Point b = layout.getPoint("WSN_B");
+
+            b.setMaxTrainLength(3);
+
+            loc.setTrainLength(null);
+
+            assertTrue(b.validateTrainLength(loc),
+                "a train with no length recorded was judged against a stated limit of 3 - nothing is known about it, which"
+                + " every other reader of the length treats as fitting (AMR-C1)");
+        }
+        finally
+        {
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
+     * A station with no track to it says THAT, rather than that it is busy.
+     *
+     * The distinction is the difference between "build some track" and "wait a minute", and a user
+     * told the wrong one of those will go and look at the wrong thing.
+     */
+    @Test
+    public void testNoTrackAtAllIsADifferentAnswerFromBusy() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback a = model.newFeedback(61, null);
+        MarklinFeedback b = model.newFeedback(62, null);
+        MarklinFeedback island = model.newFeedback(63, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{a, b, island})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint("WS4_A", true, a.getName());
+        layout.createPoint("WS4_B", true, b.getName());
+        layout.createPoint("WS4_Island", true, island.getName());
+
+        // A and B are joined; the island is joined to nothing
+        layout.createEdge("WS4_A", "WS4_B");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "WS4_A", false);
+
+        Map<String, String> why = layout.explainDestinations(loc);
+
+        // containsKey AND null, not null alone.  A station wrongly left OUT of the map also reads as
+        // null from get(), so the plain assertion passed either way - it could not tell "available"
+        // from "never considered", which is the one distinction it exists to make.
+        assertTrue(why.containsKey("WS4_B"), "B was not listed at all");
+        assertNull(why.get("WS4_B"), "B is joined to A and free, so it must come back available");
+
+        assertEquals(why.get("WS4_Island"), org.traincontrol.util.I18n.t("autolayout.why.noRoute"),
+            "a station with no track leading to it must say so - reporting it as blocked would send "
+            + "the user looking for a train that is not there.  Got: " + why.get("WS4_Island"));
+    }
+
+    /**
+     * A train that can go somewhere gets a null reason, which is what "available" means here.
+     */
+    @Test
+    public void testAnAvailableStationHasNoReason() throws Exception
+    {
+        Layout layout = twoStations("WS5");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "WS5_A", false);
+
+        java.util.Map<String, String> why = layout.explainDestinations(loc);
+
+        assertTrue(why.containsKey("WS5_B"),
+            "B was not listed at all, so the null below would have passed for the wrong reason");
+
+        assertNull(why.get("WS5_B"),
+            "nothing is in the way, so B must be available - a reason here would mean the explanation "
+            + "disagrees with the layout it is explaining");
+
+        assertNull(layout.explainCannotStart(loc),
+            "and the locomotive itself is free to start");
+    }
+
+    /**
+     * The five reasons that are about the train rather than any destination.
+     */
+    @Test
+    public void testALocomotiveOffTheGraphIsToldSo() throws Exception
+    {
+        Layout layout = twoStations("WS6");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // Deliberately not placed
+        assertEquals(layout.explainCannotStart(loc),
+            org.traincontrol.util.I18n.t("autolayout.why.notOnGraph"),
+            "a locomotive that is not on the railway must be told that, rather than being given a "
+            + "list of stations it cannot reach");
+
+        assertTrue(layout.explainDestinations(loc).isEmpty(),
+            "and there is nothing useful to say about destinations for a train that is nowhere");
+    }
+
+    /**
+     * Non-stations are left out entirely.
+     *
+     * On a real layout they are most of the graph, and a list of two hundred "not a station" lines
+     * answers nothing while burying the entries that do.
+     */
+    @Test
+    public void testPlainTrackIsNotListed() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback a = model.newFeedback(64, null);
+        MarklinFeedback middle = model.newFeedback(65, null);
+        MarklinFeedback b = model.newFeedback(66, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[]{a, middle, b})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint("WS7_A", true, a.getName());
+        layout.createPoint("WS7_Middle", false, middle.getName());
+        layout.createPoint("WS7_B", true, b.getName());
+
+        layout.createEdge("WS7_A", "WS7_Middle");
+        layout.createEdge("WS7_Middle", "WS7_B");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "WS7_A", false);
+
+        Map<String, String> why = layout.explainDestinations(loc);
+
+        assertFalse(why.containsKey("WS7_Middle"),
+            "plain track must not be listed - it is most of a real graph, and listing it buries the "
+            + "stations that are the actual answer");
+
+        assertTrue(why.containsKey("WS7_B"), "but the station beyond it must be");
+    }
+
+    /**
+     * A station autonomy will never choose is reported as barred, and says WHY it is barred.
+     *
+     * FR-017. The window groups the stations - "Order them by ones that can be chosen autonomously
+     * and ones that cannot, with the autonomous ones first" - and the grouping cannot be recovered
+     * from the reason strings: two of the standing bars are translated sentences that would have to
+     * be matched by value.  So the Layout answers it, and this pins that the answer exists and is
+     * about the right stations.
+     *
+     * The second half is the interesting one. `explainDestinations` used to test "occupied" FIRST, so
+     * a station barred from autonomy reported "occupied by X" whenever a train happened to be sitting
+     * on it - the answer to a question nobody asked, in place of the one they did.  It also made the
+     * reason disagree with the group the line was filed under: barred, and yet printed beside a
+     * heading saying autonomy could choose it.
+     *
+     * That is why the fixture puts a train on the barred station rather than leaving it empty.  With
+     * an empty one the test passes either way round, which would make it a test of nothing.
+     */
+    @Test
+    public void testAStationBarredFromAutonomySaysSoRatherThanThatItIsBusy() throws Exception
+    {
+        Layout layout = twoStations("WS9");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive other = model.getLocByName(model.getLocList().get(1));
+
+        layout.moveLocomotive(loc.getName(), "WS9_A", false);
+        layout.moveLocomotive(other.getName(), "WS9_B", false);
+
+        // Barred AND busy, which is the combination that used to answer the wrong one.
+        layout.getPoint("WS9_B").setAutoDestination(false);
+
+        assertTrue(layout.destinationsBarredFromAutonomy(loc).contains("WS9_B"),
+            "a station that is not an autonomy destination was not reported as barred, so the window "
+            + "would file it under the stations autonomy could choose - where the user would wait for "
+            + "it to become available, which it never will");
+
+        String reason = layout.explainDestinations(loc).get("WS9_B");
+
+        assertEquals(reason, org.traincontrol.util.I18n.t("autolayout.why.notAutoDestination"),
+            "the reason given for a barred station is that it is busy rather than that it is barred. "
+            + "The train standing there will leave; the bar will not, so 'occupied' sends the user to "
+            + "wait for something that changes nothing.  Got: " + reason);
+    }
+
+    /**
+     * THE DASH AND THE RULE, swept limb by limb rather than on the one that was missed (MON-B1).
+     *
+     * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of
+     * `Layout.barredFromAutonomy` - the rule is `synchronized` on the Layout and this runs on the event
+     * thread three times per repaint - so the two can only be kept together by a test that asks both.
+     *
+     * The previous version of this test exercised the TERMINUS limb and claimed in its own words to
+     * catch "removing any limb of the dash's predicate". It could not: a test that builds one case
+     * cannot notice a limb that was never written. Two were missing - `!isAutoDestination()` and
+     * `!isActive()` - and the first of them is how a modern parking berth is spelled, which is the very
+     * thing the dash's javadoc says it exists to mark.
+     *
+     * So this compares the two ANSWERS over every case instead of asserting a mark. Both are reached by
+     * reflection: the copy is private, and the rule is private because everything public that reaches
+     * it takes the monitor this copy exists to avoid.
+     *
+     * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one
+     * reason, and the clean case pins the other direction.
+     *
+     * @throws Exception on a failure to reach either method
+     */
+    @Test
+    public void testTheDashAgreesWithTheRule() throws Exception
+    {
+        Layout layout = twoStations("WS11");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.moveLocomotive(loc.getName(), "WS11_A", false);
+
+        final org.traincontrol.automation.Point end = layout.getPoint("WS11_B");
+
+        java.lang.reflect.Method dash =
+            org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredMethod(
+                "notChosenByAutonomy", org.traincontrol.automation.Point.class,
+                org.traincontrol.base.Locomotive.class);
+
+        dash.setAccessible(true);
+
+        java.lang.reflect.Method rule = Layout.class.getDeclaredMethod("barredFromAutonomy",
+            org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
+
+        rule.setAccessible(true);
+
+        // Each case names itself, sets ONE thing, and puts it back.
+        java.util.LinkedHashMap<String, Runnable[]> cases = new java.util.LinkedHashMap<>();
+
+        cases.put("nothing wrong with it", new Runnable[]{() -> { }, () -> { }});
+
+        cases.put("switched off", new Runnable[]{
+            () -> end.setActive(false), () -> end.setActive(true)});
+
+        cases.put("a parking berth, spelled the modern way", new Runnable[]{
+            () -> end.setAutoDestination(false), () -> end.setAutoDestination(true)});
+
+        cases.put("a reversing station", new Runnable[]{
+            () -> quietly(() -> end.setReversing(true)),
+            () -> quietly(() -> end.setReversing(false))});
+
+        cases.put("a terminus this train cannot back into", new Runnable[]{
+            () -> { quietly(() -> end.setTerminus(true)); loc.setReversible(false); },
+            () -> { quietly(() -> end.setTerminus(false)); loc.setReversible(true); }});
+
+        cases.put("excluding this locomotive", new Runnable[]{
+            () -> end.setExcludedLocs(new java.util.HashSet<>(java.util.Arrays.asList(loc))),
+            () -> end.setExcludedLocs(new java.util.HashSet<>())});
+
+        boolean wasReversible = loc.isReversible();
+
+        loc.setReversible(true);
+
+        try
+        {
+            for (java.util.Map.Entry<String, Runnable[]> each : cases.entrySet())
+            {
+                each.getValue()[0].run();
+
+                try
+                {
+                    boolean barred = rule.invoke(layout, end, loc) != null;
+                    boolean marked = " -".equals(dash.invoke(null, end, loc));
+
+                    assertEquals(marked, barred,
+                        "the run list and the model disagree about a station that is " + each.getKey()
+                        + ": the model says autonomy " + (barred ? "will never" : "may")
+                        + " choose it, the dash says autonomy " + (marked ? "will never" : "may")
+                        + " choose it. The dash is a deliberate copy of that rule and a copy that has"
+                        + " lost a limb offers a berth autonomy has already ruled out (MON-B1)");
+                }
+                finally
+                {
+                    each.getValue()[1].run();
+                }
+            }
+        }
+        finally
+        {
+            loc.setReversible(wasReversible);
+        }
+    }
+
+    /**
+     * Runs something that declares a checked exception, failing the test if it throws.
+     *
+     * `setReversing` and `setTerminus` both declare `Exception`, which a `Runnable` cannot carry, and
+     * wrapping each in its own try block would bury the cases above in ceremony.
+     *
+     * @param body what to run
+     */
+    private static void quietly(ThrowingBody body)
+    {
+        try
+        {
+            body.run();
+        }
+        catch (Exception failed)
+        {
+            throw new RuntimeException(failed);
+        }
+    }
+
+    /**
+     * A body that may throw, for `quietly`.
+     */
+    private interface ThrowingBody
+    {
+        /**
+         * @throws Exception whatever the body throws
+         */
+        void run() throws Exception;
+    }
+
+    /**
+     * A station that is merely occupied is NOT barred.
+     *
+     * The other half of the pair, and the one that stops the fix above from being "call everything
+     * barred".  A station with a train on it is a candidate that is busy: it becomes available again
+     * when that train leaves, and it belongs in the group the user can do something about.
+     */
+    @Test
+    public void testAnOccupiedStationIsStillOneAutonomyCouldChoose() throws Exception
+    {
+        Layout layout = twoStations("WS10");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+        MarklinLocomotive other = model.getLocByName(model.getLocList().get(1));
+
+        layout.moveLocomotive(loc.getName(), "WS10_A", false);
+        layout.moveLocomotive(other.getName(), "WS10_B", false);
+
+        assertFalse(layout.destinationsBarredFromAutonomy(loc).contains("WS10_B"),
+            "a station whose only problem is the train standing on it was reported as barred from "
+            + "autonomy. It would then be listed under 'stations autonomy will never choose', which "
+            + "is a statement about the railway's setup - and this one is about this minute");
+
+        assertTrue(layout.explainDestinations(loc).get("WS10_B").contains(other.getName()),
+            "and its reason must still name the train in the way");
+    }
+
+    /**
+     * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299,
+     * ADU2-C2) - where Why not Moving? listed every station's own reason instead of the copy's, and the train sat there
+     * with nothing saying why.  Told to turn it round where the square's other copy reaches a station, since turning
+     * puts it on that copy; and where neither does, told what would help instead, since turning round would not.
+     *
+     * By hand it is not a reason: a train sent by hand may go where autonomy never sends one.
+     *
+     * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave the
+     * closed side out of the either-way sentence, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testACopyThatReachesNoStationSaysSo() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // THE OTHER COPY REACHES A STATION: eastbound runs into a siding and stops; westbound reaches WS9 Far.
+        Layout turnable = platformWithASiding("WS9", true);
+
+        turnable.moveLocomotive(loc.getName(), "WS9 Platform (eastbound)", false);
+
+        assertNotNull(turnable.explainCannotStart(loc), "a train on the copy of WS9 Platform that reaches no station"
+            + " autonomy may choose is given no reason of its own - Why not Moving? lists the stations' reasons (OB-299)");
+
+        assertEquals(turnable.explainCannotStart(loc), org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStation",
+            "WS9 Platform"), "a train on the copy of WS9 Platform that reaches no station autonomy may choose is not told"
+            + " so - Why not Moving? lists the stations' reasons, not the copy's (OB-299)");
+
+        assertNull(turnable.explainCannotStart(loc, true), "by hand, reaching no station autonomy may choose is given as a"
+            + " reason not to move - a train sent by hand may go where autonomy never sends one");
+
+        turnable.moveLocomotive(loc.getName(), "WS9 Platform (westbound)", false);
+
+        assertNull(turnable.explainCannotStart(loc), "CONTROL: the copy that reaches WS9 Far is given a reason not to"
+            + " start");
+
+        // NEITHER COPY DOES: both run into sidings.  Turning it round would not help.
+        Layout stranded = platformWithASiding("WS10", false);
+
+        stranded.moveLocomotive(loc.getName(), "WS10 Platform (eastbound)", false);
+
+        assertEquals(stranded.explainCannotStart(loc), org.traincontrol.util.I18n.f(
+            "autolayout.why.startReachesNoStationEitherWay", "WS10 Platform",
+            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
+            org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on a square where neither copy"
+            + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
+
+        // AND THE SIDE A TRAIN WOULD ARRIVE ON, WITH GUI4-C3'S EXCEPTION (RLU4-C4, RLU3-C1).  At a station trains pass
+        // through, a closed side is what keeps it out of reach, and switching it on and ticking - true there already - is
+        // no remedy (RLU2-C10); where every train turns round, opening it is the terminus error that refuses the whole
+        // setup.  The sentence does not know which station is meant, so it names the side with the exception.
+        assertTrue(stranded.explainCannotStart(loc).contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")),
+            "the either-way sentence gives only remedies already true of a station reached across a closed side (RLU4-C4,"
+            + " RLU2-C10): " + stranded.explainCannotStart(loc));
+
+        // The exception in the words, read from the English bundle: no placeholder carries it.
+        assertTrue(java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages", java.util.Locale.ROOT)
+            .getString("autolayout.why.startReachesNoStationEitherWay").contains("unless every train turns round there"),
+            "the either-way sentence sends the operator to open a side under Trains May Arrive... without GUI4-C3's"
+            + " exception - at a station every train turns round at, that makes the setup refuse to load (RLU3-C1)");
+    }
+
+    /**
+     * Turning round is offered only onto a copy a train may be started from: where the square's other copy reaches a
+     * station but is switched off, the train is told what would help instead (RLA-C5).
+     *
+     * Turned round onto a copy autonomy will not start a train from, the next Why not Moving? gave that copy's refusal,
+     * and turning back led to this sentence again.
+     *
+     * MUTATION: offer turning round wherever another copy reaches a station, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Layout layout = platformWithASiding("WS11", true);
+
+        // THE COPY THAT REACHES WS11 FAR, SWITCHED OFF.
+        layout.getPoint("WS11 Platform (westbound)").setActive(false);
+
+        layout.moveLocomotive(loc.getName(), "WS11 Platform (eastbound)", false);
+
+        // NOT "WHICHEVER WAY" (RLU3-C2): the other way does reach a station; autonomy only starts no train there.
+        assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
+            "autolayout.why.startReachesNoStationOtherWayRefused", "WS11 Platform"), "a train on the copy of WS11 Platform"
+            + " that reaches no station is told to turn round onto a copy that is switched off (RLA-C5), or told no station"
+            + " can be reached whichever way it faces, where the other way reaches one (RLU3-C2)");
+
+        // CONTROL: switched on, the other copy is one to turn round onto.
+        layout.getPoint("WS11 Platform (westbound)").setActive(true);
+
+        assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStation",
+            "WS11 Platform"), "CONTROL: with the other copy switched on, turning round is not offered");
+    }
+
+    /**
+     * Turning round is not offered onto a copy that is no station - the copy of a square trains may not arrive at - even
+     * where it reaches a station (RLA-C5, RLA2-C6).
+     *
+     * The barred copy is the case RLA-C5 led with: turned round onto it, the next Why not Moving? refuses it and sends
+     * the operator back.  The claim beside this one switches a copy off, which a built railway never does to one copy
+     * alone.
+     *
+     * MUTATION: offer turning round onto any copy that reaches a station, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTurningRoundIsNotOfferedOntoACopyThatIsNoStation() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Layout layout = platformWithASiding("WS12", true, false);
+
+        layout.moveLocomotive(loc.getName(), "WS12 Platform (eastbound)", false);
+
+        assertTrue(layout.isABarredCopyOfAStation(layout.getPoint("WS12 Platform (westbound)")), "precondition: the"
+            + " westbound copy is not a copy of the station trains may not arrive at");
+
+        // NOT "WHICHEVER WAY" (RLU3-C2): the other way reaches WS12 Far; trains may only not arrive facing it.  Its
+        // remedy is that copy's own - open that side, then turn round - where not every train turns there (GUI4-C3).
+        assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
+            "autolayout.why.startReachesNoStationOtherWayBarred", "WS12 Platform",
+            org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS12 Platform that"
+            + " reaches no station is told to turn round onto a copy trains may not arrive at (RLA-C5), or told no station"
+            + " can be reached whichever way it faces, where the other way reaches WS12 Far (RLU3-C2)");
+    }
+
+    /**
+     * Where the other way reaches a station only across a side trains may not arrive by, and every train turns round at
+     * that square, the train is told that side is closed and not told to open it (RLU4-C6, RLU4-C7, RLA4-C4, RLD4-C6):
+     * opened there, a terminus reached from two sides is the error that refuses the whole setup (GUI4-C3).
+     *
+     * The claims beside this one build no square whose every copy turns a train, so the exception had no claim; and the
+     * sentence chosen here said only that autonomy starts no train that way, without the reason.
+     *
+     * MUTATION: offer "open that side" wherever the other copy is barred, or give the refusal without its reason, and
+     * this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testOpeningASideIsNotOfferedWhereEveryTrainTurns() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Layout layout = platformWithASiding("WS13", true, false);
+
+        // EVERY COPY TURNS A TRAIN: the station copy a terminus, the barred one a reversing point.
+        layout.getPoint("WS13 Platform (eastbound)").setTerminus(true);
+        layout.getPoint("WS13 Platform (westbound)").setReversing(true);
+
+        Point barred = layout.getPoint("WS13 Platform (westbound)");
+
+        assertTrue(layout.turnsEveryTrainAt(barred), "precondition: a copy of WS13 Platform lets a train through");
+
+        assertTrue(layout.isABarredCopyOfAStation(barred), "precondition: the westbound copy is not a copy of the station"
+            + " trains may not arrive at");
+
+        assertTrue(layout.canReachAnyDestination(barred), "precondition: the westbound copy reaches no station");
+
+        layout.moveLocomotive(loc.getName(), "WS13 Platform (eastbound)", false);
+
+        String said = layout.explainCannotStart(loc);
+
+        assertEquals(said, org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStationOtherWayBarredMustTurn",
+            "WS13 Platform"), "a train at a square every train turns round at, whose other way reaches a station only"
+            + " across a closed side, is not told the side is closed, or is told to open it (RLU4-C6, RLU4-C7)");
+
+        assertFalse(said.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train at a square"
+            + " every train turns round at is told to open a side under Trains May Arrive..., which makes the setup refuse to"
+            + " load (GUI4-C3): " + said);
+    }
+
+    /**
+     * A platform of two copies, eastbound running into a siding that goes no further; westbound into another siding,
+     * or on to a station of its own where `westReachesAStation`.
+     */
+    private static Layout platformWithASiding(String prefix, boolean westReachesAStation) throws Exception
+    {
+        return platformWithASiding(prefix, westReachesAStation, true);
+    }
+
+    /**
+     * The same, with the westbound copy no station where `westIsAStation` is false - the copy of a square trains may not
+     * arrive at.
+     */
+    private static Layout platformWithASiding(String prefix, boolean westReachesAStation, boolean westIsAStation)
+        throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        int base = westReachesAStation ? 3301 : 3311;
+
+        MarklinFeedback platform = model.newFeedback(base, null);
+        MarklinFeedback siding = model.newFeedback(base + 1, null);
+        MarklinFeedback beyond = model.newFeedback(base + 2, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[] {platform, siding, beyond})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint(prefix + " Platform (eastbound)", true, platform.getName());
+        layout.createPoint(prefix + " Platform (westbound)", westIsAStation, platform.getName());
+
+        layout.getPoint(prefix + " Platform (eastbound)").setBlock(prefix + "-P");
+        layout.getPoint(prefix + " Platform (westbound)").setBlock(prefix + "-P");
+
+        layout.createPoint(prefix + " Siding", false, siding.getName());
+        layout.createEdge(prefix + " Platform (eastbound)", prefix + " Siding");
+
+        layout.createPoint(prefix + (westReachesAStation ? " Far" : " Other Siding"), westReachesAStation, beyond.getName());
+        layout.createEdge(prefix + " Platform (westbound)", prefix + (westReachesAStation ? " Far" : " Other Siding"));
+
+        return layout;
+    }
+
+    /**
+     * Two stations joined both ways, named with a prefix so the tests cannot collide.
+     */
+    private static Layout twoStations(String prefix) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        MarklinFeedback a = model.newFeedback(51, null);
+        MarklinFeedback b = model.newFeedback(52, null);
+
+        model.setFeedbackState(a.getName(), false);
+        model.setFeedbackState(b.getName(), false);
+
+        layout.createPoint(prefix + "_A", true, a.getName());
+        layout.createPoint(prefix + "_B", true, b.getName());
+
+        layout.createEdge(prefix + "_A", prefix + "_B");
+        layout.createEdge(prefix + "_B", prefix + "_A");
+
+        return layout;
+    }
+
+    /**
+     * A platform's several arrival sides are described by the platform, not by the model's spelling.
+     *
+     * The index maps every emitted Point back to its square and that is the answer whenever it has
+     * one - but it does not always: a configuration built by a different run of the builder is not in
+     * the map, and the fallback used to be the internal name. "BottomMainA (northbound)" is not a place
+     * on anybody's railway. Adam met it in the hover that explains why a train is not moving, which is
+     * the worst place for it: somebody reading that is already confused.
+     *
+     * Only the suffixes the builder itself emits come off, which is the half worth testing - a station
+     * genuinely called "Yard (upper)" has to keep its name, or this fix quietly renames real places.
+     */
+    @Test
+    public void testAnArrivalSideIsDescribedByItsStation() throws Exception
+    {
+        // EMPTY is the index with no builder behind it, which is exactly the degraded case the
+        // fallback exists for: nothing maps, so every answer comes from the name itself.
+        org.traincontrol.automationui.StationIndex index =
+            org.traincontrol.automationui.StationIndex.EMPTY;
+
+        assertEquals(index.describe(new Point("BottomMainA (northbound)", false, null)),
+            "BottomMainA",
+            "the compass bearing is how the model spells one platform's arrival sides, and is not "
+            + "something the user created or should be shown");
+
+        assertEquals(index.describe(new Point("BottomMainA (northbound, reverse)", false, null)),
+            "BottomMainA",
+            "the reversing copies are spelled the same way and are no more real");
+
+        assertEquals(index.describe(new Point("Yard (upper)", false, null)), "Yard (upper)",
+            "a station somebody has genuinely called this keeps its name - taking brackets off "
+            + "anything that has them would rename real places to make an internal one read better");
+    }
+}

@@ -428,8 +428,18 @@ public class CS2Message extends CANMessage
      */
     public int getSubCommand()
     {
-        // The sub command is data[4], so five bytes are needed - not four
-        if (this.data.length < 5)
+        // The sub command is data[4], so five bytes are needed - not four.
+        //
+        // Against LENGTH, not data.length.  The parsing constructor always allocates eight bytes and
+        // fills only the first `length` of them, so data.length is eight for every message that ever
+        // arrives off the network and this guard could not fire.  A system frame carrying fewer than
+        // five payload bytes therefore returned the untouched data[4] - zero - and zero is
+        // CMD_SYSSUB_STOP.  The system branch of receiveMessage deliberately does not check the
+        // response bit, so any such frame on the bus read as a stop from another controller: power
+        // state off, every locomotive told the power had gone, the indicator dark, and anything
+        // waiting on the power state released.  A short frame is not a stop; it is a frame that does
+        // not say.
+        if (this.length < 5)
         {
             return -1;
         }

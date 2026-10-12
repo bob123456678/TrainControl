@@ -1,0 +1,4550 @@
+{
+    "points": [
+        {
+            "name": "Indk0102",
+            "station": false,
+            "s88": 20,
+            "x": 100,
+            "y": 1800
+        },
+        {
+            "name": "Indk0304",
+            "station": false,
+            "x": 1800,
+            "y": 1400
+        },
+        {
+            "name": "Indk0304pre",
+            "station": false,
+            "s88": 47,
+            "x": 3200,
+            "y": 1450
+        },
+        {
+            "name": "Indk2122",
+            "station": false,
+            "s88": 1,
+            "x": 3600,
+            "y": 1500
+        },
+        {
+            "name": "Indk2324",
+            "station": false,
+            "s88": 3,
+            "x": 1500,
+            "y": 3650
+        },
+        {
+            "name": "OprH",
+            "station": false,
+            "x": 2100,
+            "y": 1800
+        },
+        {
+            "name": "Ret21",
+            "station": false,
+            "s88": 21,
+            "x": 1750,
+            "y": 1700
+        },
+        {
+            "name": "Ret24",
+            "station": false,
+            "s88": 24,
+            "x": 1000,
+            "y": 890
+        },
+        {
+            "name": "Ret45",
+            "station": false,
+            "s88": 45,
+            "x": 1400,
+            "y": 1950
+        },
+        {
+            "name": "Ret47",
+            "station": false,
+            "s88": 47,
+            "x": 3300,
+            "y": 1700
+        },
+        {
+            "name": "RetOprH",
+            "station": false,
+            "x": 2100,
+            "y": 1950
+        },
+        {
+            "name": "Rev01",
+            "station": false,
+            "s88": 37,
+            "reversing": true,
+            "x": 2450,
+            "y": 1110
+        },
+        {
+            "name": "Rev0304",
+            "station": false,
+            "s88": 3,
+            "reversing": true,
+            "x": 800,
+            "y": 3550
+        },
+        {
+            "name": "Rev21",
+            "station": false,
+            "s88": 20,
+            "reversing": true,
+            "x": 150,
+            "y": 2700
+        },
+        {
+            "name": "ST60rear",
+            "station": true,
+            "s88": 960,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 750,
+            "y": 2350
+        },
+        {
+            "name": "St00A",
+            "station": true,
+            "s88": 27,
+            "maxTrainLength": 0,
+            "x": 2000,
+            "y": 10
+        },
+        {
+            "name": "St00AA",
+            "station": true,
+            "s88": 999,
+            "maxTrainLength": 0,
+            "x": 900,
+            "y": 10
+        },
+        {
+            "name": "St00C",
+            "station": true,
+            "s88": 11,
+            "maxTrainLength": 0,
+            "x": 3500,
+            "y": 210
+        },
+        {
+            "name": "St00Cpost",
+            "station": false,
+            "s88": 17,
+            "x": 2300,
+            "y": 210
+        },
+        {
+            "name": "St00Cpost2",
+            "station": false,
+            "s88": 24,
+            "x": 1600,
+            "y": 210
+        },
+        {
+            "name": "St00Crev",
+            "station": true,
+            "s88": 20,
+            "maxTrainLength": 0,
+            "terminus": true,
+            "x": 600,
+            "y": 210
+        },
+        {
+            "name": "St00D",
+            "station": true,
+            "s88": 19,
+            "maxTrainLength": 2,
+            "terminus": true,
+            "x": 3500,
+            "y": 610
+        },
+        {
+            "name": "St00Dpost",
+            "station": false,
+            "s88": 11,
+            "x": 2800,
+            "y": 610
+        },
+        {
+            "name": "St00Dpre",
+            "station": false,
+            "s88": 11,
+            "x": 2800,
+            "y": 410
+        },
+        {
+            "name": "St01",
+            "station": true,
+            "s88": 17,
+            "maxTrainLength": 0,
+            "priority": 1,
+            "x": 1600,
+            "y": 1010
+        },
+        {
+            "name": "St01A",
+            "station": true,
+            "s88": 13,
+            "maxTrainLength": 5,
+            "x": 100,
+            "y": 1010
+        },
+        {
+            "name": "St01B",
+            "station": true,
+            "s88": 29,
+            "maxTrainLength": 0,
+            "x": 3000,
+            "y": 1010
+        },
+        {
+            "name": "St01Bpost",
+            "station": false,
+            "s88": 17,
+            "x": 2300,
+            "y": 810
+        },
+        {
+            "name": "St01Bv",
+            "station": false,
+            "s88": 37,
+            "x": 2300,
+            "y": 1010
+        },
+        {
+            "name": "St01C",
+            "station": true,
+            "s88": 30,
+            "maxTrainLength": 2,
+            "terminus": true,
+            "x": 3500,
+            "y": 810
+        },
+        {
+            "name": "St01Cpost",
+            "station": false,
+            "s88": 29,
+            "x": 2800,
+            "y": 810
+        },
+        {
+            "name": "St01Cv",
+            "station": false,
+            "s88": 29,
+            "x": 2600,
+            "y": 1010
+        },
+        {
+            "name": "St01pre",
+            "station": false,
+            "s88": 24,
+            "x": 600,
+            "y": 1010
+        },
+        {
+            "name": "St01rev",
+            "station": true,
+            "s88": 24,
+            "maxTrainLength": 0,
+            "terminus": true,
+            "x": 600,
+            "y": 810
+        },
+        {
+            "name": "St02",
+            "station": true,
+            "s88": 16,
+            "maxTrainLength": 0,
+            "priority": 2,
+            "x": 1600,
+            "y": 1210
+        },
+        {
+            "name": "St02pre",
+            "station": false,
+            "s88": 22,
+            "x": 600,
+            "y": 1210
+        },
+        {
+            "name": "St03",
+            "station": true,
+            "s88": 15,
+            "maxTrainLength": 0,
+            "priority": 1,
+            "x": 600,
+            "y": 1400
+        },
+        {
+            "name": "St03n",
+            "station": false,
+            "s88": 15,
+            "x": 700,
+            "y": 3250
+        },
+        {
+            "name": "St03pre",
+            "station": false,
+            "s88": 23,
+            "x": 1500,
+            "y": 1400
+        },
+        {
+            "name": "St03rev",
+            "station": true,
+            "s88": 23,
+            "maxTrainLength": 0,
+            "terminus": true,
+            "x": 700,
+            "y": 1800
+        },
+        {
+            "name": "St04",
+            "station": true,
+            "s88": 14,
+            "maxTrainLength": 0,
+            "x": 600,
+            "y": 1600
+        },
+        {
+            "name": "St04B",
+            "station": true,
+            "s88": 70,
+            "maxTrainLength": 0,
+            "x": 2650,
+            "y": 1750
+        },
+        {
+            "name": "St04pre",
+            "station": false,
+            "s88": 21,
+            "x": 1500,
+            "y": 1600
+        },
+        {
+            "name": "St05",
+            "station": true,
+            "s88": 10,
+            "maxTrainLength": 1,
+            "terminus": true,
+            "priority": 2,
+            "excludedLocs": ["Q 343"],
+            "x": 1100,
+            "y": 1800
+        },
+        {
+            "name": "St05post",
+            "station": false,
+            "s88": 45,
+            "x": 1400,
+            "y": 1800
+        },
+        {
+            "name": "St05pre",
+            "station": false,
+            "x": 1400,
+            "y": 2550
+        },
+        {
+            "name": "St21",
+            "station": true,
+            "s88": 44,
+            "maxTrainLength": 0,
+            "loc": {
+                "name": "Q 343",
+                "reversible": true,
+                "speed": 35,
+                "arrivalFunc": 15,
+                "departureFunc": 10,
+                "trainLength": 1
+            },
+            "x": 1600,
+            "y": 4050
+        },
+        {
+            "name": "St21A",
+            "station": true,
+            "active": false,
+            "s88": 99,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 900,
+            "y": 4250
+        },
+        {
+            "name": "St21Apost",
+            "station": false,
+            "s88": 39,
+            "x": 2500,
+            "y": 4250
+        },
+        {
+            "name": "St21Arev",
+            "station": false,
+            "s88": 1,
+            "reversing": true,
+            "x": 3000,
+            "y": 4250
+        },
+        {
+            "name": "St21pre",
+            "station": false,
+            "s88": 39,
+            "x": 3200,
+            "y": 4050
+        },
+        {
+            "name": "St22",
+            "station": true,
+            "s88": 41,
+            "maxTrainLength": 0,
+            "x": 1600,
+            "y": 3850
+        },
+        {
+            "name": "St22pre",
+            "station": false,
+            "s88": 35,
+            "x": 3200,
+            "y": 3850
+        },
+        {
+            "name": "St23",
+            "station": true,
+            "s88": 40,
+            "maxTrainLength": 0,
+            "loc": {
+                "name": "MY 1106",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 2,
+                "departureFunc": 2,
+                "trainLength": 5
+            },
+            "x": 3100,
+            "y": 3650
+        },
+        {
+            "name": "St23pre",
+            "station": false,
+            "s88": 28,
+            "x": 2100,
+            "y": 3650
+        },
+        {
+            "name": "St24",
+            "station": true,
+            "s88": 34,
+            "maxTrainLength": 0,
+            "loc": {
+                "name": "N 209",
+                "reversible": true,
+                "speed": 35,
+                "arrivalFunc": 8,
+                "departureFunc": 6,
+                "trainLength": 6
+            },
+            "x": 3100,
+            "y": 3450
+        },
+        {
+            "name": "St24a",
+            "station": true,
+            "s88": 43,
+            "maxTrainLength": 0,
+            "x": 1800,
+            "y": 3450
+        },
+        {
+            "name": "St24pre",
+            "station": false,
+            "s88": 46,
+            "x": 2100,
+            "y": 3450
+        },
+        {
+            "name": "St30",
+            "station": true,
+            "s88": 300,
+            "maxTrainLength": 0,
+            "x": 1100,
+            "y": 3350
+        },
+        {
+            "name": "St31",
+            "station": true,
+            "s88": 48,
+            "maxTrainLength": 5,
+            "x": 1650,
+            "y": 2600
+        },
+        {
+            "name": "St31A",
+            "station": true,
+            "s88": 31,
+            "maxTrainLength": 0,
+            "x": 1100,
+            "y": 3150
+        },
+        {
+            "name": "St31Apost",
+            "station": false,
+            "s88": 12,
+            "x": 900,
+            "y": 3150
+        },
+        {
+            "name": "St31B",
+            "station": true,
+            "s88": 42,
+            "maxTrainLength": 1,
+            "terminus": true,
+            "x": 1800,
+            "y": 3250
+        },
+        {
+            "name": "St31Brev",
+            "station": true,
+            "s88": 12,
+            "maxTrainLength": 0,
+            "terminus": true,
+            "x": 1500,
+            "y": 3250
+        },
+        {
+            "name": "St31post",
+            "station": false,
+            "x": 2100,
+            "y": 1600
+        },
+        {
+            "name": "St31pre",
+            "station": false,
+            "s88": 12,
+            "x": 1300,
+            "y": 3450
+        },
+        {
+            "name": "St32",
+            "station": true,
+            "s88": 45,
+            "maxTrainLength": 6,
+            "x": 2100,
+            "y": 3250
+        },
+        {
+            "name": "St32pre",
+            "station": false,
+            "s88": 33,
+            "x": 3000,
+            "y": 3250
+        },
+        {
+            "name": "St59",
+            "station": true,
+            "s88": 958,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 900,
+            "y": 2050
+        },
+        {
+            "name": "St60",
+            "station": true,
+            "s88": 38,
+            "maxTrainLength": 0,
+            "x": 900,
+            "y": 2350
+        },
+        {
+            "name": "St60a",
+            "station": true,
+            "s88": 959,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 900,
+            "y": 2200
+        },
+        {
+            "name": "St61",
+            "station": true,
+            "s88": 61,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "loc": {
+                "name": "Mx 1004",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 7,
+                "departureFunc": 8,
+                "trainLength": 4
+            },
+            "x": 900,
+            "y": 2500
+        },
+        {
+            "name": "St62",
+            "station": true,
+            "s88": 62,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1000,
+            "y": 2650
+        },
+        {
+            "name": "St62m",
+            "station": false,
+            "s88": 47,
+            "x": 850,
+            "y": 2800
+        },
+        {
+            "name": "St63",
+            "station": true,
+            "s88": 63,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1100,
+            "y": 2800
+        },
+        {
+            "name": "St64",
+            "station": true,
+            "s88": 64,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1200,
+            "y": 2950
+        },
+        {
+            "name": "St65",
+            "station": true,
+            "s88": 65,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 1300,
+            "y": 3100
+        },
+        {
+            "name": "St71",
+            "station": true,
+            "s88": 71,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "loc": {
+                "name": "460 067-2 SBB",
+                "reversible": false,
+                "speed": 35
+            },
+            "x": 2500,
+            "y": 2350
+        },
+        {
+            "name": "St72",
+            "station": true,
+            "s88": 72,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "home": "E 991",
+            "loc": {
+                "name": "E 991",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 8,
+                "trainLength": 4
+            },
+            "x": 2500,
+            "y": 2500
+        },
+        {
+            "name": "St73",
+            "station": true,
+            "s88": 73,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "home": "N 209",
+            "x": 2500,
+            "y": 2650
+        },
+        {
+            "name": "St74",
+            "station": true,
+            "s88": 74,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 2500,
+            "y": 2800
+        },
+        {
+            "name": "St75",
+            "station": true,
+            "s88": 75,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 2500,
+            "y": 2950
+        },
+        {
+            "name": "St76",
+            "station": true,
+            "s88": 76,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "x": 2500,
+            "y": 3100
+        },
+        {
+            "name": "St99",
+            "station": true,
+            "active": false,
+            "s88": 99,
+            "maxTrainLength": 0,
+            "reversing": true,
+            "loc": {
+                "name": "MV 1134",
+                "reversible": false,
+                "speed": 35,
+                "arrivalFunc": 3,
+                "departureFunc": 5,
+                "trainLength": 5
+            },
+            "x": 3500,
+            "y": 4050
+        },
+        {
+            "name": "Udk0102",
+            "station": false,
+            "x": 2300,
+            "y": 1210
+        },
+        {
+            "name": "Udk0102post",
+            "station": false,
+            "x": 3000,
+            "y": 1210
+        },
+        {
+            "name": "Udk0304",
+            "station": false,
+            "x": 400,
+            "y": 3250
+        },
+        {
+            "name": "Udk0304post",
+            "station": false,
+            "x": 500,
+            "y": 3450
+        },
+        {
+            "name": "Udk2122",
+            "station": false,
+            "x": 200,
+            "y": 3650
+        },
+        {
+            "name": "Udk2324",
+            "station": false,
+            "x": 3300,
+            "y": 3250
+        },
+        {
+            "name": "X03",
+            "station": false,
+            "s88": 47,
+            "x": 2800,
+            "y": 1310
+        }
+    ],
+    "edges": [
+        {
+            "start": "Indk0102",
+            "end": "St01pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 3",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 2",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 95",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "Indk0102",
+            "end": "St02pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 2",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 95",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "Indk0304",
+            "end": "St03pre",
+            "length": 0,
+            "commands": [{
+                "acc": "Switch 7",
+                "state": "straight"
+            }],
+            "lockedges": [
+                {
+                    "start": "St03",
+                    "end": "Udk0304"
+                },
+                {
+                    "start": "St03rev",
+                    "end": "Udk0304"
+                }
+            ]
+        },
+        {
+            "start": "Indk0304",
+            "end": "St04pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 51",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 7",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [{
+                "start": "St04",
+                "end": "Udk0304"
+            }]
+        },
+        {
+            "start": "Indk0304pre",
+            "end": "Indk0304",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 88",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 82",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St31post",
+                    "end": "X03"
+                },
+                {
+                    "start": "X03",
+                    "end": "St32pre"
+                }
+            ]
+        },
+        {
+            "start": "Indk2122",
+            "end": "St21pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 99",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 94",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 106",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "Indk2122",
+            "end": "St22pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 99",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 94",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "Indk2324",
+            "end": "St23pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 54",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 97",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "Indk2324",
+            "end": "St24pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 54",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 21",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 97",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "OprH",
+            "end": "St04pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 51",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 4",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [{
+                "start": "St31",
+                "end": "St31post"
+            }]
+        },
+        {
+            "start": "Ret21",
+            "end": "Ret45",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 55",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St32",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "OprH",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "Indk0304",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St32",
+                    "end": "St05pre"
+                },
+                {
+                    "start": "St32pre",
+                    "end": "St32"
+                },
+                {
+                    "start": "St05post",
+                    "end": "Indk0304pre"
+                },
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "Ret21",
+            "end": "RetOprH",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 51",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 4",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "OprH",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "Indk0304",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St32",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St04B",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St71",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St72",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St73",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St74",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St75",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St76",
+                    "end": "OprH"
+                }
+            ]
+        },
+        {
+            "start": "Ret24",
+            "end": "St01A",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 3",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 96",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Indk0102",
+                    "end": "St01pre"
+                },
+                {
+                    "start": "St01A",
+                    "end": "St01pre"
+                },
+                {
+                    "start": "St00Crev",
+                    "end": "St01"
+                },
+                {
+                    "start": "St01rev",
+                    "end": "St01"
+                },
+                {
+                    "start": "St01pre",
+                    "end": "St01"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "ST60rear",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 105",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 28",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 39",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 125",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 126",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                },
+                {
+                    "start": "ST60rear",
+                    "end": "St60"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "St59",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 122",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 125",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 126",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "St60a",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 28",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 62",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                },
+                {
+                    "start": "ST60rear",
+                    "end": "St60"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "St61",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 103",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 125",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 126",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "St62",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 104",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "St63",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 42",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "St64",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 14",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 53",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "Ret45",
+            "end": "St65",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 19",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 63",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "Ret47",
+            "end": "Ret45",
+            "length": 0,
+            "commands": [{
+                "acc": "Switch 40",
+                "state": "turn"
+            }],
+            "lockedges": [
+                {
+                    "start": "St05post",
+                    "end": "Indk0304pre"
+                },
+                {
+                    "start": "St32pre",
+                    "end": "St32"
+                },
+                {
+                    "start": "St32",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St32",
+                    "end": "St05pre"
+                },
+                {
+                    "start": "St05",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St05pre",
+                    "end": "St05"
+                },
+                {
+                    "start": "St59",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St60a",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St61",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St63",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St64",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St65",
+                    "end": "St05post"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                }
+            ]
+        },
+        {
+            "start": "RetOprH",
+            "end": "St71",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 73",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St04B",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St71",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St72",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St73",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St74",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St75",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St76",
+                    "end": "OprH"
+                }
+            ]
+        },
+        {
+            "start": "RetOprH",
+            "end": "St72",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 74",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St04B",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St71",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St72",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St73",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St74",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St75",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St76",
+                    "end": "OprH"
+                }
+            ]
+        },
+        {
+            "start": "RetOprH",
+            "end": "St73",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 75",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St04B",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St71",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St72",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St73",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St74",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St75",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St76",
+                    "end": "OprH"
+                }
+            ]
+        },
+        {
+            "start": "RetOprH",
+            "end": "St74",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 116",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 76",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St04B",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St71",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St72",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St73",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St74",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St75",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St76",
+                    "end": "OprH"
+                }
+            ]
+        },
+        {
+            "start": "RetOprH",
+            "end": "St75",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 57",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 116",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 117",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St04B",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St71",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St72",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St73",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St74",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St75",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St76",
+                    "end": "OprH"
+                }
+            ]
+        },
+        {
+            "start": "RetOprH",
+            "end": "St76",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 58",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 116",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 117",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St04B",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St71",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St72",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St73",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St74",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St75",
+                    "end": "OprH"
+                },
+                {
+                    "start": "St76",
+                    "end": "OprH"
+                }
+            ]
+        },
+        {
+            "start": "Rev01",
+            "end": "Ret24",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St01pre",
+                    "end": "St01"
+                },
+                {
+                    "start": "St01A",
+                    "end": "St01pre"
+                },
+                {
+                    "start": "Indk0102",
+                    "end": "St01pre"
+                },
+                {
+                    "start": "St01rev",
+                    "end": "St01"
+                },
+                {
+                    "start": "St01Bpost",
+                    "end": "St01rev"
+                },
+                {
+                    "start": "St00AA",
+                    "end": "St01"
+                },
+                {
+                    "start": "St00Crev",
+                    "end": "St01"
+                }
+            ]
+        },
+        {
+            "start": "Rev0304",
+            "end": "Ret21",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 83",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Indk0304",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St04pre",
+                    "end": "St04"
+                },
+                {
+                    "start": "OprH",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St32",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                },
+                {
+                    "start": "St62m",
+                    "end": "Udk0304"
+                }
+            ]
+        },
+        {
+            "start": "Rev0304",
+            "end": "Ret47",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 88",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 83",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 82",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 7",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Indk0304",
+                    "end": "St03pre"
+                },
+                {
+                    "start": "St03pre",
+                    "end": "St03"
+                },
+                {
+                    "start": "Indk0304pre",
+                    "end": "Indk0304"
+                },
+                {
+                    "start": "Indk0304",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St05post",
+                    "end": "Indk0304pre"
+                },
+                {
+                    "start": "Udk2324",
+                    "end": "Indk0304pre"
+                },
+                {
+                    "start": "Udk0102",
+                    "end": "St32pre"
+                },
+                {
+                    "start": "St31post",
+                    "end": "X03"
+                },
+                {
+                    "start": "X03",
+                    "end": "St32pre"
+                },
+                {
+                    "start": "St62",
+                    "end": "St62m"
+                },
+                {
+                    "start": "St30",
+                    "end": "St03n"
+                },
+                {
+                    "start": "St31Apost",
+                    "end": "St03n"
+                },
+                {
+                    "start": "St03n",
+                    "end": "St03rev"
+                }
+            ]
+        },
+        {
+            "start": "Rev21",
+            "end": "St99",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 113",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 86",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 81",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 106",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk2122",
+                    "end": "Indk0102"
+                },
+                {
+                    "start": "St22",
+                    "end": "Udk2122"
+                },
+                {
+                    "start": "St21pre",
+                    "end": "St21"
+                },
+                {
+                    "start": "Indk2122",
+                    "end": "St21pre"
+                },
+                {
+                    "start": "St99",
+                    "end": "St21pre"
+                },
+                {
+                    "start": "St21A",
+                    "end": "St21Apost"
+                },
+                {
+                    "start": "St21Apost",
+                    "end": "St21Arev"
+                },
+                {
+                    "start": "St21Arev",
+                    "end": "St21"
+                }
+            ]
+        },
+        {
+            "start": "ST60rear",
+            "end": "St60",
+            "length": 0
+        },
+        {
+            "start": "St00A",
+            "end": "St00Cpost2",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 44",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 66",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 118",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk2122",
+                    "end": "Indk0102"
+                },
+                {
+                    "start": "St01pre",
+                    "end": "St01"
+                },
+                {
+                    "start": "St01Bpost",
+                    "end": "St01rev"
+                },
+                {
+                    "start": "St00Cpost",
+                    "end": "St00Cpost2"
+                }
+            ]
+        },
+        {
+            "start": "St00AA",
+            "end": "St01",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 69",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 66",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 118",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St00A",
+                    "end": "St00Cpost2"
+                },
+                {
+                    "start": "St00Cpost",
+                    "end": "St00Cpost2"
+                },
+                {
+                    "start": "St01Bpost",
+                    "end": "St01rev"
+                }
+            ]
+        },
+        {
+            "start": "St00C",
+            "end": "St00Cpost",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 112",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 31",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St01Bpost",
+                    "end": "St01rev"
+                },
+                {
+                    "start": "Udk2122",
+                    "end": "Indk0102"
+                },
+                {
+                    "start": "St01A",
+                    "end": "St01pre"
+                }
+            ]
+        },
+        {
+            "start": "St00Cpost",
+            "end": "St00Cpost2",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 66",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 72",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 118",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St00Cpost2",
+            "end": "St00Crev",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 3",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 2",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 66",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 72",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk2122",
+                    "end": "Indk0102"
+                },
+                {
+                    "start": "St00AA",
+                    "end": "St01"
+                }
+            ]
+        },
+        {
+            "start": "St00Crev",
+            "end": "St01",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 3",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 2",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 66",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 72",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 118",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [{
+                "start": "Udk2122",
+                "end": "Indk0102"
+            }]
+        },
+        {
+            "start": "St00D",
+            "end": "St00Dpost",
+            "length": 0,
+            "commands": [{
+                "acc": "Signal 111",
+                "state": "green"
+            }]
+        },
+        {
+            "start": "St00Dpost",
+            "end": "St01Bpost",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 15",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St00Dpre",
+            "end": "St00D",
+            "length": 0
+        },
+        {
+            "start": "St01",
+            "end": "Rev01",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 59",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St01Bv",
+                    "end": "St01Cv"
+                },
+                {
+                    "start": "St01B",
+                    "end": "St01Bpost"
+                },
+                {
+                    "start": "St00Dpost",
+                    "end": "St01Bpost"
+                },
+                {
+                    "start": "St00C",
+                    "end": "St00Cpost"
+                },
+                {
+                    "start": "St01Cpost",
+                    "end": "St01Bpost"
+                }
+            ]
+        },
+        {
+            "start": "St01",
+            "end": "St00Dpre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 112",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 111",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St01",
+            "end": "St01Bv",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 59",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St00C",
+                    "end": "St00Cpost"
+                },
+                {
+                    "start": "St00A",
+                    "end": "St00Cpost2"
+                }
+            ]
+        },
+        {
+            "start": "St01",
+            "end": "Udk0102",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 8",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 82",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St01A",
+            "end": "St01pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 3",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 72",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 96",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St01B",
+            "end": "St01Bpost",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 59",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St01Bpost",
+            "end": "St01rev",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 66",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 118",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St01pre",
+                    "end": "St01"
+                },
+                {
+                    "start": "St00Cpost2",
+                    "end": "St00Crev"
+                },
+                {
+                    "start": "St00AA",
+                    "end": "St01"
+                }
+            ]
+        },
+        {
+            "start": "St01Bv",
+            "end": "St01Cv",
+            "length": 0
+        },
+        {
+            "start": "St01C",
+            "end": "St01Cpost",
+            "length": 0,
+            "commands": [{
+                "acc": "Signal 59",
+                "state": "green"
+            }]
+        },
+        {
+            "start": "St01Cpost",
+            "end": "St01Bpost",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 33",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 84",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St01Cv",
+            "end": "St01C",
+            "length": 0
+        },
+        {
+            "start": "St01pre",
+            "end": "St01",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 66",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 72",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 118",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St01rev",
+            "end": "St01",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 66",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 16",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 72",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 118",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St02",
+            "end": "Udk0102",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 15",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 8",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 82",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St02pre",
+            "end": "St02",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 2",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 15",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 71",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St03",
+            "end": "Rev0304",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 12",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 83",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk0304",
+                    "end": "Udk0304post"
+                },
+                {
+                    "start": "Udk0304post",
+                    "end": "Indk2324"
+                },
+                {
+                    "start": "Udk0304post",
+                    "end": "St31pre"
+                },
+                {
+                    "start": "St30",
+                    "end": "St03n"
+                },
+                {
+                    "start": "St31Apost",
+                    "end": "St03n"
+                },
+                {
+                    "start": "St03n",
+                    "end": "St03rev"
+                },
+                {
+                    "start": "St03rev",
+                    "end": "Udk0304"
+                },
+                {
+                    "start": "Indk2324",
+                    "end": "St23pre"
+                },
+                {
+                    "start": "Indk2324",
+                    "end": "St24pre"
+                },
+                {
+                    "start": "St04",
+                    "end": "Udk0304"
+                }
+            ]
+        },
+        {
+            "start": "St03",
+            "end": "Udk0304",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 12",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St03n",
+            "end": "St03rev",
+            "length": 0,
+            "lockedges": [{
+                "start": "Indk0304",
+                "end": "St03pre"
+            }]
+        },
+        {
+            "start": "St03pre",
+            "end": "St03",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 12",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 70",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St03rev",
+            "end": "Udk0304",
+            "length": 0
+        },
+        {
+            "start": "St04",
+            "end": "Rev0304",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 11",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 83",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk0304",
+                    "end": "Udk0304post"
+                },
+                {
+                    "start": "Udk0304post",
+                    "end": "Indk2324"
+                },
+                {
+                    "start": "Udk0304post",
+                    "end": "St31pre"
+                },
+                {
+                    "start": "St30",
+                    "end": "St03n"
+                },
+                {
+                    "start": "St31Apost",
+                    "end": "St03n"
+                },
+                {
+                    "start": "St03n",
+                    "end": "St03rev"
+                },
+                {
+                    "start": "St03rev",
+                    "end": "Udk0304"
+                },
+                {
+                    "start": "Indk2324",
+                    "end": "St23pre"
+                },
+                {
+                    "start": "Indk2324",
+                    "end": "St24pre"
+                },
+                {
+                    "start": "St03",
+                    "end": "Udk0304"
+                }
+            ]
+        },
+        {
+            "start": "St04",
+            "end": "Udk0304",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 11",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St04B",
+            "end": "OprH",
+            "length": 0,
+            "commands": [{
+                "acc": "Signal 100",
+                "state": "green"
+            }]
+        },
+        {
+            "start": "St04pre",
+            "end": "St04",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 13",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 11",
+                    "state": "red"
+                }
+            ]
+        },
+        {
+            "start": "St05",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 55",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 64",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St05post",
+            "end": "Indk0304pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 40",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 109",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 98",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St31",
+                    "end": "St31post"
+                },
+                {
+                    "start": "St32",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "Udk2324",
+                    "end": "Indk0304pre"
+                },
+                {
+                    "start": "X03",
+                    "end": "St32pre"
+                },
+                {
+                    "start": "St32",
+                    "end": "St05pre"
+                },
+                {
+                    "start": "Udk0102",
+                    "end": "St32pre"
+                }
+            ]
+        },
+        {
+            "start": "St05pre",
+            "end": "St05",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 64",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St21",
+            "end": "Rev21",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 45",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 86",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 81",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk2122",
+                    "end": "Indk0102"
+                },
+                {
+                    "start": "St22",
+                    "end": "Udk2122"
+                },
+                {
+                    "start": "St00Cpost2",
+                    "end": "St00Crev"
+                },
+                {
+                    "start": "St00Crev",
+                    "end": "St01"
+                },
+                {
+                    "start": "Indk0102",
+                    "end": "St01pre"
+                },
+                {
+                    "start": "Indk0102",
+                    "end": "St02pre"
+                }
+            ]
+        },
+        {
+            "start": "St21",
+            "end": "St21A",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 86",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 9",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St21pre",
+                    "end": "St21"
+                },
+                {
+                    "start": "Indk2122",
+                    "end": "St21pre"
+                },
+                {
+                    "start": "St21Arev",
+                    "end": "St21"
+                },
+                {
+                    "start": "St21A",
+                    "end": "St21Apost"
+                }
+            ]
+        },
+        {
+            "start": "St21",
+            "end": "Udk2122",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 45",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 86",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 81",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St21A",
+            "end": "St21Apost",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 86",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 106",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 9",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St21pre",
+                    "end": "St21"
+                },
+                {
+                    "start": "Indk2122",
+                    "end": "St22pre"
+                }
+            ]
+        },
+        {
+            "start": "St21Apost",
+            "end": "St21Arev",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 77",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 99",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 94",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 105",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk0102post",
+                    "end": "Indk2122"
+                },
+                {
+                    "start": "Indk2122",
+                    "end": "St21pre"
+                },
+                {
+                    "start": "Indk2122",
+                    "end": "St22pre"
+                }
+            ]
+        },
+        {
+            "start": "St21Arev",
+            "end": "St21",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 77",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 99",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 45",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 94",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 106",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St21pre",
+            "end": "St21",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 77",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 45",
+                    "state": "red"
+                }
+            ]
+        },
+        {
+            "start": "St22",
+            "end": "Udk2122",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 46",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 81",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St22pre",
+            "end": "St22",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 46",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 78",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St23",
+            "end": "Udk2324",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 79",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 40",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 93",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St23pre",
+            "end": "St23",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 79",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 47",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St24",
+            "end": "Udk2324",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 40",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 93",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 80",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St24a",
+            "end": "St24pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 21",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 48",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 80",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 41",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [{
+                "start": "Indk2324",
+                "end": "St24pre"
+            }]
+        },
+        {
+            "start": "St24pre",
+            "end": "St24",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 48",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 80",
+                    "state": "red"
+                }
+            ]
+        },
+        {
+            "start": "St30",
+            "end": "St03n",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 12",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 61",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 70",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Udk0304",
+                    "end": "Udk0304post"
+                },
+                {
+                    "start": "Indk0304",
+                    "end": "St03pre"
+                }
+            ]
+        },
+        {
+            "start": "St31",
+            "end": "St31post",
+            "length": 0,
+            "commands": [{
+                "acc": "Signal 107",
+                "state": "green"
+            }],
+            "lockedges": [
+                {
+                    "start": "St32",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "OprH",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St05post",
+                    "end": "Indk0304pre"
+                },
+                {
+                    "start": "St32",
+                    "end": "St05pre"
+                }
+            ]
+        },
+        {
+            "start": "St31A",
+            "end": "St31Apost",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 121",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 38",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St31pre",
+                    "end": "St31"
+                },
+                {
+                    "start": "St31",
+                    "end": "St31post"
+                }
+            ]
+        },
+        {
+            "start": "St31Apost",
+            "end": "St03n",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 12",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 83",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 70",
+                    "state": "red"
+                }
+            ],
+            "lockedges": [{
+                "start": "Udk0304",
+                "end": "Udk0304post"
+            }]
+        },
+        {
+            "start": "St31B",
+            "end": "St31Brev",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 35",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 60",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 38",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St31pre",
+                    "end": "St31"
+                },
+                {
+                    "start": "St31Apost",
+                    "end": "St03n"
+                }
+            ]
+        },
+        {
+            "start": "St31Brev",
+            "end": "St31",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 35",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 38",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 107",
+                    "state": "red"
+                }
+            ]
+        },
+        {
+            "start": "St31post",
+            "end": "X03",
+            "length": 0,
+            "commands": [{
+                "acc": "Switch 82",
+                "state": "turn"
+            }],
+            "lockedges": [{
+                "start": "Indk0304pre",
+                "end": "Indk0304"
+            }]
+        },
+        {
+            "start": "St31pre",
+            "end": "St31",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 35",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 38",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 107",
+                    "state": "red"
+                }
+            ]
+        },
+        {
+            "start": "St32",
+            "end": "St04pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 55",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 109",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St31",
+                    "end": "St31post"
+                },
+                {
+                    "start": "St05post",
+                    "end": "Indk0304pre"
+                }
+            ]
+        },
+        {
+            "start": "St32",
+            "end": "St05pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 55",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 109",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [{
+                "start": "St31",
+                "end": "St31post"
+            }]
+        },
+        {
+            "start": "St32pre",
+            "end": "St32",
+            "length": 0,
+            "commands": [{
+                "acc": "Signal 109",
+                "state": "red"
+            }]
+        },
+        {
+            "start": "St59",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 122",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 125",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 126",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St60",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 105",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 39",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 28",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 125",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 126",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St60a",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 28",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 62",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ],
+            "lockedges": [{
+                "start": "ST60rear",
+                "end": "St60"
+            }]
+        },
+        {
+            "start": "St61",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 103",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 125",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 126",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St62",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 104",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St62",
+            "end": "St62m",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 17",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 109",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 49",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 7",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 13",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 104",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 11",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 88",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 52",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 40",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 51",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 82",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 98",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Indk0304pre",
+                    "end": "Indk0304"
+                },
+                {
+                    "start": "OprH",
+                    "end": "St04pre"
+                },
+                {
+                    "start": "St04",
+                    "end": "Udk0304"
+                },
+                {
+                    "start": "St04pre",
+                    "end": "St04"
+                }
+            ]
+        },
+        {
+            "start": "St62m",
+            "end": "Udk0304",
+            "length": 0
+        },
+        {
+            "start": "St63",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 53",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 42",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 27",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St64",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 14",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 53",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 19",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St65",
+            "end": "St05post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 19",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 26",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 63",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St71",
+            "end": "OprH",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 73",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St72",
+            "end": "OprH",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 74",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "St73",
+            "end": "OprH",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 75",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "turn"
+                }
+            ]
+        },
+        {
+            "start": "St74",
+            "end": "OprH",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 116",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 76",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St75",
+            "end": "OprH",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 57",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 116",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 117",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St76",
+            "end": "OprH",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 58",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 56",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 116",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 117",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 114",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 115",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "St99",
+            "end": "St21pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 113",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 106",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "Udk0102",
+            "end": "St32pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 34",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 88",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 40",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 82",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 17",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 98",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "St31post",
+                    "end": "X03"
+                },
+                {
+                    "start": "Indk0304pre",
+                    "end": "Indk0304"
+                },
+                {
+                    "start": "St05post",
+                    "end": "Indk0304pre"
+                }
+            ]
+        },
+        {
+            "start": "Udk0102",
+            "end": "Udk0102post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 18",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 17",
+                    "state": "straight"
+                }
+            ],
+            "lockedges": [{
+                "start": "X03",
+                "end": "Udk0102post"
+            }]
+        },
+        {
+            "start": "Udk0102post",
+            "end": "Indk2122",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 34",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 88",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "Udk0304",
+            "end": "Udk0304post",
+            "length": 0
+        },
+        {
+            "start": "Udk0304post",
+            "end": "Indk2324",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 83",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 50",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "Udk0304post",
+            "end": "St31pre",
+            "length": 0,
+            "commands": [{
+                "acc": "Switch 83",
+                "state": "turn"
+            }]
+        },
+        {
+            "start": "Udk2122",
+            "end": "Indk0102",
+            "length": 0,
+            "lockedges": [{
+                "start": "St00Cpost2",
+                "end": "St00Crev"
+            }]
+        },
+        {
+            "start": "Udk2324",
+            "end": "Indk0304pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 18",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 98",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 17",
+                    "state": "straight"
+                }
+            ]
+        },
+        {
+            "start": "X03",
+            "end": "St32pre",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 40",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 18",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Switch 17",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 98",
+                    "state": "green"
+                }
+            ],
+            "lockedges": [
+                {
+                    "start": "Indk0304pre",
+                    "end": "Indk0304"
+                },
+                {
+                    "start": "St05post",
+                    "end": "Indk0304pre"
+                }
+            ]
+        },
+        {
+            "start": "X03",
+            "end": "Udk0102post",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 18",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Switch 17",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 98",
+                    "state": "green"
+                }
+            ]
+        }
+    ],
+    "minDelay": 0,
+    "maxDelay": 1,
+    "defaultLocSpeed": 35,
+    "preArrivalSpeedReduction": 0.8,
+    "maxLatency": 0,
+    "turnOffFunctionsOnArrival": false,
+    "turnOnFunctionsOnDeparture": true,
+    "atomicRoutes": true,
+    "maxActiveTrains": 0,
+    "maxLocInactiveSeconds": 90,
+    "timetable": [],
+    "activateRoutes": false,
+    "activateRouteIDs": []
+}

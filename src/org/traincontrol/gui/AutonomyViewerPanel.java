@@ -1,0 +1,2193 @@
+package org.traincontrol.gui;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.AutonomyChecks;
+import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.util.I18n;
+
+/**
+ * Managing a layout's autonomy configurations, from the Auto tab.
+ *
+ * The counterpart to the editor panel: that one is for deciding how the railway is wired, this one is
+ * for using it.  Setting autonomy up for the first time, choosing which configuration runs, moving
+ * configurations between machines, and checking whether anything looks wrong before trusting trains
+ * to it.  It stands where the JSON window used to: the configuration IS the diagram now, so what was a
+ * text area becomes a list of named setups.
+ *
+ * Hand written and mounted into a container the main window already has, so no form changes and no new
+ * window.
+ *
+ * @author Adam
+ */
+public class AutonomyViewerPanel extends JPanel
+{
+    /**
+     * Asked for every time rather than held.
+     *
+     * The window drops its session whenever the layout changes underneath it - closing either editor
+     * does exactly that - and builds a new one from disk on the next request.  A panel holding the old
+     * object went on writing to a session nobody else could see: an import, a name, a caption all
+     * landed in it and were saved, while the diagram read the window's new session and showed none of
+     * them.  Closing an editor "fixed" it only because that is what replaced the window's session with
+     * one that had just read the file.
+     *
+     * Falling back to the one this panel was built with, which is never null.  The window can answer
+     * null - it does for a layout that is not stored locally - and these forty-odd call sites were
+     * written against a field that could not be, so preferring the live session must not hand them a
+     * null they never had to consider.
+     *
+     * @return the session the rest of the application is using
+     */
+    private AutonomySession session()
+    {
+        AutonomySession current = ui.getAutonomySession();
+
+        return current != null ? current : initialSession;
+    }
+
+    /**
+     * What this panel was constructed with, kept only as the fallback above.
+     */
+    private final AutonomySession initialSession;
+
+    /**
+     * The main window - and the parent of every dialog this class raises.
+     *
+     * It has to be, because this panel is no longer displayed: its controls moved to the Autonomy
+     * menu and the object stayed behind as the place the actions live.  A dialog parented to a
+     * component that is not on screen has nothing to centre on, so every one of them opened in the
+     * middle of the DISPLAY instead of over the window that asked.
+     */
+    private final TrainControlUI ui;
+
+    private final JComboBox<String> configurations = new JComboBox<>();
+    private final DefaultListModel<String> roster = new DefaultListModel<>();
+    private final DefaultListModel<String> findingsModel = new DefaultListModel<>();
+    private final JList<String> findings = new JList<>(findingsModel);
+
+    // Which tile each row of the findings list refers to; null for a page heading.  Parallel to the
+    // model rather than a richer element type, so the list still renders as plain strings.
+    private final List<org.traincontrol.automationui.TileGraph.TileKey> findingRows =
+        new java.util.ArrayList<>();
+
+    // The squares each row's finding names beside its own - a guard's signal - for the editor to outline when a click
+    // opens it there (RLV9-C5).  Parallel to the rows; null where there are none.
+    private final List<List<org.traincontrol.automationui.TileGraph.TileKey>> findingRelatedRows =
+        new java.util.ArrayList<>();
+
+    // What each findings row is, so the renderer can colour it and a click can act on it.  Parallel
+    // lists rather than a richer element type, so the list still renders as plain strings.
+    private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
+
+    private final JButton initialize = new JButton(I18n.t("autosetup.ui.btnInitFromLayout"));
+    private final JButton enable = new JButton(I18n.t("autosetup.ui.btnEnable"));
+    private final JButton placeLocomotives =
+        new JButton(I18n.t("autosetup.ui.btnPlaceLocomotives"));
+
+    // Built in buildSteps rather than here, but held as a field so it can be hidden with the rest of
+    // step 3 - it leads to a tab that does not exist until a configuration is running.
+    private JButton startHere;
+
+    private final JLabel stepChoose = step(I18n.t("autosetup.ui.stepChoose"));
+    private final JLabel stepPages = step(I18n.t("autosetup.ui.stepPages"));
+    private final JLabel stepEnable = step(I18n.t("autosetup.ui.stepEnable"));
+    private final JLabel stepRun = step(I18n.t("autosetup.ui.stepRun"));
+
+    private final JLabel pagesSummary = new JLabel();
+
+    private final JLabel hint = new JLabel(I18n.t("autosetup.ui.hintClickToFix"));
+
+    private final JLabel status = new JLabel();
+
+
+    public AutonomyViewerPanel(AutonomySession session, TrainControlUI ui)
+    {
+        // Kept only as the fallback session() describes: every use asks the window for whichever
+        // session is current, because the window replaces its own whenever the layout changes
+        // underneath it and a panel holding the old one writes where nobody is reading.
+        this.initialSession = session;
+        this.ui = ui;
+
+        // White, and no inset border: this panel stands inside a white container, and a default grey
+        // JPanel with padding read as a second surface floating on top of it.
+        setOpaque(true);
+        setBackground(java.awt.Color.WHITE);
+        setLayout(new BorderLayout(0, 6));
+
+        add(buildSteps(), BorderLayout.NORTH);
+        add(buildFindings(), BorderLayout.CENTER);
+
+        // No preferred size at all: the scroll pane it lives in has scrolling switched off in both
+        // directions, so the viewport hands this panel exactly the space the tab has and the findings
+        // list - the one thing that can overflow - scrolls inside its own box instead.
+        setBorder(BorderFactory.createEmptyBorder(6, 8, 8, 8));
+
+        unfocusable(this);
+
+        refresh();
+    }
+
+    // Copied from the Autonomy Settings tab rather than invented here, so the two read as one design:
+    //   group heading  jLabel51 "Train Behavior"        Segoe UI Semibold 13, navy, above a boxed panel
+    //   field label    jLabel46 "Minimum Action Delay"  Segoe UI plain 14, navy
+    //   control        minDelay, atomicRoutes           Segoe UI plain 14, default colour
+    //   button         validateButton, editLayoutButton Segoe UI bold 12
+    //   box            jPanel3, jPanel4                 white, 1px line border in (204,204,204)
+    static final java.awt.Font FONT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
+
+    static final java.awt.Font FONT_GROUP = new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
+
+    static final java.awt.Font FONT_BOLD = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12);
+
+    /**
+     * The findings and roster lists only.  They are dense reading rather than labels, and at 14 a real
+     * layout's list stops fitting in the space there is.
+     */
+    static final java.awt.Font FONT_LIST = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
+
+    static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 115);
+    static final java.awt.Color BOX_BORDER = new java.awt.Color(204, 204, 204);
+
+    static final java.awt.Color ERROR_COLOUR = new java.awt.Color(170, 0, 0);
+    static final java.awt.Color WARNING_COLOUR = new java.awt.Color(150, 95, 0);
+    static final java.awt.Color SUBHEADING_COLOUR = new java.awt.Color(70, 70, 70);
+
+    /**
+     * Takes a whole panel out of the keyboard's reach, and returns it.
+     *
+     * The main window drives locomotives from bare key presses, so a button or a checkbox that can
+     * take focus is a trap: press it once and every subsequent keystroke goes to that control instead
+     * of to the train.  Nothing on either autonomy panel is operated by keyboard - they are read and
+     * clicked - so the whole tree gives focus up.  This matches what the rest of the window already
+     * does control by control; done here as a sweep so a control added later cannot forget.
+     *
+     * Menus are untouched on purpose: a popup takes focus while it is open and gives it back when it
+     * closes, which is how a menu is meant to behave.
+     *
+     * @param component the root to sweep, usually a panel
+     */
+    static <T extends java.awt.Component> T unfocusable(T component)
+    {
+        component.setFocusable(false);
+
+        if (component instanceof java.awt.Container)
+        {
+            for (java.awt.Component child : ((java.awt.Container) component).getComponents())
+            {
+                unfocusable(child);
+            }
+        }
+
+        return component;
+    }
+
+    /**
+     * Applies the application's control font to a component, and returns it.
+     *
+     * @param component
+     * @param bold true for a button, false for a label or control
+     */
+    static <T extends javax.swing.JComponent> T styled(T component, boolean bold)
+    {
+        component.setFont(bold ? FONT_BOLD : FONT);
+        return component;
+    }
+
+    /**
+     * A group heading, sitting above a boxed panel - the "Train Behavior" style.
+     */
+    private JLabel group(String text)
+    {
+        JLabel label = new JLabel(text);
+        label.setFont(FONT_GROUP);
+        label.setForeground(HEADING_COLOUR);
+        label.setAlignmentX(LEFT_ALIGNMENT);
+        return label;
+    }
+
+    /**
+     * A field label inside a box - the "Minimum Action Delay (s)" style.
+     */
+    private JLabel step(String text)
+    {
+        JLabel label = new JLabel(text);
+        label.setFont(FONT);
+        label.setForeground(HEADING_COLOUR);
+        return label;
+    }
+
+    /**
+     * A white box with the window's own hairline border, as the settings tab uses.
+     */
+    private JPanel box()
+    {
+        JPanel panel = new JPanel();
+        panel.setBackground(java.awt.Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BOX_BORDER),
+            BorderFactory.createEmptyBorder(8, 10, 10, 10)));
+        panel.setAlignmentX(LEFT_ALIGNMENT);
+        return panel;
+    }
+
+    /**
+     * A row of controls that sits flush left under its field label.
+     */
+    private JPanel row()
+    {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        panel.setOpaque(false);
+        return panel;
+    }
+
+    /**
+     * All the step buttons share a width, so the left edge of the box reads as one column rather than
+     * as three buttons that happen to start in the same place and end wherever their text did.
+     */
+    private JButton sized(JButton button)
+    {
+        styled(button, true);
+        button.setPreferredSize(new Dimension(BUTTON_WIDTH, 26));
+        return button;
+    }
+
+    static final int BUTTON_WIDTH = 170;
+
+    /**
+     * The workflow: choose, scope, enable, run - each step a field label with its controls beneath it,
+     * laid out on one grid so every label and every control starts on the same left edge.
+     *
+     * Built as a boxed group under a heading, which is how the Autonomy Settings tab next door presents
+     * exactly this kind of content.
+     */
+    private JPanel buildSteps()
+    {
+        JPanel outer = new JPanel();
+        outer.setOpaque(false);
+        outer.setLayout(new javax.swing.BoxLayout(outer, javax.swing.BoxLayout.Y_AXIS));
+
+        outer.add(group(I18n.t("autosetup.ui.headingConfiguration")));
+        outer.add(javax.swing.Box.createVerticalStrut(3));
+
+        JPanel panel = box();
+        panel.setLayout(new java.awt.GridBagLayout());
+
+        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = java.awt.GridBagConstraints.WEST;
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
+
+        // --- step 1: which configuration ---
+        add(panel, gbc, stepChoose, 0);
+
+        initialize.addActionListener(e -> initialize());
+
+        JPanel initRow = row();
+        initRow.add(sized(initialize));
+        add(panel, gbc, initRow, 0);
+
+        JPanel choose = row();
+
+        configurations.setFont(FONT);
+        configurations.setMaximumRowCount(12);
+        configurations.setPreferredSize(new Dimension(BUTTON_WIDTH, 26));
+        choose.add(configurations);
+
+        // Everything that manages configurations lives behind one button and the combo's own context
+        // menu, rather than as five peers competing with the step that matters.  They are all rare:
+        // a configuration is made once and chosen thereafter.
+        final JButton manage = new JButton(I18n.t("autosetup.ui.btnManage"));
+        manage.addActionListener(e -> manageMenu().show(manage, 0, manage.getHeight()));
+        choose.add(styled(manage, true));
+
+        // No ActionListener, deliberately: choosing a configuration is done from the menu below rather
+        // than by selecting it here.  There used to be a `populating` flag set around every write to
+        // this combo, described as stopping a selection made in code from being reacted to and loaded
+        // straight back - a guard against a listener that does not exist, and that nothing ever read.
+        // Anything that does add one will need that guard back, because populate() sets the selection
+        // itself.
+        configurations.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e)
+            {
+                if (javax.swing.SwingUtilities.isRightMouseButton(e))
+                {
+                    manageMenu().show(configurations, e.getX(), e.getY());
+                }
+            }
+        });
+
+        add(panel, gbc, choose, 0);
+
+        // --- which pages count ---
+        // On the surface rather than on the Manage menu: it decides which track is considered at all,
+        // so it is the first thing to reach for when the list below is full of findings about a page
+        // that is not part of the railway being automated.
+        add(panel, gbc, stepPages, 10);
+
+        JPanel pageRow = row();
+
+        pageRow.add(styled(pagesSummary, false));
+
+        add(panel, gbc, pageRow, 0);
+
+        // --- step 2: turn it on ---
+        add(panel, gbc, stepEnable, 10);
+
+        enable.setToolTipText(I18n.t("autosetup.ui.tooltipLoadConfiguration"));
+        enable.addActionListener(e ->
+        {
+            Object selected = configurations.getSelectedItem();
+
+            if (selected != null) load(String.valueOf(selected), true);
+        });
+
+        JPanel enableRow = row();
+        enableRow.add(sized(enable));
+        enableRow.add(styled(status, false));
+
+        add(panel, gbc, enableRow, 0);
+
+        // --- step 3: run ---
+        add(panel, gbc, stepRun, 10);
+
+        JPanel run = row();
+
+        // Sends the user where placing actually happens: the diagram editor, where a station can be
+        // right-clicked and given a locomotive.  It used to open the run tab, which is where autonomy
+        // is STARTED - a train has to be somewhere before that is any use.
+        placeLocomotives.addActionListener(e -> ui.openAutonomyEditor(null));
+        run.add(sized(placeLocomotives));
+
+        // The step after placing, kept as its own button.  Placing used to lead here directly, and
+        // moving it to the editor would otherwise have left the run tab with nothing pointing at it -
+        // the same dead end this workflow was built to close.
+        startHere = new JButton(I18n.t("autosetup.ui.btnGoToStart"));
+        startHere.setToolTipText(I18n.t("autosetup.ui.tooltipGoToStart"));
+        startHere.addActionListener(e -> ui.showAutonomyRunTab());
+        run.add(styled(startHere, true));
+
+        add(panel, gbc, run, 0);
+
+        outer.add(panel);
+
+        return outer;
+    }
+
+    /**
+     * Adds one full-width row to a GridBagLayout, with a gap above it.
+     */
+    private void add(JPanel panel, java.awt.GridBagConstraints gbc, java.awt.Component component,
+        int gapAbove)
+    {
+        gbc.insets = new java.awt.Insets(gapAbove, 0, 2, 0);
+        panel.add(component, gbc);
+        gbc.gridy++;
+    }
+
+    /**
+     * Everything that manages configurations, on one menu.
+     */
+    private javax.swing.JPopupMenu manageMenu()
+    {
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
+            { public void run() { duplicate(); } }));
+        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), new Runnable()
+            { public void run() { rename(); } }));
+        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), new Runnable()
+            { public void run() { delete(); } }));
+        menu.addSeparator();
+        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
+            { public void run() { importConfiguration(); } }));
+        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
+            { public void run() { exportConfiguration(); } }));
+
+        // Debug builds only, and last on the menu.  What it writes is the DERIVED graph in the old
+        // JSON form - a diagnostic for reading when something derives wrongly, not a file anybody
+        // operates the railway from.  The menu is rebuilt on every press, so the flag is read fresh.
+        // And only when there is a derived graph to write.  What this exports is the REDUCTION, so
+        // with no setup at all there is nothing to reduce, and with blocking problems the reduction is
+        // the thing under repair - offering it in either state hands somebody a file that describes
+        // nothing, or throws on the way to writing one.  The Autonomy menu has always refused in both
+        // states; this copy of the same action did not.
+        if (ui.getModel() != null && ui.getModel().isDebug()
+            && session().exists() && !session().hasBlockingProblems())
+        {
+            menu.addSeparator();
+            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
+                { public void run() { inspect(); } }));
+        }
+
+        return menu;
+    }
+
+    private javax.swing.JMenuItem item(String text, final Runnable action)
+    {
+        javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);
+        menuItem.addActionListener(e -> action.run());
+        return styled(menuItem, false);
+    }
+
+    /**
+     * The list of things to look at, errors first, each one clickable.
+     *
+     * A boxed group like the one above it, and the only part of this tab that is allowed to overflow:
+     * the list scrolls inside its own box, so the tab itself never does.
+     */
+    private JPanel buildFindings()
+    {
+        JPanel outer = new JPanel(new BorderLayout(0, 3));
+        outer.setOpaque(false);
+
+        JPanel heading = new JPanel();
+        heading.setOpaque(false);
+        heading.setLayout(new javax.swing.BoxLayout(heading, javax.swing.BoxLayout.Y_AXIS));
+        heading.add(group(I18n.t("autosetup.ui.headingFindings")));
+
+        hint.setFont(FONT_LIST);
+        hint.setForeground(SUBHEADING_COLOUR);
+        hint.setAlignmentX(LEFT_ALIGNMENT);
+        heading.add(hint);
+
+        outer.add(heading, BorderLayout.NORTH);
+
+        JPanel panel = box();
+        panel.setLayout(new BorderLayout(0, 6));
+
+        findings.setCellRenderer(new FindingRenderer());
+        findings.setBackground(java.awt.Color.WHITE);
+        findings.setFont(FONT_LIST);
+
+        // One click, straight to the square it is about, with the tools that can fix it already open.
+        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e)
+            {
+                int row = findings.locationToIndex(e.getPoint());
+
+                if (row < 0 || row >= findingRows.size()) return;
+
+                // locationToIndex returns the CLOSEST row, not -1, for a click below the last one - so
+                // clicking the empty space under the list opened the last finding's tile.
+                java.awt.Rectangle bounds = findings.getCellBounds(row, row);
+
+                if (bounds == null || !bounds.contains(e.getPoint())) return;
+
+                org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
+
+                // With the squares it names beside its own, outlined there as the editor's own list outlines them
+                // (RLV9-C5)
+                if (tile != null)
+                {
+                    ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
+                }
+            }
+        });
+
+        // The findings are the only thing here genuinely wider than the tab, so this is the only thing
+        // that scrolls sideways.  Everything else is bounded, so the tab itself never scrolls at all.
+        JScrollPane scroll = new JScrollPane(findings,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(java.awt.Color.WHITE);
+
+        panel.add(scroll, BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel(new BorderLayout(0, 2));
+        bottom.setOpaque(false);
+
+        // A field label rather than a titled border: the settings tab labels its groups this way, and a
+        // box around a list inside a boxed group is a frame inside a frame.
+        bottom.add(step(I18n.t("autosetup.ui.labelLocomotiveRoster")), BorderLayout.NORTH);
+
+        JList<String> locomotives = new JList<>(roster);
+        locomotives.setFont(FONT_LIST);
+
+        JScrollPane rosterScroll = new JScrollPane(locomotives,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        rosterScroll.setBorder(BorderFactory.createLineBorder(BOX_BORDER));
+        rosterScroll.setPreferredSize(new Dimension(10, 80));
+        rosterScroll.getViewport().setBackground(java.awt.Color.WHITE);
+
+        bottom.add(rosterScroll, BorderLayout.CENTER);
+
+        panel.add(bottom, BorderLayout.SOUTH);
+
+        outer.add(panel, BorderLayout.CENTER);
+
+        return outer;
+    }
+
+    /**
+     * Colours a row by what it is: a section heading, something that must be fixed, or something worth
+     * checking.  Colour rather than a prefix, because the list is scanned rather than read.
+     */
+    private class FindingRenderer extends javax.swing.DefaultListCellRenderer
+    {
+        @Override
+        public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
+            int index, boolean isSelected, boolean cellHasFocus)
+        {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+            AutonomyChecks.Severity severity =
+                index < findingSeverity.size() ? findingSeverity.get(index) : null;
+
+            boolean heading = index < findingRows.size()
+                && findingRows.get(index) == null && severity == null;
+
+            setFont(heading ? FONT_BOLD : FONT);
+
+            if (!isSelected)
+            {
+                setForeground(heading ? HEADING_COLOUR
+                    : severity == AutonomyChecks.Severity.ERROR ? ERROR_COLOUR
+                    : severity == AutonomyChecks.Severity.WARNING ? WARNING_COLOUR
+                    : java.awt.Color.DARK_GRAY);
+            }
+
+            return this;
+        }
+    }
+
+    // --- configurations ---------------------------------------------------------------------------
+
+    /**
+     * Loads a configuration and makes it the one that runs.
+     *
+     * Refused while autonomy is doing anything, because replacing the graph underneath a train in
+     * motion leaves it running with nothing tracking it - the same gate the rest of the application
+     * applies to structural changes.
+     */
+    /**
+     * Which configuration the Manage actions operate on: the one showing in the dropdown.
+     *
+     * NOT the active one.  Every Manage action used to read getActiveConfiguration(), so choosing "Yard"
+     * in the list and pressing Delete deleted whatever was running - unrecoverable, from an ordinary
+     * gesture.  The dropdown is what the user is pointing at.
+     */
+    /**
+     * Points the Manage actions at a configuration, for a caller that has no combo box of its own.
+     *
+     * @param name
+     */
+    public void setSelectedConfiguration(String name)
+    {
+        configurations.setSelectedItem(name);
+    }
+
+    public String selected()
+    {
+        Object chosen = configurations.getSelectedItem();
+
+        return chosen == null ? session().getStore().getActiveConfiguration() : String.valueOf(chosen);
+    }
+
+    /**
+     * Loads what an import leaves in use: the configuration just imported where nothing was running, and otherwise the one
+     * running, loaded again over the shared half the import merged.
+     *
+     * Importing is the click.  Needing a second one before anything takes effect is the step that gets
+     * left out - and then the import looks to have failed, which is exactly the report that led here.
+     *
+     * An import does not swap out a configuration somebody has running (`configurationToLoadAfterImport`), and the
+     * diagram beside it is showing it.
+     *
+     * Interactive, unlike the startup resume: the user asked for this a moment ago, so if it will not
+     * build they should be told now rather than left to find the reasons in a list.
+     *
+     * @param name the configuration to bring up, or null to leave things alone
+     */
+    private void loadAfterImport(String name)
+    {
+        loadAfterImport(name, true);
+    }
+
+    /**
+     * The same, told whether the running layout still has to be folded back in first - false where the import captured
+     * it before writing, so the reload does not write it back over what the import brought (RLA-C2, RLD3-C1).
+     *
+     * @param name the configuration to bring up, or null to leave things alone
+     * @param captureRunningState whether the reload captures the running layout first
+     */
+    private void loadAfterImport(String name, boolean captureRunningState)
+    {
+        if (name == null || name.trim().isEmpty()) return;
+
+        // The rule lives on AutonomySession, where it can be tested; see the note there for why
+        // something already running has to be loaded AGAIN rather than left alone.
+        String toLoad = AutonomySession.configurationToLoadAfterImport(
+            ui.getActiveDiagramConfiguration(), name);
+
+        if (toLoad == null) return;
+
+        session().getStore().setActiveConfiguration(toLoad);
+
+        load(toLoad, true, captureRunningState);
+
+        // And then rebuild the diagram, which is what makes the captions live.
+        //
+        // updateVisiblePoints only writes to labels the grid has REGISTERED, so it can do nothing for
+        // a station whose caption did not exist when the grid was last built - which is every station
+        // an import has just created.  Calling it directly therefore fixed nothing, however many event
+        // hops it was given: repaintLayout submits to a background executor which then posts its own
+        // event, so hops queued here can and do run first.
+        //
+        // repaintLayout is the one thing that does both, in order and inside a single event: it
+        // rebuilds the grid, registering a label for every caption, and calls updateVisiblePoints at
+        // the end.  Asking for that once is both simpler and correct.
+        javax.swing.SwingUtilities.invokeLater(() -> ui.repaintLayout());
+    }
+
+    /**
+     * Loads the active configuration - the startup resume, which is the same as the user choosing what
+     * they chose last time.
+     */
+    public void loadActive()
+    {
+        String active = session().getStore().getActiveConfiguration();
+
+        // Quietly: a modal on startup, before the window is even up, tells a user who has not asked for
+        // anything that something they have never heard of cannot be used.  A failed resume goes to the
+        // log and leaves its reasons in the list, where somebody looking for them will find them.
+        if (active != null) load(active, false);
+    }
+
+    /**
+     * @param name the configuration to load
+     * @param interactive whether the user asked for this, and so should be told when it fails
+     */
+    public void load(String name, boolean interactive)
+    {
+        load(name, interactive, true);
+    }
+
+    /**
+     * The same, told whether the running layout's state is worth keeping.
+     *
+     * Loading normally CAPTURES first - placements, homes and facings set while the outgoing
+     * configuration ran go back into it before anything is replaced. That is right when the running
+     * layout is the newer of the two.
+     *
+     * It is exactly wrong when the SETUP is newer, which is the case whenever a rebuild is asked for
+     * BECAUSE the setup just changed. There the capture writes the running layout's stale answer back
+     * over the edit that provoked the rebuild, and the reload then regenerates from the reverted
+     * configuration - so setting a facing, placing a train or removing one would be undone on the way
+     * to being redrawn.
+     *
+     * An explicit edit beats an inferred one, which is the same precedence the rest of this applies:
+     * a facing learned by watching where a train ended up is a guess, and somebody typing one is not.
+     *
+     * @param name the configuration to load
+     * @param interactive whether the user asked for this, and so should be told when it fails
+     * @param captureRunningState whether to fold the running layout's state back in first
+     */
+    public void load(String name, boolean interactive, boolean captureRunningState)
+    {
+        // The same gate the JSON path applies before replacing the layout: confirm, then stop whatever
+        // is moving.  Owned by the main window because stopping trains is its business, not a panel's.
+        if (!ui.prepareAutonomyReload())
+        {
+            refresh();
+            return;
+        }
+
+        // WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD, THE TRAINS ARE CARRIED ACROSS RATHER THAN FOLDED
+        // (RLD4-C3, RLA5-B1, RLV6-B1).  The running layout is the older of the two, and folding it would take the edit
+        // away; but where its trains stand is the railway's to say (OB-183), and a load that rebuilt from the setup
+        // without a fold stood each train the run moved back where it set off, with the square it really stands on
+        // reading free.  So these loads carry them across (`carryTheTrainsAcross`), and the load itself is the one asked
+        // for, interactive or not (RLV6-C1), after the question above rather than through a door that refuses while
+        // autonomy reads busy (RLV6-B1, c).
+        //
+        // A layout that holds a path - Yes above stops the trains and releases nothing - is folded as any other, with
+        // each train under way written on the one point it is kept at (`loadPrepared`, RLV7-B1, RLV8-B1).  Carried
+        // instead, it lost everything but where the trains stand: the Auto tab's settings and a timetable captured this
+        // session went back to the file's.
+        if (captureRunningState && ui.isSetupNewerThanTheRunningLayout())
+        {
+            // The configuration running - or, where a reset has forgotten its name, the one it forgot (RLV6-B1, a).  Not
+            // "nothing running" read as that: Unload, a deleted setup and a switch of railway forget the name too, and a
+            // load after a switch carried the previous railway's trains across (RLV7-C2).
+            final String running = ui.getActiveDiagramConfiguration() != null ? ui.getActiveDiagramConfiguration()
+                : ui.getConfigurationTheResetForgot();
+
+            if (running != null && running.equals(name))
+            {
+                ui.carryTheTrainsAcross(() -> loadPrepared(name, interactive, false));
+
+                refresh();
+                return;
+            }
+
+            // Another configuration (RLV6-B1, b): the one running first, with the edit and where the trains stand, so
+            // it is folded below as any configuration left is.  With nothing running there is nothing to carry, and
+            // nothing to fold.
+            if (running != null)
+            {
+                // Quietly: its failure is said below, in words about this choice rather than a start-up (RLV7-C4)
+                final boolean carried = ui.carryTheTrainsAcross(() -> loadPrepared(running, false, false, false));
+
+                // NOT WHILE THE ONE RUNNING CANNOT BE USED WITH THE EDIT THAT WAITS (RLV7-C4).  The choice went ahead:
+                // the configuration left kept where its trains stood before the run, with nothing said, and the flag
+                // stayed up over the one chosen.  Refused, the one running stays loaded - as it was, where the edit stops
+                // it building, or with its errors where it builds with them (SVN-B10: a setup with errors loads, so it
+                // can be fixed) - the edit is kept, and what stops it is in the list the refresh shows.
+                if (!carried && ui.isSetupNewerThanTheRunningLayout())
+                {
+                    int things = Math.max(countBlocking(), session().errorCount());
+
+                    String why = I18n.f("autosetup.ui.errorCannotKeepTrainsBeforeChoosing", running, name);
+
+                    if (things > 0)
+                    {
+                        why += "\n\n" + (things == 1 ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
+                            : I18n.f("autosetup.ui.errorCannotBuildDetail", things));
+                    }
+
+                    refresh();
+
+                    if (interactive) JOptionPane.showMessageDialog(ui, why);
+                    else if (ui.getModel() != null) ui.getModel().log(why);
+
+                    return;
+                }
+            }
+        }
+
+        // AND THE TURNS THE RAILWAY OWES, across a fold of the configuration running (RLV9-C1).  A turn made at a
+        // destination is written into the setup only while the railway is idle, so during a run every one made since it
+        // started is still owed; the fold writes where each train stands, not which way it was turned, and the load
+        // replaced the railway with the records on it.  The carry above keeps them already.
+        final String runningNow = ui.getActiveDiagramConfiguration();
+
+        if (captureRunningState && runningNow != null && runningNow.equals(name))
+        {
+            ui.keepThePendingTurnsAcross(() -> loadPrepared(name, interactive, captureRunningState));
+        }
+        else
+        {
+            // ANOTHER CONFIGURATION: the turns the railway owes are the one running's, written into it before its fold
+            // (RLV10-C1)
+            if (captureRunningState && runningNow != null) ui.writeTheTurnsOwed();
+
+            loadPrepared(name, interactive, captureRunningState);
+        }
+    }
+
+    /**
+     * The load itself, once `prepareAutonomyReload` has been asked: the capture where it is wanted, the rebuild, and what
+     * follows it.
+     *
+     * @param name the configuration to load
+     * @param interactive whether the user asked for this, and so should be told when it fails
+     * @param captureRunningState whether to fold the running layout's state back in first
+     */
+    private void loadPrepared(String name, boolean interactive, boolean captureRunningState)
+    {
+        loadPrepared(name, interactive, captureRunningState, true);
+    }
+
+    /**
+     * The same, told whether a load that is not interactive says in the log that it failed - not where its caller says
+     * so itself, in words about what was asked for (RLV7-C4).
+     *
+     * @param name the configuration to load
+     * @param interactive whether the user asked for this, and so should be told when it fails
+     * @param captureRunningState whether to fold the running layout's state back in first
+     * @param logAFailure whether a failure that is not interactive goes to the log as a start-up's would
+     */
+    private void loadPrepared(String name, boolean interactive, boolean captureRunningState, boolean logAFailure)
+    {
+        // What was set while the outgoing configuration ran - placements, homes, settings - goes back
+        // into THAT configuration, by name, before anything is replaced.  By name because store-active
+        // and what-is-running can disagree after a refused load, and capturing into the store's idea
+        // of active would overwrite a configuration with another one's state.
+        //
+        // NOT WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD (RLD4-C3, WKW-B2): the running layout is then the
+        // older of the two, and folding it in would take the edit away - the exit save and the editor doors ask the same.
+        //
+        // AND A LAYOUT HOLDING A PATH WITH EACH TRAIN UNDER WAY ON ONE POINT (RLV7-B1, RLV8-B1).  A locked path holds every
+        // point on it for its train, and folded point by point a train under way stood on each of those squares, which
+        // the configuration refused as one locomotive in two places.  Written at the point it is kept at - the last
+        // station on its path whose sensor it tripped, or where it set off (RLV7-C1) - it stands once, and the rest of
+        // the fold - the Auto tab's settings, a captured timetable - is kept.
+        if (captureRunningState && !ui.isSetupNewerThanTheRunningLayout() && ui.getActiveDiagramConfiguration() != null
+            && ui.getModel() != null && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
+        {
+            try
+            {
+                org.traincontrol.automation.Layout folding = ui.getModel().getAutoLayout();
+
+                session().captureFromLayout(folding.toJSON(folding.getLastPointsReached()),
+                    ui.getActiveDiagramConfiguration());
+            }
+            catch (Exception e)
+            {
+                // capture is a courtesy; failing to capture must not block loading
+                if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+            }
+        }
+
+        // remembered so a failed load can put the store back: what loads on the next start must be
+        // something that actually loaded, not something that was refused partway
+        String previous = session().getStore().getActiveConfiguration();
+
+        session().getStore().setActiveConfiguration(name);
+        session().rebuild();
+
+        if (session().hasBlockingProblems())
+        {
+            // refreshed FIRST, so the reasons are on screen behind the message that refers to them
+            refresh();
+
+            if (interactive)
+            {
+                // One of these is far and away the commonest case, and "1 things" in the one message
+                // a user meets before their railway will run is not the first impression to make.
+                int blocking = countBlocking();
+
+                JOptionPane.showMessageDialog(ui, blocking == 1
+                    ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
+                    : I18n.f("autosetup.ui.errorCannotBuildDetail", blocking));
+            }
+            else if (logAFailure && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.infoResumeFailed", name));
+            }
+
+            revert(previous);
+            refresh();
+            return;
+        }
+
+        if (ui.getModel() == null)
+        {
+            revert(previous);
+            return;
+        }
+
+        try
+        {
+            ui.getModel().parseAuto(session().buildConfiguration());
+
+            // ITS SETTINGS AS BUILT, for the folds to tell what the railway changed since (RSA20-B1)
+            ui.noteTheRailwaysSettingsAsBuilt();
+
+            // THE RULE FOR EVERY PARSE (Adam, 2026-09-21): a setup that turns atomic routes off
+            // while track autonomy runs over has no length comes up atomic, with the reason in the
+            // log.  This is the only door into `parseAuto` since the old JSON tab's Validate button
+            // went (OB-254); while there were two, both had to carry it.
+            ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
+            // remembered for next start, the way loading has always doubled as choosing
+            save();
+
+            // everything that follows success - dependent tabs, the monitor, the overlay toggle, the
+            // jump to the diagram - in one place, shared with the startup resume
+            ui.autonomyLoadedFromDiagram(name, !interactive);
+        }
+        catch (RuntimeException e)
+        {
+            if (interactive) JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
+            else if (ui.getModel() != null) ui.getModel().log(String.valueOf(e.getMessage()));
+
+            revert(previous);
+        }
+
+        refresh();
+    }
+
+    /**
+     * The session's own count (DY3-C7).
+     *
+     * This was the only copy of the loop, so the start door had none and said "one thing" whatever the
+     * number was.  Kept as a method rather than inlined because the call sites read better for it.
+     *
+     * @return how many problems would stop the setup being built
+     */
+    private int countBlocking()
+    {
+        return session().blockingProblemCount();
+    }
+
+    private void revert(String previous)
+    {
+        session().getStore().setActiveConfiguration(previous);
+        session().rebuild();
+    }
+
+    /**
+     * Sets autonomy up for a layout that has none: one configuration, named by the user, which
+     * everything else on this panel then applies to.
+     */
+    public void initialize()
+    {
+        // NOT WHILE AUTONOMY RUNS (RSA10-A1): it writes a configuration, and may tick pages out, under the railway
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
+        String name = (String) JOptionPane.showInputDialog(ui,
+            I18n.t("autosetup.ui.promptConfigurationName"),
+            I18n.t("autosetup.ui.menuInitialize"),
+            JOptionPane.PLAIN_MESSAGE, null, null, suggestedConfigurationName());
+
+        if (name == null || name.trim().isEmpty()) return;
+
+        try
+        {
+            session().initialize(name.trim());
+        }
+        catch (IOException e)
+        {
+            // Only a name collision is reported as one.  initialize() also SAVES, so a full disk or a
+            // read-only folder used to be announced as "that name is already in use" - and the user
+            // would try another name, and another, none of which was ever the problem.
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
+            return;
+        }
+
+        // BEFORE anything is derived or loaded, so the pages that cannot be told apart are already out
+        // when the first graph is built - rather than the user meeting a screenful of duplicate-sensor
+        // errors and being told about the exclusions afterwards.
+        List<String> shut = session().excludeRepeatedSensorPages();
+
+        if (!shut.isEmpty())
+        {
+            save();
+
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
+                shut.size(), String.join(", ", shut)));
+        }
+
+        refresh();
+
+        // And run it.  Creating a configuration nobody is using leaves the window showing the old one
+        // with nothing to say a new one exists - which reads exactly like the button having done
+        // nothing.  load() is the same guarded path the chooser uses, so trains are stopped and the
+        // user is asked before anything is replaced.
+        load(name.trim(), true);
+
+        // A refused load must still leave the new configuration CHOSEN.
+        //
+        // load() puts the store back to whatever was active before, so that what resumes next start is
+        // something that actually loaded - right in general, and wrong for the one just created: what
+        // was active before is nothing, so the setup the user has this second made is left unchosen.
+        // The editor is gated on a configuration being chosen, so the errors it exists to fix would lock
+        // the door to the room they are fixed in, and the banner would go on offering to load something
+        // that cannot load.
+        if (ui.getActiveDiagramConfiguration() == null)
+        {
+            session().getStore().setActiveConfiguration(name.trim());
+            session().rebuild();
+
+            refresh();
+        }
+
+        // Then show them the thing they just made autonomy for.
+        //
+        // Whatever happened above - loaded, or refused with a list of what to fix - the answer is on the
+        // track diagram: the stations appear there, and the strip along the top says how many things
+        // need looking at and opens the editor at the first of them.  Staying on this tab leaves the
+        // work they just did apparently invisible.
+        ui.showLayoutTab();
+    }
+
+    /**
+     * A name the user can simply accept.
+     *
+     * Naming a thing is a small decision, and it is the first one this feature asks for - so a blank box
+     * makes somebody invent something before they can find out what the feature does.  "Autonomy 1", or
+     * the next number nobody has used, can be accepted in one keystroke and renamed later from the same
+     * menu.
+     *
+     * The next FREE number, not the count plus one: with "Autonomy 1" and "Autonomy 3" present, the
+     * count would suggest "Autonomy 3" and the dialog would then refuse it as already in use.
+     */
+    private String suggestedConfigurationName()
+    {
+        java.util.List<String> taken = session().getStore().getConfigurationNames();
+
+        for (int next = 1; next < 1000; next++)
+        {
+            String candidate = I18n.f("autosetup.ui.defaultConfigurationName", next);
+
+            if (!taken.contains(candidate)) return candidate;
+        }
+
+        return I18n.f("autosetup.ui.defaultConfigurationName", taken.size() + 1);
+    }
+
+    /**
+     * A file chooser opened where the last one was, like every other file chooser in the application.
+     *
+     * These three - import a configuration, export one, read an old autonomy.json - each opened in the
+     * working directory, which on a packaged build is wherever the shortcut points and never where
+     * anybody keeps their files.
+     *
+     * @return the chooser
+     */
+    private javax.swing.JFileChooser chooser()
+    {
+        return new QuickFileChooser(TrainControlUI.getPrefs()
+            .get(TrainControlUI.LAST_USED_FOLDER, new java.io.File(".").getAbsolutePath()));
+    }
+
+    /**
+     * Remembers the folder a file was chosen in, so the next chooser opens there.
+     *
+     * @param file the file that was chosen
+     */
+    private void rememberFolder(java.io.File file)
+    {
+        if (file == null || file.getParent() == null) return;
+
+        TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, file.getParent());
+    }
+
+    /**
+     * Reads an exported configuration file in as a new named configuration.
+     *
+     * The file carries the configuration AND the track decisions it refers to - station names, which
+     * squares are stations, lengths, directions, portals, captions.  It used to carry the configuration
+     * alone, on the assumption that the track is derived from the diagram; the track's SHAPE is, but
+     * what any of it is called and which squares count as stations are decisions somebody made, and
+     * they live only in the setup.  Without them an imported configuration refers to nothing.
+     *
+     * The shared half is merged, never adopted wholesale, so importing cannot rename a station that
+     * already has a name here.
+     */
+    public void importConfiguration()
+    {
+        // NOT WHILE AUTONOMY RUNS (RSA4-C5; Adam, 2026-09-28: *"There should be no setup edit possible during a run"*), as
+        // Delete beside it is refused, and before anything is asked.  Into any configuration an import writes the setup's
+        // shared half - a station's name among it - and the fold after a declined reload read the running railway through
+        // names it had changed: a train on a square it renamed was written nowhere.  It was refused into the configuration
+        // in use alone (RLU4-C1); what it says says what to do instead (RLU5-C2, RLA5-C1).
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorImportWhileRunning"));
+
+            return;
+        }
+
+        javax.swing.JFileChooser chooser = chooser();
+
+        if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        rememberFolder(chooser.getSelectedFile());
+
+        String name = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptImportName"),
+            chooser.getSelectedFile().getName().replaceAll("\\.json$", ""));
+
+        if (name == null || name.trim().isEmpty()) return;
+
+        // READ BEFORE THE QUESTION BELOW, so that it can say what Yes does (RLA-B2, RLU-B1, RLD-C4).  A bundle replaces
+        // the configuration of that name; an old autonomy.json fills in what that configuration does not already say,
+        // as MT-298 rules a second import must.  They shared one question - "Replace it with the imported one?" - and
+        // for an old file Yes did the other thing.
+        org.json.JSONObject file;
+
+        AutonomySession.ImportFormat format;
+
+        try
+        {
+            byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
+
+            file = new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+
+            // Told apart by shape, not by where it came from or what it is called.  A user has one
+            // Import, and an old autonomy.json is as much a thing to import as a bundle is - being
+            // asked to know which menu item their own file belongs to is a question they should never
+            // have to answer.
+            format = AutonomySession.detectImportFormat(file);
+        }
+        catch (IOException | RuntimeException e)
+        {
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+
+            refresh();
+            return;
+        }
+
+        if (format == AutonomySession.ImportFormat.UNKNOWN)
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorImportUnrecognised"));
+            return;
+        }
+
+        // NOTHING THAT REPLACES THE CONFIGURATION IN USE (RLA2-B1, RLD3-C2, RLU4-B1).  A bundle replaces the configuration it
+        // is imported into, and so does a configuration of the older, bare shape - the setup folder's own file, or an export
+        // from before bundles; the reload that follows captured the running railway straight back over either - its
+        // settings and its timetable - so "Replace it?" answered Yes did not replace; and their placements are not where the
+        // running railway's trains stand (OB-183).  So they go in under another name and are run by choosing them.  An old
+        // file is not refused (RLD3-C1): it fills gaps, as MT-298 has it, and places no train on the railway running -
+        // below.
+        String inUse = ui.getActiveDiagramConfiguration();
+
+        final boolean intoTheOneInUse = inUse != null && inUse.equals(name.trim());
+
+        if (intoTheOneInUse && format != AutonomySession.ImportFormat.LEGACY_GRAPH)
+        {
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorImportIntoConfigurationInUse", inUse,
+                I18n.t("autosetup.ui.menuAutonomy") + " > " + I18n.f("autosetup.ui.menuConfigurations", inUse)));
+
+            return;
+        }
+
+        // importing over an existing name replaces it, or fills its gaps, which is sometimes wanted and never silent - and
+        // into the configuration in use an old file places none of its trains, which its question says (RLU4-C3)
+        if (session().getStore().getConfigurationNames().contains(name.trim()))
+        {
+            String question = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? "autosetup.ui.confirmImportOverwrites"
+                : intoTheOneInUse ? "autosetup.ui.confirmImportFillsGapsInUse" : "autosetup.ui.confirmImportFillsGaps";
+
+            // AN OLD FILE'S QUESTION SAYS WHAT COUNTS AS NOT SET (RLA3-B1; Adam, 2026-09-28: keep the gap-fill and say so).
+            // A default is stored as nothing, so a setting returned to its default, a home taken off or an emptied
+            // exclusion list reads as a gap and takes the file's - which "nothing already set is changed" did not say.  And
+            // the one setting that does not: once the configuration has been loaded, every station records its maximum, no
+            // limit included, so the file's maximum is kept out (RLV12-C6).
+            String asked = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? I18n.f(question, name.trim())
+                : I18n.f(question, name.trim()) + "  " + I18n.t("autosetup.ui.importTakesTheFilesForDefaults")
+                    + "  " + I18n.f("autosetup.ui.importKeepsTheStationMaximums", name.trim());
+
+            int replace = JOptionPane.showOptionDialog(ui, asked,
+                I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE, null,
+                TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
+
+            if (replace != 0) return;
+        }
+
+        try
+        {
+            if (format == AutonomySession.ImportFormat.LEGACY_GRAPH)
+            {
+                // WITH the name, which this branch used to discard (OB-106).
+                //
+                // Adam: "when a track diagram has no autonomy, and we import from a legacy file,
+                // there is no autonomy setup to view.  one should be created so that it's properly
+                // loaded into.  autonomy editor, controls are all greyed out."
+                //
+                // The user is asked for a configuration name a few lines above, for both kinds of
+                // file - and then this branch returned without ever using it. The import wrote its
+                // per-point settings into the ACTIVE configuration, and on a layout that has never
+                // had autonomy there is no active configuration and no configuration at all, so the
+                // placements, homes and termini had nowhere to land and the load afterwards was asked
+                // to load null. Hence a setup that appears to import successfully and then cannot be
+                // opened.
+                importLegacyGraph(file, name.trim());
+                return;
+            }
+
+            int filled = session().importBundle(name.trim(), file);
+
+            // AND WHICH PAGES WERE LEFT OUT, said before the save (Adam, 2026-09-13: "keep only the
+            // pages, and alert the user").  An export describes the railway it came from; pages this
+            // layout does not have are not brought in, because a page the setup knows about and cannot
+            // load stops every later save from tidying anything.
+            java.util.List<String> notHere = session().getPagesLeftOutOfLastImport();
+
+            if (!notHere.isEmpty())
+            {
+                JOptionPane.showMessageDialog(ui,
+                    I18n.f("autosetup.ui.warnImportPagesNotHere", String.join(", ", notHere)),
+                    I18n.t("autosetup.ui.titleImportPagesNotHere"), JOptionPane.WARNING_MESSAGE);
+            }
+
+            save();
+
+            // Said out loud, because the alternative is somebody wondering whether their station names
+            // came across.  A file written before exporting carried the track decisions fills nothing,
+            // and that is worth knowing too.
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoImported", filled));
+
+            loadAfterImport(name.trim());
+        }
+        catch (IOException | RuntimeException e)
+        {
+            // A COLLISION IS NOT AN UNREADABLE FILE (GSP-B1).  The store reports its refusals as
+            // message keys - `createConfiguration` and `renameConfiguration` both translate them
+            // here, with a comment saying a user should not be told "autosetup.ui.errorNameInUse" -
+            // and this door wrapped every one of them in "the file could not be read", which named
+            // neither the fault nor a remedy for the one refusal an import can actually hit - which is a name sharing
+            // another configuration's file, said as that (VD17-C6).
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage()))));
+        }
+
+        refresh();
+    }
+
+    /**
+     * What to tell somebody whose configuration name the store refused - or `otherwise`, for any other failure (GSP-B1,
+     * VD17-C6).
+     *
+     * The store reports its refusals as message keys, so they are translated here rather than shown raw: a user should not
+     * be told "autosetup.ui.errorNameInUse".  There are two, and they are different faults: a name another configuration
+     * already HAS, and a name that would be saved in another configuration's FILE - "Night_ Yard" beside "Night: Yard",
+     * since a file name holds no colon.  The second was said as the first, which names as existing the one configuration
+     * that does not.  One method for the five doors that take a configuration's name, so they cannot say different things.
+     *
+     * @param e what was thrown
+     * @param name the name that was typed, or null
+     * @param otherwise what to say for anything else
+     * @return the sentence
+     */
+    private static String nameRefused(Exception e, String name, String otherwise)
+    {
+        String typed = name == null ? "" : name.trim();
+
+        if (e instanceof AutonomyCompanionStore.NameSharesAFile)
+        {
+            return I18n.f("autosetup.ui.errorNameSharesAFile", typed,
+                ((AutonomyCompanionStore.NameSharesAFile) e).getSharedWith());
+        }
+
+        return AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
+            ? I18n.f("autosetup.ui.errorNameInUse", typed) : otherwise;
+    }
+
+    /** A blank line between two paragraphs of a dialog, as a constant so no script has to escape it. */
+    private static final String NEWLINES = System.lineSeparator() + System.lineSeparator();
+
+    /**
+     * Chooses the configuration named at the Import prompt, creating it where there is none of that name - the
+     * configuration an old autonomy.json's per-point half is then written into (Adam, 2026-09-25: *"(a)"*).
+     *
+     * `importLegacy` writes placements, homes, termini and facings through `setPointProperty`, which addresses the
+     * configuration chosen; so choosing it is choosing where they land.  The configuration chosen before is not touched:
+     * `setActiveConfiguration` moves the pointer and nothing else - and the door moves it back to the configuration that
+     * is running before anything is saved, so the imported one is loaded only where nothing else is.
+     *
+     * @param store the setup's store
+     * @param typed the name typed at the prompt, or null or blank for none
+     * @param suggested the name to use where none was typed
+     * @return the configuration now chosen
+     * @throws java.io.IOException where a configuration of that name cannot be created
+     */
+    static String activateTheConfigurationNamed(AutonomyCompanionStore store, String typed, String suggested)
+        throws java.io.IOException
+    {
+        String name = typed == null || typed.trim().isEmpty() ? suggested : typed.trim();
+
+        if (!store.getConfigurationNames().contains(name)) store.createConfiguration(name, null);
+
+        store.setActiveConfiguration(name);
+
+        return name;
+    }
+
+    /**
+     * A list for the log as one entry: its heading, and each line under it, indented.  One entry, because the log puts its
+     * newest entry on top - a heading logged as an entry of its own before its lines stood below them, and the list read
+     * upwards (Adam, 2026-10-06: "Fix them", on RSA45's notes).
+     *
+     * @param heading what the list is
+     * @param lines its lines
+     * @return the entry
+     */
+    private static String listForTheLog(String heading, java.util.List<String> lines)
+    {
+        StringBuilder entry = new StringBuilder(heading);
+
+        for (String line : lines) entry.append("\n  ").append(line);
+
+        return entry.toString();
+    }
+
+    /**
+     * The import dialog's sentence for the old points whose names were not kept, in the form the number takes - "1 old
+     * point", not "1 old points" (Adam, 2026-10-06: "Fix them", on RSA45's notes).
+     *
+     * @param points how many
+     * @return the sentence
+     */
+    private static String sharedSquaresSentence(int points)
+    {
+        return I18n.f("autosetup.ui.importSharedSquares" + I18n.countForm(points), points);
+    }
+
+    /**
+     * The import dialog's sentence for what it deliberately left behind, in the form the number takes - "1 thing", not "1
+     * things".
+     *
+     * @param things how many
+     * @return the sentence
+     */
+    private static String leftBehindSentence(int things)
+    {
+        return I18n.f("autosetup.ui.leftBehind" + I18n.countForm(things), things);
+    }
+
+    /**
+     * Reads an old autonomy.json onto the squares carrying the same sensors.
+     *
+     * Reached from the one Import action, which works out what the file is - so this takes the parsed
+     * file rather than going and asking for one.
+     *
+     * @param file the parsed autonomy.json
+     */
+    private void importLegacyGraph(org.json.JSONObject file, String name)
+    {
+        // First, because an s88 on two squares is what stops an import deciding anything: those points
+        // are refused and listed, and the user is left to work out that a repeated page is the reason.
+        // Shutting the repeats before reading the file is what makes the import unambiguous instead.
+        //
+        // Here as well as at setup creation, because a setup made before this existed - or one whose
+        // pages have been redrawn since - has never had it applied, and importing is exactly when it
+        // matters.
+        //
+        // AND BEFORE THE SNAPSHOT BELOW (OB-302).  The pages it shuts are announced at once, and an exclusion is the
+        // setup's shared half rather than the configuration being imported - so a failure later in the import is no
+        // reason to take it back.  Taken after it, the snapshot put a file that failed back as it was before the
+        // exclusion too, and the pages came back into autonomy with that message the last word on them.  A name the store
+        // refuses below leaves them out as well, for the same reason.
+        List<String> shut = session().excludeRepeatedSensorPages();
+
+        if (!shut.isEmpty())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoPagesExcludedForSensors",
+                shut.size(), String.join(", ", shut)));
+        }
+
+        // EVERYTHING AS IT WAS, for an import that fails part way (RLA-C3, RLU-C1).  The configuration is created and
+        // chosen before the file is read, and importLegacy writes as it reads; its sibling, the bundle import, puts all of
+        // that back when it fails, and this did not - the new configuration stayed chosen, and the next save made it the
+        // one the next start resumed.
+        org.json.JSONObject was = session().snapshotSetup();
+
+        // Somewhere for the import to land, before it starts (OB-106).
+        //
+        // The shared half of a setup - names, stations, lengths, directions - belongs to the TRACK and
+        // is written whether or not a configuration exists. The per-point half - placements, homes,
+        // termini, facings - belongs to a configuration, and importLegacy writes it through
+        // setPointProperty, which addresses the ACTIVE one. With none, that half was silently
+        // dropped: the dialog still reported everything it had matched, because matching is what it
+        // counts, and the setup then would not open.
+        //
+        // INTO THE CONFIGURATION NAMED AT THE PROMPT (Adam, 2026-09-25, asked whether to honour the name typed or stop
+        // asking for one: *"(a)"*).  A layout that already had configurations kept importing into the one in use, so the
+        // name the door had just asked for - and warned about replacing - was thrown away, and the old file's placements,
+        // homes and facings went into the configuration the operator was running.  Now the one named is created where it
+        // does not exist, and chosen while the import writes into it; the configuration running is chosen again before
+        // anything is saved (RLD-C3, below), and the others are left as they were.
+        String into;
+
+        try
+        {
+            // suggestedConfigurationName, not the bundle key directly: that value is "Autonomy {0}" and asking for it
+            // with I18n.t would put the placeholder on screen as the configuration's NAME.
+            into = activateTheConfigurationNamed(session().getStore(), name, suggestedConfigurationName());
+        }
+        catch (java.io.IOException e)
+        {
+            // A NAME IN USE IS NOT AN UNREADABLE FILE (GSP-B1): a configuration file of that name already sits beside
+            // the setup, under another name that shares its file (VD17-C6).
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage()))));
+
+            return;
+        }
+
+        // Whether the import reached the save, after which a failure is not rolled back: what was saved stays.
+        boolean saved = false;
+
+        try
+        {
+            // The names this database actually holds, so a placement naming something else is
+            // refused here rather than by the whole layout failing to build later
+            java.util.Set<String> known = ui.getModel() == null
+                ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
+
+            // INTO THE CONFIGURATION RUNNING, BY ITS NAME (RLA-C2, RLD3-C1): what the running layout knows goes into it
+            // FIRST, and the reload after the import does not capture again - captured on the reload, as every reload
+            // is, it wrote the running railway back over the homes and settings the import had just brought.  And the
+            // file places no train in it: where a train stands on the railway running is the railway's to say (OB-183),
+            // and nothing knows where the file's trains are now (RLA2-B3).  While autonomy runs, the door refuses the name
+            // (RLU4-C1).  And not while a setup edit a run declined waits for its rebuild (RLD4-C3): the running layout is
+            // then the older of the two, and folding it in would take that edit away - which is why the exit save and the
+            // editor doors do not; the reload after the import does not fold either (`load`).
+            final boolean intoTheOneRunning = into.equals(ui.getActiveDiagramConfiguration());
+
+            boolean captured = false;
+
+            if (intoTheOneRunning && !ui.isAutonomyBusy() && !ui.isSetupNewerThanTheRunningLayout()
+                && ui.getModel() != null && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
+            {
+                try
+                {
+                    session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into);
+
+                    captured = true;
+                }
+                catch (Exception e)
+                {
+                    // as load() treats it: a courtesy, and failing it leaves the reload to capture, as before
+                    if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+                }
+            }
+
+            AutonomySession.LegacyImport result = session().importLegacy(file, known, !intoTheOneRunning);
+
+            // Read to its end before anything is saved, so a file that throws here has changed nothing (RLA-C3).  This
+            // came after the save, and it reads the timetable and the edges strictly.
+            java.util.List<String> left = session().whatALegacyImportLeaves(file);
+
+            // AND THE CONFIGURATION RUNNING CHOSEN AGAIN, BEFORE THE SAVE (RLD-C3).  The save wrote the imported one as
+            // the configuration the next start resumes, and only a reload that finished put the running one back - so
+            // "No" to stopping the trains, or a reload refused, left the next start loading the imported configuration.
+            String inUse = AutonomySession.configurationToLoadAfterImport(ui.getActiveDiagramConfiguration(), into);
+
+            if (inUse != null) session().getStore().setActiveConfiguration(inUse);
+
+            saved = true;
+
+            save();
+
+            // LOAD AUTONOMY IS LEFT AS IT WAS (Adam, 2026-09-24, TDD-C11: "Drop it now").  REG2-C3 unticked it here, while
+            // the box still loaded the old graph at start; since OB-254 it resumes the active setup, which the import has
+            // just made, so the untick was what kept the imported setup from loading at the next start.
+
+            String unmatched = result.unmatched.isEmpty()
+                ? "" : "\n\n" + String.join(", ", result.unmatched);
+
+            // Named, because these are the ones that would otherwise have stopped the setup loading
+            if (!result.unknownLocomotives.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyUnknownLocs",
+                    String.join(", ", result.unknownLocomotives));
+            }
+
+            if (!result.duplicateLocomotives.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateLocs",
+                    String.join(", ", result.duplicateLocomotives));
+            }
+
+            // And the ones this configuration already has standing somewhere, which stay there (RLA-B2)
+            if (!result.alreadyPlaced.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyAlreadyPlaced",
+                    String.join(", ", result.alreadyPlaced));
+            }
+
+            // And the homes it already has, which stay too (RLA2-C3)
+            if (!result.homesKept.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomesKept", String.join(", ", result.homesKept));
+            }
+
+            // AND WHAT IT LEFT ON A SQUARE ALREADY TAKEN, and the homes it named twice (OB-304): each a choice the
+            // import made for the operator - the train or the home already there kept, the first home named kept - and
+            // skipped or counted without a word until now.
+            if (!result.squareTaken.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacySquareTaken",
+                    String.join(", ", result.squareTaken));
+            }
+
+            if (!result.homeSquareTaken.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomeSquareTaken",
+                    String.join(", ", result.homeSquareTaken));
+            }
+
+            if (result.duplicateHomes > 0)
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateHomes", result.duplicateHomes);
+            }
+
+            // And the trains it did not place, into the configuration running (RLD3-C1)
+            if (!result.notPlacedInUse.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyNotPlacedInUse",
+                    String.join(", ", result.notPlacedInUse), into,
+                    // THE DOOR THAT PUTS DOWN A TRAIN THE DIAGRAM DOES NOT HAVE (RLU5-C1): "Place <train>", for the train
+                    // chosen in the main window - "Place Locomotive..." lists only the trains already standing
+                    I18n.f("layout.ui.menuPlaceLocomotive", String.valueOf((char) 0x2026)));
+            }
+
+            // AND WHAT IT DID NOT BRING (MT-257 item 3).
+            //
+            // Adam: "yes, but list them in the log and mention that in the dialog."  Four things are
+            // dropped on purpose - per-edge accessory commands, edge lengths, the timetable, route
+            // activations - each for a reason written at `AutonomySession.importLegacy`, and until now
+            // this dialog counted the six it brought and said nothing at all about these.  The code's
+            // own comment called that "a gap worth naming rather than papering over".
+            //
+            // The list goes to the log because it is a list and this is a dialog; the dialog says it
+            // is there, which is the half that was missing.  Read above, before the save.
+            if (!left.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(listForTheLog(I18n.t("autosetup.ui.leftBehindHeading"), left));
+            }
+
+            // AND THE FACINGS THAT WERE GUESSED (ACC-C4).
+            //
+            // The old format states which way a train faces only through its one-way edges (REG4-A1), so
+            // where they cannot say - no edge, or edges both ways - a placement landing on a split square
+            // has one chosen for it.  That is a guess, and it used to be made silently - so a train
+            // pointing the wrong way after an import looked like a defect rather than the one thing the
+            // file could not tell us.
+            //
+            // In the log rather than the dialog, like the list above: the dialog is already a
+            // paragraph, and this is something to read once and then check on the diagram.
+            if (result.facingsInvented > 0 && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.facingsGuessed", result.facingsInvented));
+            }
+
+            // AND THE ONES THE FILE STATES AND THIS DIAGRAM CANNOT HOLD (REG4-A1), by name: stood the only way their
+            // square allows, which is the other way round from how they drive.
+            if (!result.facingsNotHeld.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.facingsNotHeld", String.join(", ", result.facingsNotHeld)));
+            }
+
+            // AND THE OLD FILE'S ONE-WAY RUNNING, carried onto the diagram (Adam, 2026-09-24) - or, onto a diagram whose
+            // directions have been set, counted and left alone.
+            if (!result.directionsCarried.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.directionsCarried", result.directionsCarried.size()));
+            }
+
+            if (result.directionsNotCarried > 0 && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.directionsNotCarried", result.directionsNotCarried));
+            }
+
+            // AND WHERE IT WENT (RLA-C1): into the configuration named, which is the one in use only where nothing else
+            // was running - otherwise the dialog counted trains the diagram does not show, and named no configuration.
+            String where = inUse == null || into.equals(inUse)
+                ? I18n.f("autosetup.ui.infoLegacyImportedInto", into)
+                : I18n.f("autosetup.ui.infoLegacyImportedNotInUse", into, inUse,
+                    I18n.t("autosetup.ui.menuAutonomy") + " > " + I18n.f("autosetup.ui.menuConfigurations", inUse));
+
+            // AND THE OLD POINTS THAT SHARED A SQUARE, whose names were not kept (RSA44-C3) - a list, so to the log
+            if (!result.namesNotKept.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(listForTheLog(I18n.t("autosetup.ui.importSharedSquaresHeading"), result.namesNotKept));
+            }
+
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
+                result.matched, result.placed, result.reversing, result.settings,
+                result.skipped, result.unmatched.size()) + unmatched
+                + (result.namesNotKept.isEmpty() ? "" : NEWLINES + sharedSquaresSentence(result.namesNotKept.size()))
+                + (left.isEmpty() ? "" : NEWLINES + leftBehindSentence(left.size()))
+                + NEWLINES + where);
+
+            // The one just created when nothing was running - so the import is loaded rather than left sitting on disk -
+            // and otherwise the one running, loaded again over the shared half the import merged.
+            loadAfterImport(into, !captured);
+        }
+        // RuntimeException alone: reading the file moved out to the one Import action that decides
+        // what a file IS, so nothing left in here is checked.  A malformed file still lands here, as
+        // a JSONException.
+        catch (RuntimeException e)
+        {
+            // Put back, where nothing has been saved yet (RLA-C3, RLU-C1)
+            if (!saved)
+            {
+                session().getStore().restoreSetup(was);
+                session().rebuild();
+            }
+
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+        }
+
+        refresh();
+    }
+
+    /**
+     * Writes the active configuration out where the user chooses, for another machine to import.
+     */
+    public void exportConfiguration()
+    {
+        // NOT WHILE AUTONOMY RUNS, as Import is not (Adam, 2026-09-30, MT-601: "Export should also only be allowed once
+        // we are stopped"), and before anything is asked
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorExportWhileRunning"));
+
+            return;
+        }
+
+        String name = selected();
+
+        if (name == null) return;
+
+        // WHERE THE TRAINS ARE, folded into the configuration running first (RSA11-B1), as New Configuration does: its file
+        // holds where they stood before the last run, and the pace and the timetable as at the load
+        ui.captureRunningLayout();
+
+        org.json.JSONObject configuration = session().getStore().exportBundle(name);
+
+        if (configuration == null) return;
+
+        javax.swing.JFileChooser chooser = chooser();
+        chooser.setSelectedFile(new java.io.File(chooser.getCurrentDirectory(), name + ".json"));
+
+        if (chooser.showSaveDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+        rememberFolder(chooser.getSelectedFile());
+
+        try
+        {
+            java.nio.file.Files.write(chooser.getSelectedFile().toPath(),
+                configuration.toString(4).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
+        }
+    }
+
+    public void duplicate()
+    {
+        // NOT WHILE AUTONOMY RUNS, as Import, Export and Delete are not (RSA10-A1) - before anything is asked
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
+        String from = selected();
+
+        String name = (String) JOptionPane.showInputDialog(ui,
+            I18n.t("autosetup.ui.promptConfigurationName"),
+            I18n.t("autosetup.ui.menuNewConfiguration"),
+            JOptionPane.PLAIN_MESSAGE, null, null, suggestedConfigurationName());
+
+        if (name == null || name.trim().isEmpty()) return;
+
+        // WHERE THE TRAINS STAND AND THE TIMETABLE, ASKED (Adam, 2026-10-01: "One door: do it"): this is the one door to a
+        // new configuration once one exists, and those two are what a variant most often starts without
+        int copyTrains = from == null ? JOptionPane.YES_OPTION : askCopyTrains(from);
+
+        if (copyTrains != JOptionPane.YES_OPTION && copyTrains != JOptionPane.NO_OPTION) return;
+
+        // WHERE THE TRAINS ARE, folded into the configuration running first (RSA10-A1): its file holds where they stood
+        // before the last run, and the copy took that
+        ui.captureRunningLayout();
+
+        try
+        {
+            // as a copy, so a variant that differs only in where the locomotives start does not mean
+            // re-entering every decision that has nothing to do with that
+            session().getStore().createConfiguration(name.trim(), from, copyTrains == JOptionPane.YES_OPTION);
+        }
+        catch (IOException e)
+        {
+            // As in initialize: a collision is a collision, and anything else is reported as itself
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
+            return;
+        }
+
+        // THE CONFIGURATION RUNNING STAYS THE ONE THE NEXT START RESUMES (RSA10-A1), as after an import (RLD-C3): the window
+        // runs it and the exit folds into it.  The copy becomes the one to resume only where none runs.
+        String inUse = ui.getActiveDiagramConfiguration();
+
+        session().getStore().setActiveConfiguration(inUse != null ? inUse : name.trim());
+
+        save();
+        refresh();
+    }
+
+    /**
+     * The answer the trains-and-timetable question is given without asking, for a test that is not about the question;
+     * null to ask.
+     */
+    private static volatile Integer copyTrainsAnswerForTests;
+
+    /**
+     * @param answer `JOptionPane.YES_OPTION` or `NO_OPTION` to answer New Configuration's question without asking, or
+     *        null to ask it again
+     */
+    public static void answerCopyTrainsForTests(Integer answer)
+    {
+        copyTrainsAnswerForTests = answer;
+    }
+
+    /**
+     * Whether New Configuration copies where the trains stand and the timetable (Adam, 2026-10-01).
+     *
+     * @param from the configuration being copied
+     * @return `JOptionPane.YES_OPTION`, `NO_OPTION`, or anything else to make no copy
+     */
+    private int askCopyTrains(String from)
+    {
+        Integer given = copyTrainsAnswerForTests;
+
+        if (given != null) return given;
+
+        // The buttons in the language chosen, not the system's: an index, which is Yes, No and Cancel in this order
+        Object[] buttons = {I18n.t("ui.yes"), I18n.t("ui.no"), I18n.t("ui.cancel")};
+
+        int chosen = JOptionPane.showOptionDialog(ui, I18n.f("autosetup.ui.promptCopyTrainsAndTimetable", from),
+            I18n.t("autosetup.ui.menuNewConfiguration"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
+            null, buttons, buttons[0]);
+
+        return chosen == 0 ? JOptionPane.YES_OPTION : chosen == 1 ? JOptionPane.NO_OPTION : JOptionPane.CANCEL_OPTION;
+    }
+
+    public void rename()
+    {
+        // NOT WHILE AUTONOMY RUNS (RSA10-A1): it renames the running configuration's file under the railway
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
+        String from = selected();
+
+        if (from == null) return;
+
+        String name = JOptionPane.showInputDialog(ui,
+            I18n.t("autosetup.ui.promptConfigurationName"), from);
+
+        if (name == null || name.trim().isEmpty()) return;
+
+        try
+        {
+            session().getStore().renameConfiguration(from, name.trim());
+            save();
+
+            // The window remembers the running configuration BY NAME, and the store has just changed
+            // it.  Deleting the running one already had a hook; renaming did not, and left the name
+            // behind pointing at nothing.
+            ui.autonomySetupRenamed(from, name.trim());
+        }
+        catch (IOException e)
+        {
+            // The store reports its refusals as message KEYS, so they are translated here rather than
+            // shown raw - a user should not be told "autosetup.ui.errorNameInUse".
+            JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
+        }
+
+        refresh();
+    }
+
+    public void delete()
+    {
+        String name = selected();
+
+        // Refused while trains are moving, exactly as deleting the whole setup already is.  Confirming
+        // this mid-run went through to clearAutoLayout and stopped every locomotive - which is a
+        // reasonable thing to ask for and not a reasonable thing to have happen as a side effect of
+        // tidying up a list of configurations.
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            return;
+        }
+
+        // WHICH ONE, where there is a choice (OB-319; Adam, 2026-10-04: *"If there is a setup cant be used, it cant be
+        // selected from the list of configs, which prevents subsequent deletion."*).  Delete acted on the configuration
+        // in use, and one whose setup cannot be used is refused at its load and never becomes that - so it could not be
+        // deleted on its own.  The one in use is offered first.
+        java.util.List<String> names = new java.util.ArrayList<>(session().getStore().getConfigurationNames());
+
+        if (names.size() > 1)
+        {
+            Object chosen = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptWhichConfigurationToDelete"),
+                I18n.t("autosetup.ui.menuDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
+                names.contains(name) ? name : names.get(0));
+
+            if (chosen == null) return;
+
+            name = chosen.toString();
+        }
+        else if (names.size() == 1)
+        {
+            name = names.get(0);
+        }
+
+        if (name == null) return;
+
+        // Named in the question, because the list and the running configuration can differ and deleting
+        // is not undoable.
+        if (JOptionPane.showOptionDialog(ui,
+            I18n.f("autosetup.ui.confirmDeleteConfiguration", name),
+            I18n.t("autosetup.ui.menuDeleteConfiguration"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0) return;
+
+        boolean wasRunning = name.equals(ui.getActiveDiagramConfiguration());
+
+        try
+        {
+            session().getStore().deleteConfiguration(name);
+            save();
+
+            // Deleting the last one is allowed now, and a layout with none left cannot go on running
+            // the graph built from the one just deleted - nothing would be able to save into it, and
+            // the diagram would keep showing stations belonging to a configuration that is gone.
+            if (session().getStore().getConfigurationNames().isEmpty()
+                || (wasRunning && ui.getActiveDiagramConfiguration() != null))
+            {
+                ui.autonomySetupDeleted();
+            }
+        }
+        catch (IOException e)
+        {
+            // Reported as itself.  The special case for "that was the last configuration" went when the
+            // store stopped refusing to delete it, and testing for a message nothing throws any more
+            // only made the real failure - a permission problem, a sync lock, a full disk - look like a
+            // rule the program was enforcing.
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
+        }
+
+        refresh();
+    }
+
+    private void save()
+    {
+        try
+        {
+            // The reconciliation the save returns is SHOWN, not dropped (DR-B10).
+            //
+            // A save reconciles the setup against the diagram and reports what it had to let go - a
+            // setting on a page that is no longer there, a pairing whose partner has gone. Thrown away,
+            // those changes happen silently and the operator finds out later from a railway that behaves
+            // differently, with nothing connecting it to the edit that caused it.
+            AutonomyReport.show(ui, session().save());
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
+        }
+    }
+
+    /**
+     * Writes the derived graph out in the ordinary autonomy format, laid out like the track it came
+     * from, so it can be read and checked against the diagram beside it.
+     */
+    public void inspect()
+    {
+        try
+        {
+            java.io.File out = new java.io.File("autonomy-derived.json").getAbsoluteFile();
+
+            java.nio.file.Files.write(out.toPath(),
+                session().buildConfigurationForInspection().getBytes(
+                    java.nio.charset.StandardCharsets.UTF_8));
+
+            // Say what happened, then show where.  A dialog containing nothing but a path leaves the
+            // reader to work out whether it was written, found, or about to be overwritten - and then
+            // to go and find the folder themselves.  Same two steps the update download takes.
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.infoGraphExported", out.getName()));
+
+            ui.showFileExplorer(out.getParentFile());
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
+        }
+    }
+
+    // --- state ------------------------------------------------------------------------------------
+
+    /**
+     * Re-reads everything and shows it.
+     */
+    public final void refresh()
+    {
+        // Each step shows only when it is reachable.  Before a setup exists there is nothing to choose
+        // and nothing to enable; before a configuration is running there is nowhere to place a train.
+        boolean exists = session().exists() || !session().getStore().getConfigurationNames().isEmpty();
+        boolean running = ui.getActiveDiagramConfiguration() != null;
+
+        initialize.setVisible(!exists);
+        stepChoose.setText(I18n.t(exists
+            ? "autosetup.ui.stepChoose" : "autosetup.ui.stepInitialize"));
+
+        configurations.setVisible(exists);
+        stepEnable.setVisible(exists);
+        enable.setVisible(exists);
+
+        int total = session().getPages().size();
+
+        pagesSummary.setText(I18n.f("autosetup.ui.labelPagesSummary",
+            total - session().getStore().getExcludedPages().size(), total));
+
+        // Hidden rather than disabled until it works: an enabled-looking button that goes to a tab
+        // which does not exist is what made placing look missing in the first place.
+        stepRun.setVisible(running);
+        placeLocomotives.setVisible(running);
+
+        if (startHere != null) startHere.setVisible(running);
+
+        status.setText(!exists ? I18n.t("autosetup.ui.statusNeverSetUp")
+            : running ? I18n.f("autosetup.ui.statusEnabled", ui.getActiveDiagramConfiguration())
+            : I18n.t("autosetup.ui.statusNotEnabled"));
+
+        configurations.removeAllItems();
+
+        for (String name : session().getStore().getConfigurationNames())
+        {
+            configurations.addItem(name);
+        }
+
+        String active = session().getStore().getActiveConfiguration();
+
+        if (active != null) configurations.setSelectedItem(active);
+
+        refreshRoster();
+        refreshFindings();
+    }
+
+    /**
+     * Where the locomotives are.
+     *
+     * Beside the diagram as well as on it, because the spatial view can only answer the question for
+     * the page being looked at - and a locomotive parked on another page is exactly the one somebody is
+     * hunting for.
+     */
+    private void refreshRoster()
+    {
+        roster.clear();
+
+        // ASKED, NOT BUILT (RLV7-C2, CS3-C4).  `getAutoLayout` makes a Layout where there is none, and this runs as the
+        // panel is made - after Unload, a deleted setup and a switch of railway, and at every start with nothing loaded
+        // - so there was never a moment with no Layout, and `hasAutoLayout` answered yes about an empty one.
+        Layout layout = ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
+
+        if (layout == null) return;
+
+        for (Point point : layout.getPoints())
+        {
+            Locomotive locomotive = point.getCurrentLocomotive();
+
+            if (locomotive == null) continue;
+
+            roster.addElement(locomotive.getName() + "  -  " + point.getName());
+        }
+
+        if (roster.isEmpty()) roster.addElement(I18n.t("autosetup.ui.infoNoLocomotivesPlaced"));
+    }
+
+    /**
+     * The list of things to look at: what must be fixed first, then what is only worth checking.
+     *
+     * Severity leads and the page groups within it, rather than the other way round.  The question a
+     * reader arrives with is "why will this not run", and a list led by page makes them read every
+     * line of every page to find the two that answer it.  Anything below the first section is by
+     * definition optional, which is what makes the list skimmable rather than a wall.
+     */
+    private void refreshFindings()
+    {
+        findingsModel.clear();
+        findingRows.clear();
+        findingRelatedRows.clear();
+        findingSeverity.clear();
+
+        List<Object[]> errors = new java.util.ArrayList<>();
+        List<Object[]> warnings = new java.util.ArrayList<>();
+
+        // A graph problem is what stops the build, so it is always an error.
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session().getGraph() == null
+            ? java.util.Collections.<org.traincontrol.automationui.TileGraph.Problem>emptyList()
+            : session().getGraph().getProblems())
+        {
+            (problem.isBlocking() ? errors : warnings).add(new Object[]
+            {
+                problem.getTile(),
+                describe(problem.getMessageKey(), problem.getTile() == null
+                    ? "" : describeTile(problem.getTile()))
+            });
+        }
+
+        for (AutonomyChecks.Finding finding : session().check())
+        {
+            // The subject is usually a Point name, and an unnamed Point's name is its coordinate - so
+            // where there is a tile, say what the tile is instead.
+            String subject = finding.getTile() == null
+                ? finding.getSubject() : describeTile(finding.getTile());
+
+            // Errors and warnings only, and a notice is neither.
+            //
+            // This read "not an error, therefore a warning", which made an INFO finding a warning here
+            // while the editor called it a notice and the diagram strip - which counts errors and
+            // warnings - ignored it.  Close one tile's routes both ways and the same setup reported a
+            // warning, a notice, and nothing at all, depending which window was open.
+            //
+            // Dropped rather than given a section of its own: this panel exists to say whether anything
+            // is WRONG, which is what the hint below it is shown for.  A notice is tidiness, and the
+            // editor is where the full list lives.
+            if (finding.getSeverity() != AutonomyChecks.Severity.ERROR
+                && finding.getSeverity() != AutonomyChecks.Severity.WARNING)
+            {
+                continue;
+            }
+
+            (finding.getSeverity() == AutonomyChecks.Severity.ERROR ? errors : warnings).add(
+            // BOTH, because {0} alone cannot say which train (OB-153).
+            //
+            // The line above deliberately prefers the tile's description to the finding's own subject,
+            // and is right to for every finding whose subject IS the point - an unnamed Point's name is
+            // its coordinate, which tells the reader nothing. FR-046's train-length warning is the
+            // first whose subject is a LOCOMOTIVE, and that preference swallowed it, so the warning
+            // named the station the train was standing at instead of the train.
+            //
+            // Passing both keeps {0} meaning exactly what it has always meant, so no other message in
+            // this list changes, and lets the two that need a name use {1}.
+                new Object[] {finding.getTile(),
+                    describe(finding.getMessageKey(), subject, finding.getSubject(),
+                        finding.getCount(), finding.getDetail(), finding.getThird()),
+                    finding.getRelated()});
+        }
+
+        // a page renumbered under the setup would silently reattach settings to the wrong track, so it
+        // is said out loud rather than left in a getter nobody calls
+        for (Map.Entry<String, String> entry : session().getStore().getPageIdConflicts().entrySet())
+        {
+            warnings.add(new Object[] {null,
+                I18n.f("autosetup.ui.warnPageRenumbered", entry.getKey(), entry.getValue())});
+        }
+
+        section(I18n.f("autosetup.ui.headingErrors", errors.size()), errors,
+            AutonomyChecks.Severity.ERROR);
+        section(I18n.f("autosetup.ui.headingWarningsShort", warnings.size()), warnings,
+            AutonomyChecks.Severity.WARNING);
+
+        hint.setVisible(!errors.isEmpty() || !warnings.isEmpty());
+    }
+
+    /**
+     * What a square IS, for a message that would otherwise name a coordinate.
+     *
+     * A finding that says "nothing connects to 1 - Main 8,6" tells the reader where to look and nothing
+     * about what they will find when they get there.  Naming the tile - a sensor with an s88 address, a
+     * switch with its address, a piece of plain track - is usually enough to recognise the spot without
+     * going to it, and is what makes a list of eleven skimmable.
+     */
+    private String describeTile(org.traincontrol.automationui.TileGraph.TileKey tile)
+    {
+        String where = tile.getX() + "," + tile.getY();
+
+        org.traincontrol.base.LayoutDiagramComponent component =
+            session().getGraph() == null ? null : session().getGraph().getTiles().get(tile);
+
+        if (component == null) return where;
+
+        // a name the user gave it beats anything derived
+        String named = session().getStore().getPointName(tile);
+
+        if (named != null && !named.trim().isEmpty()) return named.trim() + " (" + where + ")";
+
+        if (component.isFeedback())
+        {
+            return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
+        }
+
+        if (component.getAccessory() != null)
+        {
+            return I18n.f("autosetup.ui.describeAccessory",
+                component.getUserFriendlyTypeName(), where, component.getAddress());
+        }
+
+        return I18n.f("autosetup.ui.describeTile", component.getUserFriendlyTypeName(), where);
+    }
+
+    /**
+     * Adds one severity section, with its findings grouped under the page each is on.
+     */
+    private void section(String heading, List<Object[]> rows, AutonomyChecks.Severity severity)
+    {
+        if (rows.isEmpty()) return;
+
+        findingsModel.addElement(heading);
+        findingRows.add(null);
+        findingRelatedRows.add(null);
+        findingSeverity.add(null);
+
+        Map<String, List<Object[]>> byPage = new java.util.LinkedHashMap<>();
+
+        for (Object[] row : rows)
+        {
+            org.traincontrol.automationui.TileGraph.TileKey tile =
+                (org.traincontrol.automationui.TileGraph.TileKey) row[0];
+
+            String page = tile == null ? "" : tile.getPage();
+
+            if (!byPage.containsKey(page)) byPage.put(page, new java.util.ArrayList<Object[]>());
+
+            byPage.get(page).add(row);
+        }
+
+        for (Map.Entry<String, List<Object[]>> entry : byPage.entrySet())
+        {
+            // no page heading for findings that belong to the whole layout rather than a square
+            if (!entry.getKey().isEmpty())
+            {
+                findingsModel.addElement("  " + I18n.f("autosetup.ui.labelPageHeading",
+                    entry.getKey()));
+                findingRows.add(null);
+                findingRelatedRows.add(null);
+                findingSeverity.add(null);
+            }
+
+            for (Object[] row : entry.getValue())
+            {
+                findingsModel.addElement("     " + row[1]);
+                findingRows.add((org.traincontrol.automationui.TileGraph.TileKey) row[0]);
+                findingSeverity.add(severity);
+
+                @SuppressWarnings("unchecked")
+                List<org.traincontrol.automationui.TileGraph.TileKey> related = row.length > 2
+                    ? (List<org.traincontrol.automationui.TileGraph.TileKey>) row[2] : null;
+
+                findingRelatedRows.add(related);
+            }
+        }
+    }
+
+    private String describe(String key, Object... args)
+    {
+        try
+        {
+            return I18n.f(key, args);
+        }
+        catch (RuntimeException e)
+        {
+            return key + " " + (args.length > 0 ? args[0] : "");
+        }
+    }
+
+}

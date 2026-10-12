@@ -7,7 +7,6 @@ import javax.swing.JButton;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
-import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
@@ -63,7 +62,7 @@ public class RightClickMenuListener extends MouseAdapter
             if (ui.buttonHasLocomotive(source))
             {
                 menuItem = new JMenuItem(
-                    I18n.f("loc.ui.menuCopyLocomotive", ui.getButtonLocomotive(source).getName())
+                    I18n.f("loc.ui.menuCopyLocomotiveNamed", ui.getButtonLocomotive(source).getName())
                 );
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, false));
                 menuItem.setToolTipText("Control+C");
@@ -81,7 +80,7 @@ public class RightClickMenuListener extends MouseAdapter
             if (ui.hasCopyTarget())
             {
                 menuItem = new JMenuItem(
-                    I18n.f("loc.ui.menuPasteLocomotive", ui.getCopyTarget().getName())
+                    I18n.f("loc.ui.menuPasteLocomotiveNamed", ui.getCopyTarget().getName())
                 );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, false));
                 menuItem.setToolTipText("Control+V");
@@ -117,20 +116,6 @@ public class RightClickMenuListener extends MouseAdapter
 
             if (ui.buttonHasLocomotive(source))
             {
-                // We no longer need these since users can just drag or copy entire pages
-                /*addSeparator();
-
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuCopyToNextPage")
-                );
-                menuItem.addActionListener(event -> ui.copyToNextPage(source));
-                add(menuItem);
-
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuCopyToPreviousPage")
-                );
-                menuItem.addActionListener(event -> ui.copyToPrevPage(source));
-                add(menuItem);*/
 
                 addSeparator();
 
@@ -179,20 +164,10 @@ public class RightClickMenuListener extends MouseAdapter
 
                 addSeparator();
 
-                menuItem = new JMenuItem(
-                    !(ui.getButtonLocomotive(source)).hasLinkedLocomotives()
-                        ? I18n.t("loc.ui.menuSetAsMultiUnit")
-                        : I18n.t("loc.ui.menuEditMultiUnitLocomotives")
-                );
-                menuItem.addActionListener(event -> ui.changeLinkedLocomotives((Locomotive) ui.getButtonLocomotive(source)));
+                // SHARED WITH THE LOCOMOTIVE DATABASE'S MENU, and on this menu's own level beside Manage Locomotive, for
+                // convenience (Adam, 2026-10-03); the key belongs to this menu
+                menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source));
                 menuItem.setToolTipText("Control+L");
-
-                if ((ui.getButtonLocomotive(source)).getDecoderType() == Locomotive.decoderType.MULTI_UNIT)
-                {
-                    menuItem.setText(
-                        I18n.t("loc.ui.menuViewMultiUnitLocomotives")
-                    );
-                }
                 add(menuItem);
 
                 addSeparator();
@@ -206,59 +181,54 @@ public class RightClickMenuListener extends MouseAdapter
                 submenu.add(menuItem);
                 submenu.addSeparator();
 
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuSetLocalLocomotiveIcon")
-                );
-                menuItem.addActionListener(event -> ui.setLocIcon(ui.getButtonLocomotive(source)));
-                submenu.add(menuItem);
+                // SHARED WITH THE LOCOMOTIVE DATABASE MENU (FR-047).
+                //
+                // These seven items were written out twice, here and in RightClickSelectorMenu, and
+                // had already drifted. They live in LocomotiveMenuItems now; the ORDER and the
+                // keyboard tooltips stay here, because those belong to this menu rather than to the
+                // locomotive.
+                //
+                // One deliberate difference: the locomotive is resolved ONCE, as the menu is built,
+                // where this used to ask the button again inside every listener. That is the same
+                // answer in every case that can happen with a popup open, and it is the better one -
+                // the menu should act on what it was opened for.
+                final org.traincontrol.base.Locomotive subject = ui.getButtonLocomotive(source);
 
-                if (ui.getButtonLocomotive(source) != null && ui.getButtonLocomotive(source).getLocalImageURL() != null)
+                submenu.add(LocomotiveMenuItems.setLocalIcon(ui, subject, null));
+
+                // Through `subject`, like every other line here.  This asked the button twice more,
+                // three lines under the paragraph above saying the locomotive is resolved ONCE - the
+                // comment had the intent right and this one line did not follow it (RC-C12).
+                if (subject != null && subject.getLocalImageURL() != null)
                 {
-                    menuItem = new JMenuItem(
-                        I18n.t("loc.ui.menuClearLocalLocomotiveIcon")
-                    );
-                    menuItem.addActionListener(event -> ui.clearLocIcon(ui.getButtonLocomotive(source)));
-                    submenu.add(menuItem);
+                    submenu.add(LocomotiveMenuItems.clearLocalIcon(ui, subject));
                 }
 
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuCustomizeFunctionIcons")
-                );
-                menuItem.addActionListener(event -> ui.setFunctionIcon(ui.getButtonLocomotive(source), source, null));
-                submenu.add(menuItem);
+                submenu.add(LocomotiveMenuItems.customiseFunctionIcons(ui, subject, source, null));
                 submenu.addSeparator();
 
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuEditNameAddressDecoder")
-                );
-                menuItem.addActionListener(event -> ui.changeLocAddress(ui.getButtonLocomotive(source)));
+                menuItem = LocomotiveMenuItems.editNameAddressDecoder(ui, subject, null);
                 menuItem.setToolTipText("Control+R");
                 submenu.add(menuItem);
 
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuEditNotes")
-                );
-                menuItem.addActionListener(event -> ui.changeLocNotes(ui.getButtonLocomotive(source)));
+                menuItem = LocomotiveMenuItems.editNotes(ui, subject, null);
                 menuItem.setToolTipText("Control+N");
                 submenu.add(menuItem);
 
-                submenu.addSeparator();
+                // How long this train is, when there is autonomy to care (FR-047).  Null when there
+                // is not, so the item simply is not there rather than being greyed.
+                JMenuItem howLong = LocomotiveMenuItems.trainLength(ui, subject, null);
 
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuFindSimilarLocomotives")
-                );
-                menuItem.addActionListener(event -> ui.findSimilarLocs(ui.getButtonLocomotive(source), null));
-                menuItem.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
-                submenu.add(menuItem);
+                if (howLong != null) submenu.add(howLong);
 
                 submenu.addSeparator();
 
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuDeleteFromDatabase")
-                );
-                menuItem.setForeground(Color.RED);
+                submenu.add(LocomotiveMenuItems.findSimilar(ui, subject, null));
+
+                submenu.addSeparator();
+
+                menuItem = LocomotiveMenuItems.deleteFromDatabase(ui, subject, null);
                 menuItem.setToolTipText("Control+Delete");
-                menuItem.addActionListener(event -> ui.deleteLoc(ui.getButtonLocomotive(source).getName()));
                 submenu.add(menuItem);
 
                 add(submenu);

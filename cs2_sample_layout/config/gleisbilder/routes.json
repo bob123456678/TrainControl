@@ -16,6 +16,15 @@
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
+                    "ADDRESS": "19",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
                     "ADDRESS": "18",
                     "SETTING": "true",
                     "PROTOCOL": "MM2"
@@ -43,6 +52,7 @@
         "name": "Top Track 2",
         "id": 2,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -98,6 +108,7 @@
         "name": "Top Track 3",
         "id": 3,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -153,6 +164,7 @@
         "name": "Top Track 4",
         "id": 4,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -208,6 +220,7 @@
         "name": "Top Track 5",
         "id": 5,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -263,6 +276,7 @@
         "name": "Inner Loop",
         "id": 6,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -366,6 +380,7 @@
         "name": "Loopback",
         "id": 8,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -557,6 +572,7 @@
         "name": "Lower Track 1",
         "id": 10,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -596,6 +612,7 @@
         "name": "Lower Track 2",
         "id": 11,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -643,6 +660,7 @@
         "name": "Lower Track 3",
         "id": 12,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -690,6 +708,7 @@
         "name": "Lower Track 4",
         "id": 13,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -737,6 +756,7 @@
         "name": "Lower Track 5",
         "id": 14,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -784,13 +804,14 @@
         "name": "Lower Track 6",
         "id": 15,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -798,7 +819,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -806,7 +827,7 @@
                 "state": {
                     "ADDRESS": "37",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -814,7 +835,7 @@
                 "state": {
                     "ADDRESS": "55",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -822,7 +843,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -830,7 +851,7 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -839,6 +860,7 @@
         "name": "Lower Track 7",
         "id": 16,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -902,6 +924,7 @@
         "name": "Lower Track 8",
         "id": 17,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -973,6 +996,7 @@
         "name": "Lower Track 9",
         "id": 18,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -1044,13 +1068,14 @@
         "name": "Lower Track 10",
         "id": 19,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
                 "state": {
                     "ADDRESS": "4",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -1058,15 +1083,7 @@
                 "state": {
                     "ADDRESS": "5",
                     "SETTING": "true",
-                    "PROTOCOL": ""
-                }
-            },
-            {
-                "type": "TYPE_ACCESSORY",
-                "state": {
-                    "ADDRESS": "55",
-                    "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -1074,7 +1091,7 @@
                 "state": {
                     "ADDRESS": "71",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -1082,7 +1099,7 @@
                 "state": {
                     "ADDRESS": "8",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -1090,7 +1107,16 @@
                 "state": {
                     "ADDRESS": "56",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1642,7 +1668,8 @@
                 "state": {
                     "ADDRESS": "79",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
                 }
             },
             {
@@ -1650,7 +1677,7 @@
                 "state": {
                     "ADDRESS": "80",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -1658,7 +1685,7 @@
                 "state": {
                     "ADDRESS": "49",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -1666,7 +1693,7 @@
                 "state": {
                     "ADDRESS": "116",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -1675,6 +1702,7 @@
         "name": "Mid Parking 4",
         "id": 24,
         "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
                 "type": "TYPE_ACCESSORY",
@@ -2497,7 +2525,7 @@
                 "state": {
                     "ADDRESS": "68",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -2505,7 +2533,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -2513,7 +2541,8 @@
                 "state": {
                     "ADDRESS": "24",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
                 }
             },
             {
@@ -2521,7 +2550,7 @@
                 "state": {
                     "ADDRESS": "23",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2577,7 +2606,7 @@
                 "state": {
                     "ADDRESS": "68",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -2585,7 +2614,7 @@
                 "state": {
                     "ADDRESS": "81",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             },
             {
@@ -2593,7 +2622,8 @@
                 "state": {
                     "ADDRESS": "23",
                     "SETTING": "false",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
                 }
             },
             {
@@ -2601,7 +2631,7 @@
                 "state": {
                     "ADDRESS": "24",
                     "SETTING": "true",
-                    "PROTOCOL": ""
+                    "PROTOCOL": "MM2"
                 }
             }
         ]
@@ -2658,7 +2688,7 @@
         "name": "Auto Emergency Stop Main A",
         "id": 49,
         "s88": 1007,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3472,7 +3502,7 @@
         "name": "Auto Emergency Stop Top R1",
         "id": 72,
         "s88": 1027,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3507,7 +3537,7 @@
         "name": "Auto Emergency Stop Top R2",
         "id": 73,
         "s88": 1027,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3693,7 +3723,7 @@
         "name": "Auto Emergency Red Light Top R1 pre",
         "id": 78,
         "s88": 1027,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -3745,7 +3775,7 @@
         "name": "Auto Emergency Red Light Top R2 pre",
         "id": 79,
         "s88": 1027,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_ACCESSORY",
@@ -3797,7 +3827,7 @@
         "name": "Auto Emergency Stop Top R1 2",
         "id": 80,
         "s88": 2014,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3832,7 +3862,7 @@
         "name": "Auto Emergency Stop Top R2 2",
         "id": 81,
         "s88": 2014,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -3971,7 +4001,7 @@
         "name": "Auto Emergency Stop Bottom Inner",
         "id": 84,
         "s88": 2012,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -4006,7 +4036,7 @@
         "name": "Auto Emergency Stop Bottom Secondary",
         "id": 85,
         "s88": 2012,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [
             {
@@ -4051,7 +4081,7 @@
         "name": "Auto Emergency Stop Bottom Inner 2",
         "id": 86,
         "s88": 1008,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -4086,7 +4116,7 @@
         "name": "Auto Emergency Stop Main BC",
         "id": 87,
         "s88": 1006,
-        "auto": true,
+        "auto": false,
         "triggerType": "CLEAR_THEN_OCCUPIED",
         "commands": [{
             "type": "TYPE_STOP",
@@ -4148,6 +4178,56 @@
                 }]
             },
             "type": "NodeOr"
+        }
+    },
+    {
+        "name": "Test Route",
+        "id": 1000,
+        "s88": 10,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "93",
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_AUTO_LOCOMOTIVE",
+                "state": {
+                    "NAME": "EN57-203",
+                    "ADDRESS": "10"
+                }
+            }
+        }
+    },
+    {
+        "name": "Test Route 2",
+        "id": 1001,
+        "s88": 1022,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "93",
+                "SETTING": "false",
+                "PROTOCOL": "MM2"
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_AUTO_LOCOMOTIVE",
+                "state": {
+                    "NAME": "EN57-203",
+                    "ADDRESS": "1022"
+                }
+            }
         }
     }
 ]}

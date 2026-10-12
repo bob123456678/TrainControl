@@ -3,11 +3,13 @@ package org.traincontrol.automation;
 import org.traincontrol.base.Locomotive;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.util.I18n;
 
@@ -17,6 +19,28 @@ import org.traincontrol.util.I18n;
  */
 public class Point
 {
+    /**
+     * The side a train standing here came IN by, which is where its tail lies.
+     *
+     * Adam, 2026-09-07: **"we need to track an arrivedFrom property... that would capture where the
+     * physical tail of the train is."**
+     *
+     * **Facing cannot answer this, which is why it is a property of its own.**  A train faces the way
+     * it will leave; its tail is behind it, and "behind" is not recoverable from the heading once the
+     * train has been turned round.  He turned the 2-8-4 at BottomMainB to face east having arrived
+     * from the west, and at that moment facing and tail point the SAME way - so a walk that infers the
+     * tail from the heading looks up the wrong track and the switch it is fouling stays open.
+     *
+     * A compass side rather than an edge, because an edge is directional and a tail is not: the train
+     * lies across that rail whichever way the graph says traffic runs.
+     *
+     * Null when nothing has said - a train nobody has placed or run.
+     */
+    private String arrivedFrom;
+
+    /** The route the standing train arrived along, or null (MT-335).  See `getArrivedAlong`. */
+    private java.util.List<Edge> arrivedAlong;
+
     // volatile: setLocomotive is synchronized but getCurrentLocomotive is not, and both are called
     // across autonomy/UI threads.  volatile gives the unsynchronized reader visibility of the latest write.
     private volatile Locomotive currentLoc;
@@ -31,22 +55,111 @@ public class Point
     private Integer priority = 0;
     private Integer uniqueId;
     private boolean active;
+
+    /**
+     * Whether full autonomy may CHOOSE this station as somewhere to send a train.
+     *
+     * Defaults to true, so a configuration written before this existed behaves exactly as it did.
+     *
+     * Separate from active on purpose.  Inactive means the point is out of service - nothing may pass
+     * through it and nothing may be sent to it - whereas this only withholds it from automatic
+     * selection: a route the user picks by hand still reaches it, and so does Return Home, which is
+     * what makes a parking berth a berth rather than a closed siding.
+     *
+     * It also replaces the way that used to be said.  A "reversing station" was the only way to keep
+     * autonomy from choosing a station, and it dragged two unrelated behaviours along with it - the
+     * train reversed on arrival, and no path could be routed through.  Those are now what a terminus
+     * and a shut arm say, each on its own.
+     */
+    private boolean autoDestination = true;
     private Set<Locomotive> excludedLocs;
+
+    /**
+     * Whether `excludedLocs` names the ONLY locomotives allowed here rather than the ones kept out (FR-121; Adam,
+     * 2026-10-11: *"For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."*).  The list is kept as chosen and read in its mode by `excludes`, which every
+     * exclusion rule asks - so a locomotive added to the database later is excluded too, and turning the mode back
+     * keeps the choice.
+     */
+    private boolean allowOnlyListed = false;
+
+    /** The key the mode is written under, beside `excludedLocs` - only when the list names the locomotives allowed. */
+    public static final String EXCLUDED_LOCS_MODE = "excludedLocsMode";
+
+    /** The value of `EXCLUDED_LOCS_MODE` that makes the list the locomotives allowed (Adam's word for it). */
+    public static final String ALLOW_ONLY_LISTED = "whitelist";
+
     private double speedMultiplier = 1.0;
 
-    // The locomotive this station has been assigned to, by NAME rather than by reference.
+    // The locomotive this station has been assigned to, as a REFERENCE.
     //
-    // A name rather than a reference because an assignment outlives placement: a locomotive that is not
-    // currently on the graph keeps its station, and is simply ignored while it is absent.  A name that
-    // matches no locomotive at all is a different case - it is reported and cleared on load, since
-    // nothing can ever resolve it - but neither invalidates the layout.
+    // This said "by NAME rather than by reference" and went on to argue for it, above a field that has
+    // been a Locomotive since the object migration. Left standing it is worse than no comment: the
+    // argument is sound and it is an argument for the opposite of what the field now is, so a reader
+    // trusting it would look for name-comparison bugs that cannot exist and miss the identity ones
+    // that can.
+    //
+    // What actually holds: an assignment outlives placement, so a locomotive that is not currently on
+    // the graph keeps its station and is ignored while absent - that part was always about the
+    // ASSIGNMENT rather than about how it is stored. The name/object boundary is toJSON and parseAuto
+    // and nowhere else, and a name in the file that resolves to no locomotive is reported and cleared
+    // on load. Neither case invalidates the layout.
     //
     // Null means no assignment, which is the state every existing layout is in - and in that state the
     // home of a locomotive is still simply where it was standing when the graph loaded.
-    private String homeLoc;
+    /**
+     * The locomotive this station is the home of, or null.
+     *
+     * The LOCOMOTIVE, not its name.  It was a name, and five separate mechanisms existed only because
+     * of that: a rename had to be followed into it, a deletion had to clear it, a load had to drop
+     * names that matched nothing, and the resolved answer was kept a second time in Layout.homeStations
+     * and rebuilt to stay in step.  Three of the defects fixed this week were that duplication.
+     *
+     * Holding the object makes most of it stop existing rather than get fixed: a rename changes the
+     * object, so every reference to it is already right, and a locomotive that is not in the database
+     * cannot be pointed at.  What is left is the two rules that are really about the railway - one
+     * locomotive has one station, and a station whose locomotive has been deleted has none - and both
+     * of those are now identity checks beside their neighbours rather than string comparisons.
+     *
+     * The FILE still holds a name, because a file has to; that boundary is in Layout.parseAuto and
+     * Point.toJSON, and it is now the only place a home is a string.
+     */
+    private Locomotive homeLoc;
+
+    /**
+     * Whether the home on this Point was set facing the way this copy faces, so Return Home brings its locomotive back
+     * to a copy of the square facing the way this one faces (Adam, 2026-09-23, OB-282: *"it should accomplish the
+     * facing"*).  False means the home is the square, whichever copy - the rule since 2026-08-31 for a home nobody gave
+     * a facing.
+     */
+    private boolean homeFacingFixed;
+
+    /**
+     * On a split square, the way a train standing on this copy points; null on a square that is one Point (OB-282).
+     *
+     * The facing and not the arrival side, because a turning copy points back at the side it came in by: it shares its
+     * plain twin's arrival and faces the other way (TDY-B1, AUT-B2).
+     */
+    private String copyFacing;
 
     // Unique ID for any new node
-    private static Integer id = 0;
+    /**
+     * The id allocator, atomic because `++` on a static is not (C6).
+     *
+     * `++id` is a read, an add and a write, and nothing held them together. Two Points constructed on
+     * different threads could both read the same value and both take it - and `uniqueId` is what
+     * `toString` returns, which is how a Point is named in a saved configuration and therefore what
+     * every stored setting is keyed to.
+     *
+     * Two Points sharing an id is the same shape as the page renumber that cost a layout restore this
+     * week: nothing fails at the time, and the setup silently reattaches to the wrong thing on the
+     * next load.
+     *
+     * Points are built off the event thread by the builder and on it by the editor, so the two
+     * threads exist. Whether they have ever raced is not knowable after the fact, which is most of the
+     * reason to close it rather than measure it.
+     */
+    private static final java.util.concurrent.atomic.AtomicInteger ID_ALLOCATOR =
+        new java.util.concurrent.atomic.AtomicInteger(0);
   
     public Point(String name, boolean isDestination, String s88) throws Exception
     {
@@ -85,7 +198,7 @@ public class Point
         }
         
         // Save the immutable unique ID
-        this.uniqueId = ++id;
+        this.uniqueId = ID_ALLOCATOR.incrementAndGet();
     }
     
     /**
@@ -135,9 +248,27 @@ public class Point
     }
     
     /**
+     * Whether full autonomy may choose this station as a destination.
+     * @return
+     */
+    public boolean isAutoDestination()
+    {
+        return autoDestination;
+    }
+
+    /**
+     * @param status false to keep autonomy from choosing this station of its own accord.  Routes the
+     *        user picks, and Return Home, are unaffected.
+     */
+    public void setAutoDestination(boolean status)
+    {
+        this.autoDestination = status;
+    }
+
+    /**
      * Returns if the point is active.
      * Active means the point will be selected by autonomous logic
-     * Ignored for non-stations
+     * Asked of every square since 2026-09-02 (D24-B5) - it used to be ignored for a non-station, and `isPathClear` refuses a path THROUGH an inactive point whatever it is, which is what the editor's Out of service means
      * @return 
      */
     public boolean isActive()
@@ -191,11 +322,13 @@ public class Point
         // sends null every time somebody clears the box, which is the obvious way to say exactly
         // that.  Stored as null it read back through getPriority(), which returns int, and through
         // toJSON's `!= 0`: both unbox.  So clearing one point's priority threw NullPointerException
-        // out of the path-choosing comparator - outside any try, so every autonomy thread died at its
-        // next pick and autonomy silently stopped dispatching - and threw again out of every attempt
-        // to SAVE the graph.
+        // out of the path-choosing comparator - outside the try that guards executePath, so the
+        // locomotive's dispatch thread died and that train silently stopped being sent anywhere for
+        // the rest of the session - and threw again out of every attempt to SAVE the layout.
+        //
+        // The same fix setMaxTrainLength already carries, for the same reason.
         this.priority = (value == null) ? 0 : value;
-        
+
         return this;
     }
 
@@ -210,6 +343,43 @@ public class Point
         {
             this.excludedLocs = excludedLocs;
         }
+    }
+
+    /**
+     * Whether this point keeps a locomotive out: one its list names, or - where the list names the locomotives allowed
+     * (FR-121) - any it does not, a locomotive added to the database since included.  What every exclusion rule asks,
+     * rather than the list, so the two modes cannot be read two ways.
+     *
+     * @param loc the locomotive, or null
+     * @return true where it is excluded; false for null
+     */
+    public boolean excludes(Locomotive loc)
+    {
+        if (loc == null) return false;
+
+        boolean listed = excludedLocs.contains(loc);
+
+        return allowOnlyListed ? !listed : listed;
+    }
+
+    /**
+     * Whether the list names the only locomotives allowed here (FR-121), rather than the ones kept out.
+     *
+     * @return true in that mode
+     */
+    public boolean isAllowOnlyListed()
+    {
+        return allowOnlyListed;
+    }
+
+    /**
+     * Reads the list as the only locomotives allowed here, or - false, the default - as the ones kept out (FR-121).
+     *
+     * @param allowOnlyListed the mode
+     */
+    public void setAllowOnlyListed(boolean allowOnlyListed)
+    {
+        this.allowOnlyListed = allowOnlyListed;
     }
 
     /**
@@ -369,11 +539,539 @@ public class Point
         return this.currentLoc;
     }
     
-    synchronized public Point setLocomotive(Locomotive l)
+    /**
+     * @return the side a standing train arrived by, or null when nothing has said
+     */
+    public String getArrivedFrom()
     {
-        this.currentLoc = l;
-        
+        return this.arrivedFrom;
+    }
+
+    /**
+     * Records which side a train came in by, so its tail can be found.
+     *
+     * @param side the compass side, or null to forget
+     */
+    public void setArrivedFrom(String side)
+    {
+        this.arrivedFrom = side;
+    }
+
+    /**
+     * The route the standing train arrived along, which its tail follows back past a junction (MT-335).
+     *
+     * Adam, 2026-09-13: *"if the train was driven there, keep claiming along the road it actually arrived
+     * on, through the junction.  A train placed by hand (no route) still stops at the fork, as now."*
+     *
+     * `arrivedFrom` answers the first hop: which way the tail leaves the platform.  Past that the walk
+     * had only the graph, and at a junction the graph offers several roads and cannot say which the
+     * train is lying on - so it stopped.  The train's own route CAN say, for as long as the train is the
+     * one that drove it.
+     *
+     * Cleared on the same change of occupant that clears `arrivedFrom`, for the same reason: a route
+     * describes the train that arrived, not whoever stands here next.  Saved with the point since WK7-B1, carried across
+     * a rebuild and captured into the setup; a hand-placed train can be given one (FR-085, behaviour.md 5c).
+     *
+     * @return the edges in the order they were driven, or null when nothing was driven here
+     */
+    public java.util.List<Edge> getArrivedAlong()
+    {
+        return this.arrivedAlong;
+    }
+
+    /**
+     * Records the route a train arrived along, so its tail can be followed past a junction.
+     *
+     * @param path the edges in the order they were driven, or null to forget
+     */
+    public void setArrivedAlong(java.util.List<Edge> path)
+    {
+        this.arrivedAlong = path == null ? null
+            : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(path));
+    }
+
+    public Point setLocomotive(Locomotive l)
+    {
+        final Locomotive previousOccupant = this.getCurrentLocomotive();
+        // One locomotive, one place - enforced HERE, because here is the only door.
+        //
+        // A train is a physical object and cannot be in two places, but nothing in the model said so:
+        // every caller was trusted to take it off wherever it was first, and they did not all do it.
+        // moveLocomotive stopped at the first copy it found; parseAuto placed from the file without
+        // looking; and a square is several Points now, so "wherever it was" is a set rather than a
+        // place.  The result was a locomotive standing on two copies of one platform, a removal that
+        // cleared one of them, and a configuration that fromJSON then refused outright.
+        //
+        // Backwards compatible in the way that matters: a Point with no layout behind it - every Point
+        // built by hand in a test, and every one built before this - behaves exactly as it did.
+        // Swept BEFORE this Point's own monitor is taken, which is why the sweep is not inside the
+        // synchronized part.  Holding one Point's lock while taking another's is how two placements on
+        // two threads deadlock each other.
+        //
+        // The invariant this rests on is that a locomotive is PLACED by one thread at a time - its own
+        // driver thread, or a UI gesture while autonomy is stopped.  It is not a claim that the sweep
+        // and the assignment are atomic: two threads placing the SAME locomotive could both sweep, find
+        // nothing, and both assign, leaving it in two places.  Nothing does that today, and the fix if
+        // something ever needs to would be a placement lock, not a wider monitor here.
+        if (l != null && this.layout != null) this.layout.clearLocomotiveExcept(l, this);
+
+        assign(l);
+
+        // The signal follows the platform, through the one door every occupancy change goes through.
+        //
+        // Red while the platform is claimed and green when it is not - and "claimed" covers a train
+        // standing there AND a locked path that has reserved it, because reserving sets the locomotive
+        // exactly as arriving does; not a path that only passes through it (OB-315, `Layout.onlyPassing`).  One derived rule rather than a hook on arrival and another on
+        // departure, so a released or failed path cannot leave a signal stuck red: whatever clears the
+        // reservation clears the signal with it.
+        if (this.layout != null) this.layout.refreshProtectingSignal(this);
+
+        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT (VAL8-B4).
+        //
+        // `arrivedFrom` describes which way the occupant came in.  A different occupant did not come
+        // in that way, and an empty platform has no tail at all - so leaving the old value standing
+        // makes the walk block the rail behind whoever was here BEFORE, which is now clear, while
+        // leaving the rail the new train is actually lying across open.
+        //
+        // Cleared on every change of occupant rather than only on removal: a platform handed straight
+        // from one train to another is where the stale value is least visible and most wrong.
+        if (l != previousOccupant) this.arrivedFrom = null;
+
+        // AND THE ROUTE IT CAME ALONG, for the same reason (MT-335): it describes the train that
+        // arrived, and a train placed here by hand has none.
+        if (l != previousOccupant) this.arrivedAlong = null;
         return this;
+    }
+
+    /**
+     * Puts a locomotive on this Point without taking it off anywhere else.
+     *
+     * For RESERVING a point, which is a different thing from placing a train there and must not sweep.
+     * A locked path reserves every point along it for one locomotive at once - that is how a junction
+     * two trains could reach is held against the second while the first runs through it - so the sweep
+     * that keeps a PLACED train in one place would tear a running train's own reservation down to its
+     * destination and free every junction behind it.
+     *
+     * Package-private: only the layout locks and unlocks paths, and only it should be able to say a
+     * locomotive is in more than one place at once.
+     *
+     * @param l the locomotive reserving this point
+     * @return this
+     */
+    Point reserve(Locomotive l)
+    {
+        assign(l);
+
+        if (this.layout != null) this.layout.refreshProtectingSignal(this);
+
+        return this;
+    }
+
+    synchronized private Point assign(Locomotive l)
+    {
+        Locomotive previousOccupant = this.currentLoc;
+
+        this.currentLoc = l;
+
+        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT, HERE TOO (AUR-C1).
+        //
+        // `setLocomotive` clears both on a change of occupant and this door did not, so a square left
+        // holding a side and a road with nobody on it - a placement the loader dropped, which is a
+        // file that has outlived the fleet - handed them to whichever train reserved it next.  The
+        // tail walk then claimed edges back along a road that train has never driven, and every other
+        // train was refused over them with a message naming a train standing somewhere else.
+        //
+        // Same rule as the other door, and the same test: a locomotive reserving the square it is
+        // already standing on keeps the tail it really has.
+        if (l != previousOccupant)
+        {
+            this.arrivedFrom = null;
+            this.arrivedAlong = null;
+        }
+
+        return this;
+    }
+
+    /**
+     * Which physical piece of track this Point is part of, or null when it is one of its own.
+     *
+     * A square of the diagram is emitted as several Points - one per side a train can arrive by - and
+     * they are the SAME piece of track.  Two trains cannot be on it at once: that is a collision, not a
+     * state to model.  But occupancy is recorded per Point, so a sibling copy reads free while a train
+     * stands on its twin, and a second train could be routed onto it.
+     *
+     * Not the s88.  Genuinely different places legitimately share a sensor - a station, its approach
+     * guard and a reversing point are three Points on one feedback in a real layout - so keying on it
+     * would refuse paths that are perfectly safe.  The identity comes from the builder, which is the
+     * only layer that knows two Points came from one tile.
+     *
+     * Null on everything hand-written or generated before this, which is exactly right: those Points
+     * each stand alone, and behave as they always have.
+     */
+    private String block;
+
+    /**
+     * The square of the diagram this Point is a copy of, as the build names it, or null on a Point written by hand
+     * (RSA5-A1).  A rebuild carries each train by it: a rename can hand a Point's name to another square.
+     */
+    private String square;
+
+    /**
+     * The accessories thrown to red while this platform is claimed.
+     *
+     * A station's protection, not a side's: every copy of a square carries the same ones, because the
+     * copies are one platform.
+     *
+     * A LIST rather than one accessory, because a platform reachable from two directions needs a
+     * signal on each approach, and a real station often has several.  They are commanded together and
+     * show the same aspect - they say the same thing about the same platform - so nothing here has to
+     * decide which of them applies to an approach.  That would need the arrival side, which the Point
+     * knows and the pairing does not.
+     *
+     * Never null, so no caller has to check twice.
+     */
+    private final List<String> protectingSignals = new ArrayList<>();
+
+    /**
+     * The accessories thrown red when a train arrives here as the end of its journey - the entry guard (FR-096).
+     *
+     * Never turned green here: the next route that needs a signal sets it (Adam: *"The next route sets it green, so
+     * that is out of scope."*).  Carried by every copy of the square, as the protecting signals are.
+     *
+     * Never null.
+     */
+    private final List<String> entrySignals = new ArrayList<>();
+
+    /**
+     * @return every entry-guard signal of this platform, in the order they were paired (FR-096)
+     */
+    public List<String> getEntrySignals()
+    {
+        return Collections.unmodifiableList(this.entrySignals);
+    }
+
+    /**
+     * Replaces the entry guard (FR-096).
+     *
+     * @param accessories the signals, or null to clear
+     * @return this
+     */
+    public Point setEntrySignals(List<String> accessories)
+    {
+        this.entrySignals.clear();
+
+        if (accessories != null)
+        {
+            for (String one : accessories) if (one != null && !this.entrySignals.contains(one)) this.entrySignals.add(one);
+        }
+
+        return this;
+    }
+
+    /**
+     * Points whose occupancy makes this station unavailable to autonomy.
+     *
+     * FR-001, and the half of it that lock edges cannot express.  The build ALSO emits a lock edge
+     * ending at each watched square, which holds the station back while a route is running over that
+     * approach - but Edge.isLockHeld asks about a reservation and deliberately not about a train
+     * standing at the sensor beyond it, because counting a parked train made a locomotive beside a
+     * junction a permanent roadblock.  Adam asked for both.
+     *
+     * The POINTS themselves, not their names.  A file holds names because a file has to, and
+     * Layout.parseAuto resolves them once every point exists - so this and toJSON are the boundary, and
+     * everywhere in between a restriction either points at a real place or is not there at all.
+     *
+     * That is what makes the rule below a lookup rather than a search: asking whether a named point is
+     * occupied meant resolving the name on every path check, and answering "not occupied" for a name
+     * that no longer matched anything - which is indistinguishable from the restriction being satisfied.
+     *
+     * Never null, so no caller has to check twice.
+     */
+    private final List<Point> blockedBy = new ArrayList<>();
+
+    /**
+     * @return the points that make this station unavailable while they are occupied
+     */
+    public List<Point> getBlockedBy()
+    {
+        return Collections.unmodifiableList(this.blockedBy);
+    }
+
+    /**
+     * Replaces the list of points that hold this station back.
+     *
+     * @param points the points, or null to clear
+     * @return this
+     */
+    public Point setBlockedBy(List<Point> points)
+    {
+        this.blockedBy.clear();
+
+        if (points != null)
+        {
+            for (Point one : points)
+            {
+                // De-duplicated, and a point never blocks itself: standing at a station already decides
+                // whether it is free, so watching itself makes a station nothing can be sent to rather
+                // than one that is restricted.
+                if (one != null && one != this && !this.blockedBy.contains(one))
+                {
+                    this.blockedBy.add(one);
+                }
+            }
+        }
+
+        return this;
+    }
+
+    /**
+     * Who is standing on a watched square, for the FR-001 rule below.
+     *
+     * The rule is one question - "is any square this station is held back by occupied by somebody
+     * else?" - but there are two legitimate places to look for the answer, and they cannot be merged
+     * because they are asked about different worlds:
+     *
+     *  - the LIVE railway, which `onTheLiveBlock()` answers by asking `getBlockLocomotive`; this is
+     *    what `isPathClear` and the FR-017 why-window use, and it is the authority, because it is the
+     *    copy that actually refuses the arrival;
+     *  - a PLANNED state, which the staging planner answers out of its own shadow occupancy map,
+     *    because "could this move happen after three other moves" has no answer on live feedback.
+     *
+     * Splitting the occupancy source out is what lets the rule itself - which squares are consulted,
+     * and which locomotive is exempt - live in exactly one place.  Before this, three copies of that
+     * iteration existed and answered differently (DR-B2).
+     */
+    public interface Occupancy
+    {
+        /**
+         * @param track a square this station is held back by
+         * @param exempt the locomotive being routed, which does not count as an occupant of it
+         * @return whether anybody OTHER than exempt is standing on the same piece of track
+         */
+        boolean heldBySomebodyOtherThan(Point track, Locomotive exempt);
+    }
+
+    /**
+     * The live railway's answer: the whole BLOCK, not just the named Point.
+     *
+     * A square emitted as several copies is one piece of track, so a train on the eastbound copy of the
+     * watched point is standing on it, and asking only the copy that carries the name would answer
+     * clear with a train there.
+     */
+    public static Occupancy onTheLiveBlock()
+    {
+        return (track, exempt) ->
+        {
+            Locomotive standing = track.getBlockLocomotive();
+
+            return standing != null && !standing.equals(exempt);
+        };
+    }
+
+    /**
+     * The square holding this one back, or null when none is (FR-001) - asked of every square a route arrives at, not
+     * only its destination (OB-295).
+     *
+     * ONE expression of the rule.  It used to be written three times - the runtime check in
+     * `isPathClear`, the staging planner's `canRest`, and the replay oracle in the staging tests - and
+     * the three answered differently on real layouts, which is the defect DR-B2 named.  Everything that
+     * asks the question now asks it here; what a caller supplies is only where to look for occupancy.
+     *
+     * The train LEAVING the watched square is exempt.  Adam, asked directly: "The condition should not
+     * apply to trains leaving - only departing."  Without the exemption the one movement that clears
+     * the condition is the movement it forbids: a locomotive standing in the yard could never be sent
+     * to the platform the yard holds back, and while it sat there the platform was shut to everybody
+     * else too.
+     *
+     * Note what this does NOT decide: whether the rule is in force at all.  That is a property of the
+     * caller, not of the rule, so it stays at the call sites.
+     *
+     * **And since 2026-09-10 no caller fences it.**  Adam: *"enforce the occupancy ruling in all modes
+     * and then rely on isPathClear."*  `isPathClear` says so where the fence used to be - "NO FENCE
+     * ... the restriction is enforced in every tier" - and `HomeStaging.canRest` asks it of the
+     * planned state.  The paragraph that stood here described the arrangement of the day before, when
+     * the runtime fenced it behind `isAutoRunning` and only the planner applied it always; reading it
+     * now would suggest a hand-driven send is exempt, and none is.
+     *
+     * @param destination the square being arrived at - a route's destination or any square on the way (OB-295); a null
+     *        square is held back by nothing
+     * @param arriving the locomotive arriving, exempt where it is itself the occupant
+     * @param occupancy where to look for who is standing where
+     * @return the watched square somebody else is standing on, or null when nobody else stands on any it watches
+     */
+    public static Point heldBackBy(Point destination, Locomotive arriving, Occupancy occupancy)
+    {
+        if (destination == null) return null;
+
+        for (Point watched : destination.getBlockedBy())
+        {
+            // Never null in practice - setBlockedBy drops nulls and parseAuto resolves names before it
+            // is called - but the two production copies of this loop guarded it differently, one of
+            // them defending against something its own constructor made impossible.  Guarded once here
+            // so no caller has to decide again.
+            if (watched == null) continue;
+
+            if (occupancy.heldBySomebodyOtherThan(watched, arriving)) return watched;
+        }
+
+        return null;
+    }
+
+    /**
+     * The rule asked of the live railway, which is what everything outside the staging planner wants.
+     *
+     * @param destination the square being arrived at - a route's destination or any square on the way (OB-295)
+     * @param arriving the locomotive arriving, exempt where it is itself the occupant
+     * @return the watched square somebody else is standing on, or null
+     */
+    public static Point heldBackBy(Point destination, Locomotive arriving)
+    {
+        return heldBackBy(destination, arriving, onTheLiveBlock());
+    }
+
+    /**
+     * @return the first signal protecting this platform, or null
+     */
+    public String getProtectingSignal()
+    {
+        return this.protectingSignals.isEmpty() ? null : this.protectingSignals.get(0);
+    }
+
+    /**
+     * @return every signal protecting this platform, in the order they were paired
+     */
+    public List<String> getProtectingSignals()
+    {
+        return Collections.unmodifiableList(this.protectingSignals);
+    }
+
+    /**
+     * Replaces the protection with one accessory, or none.
+     *
+     * @param accessory the signal, or null to clear
+     * @return this
+     */
+    public Point setProtectingSignal(String accessory)
+    {
+        this.protectingSignals.clear();
+
+        if (accessory != null) this.protectingSignals.add(accessory);
+
+        return this;
+    }
+
+    /**
+     * Replaces the protection with a list.
+     *
+     * @param accessories the signals, or null to clear
+     * @return this
+     */
+    public Point setProtectingSignals(List<String> accessories)
+    {
+        this.protectingSignals.clear();
+
+        if (accessories != null)
+        {
+            for (String one : accessories)
+            {
+                if (one != null && !this.protectingSignals.contains(one)) this.protectingSignals.add(one);
+            }
+        }
+
+        return this;
+    }
+
+    /**
+     * Whether this and another Point are the same piece of track (MT-165).
+     *
+     * One square on the diagram is emitted as several Points, one per arrival side, tied together by
+     * a block.  Almost every rule about a square means the SQUARE - a train standing on any copy is
+     * standing on that platform, and a platform already spoken for is spoken for whichever copy is
+     * named - so comparing Points answers a question nobody asked.
+     *
+     * Here rather than in either caller, because it was in one caller and not the other and that is
+     * exactly what went wrong: `HomeStaging.atHome` learned it when positional homes were allowed onto
+     * split squares, and `Layout.claimHome`'s "this station is already somebody's home" test went on
+     * comparing Points - so a second locomotive could take the far copy of a platform that was already
+     * a home, and no arrangement puts both trains at home.
+     *
+     * @param other the other Point, or null
+     * @return true when a train on one is standing where a train on the other is standing
+     */
+    public boolean isSamePlaceAs(Point other)
+    {
+        if (other == null) return false;
+
+        if (this.equals(other)) return true;
+
+        return this.block != null && this.block.equals(other.getBlock());
+    }
+
+    /**
+     * @return the block this Point shares with the other copies of its square, or null
+     */
+    public String getBlock()
+    {
+        return this.block;
+    }
+
+    /**
+     * @param block the shared identity, from the builder
+     * @return this
+     */
+    public Point setBlock(String block)
+    {
+        this.block = block;
+
+        return this;
+    }
+
+    /**
+     * The locomotive standing anywhere on this Point's piece of track.
+     *
+     * Its own if it has one, otherwise whatever is standing on another copy of the same square.  This
+     * is what occupancy has to ask: a train on the eastbound copy of a platform is on the platform, and
+     * the westbound copy is not free just because it is a different object.
+     *
+     * @return the locomotive, or null when the whole block is clear
+     */
+    public Locomotive getBlockLocomotive()
+    {
+        Locomotive mine = this.currentLoc;
+
+        if (mine != null) return mine;
+
+        if (this.block == null || this.layout == null) return null;
+
+        return this.layout.locomotiveInBlock(this.block, this);
+    }
+
+    /**
+     * The layout this Point belongs to, so that placing a locomotive can clear it from everywhere else.
+     *
+     * Set by the layout as it takes the Point, and never by anything else.  Null on a Point that was
+     * built and not added, which is exactly when there is nowhere else for a locomotive to be.
+     */
+    private Layout layout;
+
+    /**
+     * The layout this Point belongs to, or null when it was built and never added.
+     *
+     * Package-private like the setter below it, and for the same reason: this is for rules inside the
+     * automation model that have to ask about a Point's neighbours - which copies of a square there
+     * are, in particular - and not part of what the rest of the application sees.
+     */
+    Layout getLayout()
+    {
+        return this.layout;
+    }
+
+    /**
+     * @param layout the layout taking ownership of this Point
+     */
+    void setLayout(Layout layout)
+    {
+        this.layout = layout;
     }
     
     public String getS88()
@@ -452,21 +1150,29 @@ public class Point
     {
         if (!this.isDestination) return true;
         if (this.getMaxTrainLength() == 0) return true;
+
+        // Nothing known about the train is not a train too long (AMR-C1).  Every other reader of the length treats
+        // null that way, and this one unboxed it inside the route checks that ask it.
+        if (loc.getTrainLength() == null) return true;
         
         return loc.getTrainLength() <= this.getMaxTrainLength();   
     }
     
     /**
-     * The locomotive assigned to this station, by name, or null.
+     * The locomotive assigned to this station, or null.
      * @return
      */
-    public String getHomeLoc()
+    public Locomotive getHomeLoc()
     {
         return this.homeLoc;
     }
 
     /**
-     * Assigns this station to a locomotive by name, or clears it with null.
+     * Assigns this station to a locomotive, or clears it with null.
+     *
+     * Held as the locomotive itself; its NAME is what gets written out and matched back on load, which
+     * is why the naming rules below decide what survives a round trip.  This pair used to say the
+     * assignment was made by name, which the signature has never done (RC-C8).
      *
      * Not validated here: a name that matches nothing is a legitimate stored state, reported on load
      * rather than refused.
@@ -478,9 +1184,60 @@ public class Point
      *
      * @param homeLoc
      */
-    public void setHomeLoc(String homeLoc)
+    public void setHomeLoc(Locomotive homeLoc)
     {
-        this.homeLoc = homeLoc == null || homeLoc.trim().isEmpty() ? null : homeLoc;
+        this.homeLoc = homeLoc;
+
+        // A facing belongs to a home; taking the home away takes it too.
+        if (homeLoc == null) this.homeFacingFixed = false;
+    }
+
+    /**
+     * @return whether this Point's home was set facing the way this copy faces (OB-282)
+     */
+    public boolean isHomeFacingFixed()
+    {
+        return this.homeLoc != null && this.homeFacingFixed;
+    }
+
+    /**
+     * @param fixed whether this Point's home was set facing the way this copy faces (OB-282)
+     */
+    public void setHomeFacingFixed(boolean fixed)
+    {
+        this.homeFacingFixed = fixed;
+    }
+
+    /**
+     * @return the square of the diagram this Point is a copy of, or null where no build said (RSA5-A1)
+     */
+    public String getSquare()
+    {
+        return this.square;
+    }
+
+    /**
+     * @param square the square of the diagram this Point is a copy of, or null
+     */
+    public void setSquare(String square)
+    {
+        this.square = square;
+    }
+
+    /**
+     * @return the way a train standing on this copy points, or null on a square that is one Point (OB-282)
+     */
+    public String getCopyFacing()
+    {
+        return this.copyFacing;
+    }
+
+    /**
+     * @param side the way a train standing on this copy points, or null
+     */
+    public void setCopyFacing(String side)
+    {
+        this.copyFacing = side;
     }
 
     /**
@@ -491,21 +1248,23 @@ public class Point
      */
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
-        return this.toJSON(this.currentLoc);
+        return toJSON(this.currentLoc);
     }
 
     /**
-     * Converts this point to a JSON representation, with the given locomotive as the one standing on it.
+     * The same, writing the given locomotive as the one standing here - or none, for null - rather than whichever this
+     * point records (RLV8-B1).  A train under way is recorded on every point of its locked path, and a fold writes it on
+     * the one point it is kept at.  The side it arrived by and its road are written only for the train this point
+     * records.
      *
-     * For Layout.toJSON(keptAt), which keeps a train at the last point whose sensor it tripped even when a
-     * non-atomic route has already released that point behind it, so that it no longer records the train
-     * (MRV4-C2).
-     * @param placed the locomotive to write as standing here; null for none
-     * @return
-     * @throws java.lang.IllegalAccessException
-     * @throws java.lang.NoSuchFieldException
+     * @param standing the locomotive to write as standing here, or null
+     * @return the point
+     * @throws IllegalArgumentException from the JSON
+     * @throws IllegalAccessException from the JSON
+     * @throws NoSuchFieldException from the JSON
      */
-    public JSONObject toJSON(Locomotive placed) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    public JSONObject toJSON(Locomotive standing) throws IllegalArgumentException, IllegalAccessException,
+        NoSuchFieldException
     {		
         JSONObject jsonObj = new JSONObject();
         Field map = jsonObj.getClass().getDeclaredField("map");
@@ -540,6 +1299,57 @@ public class Point
         {
             jsonObj.put("reversing", this.isReversing);
         }
+
+        // The signals thrown to red while this platform is claimed.
+        //
+        // Written as well as read.  parseAuto has always taken this back in, and leaving it out of the
+        // export made the configuration JSON quietly lossy: a setup exported and imported came back
+        // with every station-signal pairing gone, and nothing said so.  Exactly what happened to the
+        // block field below, whose own comment this one had been tacked onto (CMT-C1).
+        //
+        // One is written as a bare string, several as an array.  The single case is what every
+        // version before this one wrote and read, and a station guarded by one signal - which is most
+        // of them - stays readable to an older TrainControl rather than becoming an array it would
+        // make nonsense of.
+        if (this.protectingSignals.size() == 1)
+        {
+            jsonObj.put("protectingSignal", this.protectingSignals.get(0));
+        }
+        else if (!this.protectingSignals.isEmpty())
+        {
+            jsonObj.put("protectingSignal", new JSONArray(this.protectingSignals));
+        }
+
+        // The entry guard (FR-096), in the same two shapes.
+        if (this.entrySignals.size() == 1)
+        {
+            jsonObj.put("entrySignal", this.entrySignals.get(0));
+        }
+        else if (!this.entrySignals.isEmpty())
+        {
+            jsonObj.put("entrySignal", new JSONArray(this.entrySignals));
+        }
+
+        // Which piece of track this Point is part of.
+        //
+        // Written because it is READ: parseAuto takes it back, and without this the export path lost
+        // it silently - a graph exported and re-imported came back with every square split into
+        // independent Points again, so two trains could once more be routed onto one platform.  The
+        // operator would have had no way to tell: the file looks like a faithful copy of the graph.
+        if (this.block != null)
+        {
+            jsonObj.put("block", this.block);
+        }
+
+        // Read back too, for the same reason (RSA5-A1)
+        if (this.square != null) jsonObj.put("square", this.square);
+
+        // written only when it differs from the default, so a file gains no noise from a setting
+        // nobody has touched
+        if (!this.autoDestination)
+        {
+            jsonObj.put("autoDestination", this.autoDestination);
+        }
         
         if (this.priority != 0)
         {
@@ -553,10 +1363,16 @@ public class Point
         
         if (this.homeLoc != null)
         {
-            jsonObj.put("home", this.homeLoc);
+            // By NAME, because a file has to.  This and Layout.parseAuto are now the only two places a
+            // home is a string; everywhere in between it is the locomotive.
+            jsonObj.put("home", this.homeLoc.getName());
+
+            if (this.homeFacingFixed) jsonObj.put("homeFacingFixed", true);
         }
+
+        if (this.copyFacing != null) jsonObj.put("copyFacing", this.copyFacing);
         
-        if (placed != null)
+        if (standing != null)
         {
             JSONObject locObj = new JSONObject();
             
@@ -565,23 +1381,43 @@ public class Point
             map.set(locObj, new LinkedHashMap<>());
             map.setAccessible(false);
             
-            locObj.put("name", placed.getName());
-            locObj.put("reversible", placed.isReversible());
-            locObj.put("speed", placed.getPreferredSpeed());
-            
-            if (placed.getArrivalFunc() != null)
+            locObj.put("name", standing.getName());
+            locObj.put("reversible", standing.isReversible());
+            // WRITTEN ONLY WHEN IT IS A SPEED (MT-233).
+            //
+            // Adam: "ensure a locomotive cannot have a speed of 0 set anywhere in the autonomy config
+            // input files."  Zero is how this field says "not set", and parseAuto reads it that way
+            // twice over - it applies a stored speed only between 1 and 100, and then fills anything
+            // still at zero from defaultLocSpeed.  So a zero here was never dangerous; it was a value
+            // in the file that means "no value", which is the shape that invites the next reader to
+            // trust it.
+            //
+            // Absence says the same thing and cannot be misread.  It is also what arrivalFunc and
+            // departureFunc below already do, for the same reason - the format had the idiom already.
+            if (standing.getPreferredSpeed() > 0)
             {
-                locObj.put("arrivalFunc", placed.getArrivalFunc());
+                locObj.put("speed", standing.getPreferredSpeed());
+            }
+            
+            if (standing.getArrivalFunc() != null)
+            {
+                locObj.put("arrivalFunc", standing.getArrivalFunc());
             }
         
-            if (placed.getDepartureFunc() != null)
+            if (standing.getDepartureFunc() != null)
             {
-                locObj.put("departureFunc", placed.getDepartureFunc());
+                locObj.put("departureFunc", standing.getDepartureFunc());
             }
             
-            if (placed.getTrainLength() > 0)
+            // A LENGTH NOBODY HAS SET IS NULL, and unboxing it here threw (found 2026-09-14 by
+            // `testAPassingTrainMayStandAcrossThePoints.testTheRoadIsWrittenToTheSetup`).  `Layout.toJSON` then
+            // failed whole, and every capture of the running layout - closing the editor, the exit, a
+            // re-download - logged the exception and wrote nothing while such a train stood anywhere.
+            Integer trainLength = standing.getTrainLength();
+
+            if (trainLength != null && trainLength > 0)
             {
-                locObj.put("trainLength", placed.getTrainLength());
+                locObj.put("trainLength", trainLength);
             }
             
             jsonObj.put("loc", locObj);
@@ -595,7 +1431,62 @@ public class Point
                 locNames.add(l.getName());
             }
 
+            // SORTED, so the file is the same file when nothing has changed.
+            //
+            // excludedLocs is a set of Locomotive objects, and Locomotive does not override hashCode -
+            // so the iteration order is identity hashes, which differ on every run of the JVM. Merely
+            // opening a layout and saving it therefore rewrote this array in a new order, and the
+            // whole configuration file came out different with nothing changed.
+            //
+            // That is not a data defect - the set is the same set - but it costs three real things: a
+            // sync on every launch for a layout that lives in OneDrive, a diff that says something
+            // happened when nothing did, and, in this repository, a test that opens the window quietly
+            // rewriting Adam's own railway.
+            java.util.Collections.sort(locNames);
+
             jsonObj.put("excludedLocs", locNames);
+        }
+
+        // The list's mode, written only where it names the locomotives allowed (FR-121) - an empty list then
+        // keeps every locomotive out, so the mode is written whether the list is or not
+        if (this.allowOnlyListed)
+        {
+            jsonObj.put(EXCLUDED_LOCS_MODE, ALLOW_ONLY_LISTED);
+        }
+
+        if (!this.blockedBy.isEmpty())
+        {
+            // By NAME, because a file has to.  The other side of this boundary is Layout.parseAuto,
+            // which resolves them once every point exists.
+            List<String> named = new ArrayList<>();
+
+            for (Point blocker : this.blockedBy) named.add(blocker.getName());
+
+            jsonObj.put("blockedBy", new JSONArray(named));
+        }
+
+        // ONLY BESIDE AN OCCUPANT (AUR-C1).
+        //
+        // A side with nobody on the square is a record of a train the database no longer has, and it
+        // was written back on every save for ever - so the AMR-C3 drop's own promise, "the next save
+        // writes the file back without the phantom", was true of the placement and false of its tail.
+        if (this.arrivedFrom != null && standing != null && standing == this.currentLoc)
+        {
+            jsonObj.put("arrivedFrom", this.arrivedFrom);
+        }
+
+        // AND THE ROAD IT CAME IN ON, which the side alone cannot say past a junction (WK7-B1).
+        //
+        // Adam, 2026-09-14: *"Then state will always be fully consistent."*  This lived in memory only, so a
+        // save, a restart or a rebuild put a driven train back with its side and not its road, and its tail
+        // stopped at the first fork again.  Written as [start, end] name pairs, the form `Layout.roadNamed`
+        // reads: by NAME because a file has to, and each edge whole because a point pair is what `getEdge`
+        // looks up.
+        String road = Layout.namesOfRoad(this.arrivedAlong);
+
+        if (road != null && standing != null && standing == this.currentLoc)
+        {
+            jsonObj.put("arrivedAlong", new JSONArray(road));
         }
                 
         if (this.coordinatesSet())

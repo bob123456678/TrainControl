@@ -39,6 +39,21 @@ public class RightClickPageMenu extends MouseAdapter
     
     final class RightClickMenu extends JPopupMenu
     {
+        /**
+         * Its tooltips wrapped where a line will not hold them, as it is shown (FR-112) - whatever set them.
+         *
+         * @param invoker where it is shown
+         * @param x where it is shown
+         * @param y where it is shown
+         */
+        @Override
+        public void show(java.awt.Component invoker, int x, int y)
+        {
+            AutonomyEditorPanel.wrapTheTooltips(this);
+
+            super.show(invoker, x, y);
+        }
+
         JMenuItem menuItem;
 
         public RightClickMenu(TrainControlUI ui, MouseEvent e)
@@ -87,6 +102,54 @@ public class RightClickPageMenu extends MouseAdapter
                 I18n.t("page.ui.menuResetCurrentMappings")
             );
             menuItem.addActionListener(event -> ui.clearCurrentPage());
+            add(menuItem);
+
+            addSeparator();
+
+            // No number on this one, though there is one on Delete below.
+            //
+            // The two sat side by side reading "Add Page 11" and "Delete Page 4", and two different
+            // numbers next to each other invite the reader to work out how they relate - which is
+            // nothing: one is where a new page would land and the other is the page being looked at.
+            // Delete keeps its number because it names something that already exists and getting the
+            // wrong one matters.
+            menuItem = new JMenuItem(
+                I18n.t("page.ui.menuAddPage")
+            );
+            // Greyed at the ceiling, with the reason on it - the same shape Delete uses below, and for
+            // the reason written there: an item that appears and disappears reads as an interface that
+            // cannot make up its mind; one that is greyed with an explanation says what to do.
+            if (ui.canAddLocMappingPage())
+            {
+                menuItem.addActionListener(event -> ui.addLocMappingPage());
+                menuItem.setToolTipText(I18n.t("page.ui.tooltipAddPage"));
+            }
+            else
+            {
+                menuItem.setEnabled(false);
+                menuItem.setToolTipText(
+                    I18n.f("page.ui.errorTooManyPages", TrainControlUI.MAX_LOC_MAPPINGS));
+            }
+
+            add(menuItem);
+
+            // Offered and refused rather than hidden, with the reason on it.  An item that appears
+            // and disappears depending on what is on the page reads as an interface that cannot make
+            // up its mind; one that is greyed with an explanation says what to do about it.
+            menuItem = new JMenuItem(
+                I18n.f("page.ui.menuDeletePage", ui.getLocMappingNumber())
+            );
+
+            if (ui.canDeleteCurrentPage())
+            {
+                menuItem.addActionListener(event -> ui.deleteCurrentLocMappingPage());
+            }
+            else
+            {
+                menuItem.setEnabled(false);
+            }
+
+            menuItem.setToolTipText(I18n.t("page.ui.tooltipDeletePage"));
             add(menuItem);
         }
     }

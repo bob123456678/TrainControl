@@ -1,0 +1,3209 @@
+package org.traincontrol.automationui;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.Stroke;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TilePorts.Side;
+
+/**
+ * What a tile has been set to allow, drawn on the tile while autonomy is being set up.
+ *
+ * The authoring counterpart to TileOverlay: that one shows what trains are doing, this one shows what
+ * they would be permitted to do.  They are separate because they answer different questions and are
+ * looked at at different times, and because merging them would mean a value class whose equality mixed a
+ * running state with an editing decision.
+ *
+ * Drawn as thin lines with chevrons rather than by tinting the tile.  A tint can say "something is set
+ * here"; it cannot say WHICH WAY, and which way is the entire content of the decision being made.  On a
+ * switch the lines also separate the branches, so a tile with three routes shows three answers rather
+ * than one.
+ *
+ * @author Adam
+ */
+public class TileAnnotation
+{
+    /**
+     * One route of a tile, and which way it may be travelled.
+     */
+    public static class Mark
+    {
+        private final Side a;
+        private final Side b;
+        private final Direction direction;
+
+        public Mark(Side a, Side b, Direction direction)
+        {
+            this.a = a;
+            this.b = b;
+            this.direction = direction == null ? Direction.BOTH : direction;
+        }
+
+        public Side getA()
+        {
+            return a;
+        }
+
+        public Side getB()
+        {
+            return b;
+        }
+
+        public Direction getDirection()
+        {
+            return direction;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (!(o instanceof Mark)) return false;
+
+            Mark other = (Mark) o;
+
+            return a == other.a && b == other.b && direction == other.direction;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (a == null ? 0 : a.hashCode()) * 961
+                 + (b == null ? 0 : b.hashCode()) * 31
+                 + direction.hashCode();
+        }
+
+        @Override
+        public String toString()
+        {
+            return a + "-" + b + ":" + direction;
+        }
+    }
+
+    /**
+     * Trains may go this way.
+     *
+     * There used to be a second colour for track that runs both ways, which asked the reader to hold
+     * three meanings when there are only two: an arrow says one thing, whether or not the arrow beside
+     * it says the same.  Both ways is now simply two green arrows, one way is a green and a red, and
+     * closed is two reds - one rule, read the same way everywhere.
+     */
+    private static final Color ONE_WAY = new Color(70, 205, 90);
+
+    /**
+     * The edge round a green arrow (Adam, 2026-10-04, choosing it from six drawn on the real tiles: *"F looks best.  let's
+     * see about using that in the editor too."*).  A dark green (0, 140, 60) was lost on the black rails it sits on, and
+     * the signals' green (0, 255, 0), which MT-675 asked for on the track diagram, was too bright; a light green with a
+     * dark green edge reads on both the rail and the white around it, on the track diagram and in the autonomy editor
+     * alike.
+     */
+    private static final Color ONE_WAY_EDGE = new Color(0, 95, 40);
+
+    /**
+     * Closed.  Red, and the only mark drawn as a bar rather than a path, because it is the one that means
+     * a train cannot get through.
+     */
+    private static final Color CLOSED = new Color(200, 0, 0);
+
+    /**
+     * The same red the diagram writes accessory addresses in.
+     *
+     * It was a muted purple, which is a perfectly good colour and nearly invisible at the size these
+     * are drawn - a two-digit number a quarter of a tile high, over track art, in a colour with no
+     * contrast against either.  Addresses solved the same problem years ago and the answer is already
+     * on the screen; using a second one would only mean the reader learning two.
+     */
+    private static final Color LENGTH = Color.RED;
+
+
+    /**
+     * Selected for a bulk edit.  Drawn as a border rather than a fill so the track underneath stays
+     * readable while forty tiles are being picked.
+     */
+    private static final Color SELECTED = new Color(255, 140, 0);
+
+    /**
+     * How much the tile art is dimmed under the marks.
+     *
+     * The lines are thin and the icons are busy, so at 0 the chevrons disappear into the track they
+     * describe.  A wash of the tile's own background separates the two layers without hiding either -
+     * the track stays legible, the marks stop competing with it.
+     */
+    private static final float DIM = 0.55f;
+
+    private static final Color DIM_COLOUR = Color.WHITE;
+
+    /**
+     * The colour of a square autonomy uses - the graph window's own blue, rgb(0,0,200), so somebody who has read one
+     * view can read the other - and of one it leaves alone: a medium dark grey, just darker than the grey station
+     * labels (Adam, FR-103, from MT-492: *"instead of orange, make them a medium dark gray that's just slightly darker
+     * than labels"*).  It was the graph window's orange, which the train mark still is.
+     */
+    private static final Color POINT_ACTIVE = DiagramColours.STATION;
+    private static final Color POINT_INACTIVE = new Color(128, 130, 134);
+
+    /**
+     * And a square nothing can pass - the X - in orange again (Adam, 2026-09-29: *"make the nothing can pass (X
+     * stations) be orange again"*): the orange it had before FR-103, rgb(255,102,0).  A square shut to every train reads
+     * apart from a berth autonomy merely does not choose.  It was the train line's own constant until the line went to a
+     * softer orange on 2026-10-09 (`DiagramColours.TRAIN`); the X kept the orange it was asked to be.
+     */
+    private static final Color POINT_IMPASSABLE = new Color(255, 102, 0);
+
+    /**
+     * What a sensor has been designated as, drawn as a badge on its tile.
+     *
+     * The SHAPE says what turning means here; the SIZE says whether it is a station.  Blue means
+     * autonomy uses it, grey means it does not (FR-103), and orange that nothing can pass (the X).
+     *
+     *                       trains do not turn    trains MAY turn    trains ALWAYS turn
+     *     a station              big circle          big diamond         big square
+     *     a passing point       small circle        small diamond       small square
+     *
+     * This used to describe the vocabulary that grid replaced - "a station is a circle, a terminus a
+     * square, a reversing point a smaller square, and a plain point a small diamond" - which had grown
+     * up the other way, four shapes with no system behind them.  Two of those four claims are now the
+     * wrong way round: a plain point is a small CIRCLE, and a diamond means trains MAY turn, so a
+     * reader interpreting a screenshot by the old legend would read a may-turn station as a plain
+     * point (TD-15).  The justification is gone too: the graph window it followed was deleted.
+     *
+     * The five kinds the user thinks in are two questions over a station - must a train leave the way
+     * it came (terminus), and does autonomy choose it on its own (parking) - which is why these are
+     * independent flags rather than one enum.
+     */
+    public static class Badge
+    {
+        private final boolean station;
+        private final boolean terminus;
+        private final boolean optional;
+        private final boolean reversing;
+        private final boolean parking;
+        private final boolean named;
+
+        /**
+         * Whether this square is switched OFF, as against merely left out of autonomy's choices.
+         *
+         * Kept apart from `parking` because they are different facts that happened to share a colour.
+         * A square autonomy will not CHOOSE is still one trains pass through and stop at; a square
+         * that is switched off is neither. Nothing about the shape grid says which, so a square
+         * nothing can use gets a mark of its own (OB-167).
+         */
+        private final boolean shut;
+
+        // Which route the badge sits on, so it can be drawn where the rails are rather than in the
+        // middle of the square.  Null for a tile whose route is unknown, which falls back to centre.
+        private final Side a;
+        private final Side b;
+
+        /**
+         * The side of the road whose track runs out - to a buffer stop, or simply stops - before it reaches another
+         * sensor (FR-118), or null where both sides go somewhere.  A station there is drawn as a terminus, flat
+         * against that side, whatever its turning setting.
+         */
+        private final Side deadEnd;
+
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named)
+        {
+            this(station, terminus, reversing, parking, named, null, null);
+        }
+
+        /**
+         * @param a one side of the route this point sits on
+         * @param b the other
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b)
+        {
+            this(station, terminus, reversing, parking, named, a, b, false);
+        }
+
+        /**
+         * @param optional whether turning round here is a choice rather than compulsory - a station
+         *        a train MAY turn at, as against one where every arrival does
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional)
+        {
+            this(station, terminus, reversing, parking, named, a, b, optional, false);
+        }
+
+        /**
+         * @param shut whether the square is switched off, so that nothing may pass or stop there
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional, boolean shut)
+        {
+            this(station, terminus, reversing, parking, named, a, b, optional, shut, null);
+        }
+
+        /**
+         * @param deadEnd the side of the road whose track runs out before it reaches another sensor, or null
+         */
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional, boolean shut, Side deadEnd)
+        {
+            this.deadEnd = deadEnd;
+            this.shut = shut;
+            this.optional = optional;
+            this.station = station;
+            this.terminus = terminus;
+            this.reversing = reversing;
+            this.parking = parking;
+            this.named = named;
+            this.a = a;
+            this.b = b;
+        }
+
+        public Side getA()
+        {
+            return a;
+        }
+
+        public Side getB()
+        {
+            return b;
+        }
+
+        /**
+         * The side of the road whose track runs out before another sensor (FR-118), or null.
+         *
+         * @return the side, or null
+         */
+        public Side getDeadEnd()
+        {
+            return deadEnd;
+        }
+
+        public boolean isStation()
+        {
+            return station;
+        }
+
+        public boolean isTerminus()
+        {
+            return terminus;
+        }
+
+        /**
+         * Whether turning round here is a choice rather than compulsory.
+         */
+        public boolean isOptional()
+        {
+            return optional;
+        }
+
+        public boolean isReversing()
+        {
+            return reversing;
+        }
+
+        public boolean isParking()
+        {
+            return parking;
+        }
+
+        /**
+         * Whether nothing can use this square at all (OB-167).
+         *
+         * SWITCHED OFF IS ENOUGH.  This also required the square not to be a station, on the reasoning
+         * that a switched-off station is still a place somebody can switch back on - and that made the
+         * cross almost impossible to see, which is what Adam reported: "I still don't reliably see X's
+         * in the nothing can pass mode."
+         *
+         * The editor settles it.  Out of service is the third of three radio buttons - stop here, pass
+         * through, neither - and its handler deliberately LEAVES the station flag as it found it, "so
+         * switching back returns it to what it was rather than to a default nobody chose".  So a
+         * square in that mode is usually still flagged a station, and a rule that excluded stations
+         * excluded nearly every square the mode is used on.
+         *
+         * What the mode means is the whole of what this asks: nothing stops here and nothing passes
+         * through.  Whether it would be a station if it were switched on is a fact about the past and
+         * the future, not about now.
+         */
+        public boolean isImpassable()
+        {
+            return shut;
+        }
+
+        public boolean isNamed()
+        {
+            return named;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (!(o instanceof Badge)) return false;
+
+            Badge other = (Badge) o;
+
+            return station == other.station && terminus == other.terminus
+                && optional == other.optional
+                && reversing == other.reversing && parking == other.parking && named == other.named
+                && shut == other.shut
+                && a == other.a && b == other.b && deadEnd == other.deadEnd;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (station ? 1 : 0) + (terminus ? 2 : 0) + (reversing ? 4 : 0)
+                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0) + (shut ? 64 : 0);
+        }
+
+        @Override
+        public String toString()
+        {
+            if (isImpassable()) return "shut" + (named ? "" : " (unnamed)");
+
+            return (station ? (parking ? "parking" : "station") : "point")
+                + (terminus ? (optional ? " may turn" : " terminus") : "")
+                + (reversing ? " reversing" : "")
+                + (named ? "" : " (unnamed)");
+        }
+    }
+
+    /**
+     * Autonomy takes no notice of this square.  Washed out rather than greyed over, so that a tile
+     * nobody can configure recedes without becoming a dark block that draws the eye more than the
+     * track does - which is what a heavier grey did on a page with forty route buttons on it.
+     */
+    private static final Color IGNORED = Color.WHITE;
+
+    private static final float IGNORED_ALPHA = 0.62f;
+
+    /**
+     * The hatching drawn over a square autonomy cannot use, so that "unavailable" is a pattern and not
+     * only a shade - the two silences on this diagram have to be told apart at a glance.
+     */
+    private static final Color HATCH = new Color(150, 150, 150);
+
+    private final List<Mark> marks;
+    private final int length;
+    private final boolean selected;
+    private final Badge badge;
+    private final boolean ignored;
+
+    /**
+     * Whether this square's track is drawn as a corner-cutting chord rather than square across the
+     * tile - a curve or a double curve, and nothing else.
+     *
+     * A switch has chords too, and taking its arrow angles from them was a step too far: the author
+     * asked for the tilt on curves only, and a switch reads better with its arrows square to the
+     * edges, which is also how its trunk enters.
+     */
+    private final boolean curved;
+
+    /**
+     * Whether this square is a paired link - a hole in the diagram that comes out on another page.
+     *
+     * It needs saying because a link's only route is a STUB: one side, which is both how a train
+     * leaves the track into the link and how one arrives out of it.  Drawn like any other side that
+     * gets a single arrow, which is why only one of those two moves was ever visible.
+     */
+    private final boolean portal;
+
+    /**
+     * Segments of a tested path running through this square, one per direction that works.
+     *
+     * A path used to be shown by outlining every square it crossed, which said WHERE it went and
+     * nothing about which way, or whether the other way was possible at all - two questions the test
+     * exists to answer.  Drawn as a line through each square instead, the route reads as a route, and
+     * a direction that has no path simply has no line: the answer is the gap.
+     */
+    private final List<Trace> traces;
+
+    /**
+     * Which sides of a station a train may arrive by, where that has been restricted.
+     *
+     * A different question from the direction arrows, and deliberately drawn differently.  The arrows
+     * say which way traffic may FLOW through a square; this says which way a train may come in and
+     * STOP.  A station can be perfectly reachable from both ends and still be one you only ever want
+     * trains pulling into from the north.
+     *
+     * Empty on almost every square, because the default is that a train may arrive from anywhere - so
+     * the diagram stays quiet and a restriction is a thing you can see.
+     */
+    private final List<Arrival> arrivals;
+
+    /**
+     * One side of a station, and whether trains may arrive by it.
+     */
+    public static class Arrival
+    {
+        private final Side side;
+        private final boolean allowed;
+
+        public Arrival(Side side, boolean allowed)
+        {
+            this.side = side;
+            this.allowed = allowed;
+        }
+
+        public Side getSide()
+        {
+            return side;
+        }
+
+        public boolean isAllowed()
+        {
+            return allowed;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (!(o instanceof Arrival)) return false;
+
+            Arrival other = (Arrival) o;
+
+            return side == other.side && allowed == other.allowed;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (side == null ? 0 : side.hashCode()) * 31 + (allowed ? 1 : 0);
+        }
+
+        @Override
+        public String toString()
+        {
+            return (allowed ? "arrive " : "no arrival ") + side;
+        }
+    }
+
+    /**
+     * Whether only the directions that are SHUT are drawn.
+     *
+     * Open track is most of a layout, so its arrows are most of the ink, and they say the thing the
+     * reader can already assume.  Turned off, what is left is exactly the restrictions - which is the
+     * whole of what somebody checking a setup is looking for.
+     */
+    private final boolean blockedOnly;
+
+    /**
+     * One square's worth of a tested path: in by one side, out by another.
+     *
+     * A null side is an end of the run - the sensor the test started or finished at - so the line stops
+     * in the middle of that square rather than running off its edge into track nobody asked about.
+     */
+    public static class Trace
+    {
+        private final Side from;
+        private final Side to;
+        /**
+         * Which of the two tested directions this segment belongs to.
+         *
+         * No longer changes how it is DRAWN - both directions share one line, and the chevrons say
+         * which ways it runs - but it still decides how many chevrons a square gets, because a route
+         * that works both ways contributes a segment from each direction.
+         */
+        private final boolean forward;
+
+        /**
+         * Whether the station this leg ENDS at is one full autonomy will never choose for itself -
+         * a parking berth, or a square that turns every train it takes.
+         *
+         * A property of the leg's destination rather than of this square: every segment of the run
+         * carries it, because what the reader is being told is where the line goes, and that has to
+         * be readable from any part of it rather than only from the end.
+         */
+        private final boolean manualOnly;
+
+        public Trace(Side from, Side to, boolean forward)
+        {
+            this(from, to, forward, false);
+        }
+
+        public Trace(Side from, Side to, boolean forward, boolean manualOnly)
+        {
+            this.from = from;
+            this.to = to;
+            this.forward = forward;
+            this.manualOnly = manualOnly;
+        }
+
+        /**
+         * @return whether this leg ends somewhere only a person may send a train
+         */
+        public boolean isManualOnly()
+        {
+            return manualOnly;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (!(o instanceof Trace)) return false;
+
+            Trace other = (Trace) o;
+
+            return from == other.from && to == other.to && forward == other.forward
+                && manualOnly == other.manualOnly;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (from == null ? 0 : from.ordinal() * 31)
+                + (to == null ? 0 : to.ordinal() * 7) + (forward ? 1 : 0)
+                + (manualOnly ? 2 : 0);
+        }
+
+        @Override
+        public String toString()
+        {
+            return (forward ? "->" : "<-") + from + ":" + to + (manualOnly ? " (manual only)" : "");
+        }
+    }
+
+    /**
+     * @param marks the routes to draw, or empty to draw none
+     * @param length the tile's length, or a negative number not to show one
+     * @param selected whether this tile is part of a bulk selection
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected)
+    {
+        this(marks, length, selected, null, false);
+    }
+
+    /**
+     * @param marks the routes to draw, or empty to draw none
+     * @param length the tile's length, or a negative number not to show one
+     * @param selected whether this tile is part of a bulk selection
+     * @param badge what this sensor is, or null when the square is not a point at all
+     * @param ignored whether autonomy takes no notice of this square at all
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored)
+    {
+        this(marks, length, selected, badge, ignored, false);
+    }
+
+    /**
+     * @param curved whether the track here is drawn as a chord across a corner, so the arrows follow
+     *        it rather than the edge they leave through
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved)
+    {
+        this(marks, length, selected, badge, ignored, curved, false);
+    }
+
+    /**
+     * @param portal whether this square is a paired link, whose one side carries traffic both ways
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal)
+    {
+        this(marks, length, selected, badge, ignored, curved, portal, null);
+    }
+
+    /**
+     * @param traces the tested path through this square, one segment per direction that works
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal, List<Trace> traces)
+    {
+        this(marks, length, selected, badge, ignored, curved, portal, traces, false);
+    }
+
+    /**
+     * @param blockedOnly whether to draw only the directions that are shut
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal, List<Trace> traces, boolean blockedOnly)
+    {
+        this(marks, length, selected, badge, ignored, curved, portal, traces, blockedOnly, null);
+    }
+
+    /**
+     * @param arrivals which sides of this station trains may arrive by, or null/empty when it takes
+     *        them from anywhere - which is the usual case and draws nothing
+     */
+    public TileAnnotation(List<Mark> marks, int length, boolean selected, Badge badge,
+        boolean ignored, boolean curved, boolean portal, List<Trace> traces, boolean blockedOnly,
+        List<Arrival> arrivals)
+    {
+        this.arrivals = arrivals == null
+            ? Collections.<Arrival>emptyList() : new ArrayList<>(arrivals);
+
+        this.curved = curved;
+        this.portal = portal;
+        this.blockedOnly = blockedOnly;
+        this.traces = traces == null ? Collections.<Trace>emptyList() : new ArrayList<>(traces);
+
+        this.marks = marks == null ? Collections.<Mark>emptyList() : new ArrayList<>(marks);
+        this.length = length;
+        this.selected = selected;
+        this.badge = badge;
+        this.ignored = ignored;
+    }
+
+    /**
+     * Whether this is being drawn in the autonomy EDITOR rather than on a diagram.
+     *
+     * One thing turns on it, with FR-118's icons only (`StationIcons.SHAPES`): what colour a badge is.
+     * In the editor every point's icon is white with its colour round it, named or not, because the
+     * direction arrows are drawn over the icon there and are what the editor is read for (Adam, 2026-10-10: *"Let's make all of the icons white with
+     * a blue border in the editor.  That way, arrows can be seen clearly."*).  Everywhere else - the
+     * main window, a popup, an exported image - a named point's icon is filled with its colour.
+     *
+     * Where the icon sits no longer turns on it: on a bend it lies along the rails in the editor as
+     * on a diagram (round 127), where it once moved out to the square's corner.
+     *
+     * Set rather than passed: the constructor already takes ten arguments and this is a property of
+     * the SURFACE doing the drawing rather than of the square being drawn.
+     */
+    public TileAnnotation inTheEditor()
+    {
+        this.editing = true;
+
+        return this;
+    }
+
+    private boolean editing = false;
+
+    /**
+     * Draws the directions trains may run - the green arrows - as well as the shut ones, while still drawing only what a
+     * restrictions-only annotation draws otherwise: no wash (FR-110).
+     *
+     * For the ordinary track diagram's Display Allowed Directions.  Set rather than passed, as inTheEditor is: the
+     * constructor already takes ten arguments.
+     *
+     * @return this
+     */
+    public TileAnnotation withAllowedDirections()
+    {
+        this.allowedToo = true;
+        return this;
+    }
+
+    private boolean allowedToo = false;
+
+    /**
+     * Draws only the directions trains may run - the green arrows - and none of the shut ones: the autonomy editor's
+     * Allowed only (Adam, 2026-10-04: *"In addition to "restrictions only", add "allowed only" to the autonomy
+     * editor."*).  The wash stays, as under Show All: the open arrows are most of the ink it lifts off the tile art.
+     *
+     * @return this
+     */
+    public TileAnnotation withoutRestrictions()
+    {
+        this.allowedOnly = true;
+        return this;
+    }
+
+    private boolean allowedOnly = false;
+
+    /**
+     * Draws no arrow at one side of the square: where a two-square crossing's squares meet, whose arrows there only repeat
+     * the ones at the track's outer ends (OB-322).
+     *
+     * @param side the side, or null for none
+     * @return this
+     */
+    public TileAnnotation withoutArrowsAt(Side side)
+    {
+        this.bareSide = side;
+        return this;
+    }
+
+    private Side bareSide = null;
+
+    /**
+     * Says a train is set up to be standing on this square.
+     *
+     * A builder rather than another constructor argument: there are five constructors already, all
+     * chaining into the longest, and a sixth position for a boolean is a thing to get wrong at a call
+     * site rather than a thing to read.
+     *
+     * @return this
+     */
+    public TileAnnotation withTrain()
+    {
+        this.occupied = true;
+
+        return this;
+    }
+
+    private boolean occupied = false;
+
+    /**
+     * Says a length rule reads this square and nobody has given it a length (the Unmeasured Track display).
+     *
+     * A builder, like `withTrain`, and for its reason: five constructors already chain into the longest.  And carried
+     * through `isBlank`, `equals` and `hashCode` as well as `paint`, because OB-007 is what happens to a mark that is
+     * not: plain track has nothing else to say, so a mark missing from `isBlank` is invisible on nearly every square it
+     * is for.
+     *
+     * @return this
+     */
+    public TileAnnotation needsALength()
+    {
+        this.unmeasured = true;
+
+        return this;
+    }
+
+    private boolean unmeasured = false;
+
+    /**
+     * @return whether this square is marked as needing a length
+     */
+    public boolean isUnmeasured()
+    {
+        return unmeasured;
+    }
+
+    /**
+     * Amber, and a wash rather than a border: the outline already means "selected", grey already means "autonomy
+     * cannot use this", and red is a finding.  Amber is none of those, and a wash over a whole run of squares reads as
+     * a run.
+     */
+    private static final Color UNMEASURED_COLOUR = new Color(245, 158, 11);
+    private static final float UNMEASURED_ALPHA = 0.38f;
+
+    private void paintUnmeasured(Graphics2D g, int width, int height)
+    {
+        java.awt.Composite before = g.getComposite();
+
+        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, UNMEASURED_ALPHA));
+        g.setColor(UNMEASURED_COLOUR);
+        g.fillRect(0, 0, width, height);
+
+        g.setComposite(before);
+    }
+
+    public boolean isIgnored()
+    {
+        return ignored;
+    }
+
+
+    public Badge getBadge()
+    {
+        return badge;
+    }
+
+    public List<Mark> getMarks()
+    {
+        return Collections.unmodifiableList(marks);
+    }
+
+    public int getLength()
+    {
+        return length;
+    }
+
+    public boolean isSelected()
+    {
+        return selected;
+    }
+
+    /**
+     * Whether this would paint anything at all.
+     * @return
+     */
+    /**
+     * Whether there is nothing here worth drawing.
+     *
+     * paint() opens with this, so anything missing from the list below is a thing that never gets
+     * painted when it is the ONLY thing on a square.
+     *
+     * `occupied` was missing, which is OB-007: the train mark had been written and drawn for a while,
+     * and was invisible on exactly the squares the request was about - the ones with nothing else to
+     * say. A station carrying a badge was never blank, so the star appeared there and the gap looked
+     * like it did not exist.
+     *
+     * The field had been added to equals and to hashCode. It is the method that decides whether the
+     * object is worth drawing at all that tends to be missed, because it is not one anybody is looking
+     * at while adding a field.
+     *
+     * @return whether this annotation would draw nothing
+     */
+    public boolean isBlank()
+    {
+        // `editing` is deliberately NOT here, unlike in equals and hashCode.  On its own it paints
+        // nothing - it only says what colour a badge is, and with no badge there is nothing to colour -
+        // so an annotation carrying it and nothing else is still blank.  Said out loud because the comment
+        // above is about a field being left out of this method, and the next reader should not have to
+        // work out whether this is the same mistake again.
+        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
+            && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured;
+    }
+
+    public List<Trace> getTraces()
+    {
+        return Collections.unmodifiableList(traces);
+    }
+
+    public List<Arrival> getArrivals()
+    {
+        return Collections.unmodifiableList(arrivals);
+    }
+
+    /**
+     * Paints over a tile that has already drawn itself.
+     *
+     * @param g the tile's graphics, already translated to its own origin
+     * @param width
+     * @param height
+     */
+    public void paint(Graphics2D g, int width, int height)
+    {
+        paint(g, width, height, false);
+    }
+
+    /**
+     * The same, told whether the tile underneath has already been drawn faint (Adam, OB-212).
+     *
+     * *"a parked (blocking in orange) train will be further shaded if an active autonomy route near it
+     * also locks that edge.  keep one level of opacity, dont stack."*
+     *
+     * **Two washes that each make sense alone.**  `LayoutLabel` draws the tile art at `BLOCKED_ALPHA`
+     * where the railway refuses the square, and this class lays one at `DIM` under its arrows so that
+     * thin arrows lift off busy tile art.  Neither knew about the other, so a square that is both
+     * blocked and annotated was faded twice and read as much further gone than either reason justifies.
+     *
+     * **This wash is the one that gives way**, because on a tile already drawn at 40% its whole purpose
+     * has been served - there is no busy art left for an arrow to compete with.  Dropping the other
+     * would lose what the fade is SAYING, which is that the railway will not use this square.
+     *
+     * @param g where to draw
+     * @param width the tile
+     * @param height the tile
+     * @param alreadyFaded whether the caller has drawn the WHOLE tile faint already
+     */
+    public void paint(Graphics2D g, int width, int height, boolean alreadyFaded)
+    {
+        paint(g, width, height, alreadyFaded
+            ? new java.awt.Rectangle(0, 0, width, height) : null);
+    }
+
+    /**
+     * The same, told exactly WHICH part of the tile is already faint (PRW-C1).
+     *
+     * A square is one road almost everywhere, and there the two forms say the same thing. A double
+     * curve is two roads in one tile, and a train covers one of them - so "is this tile already
+     * faded" has no answer and the boolean form had to pick one. It picked "yes", and the road with
+     * no train on it lost the wash under its arrows.
+     *
+     * @param g the brush
+     * @param width the tile's width
+     * @param height its height
+     * @param alreadyFaint the region already drawn faint, or null when none of it is
+     */
+    public void paint(Graphics2D g, int width, int height, java.awt.Shape alreadyFaint)
+    {
+        if (isBlank()) return;
+
+        Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        Stroke oldStroke = g.getStroke();
+        Color oldColor = g.getColor();
+        java.awt.Font oldFont = g.getFont();
+
+        // Restored with the rest.  The ignored branch sets a composite and returns, so without this the
+        // only thing keeping a half-transparent brush from leaking out is that the caller happens to
+        // hand over a scratch Graphics it then throws away.
+        java.awt.Composite oldComposite = g.getComposite();
+
+        try
+        {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // A square autonomy takes no notice of is greyed out and nothing else is drawn on it.
+            // Nothing here is the user's to decide, so anything drawn would invite a click.
+            // Grey means one thing on this diagram: autonomy cannot use this square.  It used to mean
+            // that AND "this track follows another tile", which are unrelated, so a reader could not
+            // tell "you cannot set this" from "this is already set, over there".  Track that follows
+            // its run is now drawn plainly and simply carries no arrows of its own; the flash on the
+            // tile that changed is what points at where the answer lives.
+            if (ignored)
+            {
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, IGNORED_ALPHA));
+                g.setColor(IGNORED);
+                g.fillRect(0, 0, width, height);
+
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, 0.55f));
+                g.setColor(HATCH);
+                g.setStroke(new BasicStroke(1f));
+
+                for (int at = -height; at < width; at += 5)
+                {
+                    g.drawLine(at, 0, at + height, height);
+                }
+
+                // Except the route being tested, which is drawn on top of the greying.
+                //
+                // "Ignored" means there is nothing here for the user to SET - a route button carries no
+                // track meaning of its own, so offering a length or a direction on it would invite a
+                // click that does nothing.  It never meant "no route runs over this square", and a
+                // route button threaded through a running line is exactly a square a route runs over:
+                // this layout has forty-three of them.
+                //
+                // Suppressing the line here broke it into pieces wherever it crossed one, and only in
+                // the editor - the running diagram draws the same route through a different painter
+                // that has no notion of ignored, which is why one worked and the other did not.  A
+                // drawn route is not something the user is being invited to change; it is an answer
+                // being shown to a question they asked.
+                if (!traces.isEmpty())
+                {
+                    g.setComposite(java.awt.AlphaComposite.getInstance(
+                        java.awt.AlphaComposite.SRC_OVER, 1f));
+
+                    paintTraces(g, width, height);
+                }
+
+                return;
+            }
+
+            // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
+            // contrast problem as writing on a photograph; this is the caption box behind the writing.
+            // No wash when only the shut directions are drawn.  It exists to lift thin arrows off busy
+            // tile art, and with the open ones gone there is little left to lift - so all it did was
+            // grey most of the layout to make a handful of red arrows very slightly crisper.
+            // Never on a paired link, which is the one tile where this wash says the opposite of what
+            // it means.
+            //
+            // Grey on this diagram means "autonomy takes no notice of this square".  A link that is
+            // paired and in use carries arrows, so it got the wash; a link switched off carries none,
+            // so it did not - and the result was that the link being USED looked faded and the one
+            // being ignored looked solid.  Exactly the wrong way round, and on the one tile type whose
+            // whole job is to be either connected or not.
+            //
+            // Nothing is lost by skipping it.  The wash exists to lift thin arrows off busy tile art,
+            // and a link's art is a single bold arrow in a box with room around it.
+            //
+            // NOR ON A SQUARE OUT OF SERVICE, which draws no arrows (Adam, 2026-10-10): the wash only paled its track and
+            // the red arrows its sensor shows while it reads occupied, which he asked to keep visible.
+            if (!marks.isEmpty() && !blockedOnly && !portal && !outOfService())
+            {
+                // WHAT IS LEFT OF THE TILE, rather than all of it or none of it (PRW-C1).
+                //
+                // `alreadyFaint` is the region the caller has already drawn faint.  On an ordinary
+                // square that is the whole tile and nothing is washed here, which is Adam's ruling on
+                // MT-375 - *"keep one level of opacity, dont stack"* - unchanged.
+                //
+                // On a DOUBLE CURVE it is one road's band: two curves crossing in one tile with no
+                // connection between them, where a train covers one road and not the other. The flag
+                // this used to take was per TILE while the fade is per ROAD, so the uncovered road
+                // lost the wash under its own arrows. Clipping keeps the covered road at one level and
+                // gives the other road the wash it should have had.
+                java.awt.geom.Area rest = new java.awt.geom.Area(
+                    new java.awt.Rectangle(0, 0, width, height));
+
+                if (alreadyFaint != null) rest.subtract(new java.awt.geom.Area(alreadyFaint));
+
+                if (!rest.isEmpty())
+                {
+                    java.awt.Composite before = g.getComposite();
+                    java.awt.Shape beforeClip = g.getClip();
+
+                    g.clip(rest);
+
+                    g.setComposite(java.awt.AlphaComposite.getInstance(
+                        java.awt.AlphaComposite.SRC_OVER, DIM));
+                    g.setColor(DIM_COLOUR);
+                    g.fillRect(0, 0, width, height);
+
+                    g.setComposite(before);
+                    g.setClip(beforeClip);
+                }
+            }
+
+            // UNDER the arrows and the badge, so the highlight says "measure this" without hiding which way the track
+            // runs or what the square is.
+            if (unmeasured) paintUnmeasured(g, width, height);
+
+            // THE BADGE UNDER THE ARROWS AGAIN (Adam, MT-710, 2026-10-09: "If there is a red or green arrow on a tile,
+            // the rectangular station icon now hides it.  We need to render red arrows on top of stations in the
+            // viewer"; asked, the editor too).  It was drawn over them once a badge on a bend had moved off into the
+            // corner, to keep its outline clean; FR-118's icons run along the track nearly the width of the square,
+            // where the arrows are, and an arrow says where a train may go - the thing a reader cannot get from the
+            // icon.  `paintBadgeOverRun` draws them over it again.
+            if (badge != null) paintBadge(g, width, height);
+
+            paintArrows(g, width, height);
+
+            paintArrivals(g, width, height);
+
+            // And the train mark over the badge (MT-099).
+            //
+            // It was drawn before, and on a STATION that made it invisible: both are centred on the
+            // tile, and a station's badge is half the tile across while the star's arms are a sixth -
+            // so the badge covered it completely. Adam: "I can't see it - but it should overlay on top
+            // of the middle of the sensor."
+            //
+            // On top is also the right reading. The badge says what the square IS, which does not
+            // change; the star says a train is standing on it now, which does. The changing fact
+            // belongs on top of the fixed one, and the star is small enough and outlined darkly
+            // enough not to hide what it sits on.
+            if (occupied) paintTrainMark(g, width, height);
+
+            if (length >= 0) paintLength(g, width, height);
+
+            // Last, and so on top of everything: the arrows, the badge, the length, the outline.
+            //
+            // It was drawn underneath, so a broad line would not cover the directions being tested
+            // against - but a tested path is a transient answer to a question just asked, and while it
+            // is up it is the thing being looked at.  Anything it covers is still there a moment later
+            // when the next click clears it.
+            paintTraces(g, width, height);
+
+            if (selected)
+            {
+                g.setStroke(new BasicStroke(2f));
+                g.setColor(SELECTED);
+                g.drawRect(1, 1, width - 3, height - 3);
+            }
+        }
+        finally
+        {
+            g.setFont(oldFont);
+            g.setColor(oldColor);
+            g.setStroke(oldStroke);
+            g.setComposite(oldComposite);
+
+            if (oldHint != null) g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint);
+        }
+    }
+
+    /**
+     * The corner an arrival chevron on this side is pushed to - its side and the side it is pushed towards - by the same
+     * reckoning `paintArrivals` draws it with.
+     *
+     * @param side the side the chevron is on
+     * @param width the tile's width
+     * @param height the tile's height
+     * @return the two sides that meet at that corner, or null for a side with no midpoint
+     */
+    private java.util.Set<Side> cornerOf(Side side, int width, int height)
+    {
+        int[] at = midpoint(side, width, height);
+
+        if (at == null) return null;
+
+        double dx = width / 2.0 - at[0];
+        double dy = height / 2.0 - at[1];
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length < 1) return null;
+
+        double px = -dy / length;
+        double py = dx / length;
+
+        if (offsetCollidesWithTrack(side, px, py))
+        {
+            px = -px;
+            py = -py;
+        }
+
+        Side toward = Math.abs(px) > Math.abs(py) ? (px > 0 ? Side.E : Side.W) : (py > 0 ? Side.S : Side.N);
+
+        return java.util.EnumSet.of(side, toward);
+    }
+
+    /**
+     * @return whether this square is out of service - nothing may pass or stop - so that it carries no arrows
+     */
+    private boolean outOfService()
+    {
+        return badge != null && badge.isImpassable();
+    }
+
+    /**
+     * Whether nudging an arrival arrow this way puts it over the tile's own track (OB-175).
+     *
+     * An arrow on one side is pushed along that side, clear of the direction mark in the middle.  Which
+     * WAY along it was a fixed rotation, so it always landed on the same corner - and on a curve that
+     * corner is where the track is.
+     *
+     * The side the nudge points toward is worked out from the vector rather than from a table, so this
+     * cannot fall out of step with the geometry above it.  Then: does this tile's run touch that side?
+     *
+     * @param arriving the side the arrow is on
+     * @param px the nudge's x component, across the edge
+     * @param py its y component
+     * @return true when the far end of the nudge is a side this tile's track uses
+     */
+    private boolean offsetCollidesWithTrack(Side arriving, double px, double py)
+    {
+        if (arriving == null || marks.isEmpty()) return false;
+
+        // Screen coordinates: y grows downward, so a negative y points NORTH.
+        Side toward;
+
+        if (Math.abs(px) > Math.abs(py))
+        {
+            toward = px > 0 ? Side.E : Side.W;
+        }
+        else
+        {
+            toward = py > 0 ? Side.S : Side.N;
+        }
+
+        // The side the arrow is ON is not a collision - every arrow sits on one.
+        if (toward == arriving) return false;
+
+        // THE ARROW'S OWN TRACK (MT-714; Adam, 2026-10-10: "when a double curve with a s88 has arrival directions set,
+        // the arrow icons may overlap").  The corner to keep clear of is the one the track through this side runs to.  It
+        // was asked of every road on the square - a side used, and its opposite not - and on a double curve every side has
+        // track and so has its opposite: nothing moved, each chevron went the same fixed way round, and half of them lay
+        // on their own curve, over its direction arrow.  On a curve the answer is the one it was, the corner its one road
+        // runs to; on straight track, whose road runs to neither corner, nothing moves - no existing mark moves.
+        for (Mark mark : marks)
+        {
+            if (mark.getA() == arriving && mark.getB() == toward || mark.getB() == arriving && mark.getA() == toward)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The side facing this one.
+     *
+     * @param side any side
+     * @return its opposite, or null for null
+     */
+    private static Side opposite(Side side)
+    {
+        if (side == null) return null;
+
+        switch (side)
+        {
+            case N: return Side.S;
+            case S: return Side.N;
+            case E: return Side.W;
+            default: return Side.E;
+        }
+    }
+    /**
+     * Where a train may pull in, and where it may not.
+     *
+     * A chevron at the edge pointing INTO the square, which is the gesture the thing itself makes: a
+     * train coming in from that side.  Deliberately unlike the direction arrows - they sit further in,
+     * point outward, and are red or green - because the two say different things about the same square
+     * and a reader has to be able to tell which they are looking at without being told.
+     *
+     * Small, and at the very edge, so a station with all its sides marked still shows its badge, its
+     * name and whatever is standing on it.  A barred side is the same chevron left open, in grey (OB-326):
+     * the shape says "arrival", the state says whether it is allowed, so there is one thing to learn rather
+     * than two.
+     */
+    private void paintArrivals(Graphics2D g, int width, int height)
+    {
+        // nor where trains may arrive, on a square nothing can arrive at (see `paintArrows`)
+        if (arrivals.isEmpty() || outOfService()) return;
+
+        int span = Math.min(width, height);
+
+        // Half the arrowhead's width, and how far in from the edge its point reaches
+        double wing = Math.max(2.5, span / 7.0);
+        double depth = Math.max(3.0, span / 5.0);
+
+        // Pushed along the edge, clear of the middle.
+        //
+        // The direction arrows sit at the middle of each side, which is where these were too - so on a
+        // station that both restricts arrivals and shows its directions, two different marks about two
+        // different questions were drawn on top of each other.  Offset to one side they read as two
+        // marks, and there is room: a tile edge is much wider than an arrowhead.
+        double offset = span / 4.0;
+
+        // AND A LITTLE NEARER THE MIDDLE WHERE TWO SHARE A CORNER (MT-714).  On a double curve the free corners are
+        // between the two curves, and the chevrons of the two sides that meet there both go to it; a quarter of the
+        // square along, their points met.  A fifth keeps them apart and still clear of the arrows at the middles.
+        java.util.Map<java.util.Set<Side>, Integer> corners = new java.util.HashMap<>();
+
+        for (Arrival arrival : arrivals)
+        {
+            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+
+            if (corner != null) corners.put(corner, corners.containsKey(corner) ? corners.get(corner) + 1 : 1);
+        }
+
+        g.setStroke(new BasicStroke(Math.max(1.2f, span / 22f),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        for (Arrival arrival : arrivals)
+        {
+            int[] at = midpoint(arrival.getSide(), width, height);
+
+            if (at == null) continue;
+
+            java.util.Set<Side> corner = cornerOf(arrival.getSide(), width, height);
+
+            double along = corner != null && corners.get(corner) > 1 ? span / 5.0 : offset;
+
+            // Which way is "inward" from this side
+            double dx = width / 2.0 - at[0];
+            double dy = height / 2.0 - at[1];
+            double length = Math.sqrt(dx * dx + dy * dy);
+
+            if (length < 1) continue;
+
+            dx /= length;
+            dy /= length;
+
+            // Across the edge, at right angles to inward
+            double px = -dy;
+            double py = dx;
+
+            // AND AWAY FROM THIS TILE'S OWN TRACK (OB-175).
+            //
+            // Adam: "curved sensor tiles going from n to e have an incoming from e arrow that
+            // overlaps with the track.  move the arrow to the lower-right corner of the tile, instead
+            // of the upper-right."
+            //
+            // The offset was a fixed rotation, so an arrow on a given side always landed on the same
+            // corner whatever the tile underneath it looked like.  On straight track that is fine -
+            // the run is down the middle and both corners are clear.  On a CURVE the run occupies one
+            // of them, and the arrow was drawn over it.
+            //
+            // Asked of the tile's own marks rather than of its art: a mark names the two sides its run
+            // joins, so the corner to avoid is the one toward a side this tile's track already uses.
+            // A straight or a junction leaves both corners equally used or equally free, and then
+            // nothing changes - the default rotation stands, so no existing tile moves.
+            if (offsetCollidesWithTrack(arrival.getSide(), px, py))
+            {
+                px = -px;
+                py = -py;
+            }
+
+            // Pulled off the edge itself, which is shared with the neighbouring square, and along
+            // it, clear of the direction arrow in the middle
+            double baseX = at[0] + dx * 1.5 + px * along;
+            double baseY = at[1] + dy * 1.5 + py * along;
+
+            double tipX = baseX + dx * depth;
+            double tipY = baseY + dy * depth;
+
+            java.awt.geom.Path2D head = new java.awt.geom.Path2D.Double();
+
+            head.moveTo(baseX + px * wing, baseY + py * wing);
+            head.lineTo(tipX, tipY);
+            head.lineTo(baseX - px * wing, baseY - py * wing);
+
+            if (arrival.isAllowed())
+            {
+                head.closePath();
+
+                g.setColor(ARRIVAL);
+                g.fill(head);
+
+                g.setColor(ARRIVAL_EDGE);
+                g.draw(head);
+            }
+            else
+            {
+                // THE CHEVRON ALONE, ITS ARMS SCALED WITH THE SQUARE, IN GREY (OB-326; Adam, 2026-10-09: "In 60px view,
+                // the trains can't arrive from this direction arrow's have an odd shape.  Make it consistent with the
+                // 30px, and gray.").
+                //
+                // It was the hollow chevron with two strokes meant to strike it through, which in fact ran beside its
+                // arms and ended a fifth of a wing from the tip.  At 30 pixels that is under a pixel, so they merged
+                // into one thicker chevron - the shape he wants.  At 60 they stood apart from the arms with a gap
+                // between, and read as a hollow triangle.  One chevron whose arms are a fourteenth of the square is the
+                // 30-pixel shape at any size.
+                java.awt.Stroke was = g.getStroke();
+
+                g.setColor(ARRIVAL_BARRED);
+                g.setStroke(new BasicStroke((float) Math.max(2.0, span / 14.0), BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND));
+                g.draw(head);
+                g.setStroke(was);
+            }
+        }
+    }
+
+    /**
+     * Draws one route as a path from one side to the other through the middle of the tile.
+     *
+     * Through the middle rather than straight across, so a curve is drawn as a curve: a straight line
+     * between the two sides of a curve tile would cut the corner and sit off the track it describes.
+     */
+    /**
+     * Draws one arrow per SIDE of the tile, rather than two per route.
+     *
+     * A route drew an arrow at each of its own two ends, which is right until two routes share an end.
+     * A switch's branches all meet at its toe, so the toe collected one arrow per branch, stacked in
+     * the same place - and where one branch was open and another shut, a green arrow sat on top of a
+     * red one and the tile said both things at once.
+     *
+     * A side is the right unit anyway, because it is the question a train asks: may I leave this way?
+     * The answer is yes if ANY route through the tile permits it, so the arrows are combined rather
+     * than drawn over each other.
+     */
+    private void paintArrows(Graphics2D g, int width, int height)
+    {
+        // NONE ON A SQUARE OUT OF SERVICE (Adam, 2026-10-10, asked: "For ones out of service, should arrows be drawn at
+        // all, since no trains can pass?"): nothing can pass it, so a way through says nothing, and the X says it all.
+        // Its directions are kept, and drawn again once it is back in service.
+        if (outOfService()) return;
+
+        // side -> may a train travel out through it
+        java.util.Map<Side, Boolean> out = new java.util.LinkedHashMap<>();
+
+        for (Mark mark : marks)
+        {
+            Direction direction = mark.getDirection();
+
+            allow(out, mark.getA(), direction == Direction.BOTH || direction == Direction.TOWARD_A);
+            allow(out, mark.getB(), direction == Direction.BOTH || direction == Direction.TOWARD_B);
+        }
+
+        // Drawn at full strength whatever the state.  Small and pale for open track was an attempt to
+        // keep a bare layout quiet, and on a real one it read as grey track with specks on it - the
+        // squares stopped looking like track that had been decided and started looking like track
+        // something had gone wrong with.
+        for (java.util.Map.Entry<Side, Boolean> entry : out.entrySet())
+        {
+            int[] target = midpoint(entry.getKey(), width, height);
+
+            if (target == null) continue;
+
+            // nothing where a crossing's two squares meet (OB-322)
+            if (entry.getKey() == bareSide) continue;
+
+            if (blockedOnly && !allowedToo && Boolean.TRUE.equals(entry.getValue())) continue;
+
+            if (allowedOnly && !Boolean.TRUE.equals(entry.getValue())) continue;
+
+            double[] outward = heading(entry.getKey(), width, height);
+            int span = Math.min(width, height);
+
+            if (portal)
+            {
+                portalArrows(g, target, outward, entry.getValue(), span);
+                continue;
+            }
+
+            arrow(g, target, outward, entry.getValue(), span);
+        }
+    }
+
+    /**
+     * A link's two moves, drawn side by side at its one side.
+     *
+     * Onto the track and into the link happen at the same edge, so as a single arrow one of them is
+     * always invisible - and it was the departure, because an arrow at a side means "a train may leave
+     * the tile this way" and the drawing had nowhere to put the other sense.  Two arrows offset along
+     * the edge, one out and one in, say both without either being guessed at.
+     *
+     * @param target the midpoint of the link's own side
+     * @param outward the direction leading off the tile
+     */
+    private void portalArrows(Graphics2D g, int[] target, double[] outward, boolean allowed, int span)
+    {
+        double length = Math.sqrt(outward[0] * outward[0] + outward[1] * outward[1]);
+
+        if (length < 1) return;
+
+        double dx = outward[0] / length;
+        double dy = outward[1] / length;
+
+        // along the edge, so the two never sit on top of each other
+        double gap = Math.max(3.0, span / 5.0);
+
+        int[] leaving = new int[] {
+            (int) Math.round(target[0] - dy * gap),
+            (int) Math.round(target[1] + dx * gap)};
+
+        // the arrival stops short of the edge and points inward, so the pair reads as a two-way door
+        int[] arriving = new int[] {
+            (int) Math.round(target[0] + dy * gap - dx * span * 0.5),
+            (int) Math.round(target[1] - dx * gap - dy * span * 0.5)};
+
+        arrow(g, leaving, outward, allowed, span);
+        arrow(g, arriving, new double[] {-outward[0], -outward[1]}, allowed, span);
+    }
+
+    /**
+     * A small star in the middle of a square, saying a train is set up to stand here.
+     *
+     * The setup can put a train on a platform, and until now the only place that showed was the caption
+     * beside it - which is on a different square, is sometimes on no square at all, and is the first
+     * thing to go when somebody turns the labels off.  So the diagram could be read all the way through
+     * without ever seeing where the trains had been placed.
+     *
+     * White with a dark edge, because the tile art underneath is not one colour: white alone vanishes on
+     * a pale platform and a dark mark vanishes on the black of the rails.  Drawn last of the marks and
+     * before the badge, so it sits over the arrows rather than under them.
+     */
+    private void paintTrainMark(Graphics2D g, int width, int height)
+    {
+        int span = Math.min(width, height);
+
+        // A sixth of the tile was too much once the mark moved on top of the badge (MT-057): over a
+        // station circle it read as a shape in its own right rather than as a mark ON one.
+        //
+        // A SEVENTH, not an eighth. An eighth made it disappear (OB-037), and the reason is the two
+        // stroke widths below: they are proportional to the arm but floored at 3.0 and 1.6, and those
+        // floors were chosen when the arm was span/6. At a 30px tile an eighth gives an arm of 3.75,
+        // so the dark outline came out 3px wide around a 1.6px white core - the outline swallowed the
+        // star and left a dark smudge.
+        //
+        // The floors moved with it. Three numbers that have to agree, and shrinking one of them is
+        // what this comment exists to stop somebody doing again.
+        double arm = Math.max(2.5, span / 7.0);
+
+        // On the TRACK, not on the tile (MT-057).
+        //
+        // Adam: "slightly off center relative to the midpoint of the station. Be careful with curved
+        // stations." Both halves are the same cause. The badge is centred on trackCentre - "the
+        // midpoint of the route's own two sides, which is the tile centre for a straight and lands on
+        // the rails for anything else" - and this was centred on the tile.
+        //
+        // On a straight they agree, which is why it looked only slightly off; on a bend the track
+        // leaves the middle of the square and they part company completely. The star marks a train
+        // standing on the RAILS, so the rails are what it belongs on - and it now sits on the badge it
+        // is drawn over, whatever shape the tile is.
+        // On the BADGE, wherever the badge went - not on the track independently (MT-124).
+        //
+        // These agreed until the editor started moving a curved station's badge to the corner, to stop
+        // it fighting the two direction arrows that sit at the middles of the same two sides. The star
+        // kept asking the track and drifted off the thing it is drawn on.
+        //
+        // Falls back to the track centre when no badge was drawn - a train standing on a plain square
+        // still gets its mark, and the rails are where it belongs.
+        int[] on = badgeDrawnAt != null ? badgeDrawnAt : trackCentre(width, height);
+
+        double centreX = on[0];
+        double centreY = on[1];
+
+        java.awt.geom.Path2D star = new java.awt.geom.Path2D.Double();
+
+        // Six arms rather than four: four reads as a plus, which on a track diagram is a crossing
+        for (int point = 0; point < 6; point++)
+        {
+            double angle = Math.PI * point / 3.0;
+
+            star.moveTo(centreX, centreY);
+            star.lineTo(centreX + Math.cos(angle) * arm, centreY + Math.sin(angle) * arm);
+        }
+
+        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+
+        // The dark edge first, as a wider stroke of the same shape underneath
+        g.setStroke(new BasicStroke((float) Math.max(1.8, arm / 1.6),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(TRAIN_MARK_EDGE);
+        g.draw(star);
+
+        g.setStroke(new BasicStroke((float) Math.max(1.0, arm / 3.0),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(TRAIN_MARK);
+        g.draw(star);
+    }
+
+    private static final Color TRAIN_MARK = Color.WHITE;
+
+    private static final Color TRAIN_MARK_EDGE = new Color(40, 40, 40, 180);
+
+    /**
+     * The tested path, drawn through the square rather than around it.
+     *
+     * The two directions are offset to either side of the rails, so a route that works both ways shows
+     * two lines and one that works one way shows one - which is the whole answer, read off the track
+     * instead of out of a sentence.
+     */
+    private void paintTraces(Graphics2D g, int width, int height)
+    {
+        if (traces.isEmpty()) return;
+
+        int span = Math.min(width, height);
+
+        // Where a traced line stops when it has no side to leave by - the first and last square of a
+        // run, which AutonomyEditorPanel builds with a null end deliberately.
+        //
+        // The same question the running overlay asks, and it was answered two different ways in the
+        // same class: OB-026 gave the RUN line the track midpoint, and left this - the editor's tested
+        // path, drawn on the same squares - stopping at the tile centre, which on a bend is nowhere
+        // near the rails.  The fix's own javadoc claims "the run line and the badge now agree about
+        // where the track is", and that was untrue for this painter (TD-4).
+        int[] centre = trackCentre(width, height);
+
+        // The route ONCE, however many directions it carries.  Drawn as one line per direction it was
+        // two lines down the same piece of track wherever a route worked both ways, which is the
+        // commonest case - so the picture was mostly duplicates, and the duplicate said nothing the
+        // single line did not.
+        g.setStroke(new BasicStroke(Math.max(3f, span / 7f),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        // Which legs cross this square.  Where a route works both ways over the SAME track the two
+        // legs land on the same segment and it is drawn once; where they go different ways round - a
+        // loop, a passing siding - the squares only one leg uses are drawn in that leg's own shade, so
+        // the picture reads as an out and a back rather than as one circuit nobody asked for.
+        java.util.Map<String, Boolean> shared = new java.util.LinkedHashMap<>();
+
+        for (Trace trace : traces)
+        {
+            String at = trace.from + ":" + trace.to;
+
+            if (shared.containsKey(at))
+            {
+                shared.put(at, Boolean.TRUE);
+            }
+            else
+            {
+                shared.put(at, Boolean.FALSE);
+            }
+        }
+
+        java.util.Set<String> drawn = new java.util.LinkedHashSet<>();
+
+        // Which RAILS already carry a line, whichever way along them it ran.
+        java.util.Set<String> rails = new java.util.HashSet<>();
+
+        for (Trace trace : traces)
+        {
+            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
+            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
+
+            if (a == null || b == null) continue;
+
+            String at = trace.from + ":" + trace.to;
+
+            if (!drawn.add(at)) continue;
+
+            // WHERE THE LINE GOES BEATS WHICH WAY IT IS RUNNING.  A leg ending somewhere autonomy
+            // will never choose is drawn in its own colour whichever direction it is - the reader is
+            // being told about the destination, and the chevrons already say the direction.
+            g.setColor(trace.manualOnly ? TRACE_MANUAL
+                : Boolean.TRUE.equals(shared.get(at)) ? TRACE
+                : trace.forward ? TRACE : TRACE_RETURN);
+
+            // THE SECOND PASS ALONG THE SAME RAIL IS NUDGED, BY HALF A NINTH, AND NO MORE.
+            //
+            // Out along a rail and back along it are two segments - E to W, W to E - and the second is
+            // moved a little aside so the two read as two passes.  Anything on a DIFFERENT rail is left
+            // where it is: a switch's straight and diverging legs are already different lines.
+            //
+            // It was a ninth times the segment's position in the square's list, and that list grows
+            // with every pass.  A tested path crosses a switch four times when it goes out through it,
+            // round a loop and back in by its diverging leg, and the route back does the same - so the
+            // fourth segment, the straight rail again, went two and a half ninths off it.  Adam, OB-216:
+            // "the orange lines over the switch at 12,13 are misaligned.  A small offset as on the other
+            // tiles is OK."  Half a ninth is that small offset, which an ordinary square had all along.
+            String rail = String.valueOf(trace.from).compareTo(String.valueOf(trace.to)) <= 0
+                ? trace.from + ":" + trace.to : trace.to + ":" + trace.from;
+
+            double nudge = rails.add(rail) ? 0 : span / 18.0;
+
+            double dx = b[0] - a[0];
+            double dy = b[1] - a[1];
+            double length = Math.sqrt(dx * dx + dy * dy);
+
+            double px = length < 1 ? 0 : -dy / length * nudge;
+            double py = length < 1 ? 0 : dx / length * nudge;
+
+            // Edge to edge in one stroke, along the rail rather than around it.
+            //
+            // A curve here is not an arc and a switch's diverging leg is not a right angle: both are
+            // drawn as a straight chord between the midpoints of two edges, which is what heading()
+            // below has always taken its arrow directions from.  Bending the tested line through the
+            // tile centre put it at forty-five degrees to the track beneath it, so the answer to "which
+            // way does this route run" was drawn across the very rails it was answering about.
+            g.drawLine((int) Math.round(a[0] + px), (int) Math.round(a[1] + py),
+                (int) Math.round(b[0] + px), (int) Math.round(b[1] + py));
+        }
+
+        // Which way, as chevrons on the line.  Two of them, pointing opposite ways, is a route that
+        // works both ways; one is a route that works one way; and the direction is read off the shape
+        // rather than off a colour nobody can be expected to have learnt.
+        g.setStroke(new BasicStroke(Math.max(2f, span / 14f),
+            BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        g.setColor(TRACE_CHEVRON);
+
+        for (Trace trace : traces)
+        {
+            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
+            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
+
+            if (a == null || b == null) continue;
+
+            // On the half the train is heading INTO, so a chevron sits on open track rather than in
+            // the middle where two of them would overlap - and along the segment's own chord, so that
+            // on a curve it points down the rail instead of across it.
+            chevron(g, a, b, span);
+        }
+    }
+
+    /**
+     * A single arrowhead on the line, pointing from one point towards another.
+     *
+     * Shared with the running overlay, which draws the path a train is actually on in the same style as
+     * the path the editor tests: same line through the square, same arrowhead on it.  Somebody who has
+     * used "test a path" has already learnt to read the running diagram.
+     */
+    static void chevron(Graphics2D g, int[] from, int[] to, int span)
+    {
+        double dx = to[0] - from[0];
+        double dy = to[1] - from[1];
+        double length = Math.sqrt(dx * dx + dy * dy);
+
+        if (length < 2) return;
+
+        dx /= length;
+        dy /= length;
+
+        // Two thirds of the way along, which keeps it clear of both the tile edge and the centre
+        double atX = from[0] + dx * length * 0.66;
+        double atY = from[1] + dy * length * 0.66;
+
+        double size = Math.max(3.0, span / 6.0);
+        double angle = Math.atan2(dy, dx);
+
+        for (int i = 0; i < 2; i++)
+        {
+            double barb = i == 0 ? 2.5 : -2.5;
+
+            g.drawLine((int) Math.round(atX), (int) Math.round(atY),
+                (int) Math.round(atX + Math.cos(angle + barb) * size),
+                (int) Math.round(atY + Math.sin(angle + barb) * size));
+        }
+    }
+
+    /**
+     * Which way the track actually runs where it leaves through one side.
+     *
+     * A curve on this diagram is not an arc - it is a straight chord cutting the corner, from the
+     * midpoint of one edge to the midpoint of the next.  So the track at the E side of an E-S curve
+     * runs up and to the right at forty-five degrees, and an arrow drawn due east sits across it
+     * instead of along it.  Taking the heading from the chord puts every arrow on its own rail.
+     *
+     * Curves only.  A switch is built from chords too, but its arrows read better square to the edges
+     * - which is how its trunk enters anyway - and tilting them was a step the author did not ask for.
+     * A shared side would be ambiguous regardless: two chords through one edge disagree by forty-five
+     * degrees, and there is only one arrow there to draw.
+     */
+    private double[] heading(Side side, int width, int height)
+    {
+        // A Y'S ARROWS LIE ALONG ITS TRACK (MT-676; Adam, 2026-10-04: *"make the arrow at the base point straight down,
+        // and the left and right aligned just like on curved tiles.  Right now, the angles are just a bit off, and they
+        // are asymmetrical."*).  Its legs are curves from the toe, so each leg's arrow lies along the chord from the toe,
+        // as on a curve, and the toe's runs straight out of the square.  Aimed from the middle of its first road, all
+        // three were a little off and no two alike.
+        Side toe = yToe();
+
+        if (toe != null && side != null && side != toe.opposite())
+        {
+            int[] to = midpoint(side, width, height);
+            int[] from = side == toe ? new int[] {width / 2, height / 2} : midpoint(toe, width, height);
+
+            if (to != null && from != null) return new double[] {to[0] - from[0], to[1] - from[1]};
+        }
+
+        Side other = null;
+        int through = 0;
+
+        for (Mark mark : marks)
+        {
+            if (mark.getA() == side || mark.getB() == side)
+            {
+                through++;
+                other = mark.getA() == side ? mark.getB() : mark.getA();
+            }
+        }
+
+        // The fallback is trackCentre rather than the geometric centre, for the third time in this
+        // class (TD-4).  It changes nothing on a straight - the midpoint of two opposite sides IS the
+        // middle of the square - and nothing where the branch above applies.  What it corrects is a
+        // bend whose side carries no route or more than one, where the arrow used to be aimed from a
+        // point the track does not pass through.
+        int[] from = curved && through == 1 && other != null && other != side
+            ? midpoint(other, width, height) : trackCentre(width, height);
+
+        int[] to = midpoint(side, width, height);
+
+        return new double[] {to[0] - from[0], to[1] - from[1]};
+    }
+
+    /**
+     * The toe of a Y - two roads that share one side and leave it by the two sides square to it - or null for any other
+     * square.  A Y switch and a permanent Y alike; a left or a right, whose straight road runs on through, is not one.
+     */
+    private Side yToe()
+    {
+        if (marks.size() != 2) return null;
+
+        Mark one = marks.get(0);
+        Mark two = marks.get(1);
+
+        for (Side toe : new Side[] {one.getA(), one.getB()})
+        {
+            if (toe == null || two.getA() != toe && two.getB() != toe) continue;
+
+            Side legOne = one.getA() == toe ? one.getB() : one.getA();
+            Side legTwo = two.getA() == toe ? two.getB() : two.getA();
+
+            if (legOne != null && legTwo != null && legOne == legTwo.opposite() && legOne != toe
+                && legOne != toe.opposite())
+            {
+                return toe;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Records what a route says about one side, without letting a "no" overrule a "yes" from another
+     * route through the same side.
+     */
+    private static void allow(java.util.Map<Side, Boolean> out, Side side, boolean allowed)
+    {
+        if (side == null) return;
+
+        out.put(side, allowed || Boolean.TRUE.equals(out.get(side)));
+    }
+
+    /**
+     * One direction of one route: an arrowhead pointing out of the tile at the side it leads to, or the
+     * same place crossed out when trains may not go that way.
+     *
+     * @param target the midpoint of the side this direction leads to
+     * @param heading which way the track runs there, not necessarily square to the edge - see heading()
+     * @param allowed whether trains may travel this way
+     * @param span the smaller of the tile's two dimensions, which sets the arrowhead size
+     */
+    private void arrow(Graphics2D g, int[] target, double[] heading, boolean allowed, int span)
+    {
+        double dx = heading[0];
+        double dy = heading[1];
+        double len = Math.sqrt(dx * dx + dy * dy);
+
+        if (len < 1) return;
+
+        dx /= len;
+        dy /= len;
+
+        // The OPEN direction is the filled one, and the two are the same size.
+        //
+        // It was the other way round twice over - shut arrows filled, and bigger - on the reasoning
+        // that a reader scanning for what is restricted should be scanning for the boldest shapes.
+        // On a real layout that is backwards: most squares are open, so most arrows were the faint
+        // ones, and the diagram read as track something had gone wrong with rather than as track that
+        // had been decided.  The way a line RUNS is the thing being looked at, and it should be the
+        // thing that is solid.
+        //
+        // Filled against hollow still carries the difference without colour, so it survives being
+        // printed, a poor screen, and a reader who cannot tell red from green - only now the sense is
+        // the other way up.  Same size for both, so neither shouts over the other.
+        // A pixel smaller where the direction is SHUT, and a pixel further back.
+        //
+        // Nominally the same size, the red one still read as the heavier of the two: it is drawn as
+        // an outline, and an outline carries a line's worth of ink beyond the shape a filled one
+        // stops at.  So the two were the same size and did not look it, and on a diagram that is
+        // mostly open track the handful of red arrows were shouting.
+        double size = Math.max(4.0, span / 3.2) - (allowed ? 0 : 1);
+
+        // The tip stops short of the edge, so two arrows meeting across a tile boundary have a
+        // hairline between them rather than touching and reading as one shape.  The shut one stops a
+        // pixel further back again, which settles it into its own square rather than looking like
+        // something arriving from the next.
+        double gap = EDGE_GAP + (allowed ? 0 : 1);
+
+        double tipX = target[0] - dx * gap;
+        double tipY = target[1] - dy * gap;
+
+        // A blocked direction is the SAME arrow in red, not a cross.  A cross says "something is wrong
+        // here" and leaves the reader to work out which way; an arrow says which way, and the colour
+        // says it is shut - so the allowed and the blocked directions are read the same way round.
+        double angle = Math.atan2(dy, dx);
+
+        int[] xs = new int[3];
+        int[] ys = new int[3];
+
+        xs[0] = (int) Math.round(tipX);
+        ys[0] = (int) Math.round(tipY);
+
+        for (int i = 0; i < 2; i++)
+        {
+            double barb = i == 0 ? 2.55 : -2.55;
+
+            xs[i + 1] = (int) Math.round(tipX + Math.cos(angle + barb) * size);
+            ys[i + 1] = (int) Math.round(tipY + Math.sin(angle + barb) * size);
+        }
+
+        // OUTLINED ON THE SHAPE ITSELF, not nudged to the pixel grid.  The grid's rounding hangs an outline half a pixel
+        // right and down, so a red arrow sat off its rail - 15.4 across a 30-pixel tile whose rail is at 15.0 - and the
+        // green one's edge would have pulled it off too (Adam, 2026-10-04: *"your down arrow on the Y may still be
+        // slightly off center"*).  Only here: the thin lines elsewhere on a square are crisper on the grid.
+        Object control = g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        try
+        {
+            if (allowed)
+            {
+                g.setColor(ONE_WAY);
+                g.fillPolygon(xs, ys, 3);
+
+                g.setColor(ONE_WAY_EDGE);
+                g.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawPolygon(xs, ys, 3);
+            }
+            else
+            {
+                // Hollow, and outlined in the same weight the open ones are drawn at, so the pair are
+                // plainly the same mark in two states rather than two different marks
+                g.setColor(Color.WHITE);
+                g.fillPolygon(xs, ys, 3);
+
+                g.setColor(CLOSED);
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawPolygon(xs, ys, 3);
+            }
+        }
+        finally
+        {
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
+                control == null ? RenderingHints.VALUE_STROKE_DEFAULT : control);
+        }
+    }
+
+    /**
+     * How far short of the tile edge an arrowhead stops.  One pixel, so that the arrows on two
+     * neighbouring tiles are visibly separate marks rather than one continuous shape.
+     */
+    private static final int EDGE_GAP = 1;
+
+    /**
+     * The tested route: a broad yellow line, the colour this application already uses to say "look
+     * here" on the running diagram, and one nothing else in this editor uses.
+     */
+    private static final Color TRACE = new Color(255, 214, 0);
+
+    /**
+     * The way back, where it does not share track with the way out.
+     *
+     * Both legs in one colour is right while they run over the same rails - two lines down one piece
+     * of track say nothing twice - and wrong the moment they go different ways round, where the single
+     * colour turns an out-and-back into what looks like one circuit.
+     */
+    private static final Color TRACE_RETURN = new Color(255, 150, 40);
+
+    /**
+     * A leg that ends somewhere full autonomy will never choose: a parking berth, or a square that
+     * turns every train it takes.
+     *
+     * Adam asked for it as "a different color going to manual-only points", after narrowing an earlier
+     * request that had been about the arrival chevrons: "I was likely talking about the simulated paths
+     * drawn in the autonomy editor... yellow is currently forward, and orange is backwards - path, not
+     * the chevron arrows."  The two questions a tested route answers - can a train get there, and would
+     * autonomy send one - were being answered by one line.
+     *
+     * **MAGENTA, and it is the only strong hue this diagram had left.**  The vocabulary already spoken
+     * here is warm for paths and trains - yellow out, orange back, and orange for the train mark - with
+     * a medium grey for the badge on a square autonomy leaves alone (FR-103; it was orange too), green
+     * and red for the one-way arrows and blue for a point autonomy uses.  A fourth warm shade would read
+     * as a third kind of path; a green or a red would read as a direction; a blue would read as the
+     * badge.
+     * Magenta is none of those, is far enough from the red arrowhead and the blue badge to be told
+     * apart at tile size, and is dark enough that the chevrons drawn on top of it still show.
+     *
+     * NOT orange, which is what Adam first suggested: orange is this painter's RETURN leg, so an
+     * outbound run to a parking berth would have been drawn as a run coming back.  His clarification
+     * names that colour as taken in the same sentence.
+     */
+    private static final Color TRACE_MANUAL = new Color(190, 40, 160);
+
+    /** The chevrons on it, dark enough to read against the yellow they sit on. */
+    private static final Color TRACE_CHEVRON = new Color(120, 80, 0);
+
+    /**
+     * The arrival marks: indigo, which is on this diagram neither a direction (red and green), nor a
+     * tested path (yellow), nor track autonomy ignores (grey).  A colour of its own for a question of
+     * its own.
+     */
+    private static final Color ARRIVAL = new Color(255, 205, 0);
+
+    /**
+     * Outlined in near-black rather than in a darker yellow.  Yellow on the pale grey of an unlit tile
+     * is the one colour on this diagram that disappears, and the outline is what stops it - it also
+     * tells the filled mark from the hollow one at a glance, which is the whole distinction.
+     */
+    private static final Color ARRIVAL_EDGE = new Color(60, 45, 0);
+
+    /**
+     * And a barred one, which is the same mark drawn as an absence: an open chevron, in grey, so a shut side recedes
+     * and the open ones read as the answer (OB-326; Adam, 2026-10-09: "... and gray").  It was a tan,
+     * rgb(150,140,100).
+     */
+    private static final Color ARRIVAL_BARRED = new Color(140, 140, 140);
+
+    /**
+     * Draws what a sensor IS, in the graph window's own shapes and colours.
+     *
+     *   plain point       small diamond
+     *   station           circle
+     *   terminus          square, or a cross where turning round is optional
+     *   reversing         small square
+     *   blue              autonomy uses it
+     *   grey              autonomy leaves it alone (parking) - FR-103; it was orange
+     *   orange            nothing can pass (the X, switched off) - orange again since 2026-09-29
+     *
+     * Parity on purpose: the shapes and the two colours are exactly what TrainControlUI already paints
+     * on the graph, so nobody has to learn a second vocabulary to read the same railway.
+     *
+     * Unnamed points are drawn hollow, which remains the only cue that one still needs a name.
+     */
+    /**
+     * The badge, and the train mark on it, drawn again over whatever has been laid on top (MT-076).
+     *
+     * The running path is a line along the rails and is painted after this whole annotation, which is
+     * deliberate - see LayoutLabel.paintComponent, where the reasoning is that a path a train is
+     * actually taking matters more than the arrows saying what is permitted.
+     *
+     * That reasoning is about the ARROWS. It is wrong about the badges: Adam, watching a run - "the
+     * intermediate stations overlap above just when reached, and then are under the green line after.
+     * I like being able to see progress - keep them on top after being reached." A station is where the
+     * train is going; burying it under the line to it is burying the landmark under the route.
+     *
+     * So the arrows stay under the line and the badge comes back over it. Called by LayoutLabel only
+     * when there is an overlay to have covered it, so an ordinary diagram paints its badge once.
+     *
+     * @param g the tile's graphics, already translated to its own origin
+     * @param width
+     * @param height
+     */
+    public void paintBadgeOverRun(Graphics2D g, int width, int height)
+    {
+        if (badge == null && !occupied) return;
+
+        Object oldHint = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        Stroke oldStroke = g.getStroke();
+        Color oldColor = g.getColor();
+        java.awt.Composite oldComposite = g.getComposite();
+
+        try
+        {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+
+            if (badge != null)
+            {
+                paintBadge(g, width, height);
+
+                // and the arrows over it, as `paint` draws them (MT-710)
+                paintArrows(g, width, height);
+
+                paintArrivals(g, width, height);
+            }
+
+            // And the train mark with it, for the same reason it goes over the badge in the first
+            // place - it is the most changeable fact on the square.
+            if (occupied) paintTrainMark(g, width, height);
+        }
+        finally
+        {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint == null
+                ? RenderingHints.VALUE_ANTIALIAS_DEFAULT : oldHint);
+
+            g.setStroke(oldStroke);
+            g.setColor(oldColor);
+            g.setComposite(oldComposite);
+        }
+    }
+
+    /**
+     * Which icons stations are drawn with.
+     */
+    public enum StationIcons
+    {
+        /**
+         * Circles, diamonds and squares - the grid in `paintBadge`, a big mark for a station and a small one for a plain
+         * sensor, the same in the autonomy editor as on the track diagram.
+         */
+        CLASSIC,
+
+        /**
+         * FR-118's blocks and hexagons, drawn by `paintStation` and spilling onto the squares beside a bend, white in the
+         * autonomy editor (rounds 110 to 130).
+         */
+        SHAPES
+    }
+
+    /**
+     * The icons stations are drawn with: the circles, diamonds and squares again (Adam, 2026-10-11: *"The icons are hard to
+     * work with in reality, because they add complexity.  Keep the work on the new icons so we can revisit later, and
+     * revert roughly to what we had before"*).  FR-118's shapes are kept whole, one setting away.
+     */
+    private static volatile StationIcons stationIcons = StationIcons.CLASSIC;
+
+    /**
+     * The icons stations are drawn with, asked in ONE place, as `LayoutLabel.tailStyle` is: every square follows on its
+     * next paint.
+     *
+     * @return the icons
+     */
+    public static StationIcons stationIcons()
+    {
+        return stationIcons;
+    }
+
+    /**
+     * Chooses the icons stations are drawn with from now on - for a later look at FR-118's, and for a test.
+     *
+     * @param icons the icons, null for the default
+     */
+    public static void setStationIcons(StationIcons icons)
+    {
+        stationIcons = icons == null ? StationIcons.CLASSIC : icons;
+    }
+
+    /**
+     * The box a mark is drawn in with the classic icons (Adam, 2026-10-11): 14 pixels at 30 and 28 at 60 for a station, a
+     * pixel under the badges before FR-118 (*"same as before, just ever slightly smaller"*), the sensor's contact's own
+     * width; 10 and 20 for a plain sensor, the inside of the contact's ring (*"match radius of s88, so 2px more
+     * diameter"*).  A station's mark covers the contact; a sensor's fills its ring.  A station out of service takes the same
+     * box for its sign (*"larger (same size a normal station) if a station, smaller if just a sensor"*), and a sensor a
+     * pixel more all round - `paintOutOfService`.
+     *
+     * @param tile the tile's edge
+     * @param station whether the mark is a station's
+     * @return the box's edge
+     */
+    static int classicBox(int tile, boolean station)
+    {
+        return station ? Math.max(9, Math.round(tile * 14 / 30f)) : Math.max(6, Math.round(tile * 10 / 30f));
+    }
+
+    private void paintBadge(Graphics2D g, int width, int height)
+    {
+        // ONE COLOUR WHENEVER AUTONOMY WILL NOT SEND A TRAIN HERE, which is one question and now has one
+        // colour (Adam, 2026-09-01: "should they always be orange...?") - `POINT_INACTIVE`, a medium grey
+        // just darker than the labels since FR-103 (Adam, from MT-492); it was orange.
+        //
+        // A cross took whichever colour the square would have had if it were working, so the same
+        // switched-off square drew blue or orange depending on a setting that means nothing while it is
+        // switched off - a difference the reader can see and cannot use.
+        //
+        // The inactive colour rather than blue because these two constants exist precisely so that
+        // somebody who has read one view can read the other; a switched-off square that took the active
+        // colour here and the inactive one elsewhere is the disagreement they were declared to prevent.
+        //
+        // BUT IT CHANGES NOTHING TODAY, and the paragraph above overstated it (FV2-C1).  Both places
+        // in src/ that build a Badge compute `parking` as `active == false || !autoDestination` and
+        // `shut` as `active == false` - so `shut` already implies `parking`, and a switched-off square
+        // ALWAYS took the inactive colour.  There is no configuration reachable through the editor where
+        // this clause decides the colour.
+        //
+        // It stays because the two flags are independent in the type even where they are not in those
+        // two callers: a Badge built any other way - by a test, or by a third site added later - must
+        // still take the X's colour when nothing can pass, and the test pins that.  What was
+        // actually wrong with the cross, and what Adam was seeing, is the SHAPE rule below, not this.
+        //
+        // Colour and shape stay separate questions, as they are everywhere else on this diagram: the
+        // colour says whether autonomy uses the square, the mark says what the square does.  Parking
+        // and out-of-service are both "autonomy leaves this alone", so they shared the colour; only one
+        // of them is a place a train can stand, and the cross is what says so.
+        //
+        // AND NOW THE COLOUR SAYS IT TOO (Adam, 2026-09-29: "make the nothing can pass (X stations) be orange
+        // again"): a square nothing can pass is orange, a parking berth grey.  Impassable asked FIRST, because
+        // every square switched off is parking as well - see the paragraph above.
+        Color colour = badge.isImpassable() ? POINT_IMPASSABLE : badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;
+
+        // ONE MARK FOR EVERY SQUARE OUT OF SERVICE, whatever it otherwise is - `paintOutOfService`
+        if (badge.isImpassable())
+        {
+            paintOutOfService(g, width, height, colour);
+
+            return;
+        }
+
+        // A STATION TAKES THE ICONS ADAM CHOSE FOR FR-118 - `paintStation` - while they are the ones drawn.  With the classic
+        // icons, and for a passing point either way, the grid below.
+        if (badge.isStation() && stationIcons() == StationIcons.SHAPES)
+        {
+            paintStation(g, width, height, colour);
+
+            return;
+        }
+
+        boolean classic = stationIcons() == StationIcons.CLASSIC;
+
+        // A station takes a bigger badge than a passing point, as it does on the graph: 20px against
+        // 17px there, the same proportion here.  A pixel less all round with the classic icons - `classicBox`.
+        int size = classic ? classicBox(Math.min(width, height), badge.isStation())
+            : Math.max(badge.isStation() ? 11 : 8, Math.min(width, height) / (badge.isStation() ? 2 : 3));
+
+        // A STATION WHOSE TRACK RUNS OUT IS A TERMINUS, whatever its turning setting (FR-118; Adam, 2026-10-09: a station
+        // with one way out is a terminus) - the square, with the classic icons.
+        boolean deadEnd = classic && badge.isStation() && badge.getDeadEnd() != null;
+
+        boolean turns = deadEnd || badge.isTerminus() || badge.isReversing();
+        boolean mayTurn = turns && !deadEnd && badge.isOptional();
+
+        // A diamond is drawn larger than a circle or a square of the same box.
+        //
+        // Half the area, geometrically: turn a square through forty-five degrees and the corners that
+        // stick out are smaller than the ones that go in.  So a diamond nominally the same size as
+        // the station circle beside it reads as the smaller mark, which is backwards - the diamonds
+        // are the designations somebody is scanning for, and the circles are the ordinary case.
+        if (mayTurn)
+        {
+            size = Math.round(size * 1.35f);
+
+            // And then a little back off each.  The third-again is about the SHAPE rather than the
+            // size - a diamond covers half the box it sits in - and on both marks it overshot: a
+            // station's box is already half the tile, so a third on top made it the loudest thing on
+            // the page rather than an equal of the circle beside it, and even the small one came out
+            // a shade heavier than the circles it sits among.
+            //
+            // Two off the big one and one off the small, so each ends up the weight of the mark it
+            // is a variant of rather than the size the arithmetic suggested.
+            size -= badge.isStation() ? 2 : 1;
+        }
+
+        // A PLAIN SENSOR'S TURN MARK A LITTLE BIGGER, OVER ITS CONTACT (Adam, 2026-10-10: "Make the plain turn icon slightly
+        // bigger so it covers the circle.") - the diamond 16 pixels at 30 and 32 at 60, where it was 13 and 26, and the
+        // square where trains must turn in proportion; the contact itself is covered under it, below, as under a station's.
+        // With FR-118's icons only: with the classic ones a sensor's mark sits inside its contact, smaller than a station's
+        // (Adam, 2026-10-11: *"diamond for reversing, larger if station, smaller if not"*).
+        if (!classic && turns) size = Math.round(Math.min(width, height) * (mayTurn ? 0.53f : 0.4f));
+
+        // Centred on the TRACK for anything straight - the midpoint of the route's own two sides,
+        // which is the tile centre for a straight and lands on the rails for anything else.
+        int[] on = trackCentre(width, height);
+
+        int x = on[0] - size / 2;
+        int y = on[1] - size / 2;
+
+        // A STATION is placed by `paintStation` (FR-118), on its rails, in the editor as on a diagram.  A passing point's
+        // mark is a third of the tile and sits on the track without crowding anything, as it always has.
+
+        // A CLASSIC STATION'S DIAMOND ON A BEND, ON ITS RAILS (Adam, 2026-10-11: "make sure that the diamonds are correctly
+        // aligned on curves"; shown three ways, he chose it a little smaller there): a pixel in from the middle of the
+        // curve's chord toward the middle of the square, as the circle and the square beside it are, and 15 pixels at 30
+        // and 29 at 60, where it is 17 and 36 on straight track - a curve leaves no more room on its rails.  The clamp below
+        // put it in by 3 pixels and 5, off them.  Still bigger than a sensor's, 13 and 26.  Its points' mitres reach under
+        // half a pixel past the square, and `paintBadge` cuts them off there.
+        boolean onTheBend = classic && badge.isStation() && mayTurn && trackBends();
+
+        if (onTheBend)
+        {
+            int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
+
+            double cx = (a[0] + b[0]) / 2.0, cy = (a[1] + b[1]) / 2.0;
+
+            cx += Math.signum(width / 2.0 - cx);
+            cy += Math.signum(height / 2.0 - cy);
+
+            size = Math.round(Math.min(width, height) * 29 / 60f);
+
+            x = (int) Math.round(cx - size / 2.0);
+            y = (int) Math.round(cy - size / 2.0);
+        }
+
+        // never let it hang outside the square - by its outline's width too: a station's is 2 pixels, and a classic
+        // station's mark on a curve, a pixel from the edge, put its outline's outer half over it, where the square's paint
+        // is cut off (Adam, MT-710: "On curves, regular stations are now cut off in the corners")
+        int margin = badge.isStation() ? 2 : 1;
+
+        if (!onTheBend)
+        {
+            x = Math.max(margin, Math.min(width - size - margin, x));
+            y = Math.max(margin, Math.min(height - size - margin, y));
+        }
+
+        // Where the badge ACTUALLY went, for the star drawn on top of it (MT-124).
+        //
+        // Recorded rather than recomputed. The placement above is two rules deep - the track centre,
+        // then the clamp - and it was three once, with the corner for a curved station in the editor
+        // between them; a second copy of that arithmetic would be a second chance to disagree. The star asked trackCentre directly, so
+        // it stayed on the rails while the badge moved to the corner. Adam: "Move the * so it aligns
+        // with the offset placement."
+        badgeDrawnAt = new int[] {x + size / 2, y + size / 2};
+
+        g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
+
+        // Filled when named, hollow when not - so an unnamed point is visible but visibly unfinished.  With FR-118's icons,
+        // white with its colour round it in the editor, as a station's icon there (Adam, 2026-10-10); with the classic ones
+        // the same in the editor as on the diagram (Adam, 2026-10-11: *"same appearance in editor as viewer"*).
+        boolean white = editing && !classic;
+
+        Color fill = badge.isNamed() && !white ? colour : Color.WHITE;
+        Color line = badge.isNamed() && !white ? Color.WHITE : colour;
+
+        // THE SHAPE SAYS WHAT TURNING MEANS HERE.  THE SIZE SAYS WHETHER IT IS A STATION.
+        //
+        //                     trains do not turn    trains MAY turn    trains ALWAYS turn
+        //     a station            big circle          big diamond         big square
+        //     a passing point     small circle        small diamond       small square
+        //
+        // Two questions, two dimensions, and every square on the diagram is one cell of that grid.
+        // It had grown up the other way: a cross for a station that may turn, a square for one that
+        // must, a circle for a station, a diamond for a plain point - four shapes with no system
+        // behind them, so each one had to be learned separately and none of them said anything about
+        // the others.  Here, having seen any two marks, the rest can be read off.
+        //
+        // The bordering cases are what makes it worth the trouble.  A station where every train turns
+        // and a siding where every train turns are the SAME fact about a railway happening in two
+        // places, and they now look like the same fact in two sizes.
+        // THE CONTACT COVERED UNDER A STATION'S MARK, as under FR-118's icons (*"make sure the white would cover an s88
+        // circle"*) - a classic diamond is wider than the contact and leaves its ring showing between its sides.  A sensor's
+        // classic mark sits inside its contact and leaves it showing round it; with FR-118's icons a sensor's turn mark covers
+        // it (round 127).
+        if (classic ? badge.isStation() : turns) coverTheContact(g, width, height);
+
+        if (turns && mayTurn)
+        {
+            Graphics2D d = (Graphics2D) g.create();
+
+            try
+            {
+                if (onTheBend) d.clipRect(0, 0, width, height);
+
+                diamond(d, x, y, size, fill, line);
+            }
+            finally
+            {
+                d.dispose();
+            }
+        }
+        else if (turns)
+        {
+            g.setColor(fill);
+            g.fillRect(x, y, size, size);
+            g.setColor(line);
+            g.drawRect(x, y, size, size);
+        }
+        else
+        {
+            g.setColor(fill);
+            g.fillOval(x, y, size, size);
+            g.setColor(line);
+            g.drawOval(x, y, size, size);
+        }
+    }
+
+    /**
+     * The sensor's contact covered under a plain sensor's turn mark (Adam, 2026-10-10: *"Make the plain turn icon slightly
+     * bigger so it covers the circle."*): `cover`, along the track at its middle, kept inside the square - as under a
+     * station's icon on a bend.  Nothing where the badge names no road.
+     */
+    private void coverTheContact(Graphics2D g, int width, int height)
+    {
+        if (badge.getA() == null || badge.getB() == null || badge.getA() == badge.getB()) return;
+
+        int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
+
+        if (a == null || b == null) return;
+
+        int[] centre = trackCentre(width, height);
+
+        Graphics2D c = (Graphics2D) g.create();
+
+        try
+        {
+            c.clipRect(0, 0, width, height);
+            c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            c.translate(centre[0], centre[1]);
+            c.rotate(Math.atan2(b[1] - a[1], b[0] - a[0]));
+
+            cover(c, Math.min(width, height));
+        }
+        finally
+        {
+            c.dispose();
+        }
+    }
+
+    /**
+     * How tall a station's icon is across its track, as a share of the tile (FR-118): 13 pixels at 30 and 26 at 60, no
+     * taller than the sensor's contact under it, so that a caption stood on end at full size has room beside it.
+     */
+    private static final float ICON_SHARE = 0.43f;
+
+    /**
+     * A station's icon (FR-118): the shapes Adam chose on the station icon page on 2026-10-09
+     * (https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB) - *"a hybrid of the D station for normal stations, B hexagon
+     * for reversing, and the B flat terminus hexagon"*, then refined by him there.  Each no taller across its track than
+     * the sensor's contact and longer along it:
+     *
+     *     a station                      a rounded block, half as long again as it is tall
+     *     trains may turn                the hexagon, pointed at both ends - the same shape at 30 pixels as at 60
+     *     trains must turn               two terminus shapes back to back, pointing away from each other across the
+     *                                    square, the track's black line showing in the gap between them
+     *     its track runs out one way     the terminus: the hexagon flat against that side, with a bar there - whatever
+     *                                    the turning setting (Adam: a station with one way out is a terminus)
+     *     out of service                 a white circle, an orange ring and an orange X in it, whatever the point is
+     *                                    otherwise - `paintOutOfService`, drawn by `paintBadge` before it gets here
+     *
+     * Blue where autonomy uses it, grey a berth it does not choose - a colour, not a shape (*"shouldn't parking have the
+     * same shape as terminus?"*) - filled when named and white ringed in the colour when not, and in the autonomy editor
+     * white ringed in the colour named or not.
+     *
+     * Along the road from side a to side b, turned so the terminus's flat end is on its dead-end side.  On straight track
+     * the sensor's contact is covered first (*"make sure the white would cover an s88 circle"*) - `cover`.  On a bend the
+     * icon lies along the chord between the road's two sides, on its rails, its full size, and the contact is covered
+     * there too; what falls outside the square spills onto the squares beside it (Adam, 2026-10-10: *"can we instead make
+     * the stations spill over onto adjacent tiles?"*) - `paintSpill`; in the autonomy editor too, white with its colour
+     * round it (Adam, 2026-10-10: *"Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly."*).  The proportions are the page's, which drew them on the real 30 and
+     * 60 pixel tiles.
+     *
+     * @param g the tile's graphics
+     * @param width the tile's width
+     * @param height the tile's height
+     * @param colour the colour the square's state gives it
+     */
+    private void paintStation(Graphics2D g, int width, int height, Color colour)
+    {
+        int tile = Math.min(width, height);
+
+        int h = Math.max(7, Math.round(tile * ICON_SHARE));
+
+        boolean large = tile >= 60;
+
+        boolean bends = trackBends();
+
+        int[] centre = trackCentre(width, height);
+
+        int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
+
+        boolean known = a != null && b != null && badge.getA() != badge.getB();
+
+        // along the road from a to b: the shapes are drawn with their flat end - a terminus's - to the left, so a dead
+        // end on side b turns them round
+        double angle = known ? Math.atan2(b[1] - a[1], b[0] - a[0]) : 0;
+
+        Side deadEnd = known && (badge.getDeadEnd() == badge.getA() || badge.getDeadEnd() == badge.getB())
+            ? badge.getDeadEnd() : null;
+
+        if (deadEnd != null && deadEnd == badge.getB()) angle += Math.PI;
+
+        // WHITE WITH ITS COLOUR ROUND IT IN THE EDITOR (Adam, 2026-10-10: "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly.") - the
+        // arrows are drawn over the icon, and the editor is where they are read
+        Color fill = badge.isNamed() && !editing ? colour : Color.WHITE;
+        Color line = badge.isNamed() && !editing ? Color.WHITE : colour;
+
+        boolean turns = badge.isTerminus() || badge.isReversing();
+
+        float stroke = large ? 2f : 1.5f;
+
+        // THE LENGTHS ADAM ASKED FOR (MT-710, 2026-10-09): "Make terminuses 1px shorter, they appear just a bit too long.
+        // Shorten may reverse stations by 1px in 30px view, 2px in 60px view.  Make sure must reverses are cumulatively
+        // no longer" - asked, no longer than the may-turn hexagon, both halves and the gap together.  They were
+        // `round(h * 1.9)` (25 at 30, 49 at 60), and the must-turn pair ran across the square.
+        int turning = Math.round(h * 1.9f) - (large ? 2 : 1), terminus = Math.round(h * 1.9f) - 1;
+
+        java.awt.Shape outline = !turns && deadEnd == null ? blockShape(h)
+            : deadEnd != null ? hexagon(terminus, h, true, large ? h / 2.0 : h * 0.66)
+            : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
+            : mustTurnShape(h, turning, large);
+
+        // what it covers, outline and all, turned along its road - and its length along the road
+        java.awt.Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
+
+        java.awt.geom.Rectangle2D needs =
+            java.awt.geom.AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
+
+        double scale = 1;
+
+        // ON A BEND, ITS FULL SIZE ON ITS RAILS, SPILLING ONTO THE SQUARES BESIDE IT (Adam, 2026-10-10: "can we instead
+        // make the stations spill over onto adjacent tiles?  This would look much better than trying to reduce the
+        // size.").  A curve's chord runs across a corner, so an icon its full size on the middle of it reaches past two
+        // edges, and a square's paint is cut off at its edges - the ends were lost (MT-710).  Round 112 moved it in off its
+        // rails; round 118 made it smaller.  Now the square draws what falls inside it, cut off cleanly at its edges, and
+        // `paintSpill`, asked by the diagram once every square is drawn, draws the rest over the squares beside it.
+        //
+        // IN THE EDITOR TOO (Adam, 2026-10-10: "Let's make all of the icons white with a blue border in the editor.  That way, arrows can be seen clearly."): it stood in the square's corner, off the
+        // rails and smaller, to keep the arrows at the sides clear of it; white, they read over it.
+        boolean spills = known && bends;
+
+        // AND ANYWHERE ELSE WHOLLY INSIDE ITS SQUARE (MT-710): moved in towards the middle of the square as far as it
+        // needs, and made smaller only where even there it would not fit.  On straight track every icon fits where it is.
+        double[] at = spills ? new double[] {centre[0], centre[1], scale}
+            : fitInside(needs, scale, centre[0], centre[1], width, height);
+
+        scale = at[2];
+
+        badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
+
+        // WHAT IT COVERS, where it is drawn - for the diagram, which draws what lies over a spill again over it (RSA61-C2):
+        // the icon's body and its outline, a pixel round for the soft edge, less the square (RSA62-C1: it was the outline's
+        // stroke alone, a ring, and the body inside it was drawn in front of the captions).  Built once for a size and kept
+        // (RSA62-B1): it was built on every paint, as a stroke of that stroke, and on Adam's main page two curve stations
+        // took 0.36 s each - the window stalled.  The annotation is replaced whenever what it draws changes.
+        if (spills && (spillFor == null || spillFor[0] != width || spillFor[1] != height))
+        {
+            java.awt.geom.AffineTransform placed = java.awt.geom.AffineTransform.getTranslateInstance(at[0], at[1]);
+
+            placed.rotate(angle);
+            placed.scale(scale, scale);
+
+            java.awt.Shape body = placed.createTransformedShape(outline);
+
+            java.awt.geom.Area region = new java.awt.geom.Area(body);
+
+            region.add(new java.awt.geom.Area(new BasicStroke((float) (stroke * scale) + 2f).createStrokedShape(body)));
+            region.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
+
+            spillRegion = region;
+            spillFor = new int[] {width, height};
+        }
+
+        // THE CONTACT COVERED ON A BEND TOO, as on straight track below - the icon is no taller than the contact, whose
+        // ring showed round it.  On the chord's middle, where the curved sensor's art draws it, turned along the chord -
+        // and kept inside the square, which turned it overhangs at two edges.  Once: not again with the spill.
+        if (spills && !spilling)
+        {
+            Graphics2D c = (Graphics2D) g.create();
+
+            try
+            {
+                c.clipRect(0, 0, width, height);
+                c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                c.translate(centre[0], centre[1]);
+                c.rotate(angle);
+
+                cover(c, tile);
+            }
+            finally
+            {
+                c.dispose();
+            }
+        }
+
+        Graphics2D s = (Graphics2D) g.create();
+
+        try
+        {
+            // WHERE IT SPILLS, CUT AT THE SQUARE'S EDGES - the square's own part inside them, the spill's outside them, so
+            // no pixel is drawn twice and no soft edge darkens where the two meet
+            if (spills) s.clip(spilling ? outside(width, height) : new java.awt.Rectangle(0, 0, width, height));
+
+            s.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // PURE, as the page drew them: the default stroke control moves an outline by up to half a pixel to sit it
+            // on whole pixels, and at 60 pixels the must-turn's outlines then met across the gap and hid the track's
+            // black line in it - the line Adam asked to have back
+            s.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            s.translate(at[0], at[1]);
+            s.rotate(angle);
+
+            if (known && !bends) cover(s, tile);
+
+            s.scale(scale, scale);
+            s.setStroke(new BasicStroke(stroke));
+
+            if (deadEnd != null)
+            {
+                // flat against the buffer, its bar there; more pointed at 30 pixels, where it stayed as Adam last saw it
+                body(s, outline, fill, line);
+
+                bar(s, -terminus / 2.0 + h * 0.3, h * 0.62, Math.max(2, Math.round(tile / 12f)), line);
+            }
+            else if (turns && badge.isOptional())
+            {
+                // the same shape at 30 pixels as at 60 (Adam: "matching the 60px hexagon's shape as closely as possible")
+                body(s, outline, fill, line);
+            }
+            else if (turns)
+            {
+                mustTurn(s, tile, h, turning, fill, line);
+            }
+            else
+            {
+                body(s, outline, fill, line);
+            }
+        }
+        finally
+        {
+            s.dispose();
+        }
+    }
+
+    /**
+     * Whether this square's station icon reaches past the square onto the ones beside it - a station on a curve, on the
+     * diagram, where it is drawn its full size on the middle of its rails (Adam, 2026-10-10: *"can we instead make the
+     * stations spill over onto adjacent tiles?"*).  The square draws what falls inside it and `paintSpill`, asked by the
+     * diagram once every square is drawn, the rest.
+     *
+     * @return true where the icon spills
+     */
+    public boolean spillsOverItsSquare()
+    {
+        // not a square the editor shades, which draws no icon on itself (RSA63-C4); and only FR-118's icons spill - a classic
+        // mark is kept inside its square
+        return stationIcons() == StationIcons.SHAPES && badge != null && badge.isStation() && !badge.isImpassable() && !ignored && badge.getA() != null
+            && badge.getB() != null && badge.getA() != badge.getB() && trackBends();
+    }
+
+    /**
+     * What of this square's station icon falls outside the square, drawn over the squares beside it - nothing where it
+     * does not spill (`spillsOverItsSquare`).
+     *
+     * @param g graphics at this square's origin, not cut off at its edges
+     * @param width the square's width
+     * @param height the square's height
+     */
+    public void paintSpill(Graphics2D g, int width, int height)
+    {
+        if (!spillsOverItsSquare()) return;
+
+        Graphics2D s = (Graphics2D) g.create();
+
+        try
+        {
+            spilling = true;
+
+            paintBadge(s, width, height);
+        }
+        finally
+        {
+            spilling = false;
+
+            s.dispose();
+        }
+    }
+
+    /** Whether `paintSpill` is drawing - the station's part outside its square, without the contact's cover. */
+    private boolean spilling;
+
+    /** What the station's icon covers outside its square, as `paintStation` built it for the size in `spillFor`. */
+    private java.awt.Shape spillRegion;
+
+    /** The width and height `spillRegion` was built for, or null before the icon is first drawn. */
+    private int[] spillFor;
+
+    /**
+     * What this square's spill covers, in the square's own coordinates: the station's icon, body and outline, a pixel round
+     * for its soft edge, less the square - null where nothing spills or the icon has not been drawn at this size yet.  The
+     * diagram draws what lies over that region again over the spill - the arrows of the square it reaches, then the
+     * captions - so the spill keeps the depth the icon has on its own square, under the captions (RSA61-C2, RSA62-C1).
+     * Built once for a size (RSA62-B1).
+     *
+     * @param width the square's width
+     * @param height the square's height
+     * @return the region, or null
+     */
+    public java.awt.Shape spillShape(int width, int height)
+    {
+        int[] built = spillFor;
+
+        if (built == null || built[0] != width || built[1] != height || !spillsOverItsSquare()) return null;
+
+        return spillRegion;
+    }
+
+    /**
+     * This square's arrows and barred-arrival marks again, over a neighbour's station that spilled onto it (Adam,
+     * 2026-10-10: *"make sure that the optional ingress/egress arrows remain visible, especially on curves"*): they sit at
+     * the middle of the square's edges, which is where a curve's station reaches it.  As `paint` draws them; nothing on a
+     * square autonomy takes no notice of, where `paint` draws none.
+     *
+     * @param g graphics at this square's origin, cut off at its edges
+     * @param width the square's width
+     * @param height the square's height
+     */
+    public void paintArrowsAgain(Graphics2D g, int width, int height)
+    {
+        if (ignored) return;
+
+        Graphics2D a = (Graphics2D) g.create();
+
+        try
+        {
+            a.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            a.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
+
+            paintArrows(a, width, height);
+
+            paintArrivals(a, width, height);
+
+            // AND ITS OUTLINE, which its own paint draws over everything on it (RSA63-C4): the spill broke it
+            if (selected)
+            {
+                a.setStroke(new BasicStroke(2f));
+                a.setColor(SELECTED);
+                a.drawRect(1, 1, width - 3, height - 3);
+            }
+        }
+        finally
+        {
+            a.dispose();
+        }
+    }
+
+    /**
+     * The sensor's contact covered, under a station's icon on straight track (FR-118; Adam: *"make sure the white would
+     * cover an s88 circle"*).  The contact is 14 pixels across at 30 and 26 at 60: white a pixel wider all round, and the
+     * track's black band, `tile` * 8 / 30 across, drawn back over it.  The icons are no taller than the contact, so they
+     * alone would leave its edges showing.
+     *
+     * @param g graphics at the icon's centre, turned along the track
+     * @param tile the tile's edge
+     */
+    private static void cover(Graphics2D g, int tile)
+    {
+        int m = Math.round(tile * 0.2f + 2);
+
+        g.setColor(Color.WHITE);
+        g.fill(new java.awt.geom.Rectangle2D.Double(-m, -m, 2 * m, 2 * m));
+
+        g.setColor(Color.BLACK);
+        g.fill(new java.awt.geom.Rectangle2D.Double(-m, -tile * 4 / 30.0, 2 * m, tile * 8 / 30.0));
+    }
+
+    /** A station's block: half as long again as it is tall, its corners rounded (D's, on the station icon page). */
+    private static void block(Graphics2D g, int h, Color fill, Color line)
+    {
+        body(g, blockShape(h), fill, line);
+    }
+
+    /** The block's shape, about the origin along x. */
+    private static java.awt.Shape blockShape(int h)
+    {
+        int w = Math.round(h * 1.5f);
+
+        double r = Math.max(2, h * 0.22);
+
+        return new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
+    }
+
+    /** Around a square to a square's depth, but not the square: where its spill is drawn. */
+    private static java.awt.Shape outside(int width, int height)
+    {
+        java.awt.geom.Area around = new java.awt.geom.Area(new java.awt.Rectangle(-width, -height, 3 * width, 3 * height));
+
+        around.subtract(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, height)));
+
+        return around;
+    }
+
+    /**
+     * Where an icon goes so that all of it is inside its square (MT-710): where it was asked to go if it fits there, or
+     * the first place that fits on the way from there to the middle of the square, or - fitting nowhere - the middle,
+     * made smaller until it does.  A pixel's half to spare at each edge, so no edge pixel is touched.
+     *
+     * @param needs what the icon covers at scale 1, about its centre, turned as it is drawn
+     * @param scale the scale it is drawn at
+     * @param x where its centre was asked to go
+     * @param y where its centre was asked to go
+     * @param width the square's width
+     * @param height the square's height
+     * @return the centre's x and y, and the scale
+     */
+    private static double[] fitInside(java.awt.geom.Rectangle2D needs, double scale, double x, double y, int width,
+        int height)
+    {
+        double mx = width / 2.0, my = height / 2.0;
+
+        for (int step = 0; step <= 20; step++)
+        {
+            double t = step / 20.0, cx = x + t * (mx - x), cy = y + t * (my - y);
+
+            if (cx + scale * needs.getMinX() >= 0.5 && cx + scale * needs.getMaxX() <= width - 0.5
+                && cy + scale * needs.getMinY() >= 0.5 && cy + scale * needs.getMaxY() <= height - 0.5)
+            {
+                return new double[] {cx, cy, scale};
+            }
+        }
+
+        double across = Math.max(-needs.getMinX(), needs.getMaxX()), down = Math.max(-needs.getMinY(), needs.getMaxY());
+
+        return new double[] {mx, my, Math.min(scale, Math.min((mx - 0.5) / across, (my - 0.5) / down))};
+    }
+
+    /**
+     * The must-turn pair's outline, about the origin along x: two terminus shapes back to back across a 4-pixel gap, the
+     * whole `total` long (MT-710: no longer than the may-turn hexagon).
+     */
+    private static java.awt.Shape mustTurnShape(int h, int total, boolean large)
+    {
+        int gap = 4, half = (total - gap) / 2;
+
+        java.awt.geom.Path2D.Double out = new java.awt.geom.Path2D.Double();
+
+        for (int dir : new int[] {-1, 1})
+        {
+            java.awt.geom.AffineTransform t = java.awt.geom.AffineTransform.getTranslateInstance(dir * (gap / 2.0 + half / 2.0), 0);
+
+            if (dir < 0) t.scale(-1, 1);
+
+            out.append(t.createTransformedShape(hexagon(half, h, true, large ? h * 0.4 : h * 0.5)), false);
+        }
+
+        return out;
+    }
+
+    /**
+     * Where trains must turn: two terminus shapes back to back, flat ends towards each other across a 4-pixel gap the
+     * track's black line shows through, pointing away from each other, each with its bar (Adam, 2026-10-09).  The pair is
+     * `total` long, no longer than the may-turn hexagon (MT-710) - each half 10 pixels at 30, 21 at 60.
+     *
+     * The bar at 30 is a pixel wide and set on whole pixels (*"should be white, not gray"*): drawn in its half's own
+     * frame, which can sit on a half pixel, it spread over two columns and showed grey.
+     */
+    private static void mustTurn(Graphics2D g, int tile, int h, int total, Color fill, Color line)
+    {
+        boolean large = tile >= 60;
+
+        int gap = 4;
+
+        int half = (total - gap) / 2;
+
+        for (int dir : new int[] {-1, 1})
+        {
+            Graphics2D p = (Graphics2D) g.create();
+
+            try
+            {
+                p.translate(dir * (gap / 2.0 + half / 2.0), 0);
+
+                if (dir < 0) p.scale(-1, 1);
+
+                body(p, hexagon(half, h, true, large ? h * 0.4 : h * 0.5), fill, line);
+
+                if (large) bar(p, -half / 2.0 + Math.max(2, h * 0.22), h * 0.6, Math.max(2, Math.round(tile / 12f)), line);
+            }
+            finally
+            {
+                p.dispose();
+            }
+
+            if (!large)
+            {
+                // in the half's flat part, before its point begins
+                int at = gap / 2 + Math.round(tile / 15f), tall = Math.round(tile * 8 / 30f);
+
+                g.setColor(line);
+                g.fill(new java.awt.geom.Rectangle2D.Double(dir > 0 ? at : -at - 1, -tall / 2.0, 1, tall));
+            }
+        }
+    }
+
+    /**
+     * A hexagon about the origin along x: pointed at both ends, or flat at the left (a terminus's buffer end).
+     *
+     * @param w its length
+     * @param h its height
+     * @param flatLeft whether its left end is flat
+     * @param point how far each point runs along x
+     */
+    private static java.awt.geom.Path2D hexagon(double w, double h, boolean flatLeft, double point)
+    {
+        java.awt.geom.Path2D.Double p = new java.awt.geom.Path2D.Double();
+
+        if (flatLeft)
+        {
+            p.moveTo(-w / 2, -h / 2);
+            p.lineTo(w / 2 - point, -h / 2);
+            p.lineTo(w / 2, 0);
+            p.lineTo(w / 2 - point, h / 2);
+            p.lineTo(-w / 2, h / 2);
+        }
+        else
+        {
+            p.moveTo(-w / 2, 0);
+            p.lineTo(-w / 2 + point, -h / 2);
+            p.lineTo(w / 2 - point, -h / 2);
+            p.lineTo(w / 2, 0);
+            p.lineTo(w / 2 - point, h / 2);
+            p.lineTo(-w / 2 + point, h / 2);
+        }
+
+        p.closePath();
+
+        return p;
+    }
+
+    /** A shape filled, then outlined in the stroke already set. */
+    private static void body(Graphics2D g, java.awt.Shape shape, Color fill, Color line)
+    {
+        g.setColor(fill);
+        g.fill(shape);
+        g.setColor(line);
+        g.draw(shape);
+    }
+
+    /** A bar across the track at x, `tall` high and `wide` across, its left edge on a whole pixel of the shape's frame. */
+    private static void bar(Graphics2D g, double x, double tall, int wide, Color colour)
+    {
+        g.setColor(colour);
+        g.fill(new java.awt.geom.Rectangle2D.Double(Math.round(x - wide / 2.0), -tall / 2, wide, tall));
+    }
+
+    /**
+     * A square out of service - nothing may pass or stop there - whatever it otherwise is, a station of any kind or a plain
+     * sensor, on the track diagram and in the editor: a white circle, an orange ring, an orange X in it, a no-stopping sign
+     * in orange (Adam, 2026-10-10: *"For simplicity, could an out of service station be made a round white circle with an
+     * orange border and X inside of it, regardless of the type of station or point it otherwise is?"*).  It replaced the X
+     * over a grey block (FR-118) and the bare X on a plain sensor (OB-167).
+     *
+     * On the middle of its track, where the sensor's contact is, and filled white across all of it so the contact does not
+     * show; no wider than the space inside the red arrows the sensor's art draws round its contact while it reads occupied
+     * (*"small enough that you can still see the sensor activation arrows, but big enough to be prominent and easy for the
+     * user to discern"*): 14 pixels across at 30 and 28 at 60 - the contact's own width and a little more - where the
+     * arrows' nearest pixels are 8 and 15.5 from the middle.  Its ring and its X grow heavier with the square, as the cross did (Adam, 2026-09-01: *"make the X a little
+     * thicker, close to what we had in the old reversing points"*).  Round, so it is the same on a curve, and inside its
+     * square, so it spills nothing.
+     *
+     * That is the sign with FR-118's icons.  With the classic ones (round 131) a station's is its mark's size and solid
+     * orange with a white X, and a plain sensor's the white circle ringed in orange, a pixel more all round than its mark.
+     *
+     * @param g the tile's graphics
+     * @param width the tile's width
+     * @param height the tile's height
+     * @param colour the orange of a square nothing can pass
+     */
+    private void paintOutOfService(Graphics2D g, int width, int height, Color colour)
+    {
+        int tile = Math.min(width, height);
+
+        int[] on = trackCentre(width, height);
+
+        boolean shapes = stationIcons() == StationIcons.SHAPES;
+
+        // FR-118's size for every square with its icons.  With the classic ones a station's mark's size, and a sensor's a
+        // pixel more all round than its mark (Adam, 2026-10-11: "1px more radius on the non station out of service")
+        double across = shapes ? Math.round(tile * 0.47f)
+            : classicBox(tile, badge.isStation()) + (badge.isStation() ? 0 : Math.round(tile / 15f));
+
+        // A CLASSIC STATION'S IS SOLID ORANGE WITH A WHITE X (Adam, 2026-10-11: "give the station out of service a solid
+        // orange fill, with a white X inside instead") - filled, as a named station's mark is, where a sensor's stays the
+        // white circle ringed in orange
+        boolean filled = !shapes && badge.isStation();
+
+        // lighter strokes on a classic sensor's small sign, so its X still reads as an X
+        boolean small = !shapes && across < 16;
+
+        float least = small ? 1.5f : 2f;
+
+        float ring = Math.max(least, (float) across / 9f);
+
+        // the ring's middle, so that its outer edge is `across` wide; the small sign's X reaches nearer its ring, as thin
+        double r = (across - ring) / 2.0, arm = filled ? across / 4.0 : r * (small ? 0.62 : 0.55);
+
+        badgeDrawnAt = new int[] {on[0], on[1]};
+
+        Graphics2D c = (Graphics2D) g.create();
+
+        try
+        {
+            c.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            c.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            c.translate(on[0], on[1]);
+
+            c.setColor(filled ? colour : Color.WHITE);
+            c.fill(new java.awt.geom.Ellipse2D.Double(-across / 2.0, -across / 2.0, across, across));
+
+            if (!filled)
+            {
+                c.setColor(colour);
+                c.setStroke(new BasicStroke(ring));
+                c.draw(new java.awt.geom.Ellipse2D.Double(-r, -r, 2 * r, 2 * r));
+            }
+
+            c.setColor(filled ? Color.WHITE : colour);
+            c.setStroke(new BasicStroke(Math.max(least, (float) across / 8f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            c.draw(new java.awt.geom.Line2D.Double(-arm, -arm, arm, arm));
+            c.draw(new java.awt.geom.Line2D.Double(-arm, arm, arm, -arm));
+        }
+        finally
+        {
+            c.dispose();
+        }
+    }
+
+    /**
+     * Whether the track through this square turns a corner.
+     *
+     * The route's two sides, and whether they are opposite each other.  N, E, S and W are declared in
+     * that order, so opposite sides are two apart either way round and everything else is a bend.
+     *
+     * @return true where the track joins two sides that are not opposite
+     */
+    private boolean trackBends()
+    {
+        Side sideA = badge != null && badge.getA() != null ? badge.getA()
+            : marks.isEmpty() ? null : marks.get(0).getA();
+
+        Side sideB = badge != null && badge.getB() != null ? badge.getB()
+            : marks.isEmpty() ? null : marks.get(0).getB();
+
+        if (sideA == null || sideB == null || sideA == sideB) return false;
+
+        return Math.abs(sideA.ordinal() - sideB.ordinal()) != 2;
+    }
+
+    /**
+     * Where paintBadge last drew, or null if it has not drawn on this pass.
+     *
+     * Only ever read by the train mark, which is painted after the badge and belongs ON it.
+     */
+    private int[] badgeDrawnAt;
+
+    /**
+     * The midpoint of this tile's own two track sides - the tile centre for a straight, and on the
+     * rails for anything else.
+     *
+     * Public because the running overlay needs it too: the end of a run has one side and a null, and
+     * without this it stopped in the middle of the square (OB-026).  The badges have been placed by it
+     * since MT-057, so the run line and the badge now agree about where the track is.
+     *
+     * @param width
+     * @param height
+     * @return x and y within the tile
+     */
+    public int[] trackCentre(int width, int height)
+    {
+        // the badge's own route where it has one, otherwise the first route drawn, otherwise centre
+        Side sideA = badge != null && badge.getA() != null ? badge.getA()
+            : marks.isEmpty() ? null : marks.get(0).getA();
+
+        Side sideB = badge != null && badge.getB() != null ? badge.getB()
+            : marks.isEmpty() ? null : marks.get(0).getB();
+
+        if (sideA == null || sideB == null) return new int[] {width / 2, height / 2};
+
+        int[] a = midpoint(sideA, width, height);
+        int[] b = midpoint(sideB, width, height);
+
+        if (a == null || b == null) return new int[] {width / 2, height / 2};
+
+        return new int[] {(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
+    }
+
+    /**
+     * The middle of the road a train stands on, named by the sides it is known to end at (MT-642) - on a curve or a
+     * double curve; `trackCentre` everywhere else, and where the sides name no road of this tile or more than one.  A
+     * double curve is two roads in one tile, and `trackCentre` is the badge's, so a train on the other road was drawn on
+     * the wrong one.  A switch keeps `trackCentre`: its diverging leg is not drawn as the line between two midpoints.
+     *
+     * @param sides the sides of the train's road, from `TileOverlay.trainSides`
+     * @param width the tile width
+     * @param height the tile height
+     * @return x and y within the tile
+     */
+    public int[] trackCentreOf(List<Side> sides, int width, int height)
+    {
+        if (sides == null || sides.isEmpty()) return trackCentre(width, height);
+
+        java.util.Set<java.util.Set<Side>> roads = new java.util.LinkedHashSet<>();
+
+        if (badge != null && badge.getA() != null && badge.getB() != null) roads.add(roadOf(badge.getA(), badge.getB()));
+
+        for (Mark mark : marks)
+        {
+            if (mark.getA() != null && mark.getB() != null) roads.add(roadOf(mark.getA(), mark.getB()));
+        }
+
+        int[] centre = centreOf(roads, sides, width, height);
+
+        return centre != null ? centre : trackCentre(width, height);
+    }
+
+    /**
+     * The same, from a square's own ports - its track type and orientation - rather than from what autonomy says about it
+     * (RSA23-C1): every square has those, where an annotation knows the roads only while the restriction arrows are
+     * shown, and a station's first road otherwise.
+     *
+     * @param routes the square's roads, from `TilePorts.ports`
+     * @param sides the sides of the train's road, from `TileOverlay.trainSides`
+     * @param width the tile width
+     * @param height the tile height
+     * @return the middle of the train's road on a curve or a double curve; null anywhere else, and where the sides name
+     *     no road of the square or more than one
+     */
+    public static int[] trackCentreOf(List<TilePorts.Route> routes, List<Side> sides, int width, int height)
+    {
+        if (routes == null || sides == null || sides.isEmpty()) return null;
+
+        java.util.Set<java.util.Set<Side>> roads = new java.util.LinkedHashSet<>();
+
+        for (TilePorts.Route route : routes)
+        {
+            if (route.getA() != null && route.getB() != null) roads.add(roadOf(route.getA(), route.getB()));
+        }
+
+        return centreOf(roads, sides, width, height);
+    }
+
+    /**
+     * The middle of the one road among these that ends at every one of the sides, where every road is a curve - two
+     * neighbouring sides - or null.
+     */
+    private static int[] centreOf(java.util.Set<java.util.Set<Side>> roads, List<Side> sides, int width, int height)
+    {
+        java.util.Set<Side> found = null;
+
+        for (java.util.Set<Side> road : roads)
+        {
+            // CURVES ONLY: two neighbouring sides, on every road of the tile
+            if (road.size() != 2) return null;
+
+            java.util.Iterator<Side> ends = road.iterator();
+
+            if (Math.abs(ends.next().ordinal() - ends.next().ordinal()) == 2) return null;
+
+            if (!road.containsAll(sides)) continue;
+
+            // more than one road through these sides: not this method's to choose
+            if (found != null) return null;
+
+            found = road;
+        }
+
+        if (found == null) return null;
+
+        java.util.Iterator<Side> ends = found.iterator();
+
+        int[] a = midpoint(ends.next(), width, height);
+        int[] b = midpoint(ends.next(), width, height);
+
+        if (a == null || b == null) return null;
+
+        return new int[] {(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
+    }
+
+    /** A road as its two ends, whichever way round they were given. */
+    private static java.util.Set<Side> roadOf(Side a, Side b)
+    {
+        return java.util.EnumSet.of(a, b);
+    }
+
+    private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
+    {
+        int half = size / 2;
+
+        int[] xs = {x + half, x + size, x + half, x};
+        int[] ys = {y, y + half, y + size, y + half};
+
+        g.setColor(fill);
+        g.fillPolygon(xs, ys, 4);
+        g.setColor(line);
+        g.drawPolygon(xs, ys, 4);
+    }
+
+    private void paintLength(Graphics2D g, int width, int height)
+    {
+        String text = String.valueOf(length);
+
+        // A third of the tile, which is what LayoutGrid gives an address label (OB-019).
+        //
+        // It was a quarter, and the two numbers sit in opposite corners of the same square in the same
+        // colour - so the smaller one read as a footnote to the larger rather than as the same kind of
+        // fact about the tile.
+        int size = Math.max(8, Math.min(width, height) / 3);
+
+        g.setFont(g.getFont().deriveFont(java.awt.Font.BOLD, (float) size));
+
+        java.awt.FontMetrics metrics = g.getFontMetrics();
+
+        int textWidth = metrics.stringWidth(text);
+
+        // Top right, which is the corner away from the address the diagram writes at the leading edge.
+        // The two are the same colour on purpose, so they must not be able to sit on top of one another
+        // and read as one number.
+        int x = width - textWidth - 2;
+        int y = metrics.getAscent() + 1;
+
+        // read against both light and dark track art
+        g.setColor(Color.WHITE);
+
+        for (int ox = -1; ox <= 1; ox++)
+        {
+            for (int oy = -1; oy <= 1; oy++)
+            {
+                if (ox != 0 || oy != 0) g.drawString(text, x + ox, y + oy);
+            }
+        }
+
+        g.setColor(LENGTH);
+        g.drawString(text, x, y);
+    }
+
+    /**
+     * Where a side meets the edge of the tile.
+     *
+     * Public since MT-309: the diagram's own train mark is a line along the rail, drawn by
+     * `LayoutLabel` rather than by anything here, and where a rail meets the edge of a square is one
+     * rule rather than two - the run line, the tested path and the train all have to agree about it.
+     *
+     * @param side the side
+     * @param width the tile's width
+     * @param height its height
+     * @return the point, or null for a side that is not one of the four
+     */
+    public static int[] midpoint(Side side, int width, int height)
+    {
+        if (side == null) return null;
+
+        switch (side)
+        {
+            case N: return new int[] {width / 2, 0};
+            case S: return new int[] {width / 2, height};
+            case E: return new int[] {width, height / 2};
+            case W: return new int[] {0, height / 2};
+            default: return null;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (!(o instanceof TileAnnotation)) return false;
+
+        TileAnnotation other = (TileAnnotation) o;
+
+        // `editing` is in here because it changes the PICTURE - it decides whether a named point's icon
+        // is filled with its colour or white - and equals is what LayoutLabel asks to decide whether a
+        // redraw is needed.  Two annotations differing only in it were indistinguishable to that
+        // question (TD-11).
+        //
+        // The two populations of labels happen to be segregated today, so no live path reached it. It
+        // is left as a trap otherwise, twelve lines below a comment recording the same omission being
+        // made once before.
+        return length == other.length && selected == other.selected
+            && (badge == null ? other.badge == null : badge.equals(other.badge))
+            && ignored == other.ignored && curved == other.curved && portal == other.portal
+            && traces.equals(other.traces) && blockedOnly == other.blockedOnly
+            && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
+            && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
+            && marks.equals(other.marks) && arrivals.equals(other.arrivals);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return marks.hashCode() * 31 + length * 2
+            + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
+            + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
+            + traces.hashCode() * 3
+            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
+            + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768)
+            + arrivals.hashCode() * 7;
+    }
+
+    @Override
+    public String toString()
+    {
+        return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
+            + (badge == null ? "" : " " + badge)
+            + (arrivals.isEmpty() ? "" : " " + arrivals)
+            + (ignored ? " ignored" : "");
+    }
+}

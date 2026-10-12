@@ -16,14 +16,15 @@ import java.util.List;
  * the database was silently not saved at all.
  *
  * Synchronized rather than backed by ConcurrentHashMap because per-map atomicity would not be
- * enough: add() has to change BOTH maps together, and a reader that saw one of them updated and not
- * the other would find a name resolving to an id whose device had already been replaced.  The lock
- * is a leaf - these methods touch nothing but the two maps, take no other lock, and call nothing
+ * enough: add() has to change BOTH maps together, and a reader that saw one updated and not the
+ * other would find a name resolving to an id whose device had already been replaced.  The lock
+ * is a leaf - these methods touch nothing but the two maps, take no other lock and call nothing
  * out - so it cannot take part in a deadlock ordering.
  *
- * (An earlier version of this comment claimed the fields are written into LocDB.data and that the
- * declared type therefore could not change.  That is wrong: saveState persists MarklinSimpleComponent
- * snapshots, and nothing serializes this class.  The Serializable declaration is vestigial.)
+ * (An earlier version of this comment said the fields are written into LocDB.data and that the
+ * declared type therefore could not change.  That is wrong: saveState persists
+ * MarklinSimpleComponent snapshots and nothing serializes this class.  The Serializable
+ * declaration is vestigial.)
  * @author Adam
  * @param <ITEM>
  * @param <IDENTIFIER> 

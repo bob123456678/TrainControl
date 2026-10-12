@@ -198,12 +198,44 @@ public class ImageUtil
         return bufferedImage;
     }
     
+    // THE COVERED WASH IS DRAWN ELSEWHERE, AND STILL HAS NOTHING TO DO WITH AN ICON (MT-309).
+    //
+    // `addCoveredOverlay` greyed a whole tile to say a train was lying across it.  It was deleted on
+    // 2026-09-08 when the wash was replaced by a line - "instead of shading the entire tiles, we need
+    // to draw a line (let's say in orange) to show that the train is there" - with a note saying that
+    // a tinting helper here with no caller is an invitation to a second way of drawing the same mark.
+    //
+    // A wash came back on 2026-09-09, for a different question: the line says where a train IS, the
+    // grey says which track its presence has BLOCKED, and Adam asked for both - "'train is here'
+    // should also mean 'track is blocked' ... it's the same as greying out edges, just in a different
+    // way."  It is NOT restored here.  `LayoutLabel.paintCoveredMark` fills it in `paintComponent`,
+    // beside the line and under it, which keeps one place that draws it and lets it survive an
+    // accessory highlight swapping the icon underneath - the hazard the icon-tinting version needed a
+    // paragraph to handle.  So the note above still stands, and this is what honouring it looks like.
+
     /**
      * Highlights an icon
      * @param originalIcon
      * @return 
      */
     public static ImageIcon addHighlightOverlay(ImageIcon originalIcon)
+    {
+        return addHighlightOverlay(originalIcon, HIGHLIGHT);
+    }
+
+    /**
+     * The same wash in a colour of the caller's choosing.
+     *
+     * A second colour exists because a route has two kinds of square: the ones it COMMANDS and the ones
+     * it LOOKS AT.  Drawn in one colour they are one list, and the question a reader has - which of
+     * these does it change, and which does it merely check - is exactly the one the picture cannot then
+     * answer.
+     *
+     * @param originalIcon the tile as it is drawn
+     * @param wash the colour to lay over it, alpha included
+     * @return a new icon; the original is not touched
+     */
+    public static ImageIcon addHighlightOverlay(ImageIcon originalIcon, Color wash)
     {
         int width = originalIcon.getIconWidth();
         int height = originalIcon.getIconHeight();
@@ -214,12 +246,18 @@ public class ImageUtil
         // Draw the original image
         g2d.drawImage(originalIcon.getImage(), 0, 0, null);
 
-        // Draw the yellow overlay
-        g2d.setColor(new Color(255, 255, 0, 128)); // Semi-transparent yellow
+        g2d.setColor(wash == null ? HIGHLIGHT : wash);
+
         g2d.fillRect(0, 0, width, height);
 
         g2d.dispose();
 
         return new ImageIcon(highlightedImage);
     }
+
+    /** The diagram's ordinary flash: what a square does when something happens to it */
+    public static final Color HIGHLIGHT = new Color(255, 255, 0, 128);
+
+    /** And what a route only looks at */
+    public static final Color HIGHLIGHT_CONDITION = new Color(255, 140, 0, 140);
 }

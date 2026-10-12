@@ -1,0 +1,62 @@
+/dist/
+/sample_layout/
+/z_backup/
+/TrackDiagramEditor.cfg
+/LocDB.data
+/ip.txt
+/UIState.data
+/autonomy.json
+/.gitignore
+/store/
+/Oles kreds/
+
+# Runtime state snapshots and timestamped backups (root only; test/*.data stays tracked)
+/LocDB*.data
+/UIState*.data
+/backup*.data
+/backup*.json
+/tc_backup/
+
+# Build output and NetBeans per-user config
+/build/
+/nbproject/private/
+/nbproject/configs/
+
+# The derived graph, written for inspection by a test and by the autonomy viewer
+autonomy-derived.json
+autonomy-derived-open.json
+
+# TestNG's output when a suite is run by hand from the project folder
+test-output/
+
+# Unpacked by the withdrawn legacy track diagram editor
+TrackDiagramEditor.exe
+
+# The diagram editor's copy of a page from before it saves over it
+*.cs2.bak
+
+# The triage app's scratch, on the development branch
+/docs/manual-tests/.triage-state.json
+/docs/manual-tests/.triage-backups/
+/docs/manual-tests/.triage-runs/
+/docs/manual-tests/__pycache__/
+
+# JVM crash dumps, left by a test JVM that is stopped
+hs_err_pid*.log
+replay_pid*.log
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# The locomotive icon crops TrainControl writes at runtime
+/tc_loc_icons/
+
+# The scratch layout a test probe builds
+/random_test_layout/
+
+# Git Bash's crash dump
+bash.exe.stackdump
+
+# The application's backup beside the sample layout's setup, written while a test drives it
+/cs2_sample_layout/config/autonomy/*_bak.json

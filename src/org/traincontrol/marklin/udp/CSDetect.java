@@ -38,17 +38,17 @@ public class CSDetect
     public static final int PING_RETRY = 2;
 
     /**
-     * How many times the web check is tried on a host.
+     * How many times the web check is tried on a host that has already answered a ping (MT-060).
      *
-     * The ping was retried and the web request was not, so a single slow reply - while ten threads
-     * are pinging the subnet - threw away a station that had just answered its ping ("it works 9 out
-     * of 10 times").  Three attempts turn a one-in-ten failure into a one-in-a-thousand one.
+     * Adam, 2026-08-27: "it works 9 out of 10 times.  sometimes I see this without a positive
+     * detection: 192.168.50.25 is reachable .......... and then it just goes on.  if I try again, it
+     * gets redetected."
      *
-     * In a scan only hosts that answered a ping get here, so the addresses with nothing on them cost
-     * no more than before.  A host that answers a ping but silently drops the web request - a PC, a
-     * phone, a printer - now costs up to three connect timeouts (3 x WEB_TIMEOUT_MS) instead of one;
-     * so does the check made at start-up on a saved address whose host drops it the same way.
-     * A refused connection, or a host that answers without the page, is quick each time (BPV-C10).
+     * The ping was retried and the web request was not, so a single timeout threw away a station that
+     * had just answered. Three attempts turn a one-in-ten failure into a one-in-a-thousand one.
+     *
+     * Only reachable hosts ever get here, so this does not lengthen the scan: the two hundred and
+     * fifty addresses with nothing on them fail at the ping and are never asked twice.
      */
     public static final int WEB_RETRY = 3;
     
@@ -148,11 +148,15 @@ public class CSDetect
                     {
                         // Check for default gateway by sending a ping
                         //
-                        // Retried, like every other ping in this class.  This one was not, and it is
-                        // upstream of all of them: one dropped reply left this network out of the
-                        // scan, and with no other network hasLocalSubnets() is false and the operator
-                        // is told auto-detect is not possible at all.  A gateway that never answers
-                        // costs one more NET_TIMEOUT_MS wait each time the networks are listed (BPV-C9).
+                        // RETRIED, like every other ping in this class (W21-C2).  This was the one
+                        // that was not, and it is upstream of all of them: one dropped reply makes
+                        // `getLocalSubnet()` return empty and `hasLocalSubnets()` false, and the
+                        // operator is told auto-detect is not possible at all - a worse answer than
+                        // the one MT-060 was raised about, from the same cause.  The javadoc at the
+                        // head of this class is about exactly that: *"a single timeout threw away a
+                        // station that had just answered.  Three attempts turn a one-in-ten failure
+                        // into a one-in-a-thousand one."*  It costs at most one extra round trip per
+                        // interface, once, before a scan that sends 254.
                         if (isReachable(inetAddress.getHostAddress().substring(0, inetAddress.getHostAddress().lastIndexOf('.')) + ".1", PING_RETRY))
                         {
                             String ip = inetAddress.getHostAddress();
@@ -170,19 +174,7 @@ public class CSDetect
         return out;
     }
     
-    /**
-     * The one ping every reachability check in this class is made of: a single attempt, waiting
-     * NET_TIMEOUT_MS.  A field rather than a call so a test can stand in for a network that drops a
-     * reply; nothing in the application sets it.
-     */
-    private static java.util.function.Predicate<String> ping = CSDetect::pingOnce;
-
     public static boolean isReachable(String host)
-    {
-        return ping.test(host);
-    }
-
-    private static boolean pingOnce(String host)
     {
         try
         {
@@ -209,18 +201,36 @@ public class CSDetect
     }
     
     /**
-     * Whether there is a Central Station web server on this host, retried.
+     * Whether there is a Central Station web server on this host, retried (MT-060).
      *
-     * The retry lives in the method both callers already use - the subnet scan and isCentralStation -
-     * so neither has to remember it.
+     * The retry lives in the name every caller already uses, rather than in a new one beside it. A
+     * second method would have to be remembered at each call site, and a rule that has to be
+     * remembered is a rule that gets left out - which is how the last several defects here arrived.
      *
-     * @param host the host
+     * @param host the host, which may carry a port for a test
      * @param path the path that identifies a Central Station
      * @return whether one answered
      */
-    private static boolean checkWebServer(String host, String path)
+    public static boolean checkWebServer(String host, String path)
     {
-        for (int tries = 0; tries < WEB_RETRY; tries++)
+        return checkWebServer(host, path, WEB_RETRY);
+    }
+
+    /**
+     * The same, with the number of attempts named - the way in for a test (MT-060).
+     *
+     * A fake server that times out once and then answers is the whole behaviour under test, and it
+     * cannot be built against a real Central Station. `host` may therefore carry a port, which costs
+     * nothing: the scan passes a bare address and the URL reads the same either way.
+     *
+     * @param host the host, which may carry a port
+     * @param path the path that identifies a Central Station
+     * @param attempts how many times to ask before giving up
+     * @return whether one answered
+     */
+    public static boolean checkWebServer(String host, String path, int attempts)
+    {
+        for (int tries = 0; tries < Math.max(1, attempts); tries++)
         {
             if (askWebServer(host, path)) return true;
         }

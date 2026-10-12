@@ -37,16 +37,38 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.layout = l;
         this.pageIndex = pageIndex;
     }
+
+    // The grid on screen now, so that the next one can tell it to stop
+    private LayoutGrid grid;
     
     private void drawGrid()
     {
-        this.ExtLayoutPanel.removeAll();
+        // The grid being replaced is told to stop first.
+        //
+        // A LayoutGrid keeps two Swing timers - one that shows the diagram when its tiles have
+        // decoded, one that puts a spinner up if they are slow - and both go on firing into the panel
+        // after the panel has been emptied.  The outgoing grid then drops a spinner into the page the
+        // NEW grid has just drawn.  Both other places that build a grid over an existing panel call
+        // this; this one did not.
+        if (this.grid != null) this.grid.discard();
+
+        // NOT EMPTIED HERE - the grid does it, at the right moment (VLD-B4).
+        //
+        // This is the position the flicker fix moved `removeAll` OUT of: emptying the panel before
+        // the build leaves it blank for the whole of it, and the build is where the image decoding
+        // is.  Doing it here made the constructor's own swap a no-op for this window, so the popup
+        // kept the flicker while the two other diagram windows lost it.
 
         LayoutGrid grid = new LayoutGrid(this.layout, size,
             this.ExtLayoutPanel, 
             this,
             true, parent);
         
+        this.grid = grid;
+
+        // Half a square at a time on both axes, as the main window's diagram (MT-726, MT-727)
+        LayoutGrid.scrollHalfASquareAtATime(this.jScrollPane1, size);
+
         setTitle(this.layout.getName() + this.parent.getWindowTitleString());
 
         // Scale the popup according to the size of the layout
@@ -206,17 +228,12 @@ public class LayoutPopupUI extends PositionAwareJFrame
     }//GEN-LAST:event_formKeyPressed
 
     private void ExtLayoutPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ExtLayoutPanelMouseClicked
-        if (parent.getModel().hasAutoLayout() && parent.getModel().getAutoLayout().isValid())
+        if (evt.getButton() == MouseEvent.BUTTON3)
         {
-            if (evt.getButton() == MouseEvent.BUTTON3)
-            {                              
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(parent, null);
-
-                    menu.show(evt.getComponent(), evt.getX(), evt.getY());      
-                });
-            }
+            // Same as the main window: the menu carries the setup now, so it is offered whether or not
+            // a layout has been built yet
+            LayoutRightclickAutonomyMenu.showFor(parent, null, null,
+                evt.getComponent(), evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_ExtLayoutPanelMouseClicked
 

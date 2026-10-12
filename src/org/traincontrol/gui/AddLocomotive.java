@@ -16,6 +16,25 @@ import org.traincontrol.util.I18n;
 
 public class AddLocomotive extends javax.swing.JFrame
 {
+    // THE APPLICATION'S LOOK AND FEEL, BEFORE THIS CLASS CAN BE INSTANTIATED (Adam, 2026-09-11).
+    //
+    // **A static block rather than the first line of the constructor, and the difference was measured.**
+    // `JFrame`'s own constructor runs before any constructor body here, and it creates the ROOT PANE -
+    // whose UI comes from whatever look and feel is installed at that instant. So installing inside the
+    // constructor is too late for the window's own chrome. Built cold, which is what a test does, this
+    // window came out with a `MetalRootPaneUI` and an operating-system title bar while the same window in
+    // the running program gets `FlatRootPaneUI`, FlatLaf's own title bar and the menu bar drawn inside it:
+    // 166x77 against 166x49 for the identical window, measured 2026-09-11.
+    //
+    // Class initialisation always finishes before the first instance is created, so this is early enough.
+    //
+    // Headless-guarded because a static initialiser that throws leaves the class unusable for the rest of
+    // the process, which is a worse failure than a window in the wrong font.
+    static
+    {
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+    }
+
     private final ViewListener model;
     private final TrainControlUI parent;
     
@@ -256,6 +275,33 @@ public class AddLocomotive extends javax.swing.JFrame
                     return;
                 }
 
+                // THE FIFTH DOOR, and the only one that never asked (MT-270).
+                //
+                // Adam, 2026-09-06: **"I added a locomotive named a,P[)(] and it went trough.  So,
+                // make sure this doesn't blow things up elsewhere."**
+                //
+                // `RouteCommand.isNameUsable`'s own rule is that the doors which set a locomotive's
+                // name have to agree, and four of them do: the rename dialog, both route-editor doors,
+                // and the one that applies a name the Central Station proposes.  Every one of those
+                // RENAMES.  Nothing checked the name a locomotive is BORN with - so the character the
+                // other four exist to keep out could simply be typed in here instead.
+                //
+                // What it costs is not this locomotive: it is every route that later mentions it.
+                // Routes store locomotives by name in a comma-separated format, so a name containing a
+                // comma re-parses as two commands - and the route that names it was legal when it was
+                // written.
+                //
+                // Brackets are Adam's own ruling and are allowed: "bracketed loc names should just be
+                // allowed."  A comma is not, and `a,P[)(]` is refused for the comma alone.
+                if (!org.traincontrol.base.RouteCommand.isNameUsable(locName))
+                {
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("loc.ui.errorLocomotiveNameUnusable")
+                    ));
+                    return;
+                }
+
                 decoderType type;
                 
                 if (this.LocTypeMFX.isSelected())
@@ -298,40 +344,29 @@ public class AddLocomotive extends javax.swing.JFrame
 
                 locAddress = Math.abs(locAddress);
 
-                if (type == decoderType.MM2)
+                // The model's own rule, asked rather than re-stated.
+                //
+                // This used to test each decoder type in its own if, against the upper bound ONLY -
+                // so with the abs() above, address 0 passed all three and made a locomotive the model
+                // itself would have refused: validateNewAddress requires address > 0 for every type.
+                // MULTI_UNIT had no branch at all, which was survivable only because this dialog does
+                // not offer it, and would have stopped being survivable the day it did.
+                //
+                // One rule, one place.  The message still names the type, because "out of range" with
+                // no range in it is not much of a message.
+                if (!org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, locAddress))
                 {
-                    if (locAddress > Locomotive.MM2_MAX_ADDR)
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("loc.errorMM2AddressOutOfRange")
-                        ));
-                        return;
-                    }
-                }
+                    final String said = type == decoderType.MM2 ? "loc.errorMM2AddressOutOfRange"
+                        : type == decoderType.DCC ? "loc.errorDCCAddressOutOfRange"
+                        : type == decoderType.MFX ? "loc.errorMFXAddressOutOfRange"
+                        : "loc.errorAddressOutOfRange";
 
-                if (type == decoderType.DCC)
-                {
-                    if (locAddress > Locomotive.DCC_MAX_ADDR)
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("loc.errorDCCAddressOutOfRange")
-                        ));
-                        return;
-                    }
-                }
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t(said)
+                    ));
 
-                if (type == decoderType.MFX)
-                {
-                    if (locAddress > Locomotive.MFX_MAX_ADDR)
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("loc.errorMFXAddressOutOfRange")
-                        ));
-                        return;
-                    }
+                    return;
                 }
 
                 if (type == decoderType.MFX)

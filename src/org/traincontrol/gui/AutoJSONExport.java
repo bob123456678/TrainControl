@@ -93,44 +93,70 @@ public class AutoJSONExport extends javax.swing.JPanel
     }// </editor-fold>//GEN-END:initComponents
 
     private void jsonSaveAsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonSaveAsActionPerformed
+
+        // THE CHOOSER IS ON THE EVENT THREAD (VB-B1).
+        //
+        // The whole handler ran inside `new Thread(...)` and opened a modal JFileChooser there, with
+        // the error dialog and the button re-enable on the same thread. This is the shape OB-137 was
+        // reported for, one class over - and the guard written for OB-137 read a single file, so it
+        // could not see this one.
+        //
+        // An action handler is already on the event thread, so the chooser needs no marshalling. Only
+        // the write goes off it.
+        JFileChooser fc = this.tcui.getFileChooser(JFileChooser.FILES_ONLY, extension);
+
+        fc.setSelectedFile(new File("TC_" + prefix + "_"
+            + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis())
+            + "." + extension));
+
+        if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+
+        final File f = fc.getSelectedFile();
+        final byte[] json = this.jsonTextArea.getText().getBytes(StandardCharsets.UTF_8);
+
         this.jsonSaveAs.setEnabled(false);
+
         new Thread(() ->
         {
+            IOException failed = null;
+
             try
             {
-                JFileChooser fc = this.tcui.getFileChooser(JFileChooser.FILES_ONLY, extension);
-                fc.setSelectedFile(new File("TC_" + prefix + "_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + "." + extension));
-                int i = fc.showSaveDialog(this);
-
-                if (i == JFileChooser.APPROVE_OPTION)
-                {
-                    File f = fc.getSelectedFile();
-
-                    byte[] json = this.jsonTextArea.getText().getBytes(StandardCharsets.UTF_8);
-
-                    Files.write(Paths.get(f.getPath()), json);
-                    TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
-
-                    // Close the popup
-                    Window w = SwingUtilities.getWindowAncestor(jsonSaveAs);
-
-                    if (w != null)
-                    {
-                        w.setVisible(false);
-                    }
-                }
+                Files.write(Paths.get(f.getPath()), json);
             }
-            catch (HeadlessException | IOException e)
+            catch (IOException e)
             {
-                JOptionPane.showMessageDialog(this, I18n.t("error.writingToFile"));
-
-                if (this.tcui.getModel().isDebug())
-                {
-                    e.printStackTrace();
-                }
+                failed = e;
             }
 
-            this.jsonSaveAs.setEnabled(true);
+            final IOException threw = failed;
+
+            SwingUtilities.invokeLater(() ->
+            {
+                this.jsonSaveAs.setEnabled(true);
+
+                if (threw != null)
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("error.writingToFile"));
+
+                    if (this.tcui.getModel().isDebug())
+                    {
+                        threw.printStackTrace();
+                    }
+
+                    return;
+                }
+
+                TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, f.getParent());
+
+                // Close the popup
+                Window w = SwingUtilities.getWindowAncestor(jsonSaveAs);
+
+                if (w != null)
+                {
+                    w.setVisible(false);
+                }
+            });
         }).start();
     }//GEN-LAST:event_jsonSaveAsActionPerformed
 

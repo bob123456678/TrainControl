@@ -1,0 +1,1470 @@
+package core;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import org.traincontrol.marklin.MarklinControlStation;
+import static org.traincontrol.marklin.MarklinControlStation.init;
+import org.traincontrol.marklin.file.CS2File;
+import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
+import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
+import org.traincontrol.marklin.MarklinAccessory;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
+
+/**
+ * Compares CS2 and CS3 route parsing
+ */
+public class testParseCS2Layout
+{   
+    // Test files stored locally
+    private final String cs2_layout = getClass().getResource("/layout").toURI().toString();
+    private final String cs2_mags = getClass().getResource("/layout/config/magnetartikel.cs2").toURI().toString();
+
+    public MarklinControlStation model;
+    public List<LayoutDiagram> layouts;
+    public List<LayoutDiagram> layouts_nomags;
+
+    public List<MarklinAccessory> accs;
+    public List<MarklinAccessory> manualAccs;
+
+    public CS2File parser;
+            
+    public testParseCS2Layout() throws Exception
+    {
+        model = init(null, true, false, false, false); 
+
+        parser = new CS2File(cs2_layout, model);
+                 
+        parser.setLayoutDataLoc(cs2_layout);
+
+        // Parse accessories with built-in logic
+        accs = parser.getMagList(true);
+        
+        // Prase accessories manually
+        manualAccs = parser.parseMags(
+            CS2File.parseFile(CS2File.fetchURL(cs2_mags))
+        );
+        
+        // Parse routes with and without the accessory database file
+        layouts = parser.parseLayout(accs);
+        
+        layouts_nomags = parser.parseLayout(new LinkedList<>());
+    }
+    
+    /**
+     * A page edit keeps the parts of the index TrainControl does not model (AC2-C1).
+     *
+     * **Silent modification of a file the user did not ask to change.** The page exporter was given
+     * a rule - *"what TrainControl does not understand it is not entitled to throw away"* - and the
+     * INDEX never got it. `writeLayoutIndex` regenerates the whole header from four hardcoded lines,
+     * so any block a Central Station put there that this program has no name for is deleted by the
+     * first page add, rename, delete or duplicate.
+     *
+     * The genuine CS2 export this repository ships carries exactly one such block: `zuletztBenutzt`,
+     * the station remembering which page you were last looking at. Adam never sees this because his
+     * files are already TrainControl-normalised; a new user who downloads their layout from the
+     * station and then names one station gets an index the station never wrote.
+     *
+     * **And the latent half.** `readLayoutIndexIds` walked the file for `.name=` lines and called
+     * every one of them a page - so `zuletztBenutzt`'s own name was read as a page at position 0.
+     * Harmless only because the same name always reappears further down as a real `seite` and the map
+     * overwrites it. Preserving the block is what makes that luck expire, so both halves are here.
+     *
+     * MUTATION: remove the `readLayoutIndexExtras` loop from `writeLayoutIndex` and the first
+     * assertion fails; remove the `inPage` guard from the id reader and the third does.
+     */
+    /**
+     * A block name the station capitalised is still a block (T10-C6).
+     *
+     * The Central Station writes `Version` with a capital V, and `LayoutDiagram.readLayoutIndexIds`
+     * has matched block names without regard to case since `VLD-B2` - the test below this one exists
+     * for exactly that. `CS2File.parseFile` did not: its block-name arm was `^[a-z]+$`, so a page
+     * block spelled `Seite` was not a block, its `.name=` and `.id=` lines were attached to whatever
+     * came before, and the parser returned **zero pages and zero failures**.
+     *
+     * That combination is the quiet one. Nothing threw, so the "a page could not be read" count was 0
+     * and the guard that reverts to the Central Station stayed silent; the operator got an empty
+     * diagram, no message, and the layout-folder override kept.
+     *
+     * **Both halves, in one test, because the defect is that they disagreed.** The index reader and
+     * the page parser are asked about the same bytes: if one of them ever stops matching the other's
+     * spelling again, the two numbers move apart here.
+     *
+     * MUTATION: narrow the block-name arm in `parseFile` back to `^[a-z]+$` and the parser's count
+     * falls to zero while the index reader still says two.
+     *
+     * @throws Exception on a failure to read
+     */
+    @Test
+    public void testACapitalisedBlockNameIsStillABlock() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-capital").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // SEITE, capitalised, which is what this test is about - and `Version` with its capital V,
+            // which is how the shipped export really spells it.
+            String index = "[gleisbild]\n"
+                + "Version\n .major=1\n"
+                + "Seite\n .id=7\n .name=Page One\n"
+                + "Seite\n .id=9\n .name=Page Two\n";
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                index.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            // THE INDEX READER, which has been case-insensitive since VLD-B2.
+            java.util.Map<String, Integer> ids =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(ids.size(), 2,
+                "the index reader no longer finds a capitalised page block, so this test cannot tell "
+                + "the two readers apart: " + ids);
+
+            // AND THE PAGE PARSER, asked about the same bytes.
+            java.util.List<java.util.Map<String, String>> blocks =
+                org.traincontrol.marklin.file.CS2File.parseFile(
+                    new java.io.BufferedReader(new java.io.FileReader(
+                        new java.io.File(config, "gleisbild.cs2"))));
+
+            int pages = 0;
+
+            for (java.util.Map<String, String> block : blocks)
+            {
+                if ("seite".equals(block.get("_type"))) pages++;
+            }
+
+            assertEquals(pages, ids.size(),
+                "the page parser found " + pages + " page blocks where the index reader found "
+                + ids.size() + ".  The station writes `Seite` with a capital S, and a parser that "
+                + "matches only lower case returns zero pages AND zero failures - so nothing throws, "
+                + "the revert-to-the-station guard stays silent, and the operator gets an empty "
+                + "diagram with no message and the layout override kept (T10-C6)");
+
+            // AND THE TYPE IS STORED LOWER-CASED, which is what lets twelve call sites go on asking
+            // `"seite".equals(...)` without knowing the station shouted.
+            for (java.util.Map<String, String> block : blocks)
+            {
+                String type = block.get("_type");
+
+                assertTrue(type == null || type.equals(type.toLowerCase()),
+                    "a block type reached a reader with its original capitals (" + type + "), so "
+                    + "every `\"seite\".equals(_type)` in the codebase answers false for it");
+            }
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    @Test
+    public void testAPageEditKeepsWhatTheStationWroteInTheIndex() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // An index in the shape the shipped CS2 export has: the station's own last-used-page
+            // memory first, then the pages.  `.id=` deliberately does NOT start at 1, so an id that
+            // is merely a position cannot pass for one that was kept.
+            // The block names a page that is NOT in the list below, on purpose.  Named after one
+            // that is, the buggy reader puts it in at position 0 and the real page overwrites it a
+            // few lines later - so the assertion passes either way and proves nothing.  That is what
+            // "benign by luck" means, and it is also what makes it untestable if copied literally.
+            String original = "[gleisbild]\n"
+                // CAPITAL V, as the shipped `sample_layout/config/gleisbild.cs2` spells it, and the
+                // whole reason the first version of this test could not fail (VLD-B2).  Spelled the
+                // way the WRITER spells it, the block is matched, skipped, and regenerated - so a
+                // case-sensitive match looks correct.  The genuine export is the case that breaks.
+                + "Version\n .major=1\n"
+                + "zuletztBenutzt\n .name=Retired Page\n"
+                + "groesse\n"
+                + "seite\n .id=7\n .name=Page One\n"
+                + "seite\n .id=9\n .name=Page Two\n";
+
+            java.io.File index = new java.io.File(config, "gleisbild.cs2");
+
+            java.nio.file.Files.write(index.toPath(),
+                original.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            // THE CONTROL, asked before anything is written: the ids are read as the file states
+            // them, and the station's block is not among the pages.
+            java.util.Map<String, Integer> read =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(read.get("Page One"), Integer.valueOf(7),
+                "precondition: the first page's stated id must be read, or nothing below is about "
+                + "ids at all");
+
+            assertEquals(read.get("Page Two"), Integer.valueOf(9),
+                "precondition: the second page's stated id must be read too");
+
+            assertNull(read.get("Retired Page"),
+                "the last-used-page block carries a `.name=` of its own, and the reader called every "
+                + "`.name=` in the file a page - so the station's memory of a page that no longer "
+                + "exists entered the id map at position 0.  A real page later given that name then "
+                + "resolves to id 0, and every setting keyed by its id attaches to the wrong track "
+                + "(AC2-C1).  Map was: " + read);
+
+            // A page edit: the same two pages, written back.
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page One", "Page Two"));
+
+            String after = new String(java.nio.file.Files.readAllBytes(index.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains("zuletztBenutzt"),
+                "writing the index deleted the station's own block.  The page exporter keeps what it "
+                + "does not model and the index did not, so a layout downloaded from a Central "
+                + "Station comes back changed after the first rename (AC2-C1).  File was:\n" + after);
+
+            assertTrue(after.contains(".name=Retired Page"),
+                "the block survived but its contents did not: " + after);
+
+            // AND EXACTLY ONCE, which is the failure the other direction: a block both carried over
+            // and regenerated leaves the file with two of it.
+            assertEquals(after.split("zuletztBenutzt", -1).length - 1, 1,
+                "the block appears more than once - carried over AND regenerated:\n" + after);
+
+            // AND THE MODELLED HEADER TOO, which is the assertion that was missing (VLD-B2).
+            //
+            // The one above is on a block that is genuinely unmodelled, so it can only catch a
+            // duplicate of something the writer never emits.  The duplicate that actually happened
+            // was of `version` - regenerated by the writer AND carried over by the reader, because
+            // the reader matched case-sensitively and the file says `Version`.  Asserting the
+            // interesting one is not the same as asserting the one that cannot go wrong.
+            int versions = 0;
+
+            for (String line : after.split("\n"))
+            {
+                if (line.trim().equalsIgnoreCase("version")) versions++;
+            }
+
+            assertEquals(versions, 1,
+                "the index now carries " + versions + " version blocks.  A fix for a finding about "
+                + "deleting part of a user's file must not write a duplicate into it instead "
+                + "(VLD-B2).  File was:\n" + after);
+
+            // The ids still stand, so the preservation did not cost what the writer is actually for.
+            java.util.Map<String, Integer> back =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(back.get("Page One"), Integer.valueOf(7), "the first page's id changed");
+            assertEquals(back.get("Page Two"), Integer.valueOf(9), "the second page's id changed");
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * Removes a temporary folder and everything in it.
+     */
+    private static void deleteTree(java.io.File file)
+    {
+        java.io.File[] children = file.listFiles();
+
+        if (children != null)
+        {
+            for (java.io.File child : children) deleteTree(child);
+        }
+
+        file.delete();
+    }
+    /**
+     * The page id from gleisbild.cs2 reaches the parsed layout.
+     *
+     * Autonomy stores its setup against this id rather than the page name, because a name is what a user
+     * renames and an id is not.  Nothing else in TrainControl reads it, so nothing else would notice if
+     * parsing stopped carrying it - hence a test.
+     */
+    @Test
+    public void testPageIdIsParsed()
+    {
+        assertEquals(layouts.size(), 1);
+        assertEquals(layouts.get(0).getPageId(), "1",
+            "the id in gleisbild.cs2 should reach the layout");
+    }
+
+    /**
+     * Reading the index must not change which pages come back, or in what order.
+     *
+     * parseLayoutList was rewritten to keep the page id alongside the name.  An index keyed by name
+     * would have been the obvious shape and is wrong: two pages may share a name, and collapsing them
+     * would silently drop one from every caller - including the download that writes the files back
+     * out.  So the list is one entry per page, in file order, duplicates and all.
+     */
+    @Test
+    public void testEveryPageInTheIndexComesBackInFileOrder() throws Exception
+    {
+        List<String> fromIndex = new ArrayList<>();
+
+        for (Map<String, String> entry : CS2File.parseFile(CS2File.fetchURL(
+            CS2File.getLayoutMasterURL(cs2_layout))))
+        {
+            if ("seite".equals(entry.get("_type")) && entry.get("name") != null)
+            {
+                fromIndex.add(entry.get("name"));
+            }
+        }
+
+        assertEquals(layouts.size(), fromIndex.size(),
+            "one layout per page in the index, including any sharing a name");
+
+        for (int i = 0; i < fromIndex.size(); i++)
+        {
+            assertEquals(layouts.get(i).getName(), fromIndex.get(i),
+                "page " + i + " should keep its position in the file");
+        }
+    }
+
+    /**
+     * The page list a user sees is sorted, and stays sorted.
+     *
+     * File order is what parsing returns; lexicographic order is what the layout selector shows.  The
+     * two are different on purpose, and the parsing change must not have quietly swapped one for the
+     * other.
+     *
+     * Driven against three names added directly to the model's layout database in a scrambled order,
+     * rather than against whatever model.getLayoutList() already returns.  That used to compare the
+     * list with a sorted copy of itself - trivially true at 0 or 1 pages, and the list it compared came
+     * from LAYOUT_OVERRIDE_PATH_PREF, a machine preference, rather than from this test's own fixture,
+     * so it was really asserting nothing about production sorting.  RemoteDeviceCollection stores names
+     * in a plain HashMap, whose iteration order is neither insertion order nor alphabetical, so three
+     * names added as Zulu, Alpha, Mike coming back as Alpha, Mike, Zulu is real evidence that
+     * getLayoutList()'s own Collections.sort ran, not a coincidence of insertion order.
+     */
+    @Test
+    public void testTheLayoutListIsStillSortedLexicographically() throws Exception
+    {
+        java.lang.reflect.Field field = MarklinControlStation.class.getDeclaredField("layoutDB");
+        field.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        org.traincontrol.base.RemoteDeviceCollection<LayoutDiagram, String> layoutDB =
+            (org.traincontrol.base.RemoteDeviceCollection<LayoutDiagram, String>) field.get(model);
+
+        // Deliberately out of both insertion order and alphabetical order.
+        String[] scrambled = {"TSTC13_Zulu", "TSTC13_Alpha", "TSTC13_Mike"};
+
+        try
+        {
+            for (String name : scrambled)
+            {
+                layoutDB.add(new LayoutDiagram(name, 1, 1, "test://" + name, model), name, name);
+            }
+
+            List<String> shown = model.getLayoutList();
+
+            assertFalse(shown.isEmpty(),
+                "the layout list must not be empty - three known pages were just added to it");
+
+            int alpha = shown.indexOf("TSTC13_Alpha");
+            int mike = shown.indexOf("TSTC13_Mike");
+            int zulu = shown.indexOf("TSTC13_Zulu");
+
+            assertTrue(alpha >= 0 && mike >= 0 && zulu >= 0,
+                "all three known layout names must come back from getLayoutList(): " + shown);
+
+            assertTrue(alpha < mike && mike < zulu,
+                "three names added in scrambled order (Zulu, Alpha, Mike) must come back sorted "
+                + "(Alpha, Mike, Zulu) - they did not: " + shown);
+
+            List<String> sorted = new ArrayList<>(shown);
+            java.util.Collections.sort(sorted);
+
+            assertEquals(shown, sorted, "the layout selector should list pages in lexicographic order");
+        }
+        finally
+        {
+            for (String name : scrambled)
+            {
+                layoutDB.delete(name);
+            }
+        }
+    }
+
+    /**
+     * A parsed layout still writes back out as valid CS2 text.
+     *
+     * The page id lives in the index file rather than in a page, so exporting a page must be unchanged
+     * by carrying it - and this is the path a diagram edit saves through.
+     */
+    @Test
+    public void testAParsedLayoutStillExportsAsCS2Text() throws Exception
+    {
+        String exported = layouts.get(0).exportToCS2TextFormat();
+
+        assertNotNull(exported);
+        assertTrue(exported.contains("[gleisbildseite]"),
+            "an exported page should carry the CS2 header: "
+                + exported.substring(0, Math.min(200, exported.length())));
+
+        // every component that went in comes back out
+        int elements = 0;
+        int index = exported.indexOf("element");
+
+        while (index >= 0)
+        {
+            elements++;
+            index = exported.indexOf("element", index + 1);
+        }
+
+        assertEquals(elements, layouts.get(0).getAll().size(),
+            "every tile should be written back");
+    }
+
+    /**
+     * Checks the number of layout pages
+     */
+    @Test
+    public void testNumLayouts()
+    {           
+        assertEquals(1, layouts.size());
+        assertEquals(1, layouts_nomags.size());
+    }
+    
+    /**
+     * Verify that the DCC accessories were detected as such
+     */
+    @Test
+    public void testDCCAcc()
+    {           
+        int valid = 0;
+        
+        for (LayoutDiagram l : layouts)
+        {
+            for (LayoutDiagramComponent c : l.getAll())
+            {
+                if (c.getAddress() == 65)
+                {
+                    assertEquals(c.getProtocol(), DCC);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 67)
+                {
+                    assertEquals(c.getProtocol(), DCC);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 68)
+                {
+                    assertEquals(c.getProtocol(), DCC);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 21)
+                {
+                    assertEquals(c.getProtocol(), MM2);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 54)
+                {
+                    assertEquals(c.getProtocol(), MM2);
+                    valid++;
+                }
+            }
+        }
+        
+        assertEquals(5, valid);
+    }
+    
+    @Test
+    public void testDCCAccNoMags()
+    {           
+        int valid = 0;
+        
+        for (LayoutDiagram l : layouts_nomags)
+        {
+            for (LayoutDiagramComponent c : l.getAll())
+            {
+                if (c.getAddress() == 65)
+                {
+                    assertEquals(c.getProtocol(), MM2);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 67)
+                {
+                    assertEquals(c.getProtocol(), MM2);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 68)
+                {
+                    assertEquals(c.getProtocol(), MM2);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 21)
+                {
+                    assertEquals(c.getProtocol(), MM2);
+                    valid++;
+                }
+                
+                if (c.getAddress() == 54)
+                {
+                    assertEquals(c.getProtocol(), MM2);
+                    valid++;
+                }
+            }
+        }
+        
+        assertEquals(5, valid);
+    }
+    
+    @Test
+    public void testAccDB()
+    {
+        assertEquals(accs, manualAccs);
+        assertEquals(accs.size(), 127);
+    }
+   
+     
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        
+    }
+
+    @AfterClass(alwaysRun = true)
+    public static void tearDownClass() throws Exception
+    {
+    }
+
+    @BeforeMethod
+    public void setUpMethod() throws Exception
+    {
+    }
+
+    @AfterMethod
+    public void tearDownMethod() throws Exception
+    {
+    }
+
+    /**
+     * Importing a three-way never records both of its drives as thrown.
+     *
+     * A three-way is two solenoid drives, and they have exactly three combinations the turnout can
+     * hold: straight with both released, left with the first thrown, right with the second - the cycle
+     * execSwitching walks.  The importer seeded the first drive from state != 1, which makes state 2
+     * both drives thrown.  That is none of the three, and the sample layout shipped with this
+     * repository contains it: element 0x203 of "1 - Main.cs2" is a dreiwegweiche with zustand=2.
+     */
+    @Test
+    public void testAThreeWayNeverImportsWithBothDrivesThrown() throws Exception
+    {
+        for (int state = 0; state <= 2; state++)
+        {
+            LayoutDiagramComponent c = new LayoutDiagramComponent(
+                LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, state, 36, 36, MM2);
+
+            assertFalse(c.getPrimaryDriveState() && c.getSecondaryDriveState(),
+                "state " + state + " records both drives thrown, which is not a position a three-way has");
+        }
+
+        // state 2 is "right": the second drive over, the first released
+        LayoutDiagramComponent right = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, 2, 36, 36, MM2);
+
+        assertFalse(right.getPrimaryDriveState(), "the first drive is released at right");
+        assertTrue(right.getSecondaryDriveState(), "and the second is the one thrown");
+
+        // the other two, unchanged
+        LayoutDiagramComponent left = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, 0, 36, 36, MM2);
+
+        assertTrue(left.getPrimaryDriveState(), "state 0 is left");
+        assertFalse(left.getSecondaryDriveState());
+
+        LayoutDiagramComponent straight = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_THREE, 0, 0, 0, 1, 36, 36, MM2);
+
+        assertFalse(straight.getPrimaryDriveState(), "state 1 is straight - both released");
+        assertFalse(straight.getSecondaryDriveState());
+    }
+
+    /**
+     * An ordinary turnout is untouched by the above: it has one drive and state 0 means thrown.
+     */
+    @Test
+    public void testAnOrdinaryTurnoutStillSeedsFromStateOne() throws Exception
+    {
+        LayoutDiagramComponent thrown = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_LEFT, 0, 0, 0, 0, 10, 10, MM2);
+
+        LayoutDiagramComponent released = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SWITCH_LEFT, 0, 0, 0, 1, 10, 10, MM2);
+
+        assertTrue(thrown.getPrimaryDriveState());
+        assertFalse(released.getPrimaryDriveState());
+    }
+
+    /**
+     * RS-C2: a page name carrying a path separator must not decide where the file is written.
+     *
+     * downloadCS2Layout writes each page to new File(layoutsDir, layoutName + ".cs2") with layoutName
+     * taken verbatim from the fetched index.  The REMOTE url is built through sanitizeURL for exactly
+     * this reason; the local write is not guarded at all.  A page named "Sub/Page" - which a Central
+     * Station will happily fetch, because the separator is legal in a url path - resolves locally to a
+     * subdirectory that does not exist in the destination, so Files.newBufferedWriter throws and the
+     * download stops half done, leaving a partial layout folder the next sync reads as authoritative.
+     *
+     * The fixture uses a separator rather than a Windows-illegal character on purpose: the source file
+     * has to EXIST for the fetch to succeed, so "Yard / West" cannot be reproduced end to end - the
+     * same constraint that makes the defect possible.  A separator reproduces the identical unguarded
+     * join with filenames that are legal on both sides.
+     *
+     * The accessory file at the end of downloadCS2Layout is fetched from http://IP/... regardless of
+     * the data path, so it cannot succeed against a local fixture.  That step runs strictly AFTER the
+     * page loop, so the assertions below are unaffected; the throw is caught and identified rather
+     * than swallowed, so a failure in the page loop cannot hide inside it.
+     */
+    @Test
+    public void testAPageNameCarryingAPathSeparatorStaysInsideTheLayoutFolder() throws Exception
+    {
+        String source = getClass().getResource("/layout_subpage").toURI().toString();
+
+        CS2File downloader = new CS2File(source, model);
+
+        downloader.setLayoutDataLoc(source);
+
+        Path destination = Files.createTempDirectory("tc-rsc2");
+
+        try
+        {
+            try
+            {
+                downloader.downloadCS2Layout(destination.toFile());
+            }
+            catch (Exception e)
+            {
+                // Expected: the accessory file is fetched over http and there is no station here.
+                // Anything thrown from the page loop instead would surface as a failed assertion
+                // below, which is the point of asserting on the files rather than on this call.
+                assertTrue(String.valueOf(e).contains("magnetartikel")
+                        || String.valueOf(e).toLowerCase().contains("http")
+                        || e instanceof java.net.MalformedURLException
+                        || e instanceof java.net.UnknownHostException,
+                    "the only tolerated failure is the accessory fetch: " + e);
+            }
+
+            File pages = new File(new File(destination.toFile(), "config"), "gleisbilder");
+
+            assertTrue(new File(pages, "Main.cs2").exists(),
+                "precondition: the ordinary page must download - it is listed before the awkward one, "
+                    + "so if this is missing the run failed before reaching the case under test");
+
+            // Fix-shape agnostic: sanitising the name to a flat file and creating the subdirectory are
+            // both acceptable, and both keep every written page inside the layouts folder.
+            List<String> written = new ArrayList<>();
+
+            if (pages.exists())
+            {
+                java.nio.file.Files.walk(pages.toPath())
+                    .filter(java.nio.file.Files::isRegularFile)
+                    .forEach(p -> written.add(pages.toPath().relativize(p).toString()));
+            }
+
+            assertEquals(written.size(), 2,
+                "both pages must be written, and both inside the layouts folder - found: " + written);
+
+            File strayDir = new File(destination.toFile(), "config");
+
+            for (File stray : strayDir.listFiles())
+            {
+                assertTrue(stray.isDirectory() || "gleisbild.cs2".equals(stray.getName())
+                        || "magnetartikel.cs2".equals(stray.getName()),
+                    "nothing may be written into config/ except the index and the accessory file, "
+                        + "but found " + stray.getName());
+            }
+        }
+        finally
+        {
+            java.nio.file.Files.walk(destination)
+                .sorted(java.util.Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
+        }
+    }
+
+    /**
+     * A component TrainControl has never heard of survives being saved.
+     *
+     * Saving regenerates the whole page from the model, and an element whose type the parser cannot map
+     * never entered the model - so writing the file deleted it.  That is not a save the user asked for:
+     * naming one station writes its page out, and renaming a point writes out every page showing that
+     * name.  A diagram with one unrecognised element on it lost that element the first time somebody
+     * typed a station name.
+     */
+    @Test
+    public void testAnUnrecognisedElementSurvivesASave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=gerade\n"
+            + " .artikel=-1\n"
+            + "element\n"
+            + " .id=0x202\n"
+            + " .typ=weltraumbahnhof\n"
+            + " .artikel=7\n"
+            + " .drehung=2\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("weltraumbahnhof"),
+            "an element this program cannot model is still the user's, and must come back:\n" + written);
+
+        assertTrue(written.contains("0x202"), "and at the square it was on:\n" + written);
+        assertTrue(written.contains(".artikel=7"), "with what it said about itself:\n" + written);
+        assertTrue(written.contains(".drehung=2"), "all of it:\n" + written);
+
+        // and the ordinary component is still there too, which is what says the export still works
+        assertTrue(written.contains("gerade"), "the modelled component is still written:\n" + written);
+    }
+
+    /**
+     * The `page=` line at the top of a page file survives a save (X8-A1).
+     *
+     * **A line deleted from every page the application has ever saved.**  `parseFileContents` knew
+     * three shapes of line - a block name, a `" .key=value"`, a `" .key"` array header - and the second
+     * line of a genuine Central Station page export is none of them: `page=1`, at the left margin, with
+     * an equals sign.  It became no item, so it reached neither `addUnmodelledBlock` nor
+     * `addUnmodelledElement`, and the exporter regenerates the whole file from the model.
+     *
+     * Measured on this repository's own exports before the fix: the four pages of `cs2_sample_layout`
+     * the application works on had lost it, and `5 - Test.cs2`, which nothing edits, still had it.
+     *
+     * This is the third instance of one rule - *"what TrainControl does not understand it is not
+     * entitled to throw away"* - which had a keeper for a block and a keeper for an element, and this
+     * shape is neither.
+     *
+     * MUTATION: delete the fourth arm of `parseFileContents`, or the `bareKeys` loop in
+     * `exportToCS2TextFormat`, and the first assertion fails.
+     */
+    @Test
+    public void testTheHeaderKeyOfAPageSurvivesASave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "page=1\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=gerade\n"
+            + " .artikel=-1\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("page=1"),
+            "the line every genuine Central Station page export opens with was deleted by saving the "
+            + "page (X8-A1).  File was:\n" + written);
+
+        // AND EXACTLY ONCE - the other direction, a line both carried over and regenerated.
+        assertEquals(written.split("page=1", -1).length - 1, 1,
+            "the header key appears more than once:\n" + written);
+
+        // AND WHERE THE FILE HAS IT: before the first block, which is where a station writes it.
+        int header = written.indexOf("[gleisbildseite]");
+        int key = written.indexOf("page=1");
+        int firstBlock = written.indexOf("version");
+
+        assertTrue(header >= 0 && key > header && firstBlock > key,
+            "the key came back but not between the header and the first block, so the file is no "
+            + "longer in the shape the station wrote it in:\n" + written);
+
+        // And the ordinary content still works, which is what says the export is not simply broken.
+        assertTrue(written.contains("gerade"), "the modelled component is still written:\n" + written);
+    }
+
+    /**
+     * A page file that is nothing but a header and its key does not lose the key (X8-A1).
+     *
+     * The keys are held until a block opens, because that is where the file puts them and the exporter
+     * has to write them back in that order.  A file with no block at all - which a truncated or
+     * hand-edited page is - would otherwise reach the end of the read still holding them.
+     *
+     * MUTATION: delete the flush in `parseFileContents`'s final pass and this fails while the test
+     * above still passes.
+     */
+    @Test
+    public void testAPageWithNoBlocksStillKeepsItsHeaderKey() throws Exception
+    {
+        String written = roundTrip("[gleisbildseite]\npage=4\n");
+
+        assertTrue(written.contains("page=4"),
+            "a page whose header key is followed by no block lost it, because the collector is only "
+            + "emptied when a block opens (X8-A1).  File was:\n" + written);
+    }
+
+    /**
+     * What the station wrote INSIDE a page's own block survives a page edit (X8-B2).
+     *
+     * `readLayoutIndexExtras` keeps whole blocks it has no name for and declares `seite` modelled.
+     * That is true of the two keys the writer emits - `.id` and `.name` - and false of the block: a
+     * Central Station writes the page's scroll position into it as `.xoffset` and `.yoffset`.  So the
+     * index kept `zuletztBenutzt` at the top of the file, which AC2-C1 was written for, and still
+     * deleted what sat inside each page.
+     *
+     * The same rule as the test above, one file up.
+     *
+     * MUTATION: remove either `appendPageExtras` call from `writeLayoutIndex` and this fails.
+     */
+    @Test
+    public void testAPageEditKeepsWhatTheStationWroteInsideThePage() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // Only the SECOND page carries the offsets, so a writer that emitted them for every page
+            // would fail this as surely as one that emitted them for none.
+            String original = "[gleisbild]\n"
+                + "version\n .major=1\n"
+                + "groesse\n"
+                + "seite\n .id=7\n .name=Page One\n"
+                + "seite\n .id=9\n .name=Page Two\n .xoffset=3\n .yoffset=11\n";
+
+            java.io.File index = new java.io.File(config, "gleisbild.cs2");
+
+            java.nio.file.Files.write(index.toPath(),
+                original.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page One", "Page Two"));
+
+            String after = new String(java.nio.file.Files.readAllBytes(index.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains(".xoffset=3") && after.contains(".yoffset=11"),
+                "writing the index deleted what the station wrote inside the page.  `seite` was "
+                + "declared modelled, which is true of the two keys the writer emits and not of the "
+                + "block (X8-B2).  File was:\n" + after);
+
+            // ON THE RIGHT PAGE, which is the whole reason they are kept by id.
+            int pageTwo = after.indexOf(".name=Page Two");
+            int offset = after.indexOf(".xoffset=3");
+
+            assertTrue(pageTwo >= 0 && offset > pageTwo,
+                "the offsets came back attached to the wrong page:\n" + after);
+
+            // AND NOT ON THE OTHER ONE.
+            assertEquals(after.split("\\.xoffset", -1).length - 1, 1,
+                "the offset was written for more than one page:\n" + after);
+
+            // The ids still stand.
+            java.util.Map<String, Integer> back =
+                org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder.getAbsolutePath());
+
+            assertEquals(back.get("Page One"), Integer.valueOf(7), "the first page's id changed");
+            assertEquals(back.get("Page Two"), Integer.valueOf(9), "the second page's id changed");
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * Each page keeps the unmodelled keys the file states for it, even when two pages claim one id
+     * (N8-B1, X8V-B1).
+     *
+     * **The ambiguity was in the map key, not in the file.** `readLayoutIndexPageExtras` was keyed by
+     * page id, and two pages can resolve to one: a map keeps the last, and `writeLayoutIndex` reissues
+     * the LATER page's id - so the page that kept the id inherited the keys of the page that lost it.
+     * That much was `X8V-B1`, and it was real.
+     *
+     * **Its fix withdrew the contested id, and that threw away a real page's keys.** `Oles kreds` - the
+     * genuine Central Station export in this repository - opens with a `seite` that carries
+     * `.xoffset=1`, `.yoffset=3` and no `.id`, which resolves to its position, 1, while the page after it
+     * states `.id=1`. Withdrawing id 1 deleted the offsets the file states for the first page
+     * unambiguously. Nothing was gained: `writeLayoutIndex` computes a reissued id as one above every id
+     * in the file, so a reissued page can never find anything in a map keyed by ids read from that same
+     * file - the misattribution needs the keys to sit on the page that LOSES, and the loser is the later
+     * one in name order, which is the synthetic shape below and not the real one.
+     *
+     * So the lines are keyed by the page's NAME, which identifies a page everywhere else in this program
+     * and which the file states on every block.
+     *
+     * **Both shapes, because only one of them was ever tested.** Alpha/Beta is the synthetic pair that
+     * `X8V-B1` was written against; Gamma/Delta is the shape in the repository, where the first page
+     * states no id at all.
+     *
+     * MUTATION: key the map by `pageIdOrPosition(idText, position)` again and the first case puts Beta's
+     * offsets on Alpha; add the withdrawal back and the second case loses Gamma's entirely.
+     */
+    @Test
+    public void testEachPageKeepsItsOwnUnmodelledKeys() throws Exception
+    {
+        // The synthetic pair: both pages state id 1, and only the LATER one carries offsets.
+        assertKeysStayWithTheirPage(
+            "seite\n .id=1\n .name=Alpha\n"
+            + "seite\n .id=1\n .name=Beta\n .xoffset=42\n .yoffset=43\n",
+            java.util.Arrays.asList("Alpha", "Beta"), "Beta", "Alpha", ".xoffset=42");
+
+        // The shape `Oles kreds` actually has: the FIRST page carries the offsets and states no id, and
+        // the page after it states the id that page's position resolves to.
+        assertKeysStayWithTheirPage(
+            "seite\n .name=Gamma\n .xoffset=1\n .yoffset=3\n"
+            + "seite\n .id=1\n .name=Delta\n",
+            java.util.Arrays.asList("Gamma", "Delta"), "Gamma", "Delta", ".xoffset=1");
+    }
+
+    /**
+     * Writes an index holding the given `seite` blocks, then asserts the named key came back under
+     * `keeper` and not under `other`.
+     *
+     * @param pages the seite blocks, verbatim
+     * @param order the page list handed to the writer, which is name-sorted in production
+     * @param keeper the page the file states the key for
+     * @param other the page that must not inherit it
+     * @param key the line to look for
+     */
+    private static void assertKeysStayWithTheirPage(String pages, java.util.List<String> order,
+        String keeper, String other, String key) throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n" + pages)
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(), order);
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int at = after.indexOf(key);
+
+            assertTrue(at >= 0,
+                key + " is gone from the file entirely.  The page it belongs to states it, and these "
+                + "are the lines this writer does not model - a scroll position the station set, or the "
+                + "next key a firmware adds (N8-B1).  File was:\n" + after);
+
+            int keeperAt = after.indexOf(".name=" + keeper);
+            int otherAt = after.indexOf(".name=" + other);
+
+            assertTrue(keeperAt >= 0 && otherAt >= 0,
+                "precondition: both pages have to be written:\n" + after);
+
+            // The key belongs to whichever block it falls inside, which is the block whose name is the
+            // closest one above it.
+            assertTrue(at > keeperAt && (otherAt < keeperAt || at < otherAt),
+                key + " came back under " + other + " rather than under " + keeper + ", which is the "
+                + "page the file states it for.  File was:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * The control: ONE page claiming an id still keeps its keys.
+     *
+     * Withdrawing on a collision must not withdraw on every page, which is what a guard written as
+     * "an id that has been seen" rather than "an id claimed twice" would do.
+     */
+    @Test
+    public void testOnePageClaimingAnIdStillKeepsItsKeys() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+                    + "seite\n .id=1\n .name=Alpha\n"
+                    + "seite\n .id=2\n .name=Beta\n .xoffset=42\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Alpha", "Beta"));
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int beta = after.indexOf(".name=Beta");
+            int offset = after.indexOf(".xoffset=42");
+
+            assertTrue(beta >= 0 && offset > beta,
+                "control: two pages with DIFFERENT ids lost the one page's keys, so the collision guard "
+                + "is refusing everything:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * A page with NO id keeps what the station wrote inside its block (X8-B2).
+     *
+     * The genuine Central Station export in this repository - `Oles kreds/config/gleisbild.cs2` -
+     * opens with exactly this: a `seite` carrying `.xoffset=1` and `.yoffset=3` and no `.id` at all.
+     * An absent id is ZERO - Adam, 2026-09-10 - which is what `pageIdOrPosition` says and what
+     * `readLayoutIndexIds` does with the same file - so a reader that insisted on a stated id would
+     * drop the offsets of the one page in the shipped export that has any.
+     *
+     * MUTATION: make `readLayoutIndexPageExtras` skip a page whose `.id` is absent and this fails
+     * while the two tests above pass.
+     */
+    @Test
+    public void testAPageWithNoIdKeepsWhatTheStationWroteInsideIt() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            // The shape of the shipped export: the last-used-page block, then a first page with no id.
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+                    + "zuletztBenutzt\n .name=Page One\n"
+                    + "seite\n .name=Page One\n .xoffset=1\n .yoffset=3\n"
+                    + "seite\n .id=2\n .name=Page Two\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page One", "Page Two"));
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains(".xoffset=1") && after.contains(".yoffset=3"),
+                "the page with no stated id lost what the station wrote inside it.  An absent id is "
+                + "the page's position, which is what every other reader of this file does with it "
+                + "(X8-B2).  File was:\n" + after);
+
+            // AND ON THE RIGHT PAGE.
+            int pageOne = after.indexOf(".name=Page One");
+            int pageTwo = after.indexOf(".name=Page Two");
+            int offset = after.indexOf(".xoffset=1");
+
+            assertTrue(pageOne >= 0 && offset > pageOne && (pageTwo < 0 || offset < pageTwo),
+                "the offsets came back attached to the wrong page:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * A renamed page keeps what the station wrote inside its block (X8-B2).
+     *
+     * The reason the extras are keyed by id.  A rename is the one operation where the writer is
+     * holding a name the index has never seen, and by-name bookkeeping would drop the offsets of
+     * exactly the page the operator just touched.
+     *
+     * MUTATION: key `readLayoutIndexPageExtras` by name and this fails while the test above passes.
+     */
+    @Test
+    public void testARenamedPageKeepsWhatTheStationWroteInsideIt() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-index").toFile();
+
+        try
+        {
+            java.io.File config = new java.io.File(folder, "config");
+
+            assertTrue(config.mkdirs(), "precondition: the config folder has to be made");
+
+            java.nio.file.Files.write(new java.io.File(config, "gleisbild.cs2").toPath(),
+                ("[gleisbild]\nversion\n .major=1\ngroesse\n"
+                    + "seite\n .id=7\n .name=Page One\n .xoffset=5\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            java.util.Map<String, String> renamed = new java.util.HashMap<>();
+
+            renamed.put("Page One", "Page Renamed");
+
+            org.traincontrol.base.LayoutDiagram.writeLayoutIndex(folder.getAbsolutePath(),
+                java.util.Arrays.asList("Page Renamed"), renamed, 0, null);
+
+            String after = new String(
+                java.nio.file.Files.readAllBytes(new java.io.File(config, "gleisbild.cs2").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains(".name=Page Renamed"),
+                "precondition: the rename has to have happened:\n" + after);
+
+            assertTrue(after.contains(".xoffset=5"),
+                "renaming a page deleted what the station wrote inside its block.  The extras are "
+                + "carried by id precisely because a rename is when the name is not usable (X8-B2).  "
+                + "File was:\n" + after);
+        }
+        finally
+        {
+            deleteTree(folder);
+        }
+    }
+
+    /**
+     * A key on a component the model DOES understand, but has no field for, survives too.
+     *
+     * The same loss one level down: the component is kept, and everything the file said about it that
+     * this program has no variable for is dropped on the way out.
+     */
+    @Test
+    public void testAnUnknownKeyOnAKnownComponentSurvivesASave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=gerade\n"
+            + " .artikel=-1\n"
+            + " .sonderfarbe=blau\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("sonderfarbe"),
+            "a key this program does not read is still a key it may not delete:\n" + written);
+
+        assertTrue(written.contains("blau"), "with its value:\n" + written);
+    }
+
+    /**
+     * Writes a page, parses it the way the application does, exports it again, and hands back what was
+     * written.  Nothing is asserted here - each test says what it expects to survive.
+     */
+    private String roundTrip(String contents) throws Exception
+    {
+        return parsePage(contents).exportToCS2TextFormat();
+    }
+
+    /**
+     * Parses one fixture page exactly as the program parses a real layout.
+     *
+     * Separate from roundTrip because a save that corrupts what it wrote is only visible on the way
+     * back IN: the exported text can look perfectly reasonable and still mean something else.
+     */
+    private LayoutDiagram parsePage(String contents) throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-layout").toFile();
+
+        File config = new File(folder, "config");
+        File pages = new File(config, "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not create " + pages);
+
+        Files.write(new File(pages, "Test.cs2").toPath(), contents.getBytes(StandardCharsets.UTF_8));
+
+        // The index lives beside the gleisbilder folder, not inside it - config/gleisbild.cs2 is what
+        // getLayoutMasterURL asks for, and the pages are config/gleisbilder/<name>.cs2.
+        Files.write(new File(config, "gleisbild.cs2").toPath(),
+            ("[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=1\n .name=Test\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
+
+        org.traincontrol.marklin.file.CS2File parser =
+            new org.traincontrol.marklin.file.CS2File(url, null);
+
+        parser.setLayoutDataLoc(url);
+
+        List<LayoutDiagram> parsed =
+            parser.parseLayout(new java.util.LinkedList<org.traincontrol.marklin.MarklinAccessory>());
+
+        assertFalse(parsed.isEmpty(), "the fixture page did not parse");
+
+        return parsed.get(0);
+    }
+
+    /**
+     * The one component of a single-element fixture, found without assuming how an id maps to a square.
+     */
+    private LayoutDiagramComponent onlyComponent(LayoutDiagram page)
+    {
+        List<LayoutDiagramComponent> all = new ArrayList<>();
+
+        for (LayoutDiagramComponent component : page.getAll())
+        {
+            if (component != null) all.add(component);
+        }
+
+        assertEquals(all.size(), 1, "the fixture should hold exactly one element");
+
+        return all.get(0);
+    }
+
+    /**
+     * A signal keeps the exact type and rotation the file gave it.
+     *
+     * The type mapping is many-to-one - fifteen signal words all become SIGNAL - while the export wrote
+     * one canonical word back, so every variant the file distinguished collapsed the first time a page
+     * was saved.  Worse for a semaphore: the parser turns any type whose word contains "_f_" by a
+     * quarter to correct the artwork, and "signal" does not contain it, so the correction was baked into
+     * the file and the signal came back turned a step further on every save.
+     *
+     * Autonomy saved pages unasked during its migration, so this was not a theoretical round trip.
+     */
+    @Test
+    public void testASignalKeepsItsExactTypeAndRotation() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .drehung=1\n"
+            + " .artikel=12\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains("signal_f_hp01"),
+            "the file said which kind of signal, and only the file knows:\n" + written);
+
+        assertTrue(written.contains(".drehung=1"),
+            "the rotation must come back as it went in, or it creeps a quarter every save:\n" + written);
+    }
+
+    /**
+     * An element carrying a CS2 array comes back as an array, not as one line with braces in it.
+     *
+     * The parser folds a key and its " ..sub=value" lines into a single map entry holding
+     * "{a=b}|{c=d}".  Writing that back as one " .key=..." line keeps the text and loses the shape - a
+     * parser would read it as a scalar that happens to contain braces.  The whole reason unmodelled
+     * content is kept is that a later firmware\u2019s file should survive a round trip, and this is the
+     * shape most likely to BE a later firmware\u2019s.
+     */
+    @Test
+    public void testAnArrayInAnUnmodelledElementKeepsItsShape() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x202\n"
+            + " .typ=weltraumbahnhof\n"
+            + " .artikel=7\n"
+            + " .plan\n"
+            + " ..gleis=3\n"
+            + " ..bahnsteig=b\n";
+
+        String written = roundTrip(original);
+
+        assertTrue(written.contains(" ..gleis=3"),
+            "an array entry has to come back as an array entry:\n" + written);
+
+        assertTrue(written.contains(" ..bahnsteig=b"), "both of them:\n" + written);
+
+        assertFalse(written.contains("{gleis"),
+            "and not as the brace form the parser folds them into:\n" + written);
+    }
+
+    /**
+     * A semaphore the file gave no rotation at all still means the same thing after a save.
+     *
+     * The parser turns any type whose word contains "_f_" back by a quarter, to correct artwork the CS2
+     * draws rotated.  A file with no ".drehung" means rotation 0, so such a signal parses to
+     * orientation 3 - and the export wrote that 3 back out, under the very word that triggers the
+     * correction, so the next load read it as 2.  A quarter turn lost to pressing Save, on the diagram
+     * and on the Central Station both.
+     *
+     * Asserting on the re-parsed orientation rather than on the text is deliberate: the number in the
+     * file is only correct relative to the word beside it, and a test that reads one without the other
+     * cannot tell a right answer from a wrong one.
+     */
+    @Test
+    public void testASemaphoreWithNoRotationDoesNotDriftOnSave() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .artikel=12\n";
+
+        int meant = onlyComponent(parsePage(original)).getOrientation();
+
+        String written = parsePage(original).exportToCS2TextFormat();
+
+        assertEquals(onlyComponent(parsePage(written)).getOrientation(), meant,
+            "saving turned the signal a quarter:\n" + written);
+    }
+
+    /**
+     * A semaphore the user turns in the editor comes back turned the way they left it.
+     *
+     * Same asymmetry as the test above, reached from the other side.  Once the orientation no longer
+     * matches the file's number the export falls back to writing the CORRECTED orientation - still
+     * under the preserved "_f_" word - so the correction is applied a second time on the next load.
+     *
+     * Before the type word was preserved this case worked, at the price of collapsing the word to a
+     * canonical "signal": the canonical word contains no "_f_", so nothing corrected it on the way
+     * back.  Preserving the word without accounting for the correction traded a known loss for a
+     * quieter one.
+     */
+    @Test
+    public void testATurnedSemaphoreComesBackTurnedTheSameWay() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .drehung=1\n"
+            + " .artikel=12\n";
+
+        LayoutDiagram page = parsePage(original);
+
+        onlyComponent(page).setOrientation(2);
+
+        String written = page.exportToCS2TextFormat();
+
+        assertEquals(onlyComponent(parsePage(written)).getOrientation(), 2,
+            "the signal was left at 2 and did not come back at 2:\n" + written);
+    }
+
+    /**
+     * A copied component writes the same file text as the one it was copied from.
+     *
+     * The copy constructor took the modelled fields and the label, which is everything the editor
+     * needs to DRAW a tile and not everything the file needs to survive one.  It carried over neither
+     * the original type word, nor the original rotation, nor the keys this program cannot model - so
+     * every copy was a component with the verbatim record stripped out.
+     *
+     * That matters because the editor snapshots through this constructor: deepCopyLayout builds undo
+     * states with it, and undo then replaces every component on the page with a stripped copy.  Place
+     * a tile, press undo, press Save, and every unmodelled key on a page that has never touched
+     * autonomy is gone - from a gesture nobody would think of as destructive.
+     */
+    @Test
+    public void testACopiedComponentStillKnowsWhatTheFileSaid() throws Exception
+    {
+        String original =
+            "[gleisbildseite]\n"
+            + "version\n"
+            + " .major=1\n"
+            + "element\n"
+            + " .id=0x101\n"
+            + " .typ=signal_f_hp01\n"
+            + " .drehung=1\n"
+            + " .artikel=12\n"
+            + " .weltraumbahnhof=42\n";
+
+        LayoutDiagramComponent parsed = onlyComponent(parsePage(original));
+
+        LayoutDiagramComponent copy = new LayoutDiagramComponent(parsed);
+
+        assertEquals(copy.exportToCS2TextFormat(), parsed.exportToCS2TextFormat(),
+            "a copy of a component does not write what the original wrote, so copying it loses "
+                + "whatever the file said that this program cannot model");
+    }
+
+    /**
+     * Renaming a page to the same letters in different case keeps the page.
+     *
+     * saveChanges writes the new filename and then deletes the old one, which is correct only while
+     * they are two files.  On Windows and macOS "Main" and "MAIN" are one file: the writer reopened
+     * and rewrote the original, and the delete then removed the only copy.  The UI does not catch it
+     * either - its duplicate check is a case-sensitive list lookup, so "MAIN" does not collide with
+     * "Main" and the rename proceeds.  Renaming is offered only for local layouts, so nothing on the
+     * Central Station could put the page back.
+     *
+     * Counting the files rather than asking for one by name is what makes this meaningful on both
+     * kinds of filesystem: where the two names are distinct the old file must be gone, and where they
+     * are the same file it must still be there.  Either way exactly one page survives, with content.
+     */
+    @Test
+    public void testACaseOnlyRenameDoesNotDeleteThePage() throws Exception
+    {
+        File folder = Files.createTempDirectory("tc-rename").toFile();
+
+        File config = new File(folder, "config");
+        File pages = new File(config, "gleisbilder");
+
+        assertTrue(pages.mkdirs(), "could not create " + pages);
+
+        Files.write(new File(pages, "Main.cs2").toPath(),
+            ("[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=weiche\n .artikel=8\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        Files.write(new File(config, "gleisbild.cs2").toPath(),
+            ("[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=1\n .name=Main\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
+
+        CS2File parser = new CS2File(url, null);
+        parser.setLayoutDataLoc(url);
+
+        List<LayoutDiagram> parsed = parser.parseLayout(new LinkedList<MarklinAccessory>());
+
+        assertFalse(parsed.isEmpty(), "the fixture page did not parse");
+
+        parsed.get(0).saveChanges("MAIN", false);
+
+        // PAGES, not files.  A page is found by the name the index gives it, so anything in this
+        // folder that is not a .cs2 - the backup saveChanges keeps of a file it is about to rewrite -
+        // is not a page and cannot become one.
+        File[] left = pages.listFiles((dir, name) -> name.endsWith(".cs2"));
+
+        assertEquals(left.length, 1,
+            "a case-only rename should leave exactly one page: " + java.util.Arrays.toString(left));
+
+        String kept = new String(Files.readAllBytes(left[0].toPath()), StandardCharsets.UTF_8);
+
+        assertTrue(kept.contains("weiche"),
+            "the surviving file is not the page that was renamed:\n" + kept);
+    }
+}

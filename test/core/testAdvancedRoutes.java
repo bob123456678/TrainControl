@@ -1,0 +1,1900 @@
+package core;
+
+import java.util.LinkedList;
+import org.traincontrol.base.NodeRouteCommand;
+import org.traincontrol.base.NodeOr;
+import org.traincontrol.base.NodeAnd;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.traincontrol.base.NodeExpression;
+import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Route;
+import org.traincontrol.base.RouteCommand;
+import org.traincontrol.marklin.MarklinControlStation;
+import static org.traincontrol.marklin.MarklinControlStation.init;
+import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.marklin.MarklinRoute;
+import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
+/**
+ * Conditional routes that act on locomotives, and multi-units inside them.
+ *
+ * Two combinations that the suite did not cover, and that the author's manual testing did not exercise
+ * either:
+ *
+ *  - A route whose CONDITION is an autoloc term ("locomotive X is standing at sensor N") and whose
+ *    COMMAND acts on that same locomotive - the "fire a function when the train reaches this sensor"
+ *    arrangement.  `testRoutes` covers autoloc conditions in isolation, through `Route.evaluate`, and
+ *    covers function commands nowhere: the condition and the command had never been exercised together
+ *    through a real trigger.
+ *  - Multi-units reached through a route.  `MarklinLocomotive.setF` and `setSpeed` fan out to
+ *    `linkedLocomotives`, so a route command naming a consist head silently commands every member.
+ *    Nothing asserted that, and the fan-out map was rebuilt three separate times during the July 2026
+ *    cycle (INT-A1, INT-A2, RR-C1).
+ *
+ * These run against the real trigger path - a monitor thread woken by an s88 transition - rather than
+ * calling execRoute directly, because the point is the combination, not the pieces.  That makes them
+ * timing-dependent: `pulseFeedback` holds each sensor state well past
+ * `Locomotive.FEEDBACK_DURATION_THRESHOLD` and then allows the route body time to run, matching the
+ * approach `testRoutes` already uses.
+ *
+ * Every route is disabled in a finally block.  A route left enabled keeps a monitor thread parked on
+ * its sensor for the rest of the JVM, and would fire during later tests.
+ */
+public class testAdvancedRoutes
+{
+    private static MarklinControlStation model;
+
+    /** Feedback and route id ranges picked clear of testRoutes (88xx / 98xx) and the layout suites. */
+    private static final int FEEDBACK_BASE = 8850;
+    private static final int ROUTE_ID_BASE = 9850;
+
+    private static final int FUNCTION = 3;
+
+    private static final String[] TEST_LOCS = {
+        "AR solo", "AR head", "AR member", "AR other" };
+
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        model = init(null, true, false, false, false);
+        model.stop();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public static void tearDownClass() throws Exception
+    {
+        for (String name : TEST_LOCS)
+        {
+            if (model != null) model.deleteLoc(name);
+        }
+    }
+
+    /**
+     * A single station, so autoloc conditions have a graph to resolve against.  Each test uses its own
+     * point name and sensor: parseAuto replaces the whole graph, so tests must not share one.
+     */
+    private static String stationAutonomy(String pointName, int s88)
+    {
+        return "{"
+            + "\"points\": [ {\"name\": \"" + pointName + "\", \"station\": true, \"s88\": " + s88 + "} ],"
+            + "\"edges\": [],"
+            + "\"minDelay\": 0,"
+            + "\"maxDelay\": 0,"
+            + "\"defaultLocSpeed\": 30"
+            + "}";
+    }
+
+    /**
+     * Two stations, so a locomotive can be placed at one while a condition names the other.
+     */
+    private static String twoStationAutonomy(String a, int s88a, String b, int s88b)
+    {
+        return "{"
+            + "\"points\": ["
+            + " {\"name\": \"" + a + "\", \"station\": true, \"s88\": " + s88a + "},"
+            + " {\"name\": \"" + b + "\", \"station\": true, \"s88\": " + s88b + "}"
+            + "],"
+            + "\"edges\": [],"
+            + "\"minDelay\": 0,"
+            + "\"maxDelay\": 0,"
+            + "\"defaultLocSpeed\": 30"
+            + "}";
+    }
+
+    /**
+     * Drives a sensor clear then occupied, holding each state past FEEDBACK_DURATION_THRESHOLD, then
+     * allows the route body to run.  Same shape as testRoutes.pulseFeedback.
+     */
+    private static void pulseFeedback(int address) throws InterruptedException
+    {
+        model.setFeedbackState(Integer.toString(address), false);
+        Thread.sleep(400);
+        model.setFeedbackState(Integer.toString(address), true);
+        Thread.sleep(1500);
+    }
+
+    /** Registers a trigger sensor and leaves it clear. */
+    private static void prepareFeedback(int address)
+    {
+        model.newFeedback(address, null);
+        model.setFeedbackState(Integer.toString(address), false);
+    }
+
+    /** A locomotive with its test function off, created fresh if it does not exist. */
+    private static MarklinLocomotive loco(String name, int address) throws Exception
+    {
+        MarklinLocomotive l = model.getLocByName(name);
+
+        if (l == null)
+        {
+            l = model.newMM2Locomotive(name, address);
+        }
+
+        l.setF(FUNCTION, false);
+        l.setSpeed(0);
+
+        return l;
+    }
+
+    /**
+     * Links member to head as a multi-unit, and returns the head.
+     */
+    private static MarklinLocomotive consist(MarklinLocomotive head, MarklinLocomotive member)
+    {
+        Map<String, Double> links = new HashMap<>();
+        links.put(member.getName(), 1.0);
+
+        head.preSetLinkedLocomotives(links);
+        head.setLinkedLocomotives();
+
+        return head;
+    }
+
+    /**
+     * Builds an enabled route: fire FUNCTION on the named locomotive when triggerS88 goes clear then
+     * occupied, provided the condition holds.
+     */
+    private static MarklinRoute functionRoute(String routeName, int routeId, String locName,
+        int triggerS88, List<RouteCommand> conditions)
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandFunction(locName, FUNCTION, true));
+
+        return new MarklinRoute(model, routeName, routeId, commands, triggerS88,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true,
+            conditions == null ? null : NodeExpression.fromList(conditions));
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The autoloc condition driving a function command
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A route command parses whatever case it is typed in (WP-C19d).
+     *
+     * `Feedback` was matched through `toLowerCase()` and every other command name with `equals`, so
+     * "feedback 12,1" parsed and "emergency stop" did not - in the same file, in the same list, typed
+     * by the same person. A format that accepts one spelling of one word and not another is a format
+     * nobody can learn.
+     *
+     * That asymmetry sat unadjudicated for three weeks inside a bundle the sweep document declared
+     * closed: `WP-C19` filed six sub-defects and four were dispositioned (MON-C9).
+     *
+     * **The canonical casing is what this program writes**, so no existing route changes meaning - the
+     * lower-case forms below are ones that used to fail with "unrecognised" and now work.
+     *
+     * MUTATION: any `equalsIgnoreCase` back to `equals` in `parseLine` fails this.
+     *
+     * @throws Exception on a parse failure
+     */
+    @Test
+    public void testACommandParsesWhateverCaseItIsTypedIn() throws Exception
+    {
+        String[][] same =
+        {
+            {"Emergency Stop", "emergency stop"},
+            {"Emergency Stop", "EMERGENCY STOP"},
+        };
+
+        for (String[] pair : same)
+        {
+            org.traincontrol.base.RouteCommand canonical =
+                org.traincontrol.base.RouteCommand.fromLine(pair[0], false);
+
+            org.traincontrol.base.RouteCommand typed =
+                org.traincontrol.base.RouteCommand.fromLine(pair[1], false);
+
+            assertNotNull(canonical, "the canonical spelling \"" + pair[0] + "\" no longer parses,"
+                + " so this test is not about case at all");
+
+            assertNotNull(typed, "\"" + pair[1] + "\" does not parse while \"" + pair[0] + "\" does."
+                + " Feedback has accepted any case since it was written; a format where one command is"
+                + " forgiving and the rest are not is one nobody can learn (WP-C19d)");
+
+            assertEquals(typed.toLine(null).trim(), canonical.toLine(null).trim(),
+                "\"" + pair[1] + "\" parsed as something other than \"" + pair[0] + "\"");
+        }
+
+        // AND THE ONE THAT WAS ALREADY FORGIVING, so this cannot pass by everything becoming strict.
+        assertNotNull(org.traincontrol.base.RouteCommand.fromLine("feedback 12,1", false),
+            "Feedback stopped accepting lower case, which is the direction this ruling did NOT go");
+    }
+
+    /**
+     * Asking about an accessory must not create one (C13).
+     *
+     * `Route.evaluate` reads an accessory condition through `getAccessoryState`, whose miss branch
+     * calls `newSwitch` - so merely EVALUATING a condition against an address the Central Station has
+     * never mentioned registers that address as a switch, and it persists into the database and onto
+     * the keyboard.  Conditions are evaluated on a timer while a route waits, so one condition naming
+     * a typo’d address invents an accessory the operator never made and cannot account for.
+     *
+     * The same fault was found and fixed in `NodeExpression`, whose comment says the fix was for
+     * "this display path" - the evaluate path was beside it and was not swept.  That is this
+     * project’s most reliable defect shape: one site fixed, the sibling left, with a comment on the
+     * fixed one describing what is still wrong next door.
+     *
+     * **The answer must not change.** `getAccessoryState` creates the switch UNSWITCHED and then
+     * returns false, so an unknown address has always read as "not switched" and routes have always
+     * fired on that.  Removing the side effect must not also flip when a route fires, which is why
+     * this asserts the answer as well as the absence.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testEvaluatingAConditionDoesNotInventTheAccessory() throws Exception
+    {
+        final Accessory.accessoryDecoderType proto = Accessory.accessoryDecoderType.MM2;
+
+        // SEARCHED, NOT HARD-CODED - AND IT HAS TO SEARCH PAST THE PROTOCOL.  The real accessory
+        // database is open, and it holds every MM2 address from 1 to 320 and every DCC address from 1
+        // to 2048, because reading one used to register it.  Adam, 2026-09-07: **"there’s no reason to
+        // delete an accessory, since we just track their actuations.  them being in the database
+        // doesn’t otherwise harm anything."**  So those rows are not damage and nothing here is
+        // cleaning them up.
+        //
+        // They do mean every in-range address is taken, and a taken address makes every assertion
+        // below vacuous rather than red - so the search runs past 320, per Adam’s other instruction:
+        // pick one that is not on any track diagram.  An address above the protocol’s range is still
+        // an address a route condition can carry and still one getAccessoryState would register, which
+        // is the mechanism under test; being unreachable by a real decoder is what makes it certainly
+        // free.
+        int free = -1;
+
+        for (int candidate = 1; candidate <= 4096 && free < 0; candidate++)
+        {
+            if (model.getAccessoryByAddressIfPresent(candidate, proto) == null) free = candidate;
+        }
+
+        assertTrue(free > 0,
+            "there is no address at all, up to 4096, that is not already registered - so there is"
+            + " nothing left to ask about whose answer would not come from an accessory that exists,"
+            + " and this test can no longer tell a read from a write");
+
+        final int address = free;
+
+        boolean unswitched = Route.evaluate(
+            RouteCommand.RouteCommandAccessory(address, proto, false), model);
+
+        assertTrue(unswitched,
+            "an accessory nobody has ever reported reads as not switched, and a condition asking for"
+            + " not-switched is therefore satisfied. That has always been the answer - the point of"
+            + " C13 is the side effect, not the verdict");
+
+        assertNull(model.getAccessoryByAddressIfPresent(address, proto),
+            "evaluating a condition REGISTERED accessory " + address + ". The route never commanded"
+            + " anything - it only looked - and the invented switch now persists in the database and"
+            + " appears on the keyboard (C13)");
+
+        assertFalse(Route.evaluate(
+            RouteCommand.RouteCommandAccessory(address, proto, true), model),
+            "and the other way round, which also must not have changed");
+
+        assertNull(model.getAccessoryByAddressIfPresent(address, proto),
+            "the second evaluation registered it, so the guard is on one branch only");
+    }
+    /**
+     * The arrangement this file exists for: fire a function when a particular locomotive reaches a
+     * particular sensor.
+     *
+     * The condition and the command name the same locomotive, and the route is triggered by a third
+     * sensor, so the two halves are independent: the trigger says *when* to look, the condition says
+     * *whether* to act.
+     */
+    @Test
+    public void testFunctionFiresOnlyOnceTheLocomotiveIsAtTheSensor() throws Exception
+    {
+        int stationS88 = FEEDBACK_BASE;
+        int triggerS88 = FEEDBACK_BASE + 1;
+
+        model.parseAuto(stationAutonomy("AR_AtSensor", stationS88));
+        prepareFeedback(triggerS88);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> conditions = new ArrayList<>();
+        conditions.add(RouteCommand.RouteCommandAutoLocomotive(loc.getName(), stationS88));
+
+        MarklinRoute route = functionRoute("AR function on arrival", ROUTE_ID_BASE,
+            loc.getName(), triggerS88, conditions);
+
+        try
+        {
+            // Let the monitor thread reach its blocking wait
+            Thread.sleep(600);
+
+            assertNull(model.getAutoLayout().getLocomotiveLocation(loc),
+                "precondition: the locomotive is not on the graph, so the condition is unsatisfied");
+
+            pulseFeedback(triggerS88);
+
+            assertFalse(loc.getF(FUNCTION),
+                "the function must not fire while the locomotive is not at the named sensor");
+
+            // Put the locomotive where the condition expects it
+            assertTrue(model.getAutoLayout().moveLocomotive(loc.getName(), "AR_AtSensor", false),
+                "precondition: the locomotive is placed at the station");
+
+            assertTrue(Route.evaluate(
+                RouteCommand.RouteCommandAutoLocomotive(loc.getName(), stationS88), model),
+                "precondition: the condition is now satisfiable");
+
+            pulseFeedback(triggerS88);
+
+            assertTrue(loc.getF(FUNCTION),
+                "with the locomotive at the sensor the route must fire and set the function");
+        }
+        finally
+        {
+            route.disable();
+        }
+    }
+
+    /**
+     * The same route, with the locomotive standing somewhere else.
+     *
+     * Distinguishes "the condition is satisfied" from "the locomotive is on the graph at all" - a route
+     * that fired merely because the locomotive existed would pass the test above and fail this one.
+     */
+    @Test
+    public void testFunctionDoesNotFireWhenTheLocomotiveIsAtAnotherSensor() throws Exception
+    {
+        int expectedS88 = FEEDBACK_BASE + 2;
+        int elsewhereS88 = FEEDBACK_BASE + 3;
+        int triggerS88 = FEEDBACK_BASE + 4;
+
+        model.parseAuto(twoStationAutonomy("AR_Expected", expectedS88, "AR_Elsewhere", elsewhereS88));
+        prepareFeedback(triggerS88);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> conditions = new ArrayList<>();
+        conditions.add(RouteCommand.RouteCommandAutoLocomotive(loc.getName(), expectedS88));
+
+        MarklinRoute route = functionRoute("AR function wrong sensor", ROUTE_ID_BASE + 1,
+            loc.getName(), triggerS88, conditions);
+
+        try
+        {
+            Thread.sleep(600);
+
+            assertTrue(model.getAutoLayout().moveLocomotive(loc.getName(), "AR_Elsewhere", false),
+                "precondition: the locomotive is on the graph, but at the other station");
+
+            pulseFeedback(triggerS88);
+
+            assertFalse(loc.getF(FUNCTION),
+                "the locomotive is on the graph but not at the sensor the condition names, so the "
+                + "function must not fire");
+        }
+        finally
+        {
+            route.disable();
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Multi-units reached through a route
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A route function command naming a consist head reaches every member.
+     *
+     * MarklinLocomotive.setF fans out over linkedLocomotives before setting its own function, so this
+     * is a property of the consist rather than of the route - but a route is how a user would actually
+     * trigger it, and the fan-out map was rebuilt three times during the July 2026 cycle.
+     */
+    @Test
+    public void testRouteFunctionOnConsistHeadReachesMembers() throws Exception
+    {
+        int triggerS88 = FEEDBACK_BASE + 5;
+
+        prepareFeedback(triggerS88);
+
+        MarklinLocomotive head = loco("AR head", 62);
+        MarklinLocomotive member = loco("AR member", 63);
+
+        consist(head, member);
+
+        assertTrue(head.hasLinkedLocomotives(), "precondition: the consist is linked");
+        assertFalse(head.getF(FUNCTION), "precondition: the head's function is off");
+        assertFalse(member.getF(FUNCTION), "precondition: the member's function is off");
+
+        MarklinRoute route = functionRoute("AR consist function", ROUTE_ID_BASE + 2,
+            head.getName(), triggerS88, null);
+
+        try
+        {
+            Thread.sleep(600);
+
+            pulseFeedback(triggerS88);
+
+            assertTrue(head.getF(FUNCTION), "the route must set the function on the head");
+            assertTrue(member.getF(FUNCTION),
+                "and the head must pass it to its member - a route naming the head commands the whole "
+                + "consist");
+        }
+        finally
+        {
+            route.disable();
+        }
+    }
+
+    /**
+     * An autoloc condition resolves against a consist head like any other locomotive.
+     *
+     * The head is what autonomy drives and what stands at a point; the member is not separately placed.
+     * A condition naming the member must therefore be unsatisfied even while the consist is at the
+     * sensor - which is correct, and worth pinning because it is easy to assume membership implies
+     * presence.
+     */
+    @Test
+    public void testAutoLocConditionResolvesAgainstTheConsistHeadOnly() throws Exception
+    {
+        int stationS88 = FEEDBACK_BASE + 6;
+
+        model.parseAuto(stationAutonomy("AR_Consist", stationS88));
+
+        MarklinLocomotive head = loco("AR head", 62);
+        MarklinLocomotive member = loco("AR member", 63);
+
+        consist(head, member);
+
+        assertTrue(model.getAutoLayout().moveLocomotive(head.getName(), "AR_Consist", false),
+            "precondition: the consist head is placed at the station");
+
+        assertTrue(Route.evaluate(
+            RouteCommand.RouteCommandAutoLocomotive(head.getName(), stationS88), model),
+            "the head is at the sensor, so a condition naming it is satisfied");
+
+        assertFalse(Route.evaluate(
+            RouteCommand.RouteCommandAutoLocomotive(member.getName(), stationS88), model),
+            "the member is not separately on the graph, so a condition naming it is not satisfied - "
+            + "being part of a consist that is present is not the same as being present");
+    }
+
+    /**
+     * A consist head and its own member may never be run as separate trains.
+     *
+     * isSimultaneousMultiUnitCompatible is what stops autonomy from driving both: they share a decoder
+     * through the fan-out, so commanding them independently would have them fight each other.
+     */
+    @Test
+    public void testConsistHeadAndMemberAreNotSimultaneouslyCompatible() throws Exception
+    {
+        MarklinLocomotive head = loco("AR head", 62);
+        MarklinLocomotive member = loco("AR member", 63);
+        MarklinLocomotive unrelated = loco("AR other", 64);
+
+        consist(head, member);
+
+        assertFalse(head.isSimultaneousMultiUnitCompatible(member),
+            "the head drives the member, so autonomy must never run them as two trains");
+
+        assertTrue(head.isSimultaneousMultiUnitCompatible(unrelated),
+            "an unrelated locomotive on a different address is unaffected");
+    }
+
+    /**
+     * A route speed command naming the head reaches the members too.
+     *
+     * The multiplier is 1.0 here, so the member should match the head exactly.  Speed is the fan-out
+     * that IND-M1 found silently desynchronising above a threshold, so it is worth an explicit check
+     * that a route - not just a throttle - drives the whole consist.
+     */
+    @Test
+    public void testRouteSpeedOnConsistHeadReachesMembers() throws Exception
+    {
+        int triggerS88 = FEEDBACK_BASE + 7;
+
+        prepareFeedback(triggerS88);
+
+        MarklinLocomotive head = loco("AR head", 62);
+        MarklinLocomotive member = loco("AR member", 63);
+
+        consist(head, member);
+
+        assertEquals(head.getSpeed(), 0, "precondition: stopped");
+        assertEquals(member.getSpeed(), 0, "precondition: stopped");
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed(head.getName(), 40));
+
+        MarklinRoute route = new MarklinRoute(model, "AR consist speed", ROUTE_ID_BASE + 3, commands,
+            triggerS88, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            Thread.sleep(600);
+
+            pulseFeedback(triggerS88);
+
+            assertEquals(head.getSpeed(), 40, "the route must set the head's speed");
+            assertEquals(member.getSpeed(), 40,
+                "and the member must follow at the same speed, the multiplier being 1.0");
+        }
+        finally
+        {
+            route.disable();
+
+            head.setSpeed(0);
+        }
+    }
+
+    /**
+     * UC-C4: a JSON-origin condition tree must mean the same thing after the editor round trip.
+     *
+     * The text parser applies stacked operators LIFO, so text-origin trees are right-nested - a bare
+     * binary node can never be a LEFT child.  Hand-written JSON can build exactly that shape,
+     * Or(And(a,b),c), and it used to render as "a AND b OR c", which reparses as And(a,Or(b,c)):
+     * opening and saving such a route silently changed when it fires.  The fix normalizes at the JSON
+     * door - a bare cross-operator left child is wrapped in a group on load, so the serializer emits
+     * the preserving parentheses - and deliberately NOT in the serializer, which must keep rendering
+     * text-origin trees byte-identically (testRoutes.testExpressions pins that identity).
+     */
+    @Test
+    public void testAnUngroupedConditionTreeSurvivesTheEditorRoundTrip() throws Exception
+    {
+        int[] sensors = {46801, 46802, 46803};
+
+        for (int s : sensors)
+        {
+            model.newFeedback(s, null);
+        }
+
+        // Or(And(a,b),c), built the only way it can exist: hand-written structural JSON
+        org.json.JSONObject a = new org.json.JSONObject()
+            .put("type", "NodeRouteCommand")
+            .put("command", RouteCommand.RouteCommandFeedback(sensors[0], true).toJSON());
+        org.json.JSONObject b = new org.json.JSONObject()
+            .put("type", "NodeRouteCommand")
+            .put("command", RouteCommand.RouteCommandFeedback(sensors[1], true).toJSON());
+        org.json.JSONObject c = new org.json.JSONObject()
+            .put("type", "NodeRouteCommand")
+            .put("command", RouteCommand.RouteCommandFeedback(sensors[2], true).toJSON());
+
+        org.json.JSONObject tree = new org.json.JSONObject()
+            .put("type", "NodeOr")
+            .put("left", new org.json.JSONObject()
+                .put("type", "NodeAnd").put("left", a).put("right", b))
+            .put("right", c);
+
+        NodeExpression loaded = NodeExpression.fromJSON(tree);
+
+        String text = NodeExpression.toTextRepresentation(loaded, model);
+        NodeExpression reparsed = NodeExpression.fromTextRepresentation(text, model);
+
+        for (int mask = 0; mask < 8; mask++)
+        {
+            model.setFeedbackState(String.valueOf(sensors[0]), (mask & 1) != 0);
+            model.setFeedbackState(String.valueOf(sensors[1]), (mask & 2) != 0);
+            model.setFeedbackState(String.valueOf(sensors[2]), (mask & 4) != 0);
+
+            assertEquals(reparsed.evaluate(model), loaded.evaluate(model),
+                "a=" + ((mask & 1) != 0) + " b=" + ((mask & 2) != 0) + " c=" + ((mask & 4) != 0)
+                + ": the reparse of \"" + text.replace("\n", " ") + "\" changed the meaning");
+        }
+    }
+
+    /**
+     * UC-C20: a condition tree restored from the locomotive database is normalized too.
+     *
+     * The locomotive database Java-serializes condition trees and restores them without running any
+     * parser - so a bare cross-operator tree imported from hand-written JSON before normalization
+     * existed came back through that door unrepaired, and the editor round trip kept silently
+     * rewriting its meaning.  The route constructor is the choke point every door shares; building
+     * the route directly with a constructor-built bare tree models exactly what deserialization
+     * hands it.
+     */
+    @Test
+    public void testALegacyDatabaseConditionTreeIsNormalizedOnRestore() throws Exception
+    {
+        int[] sensors = {46811, 46812, 46813};
+
+        for (int s : sensors)
+        {
+            model.newFeedback(s, null);
+        }
+
+        NodeExpression bare = new NodeOr(
+            new NodeAnd(
+                new NodeRouteCommand(RouteCommand.RouteCommandFeedback(sensors[0], true)),
+                new NodeRouteCommand(RouteCommand.RouteCommandFeedback(sensors[1], true))),
+            new NodeRouteCommand(RouteCommand.RouteCommandFeedback(sensors[2], true)));
+
+        MarklinRoute restored = new MarklinRoute(model, "UC C20 legacy", 46810,
+            new LinkedList<>(), 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, bare);
+
+        String text = NodeExpression.toTextRepresentation(restored.getConditions(), model);
+        NodeExpression reparsed = NodeExpression.fromTextRepresentation(text, model);
+
+        for (int mask = 0; mask < 8; mask++)
+        {
+            model.setFeedbackState(String.valueOf(sensors[0]), (mask & 1) != 0);
+            model.setFeedbackState(String.valueOf(sensors[1]), (mask & 2) != 0);
+            model.setFeedbackState(String.valueOf(sensors[2]), (mask & 4) != 0);
+
+            assertEquals(reparsed.evaluate(model), bare.evaluate(model),
+                "a=" + ((mask & 1) != 0) + " b=" + ((mask & 2) != 0) + " c=" + ((mask & 4) != 0)
+                + ": the restored tree changed meaning through \"" + text.replace("\n", " ") + "\"");
+        }
+    }
+
+    /**
+     * Renaming a locomotive repairs the routes whose CONDITION names it, not only their commands.
+     *
+     * Route.locomotiveRenamed sweeps the command list, and renameLoc runs it over every route - its own
+     * comment names routes as one of the two stores that hold locomotives by name and therefore need
+     * repairing.  Conditions are held separately, on MarklinRoute, and nothing swept them.
+     *
+     * The consequence is silent, which is what makes it worth a test: evaluate asks getLocByName for a
+     * name that no longer exists, gets null, and returns false forever.  The monitor thread keeps
+     * running and keeps logging "condition failed", so the route looks alive and never fires again.
+     */
+    @Test
+    public void testARenameReachesConditionsAndNotOnlyCommands() throws Exception
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 40));
+
+        NodeExpression condition =
+            new NodeRouteCommand(RouteCommand.RouteCommandAutoLocomotive("BR 218", 50));
+
+        // Not enabled: the constructor starts a monitor thread for an enabled route with an s88, and
+        // this test is about the rename, not the trigger.
+        MarklinRoute route = new MarklinRoute(null, "Ahead", 1, commands, 50,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, condition);
+
+        route.locomotiveRenamed("BR 218", "BR 218 neu");
+
+        List<RouteCommand> conditionCommands = NodeExpression.toList(route.getConditions());
+
+        // Floor: without this, an empty condition list would leave the loop below running zero times
+        // and the rename-reaches-conditions check would pass having examined nothing.
+        assertFalse(conditionCommands.isEmpty(),
+            "precondition: the route must still have a condition to check");
+
+        for (RouteCommand rc : conditionCommands)
+        {
+            assertEquals(rc.getName(), "BR 218 neu",
+                "the condition still names the old locomotive, so this route can never fire again");
+        }
+
+        // Same floor for the command list, so a mutation emptying it cannot pass this silently either.
+        assertFalse(route.getRoute().isEmpty(),
+            "precondition: the route must still have a command to check");
+
+        for (RouteCommand rc : route.getRoute())
+        {
+            assertEquals(rc.getName(), "BR 218 neu", "the command list was not repaired either");
+        }
+    }
+
+    /**
+     * Capturing a command keeps one entry per locomotive, not one per kind of command.
+     *
+     * The filter keyed on everything before the first comma.  For an accessory line - "name,setting" -
+     * that is the accessory, which is right.  For a locomotive line - "prefix,name,value" - it is just
+     * "locspeed", so every locomotive in the route collapsed onto one key and only the last survived.
+     *
+     * The user sees this as a line vanishing from the middle of the text area while they click a
+     * turnout somewhere else, and saving persists the shortened route.
+     */
+    @Test
+    public void testCapturingKeepsEveryLocomotivesCommands() throws Exception
+    {
+        String filtered = org.traincontrol.base.RouteCapture.filterConfigCommands(
+            "locspeed,Loc A,50\nlocspeed,Loc B,40\nlocfunc,Loc A,3,1\nlocfunc,Loc A,4,1");
+
+        assertTrue(filtered.contains("locspeed,Loc A,50"), "Loc A's speed was dropped:\n" + filtered);
+        assertTrue(filtered.contains("locspeed,Loc B,40"), "Loc B's speed was dropped:\n" + filtered);
+
+        assertTrue(filtered.contains("locfunc,Loc A,3,1") && filtered.contains("locfunc,Loc A,4,1"),
+            "two functions of one locomotive are two settings, not one:\n" + filtered);
+    }
+
+    /**
+     * The same filter still collapses repeated writes to one accessory, keeping the last.
+     *
+     * The precondition that makes the test above meaningful: a key wide enough to separate locomotives
+     * must not have become so wide that nothing dedupes any more.  Captured three-way pairs depend on
+     * this - rewriting an accessory moves it to the end, and that ordering is load-bearing.
+     */
+    @Test
+    public void testCapturingStillCollapsesRepeatedAccessoryWrites() throws Exception
+    {
+        String filtered = org.traincontrol.base.RouteCapture.filterConfigCommands(
+            "Switch 3,straight\nSwitch 4,turn\nSwitch 3,turn");
+
+        assertFalse(filtered.contains("Switch 3,straight"),
+            "the earlier setting of Switch 3 should have been replaced:\n" + filtered);
+
+        assertTrue(filtered.contains("Switch 3,turn"), "the later one should survive:\n" + filtered);
+        assertTrue(filtered.contains("Switch 4,turn"), "and the other accessory too:\n" + filtered);
+    }
+
+    /**
+     * A name routes can carry survives the text format; one they cannot does not.
+     *
+     * The guard exists because the format cannot express these names, so the test proves that rather
+     * than restating the predicate - a test that only asserted isNameUsable("a,b") is false would pass
+     * against a rule invented for no reason.
+     */
+    @Test
+    public void testANameRoutesCanCarrySurvivesTheTextFormat() throws Exception
+    {
+        assertTrue(RouteCommand.isNameUsable("BR 218"), "precondition: an ordinary name is allowed");
+
+        RouteCommand allowed = RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 40);
+
+        assertEquals(RouteCommand.fromLine(allowed.toLine(null).trim(), false).getName(), "BR 218",
+            "an allowed name must survive being written and read back");
+
+        assertFalse(RouteCommand.isNameUsable("BR 103, 001"), "a comma is refused");
+
+        RouteCommand refused = RouteCommand.RouteCommandLocomotiveSpeed("BR 103, 001", 40);
+
+        boolean carried;
+
+        try
+        {
+            carried = "BR 103, 001".equals(
+                RouteCommand.fromLine(refused.toLine(null).trim(), false).getName());
+        }
+        catch (Exception e)
+        {
+            // The other way it fails: the tail does not parse as a number and the whole line is
+            // rejected, which is what blocks the route from being saved at all
+            carried = false;
+        }
+
+        assertFalse(carried,
+            "the format carried a comma after all, which would make the guard unnecessary");
+    }
+
+    /**
+     * A name with a bracket is allowed, and survives the way routes are actually stored (RGN-C3).
+     *
+     * **This test asserted the opposite until 2026-09-04**, and its own closing sentence said what
+     * would change it: *"would mean this name could simply be allowed"*. Adam ruled exactly that -
+     * *"bracketed loc names should just be allowed"*.
+     *
+     * The rule refused brackets because `NodeExpression.preprocessText` rewrites every bracket into a
+     * line break to find the grouping, so a condition naming `SBB 460 (2)` was torn into pieces. That
+     * mattered while conditions were stored as TEXT. They are not: `MarklinRoute.fromJSON` reads them
+     * through `NodeExpression.fromJSON`, and `fromTextRepresentation` has no caller left in `src/`.
+     *
+     * So the guard outlived its reason, and what it cost was real - a 2.7.4c route naming such a
+     * locomotive could not be saved at all, not even to change the route's own name.
+     *
+     * **Both halves are asserted**, because the interesting fact is that they now disagree: the text
+     * form still cannot carry the name, and the JSON form can. That is what makes allowing it safe,
+     * and if the text form ever became load-bearing again this test would still be telling the truth
+     * about it.
+     *
+     * MUTATION: putting the bracket back into `isNameUsable` fails the first assertion.
+     */
+    @Test
+    public void testANameWithABracketIsAllowedAndSurvivesTheJsonForm() throws Exception
+    {
+        assertTrue(RouteCommand.isNameUsable("SBB 460 (2)"),
+            "a bracketed locomotive name is refused, so a route naming one cannot be saved at all - "
+            + "which is what Adam overturned on 2026-09-04 (RGN-C3)");
+
+        assertFalse(RouteCommand.isNameUsable("BR 103, 001"),
+            "the comma is still fatal: a command is written prefix,name,value and read back by "
+            + "splitting on commas, so this half of the rule has to stay");
+
+        RouteCommand bracketed = RouteCommand.RouteCommandAutoLocomotive("SBB 460 (2)", 50);
+
+        // THE FORM ROUTES ARE STORED IN, which is what makes the name safe to allow.
+        RouteCommand back = RouteCommand.fromJSON(bracketed.toJSON());
+
+        assertEquals(back.getName(), "SBB 460 (2)",
+            "the JSON form did not carry the bracket, so allowing the name would lose it on the "
+            + "path routes are actually saved and loaded through");
+
+        // AND THE TEXT FORM STILL CANNOT, which is why this was ever a rule.
+        NodeExpression condition = new NodeRouteCommand(bracketed);
+
+        String asText = NodeExpression.toTextRepresentation(condition, null);
+
+        boolean survivedText;
+
+        try
+        {
+            NodeExpression reparsed = NodeExpression.fromTextRepresentation(asText, null);
+
+            survivedText = !NodeExpression.toList(reparsed).isEmpty()
+                && "SBB 460 (2)".equals(NodeExpression.toList(reparsed).get(0).getName());
+        }
+        catch (Exception e)
+        {
+            survivedText = false;
+        }
+
+        assertFalse(survivedText,
+            "the text form carried the bracket after all.  That would not be a defect - it would "
+            + "mean this test's account of WHY the rule existed is wrong, and the note in "
+            + "isNameUsable should be corrected with it");
+    }
+
+    /**
+     * A route refused for having a duplicate name does not leave its monitor running.
+     *
+     * The complete constructor arms the s88 monitor as soon as the route is enabled and has a sensor -
+     * before the object has been offered to any database - so an import carrying two routes of the
+     * same name left the rejected one watching its sensor forever, firing turnouts for a route the UI
+     * has no handle on and only a restart could stop.
+     */
+    @Test
+    public void testARefusedRouteDoesNotKeepItsMonitorRunning() throws Exception
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed("BR 218", 40));
+
+        // A name and ids this database will not already have
+        MarklinRoute first = new MarklinRoute(model, "Duplicate Import Probe", 8801, commands, 61,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            assertTrue(model.newRoute(first), "precondition: the first route is accepted");
+
+            MarklinRoute second = new MarklinRoute(model, "Duplicate Import Probe", 8802, commands, 61,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+            assertTrue(second.isEnabled(), "precondition: the constructor armed the second route");
+
+            assertFalse(model.newRoute(second), "precondition: the duplicate name is refused");
+
+            assertFalse(second.isEnabled(),
+                "the refused route is still armed, so its monitor keeps firing a route nothing can "
+                    + "reach or disable");
+        }
+        finally
+        {
+            model.deleteRoute("Duplicate Import Probe");
+        }
+    }
+
+    /**
+     * A route started again while it runs says so in the log (GSR-C4).  The sensor that triggers a route can fire again
+     * before the route has finished; the second start is dropped, as it always was, and said nothing - the window's own
+     * doors say a route is already running (`route.ui.infoAlreadyRunning`), and this door, the one a sensor uses, did not.
+     *
+     * MUTATION: drop the line and this fails.
+     *
+     * @throws Exception from the route thread
+     */
+    @Test
+    public void testARouteStartedWhileItRunsSaysSo() throws Exception
+    {
+        final String routeName = "GSR-C4 route";
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++)
+        {
+            commands.add(RouteCommand.RouteCommandAccessory(110 + i, Accessory.accessoryDecoderType.MM2, true));
+        }
+
+        model.newRoute(routeName, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                said.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
+
+        try
+        {
+            new Thread(() -> model.execRoute(routeName)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < armed) Thread.sleep(20);
+
+            assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
+
+            // THE SECOND START, while the first is part-way along
+            new Thread(() -> model.execRoute(routeName)).start();
+
+            String expected = org.traincontrol.util.I18n.f("route.ui.infoAlreadyRunning", routeName);
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!said.contains(expected) && System.currentTimeMillis() < until) Thread.sleep(20);
+
+            assertTrue(said.contains(expected), "a route started again while it ran was dropped with nothing in the log"
+                + " (GSR-C4): " + said);
+
+            long giveUp = System.currentTimeMillis() + 15000;
+
+            while (model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+        }
+        finally
+        {
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+            try { model.deleteRoute(routeName); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * A route finishes its commands even if the locomotive it names is deleted while it runs (CS3-B1).
+     *
+     * `deleteLoc` takes every command that drives that locomotive out of every route, through `Iterator.remove()`,
+     * from the event thread - while `execRoute` is part-way along the same list on its own thread with 200 ms between
+     * commands.  Both list kinds are fail-fast, so that thread died mid-route and everything after the command being
+     * sent was never sent: measured on 2026-09-19, three of eight turnouts thrown, the road left half set, and
+     * nothing in the log to say so - the route reports itself finished either way.
+     *
+     * The model half is here; the door half - the UI refusing the delete while such a route runs - is
+     * `runningRouteDriving`, asserted below.
+     *
+     * @throws Exception from the route thread
+     */
+    @Test
+    public void testARouteFinishesWhenItsLocomotiveIsDeletedMidRun() throws Exception
+    {
+        final String loc = "ProbeCME";
+        final String routeName = "ProbeCME route";
+
+        model.newMM2Locomotive(loc, 61);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        for (int i = 0; i < 8; i++)
+        {
+            commands.add(RouteCommand.RouteCommandAccessory(90 + i, Accessory.accessoryDecoderType.MM2, true));
+        }
+
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed(loc, 30));
+
+        model.newRoute(routeName, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        final java.util.concurrent.atomic.AtomicInteger accessories = new java.util.concurrent.atomic.AtomicInteger();
+
+        model.setSentMessageObserver(m ->
+        {
+            if (m.isAccessoryCommand()) accessories.incrementAndGet();
+        });
+
+        try
+        {
+            assertTrue(model.getRoute(routeName).commandsDrive(loc),
+                "precondition: the route does not name the locomotive this deletes");
+
+            new Thread(() -> model.execRoute(routeName)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < armed)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
+
+            // PART-WAY ALONG, which is where the hazard is: waited for rather than slept for, because a loaded
+            // machine can leave the route thread with nothing sent after any fixed sleep (SVT-B3).  The upper bound
+            // needs no waiting: the route pauses at least 200 ms between commands, so eight cannot be out yet.
+            long started = System.currentTimeMillis() + 10000;
+
+            while (accessories.get() < 1 && System.currentTimeMillis() < started)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(accessories.get() > 0 && accessories.get() < 8,
+                "precondition: the delete has to land in the middle of the route, and " + accessories.get()
+                + " of 8 commands had been sent");
+
+            // THE DOOR'S OWN QUESTION, which is what the UI refuses on.
+            assertNotNull(model.runningRouteDriving(loc),
+                "the model cannot tell that a running route is driving this locomotive, so no door can refuse the"
+                + " delete while it runs");
+
+            model.deleteLoc(loc);
+
+            long giveUp = System.currentTimeMillis() + 15000;
+
+            while (model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < giveUp)
+            {
+                Thread.sleep(50);
+            }
+
+            assertFalse(model.getRoute(routeName).isExecuting(), "the route never finished");
+
+            assertEquals(accessories.get(), 8,
+                "the route stopped short after the locomotive it names was deleted mid-run, leaving the road half"
+                + " set - " + accessories.get() + " of 8 turnouts were thrown");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+
+            try { model.deleteRoute(routeName); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * A running route about to CHAIN to another one is driving what that other route drives (MT-464).
+     *
+     * **What Adam did**, 2026-09-21: *"I made Route 1, that fires a loc a route that fires a loc
+     * function after 10000ms.  Then I tried deleting alco UP (the target loc) from the loc db browser,
+     * and it went through on deleting ALCO UP."*
+     *
+     * `runningRouteDriving` is the question every door asks before it edits or deletes a locomotive, and
+     * it asked each executing route about its OWN command list.  A route whose command is another ROUTE
+     * drives every locomotive that route drives, seconds later, on a thread nobody has started yet - so
+     * the running route answered no, the delete was allowed, and the function was then sent for a
+     * locomotive the database no longer has.
+     *
+     * The window is as long as the delays sitting ahead of the chain command.  Here it is one accessory
+     * command with a four-second pause, which is the shape of his ten-second one.
+     *
+     * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and
+     * passes `limit - 1` down, so a route fired BY a route cannot fire a third.
+     *
+     * MUTATION: take the chain walk out of `MarklinControlStation.runningRouteDriving` and the claim
+     * below goes red.
+     *
+     * @throws Exception from the route thread
+     */
+    @Test
+    public void testARunningRouteIsDrivingWhatTheRouteItChainsToDrives() throws Exception
+    {
+        final String loc = "ProbeChain";
+        final String inner = "ProbeChain inner";
+        final String outer = "ProbeChain outer";
+
+        model.newMM2Locomotive(loc, 62);
+
+        List<RouteCommand> fires = new ArrayList<>();
+
+        fires.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(inner, fires, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        List<RouteCommand> chain = new ArrayList<>();
+
+        RouteCommand waits = RouteCommand.RouteCommandAccessory(94,
+            Accessory.accessoryDecoderType.MM2, true);
+
+        // THE WINDOW.  A command's pause is taken AFTER the command it sits on, so these are the four
+        // seconds during which the outer route is executing and the inner one has not been started.
+        waits.setDelay(4000);
+
+        chain.add(waits);
+        chain.add(RouteCommand.RouteCommandRoute(inner));
+
+        model.newRoute(outer, chain, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        try
+        {
+            assertFalse(model.getRoute(outer).commandsDrive(loc),
+                "precondition: the outer route names the locomotive itself, so this is not about a chain");
+
+            assertTrue(model.getRoute(inner).commandsDrive(loc),
+                "precondition: the inner route does not name the locomotive");
+
+            new Thread(() -> model.execRoute(outer)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(outer).isExecuting() && System.currentTimeMillis() < armed)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(model.getRoute(outer).isExecuting(), "precondition: the outer route never started");
+
+            assertFalse(model.getRoute(inner).isExecuting(),
+                "precondition: the inner route has already started, so the window this is about is over");
+
+            assertNotNull(model.runningRouteDriving(loc),
+                "a route four seconds away from firing a function at this locomotive is not reported as"
+                + " driving it: the walk asks each executing route about its own commands and never"
+                + " follows the ROUTE command that does the driving.  Every door that refuses an edit or"
+                + " a delete while a route drives the locomotive stands open for as long as the chain is"
+                + " pending, which is what Adam got when he deleted ALCO UP");
+        }
+        finally
+        {
+            long giveUp = System.currentTimeMillis() + 15000;
+
+            while ((model.getRoute(outer) != null && model.getRoute(outer).isExecuting())
+                && System.currentTimeMillis() < giveUp)
+            {
+                Thread.sleep(50);
+            }
+
+            try { model.deleteRoute(outer); } catch (Exception ignored) { }
+            try { model.deleteRoute(inner); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * A route is not edited while it runs, so afterwards it is still running and still drives what it drove (GSR-B3).
+     *
+     * `editRoute` edits by deleting the route and adding a new object under the same id.  It carries across whether
+     * autonomy selected the route and whether it is locked, and not whether it is EXECUTING, which lives on the object:
+     * the new one read idle while the old one's thread went on sending its commands.  So `runningRouteDriving` lost it,
+     * and every door that refuses to edit or delete a locomotive a running route drives stood open; the route tile
+     * stopped showing it running; and its guard against being started again on top of itself was gone.
+     *
+     * The flag is set as `MarklinRoute.execRoute` sets it, with no thread, so nothing is sent and nothing is waited for.
+     *
+     * MUTATION: take the refusal out of `MarklinControlStation.editRoute`, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARunningRouteIsNotEdited() throws Exception
+    {
+        final String loc = "ProbeGSR3 loc";
+        final String name = "ProbeGSR3 route";
+
+        model.newMM2Locomotive(loc, 66);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        MarklinRoute running = model.getRoute(name);
+
+        try
+        {
+            assertTrue(running.setExecuting(), "precondition: the route was marked running already");
+
+            assertNotNull(model.runningRouteDriving(loc), "precondition: the model does not see the running route drive "
+                + loc + ", so there is nothing for an edit to forget");
+
+            boolean edited = model.editRoute(name, name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+                null);
+
+            assertNotNull(model.runningRouteDriving(loc), "an edit of a running route forgot it was running, so every door"
+                + " that refuses to edit or delete " + loc + " while a route drives it stands open (GSR-B3)");
+
+            assertTrue(model.getRoute(name).isExecuting(), "the route the database holds after the edit reads idle while"
+                + " the one that was running goes on sending its commands (GSR-B3)");
+
+            assertFalse(edited, "the edit of a running route reported success, so the route editor would close as though"
+                + " it had been saved");
+        }
+        finally
+        {
+            running.stopExecuting();
+
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * A Central Station sync does not replace a route while it runs, so afterwards it is still running and still
+     * drives what it drove (GSR-B3, in the sync).
+     *
+     * Where the station's definition of a route differs from the one held, the sync deletes the held route and adds
+     * the station's as a new object under the same id - the delete-and-add `editRoute` does, which round 115 made
+     * refuse while the route runs, because what a route is doing lives on its object.  The sync went on replacing it:
+     * the new object read idle while the old one's thread went on sending its commands, so `runningRouteDriving` lost
+     * it, and every door that refuses to edit or delete a locomotive a running route drives stood open.
+     *
+     * The sync's per-route step is asked directly, with the station's description of the same route carrying one
+     * more command, because the whole sync needs a station on the network.  The flag is set as `MarklinRoute.execRoute`
+     * sets it, with no thread, so nothing is sent and nothing is waited for.
+     *
+     * MUTATION: take the running-route refusal out of `MarklinControlStation.adoptCentralStationRoute`, and this
+     * fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncDoesNotReplaceARunningRoute() throws Exception
+    {
+        final String loc = "ProbeGSR3S loc";
+        final String name = "ProbeGSR3S route";
+
+        model.newMM2Locomotive(loc, 66);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        MarklinRoute running = model.getRoute(name);
+
+        try
+        {
+            assertTrue(running.setExecuting(), "precondition: the route was marked running already");
+
+            assertNotNull(model.runningRouteDriving(loc), "precondition: the model does not see the running route drive "
+                + loc + ", so there is nothing for a sync to forget");
+
+            // THE CENTRAL STATION'S DESCRIPTION: the same route, under the same id, with one more command
+            List<RouteCommand> changed = new ArrayList<>(commands);
+
+            changed.add(RouteCommand.RouteCommandFunction(loc, 2, true));
+
+            MarklinRoute fromTheStation = new MarklinRoute(model, name, running.getId(), changed, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            model.adoptCentralStationRoute(fromTheStation);
+
+            assertSame(model.getRoute(name), running, "a Central Station sync replaced a running route with a new"
+                + " object, which reads idle while the old one's thread goes on sending its commands (GSR-B3)");
+
+            assertNotNull(model.runningRouteDriving(loc), "a sync of a running route forgot it was running, so every"
+                + " door that refuses to edit or delete " + loc + " while a route drives it stands open (GSR-B3)");
+
+            assertTrue(model.getRoute(name).isLocked(), "the running route the sync left was not locked, so its menu"
+                + " offers Delete and Change Route ID on a Central Station route");
+        }
+        finally
+        {
+            running.stopExecuting();
+
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * Nor where the station has a route of the same NAME under another id (GSR-B3, in the sync): the held route is
+     * deleted to make room for it, and a running one is not - the station's waits for the next sync.
+     *
+     * The sync's other replacing branch.  The station's route cannot be added beside the running one under the same
+     * name, so the step adds nothing, and the running route is still the one the model holds by that name.
+     *
+     * MUTATION: take the running-route refusal out of the same-name branch of
+     * `MarklinControlStation.adoptCentralStationRoute`, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncDoesNotReplaceARunningRouteOfTheSameName() throws Exception
+    {
+        final String loc = "ProbeGSR3N loc";
+        final String name = "ProbeGSR3N route";
+
+        model.newMM2Locomotive(loc, 67);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(name, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        MarklinRoute running = model.getRoute(name);
+
+        try
+        {
+            assertTrue(running.setExecuting(), "precondition: the route was marked running already");
+
+            // THE CENTRAL STATION'S ROUTE OF THE SAME NAME, under an id nothing here holds
+            int other = running.getId() + 1;
+
+            while (model.getRoute(other) != null) other++;
+
+            MarklinRoute fromTheStation = new MarklinRoute(model, name, other, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            assertFalse(model.adoptCentralStationRoute(fromTheStation), "the sync counted a route it added beside a"
+                + " running route of the same name");
+
+            assertSame(model.getRoute(name), running, "a Central Station sync deleted a running route to make room for"
+                + " the station's route of the same name, so the model forgot it was running (GSR-B3)");
+
+            assertNotNull(model.runningRouteDriving(loc), "a sync of a running route forgot it was running, so every"
+                + " door that refuses to edit or delete " + loc + " while a route drives it stands open (GSR-B3)");
+
+            assertNull(model.getRoute(other), "the station's route was added under its own id beside the running one");
+        }
+        finally
+        {
+            running.stopExecuting();
+
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * Deleting a route takes it out of every route that runs it, so a new route of that name is not run by them
+     * (GSR-B4).
+     *
+     * Adam's ruling of 2026-10-10: deleting a route removes the other routes' commands that run it, and the delete's
+     * question says how many routes call it - as deleting a locomotive removes the commands that drive it.  Left behind,
+     * a command naming a deleted route did nothing until somebody made a route of that name, and from then on ran it: a
+     * route nobody had put into the first one.
+     *
+     * Through the door's own model method, `deleteRouteAndItsCalls`.  The model's `deleteRoute` is left as it is,
+     * because `editRoute` deletes and re-adds through it, and an edit must not strip a route's callers.
+     *
+     * MUTATION: take the strip out of `deleteRouteAndItsCalls`, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testADeletedRouteIsNotRunByTheRoutesThatCalledIt() throws Exception
+    {
+        final String called = "ProbeGSR4 called";
+        final String caller = "ProbeGSR4 caller";
+
+        List<RouteCommand> sets = new ArrayList<>();
+
+        sets.add(RouteCommand.RouteCommandAccessory(93, Accessory.accessoryDecoderType.MM2, true));
+
+        model.newRoute(called, sets, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        List<RouteCommand> runs = new ArrayList<>();
+
+        runs.add(RouteCommand.RouteCommandAccessory(95, Accessory.accessoryDecoderType.MM2, true));
+        runs.add(RouteCommand.RouteCommandRoute(called));
+
+        model.newRoute(caller, runs, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        try
+        {
+            // COUNTED BEFORE, as the door counts for its question
+            List<String> counted = model.routesCalling(called);
+
+            model.deleteRouteAndItsCalls(called);
+
+            assertNull(model.getRoute(called), "precondition: the route was not deleted");
+
+            // A NEW ROUTE OF THAT NAME
+            List<RouteCommand> again = new ArrayList<>();
+
+            again.add(RouteCommand.RouteCommandAccessory(96, Accessory.accessoryDecoderType.MM2, true));
+
+            model.newRoute(called, again, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            for (RouteCommand rc : model.getRoute(caller).getRoute())
+            {
+                assertFalse(rc.isRoute() && called.equals(rc.getName()), caller + " still runs " + called + " after it was"
+                    + " deleted, so it now runs the new route of that name - one nobody put in it (GSR-B4)");
+            }
+
+            assertEquals(model.getRoute(caller).getRoute().size(), 1, "the route that ran " + called + " lost more than"
+                + " the command that ran it");
+
+            assertEquals(counted, java.util.Collections.singletonList(caller), "the count the delete's question gives is"
+                + " not the one route that runs " + called + " (GSR-B4)");
+        }
+        finally
+        {
+            try { model.deleteRoute(called); } catch (Exception ignored) { }
+            try { model.deleteRoute(caller); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * A route whose name carries a leading or trailing space can still be found and deleted (CS3-C1).
+     *
+     * The two file parsers build a `MarklinRoute` with the name exactly as the file has it; `newRoute` then indexed
+     * it under the trimmed name while `deleteRoute` deleted by the route's own - so such a route could be neither
+     * deleted nor re-read by a sync, and `changeRouteId` put it into the database under both ids.  Central Station
+     * route names are typed by people, and a trailing space is invisible.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARouteNameWithSpacesAroundItIsUsable() throws Exception
+    {
+        MarklinRoute padded = new MarklinRoute(model, " Padded route ", 7701);
+
+        try
+        {
+            assertEquals(padded.getName(), "Padded route", "the name is not trimmed where every door meets");
+
+            assertTrue(model.newRoute(padded), "the route was refused");
+
+            assertNotNull(model.getRoute("Padded route"), "the route is not in the database under its own name");
+
+            model.deleteRoute("Padded route");
+
+            assertNull(model.getRoute("Padded route"), "the route survived a delete by the name it is indexed under");
+            assertNull(model.getRoute(7701), "the route survived by id, so the database still holds it");
+        }
+        finally
+        {
+            try { model.deleteRoute("Padded route"); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
+     * A route tile on the diagram runs the route the database holds now, not the one it was wired to (MKR-B1).
+     *
+     * `wireComponents` hands the tile the route OBJECT, and `LayoutDiagramComponent.execSwitching` runs whatever it
+     * was handed.  Every door that changes a route replaces that object - `editRoute` deletes and re-adds, the sync
+     * re-reads a station route that changed, an import replaces the lot - and only a full re-wire re-bound the
+     * tiles.  With the Central Station as the diagram source that happens once a session, so the tile went on
+     * running last session's commands, and a deleted route still fired from its tile.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARouteTileFollowsTheDatabase() throws Exception
+    {
+        final int id = 7702;
+        final String name = "Tile route";
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(91, Accessory.accessoryDecoderType.MM2, true));
+
+        model.newRoute(name, id, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("tiles", 4, 4, null, null);
+
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.ROUTE, 1, 1, 0, 0, id, 0,
+            Accessory.accessoryDecoderType.MM2, null);
+
+        page.setPageId("9");
+
+        model.wireComponents(page, null);
+
+        // THE PAGE HAS TO BE ONE THE MODEL KNOWS, because that is what the re-bind walks - and it is also
+        // what makes this the real case: a page the model never heard of is not on anybody's diagram.
+        java.lang.reflect.Field pages = MarklinControlStation.class.getDeclaredField("layoutDB");
+        pages.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> layouts =
+            (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>)
+                pages.get(model);
+
+        layouts.add(page, page.getName(), page.getName());
+
+        org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(1, 1);
+
+        try
+        {
+            assertNotNull(tile.getRoute(), "precondition: the tile was not wired to the route at all");
+            assertSame(tile.getRoute(), model.getRoute(id), "precondition: the tile holds some other route");
+
+            // WHAT AN EDIT DOES: delete and re-add, which is a new object under the same id.
+            List<RouteCommand> changed = new ArrayList<>();
+            changed.add(RouteCommand.RouteCommandAccessory(92, Accessory.accessoryDecoderType.MM2, true));
+
+            assertTrue(model.editRoute(name, name, changed, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+                null), "precondition: the edit was refused");
+
+            assertSame(tile.getRoute(), model.getRoute(id),
+                "the tile still holds the route object it was wired to, so pressing it runs the commands the route"
+                + " had before it was edited");
+
+            // AND WHAT A DELETE DOES.
+            model.deleteRoute(name);
+
+            assertNull(tile.getRoute(),
+                "the tile still holds a route the database no longer has, so pressing it fires a deleted route");
+        }
+        finally
+        {
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+
+            // AND THE PAGE COMES OUT AGAIN (OP2-C10).  It was put into the model's own page database by
+            // reflection a few statements up, and left there - so every class that ran after this one in
+            // the same JVM saw a page the layout never had, and anything that counts pages or walks them
+            // counted it.
+            try { layouts.delete(page.getName()); } catch (Exception ignored) { }
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Every command and trigger, run (Adam, 2026-10-08: "Add the tests.  Advise if any fail") - the gaps
+    // a read of the suite found: features that were only parsed or round-tripped, never run as a route
+    // ---------------------------------------------------------------------------------------------
+
+    /** Polls a condition every 50 ms until it holds or the time is up. */
+    private static boolean until(java.util.function.BooleanSupplier holds, long ms) throws InterruptedException
+    {
+        long end = System.currentTimeMillis() + ms;
+
+        while (!holds.getAsBoolean() && System.currentTimeMillis() < end) Thread.sleep(50);
+
+        return holds.getAsBoolean();
+    }
+
+    /** A route run by hand, not watching a sensor. */
+    private static MarklinRoute byHand(String name, int id, RouteCommand... commands)
+    {
+        List<RouteCommand> list = new ArrayList<>();
+
+        for (RouteCommand command : commands) list.add(command);
+
+        return new MarklinRoute(model, name, id, list, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
+    /**
+     * A route set to fire when its sensor clears fires then, and not when the sensor becomes occupied.  The live
+     * railway has some fourteen such routes, and no test had ever fired one.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAFiresOnClearRouteFiresWhenItsSensorClears() throws Exception
+    {
+        int trigger = 8890;
+
+        prepareFeedback(trigger);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandFunction(loc.getName(), FUNCTION, true));
+
+        MarklinRoute route = new MarklinRoute(model, "AR fires on clear", 9890, commands, trigger,
+            MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, true, null);
+
+        try
+        {
+            Thread.sleep(600);
+
+            model.setFeedbackState(Integer.toString(trigger), true);
+            Thread.sleep(1500);
+
+            assertFalse(loc.getF(FUNCTION), "a route set to fire when its sensor clears fired when the sensor became"
+                + " occupied");
+
+            model.setFeedbackState(Integer.toString(trigger), false);
+
+            assertTrue(until(() -> loc.getF(FUNCTION), 3000), "a route set to fire when its sensor clears did not fire"
+                + " when it cleared");
+        }
+        finally
+        {
+            route.disable();
+            model.setFeedbackState(Integer.toString(trigger), false);
+        }
+    }
+
+    /**
+     * A route set to fire when its sensor becomes occupied does not fire when the sensor clears.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAFiresOnOccupiedRouteIgnoresTheClearingEdge() throws Exception
+    {
+        int trigger = 8891;
+
+        model.newFeedback(trigger, null);
+        model.setFeedbackState(Integer.toString(trigger), true);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandFunction(loc.getName(), FUNCTION, true));
+
+        MarklinRoute route = new MarklinRoute(model, "AR fires on occupied", 9891, commands, trigger,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
+        {
+            Thread.sleep(600);
+
+            model.setFeedbackState(Integer.toString(trigger), false);
+            Thread.sleep(1500);
+
+            assertFalse(loc.getF(FUNCTION), "a route set to fire when its sensor becomes occupied fired when the sensor"
+                + " cleared");
+
+            model.setFeedbackState(Integer.toString(trigger), true);
+
+            assertTrue(until(() -> loc.getF(FUNCTION), 3000), "a route set to fire when its sensor becomes occupied did"
+                + " not fire when it did");
+        }
+        finally
+        {
+            route.disable();
+            model.setFeedbackState(Integer.toString(trigger), false);
+        }
+    }
+
+    /**
+     * A route's direction and speed commands drive the locomotive, and a speed of -1 stops it at once.
+     *
+     * "At once" is the station's train-stop command for this locomotive: an ordinary speed of 0 stops it too, at the
+     * decoder's own deceleration, and sends no such command (RSA57-C2).
+     *
+     * MUTATION: hand the -1 to an ordinary stop (`setSpeed(0)`) and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testSpeedDirectionAndInstantStopRunThroughARoute() throws Exception
+    {
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        loc.setDirection(org.traincontrol.base.Locomotive.locDirection.DIR_FORWARD);
+
+        assertTrue(until(() -> loc.getDirection() == org.traincontrol.base.Locomotive.locDirection.DIR_FORWARD, 2000),
+            "precondition: the locomotive does not face forward");
+
+        byHand("AR backward at 40", 9892,
+            RouteCommand.RouteCommandLocomotiveDirection(loc.getName(), org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD),
+            RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), 40)).execRoute(false);
+
+        assertTrue(until(() -> loc.getSpeed() == 40, 3000), "a route's speed command did not set the speed: "
+            + loc.getSpeed());
+
+        assertEquals(loc.getDirection(), org.traincontrol.base.Locomotive.locDirection.DIR_BACKWARD, "a route's"
+            + " direction command did not turn the locomotive");
+
+        final java.util.concurrent.atomic.AtomicInteger trainStops = new java.util.concurrent.atomic.AtomicInteger();
+
+        model.setSentMessageObserver(m ->
+        {
+            if (m.isSysCommand() && m.getSubCommand() == org.traincontrol.marklin.udp.CS2Message.CMD_SYSSUB_TRAINSTOP
+                && m.extractUID() == loc.getIntUID())
+            {
+                trainStops.incrementAndGet();
+            }
+        });
+
+        try
+        {
+            byHand("AR instant stop", 9893, RouteCommand.RouteCommandLocomotiveSpeed(loc.getName(), -1)).execRoute(false);
+
+            assertTrue(until(() -> loc.getSpeed() == 0, 3000), "a route's speed of -1 did not stop the locomotive: "
+                + loc.getSpeed());
+
+            assertTrue(until(() -> trainStops.get() > 0, 3000), "a route's speed of -1 stopped the locomotive as an"
+                + " ordinary stop does - the station's train-stop command was not sent (RSA57-C2)");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+        }
+    }
+
+    /**
+     * A route that chains to an ordinary route runs that route's commands; the chain stops one route deep, as the
+     * changelog for 2.5.3 says (a chained route triggers no further routes); and a route that names itself runs its
+     * other commands once and does not loop.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAChainedRouteRunsAndTheChainStopsAtItsLimit() throws Exception
+    {
+        MarklinLocomotive first = loco("AR solo", 61);
+        MarklinLocomotive third = loco("AR other", 64);
+        MarklinLocomotive self = loco("AR head", 62);
+
+        MarklinRoute c = byHand("AR chain C", 9896, RouteCommand.RouteCommandFunction(third.getName(), FUNCTION, true));
+        MarklinRoute b = byHand("AR chain B", 9895, RouteCommand.RouteCommandFunction(first.getName(), FUNCTION, true),
+            RouteCommand.RouteCommandRoute("AR chain C"));
+        MarklinRoute a = byHand("AR chain A", 9894, RouteCommand.RouteCommandRoute("AR chain B"));
+        MarklinRoute s = byHand("AR chain self", 9897, RouteCommand.RouteCommandRoute("AR chain self"),
+            RouteCommand.RouteCommandFunction(self.getName(), FUNCTION, true));
+
+        try
+        {
+            for (MarklinRoute r : new MarklinRoute[] {a, b, c, s})
+            {
+                assertTrue(model.newRoute(r), "precondition: " + r.getName() + " could not be added");
+            }
+
+            a.execRoute(false);
+
+            assertTrue(until(() -> first.getF(FUNCTION), 3000), "a route chained to an ordinary route did not run that"
+                + " route's commands");
+
+            Thread.sleep(1500);
+
+            assertFalse(third.getF(FUNCTION), "a chain ran a second level deep - a chained route is not to trigger"
+                + " further routes (2.5.3)");
+
+            s.execRoute(false);
+
+            assertTrue(until(() -> self.getF(FUNCTION), 3000), "a route that names itself did not run its other commands");
+
+            assertTrue(until(() -> !s.isExecuting(), 3000), "a route that names itself is still running - it loops");
+        }
+        finally
+        {
+            for (MarklinRoute r : new MarklinRoute[] {a, b, c, s}) model.deleteRoute(r.getName());
+        }
+    }
+
+    /**
+     * A function OFF command, All Functions Off, All Lights On and All Lights On (Autonomy Locomotives Only) each do
+     * what they say when a route runs them.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testFunctionOffAndTheLightAndFunctionSweepsRunThroughARoute() throws Exception
+    {
+        MarklinLocomotive loc = loco("AR solo", 61);
+        MarklinLocomotive other = loco("AR other", 64);
+
+        loc.setF(FUNCTION, true);
+
+        byHand("AR function off", 9898, RouteCommand.RouteCommandFunction(loc.getName(), FUNCTION, false))
+            .execRoute(false);
+
+        assertTrue(until(() -> !loc.getF(FUNCTION), 3000), "a route's function OFF command left the function on");
+
+        loc.setF(FUNCTION, true);
+
+        byHand("AR all functions off", 9899, RouteCommand.RouteCommandFunctionsOff()).execRoute(false);
+
+        assertTrue(until(() -> !loc.getF(FUNCTION), 5000), "All Functions Off left a locomotive's function on");
+
+        loc.setF(0, false);
+        other.setF(0, false);
+
+        byHand("AR all lights on", 9888, RouteCommand.RouteCommandLightsOn()).execRoute(false);
+
+        assertTrue(until(() -> loc.getF(0) && other.getF(0), 5000), "All Lights On did not turn every locomotive's"
+            + " lights on");
+
+        // ONLY THE AUTONOMY LOCOMOTIVES: one on the railway, one not
+        model.parseAuto(stationAutonomy("AR_Lights", 8889));
+
+        assertTrue(model.getAutoLayout().moveLocomotive(loc.getName(), "AR_Lights", false), "precondition: the"
+            + " locomotive is not on the railway");
+
+        loc.setF(0, false);
+        other.setF(0, false);
+
+        byHand("AR autonomy lights on", 9887, RouteCommand.RouteCommandAutonomyLightsOn()).execRoute(false);
+
+        assertTrue(until(() -> loc.getF(0), 5000), "All Lights On (Autonomy Locomotives Only) did not turn on the"
+            + " lights of a locomotive on the railway");
+
+        Thread.sleep(500);
+
+        assertFalse(other.getF(0), "All Lights On (Autonomy Locomotives Only) turned on the lights of a locomotive"
+            + " that is not on the railway");
+    }
+
+    /**
+     * A sensor condition and a switch condition hold back a route its own sensor fires, until both hold; a DCC
+     * switch's state is read apart from the MM2 switch at the same address; and groups inside a group are evaluated
+     * as written.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testSensorAndSwitchConditionsHoldBackAFiredRoute() throws Exception
+    {
+        int trigger = 8886, sensor = 8885, other = 8884;
+
+        prepareFeedback(trigger);
+        prepareFeedback(sensor);
+        prepareFeedback(other);
+
+        model.setAccessoryState(281, Accessory.accessoryDecoderType.MM2, false);
+        model.setAccessoryState(283, Accessory.accessoryDecoderType.MM2, false);
+
+        MarklinLocomotive loc = loco("AR solo", 61);
+
+        List<RouteCommand> conditions = new ArrayList<>();
+        conditions.add(RouteCommand.RouteCommandFeedback(sensor, true));
+        conditions.add(RouteCommand.RouteCommandAccessory(281, Accessory.accessoryDecoderType.MM2, true));
+
+        MarklinRoute route = functionRoute("AR held back", 9886, loc.getName(), trigger, conditions);
+
+        try
+        {
+            Thread.sleep(600);
+
+            pulseFeedback(trigger);
+
+            assertFalse(loc.getF(FUNCTION), "the route fired with its sensor condition clear and its switch straight");
+
+            model.setFeedbackState(Integer.toString(sensor), true);
+
+            pulseFeedback(trigger);
+
+            assertFalse(loc.getF(FUNCTION), "the route fired with its switch condition not met");
+
+            model.setAccessoryState(281, Accessory.accessoryDecoderType.MM2, true);
+
+            pulseFeedback(trigger);
+
+            assertTrue(loc.getF(FUNCTION), "the route did not fire with both its conditions met");
+        }
+        finally
+        {
+            route.disable();
+        }
+
+        // A DCC SWITCH IS ITS OWN DEVICE, apart from the MM2 switch at the same address
+        model.setAccessoryState(282, Accessory.accessoryDecoderType.DCC, true);
+        model.setAccessoryState(282, Accessory.accessoryDecoderType.MM2, false);
+
+        assertTrue(Route.evaluate(RouteCommand.RouteCommandAccessory(282, Accessory.accessoryDecoderType.DCC, true), model),
+            "a DCC switch condition did not read the DCC switch");
+
+        assertFalse(Route.evaluate(RouteCommand.RouteCommandAccessory(282, Accessory.accessoryDecoderType.MM2, true),
+            model), "an MM2 switch condition read the DCC switch at the same address");
+
+        // GROUPS INSIDE A GROUP: ((sensor OR other) AND (281 OR 283))
+        String a = RouteCommand.RouteCommandFeedback(sensor, true).toLine(null);
+        String b = RouteCommand.RouteCommandFeedback(other, true).toLine(null);
+        String c = RouteCommand.RouteCommandAccessory(281, Accessory.accessoryDecoderType.MM2, true)
+            .toLine(model.getAccessoryByAddress(281, Accessory.accessoryDecoderType.MM2));
+        String d = RouteCommand.RouteCommandAccessory(283, Accessory.accessoryDecoderType.MM2, true)
+            .toLine(model.getAccessoryByAddress(283, Accessory.accessoryDecoderType.MM2));
+
+        NodeExpression nested = NodeExpression.fromTextRepresentation(
+            "((" + a + "\nOR\n" + b + ")\nAND\n(" + c + "\nOR\n" + d + "))", model);
+
+        boolean[][] cases = {
+            // sensor, other, 281, 283, expected
+            {true, false, false, true, true},
+            {false, false, true, true, false},
+            {false, true, false, false, false},
+            {false, true, true, false, true},
+        };
+
+        for (boolean[] k : cases)
+        {
+            model.setFeedbackState(Integer.toString(sensor), k[0]);
+            model.setFeedbackState(Integer.toString(other), k[1]);
+            model.setAccessoryState(281, Accessory.accessoryDecoderType.MM2, k[2]);
+            model.setAccessoryState(283, Accessory.accessoryDecoderType.MM2, k[3]);
+
+            assertEquals(nested.evaluate(model), k[4], "((sensor OR other) AND (281 OR 283)) with sensor " + k[0]
+                + ", other " + k[1] + ", 281 " + k[2] + ", 283 " + k[3]);
+        }
+
+        model.setFeedbackState(Integer.toString(sensor), false);
+        model.setFeedbackState(Integer.toString(other), false);
+    }
+}

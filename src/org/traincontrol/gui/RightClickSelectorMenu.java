@@ -25,12 +25,17 @@ public class RightClickSelectorMenu extends JPopupMenu
 
         // No current button means no key to render - (char) -1 painted as U+FFFF garbage.
         // Without a target the item is meaningless, so it is omitted rather than disabled.
-        Integer currentButtonKey = ui.getKeyForCurrentButton();
+        //
+        // ONE CLAUSE, NOT TWO (W21-C1). The `!= null` half could never be false -
+        // `getKeyForCurrentButton` returns -1 and never null - and a guard whose first clause is dead
+        // is what made the OTHER site look as though it were already covered. It was not: the same
+        // value went into a dialog unguarded for as long as this comment has been here.
+        int currentButtonKey = ui.getKeyForCurrentButton();
 
-        if (currentButtonKey != null && currentButtonKey != -1)
+        if (currentButtonKey >= 0)
         {
             menuItem = new JMenuItem(
-                I18n.f("loc.ui.menuAssignToButton", String.valueOf((char) currentButtonKey.intValue()))
+                I18n.f("loc.ui.menuAssignToButton", String.valueOf((char) currentButtonKey))
             );
             menuItem.addActionListener(event -> {
                 ui.mapLocToCurrentButton(loc.getName());
@@ -39,60 +44,42 @@ public class RightClickSelectorMenu extends JPopupMenu
             add(menuItem);
         }
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuSetLocalLocomotiveIcon")
-        );
-        menuItem.addActionListener(event -> ui.setLocIcon(loc, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.setLocalIcon(ui, loc, e));
 
         if (loc.getLocalImageURL() != null)
         {
-            menuItem = new JMenuItem(
-                I18n.t("loc.ui.menuClearLocalLocomotiveIcon")
-            );
-            menuItem.addActionListener(event -> ui.clearLocIcon(loc));
-            add(menuItem);
+            add(LocomotiveMenuItems.clearLocalIcon(ui, loc));
         }
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuCustomizeFunctionIcons")
-        );
-        menuItem.addActionListener(event -> ui.setFunctionIcon(loc, null, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.customiseFunctionIcons(ui, loc, null, e));
 
         addSeparator();
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuEditNameAddressDecoder")
-        );
-        menuItem.addActionListener(event -> ui.changeLocAddress(loc, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.editNameAddressDecoder(ui, loc, e));
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuEditNotes")
-        );
-        menuItem.addActionListener(event -> ui.changeLocNotes(loc, e));
-        add(menuItem);
+        add(LocomotiveMenuItems.editNotes(ui, loc, e));
+
+        // HOW LONG THIS TRAIN IS, when there is autonomy to care (FR-047).
+        //
+        // Beside the other facts about the locomotive itself rather than with the icons: it is a
+        // number about the train, like its name and address, and the items above it are about how it
+        // is drawn.
+        JMenuItem length = LocomotiveMenuItems.trainLength(ui, loc, e);
+
+        if (length != null) add(length);
+
+        // And its multi-unit, as the keyboard's menu offers it, below a divider of its own (Adam, 2026-10-03)
+        addSeparator();
+
+        add(LocomotiveMenuItems.multiUnit(ui, loc));
 
         addSeparator();
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuFindSimilarLocomotives")
-        );
-        menuItem.addActionListener(event -> ui.findSimilarLocs(loc, e));
-        menuItem.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
-        add(menuItem);
+        add(LocomotiveMenuItems.findSimilar(ui, loc, e));
 
         addSeparator();
 
-        menuItem = new JMenuItem(
-            I18n.t("loc.ui.menuDeleteFromDatabase")
-        );
-        menuItem.setForeground(Color.RED);
-        menuItem.addActionListener(event -> {
-            ui.deleteLoc(loc.getName(), e);
-        });
-        add(menuItem);
+        add(LocomotiveMenuItems.deleteFromDatabase(ui, loc, e));
     }
 }
    

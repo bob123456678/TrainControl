@@ -1,0 +1,1762 @@
+package org.traincontrol.automationui;
+
+import org.traincontrol.base.LayoutDiagramComponent;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.traincontrol.automationui.GraphReducer.ReducedEdge;
+import org.traincontrol.automationui.GraphReducer.ReducedPoint;
+import org.traincontrol.automationui.TileGraph.TileKey;
+
+/**
+ * Checks a user can run against a configuration before trusting trains to it.
+ *
+ * These are the questions that are obvious once asked and invisible until then: a terminus nothing can
+ * leave, a station no train can reach, a run somebody has closed in both directions.  Every one of them
+ * produces a configuration that loads, validates and runs - and then quietly never sends a train
+ * somewhere, which is the kind of fault people spend an evening chasing on the baseboard.
+ *
+ * Reported as a list of findings rather than as a pass or a fail.  A layout mid-setup is expected to
+ * have some of these, and a check that says only "no" is a check people stop running.
+ *
+ * @author Adam
+ */
+public class AutonomyChecks
+{
+    /**
+     * How much a finding matters.
+     */
+    public static enum Severity
+    {
+        /**
+         * Autonomy cannot be built at all until this is fixed.
+         */
+        ERROR,
+
+        /**
+         * It will build and run, but something will not work the way it looks like it should.
+         */
+        WARNING,
+
+        /**
+         * Tidiness.  Nothing behaves differently; the setup is simply harder to read than it could be.
+         *
+         * Last on purpose - findings are sorted by this ordinal, so a notice never comes above
+         * something that will actually go wrong.
+         */
+        NOTICE,
+
+        /**
+         * Worth knowing, not worth fixing.
+         */
+        INFO
+    }
+
+    /**
+     * One thing worth telling the user, in terms they can act on.
+     */
+    public static class Finding
+    {
+        private final Severity severity;
+        private final String messageKey;
+        private final String subject;
+        private final TileKey tile;
+        private final int count;
+        private final int detail;
+        private final int third;
+        private final List<TileKey> related;
+
+        Finding(Severity severity, String messageKey, String subject, TileKey tile)
+        {
+            this(severity, messageKey, subject, tile, 0);
+        }
+
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, List<TileKey> related)
+        {
+            this(severity, messageKey, subject, tile, 0, 0, 0, related);
+        }
+
+        /**
+         * The same, with a number the message may put in a sentence (OB-171).
+         *
+         * @param count how many things this finding is about, or zero when it is not about a number
+         */
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count)
+        {
+            this(severity, messageKey, subject, tile, count, 0);
+        }
+
+        /**
+         * The same, with a SECOND number, because one of the findings is a comparison.
+         *
+         * `RUN_IN_SHORTER_THAN_THE_BERTH` says what the station was told it can hold and what the track
+         * actually measures, and a sentence carrying one of those sends the reader to look up the other.
+         * It is the same reason `autolayout.errorTrainTooLongForBerth` carries both numbers: *"a refusal
+         * that says only 'too long' leaves nothing to measure"*.
+         *
+         * @param detail the second number, or zero when this finding is not a comparison
+         */
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
+            int detail)
+        {
+            this(severity, messageKey, subject, tile, count, detail, 0);
+        }
+
+        /**
+         * The same, with a THIRD number: the figure a train is refused above at a platform (TDA-C10).
+         *
+         * @param third the third number, or zero when this finding has none
+         */
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
+            int detail, int third)
+        {
+            this(severity, messageKey, subject, tile, count, detail, third, null);
+        }
+
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
+            int detail, int third, List<TileKey> related)
+        {
+            this.related = related == null ? Collections.<TileKey>emptyList()
+                : Collections.unmodifiableList(new ArrayList<>(related));
+            this.severity = severity;
+            this.messageKey = messageKey;
+            this.subject = subject;
+            this.tile = tile;
+            this.count = count;
+            this.detail = detail;
+            this.third = third;
+        }
+
+        /**
+         * The third number, rendered as `{4}` - after the other two, so no existing message changes.
+         *
+         * @return the number, or zero when this finding has none
+         */
+        public int getThird()
+        {
+            return third;
+        }
+
+        /**
+         * The second number, rendered as `{3}`.
+         *
+         * After the count, so no existing message changes and only the one that needs it asks.
+         *
+         * @return the number, or zero when this finding is not a comparison
+         */
+        public int getDetail()
+        {
+            return detail;
+        }
+
+        /**
+         * How many things this finding is about - the squares still needing a length, today.
+         *
+         * Rendered as `{2}`, after the tile description and the subject, so no existing message
+         * changes and only the ones that need a number ask for it.
+         *
+         * @return the number, or zero when this finding is not about one
+         */
+        public int getCount()
+        {
+            return count;
+        }
+
+        public Severity getSeverity()
+        {
+            return severity;
+        }
+
+        /**
+         * A message bundle key, so presentation stays with whatever is presenting.
+         * @return
+         */
+        public String getMessageKey()
+        {
+            return messageKey;
+        }
+
+        /**
+         * What the finding is about - usually a Point name.
+         * @return
+         */
+        public String getSubject()
+        {
+            return subject;
+        }
+
+        /**
+         * Where to look on the diagram, or null if it is not about one place.
+         * @return
+         */
+        public TileKey getTile()
+        {
+            return tile;
+        }
+
+        /**
+         * The squares it is about beyond its own, which a click on it outlines too - a guard finding's signal, where
+         * its own square is the station (MT-505).
+         * @return never null; empty for most findings
+         */
+        public List<TileKey> getRelated()
+        {
+            return related;
+        }
+
+        @Override
+        public String toString()
+        {
+            return severity + " " + messageKey + " [" + subject + "]"
+                + (tile == null ? "" : " at " + tile);
+        }
+    }
+
+    public static final String STATION_REACHES_NOTHING = "autosetup.ui.checkStationReachesNothing";
+    public static final String STATION_UNREACHABLE = "autosetup.ui.checkStationUnreachable";
+
+    /**
+     * A station set to No - Nothing Can Pass (FR-101).  Adam, 2026-09-24: *"these show 'no train can reach &lt;point&gt; from
+     * any other station....check the direction'.  Update the error message to say that is marked for nothing to be able
+     * to pass, user to validate if intentional."*  Said once, in place of the two reachability sentences, which were
+     * true and sent the reader to the directions for a square switched out on purpose.
+     */
+    public static final String STATION_CLOSED = "autosetup.ui.checkStationClosed";
+    public static final String TERMINUS_STRANDED = "autosetup.ui.checkTerminusStranded";
+    public static final String POINT_ISOLATED = "autosetup.ui.checkPointIsolated";
+    public static final String RUN_CLOSED_BOTH_WAYS = "autosetup.ui.checkRunClosedBothWays";
+    public static final String NO_STATIONS = "autosetup.ui.checkNoStations";
+    public static final String ONE_STATION = "autosetup.ui.checkOneStation";
+    public static final String UNNAMED_POINT = "autosetup.ui.checkUnnamedPoint";
+    public static final String UNNAMED_STATION = "autosetup.ui.checkUnnamedStation";
+    public static final String UNLABELLED_STATION = "autosetup.ui.checkUnlabelledStation";
+    public static final String MAY_TURN_ON_DEAD_END = "autosetup.ui.checkMayTurnOnDeadEnd";
+    public static final String REVERSING_LEADS_NOWHERE = "autosetup.ui.checkReversingLeadsNowhere";
+    public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
+
+    /**
+     * A trapped arrival whose advice leaves out closing arrivals, because the editor cannot close them there: a plain
+     * point has no arrivals menu, and a station's last open way in cannot be shut (RSA37-B1).  The same finding as
+     * `ARRIVAL_TRAPPED` in every other respect - `isArrivalTrapped` answers for either.
+     */
+    public static final String ARRIVAL_TRAPPED_NO_CLOSING = "autosetup.ui.checkArrivalTrappedNoClosing";
+    public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
+    public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
+
+    /**
+     * A square trains reverse at, on a layout that measures track, whose own track is not measured.
+     */
+    public static final String REVERSAL_NEEDS_LENGTH = "autosetup.ui.checkReversalNeedsLength";
+
+    /**
+     * The same square, when the track leading to it has to be measured as well (OB-171).
+     */
+    public static final String REVERSAL_NEEDS_LENGTH_RUN = "autosetup.ui.checkReversalNeedsLengthRun";
+
+    /**
+     * The three ways one ARRIVAL at a station can be a trap while the square looks perfectly healthy.
+     *
+     * A square is emitted as one Point per side a train can arrive by, and the copies do not share
+     * their edges.  Every other check here asks about the square, so a square can pass all of them
+     * with one of its arrivals leading nowhere.
+     *
+     * They are ordered by how badly the train is stuck: no track out at all, no track in at all, and
+     * track out that reaches no other station - which is the same dead end with a siding on it.
+     *
+     * All three fire only where the SQUARE is healthy.  Where every copy is stuck the square is stuck,
+     * and the square-level checks say so already.
+     */
+    public static final String COPY_NO_WAY_OUT = "autosetup.ui.checkCopyNoWayOut";
+    public static final String COPY_NO_WAY_IN = "autosetup.ui.checkCopyNoWayIn";
+    public static final String COPY_REACHES_NOTHING = "autosetup.ui.checkCopyReachesNothing";
+    public static final String FACING_IMPOSSIBLE = "autosetup.ui.checkFacingImpossible";
+    public static final String TRAIN_FACES_TRACK_TOWARDS_IT = "autosetup.ui.checkTrainFacesTrackTowardsIt";
+    public static final String STATION_AT_THE_END_OF_A_LINE = "autosetup.ui.checkStationAtTheEndOfALine";
+
+    public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
+
+    public static final String NO_SIGNAL_PAIRED = "autosetup.ui.checkNoProtectingSignal";
+
+    /**
+     * One signal as both guards of one station, which the setters refuse and a loaded file can still carry (AUT-C2).
+     * A WARNING: the setup runs, and neither guard means what it was paired for.
+     */
+    public static final String GUARD_IS_BOTH = "autosetup.ui.checkGuardIsBoth";
+
+    /**
+     * An entry guard no route into its station commands (AUT-C2, Adam 2026-09-24: *"if the guard signal is not on a path
+     * leading to the chosen station, we can add notice to the autonomy editor"*).  A NOTICE, as all four guard notices:
+     * the setup is the operator's to get right, and this is only a pointer.  `AutonomySession.guardNotices` reads all four
+     * off the built railway.
+     */
+    public static final String GUARD_OFF_THE_WAY_IN = "autosetup.ui.checkGuardOffTheWayIn";
+
+    /** An exit guard no route commands at all: it shows only whether its station is occupied. */
+    public static final String EXIT_GUARD_OFF_THE_WAY = "autosetup.ui.checkExitGuardOffTheWay";
+
+    /** An exit guard routes to other stations command, so they turn it green over a train standing there (RSA41-C2). */
+    public static final String EXIT_GUARD_CROSSED = "autosetup.ui.checkExitGuardCrossed";
+
+    /**
+     * An exit guard a route into its station commands - a home signal (RSA42-C1): the arriving route turns it green, and
+     * the arrival's claim can turn it red in front of that train.  The entry guard is the signal on the way in.
+     */
+    public static final String EXIT_GUARD_ON_THE_WAY_IN = "autosetup.ui.checkExitGuardOnTheWayIn";
+
+    /**
+     * A square unavailable while another is occupied, station or not (Adam, 2026-09-24: *"a simple info notice on
+     * restrictions (in the list for any type of station or non station) would be better"*).  A NOTICE: the restriction
+     * is the operator's own setting, and this says where it is - it is kept when a station is made pass-through, and on
+     * such a square it is otherwise easy to forget.
+     */
+    public static final String UNAVAILABLE_WHILE_OCCUPIED = "autosetup.ui.checkUnavailableWhileOccupied";
+
+    /**
+     * A station no train can arrive at any more.
+     *
+     * Every way in barred, which the editor refuses to do but a diagram edit can arrive at from the
+     * other side: bar one of two ways in, then delete the track that reached the other.
+     */
+    public static final String NO_ARRIVALS_LEFT = "autosetup.ui.checkNoArrivalsLeft";
+
+    /**
+     * A station every train must turn round at, with track reaching it from more than one side (MT-361).
+     *
+     * Adam, 2026-09-12: *"terminuses (stations that must reverse) are currently allowed to have ingress
+     * from two sides.  Make this be an autonomy ERROR that the user has to fix."*
+     *
+     * **A terminus is the end of the line, and this is a statement that cannot be true.**  A square
+     * marked "must turn round" is emitted as one Point per arrival side, each leaving the way it came -
+     * so a square with two ways in becomes two termini, and a train sent to either leaves back the way
+     * it arrived while the track out of the other side is never used. Whatever the operator meant, the
+     * diagram and the marking disagree.
+     *
+     * **AN ERROR, which stops autonomy starting, and that was measured before it was chosen.**
+     * `checkBadCopies` a few hundred lines up argued itself out of an ERROR within the hour on the
+     * grounds that *"an error here would have stopped Adam's railway starting over two tunnel berths he
+     * has been running for months"* - so this was counted first, over a sandbox copy of his own railway
+     * and of `test/layouts/live-snapshot`: zero of seventeen must-turn squares have more than one
+     * unbarred way in on either. Nothing he runs today is blocked by this.
+     *
+     * **STATIONS ONLY.**  A must-turn square that is not a station is emitted as a plain reversing
+     * point, and a reversing point with two ways in is an ordinary mid-layout turn-round - the
+     * `BACK_mid` of `core.testNonReversibleTrains`. Reporting those would make the rule fire on
+     * railways that are correct.
+     *
+     * **Barred arrivals do not count.**  Shutting one side with the arrows is one of the three ways to
+     * fix this, so counting a side the operator has already barred would leave a finding they cannot
+     * clear - and the message names that remedy.
+     *
+     * **Counted as sides, not as arriving edges**, because two edges can reach one square by the same side.
+     * (This said a square reached only through a portal has no entry side; a walk through a portal arrives
+     * by a real side, and a missing one arises only in a setup `validatePortals` refuses - AMG-C2.)
+     */
+    public static final String TERMINUS_WITH_TWO_WAYS_IN = "autosetup.ui.checkTerminusTwoWaysIn";
+
+    /**
+     * One locomotive recorded as standing in two places.
+     *
+     * An ERROR, and the strongest kind: the running model does not skip the second placement, it
+     * refuses the whole configuration - so a setup carrying this builds, loads, and then answers every
+     * path with "configuration is invalid and must be reloaded", naming nothing that would lead anyone
+     * back to the placement.  Reported here so it is visible before that happens, on the square that
+     * can be cleared to fix it.
+     */
+    public static final String DUPLICATE_LOCOMOTIVE = "autosetup.ui.checkDuplicateLocomotive";
+
+    /**
+     * A train standing on the railway with no length recorded (FR-046).
+     *
+     * Autonomy refuses a platform to a train too long for it, and that comparison needs a number at
+     * both ends. A locomotive with no length is never refused anything - it does not fail the rule, it
+     * opts out of it - so a railway can be carefully set up with maximum lengths everywhere and still
+     * run as though they were not there.
+     *
+     * A warning rather than an error, because a layout where nothing is ever close to too long is a
+     * perfectly good layout and this is a reminder, not a refusal.
+     */
+    public static final String NO_TRAIN_LENGTH = "autosetup.ui.checkNoTrainLength";
+
+    /**
+     * A station told it can hold more train than its track measures (Adam, 2026-09-11).
+     *
+     * *"Let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth
+     * length, that way they can decide if it makes sense or not.  for example, a station of length 4 may
+     * have two segments of tracks on either side of a switch, of length 2.  that is acceptable and its
+     * limitations are understood."*
+     *
+     * **Two rules can refuse a train a platform and they are set by different hands.**  The station's
+     * `maxTrainLength` is a number somebody typed - what they believe the platform holds - and the
+     * measured run in is what the track says, counted back from the platform to whichever of the last
+     * switch and a reversal is met first.  For a parking berth the figure is the berth rule's where that stops first - at
+     * a crossing between the berth and its switch, or on a leg with no switch (TDA2-C6, TDA3-C2) - where the rule judges
+     * the leg (something on it measured) and another road runs over the square it stops at (TDA4-C3, TDA5-C1); and 0
+     * where every square before that stop was answered 0 (TDA3-C1, TDA4-C1).  Where the second is
+     * smaller the first never binds: a train inside the stated maximum is refused on the track measurement instead, by
+     * a rule that names a different number.
+     *
+     * **It is a NOTICE and not a warning, and that is his ruling rather than a grading.**  His own
+     * example is a four-unit platform whose track is 2 + 2 across a switch - nothing is wrong with it,
+     * the geometry is simply finer than one number per station, and he wants to be told so he can
+     * decide.  A railway where that is understood should not carry a warning about it for ever.
+     *
+     * Reported per STATION, not per arrival: a platform reached two ways is one platform, and the
+     * number given is the smallest room any of its approaches has, which is the one that binds.
+     */
+    public static final String RUN_IN_SHORTER_THAN_THE_BERTH = "autosetup.ui.checkRunInShorterThanTheBerth";
+
+    /**
+     * The same finding at a station autonomy may choose, where the train is not refused (MT-555).
+     *
+     * Adam, 2026-09-24: *"so a train longer than x is refused" - "so a train longer than x may block other parts of the
+     * layout..."*.  `Layout.whyTooLongForThisRoute` refuses a train longer than the run-in at a parking berth, and at a
+     * station autonomy may choose admits it as far as the measured route in holds (FR-087): it stands across the switch
+     * and closes the railway behind it until it leaves.  One sentence could only be true of one of them.
+     */
+    public static final String RUN_IN_SHORTER_THAN_THE_PLATFORM = "autosetup.ui.checkRunInShorterThanThePlatform";
+
+    /**
+     * The same, with the figure a train is refused above on the shortest way in, where there is one (Adam, 2026-09-24,
+     * TDA-C10: *"Add the refusing figure where there is one."*).  `Layout.whyTooLongForThisRoute` admits a longer train
+     * only as far as the measured route in holds it (FR-087), so the one sentence was untrue of a train setting off close
+     * behind - on his railway, a four-unit train from TopR1ParkShort at TopMainR1Inter.  `{4}` is the figure.
+     */
+    public static final String RUN_IN_SHORTER_THAN_THE_PLATFORM_REFUSED =
+        "autosetup.ui.checkRunInShorterThanThePlatformRefused";
+
+    /**
+     * A parking berth whose track before its stop - the switch, turnout or crossing behind it - was all answered 0, so it
+     * takes no train that comes in that way (Adam, 2026-09-24, TDA4-C2: *"Give it its own sentence as a warning, make it
+     * sound intuitive (the effective specified length of the track is 0)"*).  A WARNING, as the half-measured berth is:
+     * trains are refused there today.
+     */
+    public static final String BERTH_TRACK_GIVEN_NO_LENGTH = "autosetup.ui.checkBerthTrackGivenNoLength";
+
+    /**
+     * The other end of the same sum: a station that will take a train of any length (FR-046).
+     *
+     * Said separately because the two are set in different places by different people - the length on
+     * the locomotive, the maximum on the platform - and knowing which half is missing is the whole of
+     * knowing what to do about it.
+     */
+    public static final String NO_MAX_TRAIN_LENGTH = "autosetup.ui.checkNoMaxTrainLength";
+
+    /**
+     * Two included pages carrying the same s88 sensor (OB-150).
+     *
+     * Adam: "when turning ON 'page 3 - top parking', there is no autonomy error telling me that its s88
+     * sensors are duplicative with ones on page 1.  This config should not be possible to run."
+     *
+     * An ERROR, because it is not a preference. One sensor on two squares becomes two Points after the
+     * reduction, and nothing downstream can say which of them a train is standing on - the railway
+     * cannot be modelled correctly in that state, however carefully everything else is set up.
+     *
+     * `excludeRepeatedSensorPages` shuts a repeating page when a configuration is created, and OB-130
+     * settled that a legacy import may do the same. Neither covers a page switched back on by hand
+     * afterwards, which is the case this is for.
+     */
+    public static final String DUPLICATE_SENSOR_PAGE = "autosetup.ui.checkDuplicateSensorPage";
+
+    /**
+     * A berth whose approach is measured in part and not in whole (Adam, 2026-09-19, on RTX-C2).
+     *
+     * A WARNING rather than a notice, because while it stands the berth can refuse a train that fits: the berth rule
+     * judges as soon as anything on the approach is measured, and the squares that are not measured are worth
+     * nothing to it.  Adam's ruling was that the rule is right and the operator should be told - *"we want clear
+     * warnings to the user"* - so the sentence says what is happening and what ends it.
+     *
+     * **CAN refuse, not does** (OP2-C12).  This said *"takes no train at all"*, and two things narrow it: the claim
+     * becomes a refusal only where a lock edge shares one of the claimed places, so a berth on a branch nothing
+     * else touches is half measured and still takes everything; and `whyABerthCannotHoldIt` returns at once for a
+     * locomotive with no train length, which is admitted either way.  The warning is worth showing on both counts -
+     * the state is still wrong and still ends the same way - but the sentence should not promise more than it
+     * knows about the railway in front of the operator.
+     */
+    public static final String HALF_MEASURED_APPROACH = "autosetup.ui.checkHalfMeasuredApproach";
+
+    private AutonomyChecks()
+    {
+    }
+
+    // ELEVEN OVERLOADS REMOVED HERE (SVN-C7, 2026-09-03).
+    //
+    // They were a cascade of `Collections.emptySet()` defaults in front of the one below, and nothing
+    // called any of them: the repository has a single call site, `AutonomySession.check()`, and it
+    // passes everything.  Every test goes through `session.check()` too.
+    //
+    // Worth removing rather than leaving: one of the defaults was the empty map for `barred`, and a
+    // caller that took it got a check that could not see barred arrivals - which is `OB-120`, the
+    // defect that argument was added for.  A convenience overload that silently drops an argument is
+    // how that happens twice.  `AutonomySession`'s own rule, a few hundred lines away: "dead code that
+    // looks load-bearing is worse than none".
+
+    /**
+     * @param arrivalsClosable the trapped squares whose trapped sides the arrivals menu can close (RSA37-B1)
+     * @param withoutTrainLength squares whose locomotive has no length recorded, to that locomotive (FR-046, RSA19-C1)
+     * @param repeatedSensorPages included pages repeating another included page's s88 (OB-150)
+     * @param withoutMaxLength station squares with no maximum train length
+     * @param shortRunIns stations whose measured run in is shorter than their stated maximum, each
+     *        mapped to {the stated maximum, the smallest measured room} (Adam, 2026-09-11), and at a platform the
+     *        figure a train is refused above third, where there is one (TDA-C10)
+     * @param berthsGivenNoRoom parking berths whose track before the stop was all answered 0 (TDA4-C2)
+     * @param terminiWithTwoWaysIn stations every train must turn round at that have more than one
+     *        unbarred way in, mapped to how many (MT-361)
+     * @param berthsBackedInto the squares a train can be backed into - reached tail first, after a rest on another
+     *        terminus or a reversing point passed on the way - off the build; null where the setup does not build (Adam,
+     *        2026-10-11)
+     *
+     * The two halves of the length comparison, supplied rather than derived: one lives on the
+     * Locomotive in the model and the other is a point property, and neither is visible from the graph.
+     */
+    public static List<Finding> run(TileGraph graph, GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> labelledStations, Set<TileKey> mayTurnOnDeadEnd, Map<TileKey, Set<TilePorts.Side>> trapped,
+        Set<TileKey> arrivalsClosable, Map<TileKey, TileKey> coveredCaptions, Map<TileKey, String> placedLocomotives,
+        Map<TileKey, Boolean> shutStations, Set<TileKey> mayTurn, Set<TileKey> mustTurn,
+        Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
+        Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> closed,
+        Map<TileKey, String> withoutTrainLength, Set<TileKey> withoutMaxLength,
+        Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom, Map<TileKey, Integer> halfMeasured,
+        Map<TileKey, Integer> terminiWithTwoWaysIn,
+        Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
+        Set<TileKey> notAutoDestinations, Set<TileKey> berthsBackedInto,
+        Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
+        Map<TileKey, String> copiesReachingNoStation,
+        Map<TileKey, Map<TileKey, String>> guardsOnBothLists, Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn,
+        Map<TileKey, Map<TileKey, String>> exitGuardsOffTheWay, Map<TileKey, Map<TileKey, String>> exitGuardsCrossed,
+        Map<TileKey, Map<TileKey, String>> exitGuardsOnTheWayIn, Map<TileKey, String> restrictions)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        findings.addAll(checkFacings(reducer, facingsImpossible));
+
+        findings.addAll(checkDuplicateLocomotives(placedLocomotives));
+        findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, shortRunIns,
+            berthsGivenNoRoom, halfMeasured, placedLocomotives, notAutoDestinations));
+        findings.addAll(checkRepeatedSensorPages(repeatedSensorPages));
+        findings.addAll(checkTermini(reducer, terminiWithTwoWaysIn));
+
+        findings.addAll(checkArrivalsLeft(reducer, shutStations));
+
+        // whatever the diagram itself is unhappy about - scissors, unaddressed switches, turntables
+        for (TileGraph.Problem problem : graph.getProblems())
+        {
+            findings.add(new Finding(
+                problem.isBlocking() ? Severity.ERROR : Severity.WARNING,
+                problem.getMessageKey(), String.valueOf(problem.getTile()), problem.getTile()));
+        }
+
+        for (TileGraph.Problem problem : reducer.getProblems())
+        {
+            findings.add(new Finding(
+                problem.isBlocking() ? Severity.ERROR : Severity.WARNING,
+                problem.getMessageKey(), String.valueOf(problem.getTile()), problem.getTile()));
+        }
+
+        findings.addAll(checkNames(reducer));
+        findings.addAll(checkTurning(reducer, mayTurnOnDeadEnd));
+
+        findings.addAll(checkReversingGoesSomewhere(reducer, mayTurn, mustTurn, barred, closed,
+            notAutoDestinations));
+        findings.addAll(checkTrappedArrivals(reducer, trapped, arrivalsClosable));
+        findings.addAll(checkCoveredCaptions(reducer, coveredCaptions));
+        findings.addAll(checkStations(reducer, termini, mayTurn, mustTurn, barred, closed));
+        findings.addAll(checkStationLabels(reducer, labelledStations));
+        findings.addAll(checkIsolatedPoints(reducer));
+        findings.addAll(checkClosedRuns(graph, reducer));
+        findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn, notAutoDestinations, berthsBackedInto));
+        findings.addAll(checkReversalsWithoutLength(reducer, reversalsWithoutLength));
+        findings.addAll(checkBadCopies(copiesWithNoWayOut, COPY_NO_WAY_OUT));
+        findings.addAll(checkBadCopies(copiesWithNoWayIn, COPY_NO_WAY_IN));
+        findings.addAll(checkBadCopies(copiesReachingNoStation, COPY_REACHES_NOTHING));
+        findings.addAll(checkProtectingSignals(reducer, signalsGone));
+
+        findings.addAll(checkStationsWithoutSignals(reducer, stationsWithoutSignal));
+
+        findings.addAll(checkGuards(guardsOnBothLists, GUARD_IS_BOTH, Severity.WARNING));
+        findings.addAll(checkGuards(guardsOffTheWayIn, GUARD_OFF_THE_WAY_IN, Severity.NOTICE));
+        findings.addAll(checkGuards(exitGuardsOffTheWay, EXIT_GUARD_OFF_THE_WAY, Severity.NOTICE));
+        findings.addAll(checkGuards(exitGuardsCrossed, EXIT_GUARD_CROSSED, Severity.NOTICE));
+        findings.addAll(checkGuards(exitGuardsOnTheWayIn, EXIT_GUARD_ON_THE_WAY_IN, Severity.NOTICE));
+
+        // Every restriction, where it is: the square is `{0}`, what it watches `{1}`.
+        if (restrictions != null)
+        {
+            for (Map.Entry<TileKey, String> held : restrictions.entrySet())
+            {
+                findings.add(new Finding(Severity.NOTICE, UNAVAILABLE_WHILE_OCCUPIED, held.getValue(), held.getKey()));
+            }
+        }
+
+        bySeverity(findings);
+
+        return findings;
+    }
+
+    /**
+     * The findings in order of severity, the worst first.
+     *
+     * @param findings the findings, sorted in place
+     */
+    static void bySeverity(List<Finding> findings)
+    {
+        Collections.sort(findings, new java.util.Comparator<Finding>()
+        {
+            @Override
+            public int compare(Finding a, Finding b)
+            {
+                return a.getSeverity().ordinal() - b.getSeverity().ordinal();
+            }
+        });
+    }
+
+    /**
+     * A WARNING per square where a standing train faces track that runs only towards it (Adam, 2026-10-01): it cannot
+     * leave that way - smaller than a refusal, and judged near the train.
+     *
+     * @param reducer the reduction, for each square's name
+     * @param squares the squares
+     * @return the findings
+     */
+    static List<Finding> checkTrainsFacingTrackTowardsThem(GraphReducer reducer, Set<TileKey> squares)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : squares)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, TRAIN_FACES_TRACK_TOWARDS_IT,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * An ERROR per station at the end of a line trains may not turn at (Adam, 2026-10-01): a train sent there could never
+     * leave.
+     *
+     * @param reducer the reduction, for each square's name
+     * @param squares the squares
+     * @return the findings
+     */
+    static List<Finding> checkStationsAtTheEndOfALine(GraphReducer reducer, Set<TileKey> squares)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : squares)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.ERROR, STATION_AT_THE_END_OF_A_LINE,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * Can trains actually get between the stations?
+     *
+     * A train may pass through a non-station but only ever stop at a station, so this is the question the
+     * layout exists to answer - and a station that can reach nothing is not a station anybody can use,
+     * however well connected its track is.
+     */
+    /**
+     * Has everything been given a name?
+     *
+     * A name still carrying what the reducer invented - the page and the coordinate - works and means
+     * nothing: autonomy names the place in every message it prints, and "1 - Main 12,7" in a running
+     * log tells the reader nothing about where their train is.
+     *
+     * How much that matters depends on what the place IS.  A station is somewhere a train is SENT, and
+     * its name is what the user picks it by and what the arrival is announced as, so an unnamed one is
+     * blocking.  A plain point is somewhere a train passes; its name appears in a path and nowhere a
+     * user has to choose from, so that is worth saying and not worth refusing over - a layout has far
+     * more of them, and stopping a setup running until every last one is named would mean naming forty
+     * squares nobody will ever read.
+     */
+    private static List<Finding> checkNames(GraphReducer reducer)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (point.getName() != null
+                    && !point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
+
+            // A station without a name is an ERROR, which is what the paragraph above always said it
+            // was - "an unnamed one is blocking" - and what the code did not do.  It is the name the
+            // user picks a destination by and the name an arrival is announced as, and "1 - Main 12,7"
+            // is neither.  Adam asked for it to refuse rather than grumble, having lived with the
+            // grumble.
+            //
+            // A plain point without one stays a NOTICE: trains pass it, its name appears in a path and
+            // nowhere anybody chooses from, and a layout has dozens of them.  Listing those beside real
+            // problems buried the real problems.
+            findings.add(new Finding(
+                point.isStation() ? Severity.ERROR : Severity.NOTICE,
+                point.isStation() ? UNNAMED_STATION : UNNAMED_POINT,
+                String.valueOf(point.getTile()), point.getTile()));
+        }
+
+        return findings;
+    }
+
+    /**
+     * "May change direction" where there is nowhere else to go.
+     *
+     * A square no arriving train can carry on from cannot offer the choice the word "may" describes:
+     * every way in leads back out the way it came, so they all turn whatever the setting says.
+     *
+     * Judged per ARRIVAL since OB-123, not by counting the ways in. A square with two ways in and one
+     * way out forces a turn on the train that came in by the departure side and offers a real choice
+     * to the other - so counting lines called it pointless when it was not. This sentence said "one
+     * line runs into it" for a day after the rule stopped meaning that.  Worth saying because the
+     * setting reads as a choice the user has made and is not one - and because if they wanted the
+     * choice, the square is not the one they think it is.
+     */
+    private static List<Finding> checkTurning(GraphReducer reducer, Set<TileKey> mayTurnOnDeadEnd)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : mayTurnOnDeadEnd)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.NOTICE, MAY_TURN_ON_DEAD_END,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A square trains turn round at, from which nothing can be reached.
+     *
+     * Adam, closing OB-113: "We need to add a warning if a reversing point leads to nothing else."
+     * That report was a route he expected and did not get, and the cause was the reversing point - so
+     * the setup could already have told him.
+     *
+     * **The hole this fills is specifically one the other checks open.** `ARRIVAL_TRAPPED` fires when
+     * a train could reach a square and then not leave it, and its own wording tells the user what to
+     * do: "Either set 'trains may change direction here', or open the way ahead." Setting the flag
+     * silences it - whether or not the way ahead was ever opened. So the advice this application gives
+     * can turn a loud problem into a silent one, and that is the case here.
+     *
+     * `TERMINUS_STRANDED` and `STATION_REACHES_NOTHING` say the same thing for STATIONS and only for
+     * stations. A reversing point that is not a station had nothing watching it at all.
+     *
+     * Reachability is asked of the reducer with the same turn sets the station walk uses, so this
+     * agrees with what the runtime will actually do rather than with plain tile adjacency - a
+     * distinction the station check above had to learn the hard way.
+     *
+     * A NOTICE, not a warning. It is a real fault when it is one, but "reaches no station" is also
+     * true of a reversing point on a spur somebody is still drawing, and this list has been made
+     * useless before by ordinary things listed beside real problems.
+     *
+     * @param reducer the reduced graph
+     * @param mayTurn squares where a train may change direction
+     * @param mustTurn squares where it must
+     * @param barred arrival sides closed off, passed through to reachableTiles so a station reachable
+     *               only by a barred side is not counted as reachable (DOC-C17: added by 3a52ec14 for
+     *               OB-120 and missing from this list ever since)
+     * @return one finding per reversing square that leads nowhere
+     */
+    private static List<Finding> checkReversingGoesSomewhere(GraphReducer reducer,
+        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> closed, Set<TileKey> notAutoDestinations)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        Set<TileKey> reversing = new LinkedHashSet<>();
+
+        reversing.addAll(mayTurn);
+        reversing.addAll(mustTurn);
+
+        // SOMEWHERE AUTONOMY WOULD ACTUALLY SEND A TRAIN, not merely a station (V36-C4).
+        //
+        // This counted any station, and the runtime does not: `Layout.isSendableDestination` requires
+        // `isActive() && isAutoDestination() && !isReversing()` before a square is a candidate at all,
+        // and the set handed in asks the first two - the ones a SQUARE can answer (E8V-B2).  So a
+        // reversing point whose only reachable station is a parking berth read as healthy here and
+        // was useless in the run - a train sent there turns round and is still nowhere, which is the
+        // exact sentence this notice exists to say.
+        //
+        // ONLY THE TWO SQUARE-LEVEL CLAUSES.  The runtime's other two - a terminus this train cannot
+        // leave, and a station that excludes it - both take a locomotive, and this notice is drawn on
+        // a square with no train in the question.  Asking them would mean choosing a train, or
+        // quantifying over every train owned; and "no locomotive on the railway could go there" is a
+        // weaker claim than the one this notice makes.  That is the same square-versus-train
+        // distinction that moved `BottomMainB` on `FR-058` the day before, from the other side.
+        //
+        // Adam, 2026-09-04: *"Make it a notice."*  It already was, and that is what makes tightening
+        // it affordable: 20 of the 71 squares on his railway are not automatic destinations, so this
+        // may now say something about a good many of them, and a notice is the one severity that can
+        // carry that without drowning the list.
+        Set<TileKey> stationTiles = new LinkedHashSet<>();
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (!point.isStation()) continue;
+
+            if (notAutoDestinations.contains(point.getTile())) continue;
+
+            // NOT ASKED AGAIN HERE, and the sentence that used to stand in its place is the reason
+            // why (MON-C1).
+            //
+            // It said the reversing clause was "asked here too rather than trusted twice over", and
+            // the two spellings are not the same thing. `notAutoDestinations` comes from
+            // `stationsAutonomyWillNotChoose`, which is a question about a SQUARE - may autonomy pick
+            // this station - while `reversing` here is may-turn and must-turn together, a question
+            // about turning. Re-applying the second was the stricter rule quietly overriding the
+            // narrower one three lines after it was applied.
+            //
+            // What that cost: a reversing square whose only reachable stations are may-reverse squares
+            // was told its run leads nowhere, when autonomy can send trains to their plain copies.
+            //
+            // THE REASONING ABOVE USED TO SAY the set "narrows deliberately to squares where turning is
+            // COMPULSORY". It did, until Adam's ruling of 2026-09-09 took that clause out (OB-195):
+            // turning round says what happens when a train ARRIVES, and the one switch that decides
+            // who autonomy may send is `isAutoDestination`. The conclusion is unchanged and the reason
+            // for it is now the one that holds - a compulsory turn autonomy may choose IS somewhere a
+            // reversing square's run can lead, so counting it is right.
+            //
+            // Trusted once, from the parameter, which is where the decision was made.
+
+            stationTiles.add(point.getTile());
+        }
+
+        for (TileKey tile : reversing)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            if (point == null) continue;
+
+            // Stations are the other two checks' business, and saying it twice about one square is
+            // how a list of findings stops being read.
+            if (point.isStation()) continue;
+
+            // WITH the red arrows (OB-120, finished 2026-08-27 after a reviewer found it).
+            //
+            // This asked the barred-less form, so the findings saw runs no train can take: bars only
+            // ever remove them, and a station reachable ONLY by a barred side counted as reachable.
+            Set<TileKey> reachable = reducer.reachableTiles(tile, mayTurn, mustTurn, barred, closed);
+
+            boolean reachesAStation = false;
+
+            for (TileKey station : stationTiles)
+            {
+                if (reachable.contains(station))
+                {
+                    reachesAStation = true;
+                    break;
+                }
+            }
+
+            if (!reachesAStation)
+            {
+                findings.add(new Finding(Severity.NOTICE, REVERSING_LEADS_NOWHERE,
+                    point.getName() == null ? String.valueOf(tile) : point.getName(), tile));
+            }
+        }
+
+        return findings;
+    }
+
+    /**
+     * A station paired with a signal that is no longer there.
+     *
+     * The pairing is stored against the signal's SQUARE and resolved to an accessory at build time, so
+     * a signal deleted from the diagram - or a setup imported against a different layout - leaves a
+     * pairing pointing at nothing.  Everything downstream then does the safe thing quietly: the build
+     * omits the accessory, and the refresh returns without sending a command, because a placement must
+     * not fail over a signal.
+     *
+     * Quietly is the problem.  The operator set that pairing because they wanted a platform protected,
+     * and nothing anywhere told them it had stopped being.
+     *
+     * @param signalsGone the station squares whose pairing no longer resolves
+     */
+    /**
+     * A station with no signal paired to it at all.
+     *
+     * A NOTICE rather than a warning, because it is a perfectly ordinary way to run a railway - most
+     * layouts protect some platforms and not others, and a station without a signal simply has no
+     * signal. What it is not is a station whose pairing was lost, and there was no way to tell those
+     * two apart from the outside: both are silent.
+     *
+     * Adam asked for it after accepting that pairings can only be audited one station at a time. This
+     * does not fix that - it is a list of the ones that have none, which is the half of the audit a
+     * check can do without being told what the layout is supposed to look like.
+     *
+     * @param reducer for the station's own name
+     * @param stationsWithoutSignal the station squares carrying no pairing
+     */
+    private static List<Finding> checkStationsWithoutSignals(GraphReducer reducer,
+        Set<TileKey> stationsWithoutSignal)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (stationsWithoutSignal == null) return findings;
+
+        for (TileKey tile : stationsWithoutSignal)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.NOTICE, NO_SIGNAL_PAIRED,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A train recorded facing a way its square cannot hold.
+     *
+     * The build has to put it somewhere, so it uses the first copy trains may arrive at (`startableCopy`) -
+     * which may point the other way, and the train appears to have turned round on its own.  Nothing here can work out
+     * which way it really points; only the operator can, and until now nothing told them to look.
+     */
+    private static List<Finding> checkFacings(GraphReducer reducer, Set<TileKey> facingsImpossible)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (facingsImpossible == null) return findings;
+
+        for (TileKey tile : facingsImpossible)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            // AN ERROR, where a direction or a link used to be refused (Adam, 2026-10-01: "Make refusals that make sense
+            // be errors"): the train cannot be stood on a copy facing another way, so nothing is sent until it is put right
+            findings.add(new Finding(Severity.ERROR, FACING_IMPOSSIBLE,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * One finding per station and signal (AUT-C2): the station is `{0}` and the signal's name `{1}`.
+     *
+     * @param guards the stations, against the names of their signals the finding is about
+     * @param key the message
+     * @param severity how loudly
+     */
+    private static List<Finding> checkGuards(Map<TileKey, Map<TileKey, String>> guards, String key, Severity severity)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (guards == null) return findings;
+
+        // Each about its station, and naming the signal's square as well, so a click shows the signal (MT-505)
+        for (Map.Entry<TileKey, Map<TileKey, String>> station : guards.entrySet())
+        {
+            for (Map.Entry<TileKey, String> signal : station.getValue().entrySet())
+            {
+                findings.add(new Finding(severity, key, signal.getValue(), station.getKey(),
+                    Collections.singletonList(signal.getKey())));
+            }
+        }
+
+        return findings;
+    }
+
+    private static List<Finding> checkProtectingSignals(GraphReducer reducer, Set<TileKey> signalsGone)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (signalsGone == null) return findings;
+
+        for (TileKey tile : signalsGone)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, SIGNAL_GONE,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A square trains reverse at, whose track has no recorded length (Adam, 2026-09-01).
+     *
+     * "Add notices to the autonomy editor to add track lengths between stations and switches that
+     * accept reversal (if any other track length is set anywhere)."
+     *
+     * A train reversing into a berth shorter than itself stands across the switch behind it, and
+     * `isPathClear` refuses that - but only where the track has been measured, because unmeasured
+     * track is unknown rather than short.
+     *
+     * **This used to add that the squares named here are exactly the ones where the guard cannot do
+     * its job. They are not, quite** (`SVN-B1`, `VD9-B7`). The account of which way they differ, and
+     * why it is narrower than it sounds, is at `AutonomySession.reversalsWithoutLength` - which is
+     * where the set is computed. It is written once, there, because this class had its own copy of
+     * the claim and the copy outlived the correction of the original.
+     *
+     * **Only on a layout that measures track at all**, which is his condition and a good one: a
+     * railway that records no lengths has decided not to model them, and a notice on every reversing
+     * square would be a list of things that are not wrong.
+     *
+     * A WARNING, not an error. Nothing here is broken - the guard simply cannot protect this square
+     * until somebody says how long it is.
+     *
+     * @param reversalsWithoutLength the squares, decided by the session
+     */
+    private static List<Finding> checkReversalsWithoutLength(GraphReducer reducer,
+        Map<TileKey, Integer> reversalsWithoutLength)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (reversalsWithoutLength == null) return findings;
+
+        for (Map.Entry<TileKey, Integer> reversal : reversalsWithoutLength.entrySet())
+        {
+            TileKey tile = reversal.getKey();
+
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            String name = point == null ? String.valueOf(tile) : point.getName();
+
+            // ONE SQUARE, OR A RUN OF THEM (OB-171).
+            //
+            // The count is every square still without a length that this reversal's guard needs - the
+            // square itself and the stretch behind it, back to the switch.  Two messages rather than
+            // one with a number in it, because "1 squares" in a notice somebody meets while setting
+            // their railway up is not worth saving a key over.
+            int missing = reversal.getValue() == null ? 1 : reversal.getValue();
+
+            findings.add(new Finding(Severity.WARNING,
+                missing > 1 ? REVERSAL_NEEDS_LENGTH_RUN : REVERSAL_NEEDS_LENGTH, name, tile, missing));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A square that emits an arrival copy nothing can leave, or nothing can reach.
+     *
+     * Adam, 2026-09-02: "we need a warning for instances like the previous version of this."  He had
+     * just built a parking spur whose reverse copy came out with two ways in and none out - somewhere
+     * autonomy may send a train that no train can ever depart from.  BottomMainB had the same shape
+     * earlier that day and cost an evening: Return Home was chased for a fault that was in the diagram.
+     *
+     * **Every other check here asks about the SQUARE, and that is why none of them catch it.**  A
+     * square is emitted as one Point per side a train can arrive by, and the copies do not share their
+     * edges.  LowerFront is perfectly reachable and its westbound copy has no way in at all; the square
+     * passes every reachability test in this file while the copy is a trap.  A rule about copies cannot
+     * be enforced by looking at squares.
+     *
+     * **ALL THREE ARE WARNINGS**, and this paragraph used to argue for an ERROR on the no-way-out
+     * case (D3F-C1).  The body six lines below settled it the other way within the hour, and the
+     * reason is at the severity itself: `errorCount() > 0` refuses to start autonomy at all, so an
+     * error here would have stopped Adam's railway starting over two tunnel berths he has been
+     * running for months.  Restoring what this paragraph used to say would do exactly that.
+     *
+     * @param copies the squares, mapped to the offending copy, decided by the session
+     * @param key which of the two messages to report
+     */
+    private static List<Finding> checkBadCopies(Map<TileKey, String> copies, String key)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (copies == null) return findings;
+
+        // A WARNING, all three, and the reason is what an error DOES: errorCount() > 0 refuses to
+        // start autonomy at all.  Adam asked for "a warning for instances like the previous version of
+        // this", and a trapped arrival on a square he has been running for months would have stopped
+        // his railway starting the first time he opened this version.
+        //
+        // Nothing downstream refuses the trip either, so the train really can be sent there - but
+        // that is the tier doctrine working as intended: filter at selection, never refuse at
+        // execution, and tell the operator what the diagram says.
+        Severity severity = Severity.WARNING;
+
+        for (Map.Entry<TileKey, String> entry : copies.entrySet())
+        {
+            findings.add(new Finding(severity, key, entry.getValue(), entry.getKey()));
+        }
+
+        return findings;
+    }
+
+
+    /**
+     * A home on a square every train must turn round at.
+     *
+     * Such a square is emitted as turning copies only, and a turning station copy is a TERMINUS.
+     *
+     * **THIS NOTICE IS NOW THE ONLY WARNING THERE IS** (ACC-C1).  Staging used to refuse a terminus
+     * to a locomotive that cannot reverse unless the route turned on the way - `mustBackIn` - so the
+     * consequence of such a home was a refusal the operator would meet at the end of a session.  Adam
+     * removed that rule on 2026-09-04, ruling that Return Home is manual operation, and the refusal
+     * became a plan: the locomotive is driven into the berth NOSE FIRST and has to back out to leave.
+     *
+     * So the home is perfectly good for a reversible locomotive; for any other it now WORKS, and
+     * whether the train can get out again afterwards is a question about the railway that nothing in
+     * the software will ask.  Saying so here is the whole remaining protection, which is why the
+     * wording is about backing out rather than about being refused.
+     *
+     * Not an error, and not something to fix in the setup: a berth every train must back out of is a
+     * real place, and a home there is a reasonable thing to want.  It is said out loud so the
+     * limitation is read here rather than discovered at the end of a session.
+     *
+     * **ONLY AT A PARKING BERTH NO ROUTE CAN BACK A TRAIN INTO** (Adam, 2026-10-11, of BottomMainC: *"it is an active
+     * terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus,
+     * not chooseable by autonomy) without a way to reverse in"*).  A terminus autonomy may choose is neither chosen for
+     * nor offered to a locomotive that cannot reverse, so the warning was moot there; at a parking berth a train can be
+     * backed into - rested first on another terminus, or turned at a reversing point on the way, as Return Home does - it
+     * is moot too (MT-552; Adam, 2026-09-24: *"Non-reversible trains can still be backed in there."*).  RSA66-C3, and the
+     * fix-validation fanout's C3-B.
+     *
+     * @param homes the squares carrying an authored home
+     * @param mustTurn the squares where turning round is compulsory
+     * @param notAutoDestinations the stations autonomy never chooses - the parking berths
+     * @param berthsBackedInto the squares a route can back a train into; null where the setup does not build, and then
+     *        nothing is said
+     */
+    private static List<Finding> checkHomesThatNeedReversing(GraphReducer reducer,
+        Set<TileKey> homes, Set<TileKey> mustTurn, Set<TileKey> notAutoDestinations, Set<TileKey> berthsBackedInto)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (homes == null || mustTurn == null) return findings;
+
+        for (TileKey tile : homes)
+        {
+            if (!mustTurn.contains(tile)) continue;
+
+            // a parking berth, or nothing to say
+            if (notAutoDestinations == null || !notAutoDestinations.contains(tile)) continue;
+
+            // and one no route backs a train into
+            if (berthsBackedInto == null || berthsBackedInto.contains(tile)) continue;
+
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            if (point == null || !point.isStation()) continue;
+
+            findings.add(new Finding(Severity.WARNING, HOME_NEEDS_REVERSIBLE,
+                point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * Squares a train can reach and then not leave.
+     *
+     * A train arriving somewhere is pointing away from where it came from, and it can only carry on
+     * forwards - so a square whose only way on is back the way the train came is the end of that train's
+     * day, unless it has been told trains may turn round there.  This used not to be sayable: with one
+     * Point per sensor the graph could not tell arriving-and-continuing from arriving-and-backing-out,
+     * so the reversal was always available and the trap never appeared.  It appears now because the
+     * graph finally distinguishes them, which makes this a case somebody has to decide rather than a new
+     * fault in the railway.
+     *
+     * Usually the answer is one of two things: the square IS a terminus and wants marking as one, or a
+     * branch off it is shut that should be open.
+     *
+     * @param closable the squares whose trapped sides the arrivals menu can close, the only ones told to (RSA37-B1)
+     */
+    private static List<Finding> checkTrappedArrivals(GraphReducer reducer, Map<TileKey, Set<TilePorts.Side>> trapped,
+        Set<TileKey> closable)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (Map.Entry<TileKey, Set<TilePorts.Side>> square : trapped.entrySet())
+        {
+            TileKey tile = square.getKey();
+
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            // A NOTICE on a square trains only pass through.  "Could not go on" warns about a place a
+            // train can be SENT and then be stuck; nothing is ever sent to a plain point, so there the
+            // same sentence is a remark about the shape of the track rather than something to fix.
+            //
+            // ITS SUBJECT IS THE SIDE THE TRAIN COMES IN BY, in words (OB-201; Adam, 2026-09-12: *"This error message
+            // should say either close arrivals from <direction>, open the way ahead, or let trains change
+            // direction."*) - the square is {0} wherever a finding is shown, and the side is {1}.
+            //
+            // CLOSING ARRIVALS IS OFFERED ONLY WHERE THE EDITOR CAN DO IT (RSA37-B1): on a station, for sides that are not
+            // its last open way in.  A plain point has no arrivals menu, and a station trapped from every open side would
+            // be left with no way in, which the menu refuses; there the advice is the other two.
+            findings.add(new Finding(
+                point != null && point.isStation() ? Severity.WARNING : Severity.INFO,
+                closable != null && closable.contains(tile) ? ARRIVAL_TRAPPED : ARRIVAL_TRAPPED_NO_CLOSING,
+                sidesInWords(square.getValue()), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * Whether a finding is a trapped arrival, whichever advice it gives (RSA37-B1).
+     *
+     * @param messageKey a finding's key
+     * @return true for `ARRIVAL_TRAPPED` and `ARRIVAL_TRAPPED_NO_CLOSING`
+     */
+    public static boolean isArrivalTrapped(String messageKey)
+    {
+        return ARRIVAL_TRAPPED.equals(messageKey) || ARRIVAL_TRAPPED_NO_CLOSING.equals(messageKey);
+    }
+
+    /**
+     * Sides in words, as the arrivals menu names them: "west", "west and north", "west, north and east".
+     *
+     * @param sides the sides
+     * @return the words
+     */
+    static String sidesInWords(java.util.Collection<TilePorts.Side> sides)
+    {
+        List<String> words = new ArrayList<>();
+
+        for (TilePorts.Side side : sides) words.add(org.traincontrol.util.I18n.t("autosetup.ui.side" + side.name()));
+
+        if (words.size() < 2) return words.isEmpty() ? "" : words.get(0);
+
+        return String.join(", ", words.subList(0, words.size() - 1)) + " "
+            + org.traincontrol.util.I18n.t("route.ui.joinAnd") + " " + words.get(words.size() - 1);
+    }
+
+    /**
+     * A station’s caption and the user’s own writing on the same square.
+     *
+     * The square belongs to the diagram, because the diagram is the user’s drawing before it is
+     * autonomy’s data - so the text is what gets drawn and the caption is what is hidden.  Nothing is
+     * deleted either way: this says which station has gone quiet and where, and the answer is to move
+     * one of the two.
+     *
+     * It became possible to say at all only once a caption stopped BEING text.  While it was a label,
+     * the two could not share a square: writing one over the other simply destroyed it.
+     */
+    private static List<Finding> checkCoveredCaptions(GraphReducer reducer,
+        Map<TileKey, TileKey> covered)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (covered == null) return findings;
+
+        for (Map.Entry<TileKey, TileKey> entry : covered.entrySet())
+        {
+            ReducedPoint station = reducer.getPoints().get(entry.getValue());
+
+            findings.add(new Finding(Severity.WARNING, CAPTION_COVERED,
+                station == null ? String.valueOf(entry.getValue()) : station.getName(),
+                entry.getKey()));
+        }
+
+        return findings;
+    }
+
+
+    /**
+     * Included pages that repeat another included page's sensors (OB-150).
+     *
+     * The subject is a PAGE rather than a square, and there is no tile to jump to: the fault is that
+     * two squares somewhere carry one address, and naming one of them would send the reader to an
+     * innocent-looking sensor. The page is the thing that can be switched back off.
+     *
+     * @param pages the offending page names, worked out by the caller against the store's own list of
+     *        what is included
+     * @return one error per page
+     */
+    private static List<Finding> checkRepeatedSensorPages(Map<TileKey, String> repeats)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (repeats == null) return findings;
+
+        for (Map.Entry<TileKey, String> repeat : repeats.entrySet())
+        {
+            // WITH ITS SQUARE (MT-223).  This passed null, and the note beside it explained that the
+            // fault was about a page rather than any one square - which was true while the message
+            // said only "this page repeats something". Once it named a specific s88, the finding was
+            // about one square, the caller knew which, and a finding that names a square and cannot
+            // take you to it is the worst of both.
+            findings.add(new Finding(Severity.ERROR, DUPLICATE_SENSOR_PAGE,
+                repeat.getValue(), repeat.getKey()));
+        }
+
+        return findings;
+    }
+    /**
+     * Trains with no length, and stations with no maximum (FR-046).
+     *
+     * Handed the answers rather than working them out: a station's maximum is a point property the
+     * session holds, and a train's length is on the Locomotive in the model, which nothing in this
+     * class can reach. Both arrive as sets of squares for the same reason every other check here takes
+     * one - the caller knows things about the configuration that the graph does not.
+     *
+     * @param withoutTrainLength squares holding a locomotive whose length is not set, to that locomotive
+     * @param withoutMaxLength station squares with no maximum train length
+     * @param placed which locomotive stands where, for naming the train in the message
+     * @return one warning per square
+     */
+    private static List<Finding> checkLengths(GraphReducer reducer, Map<TileKey, String> withoutTrainLength,
+        Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom,
+        Map<TileKey, Integer> halfMeasured, Map<TileKey, String> placed, Set<TileKey> notAutoDestinations)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        // THE BERTH GIVEN NO ROOM (TDA4-C2): it takes no train that comes in over the track answered 0 - said first with the
+        // half-measured berth, because both stop trains today.
+        if (berthsGivenNoRoom != null)
+        {
+            for (TileKey berth : berthsGivenNoRoom)
+            {
+                GraphReducer.ReducedPoint point = reducer == null ? null : reducer.getPoints().get(berth);
+
+                findings.add(new Finding(Severity.WARNING, BERTH_TRACK_GIVEN_NO_LENGTH,
+                    point == null ? String.valueOf(berth) : point.getName(), berth));
+            }
+        }
+
+        // THE BERTH THAT TAKES NOTHING AT ALL, said first because it is the one that stops trains today.
+        if (halfMeasured != null)
+        {
+            for (Map.Entry<TileKey, Integer> station : halfMeasured.entrySet())
+            {
+                GraphReducer.ReducedPoint point =
+                    reducer == null ? null : reducer.getPoints().get(station.getKey());
+
+                findings.add(new Finding(Severity.WARNING, HALF_MEASURED_APPROACH,
+                    point == null ? String.valueOf(station.getKey()) : point.getName(),
+                    station.getKey(), station.getValue()));
+            }
+        }
+
+        for (Map.Entry<TileKey, String> train : withoutTrainLength.entrySet())
+        {
+            // Named, because "a train has no length" sends the reader looking at seven of them. The
+            // square is what the editor jumps to; the name is what says which train to go and measure -
+            // the train that stands there, which after a run is not always the one the setup records (RSA19-C1).
+            TileKey square = train.getKey();
+
+            String standing = train.getValue();
+
+            findings.add(new Finding(Severity.WARNING, NO_TRAIN_LENGTH,
+                standing == null ? "" : standing, square));
+        }
+
+        for (TileKey square : withoutMaxLength)
+        {
+            // The station's name as the subject, the way every other finding about a station does it -
+            // the editor jumps to the square, and the sentence needs something to be about.
+            GraphReducer.ReducedPoint point = reducer == null ? null : reducer.getPoints().get(square);
+
+            findings.add(new Finding(Severity.WARNING, NO_MAX_TRAIN_LENGTH,
+                point == null ? String.valueOf(square) : point.getName(), square));
+        }
+
+        // AND THE TWO OF THEM DISAGREEING, which is the case where both are filled in (Adam,
+        // 2026-09-11).  The stated maximum first, because it is the number the reader typed; the
+        // measured room second, because it is the one that will actually refuse the train.
+        if (shortRunIns != null)
+        {
+            for (Map.Entry<TileKey, int[]> station : shortRunIns.entrySet())
+            {
+                GraphReducer.ReducedPoint point =
+                    reducer == null ? null : reducer.getPoints().get(station.getKey());
+
+                // REFUSED AT A BERTH, STANDING ACROSS THE SWITCH AT A PLATFORM (MT-555): the sentence says which.
+                boolean berth = notAutoDestinations != null && notAutoDestinations.contains(station.getKey());
+
+                // AND AT A PLATFORM, THE FIGURE A TRAIN IS REFUSED ABOVE, where there is one (TDA-C10).
+                int refused = !berth && station.getValue().length > 2 ? station.getValue()[2] : 0;
+
+                findings.add(new Finding(Severity.NOTICE,
+                    berth ? RUN_IN_SHORTER_THAN_THE_BERTH
+                        : refused > 0 ? RUN_IN_SHORTER_THAN_THE_PLATFORM_REFUSED : RUN_IN_SHORTER_THAN_THE_PLATFORM,
+                    point == null ? String.valueOf(station.getKey()) : point.getName(),
+                    station.getKey(), station.getValue()[0], station.getValue()[1], refused));
+            }
+        }
+
+        return findings;
+    }
+
+    /**
+     * Stations that must turn every train round and have more than one way in (MT-361).
+     *
+     * Handed the answer rather than working it out, like every other check here that needs to know
+     * something about the setup: whether a square is a station lives on the store, which this class
+     * cannot reach.
+     *
+     * @param reducer for the names
+     * @param termini the squares, mapped to how many unbarred sides reach them
+     * @return one error per square
+     */
+    private static List<Finding> checkTermini(GraphReducer reducer, Map<TileKey, Integer> termini)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (termini == null) return findings;
+
+        for (Map.Entry<TileKey, Integer> each : termini.entrySet())
+        {
+            ReducedPoint point = reducer == null ? null : reducer.getPoints().get(each.getKey());
+
+            findings.add(new Finding(Severity.ERROR, TERMINUS_WITH_TWO_WAYS_IN,
+                point == null ? String.valueOf(each.getKey()) : point.getName(), each.getKey(),
+                each.getValue()));
+        }
+
+        return findings;
+    }
+
+    /**
+     * Is any locomotive recorded as standing in two places?
+     *
+     * One locomotive, one place - which the running layout enforces when a train MOVES, because it
+     * leaves where it was.  The configuration is a different store and nothing enforced it there, so a
+     * placement made by hand could sit alongside one an import had already written.
+     *
+     * The consequence is out of all proportion to the cause: fromJSON refuses the whole layout, and
+     * every path afterwards is answered with "configuration is invalid" - which names neither the
+     * locomotive nor the square, and points at nothing the reader did.
+     *
+     * Reported against the SECOND square and any after it, rather than against both.  One of them is
+     * where the train is meant to be and the other is the leftover; the check cannot tell which, but
+     * listing them all as errors would say the setup has two problems when it has one, and clearing
+     * either fixes it.
+     */
+    private static List<Finding> checkDuplicateLocomotives(Map<TileKey, String> placed)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (placed == null) return findings;
+
+        Map<String, List<TileKey>> where = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, String> entry : placed.entrySet())
+        {
+            if (entry.getKey() == null || entry.getValue() == null) continue;
+
+            if (entry.getValue().trim().isEmpty()) continue;
+
+            if (!where.containsKey(entry.getValue()))
+            {
+                where.put(entry.getValue(), new ArrayList<TileKey>());
+            }
+
+            where.get(entry.getValue()).add(entry.getKey());
+        }
+
+        for (Map.Entry<String, List<TileKey>> entry : where.entrySet())
+        {
+            List<TileKey> squares = entry.getValue();
+
+            if (squares.size() < 2) continue;
+
+            for (int extra = 1; extra < squares.size(); extra++)
+            {
+                // The subject is the locomotive, and the editor shows the SQUARE instead whenever a
+                // finding carries one - which it must here, or there is nothing to jump to.  So the
+                // message is written to read against the square, and the name is carried for anything
+                // that wants it rather than for that sentence.
+                findings.add(new Finding(Severity.ERROR, DUPLICATE_LOCOMOTIVE,
+                    entry.getKey(), squares.get(extra)));
+            }
+        }
+
+        return findings;
+    }
+
+    /**
+     * Is any station shut to trains from every direction?
+     *
+     * The editor will not let somebody tick the last way in, so this is for the ways round it: a
+     * diagram edited after the restriction was set, a track removed, a setup written by hand.  The
+     * consequence is quiet and total - the station simply never appears as a destination again - so it
+     * is worth saying out loud.
+     */
+    private static List<Finding> checkArrivalsLeft(GraphReducer reducer, Map<TileKey, Boolean> shut)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (shut == null) return findings;
+
+        for (Map.Entry<TileKey, Boolean> entry : shut.entrySet())
+        {
+            if (!Boolean.TRUE.equals(entry.getValue())) continue;
+
+            // By name, like every other check.  The editor substitutes the square's description for
+            // the subject of a finding that carries a tile, so this is what anything else sees - and
+            // "main:3,1" is not something a user can look for on their own diagram.
+            ReducedPoint point = reducer == null ? null : reducer.getPoints().get(entry.getKey());
+
+            // INFORMATION, not an error, and Adam settled why (MT-078): "We should let the user know a
+            // train can't come in in any way (warning). If manual only, it's info."
+            //
+            // Barring every side stops AUTONOMY sending a train here; it does not stop a person driving
+            // one in, because a bar is advisory - autonomy will not route into a barred side and a hand
+            // dispatch may. So the station is still reachable, and a finding that blocks the whole
+            // setup from starting over a platform the operator can still use is the wrong answer.
+            //
+            // The case Adam calls a warning - nothing can come in ANY way - is a different condition
+            // and already has one: POINT_ISOLATED, where no track reaches the square at all.
+            findings.add(new Finding(Severity.INFO, NO_ARRIVALS_LEFT,
+                point == null || point.getName() == null || point.getName().trim().isEmpty()
+                    ? entry.getKey().toString() : point.getName(),
+                entry.getKey()));
+        }
+
+        return findings;
+    }
+
+    /**
+     * Is every station shown on the track diagram?
+     *
+     * The diagram is where the user watches trains, and a station with no label on it is a place they
+     * cannot see - autonomy will announce arrivals at a platform that is nowhere on screen.
+     *
+     * An error, on the author's instruction.  This was a warning on the argument that the railway runs
+     * perfectly well unlabelled and merely cannot be read - true of the trains, and beside the point
+     * for the person watching them.  A setup whose stations cannot be found on the diagram is not one
+     * anybody can supervise, and calling that "worth checking" put it below things that matter less.
+     *
+     * A station still carrying its generated name is skipped, because it already has a warning of its
+     * own and naming it is the step that has to come first - two rows about one sensor, one of which
+     * cannot be acted on yet, is a list nobody finishes.
+     */
+    private static List<Finding> checkStationLabels(GraphReducer reducer, Set<TileKey> labelled)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (labelled == null) return findings;
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (!point.isStation() || point.getName() == null) continue;
+
+            if (point.getName().equals(GraphReducer.generatedName(point.getTile()))) continue;
+
+            // Asked by SQUARE, not by name.  Matching the caption's text against the Point's name was
+            // the same fragile join that let a caption look live while naming a station that had been
+            // renamed - and it reported a perfectly well labelled station as unlabelled the moment its
+            // name changed.
+            if (!labelled.contains(point.getTile()))
+            {
+                findings.add(new Finding(Severity.ERROR, UNLABELLED_STATION,
+                    point.getName(), point.getTile()));
+            }
+        }
+
+        return findings;
+    }
+
+    private static List<Finding> checkStations(GraphReducer reducer, Set<TileKey> termini,
+        Set<TileKey> mayTurn, Set<TileKey> mustTurn, Map<TileKey, Set<TilePorts.Side>> barred,
+        Set<TileKey> closed)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        List<ReducedPoint> stations = new ArrayList<>();
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (point.isStation()) stations.add(point);
+        }
+
+        if (stations.isEmpty())
+        {
+            // An error, not a warning.  Autonomy moves trains between stations, so a setup with none
+            // cannot run at all - there is nowhere for anything to go.  Reporting it as a warning put
+            // it beside things that merely want attention, and let the setup look startable.
+            findings.add(new Finding(Severity.ERROR, NO_STATIONS, "", null));
+            return findings;
+        }
+
+        if (stations.size() == 1)
+        {
+            // trains have nowhere to go, which is not an error but is certainly not what was meant
+            findings.add(new Finding(Severity.WARNING, ONE_STATION,
+                stations.get(0).getName(), stations.get(0).getTile()));
+            return findings;
+        }
+
+        Set<TileKey> stationTiles = new LinkedHashSet<>();
+
+        for (ReducedPoint station : stations)
+        {
+            stationTiles.add(station.getTile());
+        }
+
+        // Reachability the way the RUNTIME has it, honouring the arrival-side split - not the plain
+        // tile adjacency, which lets a run cross between the two arms of a double curve and so reports
+        // a route Layout.bfs never takes.  Worked out once per station and read from below for both
+        // directions; the old code walked the graph again inside the reverse loop.
+        Map<TileKey, Set<TileKey>> reach = new LinkedHashMap<>();
+
+        for (ReducedPoint station : stations)
+        {
+            reach.put(station.getTile(),
+                // WITH the red arrows, which is what the comment above has always claimed (OB-120).
+                reducer.reachableTiles(station.getTile(), mayTurn, mustTurn, barred, closed));
+        }
+
+        // A STATION NOTHING CAN PASS IS SAID TO BE, and left out of the two sentences below (FR-101).
+        for (ReducedPoint station : stations)
+        {
+            if (closed != null && closed.contains(station.getTile()))
+            {
+                findings.add(new Finding(Severity.WARNING, STATION_CLOSED, station.getName(), station.getTile()));
+            }
+        }
+
+        for (ReducedPoint station : stations)
+        {
+            if (closed != null && closed.contains(station.getTile())) continue;
+
+            Set<TileKey> reachable = reach.get(station.getTile());
+
+            boolean reachesAStation = false;
+
+            for (TileKey other : stationTiles)
+            {
+                if (!other.equals(station.getTile()) && reachable.contains(other))
+                {
+                    reachesAStation = true;
+                    break;
+                }
+            }
+
+            if (!reachesAStation)
+            {
+                // A terminus that cannot be left is the specific case worth naming: a train sent there
+                // is stuck, and the layout will look like it simply stopped using that station.
+                // A COMPULSORY TURN IS A TERMINUS HERE (AMG-C1).  `isTerminus` reads the authored flag, which
+                // setting a square's flags clears, and falls back to "nothing leaves it" - never true of a
+                // compulsory turn, whose turning copy departs.
+                findings.add(new Finding(Severity.WARNING,
+                    isTerminus(reducer, station, termini) || mustTurn.contains(station.getTile())
+                        ? TERMINUS_STRANDED : STATION_REACHES_NOTHING,
+                    station.getName(), station.getTile()));
+            }
+        }
+
+        // and the other direction: a station nothing can reach can never be a destination
+        for (ReducedPoint station : stations)
+        {
+            if (closed != null && closed.contains(station.getTile())) continue;
+
+            boolean reachable = false;
+
+            for (ReducedPoint other : stations)
+            {
+                if (other == station) continue;
+
+                if (reach.get(other.getTile()).contains(station.getTile()))
+                {
+                    reachable = true;
+                    break;
+                }
+            }
+
+            if (!reachable)
+            {
+                findings.add(new Finding(Severity.WARNING, STATION_UNREACHABLE,
+                    station.getName(), station.getTile()));
+            }
+        }
+
+        return findings;
+    }
+
+    /**
+     * A Point with no edges at all.
+     *
+     * The reducer already leaves out sensors with nothing beside them, so anything here is a sensor whose
+     * track exists but whose every connection has been closed - which is a decision somebody made and may
+     * not have meant.
+     */
+    private static List<Finding> checkIsolatedPoints(GraphReducer reducer)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        Set<TileKey> touched = new HashSet<>();
+
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            touched.add(edge.getStart());
+            touched.add(edge.getEnd());
+        }
+
+        for (ReducedPoint point : reducer.getPoints().values())
+        {
+            if (!touched.contains(point.getTile()))
+            {
+                findings.add(new Finding(Severity.WARNING, POINT_ISOLATED,
+                    point.getName(), point.getTile()));
+            }
+        }
+
+        return findings;
+    }
+
+    /**
+     * Track that has been closed in both directions.
+     *
+     * Almost always a mis-click: somebody meant to make a run one way and cycled past it.  The tile is
+     * still drawn, so nothing looks wrong, and the route through it simply stops existing.
+     */
+    private static List<Finding> checkClosedRuns(TileGraph graph, GraphReducer reducer)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (Map.Entry<TileKey, LayoutDiagramComponent> entry : graph.getTiles().entrySet())
+        {
+            Map<TileGraph.RouteId, TilePorts.Route> routes = graph.getRoutes(entry.getKey());
+
+            if (routes.isEmpty()) continue;
+
+            boolean anyOpen = false;
+
+            for (TileGraph.RouteId routeId : routes.keySet())
+            {
+                if (graph.getDirection(entry.getKey(), routeId) != TileGraph.Direction.NONE)
+                {
+                    anyOpen = true;
+                    break;
+                }
+            }
+
+            if (!anyOpen)
+            {
+                findings.add(new Finding(Severity.INFO, RUN_CLOSED_BOTH_WAYS,
+                    String.valueOf(entry.getKey()), entry.getKey()));
+            }
+        }
+
+        return findings;
+    }
+
+    private static boolean isTerminus(GraphReducer reducer, ReducedPoint station, Set<TileKey> termini)
+    {
+        // What the user marked comes first; a dead end is the fallback for a Point nobody marked.
+        if (termini.contains(station.getTile())) return true;
+
+        for (ReducedEdge edge : reducer.getEdges())
+        {
+            if (edge.getStart().equals(station.getTile())) return false;
+        }
+
+        return true;
+    }
+
+    // The tile-adjacency reachability that used to live here (adjacency + reachableFrom) is gone.  It
+    // walked reducer.getEdges() as a plain Point-to-Point graph, which ignores the arrival-side split
+    // and so let a run cross between the two arms of a double curve - reporting a station pair
+    // reachable that the runtime never routes.  reducer.reachableTiles answers the split-aware
+    // question instead, which is the same one Layout.bfs and the editor's path test ask.
+}

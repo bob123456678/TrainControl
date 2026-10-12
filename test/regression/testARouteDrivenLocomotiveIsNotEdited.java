@@ -1,0 +1,830 @@
+package regression;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import static org.testng.Assert.*;
+import org.testng.annotations.Test;
+import org.traincontrol.base.RouteCommand;
+import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.util.I18n;
+
+/**
+ * A locomotive a running route drives is neither deleted nor renamed, and the refusal names the route (OB-287, CS3-B1).
+ *
+ * Adam, on MT-464, 2026-09-22: *"make an automated test for this"*.  `core.testAdvancedRoutes` holds the half about the
+ * route finishing its commands, and `runningRouteDriving` - the question - is claimed there too; nothing asked whether
+ * the doors ask it.  Deleting a locomotive rewrites every route's commands, and renaming it rewrites every command that
+ * names it, under a route part-way along its list.
+ *
+ * The two doors a person uses are driven here on a real window: the refusal is a message dialog, which this closes; had
+ * the door gone on, the dialog it shows next is a different one, which this also closes without answering yes.  The
+ * third door, the Central Station's name proposal, sits inside a loop over a modal list, so it is read.
+ *
+ * MUTATION: take the refusal out of either door, and the matching claim fails.
+ *
+ * @author Adam
+ */
+public class testARouteDrivenLocomotiveIsNotEdited
+{
+    private static final String LOC = "OB-287 loc";
+    private static final String ROUTE = "OB-287 route";
+
+    /** A second locomotive, for a multi-unit the route's locomotive is ticked into */
+    private static final String UNIT = "OB-287 unit";
+
+    /** A Central Station multi-unit with the route's locomotive among its members (RSA30-C8) */
+    private static final String CS_UNIT = "OB-287 CS unit";
+
+    /**
+     * The delete door and the edit door each refuse, naming the route, and leave the locomotive as it was; and the
+     * multi-unit door (Adam, 2026-10-03) - from the locomotive database's menu and the keyboard's, and asked again at OK
+     * of a locomotive ticked into another's multi-unit.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testBothDoorsRefuseWhileTheRouteRuns() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111): anything thrown between the open and the close would leave the
+            // layout preference pointing at a folder under %TEMP%.
+            sandbox = support.LayoutSandbox.open();
+
+            model = MarklinControlStation.init(null, true, false, false, false);
+
+            final MarklinControlStation m = model;
+            final TrainControlUI[] made = new TrainControlUI[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    made[0] = new TrainControlUI();
+                    made[0].setViewListener(m, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            ui = made[0];
+
+            model.newMM2Locomotive(LOC, 63);
+
+            // A ROUTE THAT DRIVES IT, and stays running long enough to ask both doors: one function command, with a
+            // pause after it.
+            List<RouteCommand> commands = new ArrayList<>();
+
+            RouteCommand fires = RouteCommand.RouteCommandFunction(LOC, 1, true);
+
+            fires.setDelay(20000);
+
+            commands.add(fires);
+
+            model.newRoute(ROUTE, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            final MarklinControlStation running = model;
+
+            new Thread(() -> running.execRoute(ROUTE)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(ROUTE).isExecuting() && System.currentTimeMillis() < armed) Thread.sleep(20);
+
+            assertTrue(model.getRoute(ROUTE).isExecuting(), "precondition: the route never started");
+
+            assertNotNull(model.runningRouteDriving(LOC), "precondition: the model does not say the running route drives"
+                + " the locomotive, so no door has anything to ask");
+
+            String refusal = I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", LOC, ROUTE);
+
+            final TrainControlUI window = ui;
+
+            // THE DELETE DOOR.
+            String said = askAndClose(() -> window.deleteLoc(LOC));
+
+            assertEquals(said, refusal, "the delete door did not refuse a locomotive a running route drives, naming the"
+                + " route (OB-287, CS3-B1)");
+
+            assertNotNull(model.getLocByName(LOC), "the delete door deleted a locomotive a running route drives");
+
+            // THE EDIT DOOR, which renames and re-addresses.
+            final org.traincontrol.base.Locomotive loc = model.getLocByName(LOC);
+
+            said = askAndClose(() -> window.changeLocAddress(loc, null));
+
+            assertEquals(said, refusal, "the edit door did not refuse a locomotive a running route drives, naming the"
+                + " route (OB-287, CS3-B1)");
+
+            assertNotNull(model.getLocByName(LOC), "the edit door renamed a locomotive a running route drives");
+
+            // THE MULTI-UNIT DOOR, from the locomotive database's menu (Adam, 2026-10-03) ...
+            final javax.swing.JPopupMenu[] database = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.RightClickSelectorMenu(window, null, loc));
+
+            final javax.swing.JMenuItem fromTheDatabase = multiUnitItemIn(database[0]);
+
+            assertNotNull(fromTheDatabase, "the locomotive database's menu offers no multi-unit item");
+
+            // WITH A DIVIDER ABOVE IT (Adam, 2026-10-03)
+            int at = java.util.Arrays.asList(database[0].getComponents()).indexOf(fromTheDatabase);
+
+            assertTrue(at > 0 && database[0].getComponent(at - 1) instanceof javax.swing.JSeparator, "the locomotive"
+                + " database's multi-unit item has no divider above it");
+
+            said = askAndClose(() -> fromTheDatabase.doClick());
+
+            assertEquals(said, refusal, "the multi-unit door, from the locomotive database, did not refuse a locomotive a"
+                + " running route drives, naming the route (OB-287)");
+
+            // ... and from the keyboard's, on its own level beside Manage Locomotive
+            final java.lang.reflect.Field current = TrainControlUI.class.getDeclaredField("currentButton");
+
+            current.setAccessible(true);
+
+            final javax.swing.JButton button = (javax.swing.JButton) current.get(window);
+
+            assertNotNull(button, "precondition: no key is the current one");
+
+            SwingUtilities.invokeAndWait(() -> window.mapLocToCurrentButton(LOC));
+
+            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.RightClickMenuListener");
+
+            final Object listener = listenerClass.getConstructor(TrainControlUI.class, javax.swing.JButton.class)
+                .newInstance(window, button);
+
+            final java.lang.reflect.Constructor<?> make = Class.forName(
+                "org.traincontrol.gui.RightClickMenuListener$RightClickMenu").getDeclaredConstructor(listenerClass,
+                TrainControlUI.class);
+
+            make.setAccessible(true);
+
+            final javax.swing.JPopupMenu[] keyboard = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    keyboard[0] = (javax.swing.JPopupMenu) make.newInstance(listener, window);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            final javax.swing.JMenuItem fromTheKeyboard = multiUnitItemIn(keyboard[0]);
+
+            assertNotNull(fromTheKeyboard, "the keyboard's menu offers no multi-unit item beside Manage Locomotive");
+
+            said = askAndClose(() -> fromTheKeyboard.doClick());
+
+            assertEquals(said, refusal, "the multi-unit door, from the keyboard, did not refuse a locomotive a running route"
+                + " drives, naming the route (OB-287)");
+
+            // AND ASKED AGAIN AT OK: another locomotive's multi-unit, with the driven one ticked into it
+            model.newMM2Locomotive(UNIT, 64);
+
+            final org.traincontrol.base.Locomotive unit = model.getLocByName(UNIT);
+
+            said = tickAndOk(() -> window.changeLinkedLocomotives(unit), LOC);
+
+            assertEquals(said, refusal, "the multi-unit dialog's OK took in a locomotive a running route drives (OB-287)");
+
+            assertFalse(unit.getLinkedLocomotiveNames().containsKey(LOC), "a locomotive a running route drives was made a"
+                + " member of a multi-unit");
+
+            // BUT A CENTRAL STATION MULTI-UNIT'S LIST, which changes nothing, is shown while the route drives a member
+            // (RSA30-C8): only the dialog that can change a multi-unit asks
+            model.newMM2Locomotive(CS_UNIT, 65);
+
+            model.changeLocAddress(CS_UNIT, 65, org.traincontrol.marklin.MarklinLocomotive.decoderType.MULTI_UNIT);
+
+            final org.traincontrol.base.Locomotive centralStations = model.getLocByName(CS_UNIT);
+
+            java.util.Map<String, Double> members = new java.util.HashMap<>();
+
+            members.put(LOC, 1.0);
+
+            centralStations.setModelMultiUnitLocomotives(members);
+
+            said = askAndClose(() -> window.changeLinkedLocomotives(centralStations));
+
+            assertNotNull(said, "a Central Station multi-unit's list was not shown");
+
+            assertNotEquals(said, refusal, "a Central Station multi-unit's list, which changes nothing, was refused while a"
+                + " route drives a member (RSA30-C8)");
+
+            // AND WHILE AUTONOMY IS BUSY - staging stands in for a run here, as the model counts it among them
+            model.getAutoLayout().setStagingInProgress(true);
+
+            try
+            {
+                assertTrue(model.isAutonomyRunning(), "precondition: the model does not read autonomy as busy");
+
+                said = askAndClose(() -> window.changeLinkedLocomotives(centralStations));
+
+                assertNotNull(said, "a Central Station multi-unit's list was not shown while autonomy was busy");
+
+                assertNotEquals(said, I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning"), "a Central Station"
+                    + " multi-unit's list, which changes nothing, was refused while autonomy was busy (RSA30-C8)");
+            }
+            finally
+            {
+                model.getAutoLayout().setStagingInProgress(false);
+            }
+        }
+        finally
+        {
+            closeEveryDialog();
+
+            if (model != null)
+            {
+                long giveUp = System.currentTimeMillis() + 30000;
+
+                while (model.getRoute(ROUTE) != null && model.getRoute(ROUTE).isExecuting()
+                    && System.currentTimeMillis() < giveUp)
+                {
+                    Thread.sleep(100);
+                }
+
+                try { model.deleteRoute(ROUTE); } catch (Exception ignored) { }
+                try { model.deleteLoc(UNIT); } catch (Exception ignored) { }
+                try { model.deleteLoc(CS_UNIT); } catch (Exception ignored) { }
+                try { model.deleteLoc(LOC); } catch (Exception ignored) { }
+            }
+
+            if (ui != null)
+            {
+                final TrainControlUI window = ui;
+
+                SwingUtilities.invokeAndWait(() -> window.dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * The Central Station's name proposal asks it too, of both names, before it renames.
+     *
+     * @throws Exception from the file
+     */
+    @Test
+    public void testTheNameProposalAsksItFirst() throws Exception
+    {
+        String source = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
+            StandardCharsets.UTF_8);
+
+        int current = source.indexOf("if (refuseWhileARouteDrivesIt(this, currentName)) continue;");
+        int proposed = source.indexOf("if (refuseWhileARouteDrivesIt(this, newName)) continue;");
+
+        assertTrue(current > 0 && proposed > 0, "the Central Station's name proposal does not ask about both names"
+            + " (CS3-B1, SVB-C2)");
+
+        int renames = source.indexOf("renameLoc(", proposed);
+
+        assertTrue(renames > proposed, "the name proposal renames before it asks (OB-287)");
+    }
+
+    /** The locomotive and route of GSR-B2's claim. */
+    private static final String SYNCED = "GSR-B2 loc";
+    private static final String SYNCED_ROUTE = "GSR-B2 route";
+
+    /**
+     * A Central Station sync does not re-address a locomotive a running route drives (GSR-B2).
+     *
+     * The sync's address change waited for autonomy and nothing else.  A route sends its commands to a locomotive by
+     * NAME, one after another with delays between them, and each goes to whatever address the name has when its turn
+     * comes - so a sync landing part-way along moved the locomotive to another address under the route, and the
+     * route's remaining commands went to a different decoder: another train, or none.  The delete and edit doors refuse
+     * the same change while a route drives the locomotive (OB-287); the sync is the door nobody opens by hand.
+     *
+     * The sync's address step is asked directly, with the Central Station's description of the locomotive at another
+     * address, because the whole sync needs a station on the network.  Autonomy is idle throughout, so the route is the
+     * only thing that can hold the address back.
+     *
+     * MUTATION: drop `|| this.runningRouteDriving(l.getName()) != null` from `adoptCentralStationAddress`, and this
+     * fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncDoesNotReAddressALocomotiveARouteDrives() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY, as the claims above open theirs (TSX-B8, OB-111).
+            sandbox = support.LayoutSandbox.open();
+
+            model = MarklinControlStation.init(null, true, false, false, false);
+
+            model.newMM2Locomotive(SYNCED, 66);
+
+            // A ROUTE THAT DRIVES IT, running long enough to ask: one function command, with a pause after it.
+            List<RouteCommand> commands = new ArrayList<>();
+
+            RouteCommand fires = RouteCommand.RouteCommandFunction(SYNCED, 1, true);
+
+            fires.setDelay(10000);
+
+            commands.add(fires);
+
+            model.newRoute(SYNCED_ROUTE, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            final MarklinControlStation running = model;
+
+            new Thread(() -> running.execRoute(SYNCED_ROUTE)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(SYNCED_ROUTE).isExecuting() && System.currentTimeMillis() < armed) Thread.sleep(20);
+
+            assertNotNull(model.runningRouteDriving(SYNCED), "precondition: the model does not say the running route"
+                + " drives the locomotive, so there is nothing for the sync to wait for");
+
+            assertFalse(model.isAutonomyRunning(), "precondition: autonomy is busy, so the sync would wait for it and"
+                + " this would say nothing about the route");
+
+            // THE CENTRAL STATION'S DESCRIPTION: the same locomotive and decoder, at another address
+            org.traincontrol.marklin.MarklinLocomotive fromTheStation = new org.traincontrol.marklin.MarklinLocomotive(
+                model, 67, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, SYNCED);
+
+            model.adoptCentralStationAddress(fromTheStation,
+                new ArrayList<org.traincontrol.marklin.MarklinLocomotive>());
+
+            assertEquals(model.getLocByName(SYNCED).getAddress(), 66, "a Central Station sync moved a locomotive a"
+                + " running route drives to another address - the route's remaining commands go to whatever decoder"
+                + " answers there, another train or none (GSR-B2)");
+        }
+        finally
+        {
+            if (model != null)
+            {
+                long giveUp = System.currentTimeMillis() + 30000;
+
+                while (model.getRoute(SYNCED_ROUTE) != null && model.getRoute(SYNCED_ROUTE).isExecuting()
+                    && System.currentTimeMillis() < giveUp)
+                {
+                    Thread.sleep(100);
+                }
+
+                try { model.deleteRoute(SYNCED_ROUTE); } catch (Exception ignored) { }
+                try { model.deleteLoc(SYNCED); } catch (Exception ignored) { }
+
+                model.stop();
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Runs a door on the event thread, and closes the first message it shows without answering yes.
+     *
+     * @param door the door
+     * @return the message, or null when none was shown
+     * @throws Exception from the wait
+     */
+    private static String askAndClose(Runnable door) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                door.run();
+            }
+            finally
+            {
+                returned.set(true);
+            }
+        });
+
+        String said = null;
+
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            final String[] found = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> found[0] = closeTheFirstQuestion());
+
+            said = found[0];
+        }
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        // AND ANY QUESTION A DOOR THAT WENT ON WOULD ASK NEXT - closed, never answered yes.
+        while (!returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
+        }
+
+        assertTrue(returned.get(), "precondition: the door never returned");
+
+        return said;
+    }
+
+    /**
+     * The multi-unit item at a menu's own level - set, edit or view - or null.
+     *
+     * @param menu the menu
+     * @return the item
+     */
+    private static javax.swing.JMenuItem multiUnitItemIn(javax.swing.JPopupMenu menu)
+    {
+        java.util.Set<String> texts = new java.util.HashSet<>(java.util.Arrays.asList(I18n.t("loc.ui.menuSetAsMultiUnit"),
+            I18n.t("loc.ui.menuEditMultiUnitLocomotives"), I18n.t("loc.ui.menuViewMultiUnitLocomotives")));
+
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof javax.swing.JMenuItem && !(part instanceof javax.swing.JMenu)
+                && texts.contains(((javax.swing.JMenuItem) part).getText()))
+            {
+                return (javax.swing.JMenuItem) part;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Opens the multi-unit dialog through a door, ticks one locomotive in it and presses OK; then the first message after
+     * the OK, closed without answering yes.
+     *
+     * @param door the door
+     * @param member the locomotive to tick
+     * @return the message after OK, or null when none was shown
+     * @throws Exception from the wait
+     */
+    private static String tickAndOk(Runnable door, String member) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                door.run();
+            }
+            finally
+            {
+                returned.set(true);
+            }
+        });
+
+        // THE DIALOG: its message is the panel of locomotives
+        final boolean[] ticked = new boolean[1];
+
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (!ticked[0] && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!(window instanceof JDialog) || !window.isShowing()) continue;
+
+                    JOptionPane pane = paneIn((java.awt.Container) window);
+
+                    if (pane == null || !(pane.getMessage() instanceof java.awt.Container)) continue;
+
+                    javax.swing.JCheckBox box = boxFor((java.awt.Container) pane.getMessage(), member);
+
+                    if (box == null) continue;
+
+                    box.setSelected(true);
+
+                    pane.setValue(pane.getOptions()[0]);
+
+                    window.dispose();
+
+                    ticked[0] = true;
+
+                    return;
+                }
+            });
+        }
+
+        assertTrue(ticked[0], "precondition: the multi-unit dialog did not offer " + member);
+
+        String said = null;
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            final String[] found = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> found[0] = closeTheFirstQuestion());
+
+            said = found[0];
+        }
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (!returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+            SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
+        }
+
+        assertTrue(returned.get(), "precondition: the multi-unit door never returned");
+
+        return said;
+    }
+
+    /** The tick box naming this locomotive in the multi-unit dialog's panel, or null. */
+    private static javax.swing.JCheckBox boxFor(java.awt.Container container, String name)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JCheckBox && name.equals(((javax.swing.JCheckBox) child).getToolTipText()))
+            {
+                return (javax.swing.JCheckBox) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JCheckBox found = boxFor((java.awt.Container) child, name);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    /** The two locomotives of OB-301's claim. */
+    private static final String EDITED = "OB-301 edited";
+    private static final String TAKEN = "OB-301 taken";
+
+    /**
+     * A name the edit door refuses changes nothing - not the address either (OB-301; Adam, 2026-10-06: "fix the mentioned
+     * OB's that are valid").
+     *
+     * The door applied the new address first and checked the name after.  A refused name returned once the address had
+     * gone through and before the sweep that takes a clash off the railway - so a train given another standing train's
+     * address and a taken name stayed on the railway beside it, the two answering to one decoder address, every command
+     * for one reaching both.
+     *
+     * MUTATION: apply the address before the name is asked, and this fails.
+     *
+     * @throws Exception from the windows
+     */
+    @Test
+    public void testARefusedNameChangesNothing() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            model = MarklinControlStation.init(null, true, false, false, false);
+
+            final MarklinControlStation m = model;
+            final TrainControlUI[] made = new TrainControlUI[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    made[0] = new TrainControlUI();
+                    made[0].setViewListener(m, new java.util.concurrent.CountDownLatch(1));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            ui = made[0];
+
+            model.newMM2Locomotive(EDITED, 64);
+            model.newMM2Locomotive(TAKEN, 65);
+
+            final org.traincontrol.base.Locomotive edited = model.getLocByName(EDITED);
+            final TrainControlUI window = ui;
+
+            // ANOTHER TRAIN'S ADDRESS, AND A NAME THAT IS TAKEN
+            String said = answerTheEditDoor(() -> window.changeLocAddress(edited, null), "65", TAKEN);
+
+            assertEquals(said, I18n.f("loc.ui.errorLocomotiveAlreadyExists", TAKEN), "precondition: the door did not refuse"
+                + " a name another locomotive has");
+
+            assertEquals(model.getLocByName(EDITED).getAddress(), 64, "the edit door refused the name and kept the new"
+                + " address - after the check, so the sweep that takes a clash off the railway never ran (OB-301)");
+        }
+        finally
+        {
+            closeEveryDialog();
+
+            if (model != null)
+            {
+                try { model.deleteLoc(EDITED); } catch (Exception ignored) { }
+                try { model.deleteLoc(TAKEN); } catch (Exception ignored) { }
+            }
+
+            if (ui != null)
+            {
+                final TrainControlUI window = ui;
+
+                SwingUtilities.invokeAndWait(() -> window.dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Opens the edit door, types an address and a name into it and presses OK; then the first message after the OK,
+     * closed without answering yes.
+     *
+     * @param door the door
+     * @param address the address to type
+     * @param name the name to type
+     * @return the message after OK, or null when none was shown
+     * @throws Exception from the wait
+     */
+    private static String answerTheEditDoor(Runnable door, String address, String name) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                door.run();
+            }
+            finally
+            {
+                returned.set(true);
+            }
+        });
+
+        final boolean[] typed = new boolean[1];
+
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (!typed[0] && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!(window instanceof JDialog) || !window.isShowing()) continue;
+
+                    JOptionPane pane = paneIn((java.awt.Container) window);
+
+                    if (pane == null || !(pane.getMessage() instanceof org.traincontrol.gui.LocomotiveAddressChange)) continue;
+
+                    try
+                    {
+                        Object edit = pane.getMessage();
+
+                        java.lang.reflect.Field addressField = edit.getClass().getDeclaredField("address");
+                        java.lang.reflect.Field nameField = edit.getClass().getDeclaredField("locName");
+
+                        addressField.setAccessible(true);
+                        nameField.setAccessible(true);
+
+                        ((javax.swing.JTextField) addressField.get(edit)).setText(address);
+                        ((javax.swing.JTextField) nameField.get(edit)).setText(name);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+
+                    pane.setValue(pane.getOptions()[0]);
+
+                    window.dispose();
+
+                    typed[0] = true;
+
+                    return;
+                }
+            });
+        }
+
+        assertTrue(typed[0], "precondition: the edit door showed no Change Name or Address dialog");
+
+        String said = null;
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            final String[] found = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> found[0] = closeTheFirstQuestion());
+
+            said = found[0];
+        }
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (!returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
+        }
+
+        assertTrue(returned.get(), "precondition: the edit door never returned");
+
+        return said;
+    }
+
+    /** Closes the first showing option pane, as its X does, and says what it said; null when none is showing. */
+    private static String closeTheFirstQuestion()
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (!(window instanceof JDialog) || !window.isShowing()) continue;
+
+            JOptionPane pane = paneIn((java.awt.Container) window);
+
+            if (pane == null) continue;
+
+            String message = String.valueOf(pane.getMessage());
+
+            pane.setValue(JOptionPane.CLOSED_OPTION);
+
+            window.dispose();
+
+            return message;
+        }
+
+        return null;
+    }
+
+    private static JOptionPane paneIn(java.awt.Container container)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof JOptionPane) return (JOptionPane) child;
+
+            if (child instanceof java.awt.Container)
+            {
+                JOptionPane found = paneIn((java.awt.Container) child);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static void closeEveryDialog() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof JDialog && window.isShowing()) window.dispose();
+            }
+        });
+    }
+}

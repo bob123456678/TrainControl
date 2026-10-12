@@ -31,6 +31,40 @@ public final class I18n
     }
 
     /**
+     * @return the locale of the messages on show
+     */
+    public static Locale getLocale()
+    {
+        return bundle.getLocale();
+    }
+
+    /**
+     * Which form of a counted noun the messages on show take for a number: "One", "Few", or "" for the plural - appended
+     * to a key, as `countWarnings` has `countWarningsOne` and `countWarningsFew` beside it (RSA28-C2).  French takes the
+     * singular for 0 as well; Polish a form of its own for 2 to 4, not 12 to 14; the rest the singular for 1 only.
+     *
+     * @param n the number counted
+     * @return the key's ending
+     */
+    public static String countForm(long n)
+    {
+        String language = bundle.getLocale().getLanguage();
+
+        if ("fr".equals(language)) return n == 0 || n == 1 ? "One" : "";
+
+        if ("pl".equals(language))
+        {
+            if (n == 1) return "One";
+
+            long last = n % 10, lastTwo = n % 100;
+
+            return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? "Few" : "";
+        }
+
+        return n == 1 ? "One" : "";
+    }
+
+    /**
      * Fetch a plain string by key.
      * @param key
      * @return 

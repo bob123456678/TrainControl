@@ -39,7 +39,11 @@ public class MarklinRoute extends Route
     private final Set<LayoutLabel> tiles;
     
     // Extra delay between route commands
-    private static final int DEFAULT_SLEEP_MS = 150;
+    // FLOOR UNDER ANY DELAY A COMMAND CARRIES, and public so the editor can raise a
+    // smaller number to it as it is typed (X8-C2) - below this a delay was accepted,
+    // stored, exported, redisplayed and then discarded, so the cell and the railway
+    // disagreed with nothing to say so.
+    public static final int DEFAULT_SLEEP_MS = 150;
 
     // What a route command's delay must be for the *next* command to land THREEWAY_DELAY_MS later -
     // the gap the track diagram already leaves between a three-way's two commands.  execRoute sleeps
@@ -82,7 +86,11 @@ public class MarklinRoute extends Route
      */
     public MarklinRoute(MarklinControlStation network, String name, int id)
     { 
-        super(name);
+        // TRIMMED HERE, where every door meets (CS3-C1).  `newRoute(MarklinRoute)` indexes under the trimmed name
+        // while `deleteRoute` deletes by the route's own - so a Central Station route whose name carries a leading or
+        // trailing space could be neither deleted nor re-read, and `changeRouteId` put it into the database twice.
+        // The two file parsers are the only doors that do not trim before they build; this is one place instead.
+        super(name == null ? null : name.trim());
         
         this.id = id;
         this.network = network;  
@@ -111,7 +119,8 @@ public class MarklinRoute extends Route
     public MarklinRoute(MarklinControlStation network, String name, int id, List<RouteCommand> route, int s88, s88Triggers triggerType, boolean enabled,
             NodeExpression conditions)
     { 
-        super(name, route);
+        // Trimmed, as the constructor above says (CS3-C1).
+        super(name == null ? null : name.trim(), route);
         
         this.id = id;
         this.network = network;    
@@ -133,42 +142,6 @@ public class MarklinRoute extends Route
                 
         // Starts the execution of the automated route
         this.executeAutoRoute();
-    }
-
-    /**
-     * Also repairs the condition tree, which the base class cannot see.
-     *
-     * A condition references a locomotive BY NAME - an "autoloc" term meaning "only fire while this
-     * locomotive is standing at that sensor" - and conditions live here, not in the command list Route
-     * sweeps.  So a rename left them naming something that no longer resolves, evaluate got null from
-     * getLocByName and returned false from then on, and the route simply stopped firing: no error, no
-     * dialog, just a route that used to set switches ahead of a moving train and now does not.
-     *
-     * The commands come back from toList by reference, so setting the name repairs the tree in place.
-     *
-     * @param oldName
-     * @param newName
-     */
-    @Override
-    public void locomotiveRenamed(String oldName, String newName)
-    {
-        super.locomotiveRenamed(oldName, newName);
-
-        if (this.conditions == null) return;
-
-        if (oldName == null || newName == null || oldName.equals(newName)) return;
-
-        for (RouteCommand rc : NodeExpression.toList(this.conditions))
-        {
-            // The same set the base class repairs.  Only autoloc can appear in a condition today, but
-            // a condition that named a locomotive any other way would need the same repair, and the
-            // two lists disagreeing is exactly how this was missed the first time.
-            if ((rc.isLocomotiveSpeed() || rc.isFunction() || rc.isAutoLocomotive()
-                    || rc.isLocomotiveDirection()) && oldName.equals(rc.getName()))
-            {
-                rc.setName(newName);
-            }
-        }
     }
 
     @Override
@@ -264,6 +237,19 @@ public class MarklinRoute extends Route
                 }
             });
 
+            // A DAEMON, AND NAMED (S14-C2).
+            //
+            // It parks on an untimed wait in the feedback handler and `disable()` only clears a flag it
+            // will not look at until the sensor next fires - so it never returns on its own, and a
+            // non-daemon thread in that state keeps the JVM alive after the window has closed.  Every
+            // other long-lived thread in this program was made a daemon for exactly that reason.
+            //
+            // Named so that a thread dump says which route is waiting, which is the only way to tell
+            // several of these apart.
+            this.monitorThread.setDaemon(true);
+
+            this.monitorThread.setName("route monitor " + this.getId() + " " + this.getName());
+
             this.monitorThread.start();
 
             return true;
@@ -308,6 +294,10 @@ public class MarklinRoute extends Route
     @Override
     public void addTile(LayoutLabel l)//, boolean dynamic)
     {   
+        // The labels this one replaces go now.  See LayoutLabel.forgetReplaced: nothing else can drop
+        // them on the main window, so without this every rebuilt page stayed registered for ever.
+        LayoutLabel.forgetReplaced(this.tiles, l);
+
         this.tiles.add(l);
     }
     
@@ -316,19 +306,428 @@ public class MarklinRoute extends Route
      * @param auto 
      */
     @Override
+    /**
+     * EVERY WALK OF THIS COMMAND LIST OFF THE EVENT THREAD TAKES A COPY FIRST (CS3-B1, narrowed by SVB-C3).
+     *
+     * This said *"every walk"*, and several do not: `toJSON`, `toCSV`, `otherRouteRenamed`, `namesLocomotives`
+     * and `commandsDrive` walk the live list.  Every one of them is an event-thread caller, which is the same
+     * thread the edits run on, so none can be part-way along a list another thread is changing.  The one walk
+     * that is NOT on the event thread is the backup menu's `saveState`, and its reader takes a copy in
+     * `MarklinSimpleComponent`'s constructor.
+     *
+     * The copy is not atomic either: `new ArrayList<>(list)` is `toArray()` under the hood, which walks a
+     * `LinkedList` with no modification check, so a removal landing inside it can shorten the copy.  The window
+     * went from seconds to microseconds, which is the whole of this fix's value; it did not go to zero, and
+     * closing it would mean locking the list on both sides - which is a bigger claim than the one this
+     * comment needs to make.
+     *
+     * `MarklinControlStation.deleteLoc` takes every command that drives the deleted locomotive out of every
+     * route, through `Iterator.remove()`, from the event thread - while `execRoute` is part-way along the
+     * same list on its own thread with 200 ms between commands.  Both list kinds used here are fail-fast, so
+     * the next step threw ConcurrentModificationException and that thread died: measured 2026-09-19, three of
+     * eight turnouts thrown and the rest never sent, leaving the road half set with nothing in the log to say
+     * so.  A route runs the commands it began with, and an edit lands on the next run - which is when it
+     * should land anyway.
+     */
     public void execRoute(boolean auto)
     {
-        execRoute(auto, 1);
+        execRoute(auto, 1, false);
+    }
+
+    /**
+     * Runs the route even though one of its accessories is on track a train is running over.
+     *
+     * Adam, 2026-08-25: "conflicting routes should still be executable in case of a transient
+     * accessory failure.  Add a confirmation dialog to the UI similar to how individual clicks
+     * currently work when an accessory has an active route."
+     *
+     * The case he is protecting is real and is the reason a refusal alone is wrong: a turnout that did
+     * not take the command, or reported the wrong position, is exactly when somebody needs to set it -
+     * and it is exactly when it will be on a locked path, because the path is what commanded it.
+     *
+     * So the refusal is for the door with nobody at it. The two doors with a person at them ask, the
+     * same way clicking the tile of an accessory on an active route has always asked, and this is what
+     * they call when the answer is yes.
+     *
+     * Not passed down to chained routes: a route this one triggers is asked about on its own terms,
+     * because the operator agreed to THIS route's conflict and was never shown the other's.
+     *
+     * **WHAT ONE "OK" ACTUALLY COVERS** (SVN-C16).  This paragraph used to describe the answer as
+     * covering "this route's conflict", singular; the override is a flag on the whole run, so every
+     * accessory this route sets is set unchecked - including one locked by a DIFFERENT dispatch five
+     * seconds later, which the operator was never shown.
+     *
+     * Deliberate, and the alternative is written at the guard itself: asking per accessory means a
+     * dialog per command in the middle of throwing a route, which is unusable.  What the operator is
+     * agreeing to is "run this route anyway", and this says so rather than implying something narrower.
+     */
+    public void execRouteOverridingConflicts()
+    {
+        execRoute(false, 1, true);
+    }
+
+    /**
+     * Which accessory of this route is on track a train is running over, or null if none.
+     *
+     * Public so that a menu can ask before it acts, rather than acting and being refused - the same
+     * shape as canStartAutonomy, and the same lesson (OB-050, OB-090).
+     *
+     * @return the accessory's name, or null when the route is free to run
+     */
+    public String conflictingAccessory()
+    {
+        String[] why = conflictingAccessoryAndReason();
+
+        return why == null ? null : why[0];
+    }
+
+    /**
+     * The same question, answered with the REASON as well as the name.
+     *
+     * `heldReason` has always distinguished the two - a turnout on a locked path is not a signal
+     * protecting a platform somebody is parked at, and the comment beside it says so in as many words.
+     * The log has told them apart since fb9b04b8.  The DIALOG did not: this class had no way to hand
+     * the reason to the interface, so every confirmation said "which is on track a train is running
+     * over right now", including for a train that was standing still.
+     *
+     * An operator asked the wrong question answers the wrong question.  Told a train is running over
+     * the accessory when none is, the cautious answer is Cancel, and the route that would have been
+     * safe to force is refused; told it about a parked train often enough, the answer becomes reflexive
+     * OK, and one day the train really is moving.
+     *
+     * @return the accessory's name and the message key for the refusal, or null when it is safe
+     */
+    public String[] conflictingAccessoryAndReason()
+    {
+        // AN EMERGENCY STOP IS NEVER A QUESTION (Adam, 2026-09-01).
+        //
+        // "Emergency stop should never conflict or prompt."
+        //
+        // Every door asks this before it acts, and the two HUMAN doors then `return` on Cancel - so a
+        // route that cuts the power AND sets a trap point did neither, and the dialog that decided it
+        // named one accessory and never mentioned the stop.  Whichever way the operator answered, they
+        // were not answering about the power.
+        //
+        // Answering "nothing to confirm" here takes the question away at every door at once, which is
+        // the property that matters: an emergency stop must not wait on a dialog, and must not be
+        // discarded by one.  The conflicting accessory is still skipped and still logged by the
+        // per-command check below, exactly as at the s88 door - declining to throw a switch under a
+        // moving train was never the part in dispute.
+        if (this.hasEmergencyStop()) return null;
+
+        return accessoryHeldByAutonomy();
+    }
+
+    /**
+     * Whether this route cuts the power - an emergency stop, wherever it sits in the command list, or a route it fires
+     * that is one.
+     *
+     * Adam, 2026-09-01: "emergency stop should never conflict or prompt."
+     *
+     * AND THROUGH THE STOP ROUTE IT FIRES (Adam, 2026-09-25).  A stop stands in a route of its own (`mixesAStop`), and a
+     * route that should set something and then cut the power fires that one in its stop's place - which is what a route
+     * that mixed them is split into.  It cuts the power all the same, so it is never asked either: asked about a switch,
+     * Cancel would have called off a power cut the question never mentioned.  As far down a chain as firing it reaches
+     * (`cutsThePowerAt`, RLA5-A1): a route that fires a split route reaches its stop two routes down.
+     *
+     * @return true when this route, or a route it fires, stops the railway
+     */
+    public boolean hasEmergencyStop()
+    {
+        return cutsThePowerAt(1, new java.util.HashSet<>());
+    }
+
+    /**
+     * Whether this route, run at this recursion limit, cuts the power - itself, or through a route it runs.
+     *
+     * The limits are `execRoute`'s own, so the answer is what firing it does: every door starts a route at 1, a chained
+     * route runs one lower, a route below 0 is refused - and a route that is only a stop runs at any level, since it fires
+     * nothing further (RLA5-A1).
+     *
+     * THE PATH, NOT EVERY ROUTE EVER ASKED (RLV6-C2).  A route reached by two paths is asked again by the second, at
+     * that path's own depth: met first too deep to fire its stop, it may fire it from a shorter way in.
+     *
+     * @param limit the recursion limit this route would run at
+     * @param seen the routes on the path being walked, so a chain that loops ends
+     * @return true where running it cuts the power
+     */
+    private boolean cutsThePowerAt(int limit, java.util.Set<MarklinRoute> seen)
+    {
+        if (!seen.add(this)) return false;
+
+        try
+        {
+            if (limit < 0 && !this.isOnlyStops()) return false;
+
+            if (hasAStop(this.route)) return true;
+
+            for (RouteCommand rc : new java.util.ArrayList<>(this.route))
+            {
+                if (rc == null || !rc.isRoute() || this.network == null) continue;
+
+                MarklinRoute fired = this.network.getRoute(rc.getName());
+
+                if (fired != null && fired != this && fired.cutsThePowerAt(limit - 1, seen)) return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            seen.remove(this);
+        }
+    }
+
+    /**
+     * Whether every command of this route is an emergency stop - a route that fires nothing further.
+     *
+     * @return true for a stop-only route
+     */
+    public boolean isOnlyStops()
+    {
+        java.util.List<RouteCommand> commands = new java.util.ArrayList<>(this.route);
+
+        if (commands.isEmpty()) return false;
+
+        for (RouteCommand rc : commands)
+        {
+            if (rc == null || !rc.isStop()) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether any of these commands is an emergency stop.
+     */
+    private static boolean hasAStop(java.util.List<RouteCommand> commands)
+    {
+        for (RouteCommand rc : new java.util.ArrayList<>(commands))
+        {
+            if (rc != null && rc.isStop()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether these commands put an emergency stop among commands of other kinds, which no route may do - Adam,
+     * 2026-09-25: *"if a route has emergency stop, it cannot have any other types of commands.  Reject it from being
+     * created or imported as such.  This will keep a clean separation."*
+     *
+     * A route that mixes them, loaded or imported, is split instead (`MarklinControlStation.splitRoutesThatMixAStop`, on
+     * his answer for his own route that did: *"Split it automatically"*); the model and the route editor refuse to make
+     * one.
+     *
+     * @param commands a route's commands, or null
+     * @return true where there is a stop and anything else
+     */
+    public static boolean mixesAStop(java.util.List<RouteCommand> commands)
+    {
+        if (commands == null) return false;
+
+        boolean stop = false;
+        boolean other = false;
+
+        for (RouteCommand rc : new java.util.ArrayList<>(commands))
+        {
+            if (rc == null) continue;
+
+            if (rc.isStop()) stop = true;
+            else other = true;
+        }
+
+        return stop && other;
     }
     
+    /**
+     * The first accessory this route would set that autonomy has locked, or null if none.
+     *
+     * Asked of `getActiveAccs`, which is the same set the diagram's tile click asks and whose own
+     * javadoc says it exists "to WARN before throwing an accessory on an active route". Route
+     * execution never asked it (AU-A2).
+     *
+     * Silent when autonomy is not running, which is when routes are most of what this application is
+     * for - nothing about ordinary route use changes.
+     *
+     * @return the accessory's name, for the log, or null when the route is safe to run
+     */
+    private String[] accessoryHeldByAutonomy()
+    {
+        for (RouteCommand rc : new java.util.ArrayList<>(this.route))
+        {
+            String[] why = heldReason(rc);
+
+            if (why != null) return why;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether autonomy holds the accessory THIS ONE command would set, asked fresh.
+     *
+     * **Asked per command, immediately before the command, because a route takes seconds to run.**
+     * The guard used to be evaluated once before the loop, and `execRoute` sleeps
+     * `SLEEP_INTERVAL` plus the command's own delay between every pair of commands. So a dispatch
+     * that locked a path while the route was part way through was invisible to it, and the route
+     * went on to throw a turnout the path had just configured and validated - which is AU-A2 itself,
+     * surviving in a window seconds wide, through all three doors including the s88 trigger with
+     * nobody present.
+     *
+     * Found by an independent review that reproduced it with a timestamped log: the route committed
+     * at 24.209, autonomy locked the turnout at 24.711, and the route set it against the path at
+     * 26.764 while `getActiveAccs` contained it.
+     *
+     * @param rc the command about to be sent
+     * @return the accessory's name and the message key for the refusal, or null when it is safe
+     */
+    private String[] heldReason(RouteCommand rc)
+    {
+        if (rc == null || !rc.isAccessory()) return null;
+
+        // ASKED ONCE, NOT BUILT (RLV11-C5): a route runs on its own thread, and Unload can clear the railway between
+        // asking whether there is one and asking for it
+        final org.traincontrol.automation.Layout railway = this.network.getAutoLayoutIfLoaded();
+
+        if (railway == null || !this.network.isAutonomyRunning()) return null;
+
+        // Each with the setting its path holds it at (Adam, 2026-10-11: "make sure the code allows switching to the
+        // correct (same) setting that autonomy is using")
+        java.util.Map<Accessory, Boolean> locked = railway.getActiveAccSettings();
+
+        if (locked == null) return null;
+
+        // The signals protecting squares somebody is standing on, which getActiveAccs cannot see.
+        //
+        // It walks the config commands of active edges, and a protecting signal is usually not one -
+        // it is driven separately, by occupancy. So a route could turn a platform's signal green with
+        // a train standing at it, and nothing re-asserts it until the next occupancy change: a green
+        // aspect inviting a hand-driven train into an occupied platform, for as long as the train
+        // stays there.
+        //
+        // "Usually" rather than "never", which is how this comment first read. `refreshOneSignal` says
+        // outright that TilePorts gives a SIGNAL tile a GREEN configuration command, so a path
+        // configured across one drives it through getConfigCommands - the same Accessory. The two sets
+        // overlap; the protecting-signal rule covers the platforms no active path happens to cross.
+        //
+        // WHERE THAT RULE LIVES: `Layout.protectsAnOccupiedSquare`, since `87b6c10a`, which is what the
+        // note at the call site below says.  It used to be computed here, immediately under this
+        // paragraph, and "this one covers the platforms..." pointed at that computation (CD3-C1).
+        // Kept because it is the reason the rule exists, which the two doors that ask it do not repeat.
+
+        // By address AND protocol, which is how the route names it and how the station resolves it -
+        // a bare address is ambiguous across decoder types on this railway.
+        MarklinAccessory accessory =
+            this.network.getAccessoryByAddressIfPresent(rc.getAddress(), rc.getProtocol());
+
+        if (accessory == null) return null;
+
+        // THE SETTING THE PATH ALREADY HOLDS MOVES NOTHING under its train, so only a command that would change it is
+        // refused - and any command where two paths disagree about it (null)
+        if (locked.containsKey(accessory) && !Boolean.valueOf(rc.getSetting()).equals(locked.get(accessory)))
+        {
+            return new String[] {accessory.getName(), "route.refusedAccessoryOnActivePath"};
+        }
+
+        // The ASPECT matters here, and it does not for the case above.
+        //
+        // A turnout on a locked path must not move at all - any position but the one the path
+        // configured is wrong for the train crossing it. A protecting signal is different: the only
+        // harmful command is the one that turns protection OFF. A route setting it red is doing
+        // exactly what protection would do, and refusing that was pure over-strictness - it fired for
+        // every route touching any signal of any platform with a train parked at it, and because
+        // accessories are skipped as a group, it took the whole route's turnouts with it. Found by
+        // review, which reproduced it with no path locked anywhere.
+        //
+        // `getSetting()` is true for RED and TURN, false for GREEN and STRAIGHT (Accessory.java).
+        // ASKED OF THE LAYOUT (SVN-B16).  It used to be worked out here, and the diagram's own
+        // accessory tile - which asks the locked-path half two lines above - never got this half at
+        // all: a route setting a platform's signal green was refused while clicking the same signal
+        // green by hand was not.  One rule now, in the one place both can reach.
+        //
+        // A GREEN THE TRAIN'S OWN PATH HOLDS IS NO CHANGE (RSA66-C1): the exit guard of the platform a path leaves and the
+        // home signal of the one it is bound for are held accessories too, and Adam's rule reaches them (2026-10-11: "make
+        // sure the code allows switching to the correct (same) setting that autonomy is using") - AND ONLY WHILE IT SHOWS
+        // GREEN (the fix-validation fanout's C1-B): one signal may guard two platforms, and protection may have set it red
+        // for a train standing beside another path's; green is a change then, and refused as ever
+        boolean heldGreenAndShowing = Boolean.FALSE.equals(locked.get(accessory)) && !accessory.isSwitched();
+
+        if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory) && !heldGreenAndShowing)
+        {
+            // STANDING, OR ONLY RESERVED (GSR-C2).  A locked path reserves every point along it for its train, its
+            // destination included, so a platform holds this signal red before any train is at it - and "a train is
+            // standing" sent the operator looking for one.  The refusal is the same either way; only what it says differs.
+            return new String[] {accessory.getName(), railway.protectsAStandingTrain(accessory)
+                ? "route.refusedSignalProtectingOccupiedPlatform" : "route.refusedSignalProtectingReservedPlatform"};
+        }
+
+        return null;
+    }
+
+    /**
+     * What a route does when one of its accessory commands conflicts with a train (MT-247).
+     */
+    public enum ConflictResponse
+    {
+        /** The operator said yes: set the ironwork and everything else. */
+        RUN_EVERYTHING,
+
+        /** The operator said no: nothing in this route happens. */
+        CANCEL_ROUTE,
+
+        /** Nobody was there to ask: leave THIS accessory alone, run everything else. */
+        SKIP_THIS_ACCESSORY
+    }
+
+    /**
+     * Adam's ruling of 2026-09-06, as a function of who is there and what they said (MT-247).
+     *
+     * **"1. cancel should cancel everything.  OK should fire everything.  2. if the route is auto
+     * triggered: popup, just a notification in the log.  don't run the conflicting switch commands,
+     * but do run the power off and others."**
+     *
+     * The two doors answer differently on purpose:
+     *
+     * A person asked and saying no means the route does not happen - not its speeds, not its
+     * functions, not the route it chains to. Somebody looking at the railway said no to this route;
+     * running most of it is not what they said. That answer is WHOLE.
+     *
+     * Nobody there - the s88 door - means THIS accessory is left alone and everything else still
+     * runs, which is how a route that cuts the power still cuts it. That answer is per command, and
+     * it is per command because Adam's words are: *"don't run the conflicting switch commands"* -
+     * the ones that conflict, not the ones that happen to be in the same route. The log line is the
+     * whole record, because there is no one to show a dialog to.
+     *
+     * **The emergency-stop carve-out is gone**, and nothing is lost by it. A route carrying a stop
+     * used to be excused the question; now the auto door does not ask at all, and the manual door
+     * asking is what Adam wants. A person who cancels a route that would have cut the power has the
+     * Stop button in front of them.
+     *
+     * Named rather than left inline so the ruling can be run: reaching the manual branch through the
+     * route itself needs a View, which is sixteen methods of stub for one boolean.
+     *
+     * @param askable whether there is somebody to ask - a person's door, with a window attached
+     * @param saidYes what they answered, meaningless when askable is false
+     * @return what the route should do
+     */
+    public static ConflictResponse respondToConflict(boolean askable, boolean saidYes)
+    {
+        if (!askable) return ConflictResponse.SKIP_THIS_ACCESSORY;
+
+        return saidYes ? ConflictResponse.RUN_EVERYTHING : ConflictResponse.CANCEL_ROUTE;
+    }
     /**
      * Executes the route
      * @param auto - was the route triggered automatically?
      * @param recursionLimit - the maximum number of other routes that can be triggered from this route
      */
-    private void execRoute(boolean auto, int recursionLimit)
+    private void execRoute(boolean auto, int recursionLimit, boolean overrideConflicts)
     {
-        if (recursionLimit < 0)
+        // A ROUTE THAT IS ONLY A STOP RUNS AT ANY DEPTH (RLA5-A1, RLU5-A1, RLD5-A1).  It fires nothing further, so the limit
+        // that keeps a chain from running away has nothing to hold back - and a split route's stop sits one route below
+        // the route that fires it, so a chain that fires a split route reaches its stop past the limit.
+        if (recursionLimit < 0 && !this.isOnlyStops())
         {
             this.network.logf(
                 "route.recursionLimitReached",
@@ -355,12 +754,249 @@ public class MarklinRoute extends Route
                 // route silently returned false for the rest of the session.
                 try
                 {
-                    for (RouteCommand rc : this.route)
+                    // Not onto track a train is running over (AU-A2).
+                    //
+                    // Route execution and autonomy path locking each worked exactly as designed and
+                    // neither consulted the other. `configureAndLockPath` reserves every accessory on
+                    // a path, commands it and validates it; a route then set the same accessory back,
+                    // with no refusal and nothing said. The train is routed off its protected path.
+                    //
+                    // Three doors reached it and the automatic one is the worst: an s88 trigger route
+                    // left over from manual operation fires when an AUTONOMY train crosses the trigger
+                    // sensor - sensors are shared and reused on this railway - so no person is
+                    // involved at all. The diagram's route tile looked guarded and was not: that guard
+                    // asks `activeAccs.contains(c.getAccessory())`, and a route component's accessory
+                    // is null.
+                    //
+                    // REFUSED rather than confirmed, at the door with nobody at it. This class is the
+                    // model half and has no business showing a dialog - the two doors with a person at
+                    // them ask, before the route starts and again if a conflict appears while it runs.
+                    //
+                    // ONE COMMAND AT A TIME, which is Adam's ruling of 2026-09-06 (MT-247): "don't run
+                    // the conflicting switch commands, but do run the power off and others".  Being on
+                    // track a train is using is a property of the ACCESSORY, not of the route, so a
+                    // switch on clear track is thrown whatever a different switch is doing.  What this
+                    // used to do instead is written out below the override.
+                    //
+                    // Only the accessories that are actually on a locked path, so a route that turns
+                    // on the lights or stops the power runs during autonomy exactly as before.
+                    //
+                    // The first version of this returned here, discarding every command in the route -
+                    // and a validation pass proved what that costs: a route that cuts the power AND
+                    // sets a trap point, which is the shape a safety route on an s88 trigger naturally
+                    // has, was refused entirely because of the turnout. The emergency stop did not
+                    // run. Measured, not reasoned: `getPowerState()` was still true afterwards.
+                    //
+                    // "Refused whole" was never an argument for suppressing a stop, which is safe to
+                    // obey whatever else is true.  So everything that is not a held accessory runs:
+                    // stop, functions off, lights, locomotive speeds, chained routes - and the
+                    // accessories nothing is standing on.
+                    // Unless somebody has said to go ahead.
+                    //
+                    // Adam: "conflicting routes should still be executable in case of a transient
+                    // accessory failure." A turnout that did not take the command is exactly when it
+                    // needs setting, and exactly when it will be on a locked path - because the path
+                    // is what commanded it. A refusal with no way past it would take the recovery away
+                    // at the moment it is wanted.
+                    //
+                    // So this stays the answer for the s88 trigger door, which fires with nobody
+                    // present, and the two doors with a person at them ask first.
+                    // A local, because the parameter is captured by the thread this runs on and so
+                    // cannot be assigned; the mid-route question below moves this one.
+                    boolean override = overrideConflicts;
+
+                    // NOTHING IS DECIDED FOR THE WHOLE ROUTE HERE ANY MORE (MT-247).
+                    //
+                    // Adam, 2026-09-06: **"if the route is auto triggered: popup, just a notification
+                    // in the log.  don't run the conflicting switch commands, but do run the power off
+                    // and others."**  Asked what "conflicting" means, he was clear: an accessory
+                    // command whose switch sits on track a train occupies or has reserved.
+                    //
+                    // This read that as being about the whole accessory GROUP.  It asked
+                    // `accessoryHeldByAutonomy` once, which returns the FIRST held command in the route
+                    // and says nothing about the others, and then set
+                    //
+                    //     boolean skipAccessories = auto && conflict != null;
+                    //
+                    // so one turnout under a train dropped every other turnout in the route with it -
+                    // and the ones it dropped were on track nothing was standing on.  The per-command
+                    // check below, which is the right grain and already existed, could never run at
+                    // that door because the group skip continued past it.
+                    //
+                    // "Refused WHOLE" is still the right argument about a route INTERRUPTED part way,
+                    // and that is still what happens: once a command is refused the ones already sent
+                    // stand, because they went out before the conflict existed.  It was never an
+                    // argument for refusing a switch on clear track because a different switch is busy.
+                    // `heldReason`'s own comment records the same shape being found from the other
+                    // side, where an over-strict signal rule "took the whole route's turnouts with it".
+                    //
+                    // The log line that used to be written here went with it.  It named one accessory
+                    // for the whole route; the per-command branch below writes one line per command
+                    // actually refused, which is both the notification Adam asked for and an accurate
+                    // one.  `accessoryHeldByAutonomy` is still what screens a route BEFORE it runs, at
+                    // the human doors, through `conflictingAccessoryAndReason`.
+
+                    for (RouteCommand rc : new java.util.ArrayList<>(this.route))
                     {
                         if (rc != null)
                         {
                             if (rc.isAccessory())
                             {
+                                // ASKED PER COMMAND, immediately before it goes out.
+                                //
+                                // This loop takes seconds: it sleeps SLEEP_INTERVAL plus each
+                                // command's own delay between every pair of commands.  So a dispatch
+                                // that locked a path while the route was part way through was
+                                // invisible to a check made once before the loop, and the route went
+                                // on to throw a turnout the path had just configured - AU-A2 itself,
+                                // surviving in a window seconds wide, through the s88 door with
+                                // nobody present.
+                                //
+                                // Per command is also the GRAIN of Adam's ruling (MT-247).  The held
+                                // accessory is the one skipped and the next is asked about fresh, so a
+                                // route does not stop setting the ironwork nothing is standing on
+                                // because one turnout happens to be busy.
+                                String[] now = override ? null : heldReason(rc);
+
+                                if (now != null)
+                                {
+                                    // Asked, if there is somebody to ask (Adam, 2026-08-25: "ask me,
+                                    // at the two human doors").
+                                    //
+                                    // `auto` is the s88 trigger door, which fires with nobody
+                                    // present - there the only safe answer is to stop, and it does.
+                                    // The two doors a person uses get the same question they were
+                                    // asked before the route started, for the same reason: a turnout
+                                    // that did not take its command is exactly when somebody needs to
+                                    // set it.
+                                    //
+                                    // ONCE, not per command. The answer is remembered for the rest of
+                                    // this route by turning on the override - being asked again at
+                                    // every remaining accessory would be unusable, and would let one
+                                    // route end up half in each state anyway.
+                                    // AND NOT MIDWAY EITHER (Adam, 2026-09-01).  The check above takes
+                                    // the question away before the route starts; this one could put it
+                                    // back seconds later, while the power is still on and the operator
+                                    // is watching a train they wanted stopped.  Same rule, both ends:
+                                    // a route that cuts the power skips the accessory and carries on.
+                                    // AND IT PARKS THE REST OF THE ROUTE WHILE IT STANDS
+                                    // (SVN-B15).
+                                    //
+                                    // This is called on the route's own thread, so the speeds, the
+                                    // functions and any chained route after this command wait for the
+                                    // answer.  That is deliberate and not an oversight: the answer
+                                    // decides whether this route's ironwork is set at all, and running
+                                    // its speeds over turnouts that were not set is the worse of the
+                                    // two.  What was wrong was `View`'s javadoc, which called the
+                                    // answer one about "the rest of its accessories"; it is corrected
+                                    // there.
+                                    //
+                                    // The one command that must never wait on a person does not reach
+                                    // here: `hasEmergencyStop()` is the whole route's stop, tested
+                                    // before the question, on Adam's ruling (`FX2-2`, `SVN-A4`).
+                                    // ADAM'S RULING, 2026-09-06 (MT-247):
+                                    //
+                                    // **"1. cancel should cancel everything.  OK should fire
+                                    // everything.  2. if the route is auto triggered: popup, just a
+                                    // notification in the log.  don't run the conflicting switch
+                                    // commands, but do run the power off and others."**
+                                    //
+                                    // So the two doors now answer differently on purpose, and each
+                                    // answer is whole rather than partial:
+                                    //
+                                    // A PERSON asked and saying no means the REST of the route does not
+                                    // happen - not its remaining speeds, not its functions, not the
+                                    // route it chains to.  Somebody looking at the railway said no to
+                                    // this route; running most of it is not what they said.
+                                    //
+                                    // "The rest", because this question is asked from inside the
+                                    // command loop: the commands before it have already gone out and
+                                    // stand, for the reason the comment at the group check above gives.
+                                    // The screen shown BEFORE the route starts is the whole-route
+                                    // refusal, and that one really does let no command out.
+                                    //
+                                    // NOBODY THERE - the s88 door - means the conflicting ironwork is
+                                    // left alone and everything else in the route still runs, which is
+                                    // how a route that cuts the power still cuts it.  The log line is
+                                    // the whole record, because there is no one to show a dialog to.
+                                    //
+                                    // The emergency-stop carve-out that used to sit in this condition
+                                    // is gone, and nothing is lost by it: a route carrying a stop is
+                                    // no longer a special case of "do not ask", because the auto door
+                                    // does not ask at all and the manual door asking is what Adam
+                                    // wants.  A person who cancels a route that would have cut the
+                                    // power has the Stop button in front of them.
+                                    // AND A ROUTE THAT CUTS THE POWER IS NEVER ASKED, at this door as
+                                    // well as the one before the route starts (DIR-A3).
+                                    //
+                                    // MT-247 took `!this.hasEmergencyStop()` out of this condition and
+                                    // left the identical clause standing in
+                                    // `conflictingAccessoryAndReason`, which is what screens a route
+                                    // BEFORE it runs.  So the two halves of one gesture disagreed: a
+                                    // stop-carrying route was waved past the pre-route screen - it
+                                    // answers "nothing to confirm" - and then met the question here
+                                    // instead, where Cancel now returns out of the whole route.
+                                    //
+                                    // Measured: `preRouteConflict=null midwayAsked=2
+                                    // powerStillOn=true`.  The operator was asked about a turnout and,
+                                    // by answering it, silently declined a power cut the dialog never
+                                    // mentioned.  Adam's ruling of 2026-09-01 is the older and the
+                                    // narrower one - *"emergency stop should never conflict or
+                                    // prompt"* - and MT-247 is about what happens WHEN somebody is
+                                    // asked.  A route carrying a stop is not asked, at either door,
+                                    // and then MT-247 governs every route that is.
+                                    final boolean askable = !auto && !this.hasEmergencyStop()
+                                        && this.network.getGUI() != null;
+
+                                    final ConflictResponse response = respondToConflict(askable,
+                                        askable && this.network.getGUI().confirmRouteConflictMidway(
+                                            this, now[0], now[1]));
+
+                                    if (response == ConflictResponse.RUN_EVERYTHING)
+                                    {
+                                        override = true;
+                                    }
+                                    else if (response == ConflictResponse.CANCEL_ROUTE)
+                                    {
+                                        // CANCELLED WHOLE.  The log line first, so the record of why
+                                        // exists before the route stops being anything.
+                                        this.network.logf(now[1], this.getName(), now[0]);
+
+                                        this.network.logf("route.cancelledByOperator", this.getName());
+
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        // The log line goes HERE, where the refusal happens.
+                                        //
+                                        // Both of these messages say the route did not switch the
+                                        // accessory.  Written before the question, that was a claim
+                                        // about a decision nobody had made yet, and clicking OK left it
+                                        // standing as the only record of a command that did go out.
+                                        this.network.logf(now[1], this.getName(), now[0]);
+
+                                        // THIS COMMAND ONLY (MT-247).  It used to set a flag that
+                                        // dropped every LATER accessory as well, which made one busy
+                                        // turnout refuse the whole route's ironwork - including the
+                                        // switches on track nothing was standing on.
+                                        //
+                                        // **AND EVERYTHING ELSE IN THE ROUTE STILL RUNS** - speeds,
+                                        // functions, chained routes (RGN-B2).  The two messages above
+                                        // used to disagree about that, one saying "nothing further in
+                                        // the route was switched either" and the other "the rest of
+                                        // the route ran"; both now say what actually happens, which is
+                                        // that only this accessory was left alone.
+                                        //
+                                        // Whether an s88-fired route SHOULD go on driving trains over
+                                        // ironwork it did not set is Adam's question, not this
+                                        // comment's - put to him as part of RGN-B2.  What is not in
+                                        // doubt is that he has to be able to tell which of the two
+                                        // happened, and until today he could not.
+                                        continue;
+                                    }
+                                }
+
                                 int idd = rc.getAddress();
                                 boolean state = rc.getSetting();
 
@@ -368,15 +1004,23 @@ public class MarklinRoute extends Route
                             }
                             else if (rc.isStop())
                             {                        
-                                // Only send stop command once
-                                if (this.network.getPowerState())
+                                // SENT WHATEVER THE POWER FLAG SAYS (RSA-C4; behaviour.md 7a: an
+                                // emergency stop is obeyed whatever else is true).  The flag is only
+                                // the last GO or STOP echo heard, so one lost GO skipped the stop of a
+                                // route that fired with nobody present.  It decides the notice and the
+                                // log line now, and nothing else: a STOP sent to a station already
+                                // stopped does nothing.
+                                final boolean wasOn = this.network.getPowerState();
+
+                                this.network.stop();
+
+                                if (wasOn)
                                 {
                                     this.network.logf(
                                         "route.powerTurnedOffCondition",
                                         this.getName()
                                     );
-                                    this.network.stop();
-                                
+
                                     if (auto && this.network.getGUI() != null)
                                     {
                                         this.network.getGUI().emergencyStopTriggered(this);
@@ -401,14 +1045,17 @@ public class MarklinRoute extends Route
                             }
                             else if (rc.isAutonomyLightsOn())
                             {
-                                if (this.network.hasAutoLayout())
+                                // Asked once, not built (RLV11-C5)
+                                final org.traincontrol.automation.Layout railway = this.network.getAutoLayoutIfLoaded();
+
+                                if (railway != null)
                                 {
                                     this.network.logf(
                                         "route.turningOnAutonomyLights",
                                         this.getName()
                                     );
 
-                                    this.network.lightsOn(this.network.getAutoLayout().getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
+                                    this.network.lightsOn(railway.getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
                                 }
                             }
                             else if (rc.isLightsOn())
@@ -494,7 +1141,26 @@ public class MarklinRoute extends Route
                                         if (!this.equals(r))
                                         {
                                              // We allow the route to recurse at most once
-                                            r.execRoute(false, recursionLimit - 1);
+                                            //
+                                            // A chained route is asked about on its own terms - the
+                                            // operator agreed to THIS route's conflict and was never
+                                            // shown that one's - so the override stays false.
+                                            //
+                                            // `auto` is PASSED ON, and it was hard-coded false. That
+                                            // was harmless when auto meant only "do not pop the
+                                            // emergency-stop notice"; it stopped being harmless when
+                                            // auto gained its second meaning, that a person is
+                                            // standing here to be asked. A route fired by an s88
+                                            // sensor has nobody at the machine, and a chained route
+                                            // would put a modal dialog up in an empty room - blocking
+                                            // its own thread forever, never reaching the finally that
+                                            // clears isExecuting, and throwing the turnout whenever
+                                            // somebody eventually happened past and pressed OK.
+                                            //
+                                            // View.java says this in as many words: "The s88 trigger
+                                            // door has nobody to ask, so it sets none of its
+                                            // accessories and runs the rest." (VD9-C18)
+                                            r.execRoute(auto, recursionLimit - 1, false);
                                         }
                                         else
                                         {
@@ -517,18 +1183,32 @@ public class MarklinRoute extends Route
 
                             try
                             {
-                                if (rc.getDelay() > MarklinRoute.DEFAULT_SLEEP_MS)
+                                // ONE EXPRESSION, NOT TWO BRANCHES (X8-C2).
+                                //
+                                // The two branches did the same arithmetic on different numbers, and
+                                // the difference between them was invisible from the editor: a delay
+                                // between 1 and DEFAULT_SLEEP_MS was accepted, stored, written to the
+                                // file, read back, redisplayed - and discarded here, without even the
+                                // `route.delay` line the other branch logs.  Somebody lowering a pause
+                                // from 300 to 100 to speed a route up saw the number change and the
+                                // railway not.
+                                //
+                                // The FLOOR IS KEPT, because it is real: it is the gap this program
+                                // leaves between two route commands, and THREEWAY_ROUTE_DELAY_MS is
+                                // defined as sitting above it.  What is fixed is that the floor was
+                                // silent.  `delayOf` now raises a smaller number as it is typed, so
+                                // the cell shows what the railway will use.
+                                long pause = Math.max(rc.getDelay(), MarklinRoute.DEFAULT_SLEEP_MS);
+
+                                if (rc.getDelay() > 0)
                                 {
                                     this.network.logf(
                                         "route.delay",
-                                        rc.getDelay()
-                                    );                                
-                                    Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + rc.getDelay());
+                                        pause
+                                    );
                                 }
-                                else
-                                {
-                                    Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + MarklinRoute.DEFAULT_SLEEP_MS);
-                                }    
+
+                                Thread.sleep(MarklinControlStation.SLEEP_INTERVAL + pause);    
                             } 
                             catch (InterruptedException ex)
                             {
@@ -548,6 +1228,13 @@ public class MarklinRoute extends Route
 
                     this.updateTiles();
                 }
+            }
+            else
+            {
+                // STARTED AGAIN WHILE IT RUNS (GSR-C4) - a sensor that triggers the route firing again before it has
+                // finished.  Dropped, as it always was, and now said: the window's own doors say so, and this door - the
+                // one a sensor uses - said nothing.
+                this.network.logf("route.ui.infoAlreadyRunning", this.getName());
             }
         }).start();
     }
@@ -608,7 +1295,7 @@ public class MarklinRoute extends Route
      */
     public final void setDelay(Integer key, Integer delayMs)
     {
-        for (RouteCommand rc : this.route)
+        for (RouteCommand rc : new java.util.ArrayList<>(this.route))
         {
             // Locomotive, function and route commands carry no address.  Skipping them matters:
             // calling getAddress() on one throws, and in the CS3 importer that exception is caught

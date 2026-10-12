@@ -482,7 +482,7 @@ public class LocomotiveStats extends javax.swing.JPanel
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            JFileChooser fc = new JFileChooser(TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
+            JFileChooser fc = new QuickFileChooser(TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
             fc.setSelectedFile(new File("TC_locstats_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis()) + ".csv"));
 
             if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION)
