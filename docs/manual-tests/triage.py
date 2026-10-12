@@ -603,7 +603,11 @@ def inbox_span(text):
 
 
 def append_to_inbox(path, block):
-    """Put an item at the bottom of a file's '## Inbox' section, above the rule that closes it."""
+    """Put an item at the bottom of a file's '## Inbox' section, above the rule that closes it.
+
+    The one door every filing goes through, so it also brings the Inbox count that open-questions.md quotes
+    up to date - for the repository's own issues.md, not for a copy.
+    """
 
     text, crlf = read_text(path)
 
@@ -630,6 +634,17 @@ def append_to_inbox(path, block):
         section += "\n"
 
     write_text(path, text[:body_from] + section + tail, crlf)
+
+    if os.path.abspath(path) == os.path.abspath(ISSUES_MD):
+        import triagedb  # imported here: triagedb imports this module
+
+        try:
+            triagedb.render_inbox_count(path)
+
+        except Exception as bad:
+            # The item IS filed.  Saying only what failed invites filing it again.
+            raise IOError("%s is in the Inbox, but its count in open-questions.md was not updated: %s"
+                          % (block.strip().splitlines()[0], bad))
 
 
 # --------------------------------------------------------------------------------------------

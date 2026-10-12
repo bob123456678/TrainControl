@@ -72,6 +72,11 @@ DB_FILE = os.path.join(HERE, "triage.db")
 TESTS_FILE = os.path.join(HERE, "tests.md")
 ISSUES_FILE = os.path.join(HERE, "issues.md")
 
+# The reference documents that quote the record's counts (see render_counts)
+REFERENCE_DIR = os.path.join(os.path.dirname(HERE), "reference")
+BEHAVIOUR_FILE = os.path.join(REFERENCE_DIR, "behaviour.md")
+QUESTIONS_FILE = os.path.join(REFERENCE_DIR, "open-questions.md")
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS doc (
@@ -473,6 +478,9 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
     The reviews folder was deleted on 2026-09-08, so this file and the store are the only copies of what
     thousands of findings were about. Keep both in git.
 
+    Rendering the repository's own mirror also rewrites the counts the reference documents quote of it
+    (`render_finding_counts`); a render to any other path does not.
+
     :param conn: an open connection
     :param path: where to write it
     :return: how many findings were written
@@ -543,6 +551,11 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
 
     io.open(path, "w", encoding="utf-8", newline="\n").write("\n".join(out))
 
+    # Only the repository's own mirror: a render to a temporary file is `verify_findings_mirror` asking a
+    # question, and answering it must not rewrite a document.
+    if os.path.abspath(path) == os.path.abspath(FINDINGS_MIRROR):
+        render_finding_counts(conn)
+
     return n
 
 
@@ -606,6 +619,171 @@ def verify_findings_mirror(conn=None, path=FINDINGS_MIRROR):
         # close; this one's own is a second handle on the same file and was left open.
         if ours:
             conn.close()
+
+
+# --------------------------------------------------------------------------------------------
+# the counts the reference documents quote
+# --------------------------------------------------------------------------------------------
+
+# Three sentences quote what the record holds, and `testTheRecordsCountTheStore` reads them as these do.  One group
+# per value.  A space inside a phrase may be a line break in the file: behaviour.md wraps its sentence.
+ROWS_QUOTE_RE = re.compile(r"(?<![\d,])(\d[\d,]*)\s+rows\s+for\s+(\d[\d,]*)\s+findings")
+ROWS_NOW_RE = re.compile(r"(?<![\d,])(\d[\d,]*) finding rows in the store now")
+INBOX_QUOTE_RE = re.compile(
+    r"Today it holds (\d+) entries - (\d+) OB and (\d+) FR,\s+recounted\s+from\s+the\s+file\s+on\s+"
+    r"(\d{4}-\d{2}-\d{2})\s+\(((?:OB|FR)-\d+)\s+the\s+newest\)")
+
+
+def _requote(path, pattern, form, choose):
+    """Rewrites the values one quoted sentence carries, and only when one of them is wrong.
+
+    The file is read and written as it stands - UTF-8, its own line endings, the sentence wrapped wherever it
+    wraps - and only the matched values are replaced, so nothing else in the document can move.
+
+    :param path: the document
+    :param pattern: finds the sentence, one group per value it quotes
+    :param form: how the sentence reads, for the error
+    :param choose: takes the values now quoted, returns the values to quote - the same ones when they are right
+    :return: true when the file was rewritten
+    """
+
+    with io.open(path, "rb") as fh:
+        text = fh.read().decode("utf-8")
+
+    found = pattern.search(text)
+
+    if found is None:
+        raise IOError("%s has no sentence in the form %s, so the counts it quotes cannot be rewritten."
+                      " Restore the form, or change the pattern in triagedb.py"
+                      % (os.path.basename(path), form))
+
+    now = list(found.groups())
+    want = choose(now)
+
+    if [v.replace(",", "") for v in want] == [v.replace(",", "") for v in now]:
+        return False
+
+    # From the last value back, so each span is still where the match found it.
+    for at in range(len(want), 0, -1):
+        text = text[:found.start(at)] + want[at - 1] + text[found.end(at):]
+
+    # crlf=False: the text keeps its own line endings, and none is added.
+    triage.write_text(path, text, False)
+
+    return True
+
+
+def render_finding_counts(conn, behaviour_path=BEHAVIOUR_FILE, questions_path=QUESTIONS_FILE):
+    """Rewrites the finding counts the reference documents quote, from the store.
+
+    `behaviour.md` says how many rows the `finding` table holds and for how many distinct refs, and
+    `open-questions.md` repeats the rows. A finding written up in two documents has a row for each, so the two
+    numbers differ and are not interchangeable (VD15-T5).
+
+    :param conn: an open connection to the store the findings live in
+    :param behaviour_path: behaviour.md
+    :param questions_path: open-questions.md
+    :return: the documents it rewrote, none when both were right
+    """
+
+    rows, findings = conn.execute("SELECT COUNT(*), COUNT(DISTINCT ref) FROM finding").fetchone()
+
+    # NOT A STORE WITHOUT FINDINGS: that is the CLI's in-memory copy, and "0 rows" would be quoted as the count.
+    if rows == 0:
+        raise IOError("REFUSING to quote 0 finding rows. This is not the store the findings live in -"
+                      " render from triagedb.connect(), not from a connection built from the markdown.")
+
+    changed = []
+
+    if _requote(behaviour_path, ROWS_QUOTE_RE, '"N rows for M findings"',
+                lambda now: [format(rows, ","), format(findings, ",")]):
+        changed.append(behaviour_path)
+
+    if _requote(questions_path, ROWS_NOW_RE, '"N finding rows in the store now"',
+                lambda now: [format(rows, ",")]):
+        changed.append(questions_path)
+
+    return changed
+
+
+def inbox_counts(issues_path=ISSUES_FILE):
+    """What the Inbox holds, counted as `testTheRecordsCountTheStore` counts it.
+
+    :param issues_path: issues.md
+    :return: (OB entries, FR entries, the newest entry's reference) - entries are appended, so that is the last
+    """
+
+    text, _ = triage.read_text(issues_path)
+
+    start = text.find("## Inbox")
+    end = text.find("## What has been picked up")
+
+    if start < 0 or end < start:
+        raise IOError("%s has no '## Inbox' section followed by '## What has been picked up', which is"
+                      " what its entries are counted between" % os.path.basename(issues_path))
+
+    entries = re.findall(r"^### ((OB|FR)-\d+)", text[start:end], re.M)
+
+    if not entries:
+        raise IOError("the Inbox of %s holds no entries, so there is no newest one to name"
+                      % os.path.basename(issues_path))
+
+    return (sum(1 for ref, kind in entries if kind == "OB"),
+            sum(1 for ref, kind in entries if kind == "FR"),
+            entries[-1][0])
+
+
+def render_inbox_count(issues_path=ISSUES_FILE, questions_path=QUESTIONS_FILE):
+    """Rewrites the Inbox count `open-questions.md` quotes, from issues.md.
+
+    The sentence carries the day it was recounted, so it gets today's date when a number or the newest entry
+    changes and keeps its date when they are all right.
+
+    :param issues_path: issues.md
+    :param questions_path: open-questions.md
+    :return: the documents it rewrote, none when the count was right
+    """
+
+    obs, frs, newest = inbox_counts(issues_path)
+
+    def choose(now):
+        want = [str(obs + frs), str(obs), str(frs), now[3], newest]
+
+        if want != now:
+            want[3] = datetime.date.today().isoformat()
+
+        return want
+
+    if _requote(questions_path, INBOX_QUOTE_RE,
+                '"Today it holds T entries - X OB and Y FR, recounted from the file on YYYY-MM-DD'
+                ' (REF the newest)"', choose):
+        return [questions_path]
+
+    return []
+
+
+def render_counts(conn, issues_path=ISSUES_FILE, behaviour_path=BEHAVIOUR_FILE, questions_path=QUESTIONS_FILE):
+    """Rewrites every count the reference documents quote, so none is written by hand.
+
+    Filing an issue calls `render_inbox_count` and rendering the mirror calls `render_finding_counts`; this
+    does both, and `triagedb.py counts` runs it after a hand edit to issues.md. Nothing is written when
+    every number is already right.
+
+    :param conn: an open connection to the store the findings live in
+    :param issues_path: issues.md
+    :param behaviour_path: behaviour.md
+    :param questions_path: open-questions.md
+    :return: the documents it rewrote
+    """
+
+    changed = render_finding_counts(conn, behaviour_path, questions_path)
+
+    for path in render_inbox_count(issues_path, questions_path):
+        if path not in changed:
+            changed.append(path)
+
+    return changed
+
 
 def findings(conn, ref=None, disposition=None, severity=None, cited=None):
     """The catalogue, filtered.
@@ -1504,6 +1682,9 @@ def main(argv=None):
     sub.add_parser("sync", help="rebuild the store from the markdown and verify it renders back")
     sub.add_parser("regenerate-ledger",
                    help="rewrite the Ledger table in tests.md from the store")
+    sub.add_parser("counts",
+                   help="rewrite the counts behaviour.md and open-questions.md quote, from the store and"
+                        " issues.md")
     p = sub.add_parser("verify", help="prove the store renders the markdown byte for byte, and that every OB a"
                                       " finding's status note says it is tracked as is in the Inbox")
     p.add_argument("--store", default=DB_FILE,
@@ -1581,6 +1762,23 @@ def main(argv=None):
         print(message)
 
         return 0 if ok else 1
+
+    if args.command == "counts":
+        # The file store: `conn` was built from the markdown and holds no findings.
+        store = connect()
+
+        try:
+            changed = render_counts(store)
+        finally:
+            store.close()
+
+        for path in changed:
+            print("rewrote " + os.path.basename(path))
+
+        if not changed:
+            print("(already up to date)")
+
+        return 0
 
     if args.command == "selftest":
         passed, lines = selftest()
