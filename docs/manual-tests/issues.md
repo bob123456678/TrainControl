@@ -148,33 +148,6 @@ add the paused autonomy locomotive indicator (and the ability to toggle whether 
 
 OB-174 is currently only partially fixed.  fully address it by adding a "Text Labels" label and dropdown right above Track Directions, with the following options: Station Names, Parked Locomotives, Home Locomotives, and None.  Station Names should be default, with the setting remembered between open.
 
-### OB-181 - 2026-09-07 - copy and paste direction still inconsistent
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-07 23:47  
-**Build:** commit 409d4ce8, build\classes, compiled 07 Sep 23:42 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when copy and pasting, the right click menu direction still doesn't match the shown direction.  moving a train in the track diagram editor from tunnelleftpark (EN 57-203) to bottommaina showed its direction as eastbound in its station label, but westbound in the right click menu.  also, its "arrived from" is not set, even though it is forced.
-
-### OB-182 - 2026-09-08 - arrival direction prompt error
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-08 01:00  
-**Build:** commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-placing a train on bottommainc asks about arrival from the west or the north, whereas it should be east or west.
-
-### OB-184 - 2026-09-08 - home planner bug
-
-**Kind:** bug  
-**Raised from:** MT-300 (Return Home reaches a split platform from either direction)  
-**Filed:** 2026-09-08 01:04  
-**Build:** commit 409d4ce8, build\classes, compiled 08 Sep 00:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-The home planner does not consider blocks due to the length of a train, i.e. a train that blocks edges behind it.
-
 ### FR-062 - 2026-09-08 - download the CS3 data files too when the user confirms a Central Station download
 
 **Kind:** feature request  
@@ -201,15 +174,6 @@ right clicking a local locomotive icon should provide a clear option to clear it
 
 when the power is off, replace the route play icon with a wrench icon to edit it.  restore play icon and run behavior on click when the power comes on.
 
-### OB-192 - 2026-09-08 - critical: UI freeze in autonomy
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-08 22:05  
-**Build:** commit 0016fc18
-
-starting autonomous operation from the current track state, via the netbeans compiled jar, makes the UI unresponsive.  Trains still run, but nothing is repainted, and controls are stuck.
-
 ### FR-070 - 2026-09-11 - make it easier to enable/disable routes
 
 **Kind:** feature request  
@@ -227,24 +191,6 @@ instead of having to risk-click to enable/disable auto execution, show a checkbo
 **Build:** commit ac960047, build\classes, compiled 11 Sep 03:29 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 right clicking the edit button on the track diagram viewer pulls up the same "manage pages" right click menu to manage pages (add/delete/rename), and is blocked at the same times as the other one.
-
-### OB-200 - 2026-09-12 - hotkeys don't work in autonomy editor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-12 00:29  
-**Build:** commit ac960047, build\classes, compiled 11 Sep 22:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when items in the list of issues are selected, hotkeys on the track diagram stop working, and there is no way to regain focus.  just send the commands through with the list of issues panel selected.
-
-### OB-201 - 2026-09-12 - incomplete error message in autonomy
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-12 00:35  
-**Build:** commit ac960047, build\classes, compiled 11 Sep 22:41 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-This error message should say either close arrivals from <direction>, open the way ahead, or let trains change direction.  "A train reaching s88 1026 from at least one direction could not go on: the only track ahead of it is the track it just came along, and a train cannot turn round here.  Either set "trains may change direction here", or open the way ahead."
 
 ### FR-072 - 2026-09-12 - easier autonomy triage
 
@@ -283,18 +229,6 @@ Adam, on MT-412 (2026-09-14): *"Works.  But we should make a FR to track fixing 
 
 The behaviour is OB-218's, accepted on 2026-09-14 on the condition that the arrow is right once the train arrives, which it is: while a hand-driven train is on its way to a square it may turn at, the route is reserved on the copy the path ENDS on - routinely the turning copy - so the badge and arrow show the turned facing until arrival, when the train is re-stood on the copy that matches the answer.  The request is for them to match before arrival too: reserve the copy the train will actually end on, decided from the answer at dispatch - a change to the locking path, which is why OB-218 was accepted rather than changed.
 
-### OB-224 - 2026-09-14 - a train was refused for standing across the points at a square it only passes
-
-**Kind:** bug  
-**Raised from:** MT-333  
-**Filed:** 2026-09-14  
-
-Adam, on MT-333 (2026-09-14): *"Regression, but not directly related to this test.  75 407 DB (len 2) can no longer go from tunnel to bottommaina because of the 1+1 length split around the switch between buttommainapre and bottommaina.  this SHOULD be allowed per the standing rule that this switch blocking should only affect berthes.  Figure out when introduced the regression, fix it, and then re-file the protrosion test itself."*
-
-**What refused it.**  Not BottomMainA - its approach measures 1 + 1, and the relaxation of 2026-09-12 admits a two-unit train.  It was refused one square earlier: *"75 407 DB (length 2) does not fit at BottomMainAPre on the way to BottomMainA, where the track measures 1"* - the run from Tunnel to BottomMainAPre crosses a switch with only 7,9 measured on it.  The same refusal closed every lower-level destination from Tunnel.
-
-**When.**  The rule arrived in `5948a88a` (2026-09-10), built on the ruling of 2026-09-09 that every square on a route is judged - a square the train only passes wherever a switch lies behind it.  The relaxation of 2026-09-12 was built in `825e7d91` (2026-09-13) at the destination only.  It became visible on this railway when 13,12, 7,9 and 10,10 were measured, after the last committed copy of the layout (8 Sep, which has 19,12, 14,13 and 22,7).  Not a code change on 13-14 Sep: the refusal could be reproduced from `5948a88a` on with these measurements; old builds cannot load today's setup, so it was established from the history rather than by running them.
-
 ### FR-084 - 2026-09-14 - switching Path Type redraws the tested route
 
 **Kind:** feature request  
@@ -321,30 +255,6 @@ Two halves.  **Kept:** a standing train's arrival road is saved with the point, 
 
 Adam, on MT-431 (2026-09-15): *"But didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the length would be tracked?"*  Asked how far the allowance should reach, he chose **bounded by the route**: at a station autonomy may choose, accept the train if the measured track of the route it drives in on holds it back from the destination - its tail lies on that route and blocks it - while unmeasured track or a gap still refuses.  Today the bound is the approach's own length (behaviour.md 5a, the 2026-09-12 relaxation), so 75 407 DB at length 3 is refused BottomMainA's two-unit approach.
 
-### OB-225 - 2026-09-15 - Switching Path Type does not redraw the tested route in the autonomy editor
-
-**Kind:** bug  
-**Raised from:** MT-434  
-**Filed:** 2026-09-15  
-
-Adam, on MT-434 (2026-09-15): *"Does not work.  Changes don't happen when switching, and in manual mode, I still get reasons like 'tunnellongpark will never be chosen in autonomy'."*  The note is written only when Auto is selected, so on Manual it means the test was never run again.  `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute` passed without reaching the real editor: it drives `applyTest` on a panel with no page, and its route assertion compares against an empty substring.
-
-### OB-226 - 2026-09-15 - The tail question leaves out a sensor exactly the train's length back
-
-**Kind:** bug  
-**Raised from:** MT-435  
-**Filed:** 2026-09-15  
-
-Adam, on MT-435 (2026-09-15): *"When 75 407 DB is set to length 3, only BottomMainAPre is offered (2 away from the station), but Tunnel should also be offered since it is 3 away.  The check works as intended at length 4."*  `TailCrossedPrompt` counts a sensor as crossed only when some of the train is left beyond it.
-
-### OB-227 - 2026-09-15 - The tail question offers roads a train could not have driven in on
-
-**Kind:** bug  
-**Raised from:** MT-435  
-**Filed:** 2026-09-15  
-
-Adam, on MT-435 (2026-09-15): *"If 'Ramp down' is selected, rather than the path that takes the train there through bottomsecondary, sensor 1030, tunnel, bottommaina, the blocked orange path crosses switch 99 and switch 100 instead of going to bottomsecondary, which would require the train to reverse in.  that isn't a realistic path."*  `TailCrossedPrompt` follows track back in either direction; the road a tail lies on is the one the train drove in on, forwards.
-
 ### FR-088 - 2026-09-15 - The tail question starts on the sensor nearest the back
 
 **Kind:** feature request  
@@ -352,36 +262,6 @@ Adam, on MT-435 (2026-09-15): *"If 'Ramp down' is selected, rather than the path
 **Filed:** 2026-09-15  
 
 Adam, on MT-435 (2026-09-15): *"The closest sensor to the back should be the default selection in the length window, so the user can just click OK if appropriate."*  Asked what to do where the tail could be on more than one road, he chose: start on the recorded road if there is one; otherwise on the sensor nearest the tail when exactly one qualifies; otherwise nothing chosen.
-
-### OB-230 - 2026-09-15 - Return Home's A* runs out of time on real arrangements: the heuristic gives no credit for getting closer
-
-**Kind:** bug  
-**Raised from:** review finding AMH-C1  
-**Filed:** 2026-09-15  
-
-**Raised from review finding AMH-C1** (`grep "^AMH-C1" docs/manual-tests/findings.tsv`), and **deferred at Adam's word, 2026-09-15:** *"I want to do the heuristic, but I think this needs to be deferred until I deliver you the fully measured layout.  So, let's mark this as an open OB for now and continue."*
-
-**What happens.**  Return Home answers `NO_PLAN_FOUND` on arrangements a person can solve by eye.  The round 3 battery left one: five trains, every one of them with a route home, three of those routes merely not clear yet because another train is standing on the destination - an ordinary rearrangement, and the order that solves it is visible by inspection (loc 3 home first, its route being clear; then loc 0 off loc 2's home; then loc 2; then loc 1).  The blocked list came back empty, which is honest: nothing on the railway is barred, the search simply did not find the order in the time it had.
-
-**Measured, on Adam's instruction** (*"the whole point of the A* is to figure out how to rearrange other trains to park things when they belong, so we also need to differentiate issues with the track diagram from issues with the algorithm.  i recommend relaxing restrictions (track/station lengths) in the layout used for the A* tests."*).  The same arrangement, one relaxation at a time:
-
-| variant | outcome | time |
-|---|---|---|
-| trains three units long | `NO_PLAN_FOUND` | 15.1 s - the whole budget and its retry |
-| train lengths zeroed | **READY, 8 moves** | 6.6 s |
-| and station maximums cleared | READY | 6.6 s - **none were set** |
-| and FR-001 restrictions cleared | READY | 6.6 s - **none existed** |
-| and every train reversible | `NO_PLAN_FOUND` | 15.0 s |
-
-Then ten presses of the relaxed arrangement, to see whether the planner is intermittent where nothing but the order is in question: **READY on 10 of 10, 6.2 to 7.0 seconds, the identical eight-move plan every time.**
-
-**What that settles.**  Length is the only restriction in play on his railway - no station maximums are set and no FR-001 restrictions exist - and zeroing the train lengths is what turns this arrangement from unplannable into an eight-move plan.  Every failure is deadline-bound: none exhausted `SEARCH_LIMIT`'s 50 000 configurations, so time is the binding constraint and not the state space.  And more freedom can lose a plan - making every train reversible widened the branching factor and the answer went back to `NO_PLAN_FOUND` inside the same deadline.  Non-monotonic behaviour of that kind is a budget symptom.
-
-**The agreed fix: the heuristic.**  `HomeStaging`'s estimate is `misplaced` - the count of trains not at home.  It cannot tell a move that carries a train most of the way home from one that shuffles it sideways, so A* spends its budget breadth-first over orders that are all equally promising by its own measure.  A heuristic that gives credit for getting closer - route length remaining, or moves-to-home over the diagram - is what turns the constrained problem from a deadline into a search.  **Deferred until Adam delivers the fully measured layout**, because the constrained problem is the one worth tuning against and its lengths are what make it hard: tuning against relaxed lengths would fit the instrument rather than the railway.
-
-**Not a regression, and the pinned class is not evidence for this.**  `core.testTrainsComeHomeFromAPinnedArrangement` freezes that scatter with lengths relaxed per Adam's ruling (*"make a pinned version and keep the current version, aiming for both to be true.  normal autonomy runs should always have a solution."*), and it is reliable 10 of 10 - so it is a regression instrument for the determinism fix, not budget evidence.  The live `core.testTrainsComeHomeToTheirPlatforms` leaves lengths unset and reaches the deadline on harder scatters; that is this issue.  Neither AMV-B1 nor AMW-B3 is implicated: asked again with every train reversible the answer is still `NO_PLAN_FOUND`.
-
-The probes are not committed; the figures above are their output.
 
 ### FR-089 - 2026-09-16 - Mass Assign Lengths, and a display that highlights the track still needing a length
 
@@ -437,78 +317,6 @@ Adam, 2026-09-17: *"Add a right click menu open to clear all max station train l
 
 `core.testMassAssignLengths.testClearAllMaxTrainLengthsClearsEveryPage` and `testTheClearMaxTrainLengthsItemCountsAndGreys`, on a two-page railway built in memory.  Five mutations each caught: clearing one page only, counting a 0, not clearing, never greying, and the item moved away from the other clears.
 
-### OB-234 - 2026-09-21 - clicking the findings list kills the autonomy editor keyboard shortcuts for the session
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-B4, 2026-09-09  
-**Filed:** 2026-09-21  
-
-The findings list in the autonomy editor (`AutonomyEditorPanel`, the `JList` behind
-`findingsModel`) is focusable, and every other control in that column is not: `button()` calls
-`setFocusable(false)` on each one, deliberately, so that the FRAME keeps the keyboard. Clicking a
-finding therefore moves focus into the list, and the frame's `KeyListener` - which is where the
-editor's shortcuts live - stops seeing keys until something hands focus back.
-
-**The fix is one line**, `setFocusable(false)` on the list, which is what its siblings do. What it
-needs beside it is a claim that can fail: the shortcuts are a `KeyListener` on the frame, so a test can
-give the list focus, dispatch a key, and assert the frame saw it.
-
-**Verified still true on 2026-09-21**, when the review that found it was deleted.
-
-### OB-235 - 2026-09-21 - the One-way tool is not greyed on an excluded page, unlike its two siblings
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-C6, 2026-09-09  
-**Filed:** 2026-09-21  
-
-`AutonomyEditorPanel.refresh()` greys `testButton` and `whyButton` on an excluded page, under a
-comment saying nothing in that column can do anything on a page autonomy takes no notice of.
-`oneWayButton` is not in that pair, and its `tileClicked` branches run before the `isIgnored(tile)`
-check.
-
-**What you see.** On an excluded page the two-click one-way gesture completes, the direction dialog
-appears, and the refusal reads "no path between the squares" - which is the wrong explanation for a
-refusal whose real cause is that the page is excluded. This is the affordance-and-guard shape of
-OB-057 and OB-090: the control that offers an action has to ask the same question the action does.
-
-**The fix** is `oneWayButton.setEnabled(!ignored)` beside its two siblings.
-
-**Verified still true on 2026-09-21**, when the review that found it was deleted.
-
-### OB-236 - 2026-09-21 - the cut half of cut-and-paste builds the autonomy session it deliberately does not tell
-
-**Kind:** bug  
-**Raised from:** review finding FV3-C6, 2026-09-10  
-**Filed:** 2026-09-21  
-
-`LayoutEditor.deleteSelection(boolean tellAutonomy)` reads
-`parent.getAutonomySession()` before it tests `tellAutonomy`. The cut half of cut-and-paste passes
-`false` on purpose - the paste carries the setup - so it now reaches the lazy builder that
-`delete(label, false)` never did. That getter parses every page, runs the caption migration (which
-writes page files) and can put a dialog on screen; three comments in this codebase, `pageIdFloor`'s
-among them, warn against reaching it from a gesture that has nothing to do with autonomy.
-
-In practice the session is normally already cached while the editor is open, which is why this is low
-rather than medium. **Moving the read inside the `if` is the whole fix.**
-
-**Verified still true on 2026-09-21**, when the review that found it was deleted.
-
-### OB-237 - 2026-09-21 - refreshReturnHomeButton materialises the autonomy Layout from a repaint
-
-**Kind:** bug  
-**Raised from:** review finding D3-C3, 2026-09-09  
-**Filed:** 2026-09-21  
-
-`TrainControlUI.refreshReturnHomeButton()` asks `this.model.getAutoLayout()`, and
-`getAutoLayout()` creates a layout when it has none (that is CS3-C4's subject, now synchronized but
-still creating). So a repaint of the Return Home button can bring a Layout into being, which its own
-sibling paths take care not to do - they ask `hasAutoLayout()` first.
-
-**The fix** is the same shape: ask `hasAutoLayout()` and treat absence as "no button", which is what
-the method does with a null layout anyway.
-
-**Verified still true on 2026-09-21**, when the review that found it was deleted.
-
 ### FR-093 - 2026-09-21 - manual-only destinations shown by the transparent treatment, as you ruled
 
 **Kind:** feature request  
@@ -537,598 +345,6 @@ the running diagram.
 settling at the same time: whether it applies while autonomy is stopped, where "manual-only" describes
 every square.
 
-### OB-239 - 2026-09-21 - the covered-track paint re-derives the tail's road instead of following it
-
-**Kind:** bug  
-**Raised from:** reading around MT-438, 2026-09-21  
-**Filed:** 2026-09-21  
-
-**Found by reading while trying to reproduce MT-438; NOT shown to have caused it.**
-
-`AutonomySession.routesCoveredByStandingTrains` takes the edges the railway says a standing train
-covers, throws away the edges and keeps only their endpoint SQUARES, and then `walkBackFrom` steps from
-square to square by asking `pathBetween(at, candidate)` for the first reduced edge that joins the pair
-in either direction.
-
-Two consequences, both on the misleading side:
-
-- **A step nothing covers.** The walk takes the first covered endpoint it can find a path to. Where a
-  train's covered chain is A to B to C, and the reduction also holds a direct A to C road, the walk can
-  step A to C and paint that road - track no covered edge names, and track the railway would let
-  another train onto.
-- **The wrong road of two.** `pathBetween` returns the FIRST matching reduced edge. Where two sensors
-  are joined by more than one road, which one gets painted is the order of `reducer.getEdges()`.
-
-**The railway's own walk does not have this problem**: `Layout.walkOneTail` follows `arrivedFrom` and
-the recorded road for the first hop and then refuses to guess at a fork. The paint re-derives what the
-walk already knew.
-
-**The fix is to stop re-deriving it.** Every covered `Edge` carries its own places -
-`Edge.getPlaceIds()`, written by `GraphReducer.placesAlong` - so the painted squares can come from the
-covered edges themselves, in order, and then the two answers cannot differ by construction.
-
-**What it needs to ship**: a fixture with two roads between one pair of sensors, which no scenario in
-`test/layouts` has today - a claim that goes red on the road it paints rather than on how many squares.
-**Swept 2026-09-21 and it does not fire on your railway.**  127 placements - every point as the
-standing square, every incoming edge as the recorded road, forty-unit tails, every tile measured at one
-unit - and the paint never once left the edges the railway itself refuses.  So this is a hazard in the
-code rather than something you are seeing: `pathBetween` would have to find a reduced edge joining two
-covered endpoints that no covered edge joins, and your geometry does not offer one.  It stays open
-because the next page you draw might.
-
-### OB-245 - 2026-09-21 - a cancelled customization copy can leave the custom flag set
-
-**Kind:** bug
-**Raised from:** VD12-C3, a validation of 2026-09-20 and 2026-09-21
-**Filed:** 2026-09-21
-
-`isCustomFunctions()` is DERIVED - any custom icon makes it true whatever the stored flag says - so
-`applyCustomizations` deliberately writes the flag back only when the answer would otherwise be wrong.
-Take a locomotive whose stored flag is false and which has one custom icon: the capture records
-`custom == true` (the derived answer), Copy Customizations sets the flag true, and Cancel then sees
-`isCustomFunctions()` already true and writes nothing.  Delete that icon later and the locomotive reads
-as customized for ever.
-
-**What that costs:** `syncWithCS2` never adopts the Central Station's function types for a locomotive
-whose flag is set (`loc.functionTypesMismatchIgnoredUI`), so it silently stops tracking the station.
-`MarklinSimpleComponent` stores the derived answer and the loader writes it back as the raw field,
-which is the second half of the same confusion.
-
-**Not changed**, because the fix wants a test with an icon set first, and because the right answer may
-be to stop storing a derived value at all rather than to patch the Cancel.
-
-### OB-247 - 2026-09-21 - thirteen finding ids in the records lead nowhere, and nothing will notice
-
-**Kind:** bug
-**Raised from:** VD12-R10, a validation of 2026-09-20 and 2026-09-21
-**Filed:** 2026-09-21
-
-`AR-17` to `AR-23` are cited as the **From:** of seven MT entries and `LR-1` to `LR-6` in `issues.md`;
-the catalogue holds `AR-1..AR-16` and no `LR-` row at all.  `testEveryCitationResolves` walks `src/`
-and `test/` only, so the guard that exists to keep every citation resolvable cannot see the records -
-which are the documents a reader actually follows.
-
-The rule the review deletion was made under is *"no reference will ever be stale or lost"*, and it is
-already false inside `tests.md` and `issues.md`.
-
-**Two ways.** (a) Widen the guard to `docs/` and put them on the dead-citation ratchet, which is
-currently EXACT at 45 and asserts EQUALITY - so it lands red until the new number is MEASURED rather
-than guessed.  It is not 58: `AR-19` is already on the roll, and a docs-wide scan with the guard's own
-pattern finds more than these thirteen - `REV-B2`, `FCR-B1` and `WP-C19f` among them (VD13-R7). (b) Resolve them: find
-what `AR-17..23` and `LR-1..6` were (both rounds are in git history) and either add the rows or correct
-the citations.
-
-(b) is the honest one and it is an afternoon's reading; (a) takes ten minutes and records the loss.
-Your call which is worth it.
-
-### OB-249 - 2026-09-21 - the catalogue reads one column two ways
-
-**Kind:** bug
-**Raised from:** VD12-R16, a validation of 2026-09-20 and 2026-09-21
-**Filed:** 2026-09-21
-
-`catalog-findings.py` has two paths into a finding's description.  `fromTheTable` excludes `where` and
-`note` from the disposition vocabulary (`DISPOSES[:-2]`); the table-only path includes them.  So in a
-document whose findings have sections, a `| id | where |` cell is evidence; in one whose findings are
-only table rows, the same cell becomes the DISPOSITION - and `described == disposed` then blanks the
-description, which is exactly the fault that lost 200 D findings their text and that the column-aware
-parser was written to fix.
-
-**It is not firing today**: all 21 table-only rows have dispositions that really do read as verdicts.
-It fires on the next round whose review uses a two-column `| id | where |` or `| id | note |` table,
-and it fires at the moment the documents are deleted - which is the only moment it matters.
-
-Worth knowing beside it: `--add` calls `prune_findings`, which deletes the deliberately-set `status`
-and `status_note` of any ref the re-scanned document no longer makes.  Re-running `--add` over an
-edited folder therefore discards answers `behaviour.md` advertises as set deliberately, with nothing
-said.
-
-### OB-250 - 2026-09-21 - an s88 route condition can read a train at a sensor it has not reached
-
-**Kind:** bug
-**Raised from:** VD13-C2, a validation of the 2026-09-21 fixes
-**Filed:** 2026-09-21
-
-`Layout.whereTheTrainIs` was written on 2026-09-21 because four readers wanted "where is the train" and
-three of them had worked the answer out separately: the last MILESTONE, falling back to whichever Point
-holds the locomotive.  The fourth was the diagram's tail overlay, and it is fixed.
-
-**There is a fifth, and it decides when a route FIRES.**  The s88 arm of the static `Route.evaluate`
-(`Route.java:364-372`) asks the
-layout's `getLatestMilestoneS88` for the sensor a train has most recently reached - that method has no fallback of its own, and returns null - and then falls back itself to
-`getLocomotiveLocation`'s s88 - and that fallback is the arbitrary answer: while a path is locked the
-locomotive is the occupant of every Point on it, so an s88 condition can be told the train is at a
-sensor it has not reached yet, or has long left.
-
-**What it costs.** A route with an autoloc condition fires, or fails to fire, on a place the train is
-not.  This is the shape of MT-438 moved from the picture to the railway's behaviour, which is why it is
-filed rather than changed in passing: it alters when ironwork moves, and it wants a test with a real
-locked path before and after.
-
-**Also not on the shared rule**, and harmless: `AutonomyEditorPanel`'s standing-train tooltip asks the
-raw question.  A tooltip about a standing train is right either way - a train that is not running has
-one reservation - so it is left alone and noted here so the next reader does not have to work it out.
-
-
-### OB-252 - 2026-09-22 - the general sweep's open findings, so they are named somewhere live
-
-**Kind:** bug
-**Raised from:** the general sweep of 2026-09-22 (GS)
-**Filed:** 2026-09-22
-
-Six Opus reviewers read one area each - the run loop, the editor and its store, routes against
-autonomy, persistence and import, threading, and the 51 findings that were already open.  Six
-findings were fixed in the commit that filed this, two are deferred until the manual
-tests are done, and the Instant Stop question became OB-251, which Adam has since declined.
-  The 33 that remain are listed here rather than as an entry each, because
-`behaviour.md` says open work belongs in a live document and OB-248 is the entry about findings
-that are in none - adding 33 orphans to it would be a poor way to answer it.
-
-The documents are not in the repository, by your ruling.  The store has each finding's evidence:
-`SELECT ref, title, status FROM finding WHERE ref LIKE 'GS%-%'`.
-
-- **`GS-B3`** *(deferred)* the tail bookkeeping is one edge behind its own definition, and on a short path it never releases anything
-- **`GS-C1`** the departure speed write is not fenced, and a comment above it says it is
-- **`GSB-C1`** route.ui.frameNameNotUsable is a second copy of VD12-R7's wrong rule, and VD12-R7 does not name it
-- **`GSB-C2`** RouteEditorFrame imports ConditionRows and does not use it
-- **`GSB-C3`** nothing verifies the status_note claims that an OB exists - second instance
-- **`GSE-C1`** the `setupChanged` guard reads the enclosing 820-line method, so `buildTileMenu`'s inline writers exempt each other
-- **`GSE-C2`** an externally renamed page is reported as one that failed to load, and nothing reconciles for the rest of the session
-- **`GSE-C3`** the "why is it not moving" worker iterates the live store collections off the event thread
-- **`GSE-C4`** demoting a station destroys five settings with no warning, and `viewer-editability.md` says the gesture changes two things
-- **`GSE-C5`** the menu door replaces a caption the drag door refuses to replace
-- **`GSP-B2`** A setup that will not read is reported as a layout folder that cannot be written
-- **`GSP-C1`** A locomotive database that reads as something other than a List loads as "loaded", and the exit save writes emptiness over it
-- **`GSP-C2`** The page shifts move the tiles and leave the unmodelled elements behind
-- **`GSP-C3`** `fileNameTaken` names two doors and there are three
-- **`GSP-C4`** `readShared` has two callers and one rollback, and the pre-edit note is the caller without it
-- **`GSR-B2`** the fourth writer past `runningRouteDriving`
-- **`GSR-B3`** the running flag belongs to an object the edit throws away
-- **`GSR-B4`** a deleted route's name is still a live target
-- **`GSR-B5`** a dropdown that cannot show the value in the cell rewrites it
-- **`GSR-B6`** the guard is asked before the dialog, and the thing it guards against starts on its own
-- **`GSR-C1`** the one target the editor does not range-check
-- **`GSR-C2`** reservation read as occupancy, then described as standing
-- **`GSR-C3`** the ROUTE dropdown offers the route being edited
-- **`GSR-C4`** a re-trigger while the route runs is dropped in silence
-- **`GST-C7`** quitting while autonomy is running skips the exit capture of the session's placements in silence, and `autosetup.log.placementsNotSaved` already exists to say so
-- **`GST-B1`** *(deferred)* nothing in `Layout` asks whether the track is live before it commands a speed - the halt half of this is declined by Adam's ruling in OB-251, the POWER half is a different control and stands
-- **`GST-B2`** `GraphLocAssign.commitChanges` discards `moveLocomotive`'s answer and writes five locomotive fields past its guard
-- **`GST-C1`** The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLength`/`reversible`, or `Feedback.set`
-- **`GST-C2`** `forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the worker
-- **`GST-C3`** `Layout.getTimetable()` is the live list, beside a synchronized snapshot door
-- **`GST-C4`** `repaintTimetable`'s comment justifies itself with a mechanism `executePath` closed
-- **`GST-C5`** `createPoint`/`createEdge` are the unsynchronized, unguarded siblings of the delete doors
-- **`GST-C6`** `getInvalidReason()` has no callers, and its javadoc describes a surface nothing implements
-
-
-**And the round that validated all of this left nine of its own** (VD17, 2026-09-22 - three Opus
-reviewers over the four commits above).  Twenty-four of its thirty-three findings were fixed in the
-commit that files this; these are what is left, and none of them needs the railway:
-
-- **`VD17-C4`** the premise the new warning disavows still stands, as the javadoc of the guard it drives
-- **`VD17-C6`** the import refusal says "a configuration called X already exists" in the one case it can reach, where it does not
-- **`VD17-C9`** two stale hard-coded finding counts in `triagedb.py`, disagreeing with each other
-- **`VD17-R10`** `tests.md` MT-471 step 5: right answer, wrong rule
-- **`VD17-R11`** `src/.../TrainControlUI.java:6111` and `:6130`: the gate method still says it has two doors
-- **`VD17-R12`** Adam's note is corrected inside the quotation marks in two javadocs
-- **`VD17-T6`** (medium) - the records class promises coverage it does not have, and the README's one unchecked piece of arithmetic sits in the paragraph it does chec
-- **`VD17-T8`** (low) - `testStartAsksBeforeItDispatchesAnything` is strictly subsumed and carries a refuted rationale
-- **`VD17-T9`** (low) - the hand-door triples pin the gate *between the modal prompt and the dispatch*, not "before the dispatch"
-
-**And the round that validated THOSE fixes left six** (VD18, 2026-09-22 - two Opus reviewers over
-the last three hours of commits).  Sixteen of its twenty-two were fixed in the commit that files
-this, and one of those was a commit of mine reverted whole: it had turned a road the operator had
-shut into an open one.  What is left:
-
-- **`VD18-B3`** Mass Assign Lengths still cuts pieces at `isSwitch()`, so a piece straddles a permanent turnout while the room walk stops at one
-- **`VD18-C2`** the arm checkboxes show both arms open where the menu offers one way
-- **`VD18-C4`** `Edge.crossesASwitch` and five statements of the rule still say "switch" where a permanent turnout now bounds too
-- **`VD18-R3`** a bullet's line citations were wrong in the commit that wrote them
-- **`VD18-T5`** the menu will not offer `BOTH` on a permanent turnout while the arm mask will store it
-- **`VD18-T9`** (low) - a failure message whose remedy the assertion will not accept
-**The three I would take first**, and none of them needs the railway: `GSR-B2` (a locomotive's
-address is rewritten by the Central Station sync past the guard that refuses it while a route is
-driving that locomotive), `GSR-B3` (`editRoute` replaces the route object, so `isExecuting` -
-and the guard that reads it - forgets a route that is still running), and `GSP-B2` (every reason
-a setup will not load is reported as "it needs a local layout folder", which `isUsable()` has
-already ruled out two lines earlier).
-
-### OB-253 - 2026-09-22 - a route import that parses can still destroy routes
-
-**Kind:** bug  
-**Raised from:** review finding FP-B3, 2026-07-27, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-`importRoutes` deletes every existing route and then adds the parsed ones.  Parsing first is what
-makes an UNREADABLE file safe, and a test pins that.  It does not make a READABLE file safe: `newRoute`
-refuses a route whose id or name is already taken, logs `route.alreadyImportedSkipping` and returns
-false, and `importRoutes` logs `route.notAdded` and carries on.
-
-So a file holding two routes that share an id or a name imports as: **everything the operator had is
-deleted, and one of the two is dropped**, with nothing but a log line to say so.
-
-**Checked against today's code, 2026-09-22.**  `MarklinControlStation.importRoutes` still deletes in a
-loop over `routeDB.getItems()` before it adds, and both refusal paths in `newRoute` still return false
-after a `logf`.
-
-**What would settle it:** either refuse the whole file when it holds a duplicate - the parse already
-walks it, so this costs one pass - or keep the existing routes until every add has succeeded.  The
-first is the one that matches the parse-first rule already in place.
-
-### OB-254 - 2026-09-22 - auto-save on exit is forced on and its checkbox hidden, so autonomy.json is rewritten for somebody who turned it off
-
-**Kind:** bug  
-**Raised from:** review finding RGN-C1, 2026-08-31, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-`TrainControlUI` sets `autosave.setSelected(true)` and `autosave.setVisible(false)` on start-up, and
-the comment says the stored preference is *"deliberately ignored rather than read"* on the reasoning that
-turning it off only ever meant losing work.
-
-**That reasoning covers what the flag SAVES; it does not cover what it PREVENTS.**  On the legacy path
-the same flag gates rewriting `autonomy.json` from the in-memory graph, so somebody who had turned
-auto-save off - and whose file is therefore something they are keeping - has it rewritten anyway.
-
-**Checked against today's code, 2026-09-22.**  Both lines are still there, and the checkbox is still
-built and then hidden.
-
-**Your call rather than a defect:** either the preference is read again, or the two things the one flag
-does are separated so the graph rewrite has a gate of its own.
-
-### OB-255 - 2026-09-22 - a UIState.data written by 3.0.0 with a non-default page count loses its page names under 2.7.4c
-
-**Kind:** bug  
-**Raised from:** review finding RGN-C4, 2026-08-31, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-2.7.4c restores the trailing page-names map only when `saveStates.size() > NUM_LOC_MAPPINGS`, and
-that constant is fixed at 10.  This version's page count is a preference between 2 and 50 and the file
-still carries exactly one trailing entry, so a user who deletes a page writes nine pages plus names -
-ten entries - and 2.7.4c evaluates `10 > 10` as false: no page names, no active page, no active button,
-and the empty map serialised back over them on exit.
-
-**Downgrade only, and clean in both directions at the default ten pages** - which is the only count a
-2.7.4c installation can have.  This version reading a 2.7.4c file is fine: `!saveStates.isEmpty()` is
-what it asks, and that replaced the count comparison precisely because it was fragile.
-
-**Not fixable here**, which is why it is a question.  The failing comparison is inside 2.7.4c.  The
-choices are to write a file shape the old version reads, or to say in the release notes that a downgrade
-loses page names.  The second is a sentence; the first is a format decision.
-
-### OB-256 - 2026-09-22 - the caption migration is a fourth door past one station, one caption
-
-**Kind:** bug  
-**Raised from:** review finding IPR-C1, 2026-08-31, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-`AutonomySession.setCaption` carries the rule and its own comment names the three doors it was
-written for: place a station automatically, choose the square in the autonomy editor, drag the square in
-the track diagram editor.  Only the first knew to remove the old caption, so the rule was moved into one
-place.
-
-**There is a fourth.**  `migrateStationLabels` - the one-time bring-across of captions that used to live
-in the layout file - writes `store.setCaption(where, station)` directly, past the rule.
-
-**Checked against today's code, 2026-09-22.**  The migration still runs from `AutonomySession`'s
-constructor path and still writes to the store directly.
-
-**What that costs:** a station captioned in the old file and again in the setup comes through captioned
-twice, with nothing saying which is current - the state the rule exists to prevent, arriving by the one
-door that does not ask it.
-
-### OB-257 - 2026-09-22 - the locomotive icon crop dialog: a saved view restores to a different rectangle, and the clamp's guarantee is in the wrong units
-
-**Kind:** bug  
-**Raised from:** review findings IPR-C2 and IPR-C4, 2026-08-31, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-Two findings about the same dialog, filed together because they are one afternoon's work.
-
-**A saved crop view restores to a different rectangle when the dialog has been resized (IPR-C2).**  The
-five numbers saved are `centerX, centerY, zoomFraction, frameAspect, frameSize`.  The centre is
-panel-independent; the crop SIZE is not - `sourceRect().width` is `cropWindow().width / getScale()`, and
-both `largestWindow` and `fitScale` take their own `min` over the panel.  So the same saved view
-reopened in a differently-sized dialog crops a different part of the photograph.
-
-**The clamp's overlap guarantee is in panel pixels (IPR-C4).**  `clampCenter` keeps
-`min(24, min(w,h)/3) / scale` source pixels of the photograph under the frame; the numerator is in PANEL
-pixels, so the guarantee falls below one source pixel once the scale passes 24 - any source under about
-682 x 442 at full zoom.  **This half is a pointer**: the reviewer verified the units and did NOT
-re-derive the rounding-to-zero its scenario depends on, and said so.  It needs a source smaller than the
-icon and a drag to the exact bound, so it is narrow either way.
-
-**Checked against today's code, 2026-09-22.**  `copyViewInto` still saves those five numbers and none of
-them is the panel size; `clampCenter` still divides a panel-pixel number by the scale.
-
-### OB-258 - 2026-09-22 - the copy mark is filled white whatever ink it is given, so it disappears on a selected row
-
-**Kind:** bug  
-**Raised from:** review finding IPR-C3, 2026-08-31, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-`RowIcons.copy(int, Color)` draws its outline in the ink it is handed and then fills the inner
-rectangle with `Color.WHITE` unconditionally.  On a selected row the mark is drawn in the selection's
-own ink - which the arrows and the trash already do, deliberately, so they stay visible against the
-look-and-feel's selection blue - and the white fill then covers most of it.
-
-**Checked against today's code, 2026-09-22.**  `RowIcons.java` still fills with `Color.WHITE` two lines
-after setting the given colour.
-
-**It is one line:** fill with the row's background rather than with white, or leave the inner rectangle
-unfilled.  Cosmetic, and it is the mark on the row somebody has just clicked - the one they are most
-likely to be reaching for.
-
-### OB-259 - 2026-09-22 - liftAboveLabels was made unnecessary by OB-159 and left in doing only its harm
-
-**Kind:** bug  
-**Raised from:** review finding DAY-C1, 2026-08-31, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-`liftAboveLabels` exists for one reason, given in its own javadoc - your *"make sure it renders on
-top of the S88's"* - and answers it by pushing a tile to component index 0 while a train is moving on it,
-then handing the front back to the station captions.
-
-OB-159 replaced that mechanism: `newDiagramContainer` paints its children and then asks every
-`LayoutLabel` for `paintTrainOverCaptions`, so the locomotive lands over every sibling whatever the
-z-order is.  The lift buys the train icon nothing.
-
-**What it still costs** is stated by the code's own comment: address labels are plain JLabels, so
-`keepCaptionsInFront` does not rescue them, and a lifted tile paints over their text for as long as a
-train sits on the square.
-
-**Checked against today's code, 2026-09-22.**  `LayoutLabel` still calls `liftAboveLabels` and still
-defines it, and the comment describing the residual harm is still there.
-
-### OB-260 - 2026-09-22 - deleting a timetable row removes against a stale index, behind a modal dialog
-
-**Kind:** bug  
-**Raised from:** review finding D3-C2, 2026-09-09, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-The handler checks `isAutonomyBusy()`, holds a modal confirmation open for as long as the operator
-leaves it, and then calls `getTimetable().remove(index)` - a structural mutation of a plain `LinkedList`
-with no lock, while `addTimetableEntry` (which IS synchronized) appends from locomotive threads whenever
-capture is on.
-
-`repaintTimetable`'s own comment already names this window as real - *"three of those callers hold a
-modal dialog open between the check and the snapshot, so the window is as wide as the operator leaves
-it"* - and that fix moved the SNAPSHOT off the event thread and left the REMOVE unguarded.
-
-**Scenario:** the operator right-clicks a row to delete it; while the confirmation sits open a route
-trigger dispatches a locomotive with capture on and entries append; Yes then removes against a stale
-index, and in the worst interleaving corrupts the list a running timetable is reading.
-
-**Checked against today's code, 2026-09-22.**  The remove is still inside the dialog's branch and still
-unsynchronized.
-
-### OB-261 - 2026-09-22 - a third accessory-reading door still creates the accessory on a miss
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-C3, 2026-09-09, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-The rule is *"reading one must still not create it"*, written after a paint loop put 2048 phantom
-switches into the live database.  Two of the three lookers were converted; `Locomotive.waitForAccessoryState`
-- a public API door used by automation scripts - still polls `getAccessoryState` in its wait loop, and
-that registers on a miss.
-
-One phantom row is harmless by your own counter doctrine.  **The finding is the rule enforced at two
-doors of three**, which is this codebase's commonest defect shape.
-
-**Scenario:** a user script waits on a mistyped address; a phantom accessory appears, and the wait never
-returns with nothing logged.
-
-**Checked against today's code, 2026-09-22.**  `waitForAccessoryState` still calls `getAccessoryState`
-inside its `while`.
-
-### OB-262 - 2026-09-22 - two dialogs open unowned, and can fall behind the main window
-
-**Kind:** bug  
-**Raised from:** review findings IND9X-C4 and IND9X-C5, 2026-09-09, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-Two findings with one cause, filed together.
-
-**The save-reconciliation warning (IND9X-C4).**  `AutonomyViewerPanel.save()` parents `AutonomyReport.show`
-on `this` - a panel that is built but never shown.  The panel's own field comment says every dialog in
-the file must parent on the main window for exactly this reason, and every other dialog in it does.  It
-is reached from page exclusion, import, initialize, duplicate, rename and delete, and it is the one
-notice that says a page's settings are at risk.
-
-**The right-click menu's refusals (IND9X-C5).**  Menu actions fire after the popup is torn down, so
-`this` has no window ancestor and the dialogs centre on the screen, unowned.  The same dialogs in
-`AutoLocomotiveStatus` parent correctly.
-
-**Scenario:** send a train from the diagram with track power off; "power on to start" appears mid-monitor,
-is covered by a stray click, and the refusal reads as the command having silently failed.
-
-**Checked against today's code, 2026-09-22.**  `AutonomyViewerPanel` still passes `this`, and
-`LayoutRightclickAutonomyMenu` still has seven `showMessageDialog(this, ...)` calls.
-
-### OB-263 - 2026-09-22 - a station caption's rotation depends on what was standing on the sensor when the layout was saved
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-C8, 2026-09-09, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-`LayoutGrid.runsNorthSouth` asks `TilePorts.ports(type, orientation, STATE)`, and a FEEDBACK tile's
-state is the `zustand` the Central Station saved - 1 if the s88 happened to be occupied at export.  A
-feedback tile has one state, so `ports` returns EMPTY for state 1 rather than throwing: a vertical sensor
-square then reads as not-north-south and its caption is drawn unrotated, as though the track ran
-east-west.  Persistently, per file, and differently for two identical vertical stations.
-
-The `catch` fallback's comment blames *"a tile type the port table does not describe"*; the real failure
-returns empty and never reaches the catch.
-
-`AutonomySession.labelSides` documents this exact trap and asks `graph.getRoutes(tile)` instead -
-`runsNorthSouth` is the surviving sibling of that fix.
-
-**No fixture can see it**, which is why nothing caught it: every hand-built fixture is orientation 0,
-horizontal, state 0.
-
-**Checked against today's code, 2026-09-22.**  `runsNorthSouth` still passes `c.getState()`, and
-`TilePorts.ports` still returns `Collections.emptyList()` when the state is past the end of the table.
-
-### OB-264 - 2026-09-22 - three coverage gaps against rules behaviour.md states
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-C7, 2026-09-09, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-Three absences, each confirmed by search rather than by reading a test.
-
-- **The `isRunning()` half of the section 6a guard has no test.**  All three refusals - rename point,
-  delete point, delete edge - are exercised against `isStagingInProgress` and none against a live run,
-  which is the other half of the OR the guard is written as.  Re-checked 2026-09-22: the claim in
-  `testHomeStaging` still asserts `!isRunning() && !isStagingInProgress()` as a precondition and never
-  sets a run going.
-- **Nothing asserts the covered mark survives an accessory highlight flash.**  behaviour.md section 5c
-  states the rule - both marks are applied on every paint so a highlight cannot take either away - and
-  the test that covered it went with the wash it was written against.
-- **One section 4 limit is code-only.**  A recorded `arrivedFrom` naming a side no track leaves by - a
-  stale value after an edit - stops the tail walk entirely, blocking nothing even where the geometry is
-  unambiguous.  The code says so at the break; no document does.  Re-checked 2026-09-22: the comment is
-  still there and behaviour.md still does not carry the limit.
-
-### OB-265 - 2026-09-22 - the rest of the dispatch-choice layer is documented only in user prose
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-C2, 2026-09-09, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-**Half of this is now done, and the half that is done was the load-bearing one.**  The finding was
-that the concurrency cap, station priority, the longest-idle preference, the minimum and maximum delay
-and atomic routes all decide which train goes where and when, and that behaviour.md - whose head claims
-*"the features that decide where trains may go"* - said nothing about any of them.  It named one
-consequence that was stated nowhere: the cap is fenced on `isAutoRunning()`, and Return Home runs under
-that flag, so the cap binds Return Home moves.
-
-Since then behaviour.md section 1 has gained the cap, the 0-means-no-cap rule, the hand-dispatch
-exemption, and exactly that Return Home consequence with the note that the fence is wider than "full
-autonomy"; section 5d has gained atomic routes.
-
-**What is left** is station priority, the longest-idle preference and the minimum and maximum delay -
-still described only in `Automation.md`, in user prose that is not written to be read against the code.
-They decide which train is chosen and where it is sent, which is what section 1 is about.
-
-### OB-266 - 2026-09-22 - the invalidation message shown is the last one, not the first
-
-**Kind:** bug  
-**Raised from:** review finding FP-C6, 2026-07-27, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-`Layout.invalidate(String)` overwrites `invalidReason` and `lastError` on every call, and the point
-loop keeps parsing after invalidating rather than returning.  So a configuration with three mistakes
-calls it three times and the operator is shown the THIRD - usually the one furthest from the cause.
-
-**A related confusion has since been fixed and this one has not.**  `invalidReason` was split out of
-`lastError` because `lastError` is written by every path that fails for any reason, so the invalidation
-message was being replaced by whatever path failed most recently.  That fixed which FIELD is read; it
-did not change that the field holds the last of several invalidations rather than the first.
-
-**Checked against today's code, 2026-09-22.**  `invalidate` still assigns both fields unconditionally.
-
-**What would settle it:** keep the first message rather than the last, or collect them and show all of
-them - the loop already visits every point, so nothing has to be read twice.
-
-### OB-267 - 2026-09-22 - two test-harness leaks: a tab left selected on a failure, and a restore that does not restore one thing
-
-**Kind:** bug  
-**Raised from:** review findings VD12-T9 and VD12-T10, 2026-09-21, re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-Two small findings about test hygiene, filed together because they are the same afternoon.
-
-**A tab left selected on a failure (VD12-T9).**  `findSomewhereToType` changes the selected tab and the
-restore is the last statement rather than a `finally`, so a failure leaves a different tab showing for
-whatever runs next in the same JVM - where the same keystroke means something else.
-
-**A restore that does not restore one thing (VD12-T10).**  The `finally` re-parses the setup's JSON and
-`parseAuto` deliberately carries the visit history forward, so the arrival the test noted survives into
-the restored layout.  Nothing reads it today; the class's own comment claims the setup is put back, and
-for this one piece of state it is not.
-
-Both are cross-class leaks of the kind that make a suite's result depend on its order, which is what
-`DEBUG_SIMULATE_PACKETS` did in the same round.
-
-### OB-268 - 2026-09-22 - the turning-copy invariant is measured with two different rulers
-
-**Kind:** bug  
-**Raised from:** review finding REV9-C2, 2026-09-09, recovered from git and re-checked 2026-09-22  
-**Filed:** 2026-09-22  
-
-Section 3 states, as the reason a compulsory turn is not a question, that *"a turning copy's only
-outgoing edges leave by the side the train arrived from"*.  The builder guarantees it in the metal
-vocabulary.
-
-The only test that examines reversing copies on the wired railway,
-`testTheTurnRuleDoesNotChangeTheRealRailway.testAReversingCopyCanBeLeftByAnotherSide`, computes the
-in-side from the STORED entry side and the out-side from `entrySideOf(leaving, copy)` - which, for an
-edge whose START is the copy, always falls through to the geometric `sideTowards` fallback.  So its
-counter-examples measure the curve between the build's side and the neighbour's compass position, not a
-turning copy with a genuine onward edge.
-
-The test is right to block the geometric narrowing, which is what it was written for.  **What is wrong
-is what it reads as**: its name and its assertion read as a refutation of the section 3 sentence, and its
-closing message invites a future author to re-measure with the same mixed ruler.  Meanwhile the metal
-invariant is pinned only on a small fixture.
-
-**Checked against today's code, 2026-09-22.**  The test still takes both sides from `entrySideOf` and
-its message still says *"re-measure before assuming either way"*.
-
-### OB-283 - 2026-09-23 - Keep the current direction can end a journey net-reversed where it passed a compulsory-turn square
-
-**Kind:** bug  
-**Raised from:** OB-190  
-**Filed:** 2026-09-23  
-
-Adam's call rather than a defect, carried until now only on OB-190's Inbox body, which the certified-entries clear-out of 2026-09-23 removed (DCN-C14). A journey that passes a compulsory-turn square is turned there, invisibly to the operator, so at a may-reverse destination the answer "Yes - keep the current direction" can leave the train net-reversed: measured 2026-09-08, keep ends backward and reverse ends forward. Section 3 of behaviour.md promises the opposite. The question: should keep and reverse be measured against the way the train set off, or against the way it arrives?
-
-### OB-284 - 2026-09-23 - A paste or Place where the train's heading is one only a barred copy holds turns it round
-
-**Kind:** bug  
-**Raised from:** OB-270  
-**Filed:** 2026-09-23  
-
-Adam's call.  At a square where trains may not arrive from one side - BottomMainA, arrivals from the east barred - a train can face the barred way: reversed there on the throttle, or turned by the Facing menu, it now stands on the copy facing that way (the copy is the direction; 8370abb1).  But a paste, the editor's Place and the Place Locomotive dialog choose only among facings a train may arrive in (OB-270: 'we shouldn't allow an impossible facing to be saved'), so the same train cut and pasted back onto the same square is turned round - against OB-270's other half, 'no train should inadvertently change direction when pasted'.  The question: should a placement keep a heading only a barred copy holds (the train then stands where autonomy will not start it, and says why), or keep choosing a way trains may arrive in?  (AUT2-A1's second half, AUT3-B2, DCN3-B1.)
-
-### OB-285 - 2026-09-24 - A train turned where it stands is cleared out over its own tail without looking for another train's tail
-
-**Kind:** bug  
-**Raised from:** AUT2-C2  
-**Filed:** 2026-09-24  
-
-Found while fixing AUT2-C2, and filed rather than changed, because it makes the running railway refuse more.  `Layout.isPathClear` asks three questions of each piece of track a route runs over - whose tail was traced along it, whose tail lies on track sharing its metal, and whose tail lies on the squares it runs over - and stops at the first answer.  Where that first answer is the moving train itself, the piece is passed and the other two are never asked.  That happens to a train standing on the copy that faces the way it will leave, with its tail on that same side: it came in from that side and was then turned where it stands - reversed on the throttle, turned with the Facing menu, or turned at a square trains may turn at.  Its way out runs over its own tail, and another train's tail on that stretch is not seen.  **Measured on the frozen railway, 2026-09-24** (a probe, not kept): 10 such cases on 4 squares, every one cleared.  The clearest: a train comes into Tunnel from the south, is reversed on the throttle, and is sent back south towards BottomMainAPre; a train in TunnelLeftPark, TunnelCenterPark or TunnelRightPark whose tail sticks out across the points at `1 - Main:7,8` to `7,11` is on that way out, and the moving train is cleared into it.  The standing train needs 3 units to reach those points, against those parks' allowance of 2, so it gets there only by hand, with a wrong or missing length, or by stopping short.  The same shape at TopR1ParkShort and TopR1ParkLong (for a train leaving `1 - Main 1,3` south; 5 and 4 units against allowances of 4 and 3) and ButtomLongestPark (10 against 9).  The planner now asks every train on a piece of track (AUT2-C2) and mirrors this exit on purpose, so that it never refuses a move the railway would make.  The question: should the railway refuse that move too?  If yes, `isPathClear` and the planner change together, with a claim at Tunnel.
-
-### OB-286 - 2026-09-24 - Highlight on Diagram can wash one three-way in both colours
-
-**Kind:** bug  
-**Raised from:** GUI2-C4  
-**Filed:** 2026-09-24  
-
-Cosmetic, rare, and deferred rather than worked: claiming it needs a three-way on a test diagram and the route editor open over it, which no fixture has yet.  A route that commands one of a three-way's two decoders and has a condition on the other lights the one tile in both colours - commanded and checked - and counts it twice, because the rule that a tile both commanded and checked is drawn as commanded is applied per address, and since GUI-C5 a three-way answers to two.  The fix is to decide it per tile in `TrainControlUI.lightWhere` (commanded first), or to fold a three-way's two addresses together before the rule in `RouteEditorFrame`.
-
 ### FR-098 - 2026-09-24 - Grey out Apply in Customize Function Icons when there is nothing to apply
 
 **Kind:** feature request  
@@ -1136,50 +352,6 @@ Cosmetic, rare, and deferred rather than worked: claiming it needs a three-way o
 **Filed:** 2026-09-24  
 
 Adam, on MT-466, 2026-09-22: *"there is no cancel button if you go to manage locomotive -> customize function icons, only apply- and closing without clicking on apply still persists the functions here.  That's OK, but just make sure apply is greyed out if there is nothing to apply."*  MT-466's note of the same day said this was filed; it was not, and the 2026-09-24 pass over the waiting tests found it missing.  It needs the dialog to know whether anything has changed since it opened, a flag it does not keep - and greying Apply while there IS something to apply would lose work, so it is to be done with a test for both directions.
-
-### OB-287 - 2026-09-24 - MT-464's automated test was asked for and only half built: the refusal to delete or rename a locomotive a running route drives
-
-**Kind:** bug  
-**Raised from:** MT-464  
-**Filed:** 2026-09-24  
-
-Adam, on MT-464, 2026-09-22: *"make an automated test for this"*.  `core.testAdvancedRoutes` holds the half about the route finishing its commands (CS3-B1).  The refusal itself - `TrainControlUI.refuseWhileARouteDrivesIt`, at both the delete and the rename door, naming the route - has no test.  Found by the 2026-09-24 pass over the waiting tests; MT-531 is the part of MT-464 still for his hands.
-
-### OB-288 - 2026-09-24 - erronous autonomy editor warning
-
-**Kind:** bug  
-**Raised from:** MT-542 (Test a Path keeps its route when Path Type changes, and changes only the note)  
-**Filed:** 2026-09-24 07:28  
-**Build:** commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-<station> can refuse trains that would otherwise fit shows up on all berths, even though we have measured the s88 tile to match the berth max train size. likely an artifact from before we included the station length in the measurement.
-
-### OB-289 - 2026-09-24 - spacing below "visible elements" in autonomy editor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-24 07:41  
-**Build:** commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-there is slightly too much spacing/padding below "visible elements" in autonomy editor.  make it be consistent with other labels
-
-### OB-290 - 2026-09-24 - orange line for 75 407 DB
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-24 07:59  
-**Build:** commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the CURRENT setup, 75 407 DB gets no orange line at bottommaina.  it did earlier
-
-### OB-291 - 2026-09-24 - max train length forgotten if station demoted
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-24 10:24  
-**Build:** commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-make max train length be remembered if a station is changed to a non-station, and then restored if it is changed back to a station.  don't modify the behavior of this attribute: it is still to be ignored for non-stations.
 
 ### FR-099 - 2026-09-24 - prettify usage graph
 
@@ -1189,15 +361,6 @@ make max train length be remembered if a station is changed to a non-station, an
 **Build:** commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 usage graph uses basic/ugly graphics.  Keep current functionality, but make it look nicer.
-
-### OB-292 - 2026-09-24 - a new straight that would join two tracks is not turned to join them
-
-**Kind:** bug  
-**Raised from:** Adam, in conversation - not from a particular test  
-**Filed:** 2026-09-24 11:16  
-**Build:** commit c3efc506
-
-Adam, 2026-09-24: *"when new straight tracks are placed in the autonomy editor and they would connect two other tracks, they are automatically oriented to connect rather than not."*  Today a straight is placed at its default orientation, so dropping one into a gap between two pieces of track can leave it lying across the line, joining neither, until it is turned by hand.
 
 ### FR-100 - 2026-09-24 - where is the tail visual selection
 
@@ -1217,15 +380,6 @@ when asking about the tail, instead of showing the list of points, highlight pos
 
 these show "no train can reach <point> from any other station....check the direction".  Update the error message to say that is marked for nothing to be able to pass, user to validate if intentional.
 
-### OB-293 - 2026-09-24 - missing tooltips
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-24 13:09  
-**Build:** commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-add brief tooltips on what entry guards and exit guards are to their items in the autonomy right click menu
-
 ### FR-102 - 2026-09-24 - why not moving convenience
 
 **Kind:** feature request  
@@ -1234,134 +388,6 @@ add brief tooltips on what entry guards and exit guards are to their items in th
 **Build:** commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor diagram so it's clear what the user can click on (consider greying out other things)
-
-### OB-294 - 2026-09-24 - routing edge case - critical
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-24 13:58  
-**Build:** commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-EN57-203 from bottomsecondary to lowerfront may run over its own tail. make sure the model factors in whether the train will  clear the area before it crosses over.  right now, If I set the train length to 20, is still allowed to go, even though it would likely hit its own tail.
-
-separately, increase choosable train lengths up to 40 in the dropdown.
-
-### OB-295 - 2026-09-24 - the 'unavailable while occupied' notice describes a standing train on a square trains only pass
-
-**Kind:** bug  
-**Raised from:** follow-up from the validation round, TDA-C9  
-**Filed:** 2026-09-24  
-**Build:** commit b62f1976 and later - found by reading, not on the railway
-
-`63c4fdc0` keeps a restriction on a square made pass-through, and lists every restriction as *"{0} is unavailable while {1} is occupied."*  On a square that is not a station only the half the build writes into lock edges is live: a ROUTE running into the watched square holds it back, and a train STANDING there holds nothing back, because the standing half is asked only of a path's destination, which a pass-through square never is.  So the sentence describes the half that does not apply.  A notice, and the wording is yours; a pass-through variant might read *"... cannot be passed while a train is being sent to {1}"*.
-
-### OB-296 - 2026-09-24 - the right-click Place item stands a train on a random copy of the square
-
-**Kind:** bug  
-**Raised from:** follow-up from the validation round, TDU-B4 - older than the range (`bd27c357`, 2026-08-18)  
-**Filed:** 2026-09-24  
-**Build:** commit b62f1976 and later - found by reading, not on the railway
-
-Three placement doors keep the train's heading and stand it on the copy that faces that way (OB-270, GUI-B1, OB-284).  The fourth - the diagram's right-click **Place {0}** for the active locomotive - still takes one of the square's usable copies at random (`LayoutRightclickAutonomyMenu.placeSomewhereLegal`), so the same train placed the same way faces either way.  behaviour.md already calls random placement superseded by your ruling of 2026-09-12, *"as long as the direction isnt flipped"*.  The question for you: should this door follow the paste's rule, or keep choosing for the operator?
-
-### OB-297 - 2026-09-24 - the own-tail refusal's count of stretches with no length misses one measured only at its switch
-
-**Kind:** bug  
-**Raised from:** follow-up from the validation round, TDA2-C1  
-**Filed:** 2026-09-24  
-**Build:** found by reading, not on the railway
-
-The own-tail refusal's note says how many stretches of the way round have no length, so that measuring them is a way past.  It counts sensor-to-sensor legs, which is coarser than the pieces Mass Assign Lengths asks for - a leg cut at its switches - so a leg whose only length is its switch counts as measured, and between Mass Assign sittings (switches first, pieces later) the note can say fewer stretches than there are, or nothing.  The rule itself is right: unmeasured track refuses more, not less.  Counting pieces needs the build to mark which of an edge's places are switches, which the configuration does not carry today.  Left for later; the rule's javadoc and behaviour.md 5c say so.
-
-### OB-298 - 2026-09-24 - a configuration build and a rebuild on two threads at once raise ConcurrentModificationException
-
-**Kind:** bug  
-**Raised from:** a test run in the OB-294 session  
-**Filed:** 2026-09-24  
-**Build:** found in a test, not on the railway
-
-Seen once, in a test that edited the setup off the event thread while a rebuild ran: `AutonomyBuilder.splitSides` iterated `reducer.getEdges()` while the other rebuild cleared and refilled that list in place (`GraphReducer` keeps one `ArrayList` of edges).  The test was put right - it now edits on the event thread, as the application does - and every door read so far builds and edits there too.  Left for later because the question is whether any door builds off the event thread: the start-up resume and `rebuildRunningLayoutFromSetup` are the ones to check.  If one does, a build could throw mid-way or read half a rebuild.
-
-### OB-299 - 2026-09-25 - a train put on a copy that reaches no station is never started, and nothing says why
-
-**Kind:** bug  
-**Raised from:** follow-up from the validation round, ADU2-C2  
-**Filed:** 2026-09-25  
-**Build:** found by reading, not on the railway
-
-Since your answer to OB-296 the right-click Place keeps the train's heading, as the paste does, over every copy of the square the train could leave by.  A copy can have a way out and still reach no station autonomy may choose - everything past it is sensors, turning points or parking - and a train stood there facing that way is never started.  For a copy trains may not arrive at, Why not Moving? says so (*"cannot be started there facing that way"*); for one that reaches no station it lists each destination's own reason, not the copy's.  Before, this door turned such a train onto the other copy - the worse fault, since its heading was then wrong.  Left for later: it is a new sentence in eight languages. On the frozen copy of your railway no station has one: the two copies there with a way out that reach no station - BottomInner facing south and TopMainR2Inter facing north - are both ones trains may not arrive at, and Why not Moving? says so at each.
-
-### OB-300 - 2026-09-25 - The own-tail rule does not judge a way round answered 0 throughout
-
-**Kind:** bug  
-**Raised from:** RLA-C6  
-**Filed:** 2026-09-25  
-
-Found by the 3.0.0 release review (RLA-C6), 2026-09-25.  Every length rule the answered-0 work reached treats track answered 0 as measured track of no length, and errs towards refusing.  The own-tail rule (`Layout.whyItWouldMeetItsOwnTail`) judges a return only where the route has run some length since it left the place, and adds only lengths above 0 - so a loop answered 0 all the way round is not judged, and a train of any length is let round it into its own body.  The one length rule that errs towards letting through.
-
-**Why it waits:** fixing it means the rule telling an answered 0 from an unmeasured square place by place - a change to a core safety rule late in a release - and no loop on the railway can reach it: every one passes measured platforms (measured on the frozen railway: no route between stations comes back to a train's own track in fewer than 9 units).
-
-**Direction:** judge a return once the way round is measured - a length on it, or answered throughout - and add the rule to behaviour.md's answered-0 list and `Edge.isMeasured`'s javadoc.  Claim: a hand-built loop as in `core.testATrainDoesNotRunIntoItsOwnTail`, every place answered 0, a train of 3 on the loop's first place; `whyItWouldMeetItsOwnTail` returns null today.
-
-### OB-301 - 2026-09-25 - Change Name or Address skips the multi-unit sweep when a new name is refused after the address changed
-
-**Kind:** bug  
-**Raised from:** RLA2-C2  
-**Filed:** 2026-09-25  
-
-Found by the 3.0.0 release review's second round (RLA2-C2), 2026-09-25.  The dialog applies the new address first and checks the new name after; a refused name (empty, too long, taken, or holding a character routes cannot read) returns with the address changed and neither the multi-unit sweep nor the refresh run.  Given another standing train's address, both stay on the graph - RLA-B1's consequence through the door it named.
-
-**Why it waits:** two mistakes in one dialog, pre-existing, and the next Place or load sweeps it.  **Direction:** check the name before applying the address, or sweep and refresh on every exit once the address has changed; claim with the dialog driven by an answerer.
-
-### OB-302 - 2026-09-25 - A failed old-file import puts back the page exclusions it has just announced
-
-**Kind:** bug  
-**Raised from:** RLU2-C12  
-**Filed:** 2026-09-25  
-
-Found by the 3.0.0 release review's second round (RLU2-C12), 2026-09-25.  The import's rollback snapshot is taken before `excludeRepeatedSensorPages`, which says at once which pages it left out; a file that then fails before the save restores the setup, pages included, and the pages it said were left out are in again with nothing said.
-
-**Why it waits:** narrow and cosmetic - the next import excludes them again and says so.  **Direction:** take the snapshot after the exclusion, which is a decision about the track and not the file; claim with a setup holding an unsettled repeated page.
-
-### OB-303 - 2026-09-25 - The Central Station sync's multi-unit sweep: members that change during a run, its claims, and the redraw
-
-**Kind:** bug  
-**Raised from:** RLA3-C1  
-**Filed:** 2026-09-25  
-
-Found by the 3.0.0 release review's third round (RLA3-C1, RLA3-C2, RLA3-C3, RLD3-C3), 2026-09-25.  RLA2-B2 made the sync sweep what it changes when autonomy is not running.  Three gaps are left.  (1) A Central Station multi-unit's new members that arrive during a run are taken at once and the sweep is skipped; no later sync sees a change, so a standing train added to a standing multi-unit stays standing until the next load or Place.  (2) Only the address half has a claim: the members half and the not-while-running guard can be deleted with every test green.  The mock station does serve a multi-unit - `test/lokomotive.cs2` holds OBB 1043 with two members - so the claims need a set-up, not a fixture: the database's copy of OBB 1043 given one member before the sync, with the other standing (corrected 2026-09-25, RLA4-C7).  (3) The sweep refreshes nothing the autonomy panels draw, where the window's doors call refreshUI, updateVisiblePoints and repaintAutoLocList after the same call.
-
-**Why it waits:** each needs a Central Station edit colliding with a standing train, and the next load or Place clears it.  **Direction:** remember the locomotives whose sweep was skipped and sweep them when the run stops; give the database's copy of the served multi-unit one member for the claims; fire the layout's refresh after a sweep that took something off.
-
-### OB-304 - 2026-09-25 - An old-file import's silent skips, and the facing it keeps where the file cannot say
-
-**Kind:** bug  
-**Raised from:** RLA3-C5  
-**Filed:** 2026-09-25  
-
-Found by the 3.0.0 release review's third round (RLA3-C4, RLA3-C5, RLD3-C6), 2026-09-25.  Three skips are still not said: a home the file names twice (counted, never shown), a placement onto a square holding another train, and a home onto a square already homing another train.  And where the file cannot say which way a placed train faces, the square's last occupant's facing is kept without being counted as a guess and without REG3-C1's preference for a way trains may arrive.
-
-**Why it waits:** information only - nothing is placed or homed twice - and on his railway the file states a facing for 88 of 90 edges.  **Direction:** name the skips in the message as the others are; keep a recorded facing only where trains may arrive, and count it with the guesses.
-
-### OB-305 - 2026-09-25 - A placement is saved only after its tail question, so a crash while the question waits loses it
-
-**Kind:** bug  
-**Raised from:** RLU3-C5  
-**Filed:** 2026-09-25  
-
-Found by the 3.0.0 release review (RLU2-C13, RLU3-C5), 2026-09-25.  Each placement door writes the placement, facing and side into the setup in memory, asks the tail question, and saves once at the end; after an editor opened in the wait nothing is saved (RLU-C9), and in any case nothing is saved while the question waits.  A crash then starts the next session without the train where it stands.
-
-**Why it waits:** the next save writes it - the editor's own, any later one, or the exit - so only a crash in that window loses it.  **Direction:** save what the door wrote before asking, when no editor is open, and keep 'save nothing' for the late answer only.
-
-### OB-306 - 2026-09-26 - A page rename's carry, while a declined edit waits, loses a train on a station with no name of its own
-
-**Kind:** bug  
-**Raised from:** RLV7-C3  
-**Filed:** 2026-09-26  
-
-Found by the 3.0.0 release review's seventh round (RLV7-C3), 2026-09-26.  While a setup edit a run declined waits, the reload after a page rename carries each train across by Point name - the capture before the rename, which re-keys every placement with the page, does not fold while that edit waits.  A station with no name of its own is named after its page, so after the rename its name is not found, and a train standing there goes back to where the setup had it before the run: DW-A1's shape, the track it stands on reading free.  Two stations of one name on different pages can also trade their " (2)" when the page order changes.
-
-**Why it waits:** it needs the one-event race that raises the flag, a page rename while it is up, and a train on a station with no name of its own - and every one of the 33 stations on his railway has a name of its own, none shared.  **Direction:** carry by square rather than by name across a rename - record the page renamed and map a recorded name on it through the rename, as the capture's re-keying does - or rename the recorded names along with the page.
 
 ### FR-103 - 2026-09-26 - Update color of "autonomy won't choose these" stations
 
@@ -1383,24 +409,6 @@ instead of "right click to change icon", add a wrench icon to the upper-left of 
 
 also, increase the opacity of the default locomotive icon by 10%, so it's slightly lighter.
 
-### OB-307 - 2026-09-29 - still see orange lines when autonomy isn't loaded
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-29 08:33  
-**Build:** commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-even when autonomy isn't loaded (i.e. when switching diagram types from CS to local), the orange lines with tran locations are painted.  also, right click menus on sensors are also live.  orange should only be painted with autonomy loaded, and right click menus also only visible if autonomy loaded.
-
-### OB-308 - 2026-09-29 - local layout folder remembered
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-29 08:37  
-**Build:** commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-layouts -> open layout should default to the last used local layout folder.  this seems like a regression
-
 ### FR-105 - 2026-09-30 - grey out consistency in autonomy editor
 
 **Kind:** feature request  
@@ -1419,84 +427,6 @@ when a page is excluded in the autonomy editor, also disable/grey out the auto/m
 
 right now, when autonomy is moving, we have a green coloring for completed paths and red for pending.  but the train tails aren't shown.  make the tail visible at all times.  advise if there are clearer colors than green and red for the paths that would make the layout look more professional.
 
-### OB-309 - 2026-10-02 - autonomy running indicator
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-02 22:44  
-**Build:** commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-can we get a spinner next to start autonomous operation on the autonomous locomotive commands tab that shows whenever anything is running?
-
-### OB-310 - 2026-10-02 - station label orientation
-
-**Kind:** bug  
-**Raised from:** MT-648 (Start says why when no train could be started)  
-**Filed:** 2026-10-02 22:47  
-**Build:** commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when changing topmainr1 from a station to no trains can pass, the label gets rotated from being vertical (correct) to being horizontal (wrong) and back again.
-
-### OB-311 - 2026-10-03 - show files after backup opens the Documents folder
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-03  
-
-After a backup, Show Files opened the Documents folder rather than the TC_Backup folder the backup was written to.
-
-Adam, 2026-10-03: *"show files after backup opened by documents folder, not the tc_backup folder."*
-
-### OB-312 - 2026-10-03 - parked locs labels without a locomotive; visible elements checkbox spacing
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-03  
-
-With **Text Labels** set to **Parked Locs**, a label is still shown on a station with no locomotive - show only the labels that have one.  And check the spacing between the checkboxes under **Visible Elements**.
-
-Adam, 2026-10-03: *"When in text labels-parked locomotive, dont show labels without a locomotive. Also, check spacing between visible elements checkboxes"*
-
-### OB-313 - 2026-10-03 - strip above the track diagram: font size and button padding
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-03  
-
-On the strip above the track diagram, the **Start Autonomous Operation** button, the autonomy controls and the warnings use a smaller font than the rest of the window - bring them to the same size as everything else.  And check the button's padding, so it is not too skinny.
-
-Adam, 2026-10-03: *"increase font sizes for start aut9nomoud and autonomy controls, warnings above the track diagram to the same font size as everything else. Check padding of the button to not be too skinny"*
-
-### OB-314 - 2026-10-03 - arrival label shows the wrong facing until the train arrives
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-03  
-
-Sending ET22-245 from TopMainR2Inter to BottomMainB, the label at BottomMainB showed the train arriving facing west rather than east - as though it would arrive reversed.  Once it arrived, the label was put right.
-
-Adam, 2026-10-03: *"when sending et22-245 from topmainr2inter to bottommainb, the label at bottommainb shows arrival arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed."*
-
-### OB-315 - 2026-10-03 - a passing train sets a station's guard signal red
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-03  
-
-Sending ET22-245 from TopMainR2Inter to BottomMainB, with TopMainR2 guarded by signal 64, that signal was set to red as the train went past.  A station's guard signal should turn red only when a train arrives there at the end of its journey, not when one passes through.  To be checked first: whether the route really passes TopMainR2, and what set the signal red.
-
-Adam, 2026-10-03: *"when sending  et22-245 from topmainr2inter to bottommainb, and when topmainr2 is guarded by exit signal 64, that signal is set to red. It should only be set to red on arrival, not passing- but check."*
-
-### OB-316 - 2026-10-03 - signal 108 turned red running from BottomMainB to TopMainR2
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-03  
-
-Running ET22-245 from BottomMainB to TopMainR2, signal 108 was turned red.  Possibly the same cause as OB-315 (a station's guard signal set red by a train that is not arriving there); to be checked with it.
-
-Adam, 2026-10-03: *"when running et22-245 from bottommainb to topmainr2, signal 108 gets turned red"*
-
 ### FR-107 - 2026-10-03 - a key for Select by Dragging a Box in the track diagram editor
 
 **Kind:** feature request  
@@ -1506,35 +436,6 @@ Adam, 2026-10-03: *"when running et22-245 from bottommainb to topmainr2, signal 
 Give **Select by Dragging a Box** in the track diagram editor a keyboard shortcut, and name the key in its tooltip, as the editor's other tools do.
 
 Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*
-
-### OB-317 - 2026-10-03 - locomotive icon disappears when autonomy is started
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-03 22:45  
-**Build:** commit 4aa7b98d, in English - build\classes, compiled 03 Oct 22:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when autonomy is started and the blue path painted for a train, the locomotive icon disappears on the starting station.  it reappears when it reaches the next milestone (s88/station) and appears normally thereafter until parking.  it needs to be added to the starting path / kept where it is standing.
-
-### OB-318 - 2026-10-04 - popup titles and file chooser buttons not always translated
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-04  
-
-Adam, 2026-10-04: *"the popup titles message and input are not always translated, nor are file chooser buttons."*
-
-The titles of message and input popups ("Message", "Input") are not always in the chosen language, and neither are the buttons of the file chooser.
-
-### OB-319 - 2026-10-04 - a configuration whose setup can't be used can't be selected, so it can't be deleted
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-04  
-
-Adam, 2026-10-04: *"There seems to be a bug with autonomy config management. If there is a setup cant be used, it cant be selected from the list of configs, which prevents subsequent deletion."*
-
-An autonomy configuration whose setup cannot be used cannot be selected in the list of configurations, so it cannot then be deleted.
 
 ### FR-108 - 2026-10-04 - a bulk tool to allow every path in one go, with a warning
 
@@ -1546,16 +447,6 @@ Adam, 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove any red arro
 
 A Bulk Tools item in the autonomy editor that opens every restricted direction - removing every red arrow - in one step, after a warning that says what it will undo.
 
-### OB-320 - 2026-10-04 - two permanent Ys acting as a crossing: the wrong directions offered when cycling
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-04  
-
-Adam, 2026-10-04: *"when there is a permanent Y tile acting as a crossing, the right options aren't offered when you cycle through the allowed directions. Lets support two permanent Ys as a crossing, if possible, same as the current crossing by effectively rotated 45 degrees, just connecting differently and spread across 2 tiles. Be careful with this."*
-
-Where permanent Y tiles together act as a crossing, clicking through the allowed directions does not offer the crossing's choices.  Wanted: two permanent Ys treated as one crossing - the existing crossing's choices, turned 45 degrees and spread over two squares.  Adam asks for care: a crossing decides which routes conflict.
-
 ### FR-109 - 2026-10-04 - for 3.1.0: rename, delete and add pages from the layout editor
 
 **Kind:** feature request  
@@ -1565,16 +456,6 @@ Where permanent Y tiles together act as a crossing, clicking through the allowed
 Adam, 2026-10-04: *"Fr for 3.1.0- add basic layout administration, like renaming and deleting and adding pages, to the layout editor."*
 
 **For 3.1.0**, not 3.0.  Pages are managed today from the main window's Layouts menu; this brings renaming, deleting and adding pages into the layout editor itself.  Related: BCR-A2 (a page name differing from another's only in case overwrites that page's file) - the same name checks will apply to these doors.
-
-### OB-321 - 2026-10-04 - after an import, the viewer shows redundant one-way arrows along a straight run
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-04  
-
-Adam, 2026-10-04: *"after import, redundant arrows can shown in the viewer, on a single straight segment with multiple straight tracks that only allows travel in one direction. The editor correctly collapses then"*
-
-After an import, the track diagram in the main window can show an arrow on every square of a straight run of several straight tracks that trains may travel only one way; the autonomy editor shows the same run correctly, with the arrows collapsed.
 
 ### FR-110 - 2026-10-04 - the viewer can show the green arrows too, not only the red
 
@@ -1597,24 +478,6 @@ Adam, 2026-10-04: *"File an FR for 3.1.0- we need point management to be via a s
 **For v3.1.0**, on Adam's word.  Setting a point up in the autonomy editor - station or not, its name, the ways in, which way trains face, turning, length, home, signals, exclusions - is spread over right-click menus and their submenus, and each choice closes the menu, so one point takes many opens.  One popup per point, holding all of it.
 
 **Claude, 2026-10-04.**  The earlier request to keep those menus open after a choice has no entry in issues.md or tests.md that I could find, so it is folded in here and tracked from now on; a single popup would make it moot.
-
-### OB-322 - 2026-10-05 - redundant arrows in autonomy allowed directions
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-05 00:00  
-**Build:** commit b95cf69d, in English - build\classes, compiled 04 Oct 23:56 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-the crossings consisting of 2 fixed Y's or 2 sets of static switches have a redundant set of (red/green) arrows in the middle.  let's hide them in that configuration for simplicity.
-
-### OB-323 - 2026-10-05 - delay when clicking open layout
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-05 01:07  
-**Build:** commit 82a1312c, in English - build\classes, compiled 05 Oct 01:05 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-there is an odd (brief but noticeable) delay before the file chooser opens for Layouts -> Open Layout... (half a second to one second or so)
 
 ### FR-112 - 2026-10-05 - autonomy editor intuitiveness
 
@@ -1661,18 +524,6 @@ Adam, 2026-10-08: *"Add a FR for 3.1.0 of locomotive data import via csv (simila
 
 To settle when it is built: how a row finds its locomotive (by name, or by name with decoder type and address); which columns it writes and which it only reads (the running time is a statistic, not a setting); what happens to a row that names no locomotive in the database, and to a locomotive the file leaves out; whether the button mappings come back too; and a preview of what will change before anything is written.
 
-### OB-325 - 2026-10-08 - Return Home says no plan was found, and does not name the train that has nowhere to go
-
-**Kind:** bug  
-**Raised from:** E2E-B1  
-**Filed:** 2026-10-08  
-
-From the end-to-end release validation, 2026-10-08 (E2E-B1).  A reversible train of 4 standing on BottomMainB's turning copy has nowhere it fits to go: every station reachable from there is shorter.  While it stands there, Return Home answers "no plan found" for the whole fleet - after about 15 seconds of searching - and names nobody, so the operator cannot tell which train to move.
-
-Round 92 stops full autonomy sending a train there.  A train placed there, or sent there by hand, still meets this.  The planner checks each train's track and home (`HomeStaging.canGetHome`) but not its length, so the plan is not refused with a name; the search simply finds no first move for that train.
-
-To settle: when one train has no first move at all, Return Home should name it and say why (too long for every station reachable from where it stands), rather than searching the whole fleet and reporting nothing.  A setup check that warns where a turning copy admits a longer train than any station it leads to would catch the same thing before a run.
-
 ### FR-115 - 2026-10-09 - Place all at their homes: every locomotive put on its home, facing the way it is homed, every other station cleared, nothing moved
 
 **Kind:** feature request  
@@ -1684,26 +535,6 @@ Adam, 2026-10-09: *"Add a new FR (bulk tool in autonomy): Place all at their hom
 A bulk tool on the autonomy diagram's right-click menu.  Every locomotive that has a home is put on its home station, facing the way it is homed; every other station is cleared of whatever locomotive stands there.  Nothing is sent to the railway: it changes where autonomy believes the trains are, as placing a train by hand does, for when the trains are already standing at home (after a session, or after carrying them there by hand) and the diagram has lost track of them.
 
 To settle when it is built: what it does while a run is in progress (refused, as other placements are); a locomotive whose home another train's home shares or overlaps; a home on a page that is not loaded; whether it asks before clearing the stations it empties; and how the tail behind each train is laid, since a train put down with no road it came by has no tail.
-
-### OB-326 - 2026-10-09 - At the large tile size, the marks that say trains cannot arrive from a direction are misshapen and tan; they should be the small size's shape, in grey
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-09  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09, with a screenshot of the 60-pixel view: *"In 60px view, the “trains can't arrive from this direction” arrow's have an odd shape. Make it consistent with the 30px, and gray."*
-
-At 60 pixels the mark beside a station that refuses arrivals from one side is drawn as a hollow triangle outline and a tan chevron, where the 30-pixel diagram draws a plain arrow.  It should be the same shape at both sizes, scaled, and grey.
-
-### OB-327 - 2026-10-09 - A station's pill stood on end touches the station or buffer stop beside it
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-09  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09, with a screenshot: *"narrow/nudge so that pills rotated vertically don't touch adjacent stations or terminuses."*
-
-A caption turned on end, beside a vertical track, is as thick as a flat pill is tall and is placed by the same offset, so where a station or a buffer stop stands on the next square it runs into it.  Narrow the pill on end, or nudge it, so that it clears what stands beside it.
 
 ### FR-116 - 2026-10-09 - A square's address is red letters on a white halo, not in a box
 
@@ -1730,26 +561,6 @@ To settle when it is built: whether the pause belongs to the configuration or to
 **Adam, 2026-10-09, added:** *“To FR-117, add a requirement to add an ‘active’ checkbox to the right click autonomy menu (also accessible via track diagram).  Show it if there is a locomotive at that station.  On the track diagram viewer, inactive locomotive icons go from black to gray on the track diagram.”*  So: an **Active** tick on the autonomy right-click menu, the diagram's included, offered on a station with a locomotive standing on it and setting the same paused or unpaused state the locomotive controls tab sets; and on the track diagram viewer a paused locomotive's icon is drawn grey where an active one is black.
 
 **Built in round 107** (`ed0d310d`), on Adam's answers of 2026-10-09: the tick is offered only while autonomy is stopped (*“Only when stopped”*), and a paused train is kept out of autonomy and Return Home (*“Autonomy and Return Home”*) - a train can still be sent by hand.  What was left to settle above: the pause belongs to the configuration, which lists its paused trains with its settings and sets every train paused or not as it loads; a paused train taken off the diagram stays paused in that configuration.  And on his later word, *“Make sure the log shows what locomotive are paused when the autonomy import happens”*, the log names the paused trains whenever a configuration loads, an import's included.
-
-### OB-328 - 2026-10-09 - A track diagram window or editor that is maximised is not brought to the front when its button is clicked
-
-**Kind:** bug  
-**Raised from:** MT-705  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09, running MT-705: *“When a track diagram popup is maximized, it will not appear on top of the window (or any other windows) after the button is clicked.  It should appear and then the main window should go back on top of it. same for the editor.  Both work when the window is not previously maximized.”*
-
-Clicking the button that opens a page in its own window (Small or Large on the Layout tab), or the button that opens the editor, when that window is already open and maximised, leaves it where it is - behind the main window and every other program.  Not maximised, it comes up.  It should come up in front, and with Window Always on Top ticked the main window should then be back on top of it.
-
-### OB-329 - 2026-10-09 - The white halo round a locomotive's icon is a little too wide at the large size
-
-**Kind:** bug  
-**Raised from:** MT-707  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09, running MT-707: *“reduce the size of halos around the locomotive slightly in 60px mode.  rest looks good”*
-
-The halo round the train's icon (round 95) grows with the icon, so at 60 pixels it is twice as wide as at 30.  Make it slightly narrower at the large size, leaving the small size as it is.
 
 ### FR-118 - 2026-10-09 - Captions stood on end back to full size, with a redesign of the station icons
 
@@ -1822,16 +633,6 @@ in the autonomy editor, have a "show trains" checkbox that toggles the locomotiv
 
 when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here.
 
-### OB-332 - 2026-10-11 - A direction arrow on a route button is greyed out in the autonomy editor and cannot be clicked or changed
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-11  
-**Filed:** 2026-10-11  
-
-Adam, 2026-10-11: "Bug: sometimes a direction arrow is placed on a route tile, but those are greyed out in the autonomy editor and can't be clicked/changed.  We need the direction arrows to be editable and clickable.  Refer to route 41 in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox (located at 4,14).  Fix it now so I can MT"
-
-A route button drawn on a running line carries the line: the graph runs the track through it (`TileGraph.transparentRoutes`), so a direction can be stored on it and its arrow is drawn there.  The editor greyed every route button and refused its click (`AutonomyEditorPanel.isIgnored`), so that arrow could not be changed.  On the Oles kreds sandbox's page *0 komplet* six route buttons carry a stored one-way direction - routes 37, 41 (at 4,14, between signal 24 and sensor 15), 53, 50, 101 and 1019.
-
 ### FR-121 - 2026-10-11 - A station's locomotive exclusions get two modes: exclude the chosen locomotives (the default), or allow only them
 
 **Kind:** feature request  
@@ -1861,34 +662,6 @@ What it takes, as surveyed on 2026-10-11:
 
 46 rather than 45 because the centring arithmetic is in whole pixels and an odd square puts the rails half a pixel off its middle.
 
-### OB-333 - 2026-10-11 - regression- highlighted tiles
-
-**Kind:** bug  
-**Raised from:** MT-715 (Round 116: autonomy waits while the track power is off)  
-**Filed:** 2026-10-11 13:47  
-**Build:** commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when autonomy is running, I don't see yellow highlights for switches and signals on my track diagram
-
-### OB-334 - 2026-10-11 - regression- tile higlights
-
-**Kind:** bug  
-**Raised from:** MT-715 (Round 116: autonomy waits while the track power is off)  
-**Filed:** 2026-10-11 13:47  
-**Build:** commit 7b504008, in English - build\classes, compiled 11 Oct 12:49 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when autonomy is running, I don't see tiles being highlighted for switches and signals being changed.
-
-### OB-335 - 2026-10-11 - regression - no highlights on the switches a route clicked on the diagram changes
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-11  
-**Filed:** 2026-10-11  
-
-Adam, 2026-10-11, in the session after OB-333 and OB-334: "I also didn't see highlighting from manually clicked routes (i.e. MarklinRoute) when clicked from the layout, also a regression."
-
-Not reproduced: run on a copy of his layout at the Large size, three routes clicked as a click runs them each lit every switch they changed, and yellow on screen.  The defect behind OB-333 is the likely cause - a square changed again inside its highlight showed no yellow - and a route that changes a square twice, or one autonomy has just changed, meets it.  Fixed with it in round 134; MT-725 asks for a route clicked on the diagram.
-
 ### FR-123 - 2026-10-11 - for 3.1.0: a fullscreen mode, and ways to resize the main window
 
 **Kind:** feature request  
@@ -1912,16 +685,6 @@ Adam, 2026-10-11: *"FR for 3.1.0: a restore from backup option in the file menu"
 **For v3.1.0**, on Adam's word.  File > Backup TrainControl Data writes one zip into the `tc_backup` folder - the locomotive database (`LocDB.data`), the window state and keyboard pages (`UIState.data`), the locomotive icons, the routes, and for a layout stored on this computer its track diagram folder with the autonomy setups - but nothing reads one back: the Readme's restore is by hand (close TrainControl, unzip beside the JAR, start it again).  Add a Restore from Backup item to the File menu that does it.
 
 To settle when it is built: choosing the archive (opening on `tc_backup`); showing what it holds and what it will replace before anything is written; backing up the current data first, so a restore can be undone; where the layout folder goes (back where it was, or a folder the user picks) and pointing TrainControl at it; refusing while autonomy or a timetable is running; restarting, or reloading everything, afterwards; an archive from an older or newer version; and the CS3's own locomotive, route and accessory files, which a backup carries but TrainControl does not read.
-
-### OB-336 - 2026-10-11 - A home on an active terminus is warned that every train must turn round and be backed out
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-11  
-**Filed:** 2026-10-11  
-
-Adam, 2026-10-11: "Small issue: we get a 'every train must turn around... and would have to back out...' warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"
-
-The setup check's `autosetup.ui.checkHomeNeedsReversible` ("Every train must turn round at {0}.  A locomotive that cannot change direction enters this home nose first and has to be backed out by hand.") was given for a home on any square every train turns at except a parking berth (MT-552) - so on BottomMainC (1 - Main:20,14, EN57-947's home), a terminus autonomy may choose, where a locomotive that cannot reverse is neither chosen nor offered by hand (OB-205).  It belongs only at a parking berth no route can back a train into.
 
 ### FR-125 - 2026-10-11 - for 3.1.0: one-click updates - download, swap the jar, restart
 
@@ -1958,6 +721,8 @@ Adam, 2026-10-12: *"File OB: there is no warning popup in the UI, and no way to 
 Today, at start-up `MarklinControlStation` runs `syncWithCS2()`; when it fails (it returns -1 on any exception while reading the Central Station's database) the only sign is the log line `log.csNotConnected` (*"Central Station network connection not established."*) and TrainControl carries on with communication off.  That start-up block is the only place communication is turned on (`this.on = true`), so a later sync from the menu cannot bring the connection up: the user has to notice the log line and restart.
 
 Wanted: when the address answers but the first sync fails, a popup with the error and a Resync choice; on a failed resync, ask again, until the sync succeeds (communication on, as after a good start) or the user exits.
+
+**For v3.0.1**, on Adam's word (2026-10-12: *"Yes, 3.0.1."*).
 
 ## What has been picked up
 

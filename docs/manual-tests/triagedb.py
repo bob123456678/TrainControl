@@ -1094,7 +1094,7 @@ INBOX_CLAIM_RE = re.compile(r"\b(?:[Tt]racked as|[Ii]n the Inbox as|filed as|def
 
 
 def verify_inbox_claims(store_path=DB_FILE, issues_path=ISSUES_FILE):
-    """Whether every OB a finding's status note says it is tracked as is an item in the Inbox (GSB-C3).
+    """Whether every OB a finding's status note says it is tracked as is an item in the Inbox or receipted (GSB-C3).
 
     Nothing checked these.  A status note is the store's own answer, kept through every reload of the catalogue, and
     "tracked as OB-n" is all it says about where the work went - so a note naming an OB that was never filed, or a
@@ -1120,6 +1120,9 @@ def verify_inbox_claims(store_path=DB_FILE, issues_path=ISSUES_FILE):
     # The one parser's headings, not a second regular expression written for the occasion (see the module docstring)
     inbox = set(m.group(1) for m in triage.ISSUE_ITEM_RE.finditer(section))
 
+    # A done item leaves the Inbox and keeps its receipt (Adam, 2026-09-24), so the receipt answers the claim too
+    receipted = set(triage.IssuesDoc(issues_path).picked_up_refs)
+
     conn = sqlite3.connect(store_path)
 
     try:
@@ -1135,14 +1138,14 @@ def verify_inbox_claims(store_path=DB_FILE, issues_path=ISSUES_FILE):
         for m in INBOX_CLAIM_RE.finditer(note):
             claims += 1
 
-            if m.group(1) not in inbox:
+            if m.group(1) not in inbox and m.group(1) not in receipted:
                 offenders.append((ref, document, m.group(1)))
 
     if offenders:
-        return False, ("%d of %d status-note claims name an OB that is not an item in the Inbox of %s:"
+        return False, ("%d of %d status-note claims name an OB neither in the Inbox nor receipted in %s:"
                        % (len(offenders), claims, issues_path)), offenders
 
-    return True, ("all %d status-note claims name an item in the Inbox (%d OB items there)"
+    return True, ("all %d status-note claims name an item in the Inbox or a receipt (%d OB items there)"
                   % (claims, sum(1 for ref in inbox if ref.startswith("OB-")))), []
 
 
