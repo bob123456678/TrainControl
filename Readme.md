@@ -336,7 +336,7 @@ Examples:
 * ```java -jar TrainControl.jar``` (UI will prompt for IP)
 * ```java -jar TrainControl.jar 192.168.50.10``` (Will attempt to connect to the Central Station at 192.168.50.10)
 * ```java -jar TrainControl.jar 192.168.50.10 debug``` (Same as above, but with debug mode: extra error logging)
-* ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station)
+* ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station; [how to test autonomy this way](Automation.md#trying-it-out-without-a-central-station))
 
 TrainControl uses your computer's language automatically.  To run it in a different language, add the locale flags shown below.
 

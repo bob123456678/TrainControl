@@ -24,6 +24,7 @@ This guide takes you from a track diagram with nothing set up on it to a layout 
 - [Example 4: a through station that only takes trains one way](#example-4-a-through-station-that-only-takes-trains-one-way)
 - [Track lengths: what they are for](#track-lengths-what-they-are-for)
 - [Running and watching](#running-and-watching)
+- [Trying it out without a Central Station](#trying-it-out-without-a-central-station)
 - [Choosing how trains pick their route](#choosing-how-trains-pick-their-route)
 - [Timetables: recording a sequence and playing it back](#timetables-recording-a-sequence-and-playing-it-back)
 - [Sending everything home](#sending-everything-home)
@@ -99,7 +100,7 @@ A layout is ready to run once three things are done: the diagram matches the tra
 
 **6. Place your trains.** Right-click the station each train is standing at → `Add a Locomotive to Autonomy...`. From then on TrainControl keeps track of them.
 
-**7. Check, save and start.** `Things to look at` lists anything still to do. When the line under it says the setup is ready to run, press `Save Changes`, then `Start Autonomous Operation` on the strip above the track diagram.
+**7. Check, save and start.** `Things to look at` lists anything still to do. When the line under it says the setup is ready to run, press `Save Changes`, then `Start Autonomous Operation` on the strip above the track diagram. To try it first without a Central Station, see [Trying it out without a Central Station](#trying-it-out-without-a-central-station).
 
 **Optional, when you want them:**
 
@@ -454,9 +455,9 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **The Auto tab** (the third icon on the left of the main window) is greyed until a configuration is loaded; when none is (after `Stop Using Autonomy`, or with `Load Autonomy` unticked under Preferences → Startup), the strip above the track diagram offers `Load this configuration`. Once one is loaded, the Auto tab has three tabs:
 
-- **Autonomous Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
+- **Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
 - **Timetable**: see [Timetables](#timetables-recording-a-sequence-and-playing-it-back).
-- **Settings**: see [Settings](#settings-and-what-each-one-is-for).
+- **Autonomy Settings**: see [Settings](#settings-and-what-each-one-is-for).
 
 ![The Auto tab while autonomy runs: Graceful Stop, and a card for each train](assets/automation/13-auto-tab.png)
 
@@ -467,6 +468,20 @@ When you send a train that can reverse to a station where trains may change dire
 The diagram's right-click `Autonomy Setup` menu has the same station settings as the editor, but changes made there are saved at once, with no Cancel. With autonomy stopped, you can also move trains from the keyboard: point at a station and press Control+X to pick its train up, Control+V to put it (or the locomotive selected in the main window) down, or Delete to take it off.
 
 ![A running layout: ICE 3 on its way from Ashby to Carlton, its route drawn in blue with white arrows; BR 218 parked at Bramley](assets/automation/12-running.png)
+
+---
+
+## Trying it out without a Central Station
+
+Autonomy can run in simulation: trains move on the diagram, but nothing is sent to a Central Station and no real train moves. It shows whether your stations, routes and settings do what you meant, without powering up the layout.
+
+1. **Start TrainControl with debug and simulation on.** In a terminal (Command Prompt on Windows) in the folder with `TrainControl.jar`, run `java -jar TrainControl.jar 0 debug simulate`. The three words are the Central Station's address (not used in simulation, so `0` will do), debug mode and simulation. TrainControl counts them and does not read them, so all three must be there. Double-clicking the jar passes none, so put the command in a `.bat` or `.sh` file to start it this way again ([details](Readme.md#download-and-run-traincontrol)).
+2. **Tick `Simulate`.** With a configuration loaded, open `Autonomy` → `Autonomy Settings...` and tick it. TrainControl refuses while a train is running, and when it was not started as in step 1.
+3. **Start autonomy as usual.** In simulation with `Simulate` unticked, Start warns that the trains will never move and asks whether to go ahead.
+
+**What happens.** Trains are sent as usual, but TrainControl answers for the sensors: after a random wait between the `Minimum Action Delay` and `Maximum Action Delay` settings it reports each sensor on a train's route as occupied, and after another such wait it clears it behind the train. Lower the delays to go faster. Nothing on your layout takes part, so a simulation checks your setup and not your hardware: a sensor drawn on the wrong square, a dead sensor or a switch that does not answer will not show up, and `Path Integrity Validation` is skipped.
+
+**Afterward.** `Simulate` is saved with the configuration, like the other settings; started normally, a configuration saved with it ticked loads with it unticked, and the log says why. TrainControl also saves where the simulated trains finished, and your real trains have not moved: stop autonomy and use `Return Home` before you close to bring them back to their homes, or place them again where they really stand.
 
 ---
 
@@ -565,7 +580,7 @@ A few more autonomy settings are under Preferences → Autonomy, because they be
 - `Display Travel Restrictions` and `Display Allowed Directions` draw the red and green direction marks on the ordinary track diagram.
 - `Show Inactive Labels` and `Grey Station Labels` decide which station captions are shown and in what colour.
 
-(`Simulate`, on the Settings tab, is only for testing without a Central Station.)
+`Simulate`, on the `Autonomy Settings` tab, is for testing without a Central Station. See [Trying it out without a Central Station](#trying-it-out-without-a-central-station).
 
 ---
 
