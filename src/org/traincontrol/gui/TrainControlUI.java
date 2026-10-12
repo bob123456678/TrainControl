@@ -32216,7 +32216,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         catch (java.lang.reflect.InvocationTargetException couldNotAsk)
         {
             // A question nobody could be asked is not a Resync: asking again would spin, so the start-up leaves
-            System.out.println(couldNotAsk.getCause());
+            couldNotAsk.printStackTrace();
 
             return false;
         }

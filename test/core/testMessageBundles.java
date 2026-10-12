@@ -1127,6 +1127,44 @@ public class testMessageBundles
     }
 
     /**
+     * The popup for a failed first sync names its two buttons as they are labelled, in every language (OB-338).
+     *
+     * Its text says "choose Resync ... or Exit", and a translator who renders the sentence's word and the button's
+     * differently leaves a reader looking for a button that is not there.  The Exit button is the File menu's item.
+     *
+     * MUTATION: word either name in the sentence otherwise than its button's label, in any language, and this fails.
+     *
+     * @throws Exception reading the bundles
+     */
+    @Test
+    public void testTheFailedSyncPopupNamesItsButtonsAsLabelled() throws Exception
+    {
+        List<String> wrong = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            String text = values.getProperty("ui.startupSyncFailed");
+
+            for (String key : new String[] {"ui.startupSyncResync", "ui.main.toolbar.exit"})
+            {
+                String label = values.getProperty(key);
+
+                if (text == null || label == null || label.trim().isEmpty() || !text.contains(label))
+                {
+                    wrong.add(bundle.getName() + " does not name \"" + label + "\" (" + key + ") in: " + text);
+                }
+            }
+
+            if (text == null || !text.contains("{0}")) wrong.add(bundle.getName() + " has no place for the reason: " + text);
+        }
+
+        assertTrue(wrong.isEmpty(), "the popup's sentence names a button in words its button does not carry, or leaves out"
+            + " the reason: " + wrong);
+    }
+
+    /**
      * Allow Every Path, with nothing to open, says that track only one way can be driven stays as it is - the sentence its
      * confirmation says it in - rather than that every piece of track already runs both ways, on a railway still showing
      * a turnout with no address's red arrow (RSA37-C2).

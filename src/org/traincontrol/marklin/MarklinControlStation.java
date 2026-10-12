@@ -406,6 +406,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
                     
+    /**
+     * Builds the station for a start that is not a simulation, and makes the first sync: the five-argument constructor
+     * with simulate false.
+     *
+     * @param network the connection to the Central Station
+     * @param view the window, or null when there is none
+     * @param autoPowerOn whether to turn the track power on once connected
+     * @param debug whether debug mode is on
+     */
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
     {
         this(network, view, autoPowerOn, debug, false);
@@ -1612,6 +1621,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         System.exit(1);
+    }
+
+    /**
+     * Whether a start leaves the saved Central Station address to be asked for again (OB-339).
+     *
+     * A start that did not connect forgets it, in case it was the wrong one.  A simulation never connects, by design, and
+     * says nothing about the address, so it keeps it.
+     *
+     * @param simulate whether this start is a simulation
+     * @param connected whether communication with the Central Station came on
+     * @return true to forget the saved address
+     */
+    public static boolean forgetsTheAddress(boolean simulate, boolean connected)
+    {
+        return !simulate && !connected;
     }
 
     /**
@@ -5454,7 +5478,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         proxy.setModel(model);
         
         // Connection failed - ask for IP on next run
-        if (!model.getNetworkCommState())
+        if (forgetsTheAddress(simulate, model.getNetworkCommState()))
         {
             TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
         }

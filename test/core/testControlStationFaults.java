@@ -879,9 +879,14 @@ public class testControlStationFaults
      * MUTATION: leave the field unset in the catch, and this fails.
      */
     @Test
-    public void testAFailedSyncKeepsItsReason()
+    public void testAFailedSyncKeepsItsReason() throws Exception
     {
         String was = support.TestStationAddress.get();
+
+        // The sync replaces the model's file parser, which every test here shares: put back as it was, with the address
+        java.lang.reflect.Field parser = MarklinControlStation.class.getDeclaredField("fileParser");
+        parser.setAccessible(true);
+        Object parserWas = parser.get(model);
 
         try
         {
@@ -897,7 +902,268 @@ public class testControlStationFaults
         finally
         {
             support.TestStationAddress.set(was);
+
+            parser.set(model, parserWas);
         }
+    }
+
+    /**
+     * A simulation never forgets the saved Central Station address (OB-339).
+     *
+     * A start that did not connect forgets the address, so that the next start asks for one.  A simulation never connects,
+     * so every simulation forgot the address of somebody who had only been trying the program out.  Asked of the rule
+     * `init` applies, over the three starts that matter and the one that cannot happen, so that a rule widened or
+     * narrowed in either direction shows.
+     *
+     * MUTATION: forget whenever communication is off, simulation or not, and this fails.
+     */
+    @Test
+    public void testASimulationNeverForgetsTheSavedAddress()
+    {
+        assertFalse(MarklinControlStation.forgetsTheAddress(true, false), "a simulation never connects, and must not forget"
+            + " the address saved for the real station");
+        assertFalse(MarklinControlStation.forgetsTheAddress(true, true), "and a simulation that somehow reads as connected"
+            + " does not either");
+        assertTrue(MarklinControlStation.forgetsTheAddress(false, false), "a real start that did not connect forgets the"
+            + " address, so that the next start asks for one");
+        assertFalse(MarklinControlStation.forgetsTheAddress(false, true), "a real start that connected keeps it");
+    }
+
+    /**
+     * The first sync of a start goes through the question, and the start says whether it is a simulation (OB-338).
+     *
+     * The claims above are of the helpers.  What makes them the start-up's is the constructor calling them and `init`
+     * telling it whether there is a station: put the constructor back to a bare sync, or have `init` pass false, and every
+     * one of them stays green while a failed first sync goes back to leaving the application offline in silence - or a
+     * simulation puts a dialog in front of a suite.  The constructor cannot be run here, since it binds the network and
+     * the exit ends the process, so its text is read, with the comments out of it.
+     *
+     * MUTATION: put the restore path back to `if (syncWithCS2() >= 0)`, or pass anything but `simulate` from `init`, and
+     * this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testTheFirstSyncOfAStartGoesThroughTheQuestion() throws Exception
+    {
+        String code = codeOf("src/org/traincontrol/marklin/MarklinControlStation.java");
+
+        int from = code.indexOf("public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn,"
+            + " boolean debug, boolean simulate)");
+        int to = code.indexOf("this.logf(\"log.csDataImported\"", from);
+
+        assertTrue(from >= 0 && to > from, "precondition: the constructor's restore path was not found in the source");
+
+        String restore = code.substring(from, to);
+
+        assertFalse(restore.contains("if (syncWithCS2()"), "the restore path syncs once and takes the result as it comes,"
+            + " so a failed first sync is never asked about");
+        assertTrue(restore.contains("syncUntilConnected(this::syncWithCS2, this::getLastSyncError, asker,"),
+            "the restore path does not sync through the question, with the reason of the sync that just failed");
+        assertTrue(restore.contains("asker, MarklinControlStation::exitUnconnected)"),
+            "an Exit answer is not wired to the exit that forgets the saved address");
+        assertTrue(restore.contains("asker = resyncAsker(this.cs2Address(), simulate,"),
+            "who is asked is not decided from the station's address and whether this is a simulation");
+
+        java.util.regex.Matcher builds = java.util.regex.Pattern.compile("new MarklinControlStation\\(([^;]*)\\);")
+            .matcher(code);
+        int found = 0;
+
+        while (builds.find())
+        {
+            found++;
+
+            assertTrue(builds.group(1).endsWith(", simulate"), "a station is built without being told whether it is a"
+                + " simulation, so a simulation would ask about its sync: new MarklinControlStation(" + builds.group(1) + ")");
+        }
+
+        assertTrue(found > 0, "precondition: init's construction of the station was not found in the source");
+
+        assertTrue(code.contains("if (forgetsTheAddress(simulate, model.getNetworkCommState())) {"
+            + " TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF); }"),
+            "init does not decide whether to forget the saved address by the rule above (OB-339)");
+    }
+
+    /**
+     * The popup answers by its buttons: Resync resyncs, and Exit or the close box leave (OB-338).
+     *
+     * The loop's claims put a recording view in the window's place, so nothing above has ever pressed a button.  This
+     * calls the real `offerResync` the way the start-up does, from a thread that is not the event thread, finds the
+     * dialog by its title, and answers it three ways: the Resync button, the Exit button, and the close box.  It also
+     * reads what the dialog says about the failure, and that it stands over the window and on top of it.
+     *
+     * MUTATION: map any of the three answers the other way in `offerResync`, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheResyncPopupAnswersByItsButtons() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the popup needs a display");
+
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> made[0] = new org.traincontrol.gui.TrainControlUI());
+
+            assertTrue(askAndAnswer(made[0], "ui.startupSyncResync"), "Resync must come back as an answer to sync again");
+            assertFalse(askAndAnswer(made[0], "ui.main.toolbar.exit"), "Exit must come back as an answer to leave");
+            assertFalse(askAndAnswer(made[0], null), "the close box must come back as an answer to leave");
+        }
+        finally
+        {
+            // Whatever a failed claim left standing, then the window
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window instanceof javax.swing.JDialog && window.isShowing()
+                        && org.traincontrol.util.I18n.t("ui.startupSyncFailedTitle").equals(((javax.swing.JDialog) window).getTitle()))
+                    {
+                        window.dispose();
+                    }
+                }
+
+                if (made[0] != null)
+                {
+                    made[0].stopDrivingTrainsFromTheWholeWindow();
+                    made[0].dispose();
+                }
+            });
+
+            sandbox.close();
+        }
+    }
+
+    /**
+     * Asks through the window's `offerResync` from a worker thread and answers the popup it puts up.
+     *
+     * @param ui the window
+     * @param button the key of the button to press, or null to close the dialog by its close box
+     * @return what `offerResync` returned
+     */
+    private static boolean askAndAnswer(org.traincontrol.gui.TrainControlUI ui, String button) throws Exception
+    {
+        final String reason = "SocketTimeoutException: connect timed out";
+        final Boolean[] answer = new Boolean[1];
+        final Throwable[] failed = new Throwable[1];
+
+        Thread worker = new Thread(() ->
+        {
+            try
+            {
+                answer[0] = ui.offerResync(reason);
+            }
+            catch (Throwable t)
+            {
+                failed[0] = t;
+            }
+        }, "resync-asker");
+
+        worker.setDaemon(true);
+        worker.start();
+
+        String title = org.traincontrol.util.I18n.t("ui.startupSyncFailedTitle");
+        javax.swing.JDialog dialog = null;
+
+        for (long giveUp = System.currentTimeMillis() + 10000; dialog == null && System.currentTimeMillis() < giveUp; )
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing() && title.equals(((javax.swing.JDialog) window).getTitle()))
+                {
+                    dialog = (javax.swing.JDialog) window;
+                }
+            }
+
+            if (dialog == null) Thread.sleep(50);
+        }
+
+        assertNotNull(dialog, "no popup titled \"" + title + "\" appeared");
+
+        final javax.swing.JDialog popup = dialog;
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            assertSame(popup.getOwner(), ui, "the popup must stand over the window, or it can be hidden behind it");
+            assertTrue(popup.isAlwaysOnTop(), "and be on top, or the splash and other windows can cover it");
+            assertTrue(labelsOf(popup).stream().anyMatch(text -> text.contains(reason)),
+                "the popup must say what went wrong: " + labelsOf(popup));
+
+            if (button == null)
+            {
+                popup.dispatchEvent(new java.awt.event.WindowEvent(popup, java.awt.event.WindowEvent.WINDOW_CLOSING));
+
+                return;
+            }
+
+            javax.swing.AbstractButton pressed = buttonLabelled(popup, org.traincontrol.util.I18n.t(button));
+
+            assertNotNull(pressed, "the popup has no button labelled " + org.traincontrol.util.I18n.t(button));
+
+            pressed.doClick();
+        });
+
+        worker.join(10000);
+
+        assertFalse(worker.isAlive(), "offerResync did not return once the popup was answered");
+        assertNull(failed[0], "offerResync failed: " + failed[0]);
+        assertNotNull(answer[0], "offerResync gave no answer");
+
+        return answer[0];
+    }
+
+    /**
+     * The button in a window with exactly this label, or null.
+     */
+    private static javax.swing.AbstractButton buttonLabelled(java.awt.Container container, String label)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.AbstractButton && label.equals(((javax.swing.AbstractButton) child).getText()))
+            {
+                return (javax.swing.AbstractButton) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.AbstractButton found = buttonLabelled((java.awt.Container) child, label);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Every label's text in a window, in the order they are found.
+     */
+    private static java.util.List<String> labelsOf(java.awt.Container container)
+    {
+        java.util.List<String> texts = new java.util.ArrayList<>();
+
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JLabel) texts.add(((javax.swing.JLabel) child).getText());
+
+            if (child instanceof java.awt.Container) texts.addAll(labelsOf((java.awt.Container) child));
+        }
+
+        return texts;
+    }
+
+    /**
+     * A source file as code: the comments taken out and every run of white space made one space.
+     */
+    private static String codeOf(String path) throws Exception
+    {
+        String text = new String(java.nio.file.Files.readAllBytes(new java.io.File(path).toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        return text.replaceAll("(?s)/\\*.*?\\*/|//[^\\n]*", " ").replaceAll("\\s+", " ");
     }
 
     /**
