@@ -88,6 +88,17 @@ public final class DiagramColours
     public static final Color TRAIN_SEE_THROUGH = new Color(255, 102, 0, 140);
 
     /**
+     * A see-through train's line where it lies over its own run line, which is `PATH_DRIVEN`'s dark grey behind the
+     * train: an orange that, laid at 75% over that grey, comes out as `TRAIN_SEE_THROUGH` does over the middle of a
+     * track square, rgb(153,153,153), where a standing train lies - rgb(209,125,69) - so a train is the same orange
+     * running as standing (Adam, 2026-10-11: "Can we brighten the color of the orange train tail while running so that it
+     * more closely matches the normal stopped color?  Remember it is seen against the dark gray track color with
+     * chevrons").  Still see-through, so the white chevrons under it show, lighter.  `TRAIN_SEE_THROUGH` itself came out
+     * a brown over that grey, rgb(178,94,38).
+     */
+    public static final Color TRAIN_OVER_RUN = new Color(250, 138, 64, 191);
+
+    /**
      * A running train whose icon cannot be read is drawn as a dot (RSA26-C2): this fill, ringed in `TRAIN_DOT_RING`.
      */
     public static final Color TRAIN_DOT = Color.BLACK;

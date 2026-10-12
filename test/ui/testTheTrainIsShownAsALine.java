@@ -609,6 +609,78 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
+     * A running train's line is the orange of a standing train's (Adam, 2026-10-11: "Can we brighten the color of the
+     * orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen
+     * against the dark gray track color with chevrons"): the see-through orange laid over its own dark grey run line came
+     * out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69).
+     *
+     * The covered square painted standing, and then running with the run's reached line along the road the tail lies on:
+     * the commonest orange of each within a few shades of the other.
+     *
+     * MUTATION: draw the line over the run in the standing orange again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
+    public void testARunningTrainIsTheOrangeOfAStandingOne() throws Exception
+    {
+        train.setTrainLength(4);
+
+        refreshCoveredTrack();
+
+        SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
+
+        pump();
+
+        try
+        {
+            assertTrue(ui.isTrackCovered(covered), "precondition: the train's length back, the square is not covered");
+
+            int standing = commonestOrange(paint(tile));
+
+            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
+
+            roads.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
+                (java.util.List<org.traincontrol.automationui.TilePorts.Route>) roads.invoke(tile);
+
+            assertFalse(covering.isEmpty(), "precondition: the tile names no road the tail is on");
+
+            org.traincontrol.automationui.TilePorts.Route road = covering.get(0);
+
+            SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+                org.traincontrol.automationui.TileOverlay.State.REACHED, false, java.util.Arrays.asList(
+                    new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), road.getB(),
+                        org.traincontrol.automationui.TileOverlay.State.REACHED)))));
+
+            pump();
+
+            int running = commonestOrange(paint(tile));
+
+            int apart = Math.max(Math.abs(((running >> 16) & 0xFF) - ((standing >> 16) & 0xFF)),
+                Math.max(Math.abs(((running >> 8) & 0xFF) - ((standing >> 8) & 0xFF)), Math.abs((running & 0xFF) - (standing & 0xFF))));
+
+            assertTrue(apart <= 12, "a running train's line on " + covered + " is " + rgbOf(running) + ", a standing one's "
+                + rgbOf(standing) + " - " + apart + " shades apart.  Adam: \"brighten the color of the orange train tail while"
+                + " running so that it more closely matches the normal stopped color\"");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(null));
+
+            train.setTrainLength(0);
+
+            refreshCoveredTrack();
+
+            SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
+
+            pump();
+        }
+    }
+
+    /**
      * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
      * edge, so the gaps fall at
      * the joins on a curve as on a straight and no coach is ever cut short (T2 of the look's train tails; Adam,
