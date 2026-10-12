@@ -4717,6 +4717,188 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The main window's diagram scrolls a square at a time on both axes, at each of the three sizes (MT-726; Adam,
+     * 2026-10-11: *"make scrolling in the track diagram viewer faster on both axes"*): each scroll bar steps the shown
+     * size, and a notch of the wheel moves the diagram three squares, where it moved three pixels.
+     *
+     * MUTATION: leave the main window's scroll bars at their pixel step, or step every size as Small, and this fails.
+     *
+     * @throws Exception reflection, the event thread
+     */
+    @Test
+    public void testTheDiagramScrollsASquareAtATime() throws Exception
+    {
+        java.lang.reflect.Field listField = TrainControlUI.class.getDeclaredField("SizeList");
+        listField.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> list = (javax.swing.JComboBox<Object>) listField.get(ui);
+
+        java.lang.reflect.Field sizesField = TrainControlUI.class.getDeclaredField("layoutSizes");
+        sizesField.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Integer> sizes = (java.util.Map<String, Integer>) sizesField.get(ui);
+
+        java.lang.reflect.Field areaField = TrainControlUI.class.getDeclaredField("LayoutArea");
+        areaField.setAccessible(true);
+
+        final javax.swing.JScrollPane area = (javax.swing.JScrollPane) areaField.get(ui);
+
+        final Object was = list.getSelectedItem();
+
+        try
+        {
+            for (int i = 0; i < list.getItemCount(); i++)
+            {
+                final Object choice = list.getItemAt(i);
+
+                final int size = sizes.get(String.valueOf(choice));
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> list.setSelectedItem(choice));
+
+                settleTheDiagram();
+
+                final int[] seen = new int[4];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    javax.swing.JScrollBar down = area.getVerticalScrollBar();
+
+                    seen[0] = down.getUnitIncrement(1);
+                    seen[1] = area.getHorizontalScrollBar().getUnitIncrement(1);
+
+                    // and a notch of the wheel, where the diagram runs on below the window
+                    seen[2] = -1;
+
+                    if (down.isVisible() && down.getBlockIncrement(1) >= 3 * size)
+                    {
+                        down.setValue(0);
+
+                        area.dispatchEvent(new java.awt.event.MouseWheelEvent(area, java.awt.event.MouseEvent.MOUSE_WHEEL,
+                            System.currentTimeMillis(), 0, 10, 10, 0, false, java.awt.event.MouseWheelEvent.WHEEL_UNIT_SCROLL,
+                            3, 1));
+
+                        seen[2] = down.getValue();
+                        seen[3] = Math.min(3 * size, down.getMaximum() - down.getVisibleAmount());
+
+                        down.setValue(0);
+                    }
+                });
+
+                assertEquals(seen[0], size, "at " + choice + " the diagram scrolls down " + seen[0] + " pixels a step, not"
+                    + " a square - Adam: \"make scrolling in the track diagram viewer faster on both axes\"");
+
+                assertEquals(seen[1], size, "at " + choice + " the diagram scrolls across " + seen[1] + " pixels a step,"
+                    + " not a square");
+
+                if (seen[2] >= 0)
+                {
+                    assertEquals(seen[2], seen[3], "at " + choice + " a notch of the wheel moved the diagram " + seen[2]
+                        + " pixels, not three squares");
+                }
+            }
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> list.setSelectedItem(was));
+
+            settleTheDiagram();
+        }
+    }
+
+    /**
+     * A diagram popped out of the main window scrolls a square at a time on both axes too (MT-726): the Medium button's
+     * window steps 46 pixels each way.
+     *
+     * MUTATION: leave the pop-up's scroll bars at their pixel step, or step it down only, and this fails.
+     *
+     * @throws Exception reflection, the event thread
+     */
+    @Test
+    public void testAPoppedOutDiagramScrollsASquareAtATime() throws Exception
+    {
+        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
+        buttonField.setAccessible(true);
+
+        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+
+        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
+
+        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
+
+        org.traincontrol.gui.LayoutPopupUI opened = null;
+
+        for (long end = System.currentTimeMillis() + 15000; opened == null && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                {
+                    opened = (org.traincontrol.gui.LayoutPopupUI) w;
+                }
+            }
+        }
+
+        assertNotNull(opened, "precondition: the Medium button opened no pop-up window");
+
+        final org.traincontrol.gui.LayoutPopupUI popup = opened;
+
+        try
+        {
+            java.lang.reflect.Field paneField = org.traincontrol.gui.LayoutPopupUI.class.getDeclaredField("jScrollPane1");
+            paneField.setAccessible(true);
+
+            final javax.swing.JScrollPane pane = (javax.swing.JScrollPane) paneField.get(popup);
+
+            final int[] seen = new int[2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                seen[0] = pane.getVerticalScrollBar().getUnitIncrement(1);
+                seen[1] = pane.getHorizontalScrollBar().getUnitIncrement(1);
+            });
+
+            assertEquals(seen[0], TrainControlUI.MEDIUM_TILE_SIZE, "the Medium pop-up scrolls down " + seen[0]
+                + " pixels a step, not a square");
+
+            assertEquals(seen[1], TrainControlUI.MEDIUM_TILE_SIZE, "the Medium pop-up scrolls across " + seen[1]
+                + " pixels a step, not a square");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+        }
+    }
+
+    /**
+     * Lets a size or page change finish on the main window: the posted repaint, the grid renderer's job behind it, and
+     * what that job posts in turn.
+     *
+     * @throws Exception reflection, the event thread
+     */
+    private static void settleTheDiagram() throws Exception
+    {
+        java.lang.reflect.Field rendererField = TrainControlUI.class.getDeclaredField("LayoutGridRenderer");
+        rendererField.setAccessible(true);
+
+        java.util.concurrent.ExecutorService renderer = (java.util.concurrent.ExecutorService) rendererField.get(ui);
+
+        for (int round = 0; round < 3; round++)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            renderer.submit(() -> { }).get(30, java.util.concurrent.TimeUnit.SECONDS);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+        }
+    }
+
+    /**
      * The autonomy editor's Show Trains switch hides the trains on its diagram (FR-119; Adam, 2026-10-10: *"in the autonomy
      * editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer."*).  A square
      * with a train standing on it, in the diagram's own container: its train drawn while the square's switch says yes,

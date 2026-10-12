@@ -66,6 +66,9 @@ public class LayoutPopupUI extends PositionAwareJFrame
         
         this.grid = grid;
 
+        // A square at a time on both axes, as the main window's diagram (MT-726)
+        LayoutGrid.scrollASquareAtATime(this.jScrollPane1, size);
+
         setTitle(this.layout.getName() + this.parent.getWindowTitleString());
 
         // Scale the popup according to the size of the layout
