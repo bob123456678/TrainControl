@@ -139,23 +139,6 @@ when other page points are clicked from warnings, also highlight it after the ed
 
 add the paused autonomy locomotive indicator (and the ability to toggle whether it's paused) to the right-click menu on the track diagram. maintain parity with the autonomous locomotive commands panel. likely for 3.1.0
 
-### FR-061 - 2026-09-07 - Text Labels as a dropdown.
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-07 19:19  
-**Build:** commit 409d4ce8, build\classes, compiled 07 Sep 19:13 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-OB-174 is currently only partially fixed.  fully address it by adding a "Text Labels" label and dropdown right above Track Directions, with the following options: Station Names, Parked Locomotives, Home Locomotives, and None.  Station Names should be default, with the setting remembered between open.
-
-### FR-062 - 2026-09-08 - download the CS3 data files too when the user confirms a Central Station download
-
-**Kind:** feature request  
-**Raised from:** the triage API  
-**Filed:** 2026-09-08  
-
-Raised by Adam in MT-170 on 2026-08-24, in the note attached to a Works verdict, and never filed on its own: *"if the user confirms the CS download, we should also download CS3 data files if using a CS3."* MT-170 tested backing up a layout that lives on the Central Station and passed; this is the follow-up it raised, filed so MT-170 can be closed without losing it.
-
 ### FR-063 - 2026-09-08 - local locomotive icons
 
 **Kind:** feature request  
@@ -219,140 +202,6 @@ add a text box so users can type a station or train name (string match against t
 
 autonomy station labels should be deduped per page, not globally- that way, other pages' stations can be tracked from a main page if desired.
 
-### FR-083 - 2026-09-14 - the arrow and badge of a train on its way should already face the way it will arrive
-
-**Kind:** feature request  
-**Raised from:** MT-412  
-**Filed:** 2026-09-14  
-
-Adam, on MT-412 (2026-09-14): *"Works.  But we should make a FR to track fixing this behavior so that the pre-arrival arrow just matches."*
-
-The behaviour is OB-218's, accepted on 2026-09-14 on the condition that the arrow is right once the train arrives, which it is: while a hand-driven train is on its way to a square it may turn at, the route is reserved on the copy the path ENDS on - routinely the turning copy - so the badge and arrow show the turned facing until arrival, when the train is re-stood on the copy that matches the answer.  The request is for them to match before arrival too: reserve the copy the train will actually end on, decided from the answer at dispatch - a change to the locking path, which is why OB-218 was accepted rather than changed.
-
-### FR-084 - 2026-09-14 - switching Path Type redraws the tested route
-
-**Kind:** feature request  
-**Raised from:** MT-399  
-**Filed:** 2026-09-14  
-
-Adam, on MT-399 (2026-09-14): *"Works, but when changing the auto and manual radio buttons, make it update the shown route to the new selection without having to repeat the button press sequence."*
-
-### FR-085 - 2026-09-14 - Ask for the farthest sensor a placed train's tail crossed, and keep the road it names
-
-**Kind:** feature request  
-**Raised from:** WK7-B1  
-**Filed:** 2026-09-14  
-
-Adam, 2026-09-14, on WK7-B1: *"For the tails, if a train is long, why not ask the user to specify the last sensor it crossed from a list of possible sensors?  Then state will always be fully consistent."*  And: *"Go - build it autonomously, battery when done.  the prompt should ask the user to pick from a list and select the farthest sensor the tail of the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to click to select as well."*
-
-Two halves.  **Kept:** a standing train's arrival road is saved with the point, reloaded, carried across every rebuild and captured into the setup, so a driven train's tail is the same after a restart or any setup gesture (WK7-B1, `63ac68f4`).  **Asked:** a hand-placed train long enough for its tail to have crossed sensors on two roads back from a junction is asked for the farthest sensor its tail crossed - at the paste, the right-click Place and the locomotive dialog, in the right-click menu beside Train arrived from, and by clicking in the autonomy editor.  behaviour.md 5c.
-
-### FR-087 - 2026-09-15 - A station autonomy may choose accepts a train its own route in holds, not only its approach
-
-**Kind:** feature request  
-**Raised from:** MT-431  
-**Filed:** 2026-09-15  
-
-Adam, on MT-431 (2026-09-15): *"But didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the length would be tracked?"*  Asked how far the allowance should reach, he chose **bounded by the route**: at a station autonomy may choose, accept the train if the measured track of the route it drives in on holds it back from the destination - its tail lies on that route and blocks it - while unmeasured track or a gap still refuses.  Today the bound is the approach's own length (behaviour.md 5a, the 2026-09-12 relaxation), so 75 407 DB at length 3 is refused BottomMainA's two-unit approach.
-
-### FR-088 - 2026-09-15 - The tail question starts on the sensor nearest the back
-
-**Kind:** feature request  
-**Raised from:** MT-435  
-**Filed:** 2026-09-15  
-
-Adam, on MT-435 (2026-09-15): *"The closest sensor to the back should be the default selection in the length window, so the user can just click OK if appropriate."*  Asked what to do where the tail could be on more than one road, he chose: start on the recorded road if there is one; otherwise on the sensor nearest the tail when exactly one qualifies; otherwise nothing chosen.
-
-### FR-089 - 2026-09-16 - Mass Assign Lengths, and a display that highlights the track still needing a length
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-09-16  
-**Filed:** 2026-09-16  
-
-Adam, 2026-09-16, asking what it would take: *"How big of a lift would it be to add a "measurement view" which shows just the logical segments that require a measurement?  Basically, I am looking for a way to make it easy for me to ensure every relevant segment gets a measurement, similar to "name all"."*  Then, having been shown the trade-off between asking per square and per stretch: *"per stretch, every relevant square a rule reads. build it.  let's have: the "mass assign lengths" feature in the right click menu that cycles through each relevant square.  and a display option to statically highlight all relevant unmeasured squares."*
-
-**Which squares.**  Every square a length rule reads: on every approach to a station, parking berth or turn-round square, the track from that square back to the nearest switch - and where a leg crosses no switch, on through the sensor behind it onto the leg before, because the room rule does (AMR-B3).  The switch tile is not room and is not asked for.
-
-**Per stretch.**  A stretch is one leg's share of that - between the square it arrives at and the switch, or between two sensors.  One whole length is typed and shared evenly over the squares that have none; squares already measured keep theirs; any remainder goes to the squares farthest from where the train rests, the refusing direction for the tail and berth rules.
-
-**On his railway today** (a sandbox copy, 2026-09-16): 46 stretches and 181 squares - 33 stretches and 131 squares on 1 - Main, 13 and 50 on 2 - Bottom, none on the three pages left out of autonomy, and no stretch crossing a page.
-
-**Revised the same day after review MAL** (`grep "^MAL-" docs/manual-tests/findings.tsv`).  The squares above are only the room rule's: the FR-087 allowance and the tail and berth walks read the switch and the track before it, and on this railway their reach is every leg.  Asked, Adam ruled *"Every leg, cut at switches"* and *"One length for all switches"*: every leg is cut into pieces between sensors and switches, switches are asked for together with one turnout length, and a piece needs a length only while its whole total is 0.  On a copy of the railway after the fix: 96 pieces (91 still with no length) and 54 switches.
-
-### FR-090 - 2026-09-16 - The walk's prompt stays where it was left until a new round is started
-
-**Kind:** feature request  
-**Raised from:** MT-454  
-**Filed:** 2026-09-16  
-
-Adam, on MT-454, 2026-09-16: *"when the popup closes and reopens, make sure it remembers its location unless I reopen a new mass assignment round from the right click menu.  right now, every skip press re centers it, which covers some of the track diagram"*
-
-**Why it re-centred.**  Each prompt of the walk is a new dialog, and `JOptionPane.createDialog` centres every one on its owner - so a prompt dragged off the track diagram came back over it at the next Skip.
-
-**Built.**  Each prompt of a walk opens where the last one was left; starting a round from the right-click menu opens its first prompt afresh.  Name Everything's walk had the same habit and shares it.  `core.testMassAssignLengths.testTheWalkPromptStaysWhereItWasLeftUntilANewRound` drives the real walk on the event thread: it moves the first prompt, presses Skip, and requires the next prompt where the first was left, then presses Cancel, starts a new round and requires its first prompt NOT to open there.  Red first - the second prompt opened centred, at 733,489 - and a mutation dropping the new-round reset fails its second half.
-
-### FR-091 - 2026-09-17 - Mass Assign Max Train Lengths walks the stations with no maximum
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-09-17  
-**Filed:** 2026-09-17  
-
-Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a min length set up, so I can enter it"*, corrected at once: *"max length"*.
-
-**Built.**  **Mass Assign Max Train Lengths...** in Bulk Tools, beside Mass Assign Lengths.  It goes through the stations on the page that will still take a train of any length - no maximum, or a maximum of 0 - row by row, outlining and scrolling to each, and asks for its maximum through the same prompt as Mass Assign Lengths: the number box has the focus, Enter submits, each prompt opens where the last was left, OK / Skip / Cancel, Escape stops.  0 is refused with a sentence saying it means any length.  A station that already has a maximum keeps it.  The number lands where the right-click menu's Maximum Train Length and Control+B put it.  Greyed, with a tooltip saying so, when every station on the page has one.
-
-**The same stations the `NO_MAX_TRAIN_LENGTH` notice lists**, now through one predicate, `hasNoMaximumTrainLength`, so the walk and the notice cannot come to disagree about which they are - but not behind the notice's gate: the notice stays quiet on a railway that models no lengths, and somebody who opens this walk has just said they are modelling them.
-
-`core.testMassAssignLengths`: `testTheMaximumWalkAsksAboutStationsWithNone`, `testAMaximumOfZeroIsRefusedAndOneAlreadySetIsKept`, and `testTheMaximumWalkWritesWhatIsTypedAndMovesOn`, which drives the real walk - types 7, presses Enter, requires the next prompt, presses Skip, and requires the first station to hold 7 and the second nothing.  Five mutations each caught: 0 accepted, a set maximum overwritten, the notice's gate added to the walk, a non-station accepted, and the walk not writing.
-
-### FR-092 - 2026-09-17 - Clear All Max Train Lengths, grouped with the other clears in Bulk Tools
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-09-17  
-**Filed:** 2026-09-17  
-
-Adam, 2026-09-17: *"Add a right click menu open to clear all max station train lengths (grouped with the other clear options)"*
-
-**Built.**  **Clear All Max Train Lengths (n)** in Bulk Tools, directly after Clear All Track Lengths.  It takes the maximum train length off every station on every page, after a confirmation that says how many and that each will then take a train of any length.  Built like the clears beside it: the tooltip is the confirmation's own sentence, the item is greyed with a reason when there is nothing to clear, and the walk keeps its own emptiness guard.  Only maxima above 0 are counted, because the setup writes an explicit 0 on every destination and 0 is what the clear leaves behind.  Through one session door, `clearEveryMaxTrainLength`, which re-derives the station index once rather than per station.
-
-`core.testMassAssignLengths.testClearAllMaxTrainLengthsClearsEveryPage` and `testTheClearMaxTrainLengthsItemCountsAndGreys`, on a two-page railway built in memory.  Five mutations each caught: clearing one page only, counting a 0, not clearing, never greying, and the item moved away from the other clears.
-
-### FR-093 - 2026-09-21 - manual-only destinations shown by the transparent treatment, as you ruled
-
-**Kind:** feature request  
-**Raised from:** your ruling of 2026-09-09, carried from the deleted for-adam note  
-**Filed:** 2026-09-21  
-
-**Your ruling of 2026-09-09, which has never been built.** It was recorded in
-`docs/for-adam-2026-09-09.md`, which was deleted on 2026-09-21 with the rest of the stale review prose,
-so it is here instead - an unbuilt ruling in a document nobody opens is an unbuilt ruling nobody
-builds.
-
-Your words: *"Already answered this: keep the orange to represent the train, and make the tiles
-transparent just like when we block edges."*
-
-So there is no new arrow overlay of any kind. Orange keeps one meaning on the running diagram - where
-a train is - and a **manual-only destination** is shown by the same treatment blocked track already
-gets: the tile goes transparent.
-
-**What is there today.** Nothing draws it. The grey wash is computed for track a train covers, and
-neither `LayoutGrid` nor `LayoutLabel` asks anything about the parking marking (*Can Be Chosen in Full
-Autonomy*) when it paints. The marking is visible in the editor and on the notice surfaces, and not on
-the running diagram.
-
-**What it needs.** The same path the blocked-edge treatment uses, asked of
-`AutonomySession`'s parking marking rather than of the block list, on the running diagram only. Worth
-settling at the same time: whether it applies while autonomy is stopped, where "manual-only" describes
-every square.
-
-### FR-098 - 2026-09-24 - Grey out Apply in Customize Function Icons when there is nothing to apply
-
-**Kind:** feature request  
-**Raised from:** MT-466  
-**Filed:** 2026-09-24  
-
-Adam, on MT-466, 2026-09-22: *"there is no cancel button if you go to manage locomotive -> customize function icons, only apply- and closing without clicking on apply still persists the functions here.  That's OK, but just make sure apply is greyed out if there is nothing to apply."*  MT-466's note of the same day said this was filed; it was not, and the 2026-09-24 pass over the waiting tests found it missing.  It needs the dialog to know whether anything has changed since it opened, a flag it does not keep - and greying Apply while there IS something to apply would lose work, so it is to be done with a test for both directions.
-
 ### FR-099 - 2026-09-24 - prettify usage graph
 
 **Kind:** feature request  
@@ -361,91 +210,6 @@ Adam, on MT-466, 2026-09-22: *"there is no cancel button if you go to manage loc
 **Build:** commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 usage graph uses basic/ugly graphics.  Keep current functionality, but make it look nicer.
-
-### FR-100 - 2026-09-24 - where is the tail visual selection
-
-**Kind:** feature request  
-**Raised from:** MT-557 (A tail question with one answer is not asked)  
-**Filed:** 2026-09-24 11:48  
-**Build:** commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when asking about the tail, instead of showing the list of points, highlight possible squares on the diagram and ask the user to click one.  only show the list if there are options on another page.
-
-### FR-101 - 2026-09-24 - warning for "nothing can pass" stations
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-24 11:53  
-**Build:** commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-these show "no train can reach <point> from any other station....check the direction".  Update the error message to say that is marked for nothing to be able to pass, user to validate if intentional.
-
-### FR-102 - 2026-09-24 - why not moving convenience
-
-**Kind:** feature request  
-**Raised from:** MT-516 (Why Not Moving? on Manual says a station that excludes the train will not take it)  
-**Filed:** 2026-09-24 13:46  
-**Build:** commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor diagram so it's clear what the user can click on (consider greying out other things)
-
-### FR-103 - 2026-09-26 - Update color of "autonomy won't choose these" stations
-
-**Kind:** feature request  
-**Raised from:** MT-492 (Return Home finds a plan on a crowded railway)  
-**Filed:** 2026-09-26 09:01  
-**Build:** commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-Update color of "autonomy won't choose these" stations - instead of orange, make them a medium dark gray that's just slightly darker than labels.
-
-### FR-104 - 2026-09-29 - editing icons for locomotives.
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-29 08:23  
-**Build:** commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-instead of "right click to change icon", add a wrench icon to the upper-left of the locomotive icon.  also, make central station supplied icons croppable locally.  
-
-also, increase the opacity of the default locomotive icon by 10%, so it's slightly lighter.
-
-### FR-105 - 2026-09-30 - grey out consistency in autonomy editor
-
-**Kind:** feature request  
-**Raised from:** MT-602 (A station renamed after a run keeps the train the run left there)  
-**Filed:** 2026-09-30 22:53  
-**Build:** commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when a page is excluded in the autonomy editor, also disable/grey out the auto/manual radio buttons (currently only the why isn't it moving and test path buttons are greyed)
-
-### FR-106 - 2026-10-02 - show train tail when moving
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-02 07:22  
-**Build:** commit 5d84aec7, in English - build\classes, compiled 02 Oct 07:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-right now, when autonomy is moving, we have a green coloring for completed paths and red for pending.  but the train tails aren't shown.  make the tail visible at all times.  advise if there are clearer colors than green and red for the paths that would make the layout look more professional.
-
-### FR-107 - 2026-10-03 - a key for Select by Dragging a Box in the track diagram editor
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-03  
-
-Give **Select by Dragging a Box** in the track diagram editor a keyboard shortcut, and name the key in its tooltip, as the editor's other tools do.
-
-Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*
-
-### FR-108 - 2026-10-04 - a bulk tool to allow every path in one go, with a warning
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
-**Filed:** 2026-10-04  
-
-Adam, 2026-10-04: *"add a bulk tool to allow all paths, i.e. remove any red arrows in one go. With warning."*
-
-A Bulk Tools item in the autonomy editor that opens every restricted direction - removing every red arrow - in one step, after a warning that says what it will undo.
 
 ### FR-109 - 2026-10-04 - for 3.1.0: rename, delete and add pages from the layout editor
 
@@ -456,16 +220,6 @@ A Bulk Tools item in the autonomy editor that opens every restricted direction -
 Adam, 2026-10-04: *"Fr for 3.1.0- add basic layout administration, like renaming and deleting and adding pages, to the layout editor."*
 
 **For 3.1.0**, not 3.0.  Pages are managed today from the main window's Layouts menu; this brings renaming, deleting and adding pages into the layout editor itself.  Related: BCR-A2 (a page name differing from another's only in case overwrites that page's file) - the same name checks will apply to these doors.
-
-### FR-110 - 2026-10-04 - the viewer can show the green arrows too, not only the red
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-04 - with OB-321  
-**Filed:** 2026-10-04  
-
-Adam, 2026-10-04, on OB-321: *"For this, we also need to add an option to view the green arrows in the viewer, not just the red, similar to the editor. File this as another FR and then work it."*
-
-The track diagram in the main window shows travel restrictions only as red arrows; the autonomy editor can also show the green ones (the directions trains may run).  An option in the viewer to show them as well.
 
 ### FR-111 - 2026-10-04 - for 3.1.0: manage a point from one popup, not right-click menus
 
@@ -478,19 +232,6 @@ Adam, 2026-10-04: *"File an FR for 3.1.0- we need point management to be via a s
 **For v3.1.0**, on Adam's word.  Setting a point up in the autonomy editor - station or not, its name, the ways in, which way trains face, turning, length, home, signals, exclusions - is spread over right-click menus and their submenus, and each choice closes the menu, so one point takes many opens.  One popup per point, holding all of it.
 
 **Claude, 2026-10-04.**  The earlier request to keep those menus open after a choice has no entry in issues.md or tests.md that I could find, so it is folded in here and tracked from now on; a single popup would make it moot.
-
-### FR-112 - 2026-10-05 - autonomy editor intuitiveness
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-05 08:46  
-**Build:** commit 1e75afb9, in English - build\classes, compiled 05 Oct 08:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the autonomy editor, it is not clear to the user that tiles with arrows can be clicked.
-
-Except where we already show the drag icon (station labels), show a pointer mouse icon over tiles that can have their arrows changed (i.e., most of them), and a brief hover tooltip "Click to change allowed directions".  Make sure that tooltip is very short.
-
-In passing, look for other tooltips in the autonomy editor right click menus, and in the main JMenu right click menus, that are currently overly wide or long, and make them be more concise so they don't cover up other things.
 
 ### FR-113 - 2026-10-07 - for 3.1.0: a notice area above the editor's diagram whose height does not move the diagram
 
@@ -523,28 +264,6 @@ Adam, 2026-10-08: *"Add a FR for 3.1.0 of locomotive data import via csv (simila
 **For v3.1.0**, on Adam's word.  Locomotives > Export to CSV writes the locomotive database to a file - Name, ButtonMappings, DecoderType, Address, PreferredSpeed, TotalRuntime, Start Year, End Year, RailwayName, Notes - and nothing reads one back.  Add an import that reads a file in the same format, so the locomotive data can be edited in a spreadsheet, or carried from one computer to another, and brought back in.
 
 To settle when it is built: how a row finds its locomotive (by name, or by name with decoder type and address); which columns it writes and which it only reads (the running time is a statistic, not a setting); what happens to a row that names no locomotive in the database, and to a locomotive the file leaves out; whether the button mappings come back too; and a preview of what will change before anything is written.
-
-### FR-115 - 2026-10-09 - Place all at their homes: every locomotive put on its home, facing the way it is homed, every other station cleared, nothing moved
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-09  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09: *"Add a new FR (bulk tool in autonomy): Place all at their homes.  Teleports locomotives to their home stations, facing the correct way, and clears all other locomotives from other stations (without actually moving anything).  Then build this and add it to the right-click menu"*
-
-A bulk tool on the autonomy diagram's right-click menu.  Every locomotive that has a home is put on its home station, facing the way it is homed; every other station is cleared of whatever locomotive stands there.  Nothing is sent to the railway: it changes where autonomy believes the trains are, as placing a train by hand does, for when the trains are already standing at home (after a session, or after carrying them there by hand) and the diagram has lost track of them.
-
-To settle when it is built: what it does while a run is in progress (refused, as other placements are); a locomotive whose home another train's home shares or overlaps; a home on a page that is not loaded; whether it asks before clearing the stations it empties; and how the tail behind each train is laid, since a train put down with no road it came by has no tail.
-
-### FR-116 - 2026-10-09 - A square's address is red letters on a white halo, not in a box
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-09  
-**Filed:** 2026-10-09  
-
-Adam, 2026-10-09: *“Can we prettify address labels to have a white halo outline around the red text rather than a rectangle around them?”*, and then *“Make sure we also track the outline FR for the red address labels”*.
-
-With Show Addresses on, each accessory's and sensor's address is drawn in red at the top left of its square, on a translucent white box that covers the corner of the square's track and signal art.  Draw the letters with a white halo round their outlines instead, and nothing behind the rest, so the number reads on black track and on white alike and covers only what the letters would.
 
 ### FR-117 - 2026-10-09 - An autonomy configuration remembers which locomotives are paused, as set on the autonomy locomotive controls tab
 
@@ -614,53 +333,6 @@ None of these changes what TrainControl does; they are why changes keep being ri
 - **DD-B9** - the routing rule (which way a train may go on from a square) written out three times; tried on 2026-09-07 and backed out - reachability is per copy, not per square - with the shape of a working fix in `open-questions.md`.
 
 Closed with it: DD-B6 (a shared test harness) declined, as `open-questions.md` already recommended; DD-C4 (the dead code) done in round 122 (`d6ce5a16`).
-
-### FR-119 - 2026-10-10 - autonomy editor show trains
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-10 20:43  
-**Build:** commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the autonomy editor, have a "show trains" checkbox that toggles the locomotive icons.  Independent of the viewer.
-
-### FR-120 - 2026-10-10 - auto naming stations
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-10 20:45  
-**Build:** commit 3cf03847, in English - build\classes, compiled 10 Oct 20:36 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when an unnamed sensor is converted to a station, pop up a box to ask for its name.  if none is provided, changes are cancelled.  names are remembered so future changes are applied.  we apply a name duplication check here.
-
-### FR-121 - 2026-10-11 - A station's locomotive exclusions get two modes: exclude the chosen locomotives (the default), or allow only them
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-11  
-**Filed:** 2026-10-11  
-
-Adam, 2026-10-11: "For locomotive exclusions at a station, add a whitelist and a blacklist mode (default blacklist).  If whitelist, just flip it to anything other than what is selected by the user.  The point is we don't want to allow new locomotives that get added later when that mode is on."
-
-Today the list under `Advanced Parameters...` -> `Excluded Locomotives` names the locomotives that may not stop at the station.  In the new mode the same list names the only ones that may, and every other locomotive is excluded - including one added to the locomotive database later, which a list of exclusions would let in.  The list is kept as chosen and read in its mode wherever an exclusion is asked, so changing the mode back keeps the choice.
-
-### FR-122 - 2026-10-11 - for 3.1.0: a Medium size for track diagrams, 46 pixels a square, between Small (30) and Large (60)
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-11  
-**Filed:** 2026-10-11  
-
-Adam, 2026-10-11, asking how hard it would be to "add a medium size option in addition to small and large for our diagrams", then, having seen his Main page at 30, 40, 46, 50 and 60 pixels side by side (`Downloads/ClaudeProjects/traincontrol-tile-sizes.png`): "File an FR for 46px.  Don't build it yet- tag for 3.1.0".
-
-**For v3.1.0**, on Adam's word - not to be built for 3.0.0.
-
-What it takes, as surveyed on 2026-10-11:
-
-- **An icon set at 46** (`resources/icons46`, the 42 GIFs the other two sizes have).  The 28 curves and switches come from `docs/tools/tile-icons.py` (round 101); the other 14 - signals, sensors, tunnels, crossings, route buttons and the rest - scaled from the 60 set and touched up by hand, as the tunnel walls were.  Loading the 60 art and shrinking it works but is visibly softer on screen.
-- **The size choice**: `TrainControlUI.layoutSizes` (Small and Large), its two buttons, a `layout.ui.medium` key in the eight languages; the open windows are already remembered per size.
-- **The few places that assume two sizes**: the editor's starting size (`LayoutEditor`, `size == 60`) and two `tile >= 60` in `TileAnnotation` (FR-118's icons only).  Everything else - the classic icons, captions, halos, arrows, train marks, the out-of-service sign, the export - is drawn in proportion to the square already.
-- **The pictures' claims**: 37 loop over 30 and 60, many with exact pixel figures per size; each needs its 46 figure.  Then a look round on an icon sheet at 46.
-
-46 rather than 45 because the centring arithmetic is in whole pixels and an odd square puts the rails half a pixel off its middle.
 
 ### FR-123 - 2026-10-11 - for 3.1.0: a fullscreen mode, and ways to resize the main window
 
