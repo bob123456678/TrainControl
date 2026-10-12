@@ -1004,14 +1004,15 @@ public class testControlStationFaults
     @Test
     public void testExitForgetsTheSavedAddressAndEnds() throws Exception
     {
-        // Under the run's own preferences only, never the operator's: a node the runner made for this JVM
-        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY) == null)
+        // Under the run's own preferences only, never the operator's: the node the runner made for this JVM
+        java.util.prefs.Preferences root = org.traincontrol.gui.TrainControlUI.getPrefs();
+
+        if (!root.absolutePath().startsWith("/" + org.traincontrol.util.Util.ISOLATED_PREFERENCES_ROOT + "/"))
         {
             throw new org.testng.SkipException("Not run here: this writes preferences, so it runs only where the run has"
                 + " its own (one.sh, battery.sh)");
         }
 
-        java.util.prefs.Preferences root = org.traincontrol.gui.TrainControlUI.getPrefs();
         java.util.prefs.Preferences scratch = root.node("exitUnconnected");
         java.util.prefs.Preferences gone = root.node("exitUnconnectedRemoved");
 
@@ -1049,7 +1050,14 @@ public class testControlStationFaults
         }
         finally
         {
-            scratch.removeNode();
+            try
+            {
+                scratch.removeNode();
+            }
+            catch (IllegalStateException alreadyGone)
+            {
+                // A broken Exit removed it; the claim's own failure says so
+            }
 
             try
             {
