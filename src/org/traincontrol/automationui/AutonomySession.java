@@ -1951,6 +1951,16 @@ public class AutonomySession
                             continue;
                         }
 
+                        // A SQUARE THAT ALLOWS ONLY THE CHOSEN LOCOMOTIVES KEEPS ITS LIST (RSA65-C1).  An old file's list names
+                        // the locomotives kept OUT; with no list here, an allow-only square lets none in - a setting, not a
+                        // gap - and filled from the file it let in exactly the ones the file kept out.
+                        if ("excludedLocs".equals(key)
+                            && org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
+                                extras.optString(org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE, null)))
+                        {
+                            continue;
+                        }
+
                         // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES (REG-B1, Adam 2026-09-24:
                         // *"yes, translate as on but not auto destination."*).  At v2.8.1 it kept autonomy out and
                         // still took a train sent by hand; carried as `active: false` it is a square nothing may pass
