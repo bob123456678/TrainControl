@@ -78,7 +78,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "3.0.0";
+    public static final String RAW_VERSION = "3.0.1";
 
     /**
      * Whether this is a build on the way to a release rather than a release.
@@ -91,11 +91,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * result carried a provenance line naming a commit three days older than the code actually run,
      * and the report nearly read as evidence the fix had been tested too early.
      *
-     * **Set to false when 3.0.0 ships.**  Nothing derives it - a constant somebody changes on purpose
-     * is the point, because a build that guesses whether it is a release will guess wrong on the one
-     * day it matters.
+     * **False in a release commit, true on dev between releases** (docs/RELEASE.md).  Nothing derives it -
+     * a constant somebody changes on purpose is the point, because a build that guesses whether it is a
+     * release will guess wrong on the one day it matters.
      */
-    public static final boolean IS_PRE_RELEASE = false;
+    public static final boolean IS_PRE_RELEASE = true;
 
     /**
      * Which build this is, for a pre-release: when the code being run was built.

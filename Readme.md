@@ -387,6 +387,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.1
 * v3.0.0 [10/12/2026]
     - Features
         - Autonomy
