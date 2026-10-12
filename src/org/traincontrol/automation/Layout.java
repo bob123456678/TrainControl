@@ -1082,7 +1082,22 @@ public class Layout
      */
     public Set<Accessory> getActiveAccs()
     {
-        Set<Accessory> activeAccessories = new HashSet<>();
+        return new HashSet<>(getActiveAccSettings().keySet());
+    }
+
+    /**
+     * Every accessory along an active route, with the setting its route holds it at: true for TURN and RED, the sense
+     * `RouteCommand.getSetting` and `Accessory.isSwitched` use - so that a route's command can be told from the one
+     * the path is holding (Adam, 2026-10-11: "make sure the code allows switching to the correct (same) setting that
+     * autonomy is using").  Null for an accessory two routes underway ask different settings of.
+     *
+     * Not synchronized, for the reason `getActiveAccs` gives.
+     *
+     * @return each accessory held, and the setting it is held at
+     */
+    public Map<Accessory, Boolean> getActiveAccSettings()
+    {
+        Map<Accessory, Boolean> activeAccessories = new HashMap<>();
 
         // EVERY TRAIN UNDERWAY, INCLUDING ONE STILL BEING DISPATCHED (RC-A10).
         //
@@ -1162,11 +1177,23 @@ public class Layout
 
                 if (cleared != null && cleared.contains(e)) continue;
 
-                for (String acc : e.getConfigCommands().keySet())
+                for (Map.Entry<String, Accessory.accessorySetting> acc : e.getConfigCommands().entrySet())
                 {
-                    Accessory a = this.control.getAccessoryByName(acc);
-                    
-                    if (a != null) activeAccessories.add(a);
+                    Accessory a = this.control.getAccessoryByName(acc.getKey());
+
+                    if (a == null) continue;
+
+                    Boolean setting = Accessory.isThrow(acc.getValue());
+
+                    // Two routes asking different settings of one accessory: neither is the one it is held at
+                    if (activeAccessories.containsKey(a) && !setting.equals(activeAccessories.get(a)))
+                    {
+                        activeAccessories.put(a, null);
+                    }
+                    else if (!activeAccessories.containsKey(a))
+                    {
+                        activeAccessories.put(a, setting);
+                    }
                 }
             }
         }
@@ -3132,7 +3159,11 @@ public class Layout
             // through excluded stations as well was tried and reverted - on the author's own layout it
             // removed 45% of the reachable station pairs for two locomotives, because it uses station
             // exclusions on through routes.  See HomeStaging.canEnter for the other half of the rule.
-            if (!e.getStart().isDestination() && e.getStart().excludes(loc))
+            //
+            // Asked of the SQUARE (RSA65-B1): a station's copy for an arrival side that is barred is no destination,
+            // and read as "not a station" its list walled off the trains it keeps out - every train but the named ones,
+            // with an allow-only list.
+            if (e.getStart().excludes(loc) && !isAStationSquare(e.getStart()))
             {
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorIntermediatePointExcluded", placeNameOf(e.getStart()))
@@ -9542,6 +9573,36 @@ public class Layout
         // of its train and block the opposite switch.
         return dy > 0 ? "S" : "N";
     }
+    /**
+     * Whether a point's square is a station - any copy of it a destination - which is what a locomotive list is read by:
+     * on a station it names the locomotives that may not stop there, and they may still pass; on any other square, the
+     * ones that may not pass at all (`514071ee`).  Not the copy's own flag: a station with an arrival side barred is built
+     * with that side's copy as no destination (`AutonomyBuilder`: "A station, unless a train arriving THIS way is not
+     * allowed to stop"), and read as "not a station", its list stopped the trains it keeps out from driving through it
+     * that way - with an allow-only list, every train it does not name (RSA65-B1).
+     *
+     * @param point any copy
+     * @return whether its square is a station
+     */
+    public boolean isAStationSquare(Point point)
+    {
+        if (point == null) return false;
+
+        if (point.isDestination()) return true;
+
+        final String place = point.getBlock();
+
+        // No block is a square with one copy, whose own flag is the whole answer
+        if (place == null) return false;
+
+        for (Point other : this.points.values())
+        {
+            if (other != point && place.equals(other.getBlock()) && other.isDestination()) return true;
+        }
+
+        return false;
+    }
+
     /**
      * Whether trains may turn round at this piece of track, on any of its copies.
      *

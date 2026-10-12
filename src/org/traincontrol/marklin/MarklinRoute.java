@@ -592,7 +592,9 @@ public class MarklinRoute extends Route
 
         if (railway == null || !this.network.isAutonomyRunning()) return null;
 
-        java.util.Collection<Accessory> locked = railway.getActiveAccs();
+        // Each with the setting its path holds it at (Adam, 2026-10-11: "make sure the code allows switching to the
+        // correct (same) setting that autonomy is using")
+        java.util.Map<Accessory, Boolean> locked = railway.getActiveAccSettings();
 
         if (locked == null) return null;
 
@@ -621,7 +623,9 @@ public class MarklinRoute extends Route
 
         if (accessory == null) return null;
 
-        if (locked.contains(accessory))
+        // THE SETTING THE PATH ALREADY HOLDS MOVES NOTHING under its train, so only a command that would change it is
+        // refused - and any command where two paths disagree about it (null)
+        if (locked.containsKey(accessory) && !Boolean.valueOf(rc.getSetting()).equals(locked.get(accessory)))
         {
             return new String[] {accessory.getName(), "route.refusedAccessoryOnActivePath"};
         }

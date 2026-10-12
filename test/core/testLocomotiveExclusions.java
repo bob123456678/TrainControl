@@ -476,4 +476,264 @@ public class testLocomotiveExclusions
             "the locomotive database holds only one locomotive, so there is no second one to ask about");
     }
 
+    /**
+     * A station whose arrival from one side is barred still lets the trains its list keeps out drive through it that way
+     * (RSA65-B1).  The copy the builder makes for the barred side is no destination - "A station, unless a train arriving
+     * THIS way is not allowed to stop" - and read as "not a station", its list stopped them passing: with an allow-only
+     * list, every train it does not name.  A station's list says who may not STOP there (`514071ee`), so it is asked of
+     * the square, not of the copy.  The control: on a plain sensor the list is still a wall.
+     *
+     * MUTATION: ask the copy's own destination flag again, in `Layout.isPathClear` or in Return Home's
+     * `HomeStaging.canEnter`, and this fails.
+     *
+     * @throws Exception from the build or reflection
+     */
+    @Test
+    public void testABarredSideDoesNotTurnAStationsListIntoAWall() throws Exception
+    {
+        rsa65Train("RSA65 X", 2901);
+
+        Locomotive y = rsa65Train("RSA65 Y", 2902);
+
+        java.lang.reflect.Method canEnter = org.traincontrol.automation.HomeStaging.class.getDeclaredMethod("canEnter",
+            Point.class, Locomotive.class, java.util.Set.class, java.util.Map.class);
+
+        canEnter.setAccessible(true);
+
+        // tag, Beta a station, barred from the west, the mode, the list, whether Y may drive east through Beta
+        Object[][] cases = {
+            {"RQ1", true, true, null, new String[] {"RSA65 Y"}, true},
+            {"RQ2", true, true, Point.ALLOW_ONLY_LISTED, new String[] {"RSA65 X"}, true},
+            {"RQ3", false, false, Point.ALLOW_ONLY_LISTED, new String[] {"RSA65 X"}, false},
+        };
+
+        for (Object[] c : cases)
+        {
+            String tag = (String) c[0];
+
+            boolean station = (Boolean) c[1], barred = (Boolean) c[2], passes = (Boolean) c[5];
+
+            rsa65Line(tag, station, barred, (String) c[3], (String[]) c[4]);
+
+            Layout rail = model.getAutoLayout();
+
+            List<Edge> path = rsa65EastThroughBeta(rail, tag);
+
+            assertNotNull(path, tag + ": precondition: no path east through Beta");
+
+            Point beta = path.get(0).getEnd();
+
+            if (barred)
+            {
+                assertFalse(beta.isDestination(), tag + ": precondition: the copy for the barred side is a destination,"
+                    + " so this case tests nothing");
+            }
+
+            Point start = path.get(0).getStart();
+
+            start.setLocomotive(y);
+
+            try
+            {
+                assertEquals(rail.isPathClear(path, y, false), passes, tag + ": a train the list keeps out "
+                    + (passes ? "could not drive through the station" : "drove through the plain sensor") + " - "
+                    + Layout.getLastError());
+
+                Object staging = org.traincontrol.automation.HomeStaging.snapshot(rail);
+
+                assertEquals(canEnter.invoke(staging, beta, y, new java.util.HashSet<String>(),
+                    new java.util.HashMap<Point, Locomotive>()), passes, tag + ": Return Home's planner "
+                    + (passes ? "would not drive a train the list keeps out through the station"
+                        : "drove a train through the plain sensor its list walls off"));
+            }
+            finally
+            {
+                start.setLocomotive(null);
+            }
+        }
+    }
+
+    /**
+     * An old autonomy.json imported into a configuration leaves the list of a square that allows only the chosen
+     * locomotives as it is (RSA65-C1).  The file's list says who is kept OUT; gap-filled into an allow-only square with
+     * none chosen, it read as the only locomotives let in - the file's meaning turned round.  The control: a square with
+     * no mode still takes the file's list.
+     *
+     * MUTATION: gap-fill the list whatever the square's mode, and this fails.
+     *
+     * @throws Exception from the build or the import
+     */
+    @Test
+    public void testAnOldFileDoesNotFillAnAllowOnlySquaresList() throws Exception
+    {
+        Locomotive x = rsa65Train("RSA65 X", 2901), y = rsa65Train("RSA65 Y", 2902);
+
+        for (boolean allowOnly : new boolean[] {true, false})
+        {
+            String tag = allowOnly ? "RQ4" : "RQ5";
+
+            // Beta's sensor is the line's second
+            int betaSensor = rsa65Sensors + 1;
+
+            org.traincontrol.automationui.AutonomySession s =
+                rsa65Line(tag, true, false, allowOnly ? Point.ALLOW_ONLY_LISTED : null);
+
+            org.json.JSONObject legacy = new org.json.JSONObject();
+
+            legacy.put("points", new org.json.JSONArray().put(new org.json.JSONObject().put("name", tag + "Old")
+                .put("s88", betaSensor).put("station", true).put("excludedLocs", new org.json.JSONArray().put("RSA65 Y"))));
+
+            legacy.put("edges", new org.json.JSONArray());
+
+            s.importLegacy(legacy);
+
+            s.rebuild();
+
+            model.parseAuto(s.buildConfiguration());
+
+            Point beta = null;
+
+            for (Point point : model.getAutoLayout().getPoints()) if (point.getName().startsWith(tag + "Beta")) beta = point;
+
+            assertNotNull(beta, tag + ": precondition: Beta was not built");
+
+            if (allowOnly)
+            {
+                assertTrue(beta.excludes(x) && beta.excludes(y), "an old file's list - the locomotives it kept OUT - became"
+                    + " the only ones an allow-only square lets in: excludes X " + beta.excludes(x) + ", excludes Y "
+                    + beta.excludes(y));
+            }
+            else
+            {
+                assertTrue(!beta.excludes(x) && beta.excludes(y), "the control: a square with no mode did not take the old"
+                    + " file's list: excludes X " + beta.excludes(x) + ", excludes Y " + beta.excludes(y));
+            }
+        }
+    }
+
+    /** Where the next line's sensors start, so no two lines share one. */
+    private static int rsa65Sensors = 2950;
+
+    /**
+     * A locomotive by name, made if the database has none: reversible, one unit long, with a speed.
+     *
+     * @param name its name
+     * @param address its address, if made
+     * @return the locomotive
+     */
+    private static Locomotive rsa65Train(String name, int address)
+    {
+        Locomotive l = model.getLocByName(name);
+
+        if (l == null) l = model.newMM2Locomotive(name, address);
+
+        l.setReversible(true);
+        l.setTrainLength(1);
+        l.setPreferredSpeed(30);
+
+        return l;
+    }
+
+    /**
+     * A line Alpha - Beta - Gamma - Delta, track between, built by the setup's own builder and handed to the model;
+     * Alpha and Delta must turn (RSA65's probe).
+     *
+     * @param tag the names' prefix
+     * @param betaStation whether Beta is a station rather than a plain sensor
+     * @param barredFromWest whether a train arriving at Beta from the west may not stop there
+     * @param mode Beta's list's mode, or null
+     * @param list the locomotives Beta's list names
+     * @return the setup
+     * @throws Exception from the build
+     */
+    private static org.traincontrol.automationui.AutonomySession rsa65Line(String tag, boolean betaStation,
+        boolean barredFromWest, String mode, String... list) throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa65-" + tag).toFile();
+
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("main", 9, 3, null, null);
+
+        org.traincontrol.base.Accessory.accessoryDecoderType mm2 = org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
+
+        int a = rsa65Sensors;
+
+        rsa65Sensors += 10;
+
+        for (int i = 0; i < 4; i++) model.newFeedback(a + i, null);
+
+        org.traincontrol.base.LayoutDiagramComponent.componentType sensor =
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK;
+
+        org.traincontrol.base.LayoutDiagramComponent.componentType straight =
+            org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT;
+
+        page.addComponent(sensor, 1, 1, 0, 0, a, a, mm2, null);
+        page.addComponent(straight, 2, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(sensor, 3, 1, 0, 0, a + 1, a + 1, mm2, null);
+        page.addComponent(straight, 4, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(sensor, 5, 1, 0, 0, a + 2, a + 2, mm2, null);
+        page.addComponent(straight, 6, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(sensor, 7, 1, 0, 0, a + 3, a + 3, mm2, null);
+        page.setPageId("1");
+
+        org.traincontrol.automationui.AutonomySession s = new org.traincontrol.automationui.AutonomySession(folder);
+
+        s.open(Arrays.asList(page));
+        s.initialize(tag);
+
+        org.traincontrol.automationui.TileGraph.TileKey alpha = new org.traincontrol.automationui.TileGraph.TileKey("main", 1, 1),
+            beta = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1),
+            gamma = new org.traincontrol.automationui.TileGraph.TileKey("main", 5, 1),
+            delta = new org.traincontrol.automationui.TileGraph.TileKey("main", 7, 1);
+
+        for (org.traincontrol.automationui.TileGraph.TileKey t : Arrays.asList(alpha, gamma, delta)) s.setStation(t, true);
+
+        if (betaStation) s.setStation(beta, true);
+
+        s.setPointName(alpha, tag + "Alpha");
+        s.setPointName(beta, tag + "Beta");
+        s.setPointName(gamma, tag + "Gamma");
+        s.setPointName(delta, tag + "Delta");
+
+        s.setPointProperty(alpha, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+        s.setPointProperty(delta, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+
+        if (barredFromWest)
+        {
+            s.setBarredArrivals(beta, new java.util.LinkedHashSet<>(java.util.Collections.singletonList(
+                org.traincontrol.automationui.TilePorts.Side.W)));
+        }
+
+        if (list.length > 0) s.setPointProperty(beta, "excludedLocs", new org.json.JSONArray(Arrays.asList(list)));
+
+        if (mode != null) s.setPointProperty(beta, Point.EXCLUDED_LOCS_MODE, mode);
+
+        s.rebuild();
+
+        model.parseAuto(s.buildConfiguration());
+
+        return s;
+    }
+
+    /**
+     * Alpha to Gamma eastbound through a copy of Beta, from the built railway's own edges.
+     *
+     * @param rail the railway
+     * @param tag the names' prefix
+     * @return the two edges, or null
+     */
+    private static List<Edge> rsa65EastThroughBeta(Layout rail, String tag)
+    {
+        for (Edge in : rail.getEdges())
+        {
+            if (!in.getStart().getName().startsWith(tag + "Alpha") || !in.getEnd().getName().startsWith(tag + "Beta")) continue;
+
+            for (Edge out : rail.getEdges())
+            {
+                if (out.getStart() == in.getEnd() && out.getEnd().getName().startsWith(tag + "Gamma")) return Arrays.asList(in, out);
+            }
+        }
+
+        return null;
+    }
 }

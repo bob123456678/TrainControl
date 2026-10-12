@@ -1941,7 +1941,10 @@ public final class HomeStaging
         // Enforcing the stricter reading on stations too was tried and reverted: on the author's own
         // layout it removed 45% of the reachable station pairs for two locomotives, because two of its
         // through stations carry exclusion lists.
-        return p.isDestination() || !p.excludes(loc);
+        //
+        // Asked of the square, as isPathClear asks it (RSA65-B1): a station's copy for a barred arrival side is no
+        // destination, and is still a station's.
+        return !p.excludes(loc) || this.layout.isAStationSquare(p);
     }
 
     /**
