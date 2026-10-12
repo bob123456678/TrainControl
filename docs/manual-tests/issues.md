@@ -380,6 +380,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-12 | OB-340 | bug | A train leaving any station turns that station's exit guard signals green: the first edge of its path sets them with its own accessories and holds them like them, and protection does not turn red a signal an active path holds green, so a guard shared with an occupied platform is green for the train leaving until its tail is past the first edge (`dc5ed1e7`, `5e331d9e`). | - | MT-733 |
 | 2026-10-12 | OB-339 | bug | A simulation start keeps the saved Central Station address; a real start that does not connect, and Exit in OB-338's question, still forget it (`aa8acc53`, `MarklinControlStation.forgetsTheAddress`). | - | MT-732 |
 | 2026-10-12 | OB-338 | bug | When the Central Station answers but the first sync fails, a window gives the reason and what to check, with Resync and Exit, asking again until it connects or the user exits; never in a simulation, without an address or without a window (`4fef0969`, `aa8acc53`). | - | MT-732 |
 | 2026-10-11 | OB-337 | bug | Automation.md's `Trying it out without a Central Station`: the command window, the command, `Simulate`, what a simulation tests and what it does not, and going back to normal; linked from Getting started, the Settings tables and the Readme (`e7b40f51`, `546d50bf`). | - | MT-732 |

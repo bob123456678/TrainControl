@@ -29,8 +29,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-731](#mt-731) | 2026-10-11 | Round 142: a standing train is one orange; a berth backed into from a terminus | fixed unvalidated | the validator's RSA66-C3 and C5, on round 141 and round 139 |
 | [MT-732](#mt-732) | 2026-10-12 | 3.0.1: trying autonomy in simulation; a simulation keeps the address; the Resync question | fixed unvalidated | OB-337, OB-338, OB-339 |
+| [MT-733](#mt-733) | 2026-10-12 | 3.0.1: a train leaving a station turns that station's exit guard green | fixed unvalidated | OB-340 |
 
-Everything else - 730 of 732 - needs nothing from you unless the area changes again:
+Everything else - 730 of 733 - needs nothing from you unless the area changes again:
 577 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34591,5 +34592,36 @@ Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts 
 `MarklinControlStation.syncUntilConnected`, `resyncAsker`, `forgetsTheAddress`, `TrainControlUI.offerResync`.
 Claims in `core.testControlStationFaults` (9 new, each seen red first; mutations DA-DG and EA-EB red) and
 `core.testMessageBundles.testTheFailedSyncPopupNamesItsButtonsAsLabelled`.
+
+---
+
+<a id="mt-733"></a>
+### MT-733 - 2026-10-12 - 3.0.1: a train leaving a station turns that station's exit guard green
+
+**Disposition:** fixed unvalidated
+**From:** OB-340
+
+**Written:** 2026-10-12
+
+**Steps**
+
+1. In the autonomy editor, give a terminus an `Exit Guard Signal...` (one no route out of it sets), save, and stand a
+   train there.  Start autonomous operation and watch that signal as the train is sent out.
+2. With a train standing at TopMainR1, let autonomy (or a send by hand) take another train out of TopMainR2, and watch
+   signals 63 and 64.
+3. Watch the terminus's signal again when the next train is routed into it.
+
+**Expected**
+
+- Step 1: the signal turns green as the route out is set, before the train moves, and the train leaves; it stays green
+  over the empty platform.
+- Step 2: the signals guarding R2 turn green for the train leaving, though the train on R1 is beside it; once the
+  leaving train's tail is past its first stretch of track, they go back to red over the train on R1.
+- Step 3: the signal turns red as the next train is routed in, and stays red while it stands there.
+
+*What this is:* OB-340 (`dc5ed1e7`, claims `5e331d9e`): the first edge of every path sets its start
+station's exit guards green with its own accessories and holds them like them; protection does not turn red a signal an
+active path holds green.  Claims in `regression.testBothProtectingSignalsAreThrown` and
+`regression.testARouteDoesNotThrowSwitchesUnderATrain`, each seen red first.
 
 ---
