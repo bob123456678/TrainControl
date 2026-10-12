@@ -2491,6 +2491,12 @@ the power still cuts, the functions still fire, and every other switch is thrown
 question was asked once, before the loop, about the FIRST held command, and every accessory in the
 route was then skipped: one turnout under a train silently dropped all the others.
 
+**The setting the train's path already holds is not a change** (Adam, 2026-10-11: *"make sure the code allows
+switching to the correct (same) setting that autonomy is using"*). A switch a path holds, and a guard signal it holds
+green - the exit guard of the platform it leaves, the home signal of the one it is bound for - may be set by a route to
+that same setting, and is neither refused nor asked about: only a command that would change it is (round 137,
+RSA66-C1). Where two paths underway would hold one accessory at different settings, every command on it is refused.
+
 **Who is asked depends on who started it.**
 
 - **A person started it.** The dialog stands. *"Cancel should cancel everything. OK should fire

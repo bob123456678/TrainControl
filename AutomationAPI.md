@@ -422,7 +422,7 @@ The three tiers differ, and it is worth knowing which is which:
 
 * **By hand, from the right-click menu or the Auto tab:** a terminus autonomy may choose is not offered to a locomotive that cannot reverse, unless the track leads on through it, because the train could not leave again.  A parking berth - a terminus with `Can Be Chosen in Full Autonomy` unticked - is still offered to any locomotive the track can take there; whether a train that cannot reverse should go in is then your judgement.
 * **In full autonomy:** a terminus is never chosen for a locomotive that cannot reverse.
-* **Returning home:** a non-reversible locomotive may be homed at a terminus, and the planner insists the way there turns it round first - so it backs in and can leave forwards.  Where no such route exists it will not set off and fail; it simply finds no arrangement, and the message says that no plan was found rather than naming the locomotive.  (The planner only names a locomotive when it can prove there is no route at all, which is a claim about the track.)
+* **Returning home:** a non-reversible locomotive may be homed at a terminus.  *Since v3.0.0* Return Home drives it there as you would by hand: where another terminus leads straight to its home, it rests the train there first and backs it in, so it can leave forwards; where none does, it drives it straight in, nose first, and it has to be backed out by hand.  The setup check warns about a home on a parking berth with no such way to back in.  (The planner only names a locomotive when it can prove there is no route at all, which is a claim about the track.)
 
 Separately, a train can be refused for being too long to back in, when the approach has recorded lengths whose total is shorter than the train.
 
