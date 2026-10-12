@@ -1582,12 +1582,22 @@ public final class LayoutLabel extends JLabel
             // AND THE TRAIN'S TAIL OVER THE RUN LINE (Adam, FR-106: "the train tails aren't shown.  make the tail
             // visible at all times").  A running train's tail lies on the road it has just driven, which the run line
             // draws as reached - so the tail, drawn first and under everything, was covered for the whole of the run.
-            if (overlay != null && !overlay.isBlank())
+            //
+            // ONLY WHERE A RUN LINE LIES (RSA66-C5): drawn over the whole of any square with an overlay, it lay a second
+            // time over itself wherever no run line was under it - all of a standing train's own square, the part of a
+            // run's first or last square the run does not reach - and came out a second, lighter orange.
+            java.awt.Shape run = overlay == null ? null
+                : overlay.runArea(getWidth(), getHeight(),
+                    annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()));
+
+            if (run != null)
             {
                 java.awt.Graphics2D tail = (java.awt.Graphics2D) g2.create();
 
                 try
                 {
+                    tail.clip(run);
+
                     paintCoveredMark(tail, true);
                 }
                 finally

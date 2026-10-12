@@ -765,6 +765,52 @@ public class TileOverlay
     }
 
     /**
+     * The part of the square this overlay's run line lies along - for the train's own line to be drawn again over it, and
+     * nowhere else (RSA66-C5): drawn again over the whole of a square, it lay a second time over itself wherever no run
+     * line was under it - the whole of a standing train's own square, whose mark has none, and the part of a run's first or
+     * last square the run does not reach - and came out a second, lighter orange.
+     *
+     * The whole square for a segment from side to side; for one that ends in the square, the half of it toward the side
+     * it leaves by, cut at the track's centre.  A held line is no run line: nothing of a train is drawn over one.
+     *
+     * @param width the square's width
+     * @param height the square's height
+     * @param trackCentre where the track's centre is, or null for the square's
+     * @return the area, or null where there is no run line
+     */
+    public java.awt.Shape runArea(int width, int height, int[] trackCentre)
+    {
+        int cx = trackCentre != null ? trackCentre[0] : width / 2;
+        int cy = trackCentre != null ? trackCentre[1] : height / 2;
+
+        java.awt.geom.Area area = new java.awt.geom.Area();
+
+        for (Segment segment : segments)
+        {
+            if (segment.getState() != State.ACTIVE && segment.getState() != State.REACHED) continue;
+
+            if (segment.getFrom() != null && segment.getTo() != null) return new java.awt.Rectangle(0, 0, width, height);
+
+            for (org.traincontrol.automationui.TilePorts.Side side
+                : new org.traincontrol.automationui.TilePorts.Side[] {segment.getFrom(), segment.getTo()})
+            {
+                if (side == null) continue;
+
+                switch (side)
+                {
+                    case N: area.add(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, width, cy))); break;
+                    case S: area.add(new java.awt.geom.Area(new java.awt.Rectangle(0, cy, width, height - cy))); break;
+                    case E: area.add(new java.awt.geom.Area(new java.awt.Rectangle(cx, 0, width - cx, height))); break;
+                    case W: area.add(new java.awt.geom.Area(new java.awt.Rectangle(0, 0, cx, height))); break;
+                    default: break;
+                }
+            }
+        }
+
+        return area.isEmpty() ? null : area;
+    }
+
+    /**
      * Paints this overlay over a tile that has already drawn itself.
      *
      * @param g the tile's graphics, already translated to its own origin
