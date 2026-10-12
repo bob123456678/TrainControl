@@ -4717,16 +4717,18 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The main window's diagram scrolls a square at a time on both axes, at each of the three sizes (MT-726; Adam,
-     * 2026-10-11: *"make scrolling in the track diagram viewer faster on both axes"*): each scroll bar steps the shown
-     * size, and a notch of the wheel moves the diagram three squares, where it moved three pixels.
+     * The main window's diagram scrolls half a square at a time on both axes, at each of the three sizes (MT-726; Adam,
+     * 2026-10-11: *"make scrolling in the track diagram viewer faster on both axes"*, and on MT-727: *"Make it half a
+     * square at a time"*): each scroll bar steps half the shown size, and a notch of the wheel moves the diagram three of
+     * those steps, where it moved three pixels.
      *
-     * MUTATION: leave the main window's scroll bars at their pixel step, or step every size as Small, and this fails.
+     * MUTATION: leave the main window's scroll bars at their pixel step, step a whole square, or step every size as
+     * Small, and this fails.
      *
      * @throws Exception reflection, the event thread
      */
     @Test
-    public void testTheDiagramScrollsASquareAtATime() throws Exception
+    public void testTheDiagramScrollsHalfASquareAtATime() throws Exception
     {
         java.lang.reflect.Field listField = TrainControlUI.class.getDeclaredField("SizeList");
         listField.setAccessible(true);
@@ -4771,7 +4773,7 @@ public class testDiagramLooksRight
                     // and a notch of the wheel, where the diagram runs on below the window
                     seen[2] = -1;
 
-                    if (down.isVisible() && down.getBlockIncrement(1) >= 3 * size)
+                    if (down.isVisible() && down.getBlockIncrement(1) >= 3 * (size / 2))
                     {
                         down.setValue(0);
 
@@ -4780,22 +4782,22 @@ public class testDiagramLooksRight
                             3, 1));
 
                         seen[2] = down.getValue();
-                        seen[3] = Math.min(3 * size, down.getMaximum() - down.getVisibleAmount());
+                        seen[3] = Math.min(3 * (size / 2), down.getMaximum() - down.getVisibleAmount());
 
                         down.setValue(0);
                     }
                 });
 
-                assertEquals(seen[0], size, "at " + choice + " the diagram scrolls down " + seen[0] + " pixels a step, not"
-                    + " a square - Adam: \"make scrolling in the track diagram viewer faster on both axes\"");
+                assertEquals(seen[0], size / 2, "at " + choice + " the diagram scrolls down " + seen[0] + " pixels a step,"
+                    + " not half a square - Adam: \"Make it half a square at a time\"");
 
-                assertEquals(seen[1], size, "at " + choice + " the diagram scrolls across " + seen[1] + " pixels a step,"
-                    + " not a square");
+                assertEquals(seen[1], size / 2, "at " + choice + " the diagram scrolls across " + seen[1] + " pixels a"
+                    + " step, not half a square");
 
                 if (seen[2] >= 0)
                 {
                     assertEquals(seen[2], seen[3], "at " + choice + " a notch of the wheel moved the diagram " + seen[2]
-                        + " pixels, not three squares");
+                        + " pixels, not three half squares");
                 }
             }
         }
@@ -4808,15 +4810,15 @@ public class testDiagramLooksRight
     }
 
     /**
-     * A diagram popped out of the main window scrolls a square at a time on both axes too (MT-726): the Medium button's
-     * window steps 46 pixels each way.
+     * A diagram popped out of the main window scrolls half a square at a time on both axes too (MT-726, MT-727): the
+     * Medium button's window steps 23 pixels each way.
      *
      * MUTATION: leave the pop-up's scroll bars at their pixel step, or step it down only, and this fails.
      *
      * @throws Exception reflection, the event thread
      */
     @Test
-    public void testAPoppedOutDiagramScrollsASquareAtATime() throws Exception
+    public void testAPoppedOutDiagramScrollsHalfASquareAtATime() throws Exception
     {
         java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
         buttonField.setAccessible(true);
@@ -4861,11 +4863,11 @@ public class testDiagramLooksRight
                 seen[1] = pane.getHorizontalScrollBar().getUnitIncrement(1);
             });
 
-            assertEquals(seen[0], TrainControlUI.MEDIUM_TILE_SIZE, "the Medium pop-up scrolls down " + seen[0]
-                + " pixels a step, not a square");
+            assertEquals(seen[0], TrainControlUI.MEDIUM_TILE_SIZE / 2, "the Medium pop-up scrolls down " + seen[0]
+                + " pixels a step, not half a square");
 
-            assertEquals(seen[1], TrainControlUI.MEDIUM_TILE_SIZE, "the Medium pop-up scrolls across " + seen[1]
-                + " pixels a step, not a square");
+            assertEquals(seen[1], TrainControlUI.MEDIUM_TILE_SIZE / 2, "the Medium pop-up scrolls across " + seen[1]
+                + " pixels a step, not half a square");
         }
         finally
         {
