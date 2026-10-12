@@ -28,8 +28,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-731](#mt-731) | 2026-10-11 | Round 142: a standing train is one orange; a berth backed into from a terminus | fixed unvalidated | the validator's RSA66-C3 and C5, on round 141 and round 139 |
+| [MT-732](#mt-732) | 2026-10-12 | 3.0.1: trying autonomy in simulation; a simulation keeps the address; the Resync question | fixed unvalidated | OB-337, OB-338, OB-339 |
 
-Everything else - 730 of 731 - needs nothing from you unless the area changes again:
+Everything else - 730 of 732 - needs nothing from you unless the area changes again:
 577 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34554,5 +34555,41 @@ not something to see: a route may set a guard signal its train's path holds gree
 **Claude, 2026-10-11.**
 
 Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts as a way to back a train into a berth: the turns on the way are counted.  A train rested on another terminus sets off turned, and each reversing point it passes turns it again, so a reversing point passed on the way in (S - reversing M - terminus T, as MT-245) counts once more; one on a stub, which sends the train straight back, does not.  So in step 3 the warning shows only where neither a terminus leading straight to BottomMainC nor a reversing point on the way in brings a train there tail first.
+
+---
+
+<a id="mt-732"></a>
+### MT-732 - 2026-10-12 - 3.0.1: trying autonomy in simulation; a simulation keeps the address; the Resync question
+
+**Disposition:** fixed unvalidated
+**From:** OB-337, OB-338, OB-339
+
+**Written:** 2026-10-12
+
+**Steps**
+
+1. Read the new section of Automation.md, `Trying it out without a Central Station`, and follow it as written: open a
+   command window in your TrainControl folder, run `java -jar TrainControl.jar 0 debug simulate`, tick `Simulate`
+   (`Autonomy` > `Autonomy Settings...`), start autonomy and watch a train or two; then stop and close TrainControl.
+2. Start TrainControl the way you normally do.
+3. Close it, and start it from a command window with the address of something on your network that is not a
+   Central Station, such as your router: `java -jar TrainControl.jar 192.168.1.1` (your router's address).  Press
+   `Resync` once, then `Exit`.
+4. Start TrainControl the way you normally do, and give it your Central Station's address when it asks.
+
+**Expected**
+
+- Step 1: the section's steps work as written; trains move on the diagram and nothing on the layout moves.
+- Step 2: TrainControl connects to your Central Station without asking for its address: the simulation kept it.
+- Step 3: after the message that the address does not look like a Central Station, a window titled `Central Station
+  data not loaded` gives the reason, what to check, and `Resync` and `Exit`.  `Resync` tries again and, failing,
+  asks again; `Exit` closes TrainControl.
+- Step 4: it asks for the address (Exit forgets it, as a start that does not connect always has), and with yours it
+  connects as usual.
+
+*What this is:* OB-337 (`e7b40f51`, `546d50bf`), OB-338 (`4fef0969`, `aa8acc53`), OB-339 (`aa8acc53`):
+`MarklinControlStation.syncUntilConnected`, `resyncAsker`, `forgetsTheAddress`, `TrainControlUI.offerResync`.
+Claims in `core.testControlStationFaults` (9 new, each seen red first; mutations DA-DG and EA-EB red) and
+`core.testMessageBundles.testTheFailedSyncPopupNamesItsButtonsAsLabelled`.
 
 ---
