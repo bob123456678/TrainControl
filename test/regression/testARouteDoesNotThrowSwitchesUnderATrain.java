@@ -333,6 +333,87 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * A route may set an accessory on a locked path to the setting the path already holds it at (Adam, 2026-10-11:
+     * *"make sure the code allows switching to the correct (same) setting that autonomy is using"*): that moves nothing
+     * under the train, so it is neither refused nor asked about.  The control: a route setting the other way, while the
+     * same train crosses, still is.
+     *
+     * MUTATION: refuse every command on a locked accessory again, whatever it sets, and this fails.
+     *
+     * @throws Exception from the dispatch
+     */
+    @Test
+    public void testARouteMaySetTheSettingThePathAlreadyHolds() throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("RG_A", false, null);
+        layout.createPoint("RG_B", true, S88);
+
+        Edge ab = layout.createEdge("RG_A", "RG_B");
+
+        MarklinAccessory turnout =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        turnout.setSwitched(false);
+
+        // The path holds it STRAIGHT
+        ab.addConfigCommand(turnout.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("RG_A").setLocomotive(loc);
+
+        final boolean[] sawTheLock = {false};
+        final String[] sameSetting = {"not asked"};
+        final String[] otherSetting = {"not asked"};
+
+        // Asked from inside the dispatch, with the path locked and the train registered - see
+        // testAnAccessoryOnALockedPathIsNotSwitchedByARoute
+        layout.setCallback("same setting probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || sawTheLock[0] || !layout.getActiveAccs().contains(turnout)) return null;
+
+            sawTheLock[0] = true;
+
+            String[] same = switchRoute(84951, false).conflictingAccessoryAndReason();
+            String[] other = switchRoute(84952, true).conflictingAccessoryAndReason();
+
+            sameSetting[0] = same == null ? null : Arrays.toString(same);
+            otherSetting[0] = other == null ? null : Arrays.toString(other);
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(sawTheLock[0], "precondition: while the train was under way the path must own this accessory");
+
+            assertNull(sameSetting[0], "a route setting the turnout STRAIGHT - the setting the locked path holds it at,"
+                + " which moves nothing - was refused: " + sameSetting[0] + ".  Adam: \"make sure the code allows switching"
+                + " to the correct (same) setting that autonomy is using\"");
+
+            assertNotNull(otherSetting[0], "the control: a route setting the turnout TURN, against the path its train is"
+                + " crossing, was not refused");
+        }
+        finally
+        {
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A route already under way when a dispatch begins does not set the accessory either.
      *
      * Found by an independent review, which reproduced it with a timestamped log: the route committed
@@ -1852,6 +1933,24 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             Accessory.accessoryDecoderType.MM2, true));
 
         return new MarklinRoute(model, "RG route " + id, id, commands, 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+    }
+
+    /**
+     * A one-command route that sets the turnout one way.
+     *
+     * @param id a route id nothing else uses
+     * @param turn true for TURN, false for STRAIGHT - the sense RouteCommand and Accessory both use
+     * @return the route, not executed
+     */
+    private static MarklinRoute switchRoute(int id, boolean turn)
+    {
+        List<RouteCommand> commands = new ArrayList<>();
+
+        commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS,
+            Accessory.accessoryDecoderType.MM2, turn));
+
+        return new MarklinRoute(model, "RG switch " + id, id, commands, 0,
             MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
     }
 
