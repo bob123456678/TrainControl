@@ -74,9 +74,29 @@
       "home": "EN57-947"
     },
     "1 - Main:20,12": {
+      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 5,
+      "arrivedAlong": [
+        [
+          "BottomSecondary",
+          "TunnelPre"
+        ],
+        [
+          "TunnelPre",
+          "Tunnel (southbound)"
+        ],
+        [
+          "Tunnel (southbound)",
+          "BottomMainAPre (eastbound)"
+        ],
+        [
+          "BottomMainAPre (eastbound)",
+          "BottomMainA (eastbound)"
+        ]
+      ],
       "homeFacing": "E",
       "facing": "E",
+      "arrivedFrom": "W",
       "home": "EN57-203"
     },
     "1 - Main:20,13": {
@@ -289,25 +309,9 @@
       "autoDestination": false
     },
     "1 - Main:13,11": {
-      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "TopMainR1",
-          "TopMainPost (eastbound)"
-        ],
-        [
-          "TopMainPost (eastbound)",
-          "RampDown (southbound)"
-        ],
-        [
-          "RampDown (southbound)",
-          "BottomSecondary"
-        ]
-      ],
       "homeFacing": "W",
       "facing": "W",
-      "arrivedFrom": "E",
       "home": "2-8-4 3505 SP"
     },
     "1 - Main:6,9": {},

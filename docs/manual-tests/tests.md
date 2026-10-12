@@ -27,12 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-728](#mt-728) | 2026-10-11 | Round 139: a running train's tail is the orange of a standing one's | fixed unvalidated | Adam, 2026-10-11: "Can we brighten the color of the orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen against the dark gray track color with chevrons." |
-| [MT-729](#mt-729) | 2026-10-11 | Round 140: the track diagram scrolls half a square at a time | fixed unvalidated | Adam, 2026-10-11, on MT-727: "Make it half a square at a time." |
-| [MT-730](#mt-730) | 2026-10-11 | Round 141: OB-336, the turn-round warning only at a parking berth no train can be backed into | fixed unvalidated | Adam, 2026-10-11: "Small issue: we get a 'every train must turn around... and would have to back out...' warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in" |
+| [MT-731](#mt-731) | 2026-10-11 | Round 142: a standing train is one orange; a berth backed into from a terminus | fixed unvalidated | the validator's RSA66-C3 and C5, on round 141 and round 139 |
 
-Everything else - 727 of 730 - needs nothing from you unless the area changes again:
-574 **fixed validated** and 153 **superseded**.
+Everything else - 730 of 731 - needs nothing from you unless the area changes again:
+577 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34425,7 +34423,7 @@ Your note ("Make it half a square at a time.") is round 140 (`afa263f5`): each s
 <a id="mt-728"></a>
 ### MT-728 - 2026-10-11 - Round 139: a running train's tail is the orange of a standing one's
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11: "Can we brighten the color of the orange train tail while running so that it more closely matches the normal stopped color?  Remember it is seen against the dark gray track color with chevrons."
 
 **Written:** 2026-10-11
@@ -34447,12 +34445,16 @@ Your note ("Make it half a square at a time.") is round 140 (`afa263f5`): each s
 *What this is:* round 139 (`d3526ef8`), `DiagramColours.TRAIN_OVER_RUN`.  Claim in
 `ui.testTheTrainIsShownAsALine`: `testARunningTrainIsTheOrangeOfAStandingOne`.
 
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit f39af3ad, in English - build\classes, compiled 11 Oct 19:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-729"></a>
 ### MT-729 - 2026-10-11 - Round 140: the track diagram scrolls half a square at a time
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11, on MT-727: "Make it half a square at a time."
 
 **Written:** 2026-10-11
@@ -34473,12 +34475,16 @@ Your note ("Make it half a square at a time.") is round 140 (`afa263f5`): each s
 *What this is:* round 140 (`afa263f5`), `LayoutGrid.scrollHalfASquareAtATime`.  Claims in
 `ui.testDiagramLooksRight`: `testTheDiagramScrollsHalfASquareAtATime`, `testAPoppedOutDiagramScrollsHalfASquareAtATime`.
 
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit f39af3ad, in English - build\classes, compiled 11 Oct 19:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-730"></a>
 ### MT-730 - 2026-10-11 - Round 141: OB-336, the turn-round warning only at a parking berth no train can be backed into
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11: "Small issue: we get a 'every train must turn around... and would have to back out...' warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"
 
 **Written:** 2026-10-11
@@ -34500,5 +34506,45 @@ Your note ("Make it half a square at a time.") is round 140 (`afa263f5`): each s
 *What this is:* round 141 (`5526ba19`), `AutonomyChecks.checkHomesThatNeedReversing` and
 `AutonomySession.berthsATrainCanBackInto`.  Claim
 `core.testAutonomyDiagramSession.testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto`.
+
+**Adam, 2026-10-11 (triage).** Works.
+
+*Run against commit f39af3ad, in English - build\classes, compiled 11 Oct 19:16 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-11.**
+
+After your Works, round 142 (`7873e860`) changed what step 2 counts as a way to back a train in, on the validator's finding RSA66-C3: it is now how Return Home actually does it - another terminus that leads straight to the berth, where the train is rested first and then backed in (your two-step parking).  A reversing point on the way no longer counts: no door drives a route on through one and back.  Step 1 (BottomMainC, active: no warning) is unchanged.  MT-731 has the new step.
+
+---
+
+<a id="mt-731"></a>
+### MT-731 - 2026-10-11 - Round 142: a standing train is one orange; a berth backed into from a terminus
+
+**Disposition:** fixed unvalidated
+**From:** the validator's RSA66-C3 and C5, on round 141 and round 139
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. With autonomy loaded and stopped, look closely at a train standing at a station, at Large: the orange line along
+   all the squares it covers, including the square its locomotive icon stands on.
+2. Start autonomous operation and watch the square a train sets off from and the one it arrives at.
+3. In the autonomy editor, untick `Can Be Chosen in Full Autonomy` on BottomMainC (making it a parking berth), and read
+   the setup check's list; then Cancel.
+
+**Expected**
+
+- Step 1: the line is one orange all along the train - its own square no lighter than the others.
+- Step 2: the same as the train sets off and arrives: no lighter patch on the half of a square its route does not
+  cover.
+- Step 3: the "Every train must turn round at BottomMainC ... backed out by hand" warning shows only if no other
+  terminus leads straight to BottomMainC; if one does, Return Home rests the train there and backs it in, and there is
+  no warning.
+
+*What this is:* round 142 (`7873e860`): `TileOverlay.runArea`, `AutonomySession.berthsATrainCanBackInto`.
+Claims `ui.testTheTrainIsShownAsALine.testAStandingTrainsOwnSquareIsOneOrange`,
+`core.testAutonomyDiagramSession.testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto`.  Also in round 142,
+not something to see: a route may set a guard signal its train's path holds green (RSA66-C1).
 
 ---
