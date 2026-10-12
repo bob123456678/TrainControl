@@ -7354,24 +7354,30 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A home on a parking berth every train turns at is not warned about (MT-552).
+     * A home on a square every train turns at is warned about only at a parking berth no route can back a train into
+     * (Adam, 2026-10-11, of BottomMainC: *"we get a 'every train must turn around... and would have to back out...'
+     * warning on BottomMainC, but it is an active terminus that would forbid non reversing trains.  The warning should
+     * only be shown for a parking spot (terminus, not chooseable by autonomy) without a way to reverse in"*).  A way to
+     * reverse in is a route that turns the train at a reversing point before it arrives, so it backs in (his ruling of
+     * 2026-09-01: non-reversing trains *"must be able to back into a terminus if the graph makes that possible"*); with
+     * one, MT-552's *"Non-reversible trains can still be backed in there"* holds.
      *
-     * Adam, 2026-09-24: *"the 'every train has to turn around' warning for TopMainR0Park is moot since it is a parking
-     * berth.  Non-reversible trains can still be backed in there."*
+     * A line B - X - R: B the home, every train turning there.  Active: no warning.  A parking berth with R a plain
+     * sensor: the warning.  R a reversing point - a train runs X to R, turns, and backs into B: no warning.
      *
-     * The control first: at a station autonomy may choose, the warning stands.
-     *
-     * MUTATION: warn about every home a train must turn at, and this fails.
+     * MUTATION: warn at an active terminus again, or at a berth a train can back into, or at no berth at all, and this
+     * fails.
      *
      * @throws Exception from the fixture
      */
     @Test
-    public void testAHomeOnAParkingBerthIsNotWarnedAboutTurning() throws Exception
+    public void testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto() throws Exception
     {
-        session.open(Arrays.asList(runOfTrack()));
+        session.open(Arrays.asList(aBerthWithARunPast()));
         session.initialize("Home");
 
-        TileKey berth = new TileKey("main", 4, 1);
+        TileKey berth = new TileKey("main", 1, 1);
+        TileKey far = new TileKey("main", 7, 1);
 
         session.setStation(berth, true);
         session.setPointProperty(berth, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
@@ -7380,14 +7386,40 @@ public class testAutonomyDiagramSession
 
         String key = org.traincontrol.automationui.AutonomyChecks.HOME_NEEDS_REVERSIBLE;
 
-        assertEquals(findingsAbout(key, berth), 1, "precondition: a home on a station every train turns at, which"
-            + " autonomy may choose, is not warned about - so this fixture cannot show the warning at all");
+        assertEquals(findingsAbout(key, berth), 0, "a home on a terminus autonomy may choose is warned that a locomotive"
+            + " which cannot reverse is driven in nose first - Adam: \"it is an active terminus that would forbid non"
+            + " reversing trains\"");
 
         session.setAutoDestination(berth, false);
         session.rebuild();
 
-        assertEquals(findingsAbout(key, berth), 0, "a home on a parking berth every train turns at is warned that a"
-            + " locomotive will be driven in nose first - Adam, MT-552: \"moot since it is a parking berth\"");
+        assertEquals(findingsAbout(key, berth), 1, "a home on a parking berth no route can back a train into is not"
+            + " warned about - Adam: \"The warning should only be shown for a parking spot ... without a way to reverse"
+            + " in\"");
+
+        session.setPointFlag(far, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, true);
+        session.rebuild();
+
+        assertEquals(findingsAbout(key, berth), 0, "a home on a parking berth a train can back into - turning at the"
+            + " reversing point beyond it - is still warned about turning round");
+    }
+
+    /** B (1,1) - X (4,1) - R (7,1), track between: a berth at one end of a run past it. */
+    private LayoutDiagram aBerthWithARunPast() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
     }
 
     /**

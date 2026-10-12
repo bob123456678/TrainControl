@@ -5296,6 +5296,88 @@ public class AutonomySession
     }
 
     /**
+     * The termini a route can back a train into: reached after it has turned at a reversing point on the way, so it
+     * arrives tail first and can leave forwards - what `HomeStaging.turnedOnTheWay` calls turning on the way, and Adam's
+     * ruling of 2026-09-01 that non-reversing trains *"must be able to back into a terminus if the graph makes that
+     * possible"*.  Walked over the build: a terminus is never driven through, a square out of service never entered.  A
+     * train standing on a reversing point sets off turned, as staging seeds it.
+     *
+     * @param built the built configuration, or null
+     * @param tiles each point's square, by name
+     * @return the squares, or null where there is no build to walk
+     */
+    private java.util.Set<TileKey> berthsATrainCanBackInto(org.json.JSONObject built, java.util.Map<String, TileKey> tiles)
+    {
+        if (built == null || tiles == null) return null;
+
+        org.json.JSONArray points = built.optJSONArray("points");
+        org.json.JSONArray edges = built.optJSONArray("edges");
+
+        if (points == null || edges == null) return null;
+
+        java.util.Map<String, org.json.JSONObject> byName = new java.util.HashMap<>();
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.optJSONObject(i);
+
+            if (point != null && point.has("name")) byName.put(point.getString("name"), point);
+        }
+
+        java.util.Map<String, java.util.List<String>> onwards = new java.util.HashMap<>();
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONObject edge = edges.optJSONObject(i);
+
+            if (edge == null) continue;
+
+            onwards.computeIfAbsent(edge.optString("start"), k -> new java.util.ArrayList<>()).add(edge.optString("end"));
+        }
+
+        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        java.util.Deque<Object[]> queue = new java.util.ArrayDeque<>();
+
+        for (org.json.JSONObject point : byName.values())
+        {
+            if (!point.optBoolean("active", true)) continue;
+
+            boolean turned = point.optBoolean("reversing", false);
+
+            if (seen.add(point.getString("name") + "|" + turned)) queue.add(new Object[] {point.getString("name"), turned});
+        }
+
+        while (!queue.isEmpty())
+        {
+            Object[] at = queue.poll();
+
+            boolean turned = (Boolean) at[1];
+
+            for (String name : onwards.getOrDefault((String) at[0], java.util.Collections.emptyList()))
+            {
+                org.json.JSONObject next = byName.get(name);
+
+                if (next == null || !next.optBoolean("active", true)) continue;
+
+                if (next.optBoolean("terminus", false))
+                {
+                    if (turned && tiles.get(name) != null) out.add(tiles.get(name));
+
+                    // a terminus is arrived at, never driven through
+                    continue;
+                }
+
+                boolean onwardTurned = turned || next.optBoolean("reversing", false);
+
+                if (seen.add(name + "|" + onwardTurned)) queue.add(new Object[] {name, onwardTurned});
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * The built graph as JSON, or null when the setup will not build.
      *
      * FOR INSPECTION, which is what the copy checks are.  buildConfiguration() answers for a
@@ -7653,6 +7735,8 @@ public class AutonomySession
             // Stations autonomy will never choose, so a pocket holding only those still leads
             // nowhere (V36-C4).
             stationsAutonomyWillNotChoose(),
+            // And the termini a route can back a train into, off the same build (Adam, 2026-10-11)
+            berthsATrainCanBackInto(inspected, namesForInspection),
             // Copies a train could be sent to and never leave, and copies nothing can reach at all
             // (Adam, 2026-09-02).  Per COPY, which is what every other check here cannot see.
             //
