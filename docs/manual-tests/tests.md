@@ -27,10 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-726](#mt-726) | 2026-10-11 | Round 135: FR-122, the Medium diagram size | fixed unvalidated | Adam, 2026-10-11: "Let's implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and phrasing to SizeList, and advise when ready.  Start with the cheap 60px scaling." |
+| [MT-727](#mt-727) | 2026-10-11 | Round 136: the track diagram scrolls a square at a time | fixed unvalidated | Adam, 2026-10-11, on MT-726: "Just make scrolling in the track diagram viewer faster on both axes." |
 
-Everything else - 725 of 726 - needs nothing from you unless the area changes again:
-572 **fixed validated** and 153 **superseded**.
+Everything else - 726 of 727 - needs nothing from you unless the area changes again:
+573 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34340,7 +34340,7 @@ it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.
 <a id="mt-726"></a>
 ### MT-726 - 2026-10-11 - Round 135: FR-122, the Medium diagram size
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam, 2026-10-11: "Let's implement the 46px diagram.  I added mediumButton to the UI.  Finish internationalizing it, add the option and phrasing to SizeList, and advise when ready.  Start with the cheap 60px scaling."
 
 **Written:** 2026-10-11
@@ -34367,5 +34367,45 @@ it, read the same way.  Claims in `core.testLocomotiveExclusions` (four), `core.
 *What this is:* round 135 (`af2bf807`).  Claims in `ui.testDiagramLooksRight`:
 `testTheMediumSizeIsBetweenSmallAndLarge`, `testAMediumSquareIsTheLargeArtScaledDown`,
 `testTheMediumButtonOpensAMediumPopUp`.
+
+**Adam, 2026-10-11 (triage).** Works, with notes.
+
+Works.  Just make scrolling in the track diagram viewer faster on both axes.
+
+*Run against commit 6dfb7b87, in English - build\classes, compiled 11 Oct 15:28 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-11.**
+
+Your note ("Just make scrolling in the track diagram viewer faster on both axes.") is round 136 (`98c1072f`): the diagram's scroll bars stepped one pixel - three a notch of the wheel - and now step one square at the size shown, both ways, in the main window and in each pop-up.  To try in MT-727.
+
+---
+
+<a id="mt-727"></a>
+### MT-727 - 2026-10-11 - Round 136: the track diagram scrolls a square at a time
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-11, on MT-726: "Just make scrolling in the track diagram viewer faster on both axes."
+
+**Written:** 2026-10-11
+
+**Steps**
+
+1. In the main window, choose Small in the size list and a page bigger than the window.  Turn the mouse wheel one notch
+   down, then one notch up.
+2. Hold Shift and turn the wheel one notch each way, to scroll across.
+3. Click the small arrows at the ends of both scroll bars.
+4. Do steps 1 to 3 again at Medium and at Large, then switch back to Small.
+5. Open the page in a pop-up with the S, M and L buttons, and do steps 1 to 3 in each.
+
+**Expected**
+
+- Steps 1 and 2: each notch moves the diagram three squares, the same down and across.
+- Step 3: each click moves it one square.
+- Step 4: at each size a notch is still three squares of that size - the same at Small after switching back.
+- Step 5: each pop-up scrolls the same way at its own size.
+- Throughout, the squares, captions and trains stay drawn whole while scrolling.
+
+*What this is:* round 136 (`98c1072f`), `LayoutGrid.scrollASquareAtATime`.  Claims in `ui.testDiagramLooksRight`:
+`testTheDiagramScrollsASquareAtATime`, `testAPoppedOutDiagramScrollsASquareAtATime`.
 
 ---
