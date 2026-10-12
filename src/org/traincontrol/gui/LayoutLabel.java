@@ -1588,7 +1588,7 @@ public final class LayoutLabel extends JLabel
 
                 try
                 {
-                    paintCoveredMark(tail);
+                    paintCoveredMark(tail, true);
                 }
                 finally
                 {
@@ -1813,17 +1813,24 @@ public final class LayoutLabel extends JLabel
      */
     public enum TailColour
     {
-        /** The old orange at 55%, the track showing through (`DiagramColours.TRAIN_SEE_THROUGH`). */
-        SEE_THROUGH(org.traincontrol.automationui.DiagramColours.TRAIN_SEE_THROUGH),
+        /**
+         * The old orange at 55%, the track showing through (`DiagramColours.TRAIN_SEE_THROUGH`); over a running train's
+         * own dark grey line, the orange that comes out the same (`DiagramColours.TRAIN_OVER_RUN`).
+         */
+        SEE_THROUGH(org.traincontrol.automationui.DiagramColours.TRAIN_SEE_THROUGH,
+            org.traincontrol.automationui.DiagramColours.TRAIN_OVER_RUN),
 
-        /** A soft orange, solid (`DiagramColours.TRAIN`). */
-        SOFT(org.traincontrol.automationui.DiagramColours.TRAIN);
+        /** A soft orange, solid (`DiagramColours.TRAIN`), the same over a run line. */
+        SOFT(org.traincontrol.automationui.DiagramColours.TRAIN, org.traincontrol.automationui.DiagramColours.TRAIN);
 
         private final Color colour;
 
-        TailColour(Color colour)
+        private final Color overTheRun;
+
+        TailColour(Color colour, Color overTheRun)
         {
             this.colour = colour;
+            this.overTheRun = overTheRun;
         }
 
         /**
@@ -1832,6 +1839,14 @@ public final class LayoutLabel extends JLabel
         public Color colour()
         {
             return colour;
+        }
+
+        /**
+         * @return the colour over a running train's own run line, which it comes out as `colour` does over track
+         */
+        public Color overTheRun()
+        {
+            return overTheRun;
         }
     }
 
@@ -1899,6 +1914,19 @@ public final class LayoutLabel extends JLabel
      */
     private void paintCoveredMark(java.awt.Graphics2D g)
     {
+        paintCoveredMark(g, false);
+    }
+
+    /**
+     * Draws the train's line, as `paintCoveredMark(g)` does, or over a run line: in the colour that comes out there as
+     * the line does over plain track (Adam, 2026-10-11: "brighten the color of the orange train tail while running so
+     * that it more closely matches the normal stopped color").
+     *
+     * @param g where to draw
+     * @param overTheRun whether it is drawn over the run line, not under everything
+     */
+    private void paintCoveredMark(java.awt.Graphics2D g, boolean overTheRun)
+    {
         if (component == null || component.isText() || !trainsShown.getAsBoolean()) return;
 
         // THE REFUSAL IS DRAWN IN `paintComponent`, NOT HERE, since MT-278 item 1.
@@ -1924,7 +1952,7 @@ public final class LayoutLabel extends JLabel
         g.setStroke(new java.awt.BasicStroke(width, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
         // WHICHEVER COLOUR THE DIAGRAM IS SET TO DRAW - see `tailColour`
-        g.setColor(tailColour().colour());
+        g.setColor(overTheRun ? tailColour().overTheRun() : tailColour().colour());
 
         // ONE SHAPE FOR ALL OF THE SQUARE'S ROADS, drawn once.  A see-through colour drawn road by road lays itself twice
         // where two roads meet - the middle of a crossing, the throat of a switch - and comes out darker there; the
