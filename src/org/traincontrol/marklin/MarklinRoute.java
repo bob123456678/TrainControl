@@ -648,8 +648,12 @@ public class MarklinRoute extends Route
         //
         // A GREEN THE TRAIN'S OWN PATH HOLDS IS NO CHANGE (RSA66-C1): the exit guard of the platform a path leaves and the
         // home signal of the one it is bound for are held accessories too, and Adam's rule reaches them (2026-10-11: "make
-        // sure the code allows switching to the correct (same) setting that autonomy is using")
-        if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory) && !Boolean.FALSE.equals(locked.get(accessory)))
+        // sure the code allows switching to the correct (same) setting that autonomy is using") - AND ONLY WHILE IT SHOWS
+        // GREEN (the fix-validation fanout's C1-B): one signal may guard two platforms, and protection may have set it red
+        // for a train standing beside another path's; green is a change then, and refused as ever
+        boolean heldGreenAndShowing = Boolean.FALSE.equals(locked.get(accessory)) && !accessory.isSwitched();
+
+        if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory) && !heldGreenAndShowing)
         {
             // STANDING, OR ONLY RESERVED (GSR-C2).  A locked path reserves every point along it for its train, its
             // destination included, so a platform holds this signal red before any train is at it - and "a train is
