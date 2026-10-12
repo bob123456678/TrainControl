@@ -79,7 +79,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 - **The strip above the track diagram.** When the setup has something to fix it shows how many errors and warnings there are, and how many of them are on this page, with a `Fix it` button in place of Start. Either opens the editor on the first thing to deal with.
 - **Right-click a square on the track diagram** → `Autonomy Setup` → `Open the Full Editor...` opens the editor on that square.
 - **Inside the editor**, the sidebar on the left switches between `Track Diagram` and `Autonomy Setup`, and between pages.
-- The Auto tab's Settings has `Edit Autonomy Paths in Track Diagram`, which opens the autonomy editor.
+- The `Autonomy Settings` tab has `Edit Autonomy Paths in Track Diagram`, which opens the autonomy editor.
 - The diagram's `Edit` button and `Layouts` → `Edit Layout Page` open whichever editor you used last: the track diagram or the autonomy setup.
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
@@ -475,19 +475,19 @@ The diagram's right-click `Autonomy Setup` menu has the same station settings as
 
 Autonomy can run in simulation: trains move on the diagram, but nothing is sent to a Central Station and no real train moves. It shows whether your stations, routes and settings do what you meant, without powering up the layout.
 
-1. **Start TrainControl with debug and simulation on.** In a terminal (Command Prompt on Windows) in the folder with `TrainControl.jar`, run `java -jar TrainControl.jar 0 debug simulate`. The three words are the Central Station's address (not used in simulation, so `0` will do), debug mode and simulation. TrainControl counts them and does not read them, so all three must be there. Double-clicking the jar passes none, so put the command in a `.bat` or `.sh` file to start it this way again ([details](Readme.md#download-and-run-traincontrol)).
-2. **Tick `Simulate`.** With a configuration loaded, open `Autonomy` → `Autonomy Settings...` and tick it. TrainControl refuses while a train is running, and when it was not started as in step 1.
-3. **Start autonomy as usual.** In simulation with `Simulate` unticked, Start warns that the trains will never move and asks whether to go ahead.
+1. **Start TrainControl with debug and simulation on.** Open the folder you normally start TrainControl from, the one with `TrainControl.jar` (your locomotives and window settings are kept there). On Windows, click the File Explorer address bar, type `cmd` and press Enter. In the window that opens, run `java -jar TrainControl.jar 0 debug simulate`. If it says `java` is not recognized, install Java first ([details](Readme.md#download-and-run-traincontrol)). All 3 words after the jar's name must be there: the first stands for the Central Station's address and is not used, the second turns on debug mode and the third simulation. Double-clicking the jar passes none of them, so to start this way again, save the command as a `.bat` file (`.sh` on Mac and Linux) in that same folder.
+2. **Tick `Simulate`.** With a configuration loaded, open `Autonomy` → `Autonomy Settings...` and tick it. It is greyed out while trains are running, and refused if TrainControl was not started as in step 1. TrainControl may tell you it has turned on `Echo Sent Commands` (Preferences → Debug); simulation needs it.
+3. **Start autonomy as usual.** If `Simulate` is not ticked, Start warns that the trains will never move and asks whether to go ahead.
 
-**What happens.** Trains are sent as usual, but TrainControl answers for the sensors: after a random wait between the `Minimum Action Delay` and `Maximum Action Delay` settings it reports each sensor on a train's route as occupied, and after another such wait it clears it behind the train. Lower the delays to go faster. Nothing on your layout takes part, so a simulation checks your setup and not your hardware: a sensor drawn on the wrong square, a dead sensor or a switch that does not answer will not show up, and `Path Integrity Validation` is skipped.
+**What happens.** Trains are sent as usual, but TrainControl answers for the sensors: after a random wait between `Minimum Action Delay` and `Maximum Action Delay` (in seconds) it reports each sensor on a train's route as occupied, and after another such wait it clears it behind the train. Lower the delays to go faster, and put them back before you run real trains: they also set how long a real train waits before leaving. Nothing on your layout takes part, so a simulation checks your setup and not your hardware: a sensor drawn on the wrong square, a dead sensor or a switch that does not answer will not show up, and `Path Integrity Validation` is skipped.
 
-**Afterward.** `Simulate` is saved with the configuration, like the other settings; started normally, a configuration saved with it ticked loads with it unticked, and the log says why. TrainControl also saves where the simulated trains finished, and your real trains have not moved: stop autonomy and use `Return Home` before you close to bring them back to their homes, or place them again where they really stand.
+**Afterward.** Your real trains have not moved, but TrainControl saves where the simulated ones finished: stop autonomy and use `Return Home` before you close, or place the trains again where they really stand. `Simulate` is saved with the configuration; when you start TrainControl normally, it loads unticked and the log says why. To go back to normal, close TrainControl and start it as you usually do. It will ask for your Central Station's address again, because a start without one forgets it (`Auto-Detect` can find it).
 
 ---
 
 ## Choosing how trains pick their route
 
-When more than one route will do, TrainControl has to choose. The **Routing Logic** dropdown on the Auto tab's Settings (`Autonomy` → `Autonomy Settings...`) says how:
+When more than one route will do, TrainControl has to choose. The **Routing Logic** dropdown on the `Autonomy Settings` tab (`Autonomy` → `Autonomy Settings...`) says how:
 
 | Setting | What it does |
 | --- | --- |
@@ -540,13 +540,13 @@ To see the homes on the diagram, set `Text Labels` to **Home Locs**: each statio
 
 ## Settings, and what each one is for
 
-These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings...` opens it. They are saved with the configuration. Most layouts need to change two or three of them at most, and none can be changed while trains are running.
+These live on the Auto tab's **Autonomy Settings** tab; `Autonomy` → `Autonomy Settings...` opens it. They are saved with the configuration. Most layouts need to change two or three of them at most, and none can be changed while trains are running.
 
 **Timing and speed**
 
 | Setting | What it is for |
 | --- | --- |
-| Minimum and Maximum Action Delay | How long a train waits before leaving again, in seconds. A range rather than a number, so departures do not fall into lockstep |
+| Minimum and Maximum Action Delay | How long a train waits before leaving again, in seconds. A range rather than a number, so departures do not fall into lockstep. In a simulation they also pace the simulated sensors |
 | Default Locomotive Speed | Used for a locomotive with no preferred speed of its own |
 | Pre-arrival Speed Multiplier | How much a train slows on the approach. This is what the sensor before the stopping point is for |
 
@@ -572,6 +572,12 @@ These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings
 | Turn Off Functions on Arrival, Turn On Functions on Departure | On departure, switch on the locomotive's saved function preset (right-click the locomotive → `Save Current Functions as Preset`, or Alt+S); on arrival, switch all its functions off. Untick the arrival one to keep sound running between routes. Separately, one function can be toggled as each train leaves and one as it arrives, whatever these two say: right-click that function's button and tick `Autonomy Departure Function` or `Autonomy Arrival Function` |
 | Linked Routes | `Toggle specified routes`: whenever this configuration is loaded, and as soon as you tick a route, the routes ticked in the list are switched on and every other route is switched off, and they stay that way after autonomy stops. Use it for emergency stops, sound effects, or safety signals. Only routes triggered by a sensor can be switched on this way |
 
+**Testing**
+
+| Setting | What it is for |
+| --- | --- |
+| Simulate | Runs autonomy with no Central Station, to try a setup. Only when TrainControl was started in simulation: see [Trying it out without a Central Station](#trying-it-out-without-a-central-station) |
+
 Per-station settings (priority, speed, train length, excluded locomotives) are on the station's right-click menu, under `Station (...)` and `Advanced Parameters...`.
 
 A few more autonomy settings are under Preferences → Autonomy, because they belong to this computer rather than to the configuration:
@@ -579,8 +585,6 @@ A few more autonomy settings are under Preferences → Autonomy, because they be
 - `Path Integrity Validation` (on, and recommended) makes each train wait until the Central Station confirms every switch and signal on its route. If it cannot, the train does not leave, autonomy tries again, and a message names the accessories.
 - `Display Travel Restrictions` and `Display Allowed Directions` draw the red and green direction marks on the ordinary track diagram.
 - `Show Inactive Labels` and `Grey Station Labels` decide which station captions are shown and in what colour.
-
-`Simulate`, on the `Autonomy Settings` tab, is for testing without a Central Station. See [Trying it out without a Central Station](#trying-it-out-without-a-central-station).
 
 ---
 
