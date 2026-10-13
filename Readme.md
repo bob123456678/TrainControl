@@ -357,9 +357,9 @@ When "Check for Updates" is ticked under Preferences > Startup, TrainControl loo
 * Download & Update: saves the new JAR file next to your current one and makes a backup of your data (see below).  Then TrainControl closes, puts the new version in place of the old JAR file under the same file name, and starts again with the same settings.  Your old JAR file is kept next to it with its version in the name (for example `TrainControl_v3_0_1_old.jar`), so you can go back by renaming it.  Each step is written to `update.log` in the same folder.
 * Cancel
 
-Download & Update is only offered when TrainControl was started from a JAR file in a folder you can write to.  It is not available while autonomy, a timetable, Return Home, or a route is running.
+Download & Update is only offered when TrainControl was started from a JAR file in a folder you can write to.  It is refused while autonomy, a timetable, Return Home, or a route is running.
 
-If the backup fails, the update stops and nothing is changed.  If the new version cannot start, the update is undone: your old JAR file is put back and started, and TrainControl tells you so.  On Windows, TrainControl restarts without a console window.
+If the backup fails, the update stops and nothing is changed.  If the new version stops with an error before its main window opens, the update is undone: your old JAR file is put back and started, and TrainControl tells you so (or, if it could not be renamed back, which file it is running from).  A new version that gets as far as its window, or is still starting after 10 minutes, is kept.  Either way your old JAR file stays next to it, so you can go back by renaming it.  On Windows, TrainControl restarts without a console window.
 
 **Backing up and restoring your data:**
 

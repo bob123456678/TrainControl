@@ -43,16 +43,19 @@ import java.util.List;
  * is kept, so the update can be undone by hand (Adam, 2026-10-12).
  *
  * **"Started" means the new version said so, not that it ran for a while.**  It is given the path of a marker file in
- * the `STARTED_ENVIRONMENT` environment variable, and `TrainControl.main` writes that file as its very first act - so
- * the file proves the new jar runs on this Java.  A version that ends without writing it is put back, whatever its
- * exit code; one that writes it and then exits (the IP question cancelled, say) has started, and stays.  An exit code
- * could not tell those apart: TrainControl ends with 1 on purpose in several places.  An environment variable rather
- * than a -D option, because the Java options are carried into every later restart and the marker belongs to this one.
- * One that says nothing within `START_CAP_MS` is kept, and the log says so.
+ * the `STARTED_ENVIRONMENT` environment variable, and writes that file once its main window is on screen - or when the
+ * user leaves it from a question before then (the IP address cancelled, the first sync given up), which is a version
+ * that runs (`SelfUpdate.reportStarted`).  So a version that fails in its own start-up, before its window, is put
+ * back, whatever its exit code; one that is up and then exits stays.  An exit code could not tell those apart:
+ * TrainControl ends with 1 on purpose in several places.  An environment variable rather than a -D option, because the
+ * Java options are carried into every later restart and the marker belongs to this one.  One that says nothing within
+ * `START_CAP_MS` is kept, and the log says so: a version still starting is not killed on a guess.  The Readme says
+ * the same (FR-125, 2026-10-13).
  *
- * **A failure puts the old jar back and starts it**, and leaves `ROLLBACK_NOTE_NAME` beside the jar, which the old
- * version reads on its next start to say the update was put back.  Every step is written to `update.log` beside the
- * jar.
+ * **A failure puts the old jar back and starts it**, and leaves `ROLLBACK_NOTE_NAME` beside the jar for the old version
+ * to say so on its next start.  The note says the old version was put back only when its jar really is back under its
+ * own name; when putting it back stopped half way, the note says where it is running from instead (FR-125, 2026-10-13).  Every
+ * step is written to `update.log` beside the jar.
  *
  * **Self-contained on purpose**: it uses nothing of TrainControl's, so nothing the application loads at start-up can
  * stop it part way through a swap.  For the same reason its log is in English; the one sentence it shows, in a small
@@ -90,7 +93,8 @@ public final class JarUpdater
 
     /**
      * The note a rollback leaves beside the jar for the old version to read on its next start: `to=` the version that
-     * could not start, `from=` the one put back.
+     * could not start, `from=` the old one, and `at=` the file the old one is running from when it could not be put
+     * back under its own name.
      */
     public static final String ROLLBACK_NOTE_NAME = "TrainControl-update-failed.txt";
 
@@ -564,15 +568,21 @@ public final class JarUpdater
 
     /**
      * After a failure: leaves the note the old version reads on its next start, and starts it.
+     *
+     * The note says the old version is back only when its jar is back under its own name - the name a shortcut
+     * starts.  Otherwise it says which file the old version is running from, so it is not told it was put back while
+     * the shortcut's name still holds the version that did not start (FR-125, 2026-10-13).
      */
     private static Outcome rollBack(Request request, File old, Launcher launcher, Log log, Runnable launched)
     {
         File note = new File(request.jar.getParentFile(), ROLLBACK_NOTE_NAME);
 
+        boolean putBack = old.getAbsoluteFile().equals(request.jar) && request.jar.isFile();
+
         try
         {
-            Files.write(note.toPath(), ("to=" + request.newVersion + "\nfrom=" + request.oldVersion + "\n")
-                .getBytes(StandardCharsets.UTF_8));
+            Files.write(note.toPath(), ("to=" + request.newVersion + "\nfrom=" + request.oldVersion + "\n"
+                + (putBack ? "" : "at=" + old.getName() + "\n")).getBytes(StandardCharsets.UTF_8));
         }
         catch (IOException e)
         {
@@ -827,10 +837,17 @@ public final class JarUpdater
     }
 
     /**
-     * The real launcher.  Its output goes nowhere, as it would for a jar started by a double click: this JVM exits
-     * soon, and a pipe with no reader would stop the new version the first time it wrote to it.
+     * The real launcher, which `main` hands to `update`.  Its output goes nowhere, as it would for a jar started by a
+     * double click: this JVM exits soon, and a pipe with no reader would stop the new version the first time it wrote
+     * to it.  Public so `regression.testTheUpdateIsWiredEndToEnd` can start a plain JVM through it.
+     *
+     * @param command the program and its arguments
+     * @param folder the working directory
+     * @param startedMarker the file a starting TrainControl is to write, or null for none
+     * @return the started program
+     * @throws IOException when it could not be started
      */
-    private static Started startProcess(List<String> command, File folder, File startedMarker) throws IOException
+    public static Started startProcess(List<String> command, File folder, File startedMarker) throws IOException
     {
         File nowhere = new File(File.separatorChar == '\\' ? "NUL" : "/dev/null");
 
@@ -840,18 +857,30 @@ public final class JarUpdater
             .redirectOutput(ProcessBuilder.Redirect.appendTo(nowhere))
             .redirectInput(ProcessBuilder.Redirect.from(nowhere));
 
-        if (startedMarker == null)
-        {
-            builder.environment().remove(STARTED_ENVIRONMENT);
-        }
-        else
-        {
-            builder.environment().put(STARTED_ENVIRONMENT, startedMarker.getAbsolutePath());
-        }
+        prepareEnvironment(builder.environment(), startedMarker);
 
         final Process process = builder.start();
 
         return process::isAlive;
+    }
+
+    /**
+     * Sets `STARTED_ENVIRONMENT` to the marker for the start that is to write it, and removes it for every other: an
+     * inherited one names a marker that belongs to an earlier start.
+     *
+     * @param environment the environment of a program about to be started
+     * @param startedMarker the marker, or null for none
+     */
+    public static void prepareEnvironment(java.util.Map<String, String> environment, File startedMarker)
+    {
+        if (startedMarker == null)
+        {
+            environment.remove(STARTED_ENVIRONMENT);
+        }
+        else
+        {
+            environment.put(STARTED_ENVIRONMENT, startedMarker.getAbsolutePath());
+        }
     }
 
     /**

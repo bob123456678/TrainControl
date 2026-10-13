@@ -17,12 +17,9 @@ public class TrainControl
      */
     public static void main(String[] args)
     {            
-        // THE VERY FIRST THING, before anything can fail: an update waiting to hear that this version starts on this
-        // Java is told so, and keeps it rather than putting the old one back (FR-125).  Only when the updater started
-        // this run; otherwise it does nothing.
-        org.traincontrol.util.SelfUpdate.reportStarted();
-
-        // Kept for an update, which starts the new version with the same arguments (FR-125)
+        // Kept for an update, which starts the new version with the same arguments (FR-125).  An update waiting to hear
+        // that this version started is told once its window is on screen (`SelfUpdate.reportStarted`, in `init`), not
+        // here: a version that fails in its own start-up after this line has not started.
         org.traincontrol.util.SelfUpdate.rememberArguments(args);
 
         try

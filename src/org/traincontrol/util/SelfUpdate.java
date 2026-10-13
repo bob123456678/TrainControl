@@ -201,24 +201,36 @@ public final class SelfUpdate
     }
 
     /**
-     * Tells an update that is waiting to hear from this version that it has started - TrainControl.main's very first
-     * act, so the marker proves the jar runs on this Java (FR-125).
+     * Tells an update that is waiting to hear from this version that it has started (FR-125).
      *
-     * Only when `JarUpdater.STARTED_ENVIRONMENT` names a file, which the updater sets for the version it starts and
-     * for nothing else.  Never throws: nothing may stop TrainControl starting.
+     * Called once the main window is on screen, and on the two ways the user leaves before then - cancelling the IP
+     * address, giving up the first sync - because a version that asks a question runs.  Not as `main`'s first act any
+     * more (FR-125, 2026-10-13): a version that fails in its own start-up after that had "started" and was kept, while the
+     * Readme promised an update that cannot start is undone.
+     *
+     * Only when `JarUpdater.STARTED_ENVIRONMENT` names a file, which the updater sets for the version it starts and for
+     * nothing else.  Never throws: nothing may stop TrainControl starting.
      */
     public static void reportStarted()
     {
         try
         {
-            String marker = System.getenv(JarUpdater.STARTED_ENVIRONMENT);
-
-            if (marker != null && !marker.trim().isEmpty()) JarUpdater.writeMarker(new File(marker.trim()));
+            reportStarted(System.getenv(JarUpdater.STARTED_ENVIRONMENT));
         }
         catch (RuntimeException | Error e)
         {
             // An update that never hears keeps the new version after its cap, which is the safe side
         }
+    }
+
+    /**
+     * `reportStarted` with the marker's path given, which is how a claim calls it without an environment of its own.
+     *
+     * @param marker the marker's path, or null or blank for none
+     */
+    public static void reportStarted(String marker)
+    {
+        if (marker != null && !marker.trim().isEmpty()) JarUpdater.writeMarker(new File(marker.trim()));
     }
 
     /**
@@ -434,9 +446,20 @@ public final class SelfUpdate
      */
     public static List<String> javaOptions()
     {
+        return javaOptions(java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments());
+    }
+
+    /**
+     * `javaOptions` of a given list, which is how a claim asks it.
+     *
+     * @param given the options a JVM was started with
+     * @return those to carry into a restart
+     */
+    public static List<String> javaOptions(List<String> given)
+    {
         List<String> out = new ArrayList<>();
 
-        for (String option : java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments())
+        for (String option : given)
         {
             if (option.startsWith("-agentlib:") || option.startsWith("-agentpath:")
                 || option.startsWith("-javaagent:") || option.startsWith("-Xrunjdwp") || option.equals("-Xdebug"))
@@ -582,7 +605,7 @@ public final class SelfUpdate
             .redirectOutput(ProcessBuilder.Redirect.appendTo(nowhere))
             .redirectInput(ProcessBuilder.Redirect.from(nowhere));
 
-        builder.environment().remove(JarUpdater.STARTED_ENVIRONMENT);
+        JarUpdater.prepareEnvironment(builder.environment(), null);
 
         final Process process = builder.start();
 
@@ -624,7 +647,8 @@ public final class SelfUpdate
      * Reads and removes the note a rolled-back update left beside the jar, for this start to show once (FR-125).
      *
      * @param folder the jar's folder
-     * @return {the version that could not start, the version put back}, or null when there is no note
+     * @return {the version that could not start, the old version, and null when the old jar is back under its own name
+     * or else the file it is running from}, or null when there is no note
      */
     public static String[] takeRollbackNote(File folder)
     {
@@ -634,6 +658,7 @@ public final class SelfUpdate
 
         String to = "?";
         String from = "?";
+        String at = null;
 
         try
         {
@@ -641,6 +666,7 @@ public final class SelfUpdate
             {
                 if (line.startsWith("to=")) to = line.substring(3).trim();
                 if (line.startsWith("from=")) from = line.substring(5).trim();
+                if (line.startsWith("at=")) at = line.substring(3).trim();
             }
         }
         catch (IOException | RuntimeException e)
@@ -651,7 +677,7 @@ public final class SelfUpdate
         // Shown once: a note that cannot be removed would say the same thing at every start
         if (!note.delete()) return null;
 
-        return new String[] {to, from};
+        return new String[] {to, from, at};
     }
 
     /**

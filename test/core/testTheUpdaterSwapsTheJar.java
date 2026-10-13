@@ -44,13 +44,15 @@ import org.traincontrol.util.SelfUpdate;
  * MUTATIONS, each seen red: `backupName` not looking for a free name (the swap claim); `swap` not moving the backup
  * back when the second rename fails (the rollback claim); `waitForTheStart` reading an ended process as started, or
  * ignoring the marker, or `update` rolling back on no word (the three started-marker claims); `rollBack` leaving no
- * note (the ended claim); `waitForLock` returning true at once (the lock, timeout, copy and process claims);
+ * note, or a note that says put back when the old jar is not (the ended and half-undone claims); `waitForLock`
+ * returning true at once (the lock, timeout, copy and process claims);
  * `whyNotAWholeJar` skipping the jar check (the truncated and HTML claim); `startUpdater` putting the jar itself on the
  * updater's classpath (the copy claim); `startUpdater` not waiting to hear from the updater, or keeping the lock when it
  * does not (the updater-did-not-start claim); `HandOver.exitWith` disarming only after a normal return, or `begin`
  * allowing a second, or `startUpdater` letting go of a lock already held (the one-at-a-time claim);
  * `Request.parse` dropping the Java options (the command-line claim); `downloadTarget` returning the running jar's own
- * name (the download claim).
+ * name (the download claim); `startUpdater` handing on the jar's folder for TrainControl's working directory (the copy
+ * claim).
  */
 public class testTheUpdaterSwapsTheJar
 {
@@ -244,10 +246,56 @@ public class testTheUpdaterSwapsTheJar
         assertEquals(read(jar), "old");
         assertEquals(read(download), "new", "the failed download should be back under its own name");
 
-        assertEquals(SelfUpdate.takeRollbackNote(folder), new String[] {"3.0.2", "3.0.1"}, "the old version is not"
-            + " told the update was put back, so it starts as though nothing happened");
+        assertEquals(SelfUpdate.takeRollbackNote(folder), new String[] {"3.0.2", "3.0.1", null}, "the old version is"
+            + " not told the update was put back, so it starts as though nothing happened");
 
         assertNull(SelfUpdate.takeRollbackNote(folder), "the note is said again at the next start");
+    }
+
+    /**
+     * When putting the old jar back stops half way - the new one cannot be moved off its name, as a just-ended JVM or
+     * a virus scanner holding it would cause - the old version is started from its kept copy, and its note says which
+     * file that is rather than that it was put back (FR-125, 2026-10-13).
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testAHalfDoneUndoDoesNotSayPutBack() throws Exception
+    {
+        // Aside, then in; the undo's first move, the new jar back to its download name, fails
+        final JarUpdater.Mover failsTheThird = new JarUpdater.Mover()
+        {
+            private int calls;
+
+            @Override
+            public void move(Path from, Path to) throws java.io.IOException
+            {
+                if (++calls == 3) throw new java.io.IOException("held by the test");
+
+                Files.move(from, to);
+            }
+        };
+
+        List<String> started = new ArrayList<>();
+        List<List<String>> commands = new ArrayList<>();
+
+        JarUpdater.Outcome outcome = JarUpdater.update(request(), 5000, 10, 1, 0, 5000,
+            launching(started, commands, new ArrayList<>(), NewVersion.ENDS_SILENTLY), failsTheThird, log, null);
+
+        assertEquals(outcome, JarUpdater.Outcome.ROLLED_BACK);
+
+        assertEquals(started, Arrays.asList("new", "old"), "the old version was not started from its kept copy");
+
+        File kept = new File(folder, "TrainControl_v3_0_1_old.jar");
+
+        assertEquals(jarIn(commands.get(1)).getAbsoluteFile(), kept.getAbsoluteFile());
+
+        String[] note = SelfUpdate.takeRollbackNote(folder);
+
+        assertNotNull(note, "the old version is not told what happened");
+
+        assertEquals(note[2], kept.getName(), "the old version is told it was put back while the jar's own name still"
+            + " holds the version that did not start");
     }
 
     /**
@@ -534,6 +582,10 @@ public class testTheUpdaterSwapsTheJar
         assertEquals(request.arguments, Arrays.asList("192.168.1.5", "debug"), "the new version would start"
             + " without TrainControl's own arguments");
         assertEquals(request.lock.getParentFile(), folder.getAbsoluteFile());
+
+        assertEquals(request.workingDirectory, new File(System.getProperty("user.dir")).getAbsoluteFile(), "the new"
+            + " version would start somewhere other than TrainControl's working directory, which is where its data is"
+            + " read from");
 
         assertTrue(SelfUpdate.isHoldingTheExitLock(), "the exit lock is not held, so the updater would not wait");
         assertFalse(JarUpdater.waitForLock(request.lock, 0, 10), "the updater could take the lock while"

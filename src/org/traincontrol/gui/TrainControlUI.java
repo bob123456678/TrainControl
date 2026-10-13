@@ -11602,7 +11602,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (putBack != null)
             {
-                final String said = I18n.f("ui.update.rolledBack", putBack[0], putBack[1]);
+                // PUT BACK ONLY WHEN IT WAS (FR-125, 2026-10-13): where the old jar could not go back under its own name,
+                // the note says which file this version is running from, and so does the message
+                final String said = putBack[2] == null ? I18n.f("ui.update.rolledBack", putBack[0], putBack[1])
+                    : I18n.f("ui.update.notPutBack", putBack[0], putBack[1], putBack[2]);
 
                 if (this.model != null) this.model.log(said);
 
@@ -11651,6 +11654,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         javax.swing.SwingUtilities.invokeLater(() ->
                         {
                             this.downloadUpdateMenuItem.setVisible(true);
+                            this.downloadUpdateMenuItem.setToolTipText(
+                                updateItemTooltip(SelfUpdate.runningJar(TrainControlUI.class) != null));
                             this.viewReleasesMenuItem.setText("v" + LATEST_VERSION + " Update Info");
                             this.helpMenu.setText(this.helpMenu.getText() + "*");
                         });
@@ -24598,9 +24603,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * On the caller's thread, which must not be the event thread: it saves, writes the archive, and may ask about the
      * Central Station's layout through `askOnEventThread`, which waits for an answer.
      *
+     * ONE AT A TIME (FR-125, 2026-10-13).  The menu greys its item while it runs, which kept two menu backups apart and
+     * nothing else: Download & Update's backup started whatever the menu's state, and two at once save the locomotive
+     * database and the window state through the same staging file and name their archives to the same second.  So a
+     * second waits for the first.  Never on the event thread, so the wait holds no window.
+     *
      * @return the archive, or no archive, and what could not be saved
      */
     private BackupOutcome backupData()
+    {
+        synchronized (this.oneBackupAtATime)
+        {
+            return writeTheBackup();
+        }
+    }
+
+    /**
+     * What one backup holds, while nobody else can write one (FR-125).
+     */
+    private final Object oneBackupAtATime = new Object();
+
+    /**
+     * `backupData`'s body, which only `backupData` calls.
+     *
+     * @return the archive, or no archive, and what could not be saved
+     */
+    private BackupOutcome writeTheBackup()
     {
         // The track diagram and the autonomy setup beside it.
         //
@@ -27891,6 +27919,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The Download Update item's tooltip, by what its question will offer (FR-125, 2026-10-13): with no jar to replace
+     * only Download is offered, and the tooltip does not promise an update.
+     *
+     * @param canInstall whether TrainControl runs from a jar it can replace
+     * @return the tooltip
+     */
+    public static String updateItemTooltip(boolean canInstall)
+    {
+        return I18n.t(canInstall ? "ui.main.tooltip.downloadAndUpdate" : "ui.main.tooltip.downloadUpdate");
+    }
+
+    /**
      * Why an update cannot start now, or null (FR-125).
      *
      * Download & Update ends by closing TrainControl, and an exit with trains running stops to ask whether to leave them
@@ -27970,7 +28010,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return;
             }
 
-            final String wait = whyAnUpdateMustWait(this.model, this.stagingFlowActive || isAutonomyBusy());
+            final String wait = whyThisUpdateMustWait();
 
             if (wait != null)
             {
@@ -28154,10 +28194,89 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The last step of Download & Update (FR-125): leaves through the application's own exit, which settles the open
-     * editors and saves the locomotive database and the window state, with the updater as its last act.
+     * Why this window's update cannot start now, or null (FR-125): `whyAnUpdateMustWait`, asked with everything the
+     * Auto tab waits for (`theAutoTabWaits`) - autonomy busy, a hand send under way from its click, Graceful Stop
+     * offered - and Return Home's own flag.  `isAutonomyBusy` alone missed a send between its click and its thread
+     * counting itself (2026-10-13).
      *
-     * Asked again first: the download and the backup took time, and a run may have started meanwhile.
+     * @return the sentence to show, or null
+     */
+    private String whyThisUpdateMustWait()
+    {
+        return whyAnUpdateMustWait(this.model, this.stagingFlowActive || theAutoTabWaits());
+    }
+
+    /**
+     * Whether a modal dialog of this application is on screen (FR-125).
+     *
+     * @return true while one is showing
+     */
+    public static boolean aModalDialogIsShowing()
+    {
+        for (Window window : Window.getWindows())
+        {
+            if (window instanceof Dialog && ((Dialog) window).isModal() && window.isShowing()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Runs something on the event thread now, or once no modal dialog is showing (FR-125, 2026-10-13).
+     *
+     * The update's exit is posted for whenever its backup ends, and a posted task runs inside whatever modal dialog is
+     * open then: `System.exit` closed a rename or locomotive dialog with the typing in it unapplied.  So while one is
+     * showing this waits, looking again every `pollMs`, and runs once it has closed.
+     *
+     * @param then what to run, on the event thread
+     * @param dialogShowing whether a modal dialog is showing
+     * @param pollMs how often to look again
+     * @return true when it ran at once
+     */
+    public static boolean whenNoModalDialog(final Runnable then, final java.util.function.BooleanSupplier dialogShowing,
+        int pollMs)
+    {
+        if (!dialogShowing.getAsBoolean())
+        {
+            then.run();
+
+            return true;
+        }
+
+        final javax.swing.Timer later = new javax.swing.Timer(pollMs, null);
+
+        later.addActionListener(e ->
+        {
+            if (dialogShowing.getAsBoolean()) return;
+
+            later.stop();
+
+            then.run();
+        });
+
+        later.start();
+
+        return false;
+    }
+
+    /**
+     * The last step of Download & Update (FR-125): once no modal dialog is open, leaves through the application's own
+     * exit.  The update stays under way while it waits, so a second is still refused.
+     *
+     * @param jar the running jar
+     * @param download the checked download
+     */
+    private void closeForTheUpdate(final File jar, final File download)
+    {
+        whenNoModalDialog(() -> closeNowForTheUpdate(jar, download), TrainControlUI::aModalDialogIsShowing, 500);
+    }
+
+    /**
+     * Leaves through the application's own exit, which settles the open editors and saves the locomotive database and
+     * the window state, with the updater as its last act (FR-125).
+     *
+     * Asked again first, as the Auto tab asks: the download and the backup took time, and a run may have started
+     * meanwhile.
      *
      * The update is armed for the exit and disarmed whatever the exit does (`HandOver.exitWith`), so an exit that throws
      * cannot leave it armed for a later, ordinary exit to start; and the hand-over is ended on every way out of here.
@@ -28165,11 +28284,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param jar the running jar
      * @param download the checked download
      */
-    private void closeForTheUpdate(final File jar, final File download)
+    private void closeNowForTheUpdate(final File jar, final File download)
     {
         try
         {
-            final String wait = whyAnUpdateMustWait(this.model, this.stagingFlowActive || isAutonomyBusy());
+            final String wait = whyThisUpdateMustWait();
 
             if (wait != null)
             {

@@ -1640,6 +1640,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             System.out.println(I18n.t("ui.errorUpdatingPreferences"));
         }
 
+        // LEFT ON PURPOSE, from a question this version asked: an update waiting to hear from it is told it started, so
+        // the user's own choice is not taken for a version that cannot start (FR-125).  Nothing unless an updater
+        // started this run.
+        org.traincontrol.util.SelfUpdate.reportStarted();
+
         exit.run();
     }
 
@@ -5227,6 +5232,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 JOptionPane.showMessageDialog(null, I18n.t("ui.noIpEnteredShutdown"));
                             }
                             
+                            // Left on purpose, from this version's own question: it started (FR-125)
+                            org.traincontrol.util.SelfUpdate.reportStarted();
+
                             System.exit(1);
                         }
                     }
@@ -5510,6 +5518,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     theUI.display();
 
                     model.logf("ui.initialized");
+
+                    // UP: the window is on screen.  An update waiting to hear that this version started is told here
+                    // rather than at main's first line, so a version that fails anywhere in its start-up is put back
+                    // (FR-125, 2026-10-13).  Does nothing unless the updater started this run.
+                    org.traincontrol.util.SelfUpdate.reportStarted();
                 });
             }
             catch (Exception ex)

@@ -31,8 +31,10 @@ import org.traincontrol.util.SelfUpdate;
  * downloads and again before it closes TrainControl, asked of a real model on a sandboxed layout.
  *
  * MUTATIONS, each seen red: the answer read by position alone, so the second of two buttons counts as Download & Update,
- * or Download & Update made the default (the buttons claim); `jarAt` accepting a folder (the classes claim); the
- * refusal dropping the model's running question, or the routes (the refusal claim).
+ * or Download & Update made the default, or the tooltip promising an update without a jar (the buttons claim); `jarAt`
+ * accepting a folder (the classes claim); the refusal dropping the model's running question, or the routes (the
+ * refusal claim); `whenNoModalDialog` not waiting (the dialog claim); `aModalDialogIsShowing` not seeing one (the
+ * modal claim).
  */
 public class testTheUpdateQuestion
 {
@@ -80,6 +82,12 @@ public class testTheUpdateQuestion
         assertEquals(defaults, Arrays.<Object>asList(download, download), "the default button must be Download, with a"
             + " jar or without: Download & Update closes TrainControl, and a reflex Enter must not do that");
 
+        // And the item's tooltip says what the question will offer (FR-125, 2026-10-13)
+        assertEquals(TrainControlUI.updateItemTooltip(false), I18n.t("ui.main.tooltip.downloadUpdate"), "without a jar"
+            + " the tooltip promises an update the question does not offer");
+        assertEquals(TrainControlUI.updateItemTooltip(true), I18n.t("ui.main.tooltip.downloadAndUpdate"));
+        assertNotEquals(TrainControlUI.updateItemTooltip(true), TrainControlUI.updateItemTooltip(false));
+
         press[0] = 0;
 
         assertEquals(TrainControlUI.askAboutTheUpdate(null, "3.0.2", "3.0.1", true), UpdateChoice.DOWNLOAD);
@@ -93,6 +101,94 @@ public class testTheUpdateQuestion
         press[0] = 2;
 
         assertEquals(TrainControlUI.askAboutTheUpdate(null, "3.0.2", "3.0.1", true), UpdateChoice.CANCEL);
+    }
+
+    /**
+     * The update's exit waits while a modal dialog is open and runs once it has closed; with none open it runs at once
+     * (FR-125, 2026-10-13: a posted exit ran inside a rename dialog and closed it with the typing unapplied).
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheUpdateWaitsForAnOpenDialog() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean showing = new java.util.concurrent.atomic.AtomicBoolean(true);
+        final java.util.concurrent.atomic.AtomicInteger ran = new java.util.concurrent.atomic.AtomicInteger();
+        final boolean[] atOnce = new boolean[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            atOnce[0] = TrainControlUI.whenNoModalDialog(ran::incrementAndGet, showing::get, 50));
+
+        assertFalse(atOnce[0], "the update's exit ran with a modal dialog open");
+
+        Thread.sleep(500);
+
+        assertEquals(ran.get(), 0, "the update's exit ran while the dialog was still open");
+
+        showing.set(false);
+
+        long until = System.currentTimeMillis() + 10000;
+
+        while (ran.get() == 0 && System.currentTimeMillis() < until) Thread.sleep(20);
+
+        Thread.sleep(300);
+
+        assertEquals(ran.get(), 1, "the update's exit did not run, once, after the dialog closed");
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            atOnce[0] = TrainControlUI.whenNoModalDialog(ran::incrementAndGet, () -> false, 50));
+
+        assertTrue(atOnce[0], "with no dialog open the update's exit did not run at once");
+        assertEquals(ran.get(), 2);
+    }
+
+    /**
+     * A real modal dialog on screen is seen, and is not once it has closed.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAModalDialogIsSeen() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("a modal dialog needs a display");
+        }
+
+        assertFalse(TrainControlUI.aModalDialogIsShowing(), "precondition: a modal dialog is already open");
+
+        final javax.swing.JDialog[] dialog = new javax.swing.JDialog[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            dialog[0] = new javax.swing.JDialog((java.awt.Frame) null, "FR-125", true);
+
+            dialog[0].setSize(120, 60);
+        });
+
+        try
+        {
+            // Shown later: a modal setVisible holds the task that calls it until the dialog closes
+            javax.swing.SwingUtilities.invokeLater(() -> dialog[0].setVisible(true));
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!TrainControlUI.aModalDialogIsShowing() && System.currentTimeMillis() < until) Thread.sleep(20);
+
+            assertTrue(TrainControlUI.aModalDialogIsShowing(), "an open modal dialog was not seen, so the update's exit"
+                + " would run inside it");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> dialog[0].dispose());
+        }
+
+        long until = System.currentTimeMillis() + 10000;
+
+        while (TrainControlUI.aModalDialogIsShowing() && System.currentTimeMillis() < until) Thread.sleep(20);
+
+        assertFalse(TrainControlUI.aModalDialogIsShowing(), "a closed dialog still reads as open, so the update would"
+            + " wait for ever");
     }
 
     /**
