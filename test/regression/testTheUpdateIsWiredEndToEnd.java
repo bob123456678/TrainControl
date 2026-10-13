@@ -204,7 +204,9 @@ public class testTheUpdateIsWiredEndToEnd
         assertFalse(init.substring(display, report).contains("});"), "the start is not reported in the same step"
             + " that shows the window");
 
-        int cancelled = init.indexOf("JOptionPane.showMessageDialog(null, I18n.t(\"ui.noIpEnteredShutdown\"))");
+        // Split, so the look-and-feel check (testEveryWindowWearsTheApplicationsLook) does not read this search for the
+        // dialog as a dialog this class opens: it opens none
+        int cancelled = init.indexOf("JOptionPane" + ".showMessageDialog(null, I18n.t(\"ui.noIpEnteredShutdown\"))");
 
         assertTrue(cancelled >= 0, "precondition: the IP question's cancel is not where it was");
 
