@@ -691,7 +691,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * editor and 13 in the autonomy editor (OB-342; Adam, 2026-10-12: *"the min height of the autonomy
      * editor window needs to be a few more pixels taller"*); at 80 it is 5 or more pixels clear at
      * every size.  Both ways of setting the floor add it - `sizeForDiagram`, and the branch for a
-     * window whose size was remembered.
+     * window whose size was remembered.  The floor's width has its own rule, stated at `sizeForDiagram`.
      */
     private static final int EXTRA_MINIMUM_HEIGHT = 80;
 
@@ -6065,6 +6065,17 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      *
      * The minimum is set here rather than beside the preferred size because pack() honours it, and a
      * floor taller than the screen would defeat the cap - hence the clamp on both.
+     *
+     * THE RULE FOR THE FLOOR, in both directions: at its smallest width and its smallest height the
+     * window shows every control, at each diagram size and in each language (OB-342).  The HEIGHT is
+     * `EXTRA_MINIMUM_HEIGHT` over the size's base, and the column of tools and the status line under
+     * the findings fit in it.  The WIDTH is the diagram's 550 and the sidebar, growing with the size,
+     * and what keeps the tools column on screen in it is that nothing of the window's own asks for
+     * more: the column and the sidebar need about 380 pixels together, 376 in German.  A control whose
+     * words are data - the status line under the findings is 521 pixels in English and 655 in German -
+     * has no minimum width and is cut with an ellipsis where the window is narrow, and not the
+     * window's width forced to its sentence, which pushed the whole column off the right edge at the
+     * smallest width (see `AutonomyEditorPanel.banner`).
      */
     private void sizeForDiagram()
     {
@@ -6185,10 +6196,14 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 // one place the taller minimum would otherwise not reach - the form is generated and
                 // cannot be edited by hand.
                 // Plus the sidebar, which is new since those bounds were remembered: without it the
-                // floor is a width the diagram used to have all of and now has to share.
+                // floor is a width the diagram used to have all of and now has to share.  Once, and
+                // not on top of a floor that has it already: a window that has been through
+                // `sizeForDiagram` has the sidebar in its floor, and adding it again made the floor 150
+                // pixels wider (OB-342).  So the floor is the diagram's own 550 and the sidebar, or what
+                // it is already if that is wider.
                 int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
 
-                this.setMinimumSize(new Dimension(getMinimumSize().width + sideways,
+                this.setMinimumSize(new Dimension(Math.max(getMinimumSize().width, 550 + sideways),
                     Math.max(getMinimumSize().height, 650 + EXTRA_MINIMUM_HEIGHT)));
             }
 

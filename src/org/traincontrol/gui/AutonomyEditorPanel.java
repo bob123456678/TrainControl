@@ -183,7 +183,23 @@ public class AutonomyEditorPanel extends JPanel
         return component;
     }
 
-    private final JLabel banner = new JLabel();
+    /**
+     * The verdict and the count, on the one line under the findings.
+     *
+     * ITS WORDS ARE DATA, so it may be given less width than they need (OB-342).  A label asks for the width of its text
+     * as its minimum, and the sentence is 521 pixels in English and 655 in German: the window's layout took that as the
+     * least it could be, 839 and 1004 pixels with the sidebar, and at the window's smallest width the whole tools column
+     * was pushed off its right edge.  With no minimum width the line is cut with an ellipsis where the window is narrow,
+     * and its tooltip has the whole of it (see `refresh`).
+     */
+    private final JLabel banner = new JLabel()
+    {
+        @Override
+        public java.awt.Dimension getMinimumSize()
+        {
+            return new java.awt.Dimension(0, super.getMinimumSize().height);
+        }
+    };
     private final JLabel hint = new JLabel();
     private final DefaultListModel<String> findingsModel = new DefaultListModel<>();
     private final JList<String> findings = new JList<>(findingsModel);
@@ -10637,6 +10653,9 @@ public class AutonomyEditorPanel extends JPanel
             banner.setBackground(warningRows.size() > 0
                 ? new java.awt.Color(255, 240, 200) : new java.awt.Color(214, 245, 214));
         }
+
+        // THE WHOLE SENTENCE, for where the window is too narrow to show it (OB-342)
+        banner.setToolTipText(banner.getText());
 
         if (!selection.isEmpty())
         {

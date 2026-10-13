@@ -30,8 +30,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * In both editors, because the plain one is where the column is right, and it has to stay right.
  *
- * And the column is all there at the window's smallest height (OB-342): the floor under that height is what shows its
- * last control.
+ * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
+ * status line that does not ask the window for its sentence's width keeps the column on the screen.
  *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
  *
@@ -149,68 +149,80 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The autonomy editor, shrunk as far as it will go, still shows every control (OB-342; Adam, 2026-10-12: *"It looks like
-     * the min height of the autonomy editor window needs to be a few more pixels taller"*).
+     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam,
+     * 2026-10-12: *"It looks like the min height of the autonomy editor window needs to be a few more pixels taller"*).
      *
-     * At Small, the window would shrink to 680 pixels and the column of tools needs 693 to show Cancel, the last control in
-     * it, and the status line under the findings (measured at 100% display scaling).  Asked at each of the three diagram
-     * sizes (Small, Medium, Large: the floor grows with the size), of every control outside the scroll panes, as wide as
-     * the layout needs so that the question is only about the height.
+     * HEIGHT: at Small the window would shrink to 680 pixels and the column of tools needs 693 to show Cancel, the last
+     * control in it, and the status line under the findings (measured at 100% display scaling).
      *
-     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, and this fails.
+     * WIDTH: the status line is a label whose words are data, and its minimum width was its text's: 521 pixels in English
+     * and 655 in German, so the window's layout would not go below 839 and 1004 with the sidebar and the whole tools column
+     * went off the right edge at the smallest width, which is 700 at Small and 806 at Medium.  So the sentence here is one
+     * longer than any language's, put into the line, and the claim does not depend on the words of the railway it is asked
+     * about.
+     *
+     * Asked at each of the three diagram sizes (Small, Medium, Large: the floor grows with the size), of every control
+     * outside the scroll panes.
+     *
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, or give the status line in `AutonomyEditorPanel` its
+     * text's width as its minimum again, and this fails.
      *
      * @throws Exception from the event thread or reflection
      */
     @Test
-    public void testTheAutonomyEditorShowsEveryControlAtItsSmallestHeight() throws Exception
+    public void testTheAutonomyEditorShowsEveryControlAtItsSmallestSize() throws Exception
     {
-        assertNothingIsCutOffAtTheSmallestHeight(true);
+        assertNothingIsCutOffAtTheSmallestSize(true);
     }
 
     /**
      * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels (OB-342).
      *
-     * MUTATION: as above.
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` back to 50, and this fails.
      *
      * @throws Exception from the event thread or reflection
      */
     @Test
-    public void testTheTrackEditorShowsEveryControlAtItsSmallestHeight() throws Exception
+    public void testTheTrackEditorShowsEveryControlAtItsSmallestSize() throws Exception
     {
-        assertNothingIsCutOffAtTheSmallestHeight(false);
+        assertNothingIsCutOffAtTheSmallestSize(false);
     }
 
-    private static void assertNothingIsCutOffAtTheSmallestHeight(boolean autonomy) throws Exception
+    /** A status sentence longer than any language's: 521 pixels is English and 655 German, and this is over 900 */
+    private static final String A_STATUS_LONGER_THAN_ANY_LANGUAGES = "This setup will run, with warnings.  13 of 33 stations"
+        + " can be chosen in full autonomy, and the others are held back for reasons that the findings above give one at a time.";
+
+    private static void assertNothingIsCutOffAtTheSmallestSize(boolean autonomy) throws Exception
     {
         int examined = 0;
 
         for (int size : new int[] {30, 46, 60})
         {
-            int[] floor = new int[1];
+            int[] floor = new int[2];
 
-            java.util.List<String> cut = cutOffAtTheSmallestHeight(autonomy, size, floor);
+            java.util.List<String> cut = cutOffAtTheSmallestSize(autonomy, size, floor);
 
             // A floor the screen holds down cannot be raised, and says nothing about the floor
             if (cut == null) continue;
 
             examined++;
 
-            assertTrue(cut.isEmpty(), "at its smallest height - " + floor[0] + " pixels, at diagram size " + size + " - the "
-                + (autonomy ? "autonomy" : "track diagram") + " editor cuts off controls, and nothing in the window can bring"
-                + " them back (OB-342" + (autonomy ? ", \"the min height of the autonomy editor window needs to be a few more"
-                + " pixels taller\"" : ", the same floor") + "): " + cut);
+            assertTrue(cut.isEmpty(), "at its smallest size - " + floor[0] + " by " + floor[1] + " pixels, at diagram size "
+                + size + " - the " + (autonomy ? "autonomy" : "track diagram") + " editor cuts off controls, and nothing in"
+                + " the window can bring them back (OB-342" + (autonomy ? ", \"the min height of the autonomy editor window"
+                + " needs to be a few more pixels taller\"" : ", the same floor") + "): " + cut);
         }
 
-        if (examined == 0) throw new SkipException("the screen is too short for the editor's smallest height at any size");
+        if (examined == 0) throw new SkipException("the screen is too small for the editor's smallest size at any diagram size");
     }
 
     /**
-     * What an editor's window cuts off of its controls once it is shrunk to its smallest height, each as "Cancel: 13 of 23
-     * pixels"; null where the screen's height, not the editor's own floor, is what held the floor down.
+     * What an editor's window cuts off of its controls once it is shrunk to its smallest size, each as "Cancel: 13 of 23
+     * pixels high"; null where the screen, not the editor's own floor, is what held the floor down.
      *
-     * @param floor receives the smallest height the window allowed
+     * @param floor receives the smallest width and height the window allowed
      */
-    private static java.util.List<String> cutOffAtTheSmallestHeight(final boolean autonomy, final int size, final int[] floor)
+    private static java.util.List<String> cutOffAtTheSmallestSize(final boolean autonomy, final int size, final int[] floor)
     throws Exception
     {
         final LayoutEditor[] built = new LayoutEditor[1];
@@ -234,17 +246,20 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
                 {
                     LayoutEditor editor = built[0];
 
+                    // The words are the railway's and the language's; the window is asked about the longest there could be
+                    if (autonomy) editor.getAutonomyPanel().getBanner().setText(A_STATUS_LONGER_THAN_ANY_LANGUAGES);
+
                     java.awt.GraphicsConfiguration screen = editor.getGraphicsConfiguration();
 
                     java.awt.Insets taskbar = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(screen);
 
-                    floor[0] = editor.getMinimumSize().height;
+                    floor[0] = editor.getMinimumSize().width;
+                    floor[1] = editor.getMinimumSize().height;
 
-                    heldDown[0] = floor[0] >= screen.getBounds().height - taskbar.top - taskbar.bottom;
+                    heldDown[0] = floor[0] >= screen.getBounds().width - taskbar.left - taskbar.right
+                        || floor[1] >= screen.getBounds().height - taskbar.top - taskbar.bottom;
 
-                    // As wide as the layout needs, so that the width is not what cuts a control off
-                    editor.setSize(Math.max(editor.getMinimumSize().width, editor.getContentPane().getMinimumSize().width + 40),
-                        floor[0]);
+                    editor.setSize(editor.getMinimumSize());
 
                     editor.validate();
 
@@ -289,10 +304,19 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
             {
                 javax.swing.JComponent each = (javax.swing.JComponent) child;
 
-                int missing = each.getHeight() - each.getVisibleRect().height;
+                java.awt.Rectangle shown = each.getVisibleRect();
 
-                if (missing > 0) out.add(child.getClass().getSimpleName() + (text == null ? "" : " '" + text + "'") + ": "
-                    + missing + " of " + each.getHeight() + " pixels");
+                int high = each.getHeight() - shown.height;
+                int wide = each.getWidth() - shown.width;
+
+                if (high > 0 || wide > 0)
+                {
+                    out.add(child.getClass().getSimpleName() + (text == null ? "" : " '"
+                        + (text.length() > 30 ? text.substring(0, 30) + "..." : text) + "'") + ": "
+                        + (high > 0 ? high + " of " + each.getHeight() + " pixels high" : "")
+                        + (high > 0 && wide > 0 ? ", " : "")
+                        + (wide > 0 ? wide + " of " + each.getWidth() + " pixels wide" : ""));
+                }
             }
 
             // The controls inside a control are its own, and a scroll pane has a way to reach what it holds
