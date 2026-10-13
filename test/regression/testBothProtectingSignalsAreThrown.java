@@ -13,6 +13,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -1622,12 +1623,18 @@ public class testBothProtectingSignalsAreThrown
         return Arrays.asList(read);
     }
 
-    /** What every reading of `raceTheRefresh` is: GREEN and held GREEN as the train sets off, and GREEN after the refresh */
+    /**
+     * What every reading of `raceTheRefresh` is: GREEN and held GREEN as the train sets off, GREEN after the refresh, and
+     * the departure's GREEN sent only once its hold could be read
+     */
     private static final String STAYS_GREEN = "GREEN, the train holding the platform, held GREEN; after the other thread's"
-        + " refresh: GREEN, the train holding the platform";
+        + " refresh: GREEN, the train holding the platform; the GREEN commanded with its hold readable";
 
     /** How long any one step of `raceTheRefresh` may wait, so that a wrong answer is a failure and never a hang */
     private static final long RACE_BOUND_MS = 20000;
+
+    /** How long the whole departure of `raceTheRefresh` may take: each step it can wait for, and then some */
+    private static final long DEPARTURE_BOUND_MS = 3 * RACE_BOUND_MS;
 
     /**
      * A protection refresh on another train's thread that has read the holds BEFORE a departure claims its route does not
@@ -1636,14 +1643,15 @@ public class testBothProtectingSignalsAreThrown
      * step against the departure's GREEN, so it either commands first and the GREEN lands last, or reads the hold.
      *
      * MUTATION: take the signal's lock out of `Layout.refreshOneSignal`, or out of the departure's GREEN in
-     * `configureAndLockPath`, and the forced reading goes RED after the refresh.
+     * `configureAndLockPath`, and the forced reading goes RED after the refresh; command that GREEN before the claim and
+     * the first edge are taken, and the GREEN is sent before its hold can be read.
      *
      * @throws Exception from the run
      */
     @Test
     public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff() throws Exception
     {
-        assertEquals(Arrays.asList(raceTheRefresh(true, false), raceTheRefresh(false, false)), Arrays.asList(
+        assertEquals(Arrays.asList(raceTheRefresh(true, false, false), raceTheRefresh(false, false, false)), Arrays.asList(
             "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform, the"
             + " leaving train's exit guard, as it sets off and once another thread's refresh of it is done - that refresh"
             + " forced to read the holds before the claim and to finish after the departure, and then made after the claim"
@@ -1660,11 +1668,50 @@ public class testBothProtectingSignalsAreThrown
     @Test
     public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOn() throws Exception
     {
-        assertEquals(Arrays.asList(raceTheRefresh(true, true), raceTheRefresh(false, true)), Arrays.asList(
+        assertEquals(Arrays.asList(raceTheRefresh(true, true, false), raceTheRefresh(false, true, false)), Arrays.asList(
             "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform, the"
             + " leaving train's exit guard, as it sets off and once another thread's refresh of it is done - that refresh"
             + " forced to read the holds before the claim and to finish after the departure, and then made after the claim"
             + " (RSA67-C1)");
+    }
+
+    /**
+     * The same where the first edge out commands the shared guard GREEN itself, as a route out does its exit signal, with
+     * Atomic Routes off: the edge's own command is held as the exit guards are, so it too is sent under the signal's lock
+     * once the edge is taken (RSA67-C1, OB-340).
+     *
+     * MUTATION: take the signal's lock out of `Layout.configureEdge`'s command, and the forced reading goes RED after the
+     * refresh.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff()
+        throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, false, true), raceTheRefresh(false, false, true)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform that the"
+            + " leaving train's first edge commands GREEN, as it sets off and once another thread's refresh of it is done -"
+            + " that refresh forced to read the holds before the claim and to finish after the departure, and then made"
+            + " after the claim (RSA67-C1)");
+    }
+
+    /**
+     * The same with Atomic Routes on (RSA67-C1, OB-340).
+     *
+     * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff`.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOn()
+        throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, true, true), raceTheRefresh(false, true, true)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform that the"
+            + " leaving train's first edge commands GREEN, as it sets off and once another thread's refresh of it is done -"
+            + " that refresh forced to read the holds before the claim and to finish after the departure, and then made"
+            + " after the claim (RSA67-C1)");
     }
 
     /**
@@ -1678,12 +1725,18 @@ public class testBothProtectingSignalsAreThrown
      * the claim, and finishes after the GREEN unless the departure waits for it.  Unforced, the same refresh is made on
      * the departing thread at the hand-over, after the claim.
      *
+     * Every GREEN the departure sends `near` before its hand-over is checked against the holds as it is sent, through the
+     * control station's sent-message observer.  The departure runs on a thread of its own, joined with a bound, so that
+     * a refresh that came to wait for the railway's monitor fails here rather than hanging the class.
+     *
      * @param forced whether the refresh straddles the claim
      * @param atomic Atomic Routes
-     * @return the guard as `aspectOver` reads it, with the setting the paths hold it at, as the train sets off; and as
-     *         `aspectOver` reads it once the refresh is done
+     * @param edgeCommandsIt whether the first edge out commands `near` GREEN itself, rather than the departure adding it
+     *        as an exit guard of RR S
+     * @return the guard as `aspectOver` reads it, with the setting the paths hold it at, as the train sets off; as
+     *         `aspectOver` reads it once the refresh is done; and whether the GREEN was sent with its hold readable
      */
-    private String raceTheRefresh(final boolean forced, boolean atomic) throws Exception
+    private String raceTheRefresh(final boolean forced, boolean atomic, boolean edgeCommandsIt) throws Exception
     {
         String[] names = {"RR S", "RR M", "RR N", "RR P", "RR X", "RR Y"};
 
@@ -1712,6 +1765,8 @@ public class testBothProtectingSignalsAreThrown
         path.add(layout.createEdge("RR S", "RR M"));
         path.add(layout.createEdge("RR M", "RR N"));
 
+        if (edgeCommandsIt) path.get(0).addConfigCommand(near.getName(), Accessory.accessorySetting.GREEN);
+
         final Locomotive leaving = model.getLocByName(model.getLocList().get(0));
         final Locomotive other = model.getLocByName(model.getLocList().get(1));
 
@@ -1723,6 +1778,8 @@ public class testBothProtectingSignalsAreThrown
         final java.util.concurrent.CountDownLatch letTheRefreshGo = new java.util.concurrent.CountDownLatch(1);
         final Thread[] refresher = {null};
         final String[] read = {"not read", "not read", "not refreshed"};
+        final java.util.concurrent.atomic.AtomicBoolean handedOver = new java.util.concurrent.atomic.AtomicBoolean();
+        final List<String> greens = new java.util.concurrent.CopyOnWriteArrayList<>();
 
         // The other train's one held edge: on the refresh's thread, the first walk of its commands waits
         Edge held = new Edge(layout.getPoint("RR X"), layout.getPoint("RR Y"))
@@ -1759,6 +1816,8 @@ public class testBothProtectingSignalsAreThrown
 
         leaving.setCallback(Layout.CB_ROUTE_START, l ->
         {
+            handedOver.set(true);
+
             java.util.Map<Accessory, Boolean> holds = layout.getActiveAccSettings();
 
             read[0] = aspectOver(layout, "RR S", leaving, near) + ", " + (!holds.containsKey(near) ? "not held"
@@ -1787,9 +1846,34 @@ public class testBothProtectingSignalsAreThrown
             startWas.accept(l);
         });
 
-        Thread watcher = null;
+        final Object[] ran = {"not finished"};
 
-        boolean ran;
+        final Thread departing = new Thread(() ->
+        {
+            try
+            {
+                ran[0] = layout.executePath(path, leaving, 30, null);
+            }
+            catch (Throwable e)
+            {
+                ran[0] = e;
+            }
+        }, "RSA67-C1 departure");
+
+        departing.setDaemon(true);
+
+        // Each GREEN of the guard the departure sends before its hand-over, and whether the holds already had it then
+        model.setSentMessageObserver(m ->
+        {
+            if (Thread.currentThread() != departing || handedOver.get()) return;
+
+            if (!Integer.valueOf(CS2Message.CMD_ACC_SWITCH).equals(m.getCommand()) || m.extractUID() != near.getUID()
+                || m.getData().length < 5 || m.getData()[4] != 1) return;
+
+            greens.add(Boolean.FALSE.equals(layout.getActiveAccSettings().get(near)) ? "held" : "not yet held");
+        });
+
+        Thread watcher = null;
 
         try
         {
@@ -1803,8 +1887,6 @@ public class testBothProtectingSignalsAreThrown
                     "precondition: the other thread's refresh must be reading the holds before the claim");
 
                 // Lets the refresh go once the departure is waiting for it, where it can never reach its hand-over
-                final Thread departing = Thread.currentThread();
-
                 watcher = new Thread(() ->
                 {
                     long until = System.currentTimeMillis() + RACE_BOUND_MS;
@@ -1831,10 +1913,13 @@ public class testBothProtectingSignalsAreThrown
                 watcher.start();
             }
 
-            ran = layout.executePath(path, leaving, 30, null);
+            departing.start();
+            departing.join(DEPARTURE_BOUND_MS);
         }
         finally
         {
+            model.setSentMessageObserver(null);
+
             letTheRefreshGo.countDown();
 
             leaving.setCallback(Layout.CB_ROUTE_START, startWas);
@@ -1851,14 +1936,22 @@ public class testBothProtectingSignalsAreThrown
 
             held.setUnoccupied();
 
-            for (String name : names) layout.getPoint(name).setLocomotive(null);
+            // Not while a departure is stuck: clearing a platform asks the guard, and may wait on what it holds
+            if (!departing.isAlive()) for (String name : names) layout.getPoint(name).setLocomotive(null);
         }
 
-        assertTrue(ran, "the dispatch did not complete, so nothing tests anything");
+        assertFalse(departing.isAlive(), "the departure did not finish within " + DEPARTURE_BOUND_MS + " ms - it is waiting"
+            + " for something that waits for it, as a refresh needing the railway's monitor would");
+
+        assertEquals(ran[0], Boolean.TRUE, "the dispatch did not complete, so nothing tests anything");
 
         assertEquals(read[2], "refreshed", "the other thread's refresh must have run to its end");
 
-        return (forced ? "forced: " : "after the claim: ") + read[0] + "; after the other thread's refresh: " + read[1];
+        String green = greens.isEmpty() ? "no GREEN commanded" : greens.contains("not yet held")
+            ? "a GREEN commanded before its hold was readable " + greens : "the GREEN commanded with its hold readable";
+
+        return (forced ? "forced: " : "after the claim: ") + read[0] + "; after the other thread's refresh: " + read[1]
+            + "; " + green;
     }
 
     /**

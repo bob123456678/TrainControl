@@ -3907,7 +3907,16 @@ public class Layout
                     state.toString().toLowerCase()
                 );
 
-                if (!acc.setState(state))
+                boolean commanded;
+
+                // UNDER THE ACCESSORY'S SIGNAL LOCK, as the exit guards are: the edge is taken, so its hold is readable,
+                // and a refresh that read the holds before that has commanded already (RSA67-C1, `signalLocks`)
+                synchronized (this.signalLock(acc))
+                {
+                    commanded = acc.setState(state);
+                }
+
+                if (!commanded)
                 {
                     // This should never happen - but if it does the accessory was not commanded, so
                     // the edge is not configured and the caller must not release the locomotive
@@ -11955,21 +11964,22 @@ public class Layout
      * A refresh need not hold the railway's monitor - the early release on another train's thread, an arrival's re-stand,
      * a placement by hand - so one that had read the holds could command RED after a departure claimed its route and set
      * a shared guard GREEN: RED in front of the leaving train, held GREEN, until the next change of occupancy.
-     * `refreshOneSignal` holds this from its read to its command; `configureAndLockPath` holds it to command a first
-     * edge's exit guards GREEN, once its claim and that edge make the hold readable.
+     * `refreshOneSignal` holds this from its read to its command; a departure holds it to command each accessory of an
+     * edge it has taken (`configureEdge`) and the exit guards its first edge sets GREEN (`configureAndLockPath`), once
+     * its claim and that edge make the hold readable.
      *
      * Taken last: under it only what a refresh took anyway - the edges' monitors, the accessory database's, and the
-     * signal's command (the accessory's monitor, then the window's in `repaintSwitch`).  So a thread waits here for one
-     * refresh or one GREEN of the same signal, never for a sleep.  Per signal rather than one for all, because the window
-     * can reach a refresh holding its own monitor: one lock for every signal would have it wait on another signal's
-     * command, which waits for the window.
+     * signal's command (the accessory's monitor, `Locomotive.accessoryMonitor`, the window's monitor in `repaintSwitch`,
+     * and `NetworkProxy`'s as it sends).  So a thread waits here for one refresh or one command of the same signal,
+     * never for a sleep.  Per signal rather than one for all, because the window can reach a refresh holding its own
+     * monitor: one lock for every signal would have it wait on another signal's command, which waits for the window.
      */
     private final Map<Accessory, Object> signalLocks = new ConcurrentHashMap<>();
 
     /**
-     * The lock of one signal (RSA67-C1): see `signalLocks`.
+     * The lock of one signal, or of any accessory a path commands (RSA67-C1): see `signalLocks`.
      *
-     * @param signal the signal
+     * @param signal the accessory
      * @return its lock, the same object for every caller
      */
     private Object signalLock(Accessory signal)
