@@ -404,6 +404,16 @@ Adam, 2026-10-12: *"It looks like the min height of the autonomy editor window n
 
 **For v3.0.1**, on Adam's word.  The editor's floor is set in `LayoutEditor`: `sizeForDiagram` for a page with no remembered size (630 plus `EXTRA_MINIMUM_HEIGHT`, 50, plus more at the larger sizes) and 650 plus 50 for a remembered one.  Wanted: at its smallest, the autonomy editor shows all of its controls.
 
+### OB-343 - 2026-10-12 - for 3.0.1: a train paused from its Auto tab card goes again after the Is Active tick is used on another train
+
+**Kind:** bug  
+**Raised from:** FR-126's build, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Found by FR-126's build, 2026-10-12.  The Auto tab card's pause button changes the train alone (its `autonomyPaused` flag); the setup's list of paused trains learns of it later.  The `Is Active` tick, on any train, goes through the door that writes the train and the list together and tells the window the railway's pauses and the setup's agree (`notePausesAsBuilt`); the rebuild it asks for then takes the setup's list as the word on every train.  So: pause train A with its card's button, tick `Is Active` off on train B, and at the rebuild A is set going again, though nobody asked.  FR-126's bulk tools avoid it by writing every standing train through the door.
+
+**For v3.0.1** (Adam, 2026-10-12: *"Everything is the next release unless I specify one."*).  Wanted: a train paused from its card stays paused whatever is done to another train.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
