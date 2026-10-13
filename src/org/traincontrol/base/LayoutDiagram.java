@@ -189,7 +189,42 @@ public class LayoutDiagram
     
     public void checkBounds()
     {
-        if (IGNORE_PADDING && !edit)
+        int[] bounds = boundsFor(edit);
+
+        minx = bounds[0];
+        miny = bounds[1];
+        maxx = bounds[2];
+        maxy = bounds[3];
+    }
+
+    /**
+     * Whether the running diagram draws this square: the part of the page its components cover, whatever mode the page is in
+     * (AD-C6).  In edit mode the page's own bounds are the whole page, and a caption - which is not a component - filed
+     * on a square outside what the components cover is drawn in the editor and never when trains run.
+     *
+     * @param x the column
+     * @param y the row
+     * @return true when the running grid draws it
+     */
+    public boolean isDrawnWhenRunning(int x, int y)
+    {
+        int[] bounds = boundsFor(false);
+
+        return x >= bounds[0] && x <= bounds[2] && y >= bounds[1] && y <= bounds[3];
+    }
+
+    /**
+     * The bounds of what is drawn, as {first column, first row, last column, last row}.
+     *
+     * @param editing whether the page is drawn for editing, when the whole page is
+     * @return the bounds
+     */
+    private int[] boundsFor(boolean editing)
+    {
+        int minx;
+        int miny;
+
+        if (IGNORE_PADDING && !editing)
         {
             minx = sx;
             miny = sy;
@@ -200,18 +235,18 @@ public class LayoutDiagram
             miny = 0;
         }
         
-        maxx = 0;
-        maxy = 0;
+        int maxx = 0;
+        int maxy = 0;
         
         for (int x = 0; x < sx; x++)
         {            
             for (int y = 0; y < sy; y++)
             {
-                if (this.getComponent(x, y) != null || edit) // This will persist the grid in edit mode
+                if (this.getComponent(x, y) != null || editing) // This will persist the grid in edit mode
                 {
                     if (x < minx)
                     {
-                        if (IGNORE_PADDING && !edit)
+                        if (IGNORE_PADDING && !editing)
                         {
                             minx = x;
                         }
@@ -219,7 +254,7 @@ public class LayoutDiagram
                     
                     if (y < miny)
                     {
-                        if (IGNORE_PADDING && !edit)
+                        if (IGNORE_PADDING && !editing)
                         {
                             miny = y;
                         }
@@ -249,6 +284,8 @@ public class LayoutDiagram
         // down to them.
         if (maxx < minx) minx = 0;
         if (maxy < miny) miny = 0;
+
+        return new int[] {minx, miny, maxx, maxy};
     }
 
     public int getSx()

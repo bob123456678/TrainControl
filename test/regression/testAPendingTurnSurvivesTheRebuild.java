@@ -1001,6 +1001,137 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
+     * A pop-up diagram follows a caption that is taken off, and stops writing the station into it (OB-341).
+     *
+     * `autonomySetupChanged` brought the main window's diagram into step with the setup and left the pop-ups alone - they
+     * were refreshed by the track editor and the address switch only - and a pop-up's caption labels are registered under
+     * its own owner, so the main window's rebuild never let go of them: the pop-up went on showing the caption, and
+     * `updateStationLabels` went on writing the station's live text into it, until the page was changed or the window
+     * opened again.  "Stop Showing" is the remedy the setup check's duplicate-caption error asks for.
+     *
+     * MUTATION: leave the pop-ups out of `autonomySetupChanged`, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAPopUpFollowsACaptionThatIsTakenOff() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
+        org.traincontrol.automationui.TileGraph.TileKey found = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
+                || ui.getLayoutStations(square).isEmpty())
+            {
+                continue;
+            }
+
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
+
+            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
+            {
+                found = square;
+                drawnAt = drawn.get(0);
+                break;
+            }
+        }
+
+        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+
+        final org.traincontrol.automationui.TileGraph.TileKey station = found;
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
+
+        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+
+        try
+        {
+            pump();
+            pump();
+
+            assertTrue(labelsInPopup(station, popup) > 0, "precondition: the pop-up draws no caption of " + station);
+
+            // TAKEN OFF through the editor's door, and the window told as the editor tells it
+            session.setCaption(square, null);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            for (int i = 0; i < 20; i++) pump();
+
+            assertEquals(labelsInPopup(station, popup), 0, "the pop-up still holds a caption of " + station + " that was taken"
+                + " off the setup, and goes on writing the station into it");
+        }
+        finally
+        {
+            session.setCaption(square, station);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+
+            pump();
+        }
+    }
+
+    /** How many of the station's registered caption labels sit inside this pop-up. */
+    private static int labelsInPopup(final org.traincontrol.automationui.TileGraph.TileKey station,
+        final org.traincontrol.gui.LayoutPopupUI popup) throws Exception
+    {
+        final int[] count = new int[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (javax.swing.JLabel label : ui.getLayoutStations(station))
+            {
+                if (javax.swing.SwingUtilities.isDescendingFrom(label, popup)) count[0]++;
+            }
+        });
+
+        return count[0];
+    }
+
+    /** The Medium button's pop-up of the page shown, once it is up. */
+    private static org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    {
+        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
+        buttonField.setAccessible(true);
+
+        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+
+        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
+
+        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
+
+        for (long end = System.currentTimeMillis() + 15000; System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                    Thread.sleep(1500);
+
+                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                }
+            }
+        }
+
+        org.testng.Assert.fail("the Medium button opened no pop-up window");
+
+        return null;
+    }
+
+    /**
      * A station on the page shown that the window draws a caption for.
      *
      * @return its square

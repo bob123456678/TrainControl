@@ -71,6 +71,7 @@ public class AutonomyChecks
         private final int detail;
         private final int third;
         private final List<TileKey> related;
+        private TileKey about;
 
         Finding(Severity severity, String messageKey, String subject, TileKey tile)
         {
@@ -174,6 +175,33 @@ public class AutonomyChecks
         }
 
         /**
+         * The square the finding is ABOUT, which is the one a sentence names as `{0}` (OB-341).
+         *
+         * Where a finding is filed - and counted, and clicked to - may be another square than the one it is about: a station
+         * whose name is drawn twice on another page is about the station, and filed on the first of the squares it is drawn
+         * on, which is where the reader has to look.
+         *
+         * @return the square it is about; its own square unless it was given another
+         */
+        public TileKey getAbout()
+        {
+            return about != null ? about : tile;
+        }
+
+        /**
+         * Says what the finding is about, where that is not the square it is filed on.
+         *
+         * @param station the square it is about
+         * @return this finding
+         */
+        Finding about(TileKey station)
+        {
+            this.about = station;
+
+            return this;
+        }
+
+        /**
          * A message bundle key, so presentation stays with whatever is presenting.
          * @return
          */
@@ -264,8 +292,9 @@ public class AutonomyChecks
      * page what is going on on another."*): a caption beside the station on each of two pages is nothing to report.
      *
      * An ERROR, as an unlabelled station is: both are a station the diagram cannot be read by.  One finding per station,
-     * on its own square, with the squares of the pages that draw its name more than once as its related ones and their
-     * number as its count.
+     * filed on the first square its name is drawn twice on - so it is counted for that page and a click goes to it - and
+     * ABOUT the station (`Finding.getAbout`), with the squares of the pages that draw its name more than once as its
+     * related ones and their number as its count (OB-341).
      */
     public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
 
@@ -687,10 +716,11 @@ public class AutonomyChecks
     /**
      * An ERROR per station whose name the track diagram draws in more than one place (OB-341).
      *
-     * On the station's own square, so a click goes to it and outlines the squares it is drawn on, which are the finding's
-     * related ones.  The subject is those squares in words - "(6,16) and (8,16)" - with the page added to one on a page other than
-     * the station's, as its coordinates alone would be a square of the station's own.  The station's name is the sentence's
-     * {0}, as for every finding with a square.
+     * Filed on the first of the squares it is drawn twice on, in reading order, so that the editor counts it for the page
+     * that shows it and a click goes where the squares to look at are, which are the finding's related ones; and ABOUT the
+     * station, whose name is the sentence's {0} (OB-341).  The subject is those squares in words - "(6,16) and (8,16)" -
+     * with the page added to one on a page other than the station's, as its coordinates alone would be a square of the
+     * station's own.
      *
      * @param shown each station's square, to the squares of the pages that draw its name more than once
      * @return the findings
@@ -709,8 +739,8 @@ public class AutonomyChecks
                     ? square.getX() + "," + square.getY() : GraphReducer.generatedName(square)) + ")");
             }
 
-            findings.add(new Finding(Severity.ERROR, STATION_NAMED_TWICE, andJoined(squares), station.getKey(),
-                station.getValue().size(), 0, 0, station.getValue()));
+            findings.add(new Finding(Severity.ERROR, STATION_NAMED_TWICE, andJoined(squares), station.getValue().get(0),
+                station.getValue().size(), 0, 0, station.getValue()).about(station.getKey()));
         }
 
         return findings;
@@ -1296,10 +1326,10 @@ public class AutonomyChecks
     /**
      * A station’s caption and the user’s own writing on the same square.
      *
-     * The square belongs to the diagram, because the diagram is the user’s drawing before it is
-     * autonomy’s data - so the text is what gets drawn and the caption is what is hidden.  Nothing is
-     * deleted either way: this says which station has gone quiet and where, and the answer is to move
-     * one of the two.
+     * The grid draws the CAPTION and not the text, and has since captions became autonomy’s (MT-017): a caption is
+     * drawn wherever the setup puts it, and the user’s own text is written only on a square with none.  So it is the
+     * text that is hidden.  Nothing is deleted either way: this says which text has gone quiet and where, and the answer is
+     * to move the caption or clear the text.  The editor asks before it puts a caption over text, naming the text.
      *
      * It became possible to say at all only once a caption stopped BEING text.  While it was a label,
      * the two could not share a square: writing one over the other simply destroyed it.

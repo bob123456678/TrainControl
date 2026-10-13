@@ -889,14 +889,21 @@ something major."*), and then the editor, which he ruled should go the same way.
 A setup file edited by hand, or written by an older version, can still carry more than one on a page.  A station
 captioned on its own square and beside it on that page is drawn once, the beside one, and is no error; one on each of
 two pages is drawn on both.  Two captions beside it on one page are two names, and the setup check calls that an error
-(OB-341), naming the station and those squares.  A caption on a page left out of autonomy, or on a page that is gone, is
-drawn nowhere and counts for nothing.
+(OB-341), naming the station and those squares: the finding is filed on the first of them, so it is counted for that page
+and a click goes there.  What counts is what the diagram draws.  A caption on a page left out of autonomy, or on a page
+that is gone, is drawn nowhere, so it neither counts toward the duplicate check nor makes a station's own caption give
+way - but it still counts as the station being shown somewhere, so the unlabelled-station error stays quiet for it.  A
+station that is unnamed and switched off is drawn nowhere either, and is not reported.  A station the railway built no
+Point for is drawn all the same, and is.
 
-**A caption may sit on blank space, and it may not sit under your own text.**  Text you have written
-on a square wins, so a caption there would be invisible; the editor says so and offers to replace it
-rather than doing so silently.  Deleting the square a caption sits on takes the caption with it, and
-deleting the STATION takes every caption naming it - text pointing at track that no longer exists is
-the orphan this design removed.
+**A caption may sit on blank space, and over your own text it hides it.**  A caption is drawn on its square whatever
+else is written there, and the text you wrote on that square is not shown, though it is kept; the editor asks before it
+puts a caption over text, naming the text, and the setup check warns about each such square (a warning, not an error).
+A caption goes only on a square the running diagram draws, which is the part of the page its components cover and not
+the blank margin the editor shows around it: Show a Station Name Here is greyed there, with the reason on its tooltip,
+Control+N does nothing and a dragged label is refused.  Deleting the square a caption sits on takes the caption with it,
+and deleting the STATION takes every caption naming it - text pointing at track that no longer exists is the orphan this
+design removed.
 
 **Why a station with no train reads as an em dash and not as its name**: the caption is about the
 station's state, and "empty" is a state.  That is also why an unlabelled square captioning an empty

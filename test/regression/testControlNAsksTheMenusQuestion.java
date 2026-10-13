@@ -67,7 +67,7 @@ public class testControlNAsksTheMenusQuestion
             // AND THE SQUARES THE MENU SENDS TO ITS TEXT MENU (MFV-C3): a label and an empty square, which carry no
             // track - an empty square counts as ignored, so a predicate that asked `isIgnored` before the text branch
             // would refuse the very square a station name is usually put on, and the two squares above would not see it.
-            for (TileKey square : new TileKey[] { new TileKey("main", 3, 3), new TileKey("main", 9, 2) })
+            for (TileKey square : new TileKey[] { new TileKey("main", 3, 3), new TileKey("main", 4, 2) })
             {
                 javax.swing.JPopupMenu there = panel.buildTileMenu(square, null);
 
@@ -221,6 +221,11 @@ public class testControlNAsksTheMenusQuestion
             assertEquals(session.getCaptionTarget(here), other, "Show a Station Name Here took the only name another"
                 + " station had off the diagram without asking, or after being answered No (GSE-C5)");
 
+            // AND IT SAYS THE STATION IS LEFT OFF THE DIAGRAM, which Yes does: this is its only name anywhere (OB-341)
+            assertEquals(AutonomyEditorPanel.takeAnotherNameQuestionForTests(),
+                I18n.f("autosetup.ui.confirmTakeAnotherStationsOnlyName", session.describeTile(other), session.describeTile(here)),
+                "the question does not say that Yes leaves the station shown nowhere");
+
             // AND YES STILL SHOWS ITS OWN: the item is live, and asking is not refusing
             AutonomyEditorPanel.answerTakeAnotherNameForTests(true);
 
@@ -281,6 +286,11 @@ public class testControlNAsksTheMenusQuestion
 
             assertEquals(session.getCaptionTarget(here), other, "Show a Station Name Here took the only name another station"
                 + " had on this page off it without asking, because it is named on another page as well");
+
+            // AND IT SAYS ONLY THIS PAGE, since the station stays shown on the other (OB-341)
+            assertEquals(AutonomyEditorPanel.takeAnotherNameQuestionForTests(),
+                I18n.f("autosetup.ui.confirmTakeAnotherStationsName", session.describeTile(other), session.describeTile(here)),
+                "the question says more than that the station leaves this page");
 
             // NAMED ON ANOTHER SQUARE OF THIS PAGE TOO, through the store's door as a hand edit leaves it: not its only name
             session.getStore().setCaption(new TileKey("main", 3, 2), other);
@@ -351,6 +361,81 @@ public class testControlNAsksTheMenusQuestion
 
             assertEquals(session.captionsFor(station), new java.util.LinkedHashSet<>(Arrays.asList(free, there)),
                 "moving the label took the other page's caption of the station off");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * No station name is offered on a square the track diagram does not draw (AD-C6).
+     *
+     * The autonomy editor shows the whole page, padding included; the running diagram draws only the part its components
+     * cover, and a caption is not a component.  Show a Station Name Here on a blank square outside that part, Control+N
+     * over it, and a drop of a label on it stored a caption nothing would ever show - and the station counted as labelled.
+     * The menu item is present but greyed, with the reason on its tooltip, as it is on a station's own square; the key
+     * agrees; a dragged label is refused; and a blank square inside the area is still offered.
+     *
+     * MUTATION: leave the area test out of `offersAStationName`, the menu item or `refuseCaptionDrop`, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testNoNameIsOfferedOnASquareTheRunningDiagramDoesNotDraw() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-outside-area").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            TileKey station = new TileKey("main", 1, 1);
+            TileKey inside = new TileKey("main", 4, 2);
+            TileKey outside = new TileKey("main", 9, 2);
+
+            session.setStation(station, true);
+            session.setPointName(station, "Hauptbahnhof");
+            session.getStore().setCaption(new TileKey("main", 5, 2), station);
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            String name = I18n.t("autosetup.ui.menuShowStationHere");
+
+            // THE CONTROL: a blank square inside the drawn area is offered, live
+            javax.swing.JMenuItem live = itemNamed(panel.buildTileMenu(inside, null), name);
+
+            assertTrue(live != null && live.isEnabled(), "precondition: no live name item on a blank square inside the area");
+            assertTrue(keyOffersAName(panel, inside), "precondition: Control+N offers no name on a blank square inside the area");
+            assertTrue(panel.canDropCaption(new TileKey("main", 5, 2), inside, null), "precondition: a label cannot be dropped"
+                + " on a blank square inside the area");
+
+            // OUTSIDE IT: present, greyed, and the reason on the tooltip
+            javax.swing.JMenuItem shown = itemNamed(panel.buildTileMenu(outside, null), name);
+
+            assertNotNull(shown, "the item is gone from the menu of a square outside the area, rather than greyed");
+            assertFalse(shown.isEnabled(), "Show a Station Name Here is live on a square the diagram does not draw");
+
+            assertTrue(shown.getToolTipText() != null
+                && shown.getToolTipText().contains(I18n.t("autosetup.ui.captionOutsideTheDrawnArea")),
+                "the greyed item does not say why: " + shown.getToolTipText());
+
+            assertFalse(keyOffersAName(panel, outside), "Control+N offers a name on a square the diagram does not draw");
+
+            panel.showStationNameFor(outside);
+
+            assertTrue(session.getCaptionTarget(outside) == null, "Control+N put a caption on a square the diagram does not draw");
+
+            assertFalse(panel.canDropCaption(new TileKey("main", 5, 2), outside, null),
+                "a label can be dropped on a square the diagram does not draw");
+
+            assertFalse(panel.moveCaption(new TileKey("main", 5, 2), outside, null), "a label was moved off the diagram");
+
+            assertEquals(session.getCaptionTarget(new TileKey("main", 5, 2)), station, "a refused drop took the caption off");
         }
         finally
         {
@@ -515,7 +600,7 @@ public class testControlNAsksTheMenusQuestion
 
             session.open(Arrays.asList(aPageWithARun("main")));
 
-            TileKey empty = new TileKey("main", 9, 2);
+            TileKey empty = new TileKey("main", 4, 2);
 
             // THE CONTROL: the editor's menu names the key.
             AutonomyEditorPanel editor = new AutonomyEditorPanel(session, "main", () -> { });
@@ -742,7 +827,8 @@ public class testControlNAsksTheMenusQuestion
 
         page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
 
-        // A label, the other square the menu sends to its text menu; (9,2) is left empty.
+        // A label, the other square the menu sends to its text menu; (4,2) is left blank inside the area the diagram
+        // draws, and (9,2) lies outside it (AD-C6).
         page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
 
         page.setPageId(name);

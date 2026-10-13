@@ -91,6 +91,17 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.parent.updateVisiblePoints();
     }
     
+    /**
+     * Whether the setup still gives every square of the grid on screen the caption it was drawn with, and every caption its
+     * name (OB-341).
+     *
+     * @return false where it does not, and for a window not drawn yet
+     */
+    boolean captionsAreAsBuilt()
+    {
+        return this.grid != null && this.grid.captionsAreAsBuilt();
+    }
+
     public String getLayoutTitle()
     {
         return this.layout.getName();

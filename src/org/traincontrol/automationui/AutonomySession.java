@@ -3336,15 +3336,25 @@ public class AutonomySession
      * a pop-up and the autonomy editor build the same grid, which hides them (`LayoutGrid.hidesStationCaptions`) - and a
      * page this session no longer has has no grid at all.  Such a caption is not drawn.
      *
+     * **And none for a station unnamed and switched off** (Adam, 2026-08-31: *"hide the label if empty and nothing can
+     * pass."*): an unnamed station draws a dash, the placeholder that says it wants a name, and on a square that is out of
+     * service there is nothing to name it FOR.  A named one keeps its name however it is switched, and an unnamed one in
+     * service keeps its dash.  This was the diagram's alone, and the check, which did not ask, called two captions beside
+     * such a station an error beside its automatic-name error (OB-341).
+     *
+     * Asked of the station, not of the station’s Point: a sensor with no track to it, marked a station, draws its captions
+     * all the same.
+     *
      * @param where the square the text sits on
      * @return false where there is no caption, where it is kept for a square that is no station now (GSE-C4), where its page
-     *         is left out or gone, and where it is a station's own and gives way to another caption on its page
+     *         is left out or gone, where its station is unnamed and out of service, and where it is a station's own and
+     *         gives way to another caption on its page
      */
     public boolean isCaptionDrawn(TileKey where)
     {
         TileKey station = getCaptionTarget(where);
 
-        if (station == null || !onAPageThatDrawsCaptions(where)) return false;
+        if (station == null || !onAPageThatDrawsCaptions(where) || isUnnamedAndSwitchedOff(station)) return false;
 
         if (!station.equals(where)) return true;
 
@@ -3354,6 +3364,38 @@ public class AutonomySession
         }
 
         return true;
+    }
+
+    /**
+     * Whether a station has no name of its own and is switched off.
+     *
+     * @param station the sensor’s square
+     * @return true for one the diagram draws no caption for (Adam, 2026-08-31)
+     */
+    private boolean isUnnamedAndSwitchedOff(TileKey station)
+    {
+        if (!Boolean.FALSE.equals(getPointProperty(station, "active"))) return false;
+
+        String named = store.getPointName(station);
+
+        return named == null || named.trim().isEmpty();
+    }
+
+    /**
+     * Whether the track diagram draws this square when trains run, which is where a caption can be seen.
+     *
+     * The autonomy editor shows the whole page, padding included, and puts the page object the session shares into edit
+     * mode, where its bounds are the whole page; the running diagram draws only the part its COMPONENTS cover, and a
+     * caption is not a component.  Worked out from the components alone, as the running grid does (AD-C6).
+     *
+     * @param square a square
+     * @return false for a square outside that part, or on a page this session does not have
+     */
+    public boolean isInTheDrawnArea(TileKey square)
+    {
+        LayoutDiagram page = pageOf(square);
+
+        return page != null && page.isDrawnWhenRunning(square.getX(), square.getY());
     }
 
     /**
@@ -3908,8 +3950,8 @@ public class AutonomySession
             // station against an edge had its caption filed one square outside the drawn area - shown
             // in the editor, which pads the grid, and never shown on the diagram, while the "not shown
             // anywhere" warning went quiet because a caption did exist.
-            if (at.getX() < page.getMinx() || at.getY() < page.getMiny()) continue;
-            if (at.getX() > page.getMaxx() || at.getY() > page.getMaxy()) continue;
+            // Worked out from the components, not read from the page: in edit mode its bounds are the whole page (AD-C6)
+            if (!page.isDrawnWhenRunning(at.getX(), at.getY())) continue;
 
             if (page.getComponent(at.getX(), at.getY()) != null) continue;
 
@@ -7887,12 +7929,11 @@ public class AutonomySession
         // every one of them is already on the list.
         Map<TileKey, Set<Side>> trapped = tilesWithATrappedArrival(inspected, namesForInspection, arrivalsForInspection);
 
-        // Captions the user’s own writing is sitting on top of.
+        // Captions the user’s own writing is sitting under.
         //
-        // The square belongs to the diagram - it is their drawing before it is autonomy’s data - so
-        // the text wins the square and the caption is the one that goes quiet.  Worth saying rather than
-        // silently losing: a station that looks captioned and shows nothing is exactly the puzzle this
-        // whole rework exists to stop.
+        // The grid draws the caption and hides the text (MT-017): it always has, and the editor asks before it puts a
+        // caption over text, naming the text.  Worth saying rather than silently losing: text that looks written and
+        // shows nothing is exactly the puzzle this whole rework exists to stop.
         Map<TileKey, TileKey> covered = new LinkedHashMap<>();
 
         for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
@@ -7993,10 +8034,10 @@ public class AutonomySession
      * one caption (OB-256), so what this finds came in past them: a setup file edited by hand, or written by an older
      * version.
      *
-     * Stale state is not counted, as the unlabelled-station check does not count it: a caption kept for a square that is no
-     * station now is not drawn (GSE-C4), nor is one on a page that is gone or left out of autonomy, and a station that is
-     * not a Point - on a page left out of autonomy, or track the diagram no longer has - is not built.  In reading order,
-     * so the sentence and the list do not change from one load of the file to the next.
+     * Stale state is not counted: a caption kept for a square that is no station now is not drawn (GSE-C4), nor is one on a
+     * page that is gone or left out of autonomy, nor one of a station unnamed and out of service.  A station that is no
+     * Point is counted, since the diagram draws its captions all the same (OB-341).  In reading order, so the sentence and
+     * the list do not change from one load of the file to the next.
      *
      * @return each such station's square, to the squares of the pages that draw its name more than once
      */
@@ -8013,8 +8054,8 @@ public class AutonomySession
 
         for (TileKey station : stations)
         {
-            if (!store.isStation(station) || !reducer.getPoints().containsKey(station)) continue;
-
+            // Drawn is drawn: a station the railway built no Point for, on a sensor with no track or on a page left out, has its
+            // captions drawn all the same (OB-341).  `drawnCaptionsFor` is empty for a square that is no station.
             // The drawn squares of each page, and the pages that draw the name more than once
             Map<String, List<TileKey>> onPage = new LinkedHashMap<>();
 

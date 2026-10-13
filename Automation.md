@@ -205,7 +205,7 @@ Names cannot sit on switches or signals.
 
 ### On text and empty squares
 
-`Show a Station Name Here...` puts a station's caption here; over your own text it asks first. A station is shown once on each page, so on a page where it already has a caption this one moves, and on another page this one is added.
+`Show a Station Name Here...` puts a station's caption here; over your own text it asks first, because the caption is drawn and your text is hidden. It is greyed on a square outside the part of the page the track diagram draws. A station is shown once on each page, so on a page where it already has a caption this one moves, and on another page this one is added.
 
 ---
 

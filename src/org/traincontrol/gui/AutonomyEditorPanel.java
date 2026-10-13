@@ -3458,12 +3458,16 @@ public class AutonomyEditorPanel extends JPanel
                     : I18n.t("autosetup.ui.menuShowStationHereNamed"),
                 () -> promptStationLabel(tile, component));
 
-            name.setEnabled(!showsItself);
+            // Greyed, with the reason, on a square the running diagram does not draw (AD-C6)
+            boolean inTheDrawnArea = session.isInTheDrawnArea(tile);
+
+            name.setEnabled(!showsItself && inTheDrawnArea);
 
             // WHAT A CAPTION IS, on the item that makes one.  Three reasons for a tooltip here and they
             // are all the same reason: nothing else on this menu says that a caption is a live readout of
             // another square rather than a name plate.
-            name.setToolTipText(wrapped(
+            name.setToolTipText(!inTheDrawnArea && !showsItself ? wrapped(I18n.t("autosetup.ui.captionOutsideTheDrawnArea"))
+                : wrapped(
                 (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
                     : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
                     : I18n.t("autosetup.ui.tooltipShowStationHere"))
@@ -3575,6 +3579,9 @@ public class AutonomyEditorPanel extends JPanel
         {
             return I18n.t("autosetup.ui.errorDropOffDiagram");
         }
+
+        // Outside the part of the page the running diagram draws, where nobody would see it (AD-C6)
+        if (!session.isInTheDrawnArea(to)) return I18n.t("autosetup.ui.captionOutsideTheDrawnArea");
 
         // A control, where a click throws real ironwork and a name would sit in the way of it.
         if (!mayCarryACaption(onTarget)) return I18n.t("autosetup.ui.errorDropOnControl");
@@ -3773,6 +3780,18 @@ public class AutonomyEditorPanel extends JPanel
         takeAnotherNameAnswerForTests = answer;
     }
 
+    /** The question last put about taking another station's only name, or answered for a test (OB-341). */
+    private static volatile String takeAnotherNameQuestion;
+
+    /**
+     * @return the words of the question about taking another station's only name that was last put, or answered through
+     *         `answerTakeAnotherNameForTests`, for a test of what it says (OB-341)
+     */
+    public static String takeAnotherNameQuestionForTests()
+    {
+        return takeAnotherNameQuestion;
+    }
+
     /**
      * Whether a station square may show its own name where it now shows the only caption of ANOTHER station ON THIS PAGE -
      * asked of the operator, naming both, and true without a question where nothing would be lost (GSE-C5).
@@ -3799,9 +3818,18 @@ public class AutonomyEditorPanel extends JPanel
 
         elsewhere.remove(tile);
 
+        // On another page too: Yes leaves it shown there, so the question says only this page (OB-341)
+        boolean shownOnOtherPages = !elsewhere.isEmpty();
+
         elsewhere.removeIf(where -> !tile.getPage().equals(where.getPage()));
 
         if (!elsewhere.isEmpty()) return true;
+
+        // Its only caption anywhere: Yes leaves it shown nowhere, and the question says off the diagram
+        String question = I18n.f(shownOnOtherPages ? "autosetup.ui.confirmTakeAnotherStationsName"
+            : "autosetup.ui.confirmTakeAnotherStationsOnlyName", describeTile(other), describeTile(tile));
+
+        takeAnotherNameQuestion = question;
 
         Boolean given = takeAnotherNameAnswerForTests;
 
@@ -3809,8 +3837,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // TrainControl's own buttons, as the question about replacing text asks, and No the default: Yes takes a name off
         // the diagram.  An INDEX comes back, where 0 is Yes.
-        return JOptionPane.showOptionDialog(owner(),
-            I18n.f("autosetup.ui.confirmTakeAnotherStationsName", describeTile(other), describeTile(tile)),
+        return JOptionPane.showOptionDialog(owner(), question,
             I18n.t("autosetup.ui.titleStationLabel"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
     }
@@ -6600,11 +6627,12 @@ public class AutonomyEditorPanel extends JPanel
 
         LayoutDiagramComponent onPage = componentAt(tile);
 
-        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return true;
+        // Only on a square the running diagram draws (AD-C6): a name put anywhere else would never be seen
+        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return session.isInTheDrawnArea(tile);
 
         if (isIgnored(tile)) return false;
 
-        if (menuOnly || !mayCarryACaption(onPage)) return false;
+        if (menuOnly || !mayCarryACaption(onPage) || !session.isInTheDrawnArea(tile)) return false;
 
         return !(session.getStore().isStation(tile) && tile.equals(session.getCaptionTarget(tile)));
     }
@@ -10768,7 +10796,7 @@ public class AutonomyEditorPanel extends JPanel
         for (AutonomyChecks.Finding finding : session.check())
         {
             String subject = finding.getTile() == null
-                ? finding.getSubject() : describeTile(finding.getTile());
+                ? finding.getSubject() : describeTile(finding.getAbout());
 
             // BOTH, because {0} alone cannot say which train (OB-153).
             //

@@ -434,7 +434,7 @@ public class testTheHomeLabelIsDrawnOnce
 
         assertEquals(reported.size(), 1, "the railway has one station drawn twice, and the check reports: " + reported);
 
-        assertEquals(reported.get(0).getTile(), twoBeside, "the check reports the wrong station");
+        assertEquals(reported.get(0).getAbout(), twoBeside, "the check reports the wrong station");
         assertEquals(reported.get(0).getCount(), 2, "the check does not count two places");
 
         assertEquals(new java.util.LinkedHashSet<>(reported.get(0).getRelated()),

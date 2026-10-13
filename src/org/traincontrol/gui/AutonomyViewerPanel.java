@@ -2046,7 +2046,7 @@ public class AutonomyViewerPanel extends JPanel
             // The subject is usually a Point name, and an unnamed Point's name is its coordinate - so
             // where there is a tile, say what the tile is instead.
             String subject = finding.getTile() == null
-                ? finding.getSubject() : describeTile(finding.getTile());
+                ? finding.getSubject() : describeTile(finding.getAbout());
 
             // Errors and warnings only, and a notice is neither.
             //

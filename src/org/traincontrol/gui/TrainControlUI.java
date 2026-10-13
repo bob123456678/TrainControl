@@ -4360,6 +4360,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             repaintLayout();
         }
+
+        refreshPopupsWhoseCaptionsChanged();
+    }
+
+    /**
+     * Draws again the pop-up diagrams whose captions are not the setup’s any more (OB-341).
+     *
+     * A pop-up’s caption labels are registered under its own window, so the main window’s rebuild never lets go of them:
+     * a caption moved or taken off went on showing in a pop-up, and `updateStationLabels` went on writing the station into
+     * it, until the page was changed there or the window opened again - and Stop Showing is the remedy the duplicate-caption
+     * error asks for.  Only the ones that differ, as the main window’s diagram is (`captionsAreAsBuilt`), so an arrow or
+     * a length changed makes none flicker.
+     */
+    private void refreshPopupsWhoseCaptionsChanged()
+    {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            javax.swing.SwingUtilities.invokeLater(this::refreshPopupsWhoseCaptionsChanged);
+
+            return;
+        }
+
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        {
+            if (popup.isVisible() && !popup.captionsAreAsBuilt()) popup.refreshDiagram();
+        }
     }
 
     /**
@@ -6294,23 +6320,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         org.traincontrol.automationui.TileGraph.TileKey caption = session.getCaptionTarget(where);
 
-        // NO LABEL ON A SQUARE THAT IS BOTH EMPTY AND SHUT (Adam, 2026-08-31).
-        //
-        // "hide the label if empty and nothing can pass."  An unnamed station draws a dash - the
-        // placeholder that says "this wants a name" - and on a square that is switched off there is
-        // nothing to name it FOR: nothing may be sent there and nothing may pass through, so the dash
-        // is an invitation to finish something that has been deliberately put out of use.
-        //
-        // Only when BOTH are true.  A named square keeps its name however it is switched, because the
-        // name is how the operator refers to it when switching it back on; and an unnamed square that
-        // is still in use keeps its dash, because that is the prompt working as intended.
-        if (caption != null
-            && Boolean.FALSE.equals(session.getPointProperty(caption, "active")))
-        {
-            String named = session.getStore().getPointName(caption);
-
-            if (named == null || named.trim().isEmpty()) return null;
-        }
+        // NO LABEL ON A SQUARE THAT IS BOTH EMPTY AND SHUT (Adam, 2026-08-31), asked of the session below with the rest
+        // (`isCaptionDrawn`): the setup check has to leave it alone too (OB-341).
 
         // AND ONE NAME PER STATION PER PAGE, THE OFFSET ONE WINNING (MT-337, OB-341).
         //
@@ -8639,6 +8650,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         setEditLayoutEnabled(true);
 
         repaintLayout();
+
+        refreshPopupsWhoseCaptionsChanged();
 
         // What the diagram SAYS, not only what it draws.  The banner is decided in one place and that
         // place was never called from an editor closing - so somebody who opened the editor from "Fix

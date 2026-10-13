@@ -8815,14 +8815,15 @@ public class testAutonomyDiagramSession
         assertEquals(finding.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
             "a station named twice with nothing to say which is current must stop the setup, not sit among the warnings");
 
-        assertEquals(finding.getTile(), station, "the finding is not on the station's own square");
+        assertEquals(finding.getAbout(), station, "the finding is not about the station");
+        assertEquals(finding.getTile(), beside, "the finding is not filed on the first square the name is drawn on");
         assertEquals(finding.getCount(), 2, "the finding does not say how many places the station is shown in");
 
         assertEquals(new LinkedHashSet<>(finding.getRelated()), new LinkedHashSet<>(Arrays.asList(beside, further)),
             "the finding does not point at both caption squares");
 
         // WHAT THE READER IS TOLD, as the editor renders it: {0} the station, {1} the finding's subject, {2} the count
-        String said = org.traincontrol.util.I18n.f(finding.getMessageKey(), edited.describeTile(finding.getTile()),
+        String said = org.traincontrol.util.I18n.f(finding.getMessageKey(), edited.describeTile(finding.getAbout()),
             finding.getSubject(), finding.getCount(), finding.getDetail(), finding.getThird());
 
         assertTrue(said.contains("Hauptbahnhof"), "the sentence does not name the station: " + said);
@@ -8887,7 +8888,7 @@ public class testAutonomyDiagramSession
 
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : found)
         {
-            assertEquals(finding.getCount(), station.equals(finding.getTile()) ? 3 : 2,
+            assertEquals(finding.getCount(), station.equals(finding.getAbout()) ? 3 : 2,
                 "the count is not the number of places the name is drawn in: " + finding);
         }
 
@@ -8901,7 +8902,7 @@ public class testAutonomyDiagramSession
         assertEquals(shownTwice(session).size(), 1, "stopping the extra captions did not clear the station: "
             + session.check());
 
-        assertEquals(shownTwice(session).get(0).getTile(), other, "it cleared the wrong station's finding");
+        assertEquals(shownTwice(session).get(0).getAbout(), other, "it cleared the wrong station's finding");
 
         // "Show a Station Name Here" on the one to keep: the others go
         session.setCaption(new TileKey("main", 4, 3), other);
@@ -8965,54 +8966,238 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * What is stale is not counted (OB-341): a caption on a page that is gone, and a station that is no Point.
+     * What is stale is not counted (OB-341): a caption on a page that is gone.
      *
      * Two captions beside a station are an error, but one of them on a page the session no longer has is not drawn
-     * anywhere, and a station on a sensor with no track to it is not built - the unlabelled-station check does not count
-     * it either.  The control is the first station with a second caption that is on a page, which is reported.
+     * anywhere.  The control is the station with a second caption that is on a page, which is reported.
      *
-     * MUTATION: leave out the page test or the Point test in `stationsShownMoreThanOnce`, and this fails.
+     * MUTATION: leave out the page test in `isCaptionDrawn`, and this fails.
      *
      * @throws Exception from the session
      */
     @Test
     public void testStaleCaptionsAreNotCounted() throws Exception
     {
-        LayoutDiagram page = runOfTrack();
-
-        // A sensor on its own, with no track to it: marked a station, it is not a Point
-        page.addComponent(componentType.FEEDBACK, 6, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
-
-        session.open(Arrays.asList(page));
+        session.open(Arrays.asList(runOfTrack()));
 
         TileKey station = new TileKey("main", 1, 1);
-        TileKey alone = new TileKey("main", 6, 3);
 
         session.getStore().setStation(station, true);
-        session.getStore().setStation(alone, true);
         session.setPointName(station, "Hauptbahnhof");
-        session.setPointName(alone, "Einzelgleis");
 
-        // One real caption beside the first, and one on a page that is gone; two real ones beside the lone sensor
+        // One real caption beside it, and one on a page that is gone
         session.getStore().setCaption(new TileKey("main", 1, 2), station);
         session.getStore().setCaption(new TileKey("gone", 1, 1), station);
-        session.getStore().setCaption(new TileKey("main", 6, 4), alone);
-        session.getStore().setCaption(new TileKey("main", 7, 4), alone);
         session.rebuild();
 
-        assertFalse(session.getReducer().getPoints().containsKey(alone), "precondition: the lone sensor should be no Point,"
-            + " and it is one");
-
-        assertTrue(shownTwice(session).isEmpty(), "a caption on a page that is gone, or beside a station that is no Point,"
-            + " is reported: " + session.check());
+        assertTrue(shownTwice(session).isEmpty(), "a caption on a page that is gone is reported: " + session.check());
 
         // THE CONTROL: the same station with a second caption that is on a page, is reported
         session.getStore().setCaption(new TileKey("main", 1, 3), station);
         session.rebuild();
 
         assertEquals(shownTwice(session).size(), 1, "precondition: a second real caption is not reported: " + session.check());
-        assertEquals(shownTwice(session).get(0).getTile(), station, "it was reported for the wrong station");
+        assertEquals(shownTwice(session).get(0).getAbout(), station, "it was reported for the wrong station");
         assertEquals(shownTwice(session).get(0).getCount(), 2, "the caption on the page that is gone was counted");
+    }
+
+    /**
+     * A station that is no Point is reported when its name is drawn twice on a page (OB-341).
+     *
+     * The rule's promise is an ERROR exactly where the diagram draws a name twice on a page, and the diagram draws a
+     * caption for any station - `getCaptionTarget` asks only that the square be one - whether or not the railway built a
+     * Point there.  Two such stations: a sensor with no track to it, and a station on a page left out of autonomy whose
+     * captions sit on a page that is drawn.  No door of the editor makes either; a setup edited by hand does.
+     *
+     * MUTATION: ask whether the station is a Point in `stationsShownMoreThanOnce`, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationThatIsNoPointIsReportedWhenItsNameIsDrawnTwice() throws Exception
+    {
+        LayoutDiagram page = runOfTrack();
+
+        // A sensor on its own, with no track to it: marked a station, it is not a Point
+        page.addComponent(componentType.FEEDBACK, 6, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        session.open(Arrays.asList(page, secondPage()));
+
+        TileKey alone = new TileKey("main", 6, 3);
+        TileKey left = new TileKey("second", 1, 1);
+
+        session.getStore().setStation(alone, true);
+        session.getStore().setStation(left, true);
+        session.setPointName(alone, "Einzelgleis");
+        session.setPointName(left, "Nebengleis");
+
+        session.getStore().setCaption(new TileKey("main", 6, 4), alone);
+        session.getStore().setCaption(new TileKey("main", 7, 4), alone);
+
+        // the station on the page left out, its captions on the page that is drawn
+        session.setPageExcluded("second", true);
+        session.getStore().setCaption(new TileKey("main", 1, 2), left);
+        session.getStore().setCaption(new TileKey("main", 1, 3), left);
+        session.rebuild();
+
+        assertFalse(session.getReducer().getPoints().containsKey(alone), "precondition: the lone sensor should be no Point,"
+            + " and it is one");
+
+        assertFalse(session.getReducer().getPoints().containsKey(left), "precondition: a station on a page left out of"
+            + " autonomy should be no Point, and it is one");
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
+
+        assertNotNull(findingFor(found, alone), "a sensor with no track, marked a station and drawn twice, is not reported: "
+            + session.check());
+
+        assertNotNull(findingFor(found, left), "a station on a page left out of autonomy, drawn twice on a page that is drawn,"
+            + " is not reported: " + session.check());
+    }
+
+    /**
+     * A station unnamed and out of service is not reported for what is not drawn (OB-341).
+     *
+     * The diagram draws no caption for a station that is both unnamed and switched off (Adam, 2026-08-31: *"hide the label
+     * if empty and nothing can pass."*), so two captions beside it are nothing drawn twice - and its automatic name already
+     * has an error of its own, which `checkStationLabels` avoids doubling.  Named, it keeps its caption however it is
+     * switched; unnamed and in service it draws its dash.  Both of those are reported.
+     *
+     * MUTATION: leave the rule out of `isCaptionDrawn`, and the first assertion fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAnUnnamedStationOutOfServiceIsNotReportedForWhatIsNotDrawn() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+        session.initialize("Evening");
+
+        TileKey shut = new TileKey("main", 1, 1);
+        TileKey open = new TileKey("main", 4, 1);
+
+        session.getStore().setStation(shut, true);
+        session.getStore().setStation(open, true);
+
+        // UNNAMED, and out of service
+        session.setPointProperty(shut, "active", Boolean.FALSE);
+        session.getStore().setCaption(new TileKey("main", 1, 2), shut);
+        session.getStore().setCaption(new TileKey("main", 1, 3), shut);
+
+        // UNNAMED, in service: it draws its dash, twice
+        session.getStore().setCaption(new TileKey("main", 4, 2), open);
+        session.getStore().setCaption(new TileKey("main", 4, 3), open);
+        session.rebuild();
+
+        assertEquals(session.getPointProperty(shut, "active"), Boolean.FALSE, "precondition: the station is not out of service");
+
+        assertFalse(session.isCaptionDrawn(new TileKey("main", 1, 2)), "a caption of a station unnamed and out of service is"
+            + " drawn, though the diagram draws none");
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
+
+        assertNull(findingFor(found, shut), "a station unnamed and out of service is reported for a name nothing draws: "
+            + session.check());
+
+        assertNotNull(findingFor(found, open), "an unnamed station in service, drawing its dash twice, is not reported: "
+            + session.check());
+
+        // NAMED, it keeps its caption however it is switched
+        session.setPointName(shut, "Gesperrt");
+        session.rebuild();
+
+        assertNotNull(findingFor(shownTwice(session), shut), "a named station out of service is not reported: "
+            + session.check());
+    }
+
+    /**
+     * The finding is filed on the first square the name is drawn on, and counted and clicked to there (OB-341).
+     *
+     * Two captions of a station on page B, the station on page A: the editor files a finding, counts it for the page and
+     * jumps to it by the square it is filed on, so one filed on the station's own square put the count on A and the click on
+     * A, where the squares to look at are not.  It is filed on B's first square and is ABOUT the station, which is what the
+     * sentence names.
+     *
+     * MUTATION: file it on the station's own square, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheFindingIsFiledOnThePageThatDrawsTheNameTwice() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey thereOne = new TileKey("second", 3, 2);
+        TileKey thereTwo = new TileKey("second", 3, 3);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(new TileKey("main", 4, 1), true);
+        session.setPointName(station, "Hauptbahnhof");
+
+        session.getStore().setCaption(thereOne, station);
+        session.getStore().setCaption(thereTwo, station);
+        session.rebuild();
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
+
+        assertEquals(found.size(), 1, "precondition: " + session.check());
+
+        org.traincontrol.automationui.AutonomyChecks.Finding finding = found.get(0);
+
+        assertEquals(finding.getTile().getPage(), "second", "the finding is filed on the station's page, where the squares to"
+            + " look at are not: " + finding.getTile());
+
+        assertEquals(finding.getTile(), thereOne, "the finding is not filed on the first square the name is drawn on");
+        assertEquals(finding.getAbout(), station, "the finding is not about the station");
+
+        String said = org.traincontrol.util.I18n.f(finding.getMessageKey(), session.describeTile(finding.getAbout()),
+            finding.getSubject(), finding.getCount(), finding.getDetail(), finding.getThird());
+
+        assertTrue(said.contains("Hauptbahnhof"), "the sentence does not name the station: " + said);
+        assertTrue(said.contains("second 3,2") && said.contains("second 3,3"), "the sentence does not name the squares: " + said);
+    }
+
+    /**
+     * A caption is never placed outside the area the RUNNING diagram draws, with the page in edit mode too (AD-C6).
+     *
+     * `testACaptionIsNeverPlacedOutsideTheDrawnArea` builds its page with edit mode off.  The autonomy editor puts the page
+     * object the session shares into edit mode, where its bounds are the whole page - and a caption is not a component, so
+     * the guard read the whole page and filed the caption on a blank square the running diagram never draws.  The area is
+     * worked out from the components alone, as the running grid does.
+     *
+     * MUTATION: read the page's own bounds in `placeCaption`, as before, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testACaptionIsNeverPlacedOutsideTheAreaTheRunningDiagramDrawsWithThePageInEditMode() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
+
+        // A station hard against the top-left corner, its only neighbour a curve (so no plain track to put the name on) and
+        // nothing below or beside it that carries a component
+        page.addComponent(componentType.FEEDBACK, 0, 0, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CURVE, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+        page.setEdit(true);
+        page.checkBounds();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 0, 0);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Kopfbahnhof");
+
+        session.placeCaption(station);
+
+        for (TileKey where : session.getCaptions().keySet())
+        {
+            assertTrue(where.getX() >= 0 && where.getX() <= 1 && where.getY() == 0,
+                "a caption at " + where + " is outside the area the running diagram draws, the part its components cover,"
+                + " so nothing shows it there");
+        }
     }
 
     /**
@@ -9222,7 +9407,7 @@ public class testAutonomyDiagramSession
 
         assertEquals(found.size(), 2, "precondition: " + session.check());
 
-        assertEquals(found.get(0).getTile(), early, "the stations are not listed in reading order: " + found);
+        assertEquals(found.get(0).getAbout(), early, "the stations are not listed in reading order: " + found);
 
         assertEquals(found.get(0).getRelated(), Arrays.asList(new TileKey("main", 1, 2), new TileKey("main", 1, 3)),
             "the squares are not in reading order");
@@ -9580,7 +9765,7 @@ public class testAutonomyDiagramSession
     {
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : findings)
         {
-            if (station.equals(finding.getTile())) return finding;
+            if (station.equals(finding.getAbout())) return finding;
         }
 
         return null;
