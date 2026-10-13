@@ -374,6 +374,16 @@ Adam, 2026-10-12: *"in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainC
 
 **For v3.0.1**, on Adam's word.  In that layout's `config/autonomy/setup.json`, `captions` maps two caption squares, `0:6,16` and `0:8,16`, to St01's square `0:9,16` - where every door of the editor keeps one station to one caption (OB-256).  Wanted: find whether an import (or a migration) produced it, and the setup check reports a station with more than one caption as an error, naming the station and the squares.
 
+### FR-126 - 2026-10-12 - for 3.0.1: bulk tools to activate and to deactivate every train; the locomotive commands tab sorted active first when opened
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Adam, 2026-10-12: *"Add an FR to add a bulk tool to mass activate and mass deactivate all trains.  Upon opening the locomotive autonomy commands tab, re-sort them to show active first, then inactive, then ones on inactive stations (as currently), sorted alphabetically within those groups.  Don't trigger the re-sort if you just click the pause button on the locomotive autonomy commands tab."*
+
+**For v3.0.1**, on Adam's word.  Active and inactive are FR-117's: a paused train is left where it stands, its icon grey, set from the Auto tab's pause button or the `Is Active` tick, and kept with the configuration.  Two bulk tools set every train active, or every train inactive, at once.  The Auto tab's locomotive commands list is re-sorted each time the tab is opened - active trains, then inactive ones, then those on inactive stations, each group alphabetical - and not when a pause button on it is clicked, so a card does not move from under the pointer.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
