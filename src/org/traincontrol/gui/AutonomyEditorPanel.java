@@ -2792,10 +2792,12 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.Set<String> names = new java.util.LinkedHashSet<>(covered);
 
-        // THE TRAINS ALREADY AS ASKED GO THROUGH THE DOOR TOO.  The door tells the window the railway's pauses and the setup's
-        // agree (`notePausesAsBuilt`), so the rebuild this asks for takes the setup's list as the word on every train: a train
-        // the card's button paused, and the list not yet, would be set going by it; one the button set going, and the list
-        // still names, would be paused again.  Going through the door writes the list and the train as one.
+        // THE TRAINS ALREADY AS ASKED GO THROUGH THE DOOR TOO.  The door writes the train and the setup's list as one, so a
+        // record the card's button has outrun does not stand: Activate takes off the list every train it names, the ones the
+        // button set going among them, which `covered` leaves out as it reads the train; Deactivate lists every train standing,
+        // the ones the button paused among them.  The rebuild's fold takes the railway's list over the setup's only where the
+        // railway changed it since it was built (OB-343), and a train the setup lists that the railway was not built pausing is
+        // no such change: left listed, the rebuild this asks for would pause it again.
         if (active) names.addAll(session.getPausedLocomotives());
         else names.addAll(trainsStanding());
 

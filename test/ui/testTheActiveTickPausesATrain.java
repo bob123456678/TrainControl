@@ -494,8 +494,550 @@ public class testTheActiveTickPausesATrain
             + " tick paused it, and the next rebuild paused it again - the last choice made for it was undone (RSA60-B1)");
     }
 
+    // ------------------------------------------- a pause made on a card outlives what is done to another train (OB-343)
+
+    /** The train the claims below press the card's pause button of, and the square it stands on among the crowd. */
+    private static final String CARD_TRAIN = "ALCO UP";
+
+    private static final String CARD_TRAIN_SQUARE = "TunnelCenterPark";
+
+    /** A second crowd train, for the claim that has one train paused by its card and another listed by the setup. */
+    private static final String LISTED_TRAIN = "BN Lights";
+
+    /**
+     * The Auto tab's pause button on a train's card, once the tab has built it: the tab is built again after a rebuild, and
+     * on the event thread a moment later.
+     */
+    private static javax.swing.AbstractButton cardsButtonOnceBuilt(Locomotive who) throws Exception
+    {
+        javax.swing.AbstractButton button = autoTabPauseButton(who);
+
+        for (long end = System.currentTimeMillis() + 10000; button == null && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            pump();
+
+            button = autoTabPauseButton(who);
+        }
+
+        assertNotNull(button, "the Auto tab shows no card with a pause button for " + who.getName());
+
+        return button;
+    }
+
+    /** The card's pause button pressed, as a click on it: the train alone, which is what the button changes. */
+    private static void pressTheCardsButton(Locomotive who, boolean expectedToPause) throws Exception
+    {
+        final javax.swing.AbstractButton button = cardsButtonOnceBuilt(who);
+
+        assertEquals(button.isSelected(), !expectedToPause, "precondition: the card of " + who.getName() + " reads "
+            + (button.isSelected() ? "paused" : "going") + " before the press that should "
+            + (expectedToPause ? "pause" : "set going") + " it");
+
+        SwingUtilities.invokeAndWait(button::doClick);
+
+        pump();
+
+        assertEquals(who.isAutonomyPaused(), expectedToPause, "precondition: the card's button did not "
+            + (expectedToPause ? "pause " : "set going ") + who.getName());
+    }
+
+    /** The rebuild a tick or a tool asks for has been done, and the Auto tab's cards built again. */
+    private static void settleTheRebuild() throws Exception
+    {
+        for (int turn = 0; turn < 10; turn++)
+        {
+            Thread.sleep(50);
+
+            pump();
+        }
+    }
+
+    /**
+     * What the next setup gesture does - a home set, a caption typed, the editor closed: the railway is built again from the
+     * setup.  The diagram's tick does not rebuild for itself, so the setup's list is read when that next gesture comes.
+     */
+    private static void theNextSetupGestureRebuilds() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+        settleTheRebuild();
+    }
+
+    /**
+     * Whether a train is paused (or going) everywhere the program keeps that: the train, which autonomy reads; the railway's
+     * own list of the paused; the setup's; and the card's button.  Says which of them disagrees with the answer asked for.
+     */
+    private static void assertPausedEverywhere(Locomotive who, boolean paused, String after) throws Exception
+    {
+        String name = who.getName();
+        String word = paused ? "paused" : "going";
+
+        assertEquals(who.isAutonomyPaused(), paused, name + ", " + word + " from its card's button, is not " + word + " "
+            + after + " - the rebuild took the setup's older answer for a train nobody asked about (OB-343)");
+
+        assertEquals(Layout.pausedNamesOf(model).contains(name), paused, name + " is not " + word + " in the railway's list "
+            + after + ": " + Layout.pausedNamesOf(model));
+
+        assertEquals(session.getPausedLocomotives().contains(name), paused, name + " is not " + word + " in the setup "
+            + after + ": " + session.getPausedLocomotives());
+
+        assertEquals(cardsButtonOnceBuilt(who).isSelected(), paused, "the Auto tab's card of " + name + " does not read "
+            + word + " " + after);
+    }
+
+    /**
+     * A train paused from its card's pause button stays paused whatever is done to another train's Is Active tick (OB-343).
+     *
+     * The button changes the train alone, and the setup learns of it at the next fold.  The tick writes the train it is
+     * given and the setup's list together, and then tells the window the railway's pauses and the setup's agree - as if the
+     * railway had been built so - and a railway whose pauses agree has the setup's list taken as the word on every train.
+     * So the tick on a second train made the window believe the first one's pause had been built, which it had not: the
+     * setup's older answer stood and the first train was set going again, with nobody asking.
+     *
+     * One train paused from its card; another's tick unticked, and ticked again.  Neither rebuild sets the first going.
+     *
+     * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testATrainPausedFromItsCardStaysPausedWhenAnotherTrainsTickIsChanged() throws Exception
+    {
+        try
+        {
+            // BUILT WITH NOBODY PAUSED, so that how the railway was built is not left over from another claim
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            pressTheCardsButton(card, true);
+
+            assertFalse(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the setup already lists "
+                + CARD_TRAIN + ", which the card's button paused on the train alone: " + session.getPausedLocomotives());
+
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            // ANOTHER TRAIN UNTICKED
+            javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
+
+            assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
+
+            click(tick);
+
+            theNextSetupGestureRebuilds();
+
+            assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " did not pause " + HIS_TRAIN);
+
+            assertPausedEverywhere(card, true, "after unticking " + label);
+
+            // AND TICKED AGAIN
+            tick = diagramMenuItem(mainB, label);
+
+            assertTrue(tick != null && !tick.isSelected(), "precondition: " + label + " does not read unticked");
+
+            click(tick);
+
+            theNextSetupGestureRebuilds();
+
+            assertFalse(train.isAutonomyPaused(), "precondition: ticking " + label + " did not set " + HIS_TRAIN + " going");
+
+            assertPausedEverywhere(card, true, "after ticking " + label);
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * The mirror (OB-343): a train set going from its card's button, while the setup still lists it as paused, stays going
+     * whatever is done to another train's Is Active tick.
+     *
+     * The train is paused through its own tick first, so the setup lists it and the railway is rebuilt with it paused; its
+     * card's button then sets it going, on the train alone; and a tick on another train, unticked and ticked, must not read
+     * the setup's older list as the word on it.
+     *
+     * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testATrainSetGoingFromItsCardStaysGoingWhenAnotherTrainsTickIsChanged() throws Exception
+    {
+        try
+        {
+            // BUILT WITH NOBODY PAUSED, so that how the railway was built is not left over from another claim
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            // PAUSED THROUGH ITS OWN TICK on the diagram, so the setup lists it and the rebuild has built it paused
+            String cardsLabel = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
+
+            javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), cardsLabel);
+
+            assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no "
+                + cardsLabel);
+
+            click(own);
+
+            theNextSetupGestureRebuilds();
+
+            assertTrue(card.isAutonomyPaused(), "precondition: unticking " + cardsLabel + " did not pause the train");
+
+            assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the setup does not list "
+                + CARD_TRAIN + " after its tick");
+
+            // SET GOING BY ITS CARD'S BUTTON: the train alone, and the list still names it
+            pressTheCardsButton(card, false);
+
+            assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the setup has already been told "
+                + CARD_TRAIN + " is going: " + session.getPausedLocomotives());
+
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            // ANOTHER TRAIN UNTICKED
+            javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
+
+            assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
+
+            click(tick);
+
+            theNextSetupGestureRebuilds();
+
+            assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " did not pause " + HIS_TRAIN);
+
+            assertPausedEverywhere(card, false, "after unticking " + label);
+
+            // AND TICKED AGAIN
+            tick = diagramMenuItem(mainB, label);
+
+            assertTrue(tick != null && !tick.isSelected(), "precondition: " + label + " does not read unticked");
+
+            click(tick);
+
+            theNextSetupGestureRebuilds();
+
+            assertPausedEverywhere(card, false, "after ticking " + label);
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * The same through the autonomy editor's tick, which rebuilds the railway itself (OB-343): a train paused from its card's
+     * button stays paused when another train is unticked in the editor, and then, set going from its card's button while the
+     * setup lists it as paused, stays going when that train is ticked again.
+     *
+     * MUTATION: have the tick note every train's pause as built, not only the ones it changed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testACardsPauseAndGoingSurviveAnotherTrainsTickInTheEditor() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            // BUILT WITH NOBODY PAUSED, so that how the railway was built is not left over from another claim
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            // THE EDITOR, as Autonomy > Edit Autonomy > the page opens it
+            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(mainB.getPage()));
+
+            for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(100);
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) editor = window;
+                }
+            }
+
+            assertNotNull(editor, "the autonomy editor did not open on " + mainB.getPage());
+
+            for (int turn = 0; turn < 6; turn++) pump();
+
+            java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
+
+            panelField.setAccessible(true);
+
+            final AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
+
+            assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
+
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            // PAUSED BY ITS CARD'S BUTTON, and another train unticked in the editor
+            pressTheCardsButton(card, true);
+
+            clickTheEditorsTick(panel, label);
+
+            settleTheRebuild();
+
+            assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " in the editor did not pause "
+                + HIS_TRAIN);
+
+            assertPausedEverywhere(card, true, "after unticking " + label + " in the editor");
+
+            // SET GOING BY ITS CARD'S BUTTON, the setup listing it now, and the other train ticked again
+            pressTheCardsButton(card, false);
+
+            assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the setup has already been told "
+                + CARD_TRAIN + " is going: " + session.getPausedLocomotives());
+
+            clickTheEditorsTick(panel, label);
+
+            settleTheRebuild();
+
+            assertFalse(train.isAutonomyPaused(), "precondition: ticking " + label + " in the editor did not set "
+                + HIS_TRAIN + " going");
+
+            assertPausedEverywhere(card, false, "after ticking " + label + " in the editor");
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
+    }
+
+    /** The editor's right-click on BottomMainB built and the tick on it clicked, as the editor's own menu does. */
+    private static void clickTheEditorsTick(final AutonomyEditorPanel panel, final String label) throws Exception
+    {
+        final javax.swing.JMenuItem[] tick = new javax.swing.JMenuItem[1];
+
+        final List<String> offered = new ArrayList<>();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JPopupMenu menu = panel.buildTileMenu(mainB, null);
+
+            texts(menu, offered);
+
+            tick[0] = itemNamed(menu, label);
+        });
+
+        assertNotNull(tick[0], "precondition: the editor's right-click on BottomMainB offers no " + label + ": " + offered);
+
+        click(tick[0]);
+    }
+
+    /**
+     * The same for the bulk tool that writes only some of the trains (OB-343): Deactivate All Trains pauses the trains
+     * standing on the layout and leaves the rest alone, and a train off the layout has a card whose button pauses it.  One
+     * paused by its card stays paused.
+     *
+     * MUTATION: have the tool note every train's pause as built, not only the ones it changed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testDeactivateAllTrainsLeavesATrainOffTheLayoutPausedByItsCardPaused() throws Exception
+    {
+        try
+        {
+            // BUILT WITH NOBODY PAUSED, so that how the railway was built is not left over from another claim
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive away = model.getLocByName(NOWHERE);
+
+            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+
+            assertFalse(standing.contains(NOWHERE), "precondition: " + NOWHERE + " stands on the layout: " + standing);
+
+            String deactivate = I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size());
+
+            // PAUSED BY ITS CARD: the train alone
+            pressTheCardsButton(away, true);
+
+            javax.swing.JMenuItem tool = diagramMenuItem(mainB, deactivate);
+
+            assertNotNull(tool, "precondition: Bulk Tools offers no " + deactivate + ": " + diagramMenuTexts(mainB));
+
+            click(tool);
+
+            settleTheRebuild();
+
+            for (String name : standing)
+            {
+                assertTrue(model.getLocByName(name).isAutonomyPaused(), "precondition: " + name + " is still active after "
+                    + deactivate);
+            }
+
+            assertTrue(away.isAutonomyPaused(), NOWHERE + ", paused from its card's button, was set going by " + deactivate
+                + ", which does not reach a train off the layout (OB-343)");
+
+            assertTrue(session.getPausedLocomotives().contains(NOWHERE), NOWHERE + ", paused from its card's button, is not"
+                + " in the setup after " + deactivate + ": " + session.getPausedLocomotives());
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * The other half of the claim above (OB-343): the train off the layout set going from its card's button, with the setup
+     * still listing it as paused, stays going.
+     *
+     * MUTATION: have the tool note every train's pause as built, not only the ones it changed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testDeactivateAllTrainsLeavesATrainOffTheLayoutSetGoingByItsCardGoing() throws Exception
+    {
+        try
+        {
+            // BUILT WITH NOBODY PAUSED, so that how the railway was built is not left over from another claim
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            final Locomotive away = model.getLocByName(NOWHERE);
+
+            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+
+            // PAUSED THROUGH THE DOOR, as a configuration loaded with it paused leaves it: the train and the setup together
+            SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, away, false));
+
+            pump();
+
+            assertTrue(session.getPausedLocomotives().contains(NOWHERE), "precondition: the setup does not list " + NOWHERE);
+
+            settleTheCards();
+
+            // SET GOING BY ITS CARD'S BUTTON: the train alone, and the setup still lists it
+            pressTheCardsButton(away, false);
+
+            assertTrue(session.getPausedLocomotives().contains(NOWHERE), "precondition: the setup has already been told "
+                + NOWHERE + " is going: " + session.getPausedLocomotives());
+
+            String deactivate = I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size());
+
+            javax.swing.JMenuItem tool = diagramMenuItem(mainB, deactivate);
+
+            assertNotNull(tool, "precondition: Bulk Tools offers no " + deactivate + ": " + diagramMenuTexts(mainB));
+
+            click(tool);
+
+            settleTheRebuild();
+
+            for (String name : standing)
+            {
+                assertTrue(model.getLocByName(name).isAutonomyPaused(), "precondition: " + name + " is still active after "
+                    + deactivate);
+            }
+
+            assertFalse(away.isAutonomyPaused(), NOWHERE + ", set going from its card's button, was paused again by "
+                + deactivate + ", which does not reach a train off the layout (OB-343)");
+
+            assertFalse(session.getPausedLocomotives().contains(NOWHERE), NOWHERE + ", set going from its card's button, is"
+                + " still listed paused in the setup after " + deactivate + ": " + session.getPausedLocomotives());
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * Activate All Trains takes a train the setup lists as paused off the list when the train is going (OB-343; FR-126): the
+     * tool reads the train, so such a train is not one it counts, and it goes through the door all the same.
+     *
+     * The state is the setup listing a train the railway was not built pausing - the train going, as a button left it - and
+     * another train paused by its card's button, so that there is something for the tool to do.  The rebuild the tool asks
+     * for takes the railway's list over the setup's only where the railway changed it since it was built, so what keeps the
+     * listed train going is the tool taking it off the list itself.
+     *
+     * MUTATION: leave the trains the setup lists out of what Activate writes, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testActivateAllTrainsTakesAGoingTrainOffTheSetupsList() throws Exception
+    {
+        try
+        {
+            // BUILT WITH NOBODY PAUSED, so that how the railway was built is not left over from another claim
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+            final Locomotive listed = model.getLocByName(LISTED_TRAIN);
+
+            // PAUSED BY ITS CARD'S BUTTON: the train alone
+            pressTheCardsButton(card, true);
+
+            // LISTED, AND GOING: the setup names it, and the railway was built with nobody paused
+            session.setLocomotivePaused(LISTED_TRAIN, true);
+
+            assertFalse(listed.isAutonomyPaused(), "precondition: " + LISTED_TRAIN + " is paused");
+
+            // THE TRAIN IS READ, NOT THE LIST: one to set going
+            String activate = I18n.f("autosetup.ui.menuActivateAllTrains", 1);
+
+            javax.swing.JMenuItem tool = diagramMenuItem(mainB, activate);
+
+            assertNotNull(tool, "precondition: Bulk Tools offers no " + activate + ": " + diagramMenuTexts(mainB));
+
+            click(tool);
+
+            settleTheRebuild();
+
+            assertFalse(card.isAutonomyPaused(), CARD_TRAIN + " is still paused after " + activate);
+
+            assertFalse(listed.isAutonomyPaused(), LISTED_TRAIN + ", going, and listed paused by the setup, was paused by the"
+                + " rebuild " + activate + " asked for (OB-343)");
+
+            assertFalse(session.getPausedLocomotives().contains(LISTED_TRAIN), activate + " left " + LISTED_TRAIN
+                + ", which is going, listed as paused in the setup: " + session.getPausedLocomotives());
+
+            assertTrue(session.getPausedLocomotives().isEmpty() && Layout.pausedNamesOf(model).isEmpty(), "trains are still"
+                + " paused after " + activate + ": the setup lists " + session.getPausedLocomotives() + ", the railway "
+                + Layout.pausedNamesOf(model));
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
     /** The Auto tab's pause button on the card of his train, or null where the tab has none. */
     private static javax.swing.AbstractButton autoTabPauseButton() throws Exception
+    {
+        return autoTabPauseButton(train);
+    }
+
+    /** The Auto tab's pause button on the card of a train, or null where the tab has none. */
+    private static javax.swing.AbstractButton autoTabPauseButton(final Locomotive who) throws Exception
     {
         final javax.swing.AbstractButton[] found = new javax.swing.AbstractButton[1];
 
@@ -517,7 +1059,7 @@ public class testTheActiveTickPausesATrain
 
                 try
                 {
-                    if (train.equals(loco.get(c))) found[0] = (javax.swing.AbstractButton) pause.get(c);
+                    if (who.equals(loco.get(c))) found[0] = (javax.swing.AbstractButton) pause.get(c);
                 }
                 catch (IllegalAccessException cannot)
                 {
@@ -1131,9 +1673,9 @@ public class testTheActiveTickPausesATrain
             // SET GOING BY ITS CARD'S BUTTON after the list had it: the list alone
             session.setLocomotivePaused(resumed.getName(), true);
 
-            // NOT ON THE LAYOUT: one paused as a configuration load leaves it, the train and the list agreeing (no card
-            // has a button to pause it), and a name with no train at all
-            session.setActive(away, false);
+            // NOT ON THE LAYOUT: one paused as a configuration load leaves it, the train, the list and the window's record of
+            // how the railway was built agreeing (no card has a button to pause it), and a name with no train at all
+            SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, away, false));
 
             session.setLocomotivePaused(GHOST, true);
 

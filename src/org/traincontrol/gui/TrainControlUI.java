@@ -4659,11 +4659,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(cannotSave);
             }
 
-            // AND THE RAILWAY'S SETTINGS AS BUILT (RSA60-B1).  The tick changed the railway and the setup together, so
-            // the two agree - as if the railway had been built this way.  Left as it was built, a press of the Auto tab's
-            // pause button afterwards, which changes the railway alone, read to the next rebuild's fold as no change, and
-            // the setup's older answer stood: the rebuild undid the button.
-            notePausesAsBuilt();
+            // AND THE RAILWAY'S SETTINGS AS BUILT (RSA60-B1), for THESE TRAINS ONLY (OB-343).  The tick changed these trains
+            // on the railway and in the setup together, so for them the two agree - as if the railway had been built this
+            // way.  Left as it was built, a press of the Auto tab's pause button afterwards, which changes the railway alone,
+            // read to the next rebuild's fold as no change, and the setup's older answer stood: the rebuild undid the button.
+            // And not for the other trains: a press made BEFORE this call has not reached the setup, so the two do not agree
+            // about that train, and writing it as built made the fold find nothing the railway had changed (see
+            // `notePausesAsBuilt`).
+            notePausesAsBuilt(trains);
         }
 
         trainsPausedChanged();
@@ -4674,20 +4677,48 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Writes the railway's paused trains into its settings as built (RSA60-B1), for a door that changed the railway and
-     * the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes (RSA21-C1).  Only
-     * for the railway the settings were read off.
+     * Writes these trains' pauses into the railway's settings as built (RSA60-B1), for a door that changed them on the
+     * railway and in the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes
+     * (RSA21-C1).  Only for the railway the settings were read off.
+     *
+     * **ONLY THE TRAINS THE DOOR CHANGED (OB-343).**  The settings as built are what the railway was built with, and the
+     * fold takes whatever the railway has that these do not.  The Auto tab's pause button changes a train on the railway
+     * alone, so a train it paused is on the railway's list and not yet on the setup's - and this used to write the railway's
+     * whole list as built.  The next tick on ANOTHER train then wrote that pause as built too, the fold found the railway
+     * unchanged, and the rebuild took the setup's older list as the word on every train: the paused one was set going (and
+     * one the button set going, which the setup still listed, was paused again).  The trains the door did not change are left
+     * as they were built, so the fold still sees the button's change and takes the railway's list.
+     *
+     * @param changed the trains the door has just changed, on the railway and in the setup
      */
-    private void notePausesAsBuilt()
+    private void notePausesAsBuilt(java.util.Collection<Locomotive> changed)
     {
         Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
         if (railway == null || railway != settingsBuiltFor || settingsAsBuilt == null) return;
 
-        java.util.List<String> paused = org.traincontrol.automation.Layout.pausedNamesOf(this.model);
+        // sorted, as the railway writes its list, so the fold's comparison of the two lists reads them as the same
+        java.util.Set<String> built = new java.util.TreeSet<>();
 
-        if (paused.isEmpty()) settingsAsBuilt.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
-        else settingsAsBuilt.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(paused));
+        org.json.JSONArray list = settingsAsBuilt.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        for (int i = 0; list != null && i < list.length(); i++)
+        {
+            Object name = list.opt(i);
+
+            if (name instanceof String) built.add((String) name);
+        }
+
+        for (Locomotive train : changed)
+        {
+            if (train == null || train.getName() == null) continue;
+
+            if (train.isAutonomyPaused()) built.add(train.getName());
+            else built.remove(train.getName());
+        }
+
+        if (built.isEmpty()) settingsAsBuilt.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else settingsAsBuilt.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(built));
     }
 
     /**
