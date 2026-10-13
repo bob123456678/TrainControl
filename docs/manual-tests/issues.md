@@ -364,6 +364,16 @@ Adam, 2026-10-12: *"when departing a terminus, autonomy should make its exit gua
 
 Wanted: when autonomy sends a train out of a terminus, the terminus's exit guard is turned green for it.  After the run it may go back to red where something already does that; otherwise it stays green.
 
+### OB-341 - 2026-10-12 - for 3.0.1: two captions for one station (St01) in a setup, and the setup check does not say so
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Adam, 2026-10-12: *"in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox, there are two labels for the same station (St01).  This is likely an import artifact- determine if so.  And add code to make this be an error in the autonomy validator (i.e. if someone edits the file by hand externally)."*
+
+**For v3.0.1**, on Adam's word.  In that layout's `config/autonomy/setup.json`, `captions` maps two caption squares, `0:6,16` and `0:8,16`, to St01's square `0:9,16` - where every door of the editor keeps one station to one caption (OB-256).  Wanted: find whether an import (or a migration) produced it, and the setup check reports a station with more than one caption as an error, naming the station and the squares.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
