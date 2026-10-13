@@ -4371,7 +4371,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * a caption moved or taken off went on showing in a pop-up, and `updateStationLabels` went on writing the station into
      * it, until the page was changed there or the window opened again - and Stop Showing is the remedy the duplicate-caption
      * error asks for.  Only the ones that differ, as the main window’s diagram is (`captionsAreAsBuilt`), so an arrow or
-     * a length changed makes none flicker.
+     * a length changed makes none flicker; and with the size and place the operator gave each window kept, and nothing
+     * new remembered for it (OB-341).
      */
     private void refreshPopupsWhoseCaptionsChanged()
     {
@@ -4384,7 +4385,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         for (LayoutPopupUI popup : new ArrayList<>(this.popups))
         {
-            if (popup.isVisible() && !popup.captionsAreAsBuilt()) popup.refreshDiagram();
+            if (popup.isVisible() && !popup.captionsAreAsBuilt()) popup.refreshCaptions();
         }
     }
 

@@ -1080,6 +1080,180 @@ public class testAPendingTurnSurvivesTheRebuild
         }
     }
 
+    /**
+     * A pop-up the operator has sized and placed keeps its size and place when a caption on its page changes, and the
+     * bounds remembered for it are not overwritten (OB-341).
+     *
+     * RSA68-C8 made a caption change redraw the pop-ups it affects, and the redraw packed the window to its natural size and
+     * saved that over the operator's - on every caption gesture in the autonomy editor on that page.  A caption-only redraw
+     * leaves the window's size and place alone and saves nothing; an explicit page change still sizes the window as it did.
+     *
+     * Modelled on the validator's probe: the Medium pop-up opened, made 160 pixels narrower and 120 shorter and moved, one
+     * caption of its page taken off as the editor takes it off, and the window told.  Remember Window Location is switched
+     * on, put back after, and the bounds kept for this window are read from the preferences.
+     *
+     * MUTATION: let the caption redraw pack and save as `refreshDiagram` does, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAPopUpKeepsItsSizeAndPlaceWhenACaptionChanges() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
+        org.traincontrol.automationui.TileGraph.TileKey found = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
+                || ui.getLayoutStations(square).isEmpty())
+            {
+                continue;
+            }
+
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
+
+            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
+            {
+                found = square;
+                drawnAt = drawn.get(0);
+                break;
+            }
+        }
+
+        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+
+        final org.traincontrol.automationui.TileGraph.TileKey station = found;
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
+
+        // REMEMBER WINDOW LOCATION ON, the operator's own choice put back below, with whatever was kept for the window
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        final String rememberWas = prefs.get(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+
+        prefs.putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
+
+        org.traincontrol.gui.LayoutPopupUI popup = null;
+        String kept = null;
+
+        try
+        {
+            popup = openAMediumPopUp();
+
+            final org.traincontrol.gui.LayoutPopupUI window = popup;
+
+            kept = "LayoutPopupUI_" + window.getLayoutTitle() + "_" + window.getLayoutSize();
+
+            for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
+
+            pump();
+            pump();
+
+            final java.awt.Dimension[] natural = new java.awt.Dimension[1];
+            final java.awt.Dimension[] sized = new java.awt.Dimension[1];
+            final java.awt.Point[] placed = new java.awt.Point[1];
+
+            // THE OPERATOR SIZES IT AND MOVES IT
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                natural[0] = window.getSize();
+
+                window.setSize(Math.max(300, natural[0].width - 160), Math.max(250, natural[0].height - 120));
+                window.setLocation(window.getX() + 37, window.getY() + 23);
+            });
+
+            for (int i = 0; i < 10; i++) pump();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                sized[0] = window.getSize();
+                placed[0] = window.getLocation();
+            });
+
+            assertTrue(sized[0].width < natural[0].width && sized[0].height < natural[0].height,
+                "precondition: the pop-up was not made smaller: " + natural[0] + " then " + sized[0]);
+
+            assertEquals(prefs.getInt(kept + "_width", -1), sized[0].width,
+                "precondition: the size the operator chose is not what is remembered for the window");
+
+            // A CAPTION OF ITS PAGE TAKEN OFF, the window told as the editor tells it
+            session.setCaption(square, null);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            for (int i = 0; i < 20; i++) pump();
+
+            Thread.sleep(500);
+
+            for (int i = 0; i < 5; i++) pump();
+
+            // IT WAS REDRAWN, or what follows would pass for a window nothing touched
+            assertEquals(labelsInPopup(station, window), 0, "precondition: the pop-up was not redrawn, so nothing here was"
+                + " asked");
+
+            final java.awt.Dimension[] after = new java.awt.Dimension[1];
+            final java.awt.Point[] stands = new java.awt.Point[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                after[0] = window.getSize();
+                stands[0] = window.getLocation();
+            });
+
+            assertEquals(after[0], sized[0], "the pop-up the operator sized went back to " + after[0] + " when a caption of"
+                + " its page changed");
+
+            assertEquals(stands[0], placed[0], "the pop-up the operator moved went to " + stands[0] + " when a caption of"
+                + " its page changed");
+
+            assertEquals(prefs.getInt(kept + "_width", -1), sized[0].width, "the width remembered for the window was written"
+                + " over with the natural size");
+
+            assertEquals(prefs.getInt(kept + "_height", -1), sized[0].height, "the height remembered for the window was written"
+                + " over with the natural size");
+
+            // AN EXPLICIT PAGE CHANGE STILL SIZES IT, as it did: the page is drawn and the window fits it
+            final int shown = pages.getSelectedIndex();
+
+            window.goToLayoutPage(shown);
+
+            for (int i = 0; i < 20; i++) pump();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> after[0] = window.getSize());
+
+            assertEquals(after[0], natural[0], "a page change no longer sizes the pop-up to its page");
+        }
+        finally
+        {
+            session.setCaption(square, station);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            if (popup != null)
+            {
+                final org.traincontrol.gui.LayoutPopupUI closing = popup;
+
+                javax.swing.SwingUtilities.invokeAndWait(closing::dispose);
+            }
+
+            if (kept != null)
+            {
+                for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
+            }
+
+            if (rememberWas == null) prefs.remove(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else prefs.put(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
+
+            pump();
+        }
+    }
+
     /** How many of the station's registered caption labels sit inside this pop-up. */
     private static int labelsInPopup(final org.traincontrol.automationui.TileGraph.TileKey station,
         final org.traincontrol.gui.LayoutPopupUI popup) throws Exception
