@@ -30,9 +30,9 @@ import org.traincontrol.util.SelfUpdate;
  * (`TrainControlUI.updateQuestionForTests`), and the refusal is the predicate Download & Update asks before it
  * downloads and again before it closes TrainControl, asked of a real model on a sandboxed layout.
  *
- * MUTATIONS, each seen red: the answer read by position alone, so the second of two buttons counts as Download & Update
- * (the buttons claim); `jarAt` accepting a folder (the classes claim); the refusal dropping the model's running
- * question, or the routes (the refusal claim).
+ * MUTATIONS, each seen red: the answer read by position alone, so the second of two buttons counts as Download & Update,
+ * or Download & Update made the default (the buttons claim); `jarAt` accepting a folder (the classes claim); the
+ * refusal dropping the model's running question, or the routes (the refusal claim).
  */
 public class testTheUpdateQuestion
 {
@@ -44,7 +44,7 @@ public class testTheUpdateQuestion
 
     /**
      * With a jar: Download, Download & Update, Cancel.  Without one: Download and Cancel, and the second button is
-     * Cancel there, not Download & Update.
+     * Cancel there, not Download & Update.  Download is the default either way.
      */
     @Test
     public void testTheButtonsWithAndWithoutAJar()
@@ -54,11 +54,13 @@ public class testTheUpdateQuestion
         final String cancel = I18n.t("ui.cancel");
 
         final List<List<Object>> shown = new ArrayList<>();
+        final List<Object> defaults = new ArrayList<>();
         final int[] press = {1};
 
-        TrainControlUI.updateQuestionForTests(choices ->
+        TrainControlUI.updateQuestionForTests((choices, initial) ->
         {
             shown.add(Arrays.asList(choices));
+            defaults.add(initial);
 
             return press[0];
         });
@@ -74,6 +76,9 @@ public class testTheUpdateQuestion
 
         assertEquals(shown.get(1), Arrays.<Object>asList(download, cancel), "without a jar to replace, Download & Update"
             + " must not be offered at all (Adam, 2026-10-12)");
+
+        assertEquals(defaults, Arrays.<Object>asList(download, download), "the default button must be Download, with a"
+            + " jar or without: Download & Update closes TrainControl, and a reflex Enter must not do that");
 
         press[0] = 0;
 

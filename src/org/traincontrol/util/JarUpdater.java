@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Swaps a new TrainControl jar in for the old one once TrainControl has closed, then starts it again (FR-125).
@@ -30,7 +29,8 @@ import java.util.concurrent.TimeUnit;
  * two programs to keep in step.
  *
  * **It never runs from the jar it replaces.**  On Windows a running jar is locked, so the application copies itself to
- * a temporary file and starts this class from the copy (`SelfUpdate.startUpdater`).
+ * a file beside the jar and starts this class from the copy (`SelfUpdate.startUpdater`).  The first thing `main` does
+ * is write `RUNNING_NAME` beside the jar, which is how the application knows this started before it exits.
  *
  * **It waits for TrainControl to have closed, without asking for its process.**  Java 8 has no `ProcessHandle`, so the
  * application holds a lock on a file beside the jar from just before it starts this until its JVM ends, and this waits
@@ -42,15 +42,24 @@ import java.util.concurrent.TimeUnit;
  * the same Java, the same Java options and the same arguments, in the working directory TrainControl had.  The old jar
  * is kept, so the update can be undone by hand (Adam, 2026-10-12).
  *
- * **Any failure puts the old jar back and starts it**, including a new version that stops at once with an error (a
- * release built for a newer Java, say).  Every step is written to `update.log` beside the jar, which is the only place
- * anybody can read what happened: there is no window while this runs.
+ * **"Started" means the new version said so, not that it ran for a while.**  It is given the path of a marker file in
+ * the `STARTED_ENVIRONMENT` environment variable, and `TrainControl.main` writes that file as its very first act - so
+ * the file proves the new jar runs on this Java.  A version that ends without writing it is put back, whatever its
+ * exit code; one that writes it and then exits (the IP question cancelled, say) has started, and stays.  An exit code
+ * could not tell those apart: TrainControl ends with 1 on purpose in several places.  An environment variable rather
+ * than a -D option, because the Java options are carried into every later restart and the marker belongs to this one.
+ * One that says nothing within `START_CAP_MS` is kept, and the log says so.
+ *
+ * **A failure puts the old jar back and starts it**, and leaves `ROLLBACK_NOTE_NAME` beside the jar, which the old
+ * version reads on its next start to say the update was put back.  Every step is written to `update.log` beside the
+ * jar.
  *
  * **Self-contained on purpose**: it uses nothing of TrainControl's, so nothing the application loads at start-up can
- * stop it part way through a swap.  For the same reason its log is in English rather than through the message bundles.
+ * stop it part way through a swap.  For the same reason its log is in English; the one sentence it shows, in a small
+ * window while it waits and swaps, is handed to it already translated.
  *
  * The file work is in static methods that take paths, a mover and a launcher, which is how
- * `core.testTheUpdaterSwapsTheJar` runs every step without starting a process or touching a real jar.
+ * `core.testTheUpdaterSwapsTheJar` runs every step without starting TrainControl or touching a real jar.
  */
 public final class JarUpdater
 {
@@ -65,24 +74,42 @@ public final class JarUpdater
     public static final String LOCK_NAME = "TrainControl-update.lock";
 
     /**
+     * The file this writes beside the jar as soon as it is running, for the application to see before it exits.
+     */
+    public static final String RUNNING_NAME = "TrainControl-updater.running";
+
+    /**
+     * The file the new version writes beside the jar as soon as it is running.
+     */
+    public static final String STARTED_NAME = "TrainControl-update.started";
+
+    /**
+     * The environment variable that tells a starting TrainControl where to write `STARTED_NAME`.
+     */
+    public static final String STARTED_ENVIRONMENT = "TRAINCONTROL_UPDATE_STARTED";
+
+    /**
+     * The note a rollback leaves beside the jar for the old version to read on its next start: `to=` the version that
+     * could not start, `from=` the one put back.
+     */
+    public static final String ROLLBACK_NOTE_NAME = "TrainControl-update-failed.txt";
+
+    /**
      * How long to wait for TrainControl to close: generous, because the exit saves the locomotive database, the
      * window state and the layout first, and a large layout on a slow disk takes time.
      */
     public static final long LOCK_TIMEOUT_MS = 5 * 60 * 1000L;
 
     /**
-     * How often to try for the lock while waiting.
+     * How often to look, while waiting for the lock or for the new version to say it has started.
      */
-    public static final long LOCK_POLL_MS = 250;
+    public static final long POLL_MS = 250;
 
     /**
-     * How long a freshly started version is watched.  One that ends with an error inside this time did not start, and
-     * the old one goes back.
-     *
-     * Long enough for somebody to read and dismiss the Java launcher's own error window, which is what a jar built for
-     * a newer Java than this one shows before it exits.
+     * How long the new version has to say it has started.  Long, because the Java launcher's own error window, which
+     * is what a jar built for a newer Java shows, waits for somebody to read it; past this the new version is kept.
      */
-    public static final long START_GRACE_MS = 60 * 1000L;
+    public static final long START_CAP_MS = 10 * 60 * 1000L;
 
     /**
      * How many times a rename is tried before it counts as failed, and how long apart.  The lock is let go as the old
@@ -96,12 +123,38 @@ public final class JarUpdater
      */
     public enum Outcome
     {
-        /** The new version is in place and was started. */
+        /** The new version is in place and said it had started. */
         UPDATED,
+        /** The new version is in place and still running, but did not say it had started within the cap: kept. */
+        UNCONFIRMED,
         /** TrainControl never closed, so nothing was changed and nothing was started. */
         GAVE_UP,
         /** Something failed: the old version was put back and started. */
         ROLLED_BACK
+    }
+
+    /**
+     * How a started version answered.
+     */
+    public enum Start
+    {
+        /** It wrote the marker. */
+        STARTED,
+        /** It ended without writing the marker. */
+        ENDED,
+        /** It is still running and has not written the marker. */
+        NO_WORD
+    }
+
+    /**
+     * A program that was started.
+     */
+    public interface Started
+    {
+        /**
+         * @return whether it is still running
+         */
+        boolean isAlive();
     }
 
     /**
@@ -112,11 +165,12 @@ public final class JarUpdater
         /**
          * @param command the program and its arguments
          * @param folder the working directory
-         * @param graceMs how long to watch it
-         * @return its exit code if it ended within graceMs, or null while it is still running
+         * @param startedMarker the file a starting TrainControl is to write, passed in `STARTED_ENVIRONMENT`; null
+         * for none, and then the variable is removed
+         * @return the program
          * @throws IOException when it could not be started at all
          */
-        Integer start(List<String> command, File folder, long graceMs) throws IOException;
+        Started start(List<String> command, File folder, File startedMarker) throws IOException;
     }
 
     /**
@@ -137,38 +191,59 @@ public final class JarUpdater
      */
     public static final class Request
     {
+        /** How many values come before the Java options' count. */
+        private static final int FIXED = 9;
+
         /** The jar TrainControl was started from: the one being replaced. */
         public final File jar;
         /** The downloaded jar, in the same folder. */
         public final File newJar;
         /** The file TrainControl holds a lock on until it has exited. */
         public final File lock;
+        /** The file this writes as soon as it is running. */
+        public final File running;
         /** The version being replaced, for the old jar's new name. */
         public final String oldVersion;
+        /** The version being installed, for the rollback note. */
+        public final String newVersion;
         /** The working directory TrainControl had. */
         public final File workingDirectory;
         /** The Java to start it with. */
         public final String java;
+        /** What the small window says while this waits and swaps, already translated. */
+        public final String windowText;
         /** The Java options it was started with. */
         public final List<String> javaOptions;
         /** Its own command-line arguments. */
         public final List<String> arguments;
 
-        public Request(File jar, File newJar, File lock, String oldVersion, File workingDirectory, String java,
-            List<String> javaOptions, List<String> arguments)
+        public Request(File jar, File newJar, File lock, File running, String oldVersion, String newVersion,
+            File workingDirectory, String java, String windowText, List<String> javaOptions, List<String> arguments)
         {
             this.jar = jar.getAbsoluteFile();
             this.newJar = newJar.getAbsoluteFile();
             this.lock = lock.getAbsoluteFile();
-            this.oldVersion = oldVersion == null ? "" : oldVersion;
+            this.running = running.getAbsoluteFile();
+            this.oldVersion = nonEmpty(oldVersion);
+            this.newVersion = nonEmpty(newVersion);
             this.workingDirectory = workingDirectory.getAbsoluteFile();
             this.java = java;
+            this.windowText = nonEmpty(windowText);
             this.javaOptions = Collections.unmodifiableList(new ArrayList<>(javaOptions));
             this.arguments = Collections.unmodifiableList(new ArrayList<>(arguments));
         }
 
         /**
-         * As `main` reads them: six fixed values, the number of Java options, the options, then the arguments.
+         * An empty argument does not survive a Windows command line under Java 8 - it is dropped, and every value
+         * after it would move up one place - so none is ever written.
+         */
+        private static String nonEmpty(String value)
+        {
+            return value == null || value.isEmpty() ? "?" : value;
+        }
+
+        /**
+         * As `main` reads them: the fixed values, the number of Java options, the options, then the arguments.
          *
          * @return the command-line form
          */
@@ -179,9 +254,12 @@ public final class JarUpdater
             out.add(this.jar.getPath());
             out.add(this.newJar.getPath());
             out.add(this.lock.getPath());
+            out.add(this.running.getPath());
             out.add(this.oldVersion);
+            out.add(this.newVersion);
             out.add(this.workingDirectory.getPath());
             out.add(this.java);
+            out.add(this.windowText);
             out.add(Integer.toString(this.javaOptions.size()));
             out.addAll(this.javaOptions);
             out.addAll(this.arguments);
@@ -198,23 +276,25 @@ public final class JarUpdater
          */
         public static Request parse(String[] args)
         {
-            if (args == null || args.length < 7)
+            if (args == null || args.length < FIXED + 1)
             {
-                throw new IllegalArgumentException("expected at least 7 arguments, got "
+                throw new IllegalArgumentException("expected at least " + (FIXED + 1) + " arguments, got "
                     + (args == null ? 0 : args.length));
             }
 
-            int options = Integer.parseInt(args[6]);
+            int options = Integer.parseInt(args[FIXED]);
 
-            if (options < 0 || 7 + options > args.length)
+            int first = FIXED + 1;
+
+            if (options < 0 || first + options > args.length)
             {
                 throw new IllegalArgumentException("the option count " + options + " does not fit "
                     + args.length + " arguments");
             }
 
-            return new Request(new File(args[0]), new File(args[1]), new File(args[2]), args[3], new File(args[4]),
-                args[5], Arrays.asList(args).subList(7, 7 + options),
-                Arrays.asList(args).subList(7 + options, args.length));
+            return new Request(new File(args[0]), new File(args[1]), new File(args[2]), new File(args[3]), args[4],
+                args[5], new File(args[6]), args[7], args[8], Arrays.asList(args).subList(first, first + options),
+                Arrays.asList(args).subList(first + options, args.length));
         }
 
         /**
@@ -314,54 +394,79 @@ public final class JarUpdater
         }
         catch (RuntimeException e)
         {
-            // Nowhere to write a log without the jar's folder, so the error stream is all there is.
+            // Nowhere to write a log without the jar's folder, so the error stream is all there is.  No running marker
+            // either, so TrainControl stays open and says the updater did not start.
             System.err.println("TrainControl updater: " + e.getMessage());
 
             return;
         }
 
+        // FIRST, so TrainControl knows this is running before it exits (it waits a few seconds for this file)
+        writeMarker(request.running);
+
         Log log = new Log(new File(request.jar.getParentFile(), LOG_NAME));
+
+        final javax.swing.JWindow[] window = {showTheWindow(request.windowText)};
 
         try
         {
-            update(request, LOCK_TIMEOUT_MS, LOCK_POLL_MS, MOVE_ATTEMPTS, MOVE_PAUSE_MS, START_GRACE_MS,
-                JarUpdater::startProcess, JarUpdater::rename, log);
+            update(request, LOCK_TIMEOUT_MS, POLL_MS, MOVE_ATTEMPTS, MOVE_PAUSE_MS, START_CAP_MS,
+                JarUpdater::startProcess, JarUpdater::rename, log, () ->
+                {
+                    closeTheWindow(window[0]);
+
+                    window[0] = null;
+                });
         }
-        catch (RuntimeException e)
+        catch (RuntimeException | Error e)
         {
             log.say("The updater stopped with an error: " + e);
         }
+        finally
+        {
+            closeTheWindow(window[0]);
+        }
+
+        // The window's event thread would otherwise keep this JVM alive; what it started is a process of its own
+        System.exit(0);
     }
 
     /**
      * The whole update: wait for TrainControl to close, swap the jars, start the new one, and put the old one back if
-     * anything fails.
+     * it does not start.
      *
      * @param request what to update
      * @param lockTimeoutMs how long to wait for TrainControl to close
-     * @param lockPollMs how often to try for the lock
+     * @param pollMs how often to look, for the lock and for the started marker
      * @param moveAttempts how many times a rename is tried
      * @param movePauseMs how long between tries
-     * @param graceMs how long the started version is watched
+     * @param startCapMs how long the new version has to say it has started
      * @param launcher what starts a program
      * @param mover what renames a file
      * @param log where each step is written
+     * @param launched run once a version has been launched, new or old, so the window can close; may be null
      * @return what happened
      */
-    public static Outcome update(Request request, long lockTimeoutMs, long lockPollMs, int moveAttempts,
-        long movePauseMs, long graceMs, Launcher launcher, Mover mover, Log log)
+    public static Outcome update(Request request, long lockTimeoutMs, long pollMs, int moveAttempts, long movePauseMs,
+        long startCapMs, Launcher launcher, Mover mover, Log log, Runnable launched)
     {
-        log.say("Updating " + request.jar + " (v" + request.oldVersion + ") with " + request.newJar.getName());
+        log.say("Updating " + request.jar + " (v" + request.oldVersion + ") to v" + request.newVersion + " from "
+            + request.newJar.getName());
 
-        if (!waitForLock(request.lock, lockTimeoutMs, lockPollMs))
+        if (!waitForLock(request.lock, lockTimeoutMs, pollMs))
         {
             log.say("TrainControl did not close within " + (lockTimeoutMs / 1000) + " seconds, so nothing was"
                 + " changed.  The new version is still at " + request.newJar);
+
+            // As tidy as it can be: where TrainControl still holds the file, the delete simply fails
+            request.lock.delete();
 
             return Outcome.GAVE_UP;
         }
 
         log.say("TrainControl has closed");
+
+        request.lock.delete();
 
         File backup;
 
@@ -373,42 +478,119 @@ public final class JarUpdater
         {
             log.say("The update failed: " + e.getMessage());
 
-            startTheOld(request, e.oldIsAt, launcher, graceMs, log);
-
-            request.lock.delete();
-
-            return Outcome.ROLLED_BACK;
+            return rollBack(request, e.oldIsAt, launcher, log, launched);
         }
 
-        String failed;
+        File started = new File(request.jar.getParentFile(), STARTED_NAME);
+
+        started.delete();
+
+        Started process;
 
         try
         {
-            Integer ended = launcher.start(request.commandFor(request.jar), request.workingDirectory, graceMs);
-
-            failed = ended == null || ended == 0 ? null : "the new version stopped at once with exit code " + ended;
+            process = launcher.start(request.commandFor(request.jar), request.workingDirectory, started);
         }
         catch (IOException e)
         {
-            failed = "the new version could not be started: " + e.getMessage();
+            log.say("The update failed: the new version could not be started: " + e.getMessage());
+
+            return rollBack(request, undo(request.jar, request.newJar, backup, mover, moveAttempts, movePauseMs, log),
+                launcher, log, launched);
         }
 
-        if (failed == null)
+        if (launched != null) launched.run();
+
+        switch (waitForTheStart(started, process, startCapMs, pollMs))
         {
-            log.say("Started the new version.  The old one is kept as " + backup.getName());
+            case STARTED:
+                started.delete();
 
-            request.lock.delete();
+                log.say("The new version has started.  The old one is kept as " + backup.getName());
 
-            return Outcome.UPDATED;
+                return Outcome.UPDATED;
+
+            case NO_WORD:
+                log.say("The new version is running but did not say it had started within " + (startCapMs / 1000)
+                    + " seconds, so it was kept.  The old one is kept as " + backup.getName());
+
+                return Outcome.UNCONFIRMED;
+
+            default:
+                log.say("The update failed: the new version ended before it had started");
+
+                return rollBack(request,
+                    undo(request.jar, request.newJar, backup, mover, moveAttempts, movePauseMs, log),
+                    launcher, log, launched);
+        }
+    }
+
+    /**
+     * Waits for a started version to write its marker, or to end without it, or for the cap.
+     *
+     * The marker is looked for once more after the process has ended: one that wrote it and quit at once (the IP
+     * question cancelled) has started.
+     *
+     * @param marker the file it is to write
+     * @param process the started version
+     * @param capMs how long to wait
+     * @param pollMs how often to look
+     * @return how it answered
+     */
+    public static Start waitForTheStart(File marker, Started process, long capMs, long pollMs)
+    {
+        long until = System.currentTimeMillis() + capMs;
+
+        while (true)
+        {
+            if (marker.isFile()) return Start.STARTED;
+
+            if (!process.isAlive()) return marker.isFile() ? Start.STARTED : Start.ENDED;
+
+            if (System.currentTimeMillis() >= until) return Start.NO_WORD;
+
+            try
+            {
+                Thread.sleep(pollMs);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+
+                return Start.NO_WORD;
+            }
+        }
+    }
+
+    /**
+     * After a failure: leaves the note the old version reads on its next start, and starts it.
+     */
+    private static Outcome rollBack(Request request, File old, Launcher launcher, Log log, Runnable launched)
+    {
+        File note = new File(request.jar.getParentFile(), ROLLBACK_NOTE_NAME);
+
+        try
+        {
+            Files.write(note.toPath(), ("to=" + request.newVersion + "\nfrom=" + request.oldVersion + "\n")
+                .getBytes(StandardCharsets.UTF_8));
+        }
+        catch (IOException e)
+        {
+            log.say("Could not leave a note for the old version: " + e.getMessage());
         }
 
-        log.say("The update failed: " + failed);
+        try
+        {
+            launcher.start(request.commandFor(old), request.workingDirectory, null);
 
-        File old = undo(request.jar, request.newJar, backup, mover, moveAttempts, movePauseMs, log);
+            log.say("Started the old version again from " + old.getName());
+        }
+        catch (IOException e)
+        {
+            log.say("Could not start the old version either: " + e.getMessage());
+        }
 
-        startTheOld(request, old, launcher, graceMs, log);
-
-        request.lock.delete();
+        if (launched != null) launched.run();
 
         return Outcome.ROLLED_BACK;
     }
@@ -577,25 +759,7 @@ public final class JarUpdater
             log.say("COULD NOT put the old version back (" + e.getMessage() + ").  It is " + backup
                 + ": rename it to " + jar.getName());
 
-            return backup;
-        }
-    }
-
-    /**
-     * Starts the old version again, after a failure.
-     */
-    private static void startTheOld(Request request, File old, Launcher launcher, long graceMs, Log log)
-    {
-        try
-        {
-            Integer ended = launcher.start(request.commandFor(old), request.workingDirectory, graceMs);
-
-            log.say(ended == null || ended == 0 ? "Started the old version again from " + old.getName()
-                : "The old version stopped too, with exit code " + ended);
-        }
-        catch (IOException e)
-        {
-            log.say("Could not start the old version either: " + e.getMessage());
+            return backup.isFile() ? backup : jar;
         }
     }
 
@@ -637,6 +801,24 @@ public final class JarUpdater
     }
 
     /**
+     * Writes a marker file.  Never throws: a marker that cannot be written is a start nobody hears about, which the
+     * waiting side already handles.
+     *
+     * @param marker the file
+     */
+    public static void writeMarker(File marker)
+    {
+        try
+        {
+            Files.write(marker.toPath(), "started".getBytes(StandardCharsets.UTF_8));
+        }
+        catch (IOException | RuntimeException e)
+        {
+            System.err.println("TrainControl updater: could not write " + marker + ": " + e);
+        }
+    }
+
+    /**
      * The real rename.  No REPLACE_EXISTING: the target never exists, and if it somehow did it must not be lost.
      */
     private static void rename(Path from, Path to) throws IOException
@@ -648,26 +830,86 @@ public final class JarUpdater
      * The real launcher.  Its output goes nowhere, as it would for a jar started by a double click: this JVM exits
      * soon, and a pipe with no reader would stop the new version the first time it wrote to it.
      */
-    private static Integer startProcess(List<String> command, File folder, long graceMs) throws IOException
+    private static Started startProcess(List<String> command, File folder, File startedMarker) throws IOException
     {
         File nowhere = new File(File.separatorChar == '\\' ? "NUL" : "/dev/null");
 
-        Process started = new ProcessBuilder(command)
+        ProcessBuilder builder = new ProcessBuilder(command)
             .directory(folder)
             .redirectErrorStream(true)
             .redirectOutput(ProcessBuilder.Redirect.appendTo(nowhere))
-            .redirectInput(ProcessBuilder.Redirect.from(nowhere))
-            .start();
+            .redirectInput(ProcessBuilder.Redirect.from(nowhere));
+
+        if (startedMarker == null)
+        {
+            builder.environment().remove(STARTED_ENVIRONMENT);
+        }
+        else
+        {
+            builder.environment().put(STARTED_ENVIRONMENT, startedMarker.getAbsolutePath());
+        }
+
+        final Process process = builder.start();
+
+        return process::isAlive;
+    }
+
+    /**
+     * A small undecorated window saying the update is under way, while TrainControl's own window is gone and the new
+     * one has not appeared (FR-125).  None on a headless system, and none if Swing cannot make one: the window is a
+     * courtesy, and nothing about the update may depend on it.
+     *
+     * @param text what it says
+     * @return the window, or null
+     */
+    private static javax.swing.JWindow showTheWindow(final String text)
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) return null;
 
         try
         {
-            return started.waitFor(graceMs, TimeUnit.MILLISECONDS) ? started.exitValue() : null;
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
+            final javax.swing.JWindow[] made = new javax.swing.JWindow[1];
 
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JLabel label = new javax.swing.JLabel(text);
+
+                label.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                    javax.swing.BorderFactory.createLineBorder(java.awt.Color.GRAY),
+                    javax.swing.BorderFactory.createEmptyBorder(16, 28, 16, 28)));
+
+                javax.swing.JWindow window = new javax.swing.JWindow();
+
+                window.getContentPane().add(label);
+                window.pack();
+                window.setLocationRelativeTo(null);
+                window.setVisible(true);
+
+                made[0] = window;
+            });
+
+            return made[0];
+        }
+        catch (Exception | Error e)
+        {
             return null;
+        }
+    }
+
+    /**
+     * Closes the window, if there is one.
+     */
+    private static void closeTheWindow(final javax.swing.JWindow window)
+    {
+        if (window == null) return;
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeLater(window::dispose);
+        }
+        catch (RuntimeException | Error e)
+        {
+            // A courtesy that could not be taken back; the process ends anyway
         }
     }
 }

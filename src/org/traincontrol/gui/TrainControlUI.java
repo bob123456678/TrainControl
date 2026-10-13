@@ -461,10 +461,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private volatile boolean stagingFlowActive = false;
 
     /**
-     * The update the exit is to start, or null (FR-125).  Set by Download & Update just before it asks for the exit, and
-     * taken by `WindowClosed` once everything is saved and nothing can refuse the exit any more.
+     * Download & Update from its question to the exit (FR-125): one at a time, and the update the exit is to start.
+     * Armed by `closeForTheUpdate` just before it asks for the exit, disarmed whatever the exit does, and taken by
+     * `WindowClosed` once everything is saved and nothing can refuse the exit any more.
      */
-    private PendingUpdate updateOnExit;
+    private final SelfUpdate.HandOver updateHandOver = new SelfUpdate.HandOver();
     
     // Graph viewer instance
     
@@ -11493,6 +11494,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }).start();
         
+        // AN UPDATE THAT WAS PUT BACK (FR-125).  When Download & Update's new version could not start, the updater put
+        // this one back, started it, and left a note beside the jar; this is that start, so the note is said once and
+        // removed.  The copies earlier updaters ran from are tidied here too, since an updater cannot remove its own.
+        final File runningFrom = SelfUpdate.runningJar(TrainControlUI.class);
+
+        if (runningFrom != null)
+        {
+            SelfUpdate.tidyOldCopies(runningFrom.getParentFile());
+
+            final String[] putBack = SelfUpdate.takeRollbackNote(runningFrom.getParentFile());
+
+            if (putBack != null)
+            {
+                final String said = I18n.f("ui.update.rolledBack", putBack[0], putBack[1]);
+
+                if (this.model != null) this.model.log(said);
+
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, said));
+            }
+        }
+
         // Check for updates
         this.downloadUpdateMenuItem.setVisible(false);
         
@@ -21614,16 +21636,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // TrainControl later.  Here everything has agreed and is saved.  The updater waits for this process to end (it
         // holds the exit lock until then), so nothing below is hurried.
         //
-        // If it cannot start, TrainControl stays open and says so, and nothing has been replaced.
-        final PendingUpdate update = this.updateOnExit;
-
-        this.updateOnExit = null;
+        // If it cannot start, or does not say within a few seconds that it is running (`startUpdater` waits for that,
+        // because a started process proves nothing), TrainControl stays open and says so, and nothing has been replaced.
+        final SelfUpdate.Pending update = this.updateHandOver.take();
 
         if (update != null)
         {
             try
             {
-                SelfUpdate.startUpdater(update.jar, update.download, RAW_VERSION, SelfUpdate::startDetached);
+                SelfUpdate.startUpdater(update.jar, update.download, RAW_VERSION, update.version,
+                    I18n.t("ui.update.updating"), SelfUpdate::startDetached, SelfUpdate.UPDATER_WAIT_MS);
             }
             catch (IOException | RuntimeException e)
             {
@@ -27716,18 +27738,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Answers the update question in place of the user, in a test: given the buttons, it returns the index of the one
-     * pressed.  Null puts the real question back.
+     * Answers the update question in place of the user, in a test: given the buttons and the default one, it returns
+     * the index of the one pressed.  Null puts the real question back.
      */
-    private static volatile java.util.function.Function<Object[], Integer> updateQuestionForTests;
+    private static volatile java.util.function.BiFunction<Object[], Object, Integer> updateQuestionForTests;
 
     /**
-     * Shows the update question's buttons to a test instead of to the user (FR-125).
+     * Shows the update question's buttons, and its default, to a test instead of to the user (FR-125).
      *
-     * @param hook given the buttons, returns the index of the one pressed, or -1 for the window closed; null for the
-     * real question
+     * @param hook given the buttons and the default, returns the index of the one pressed, or -1 for the window
+     * closed; null for the real question
      */
-    public static void updateQuestionForTests(java.util.function.Function<Object[], Integer> hook)
+    public static void updateQuestionForTests(java.util.function.BiFunction<Object[], Object, Integer> hook)
     {
         updateQuestionForTests = hook;
     }
@@ -27741,7 +27763,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * replace there are two buttons, Download and Cancel, and the second button is Cancel.  The answer is read
      * against the buttons that were shown, so the two layouts cannot be mistaken for each other.
      *
-     * Download & Update is the default where it is offered: it is the one click this was asked for.
+     * Download is the default, with a jar or without: Download & Update closes TrainControl, and a reflex Enter must
+     * not do that.
      *
      * @param parent what to show it over
      * @param latest the new version
@@ -27758,14 +27781,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ? new Object[] {download, install, I18n.t("ui.cancel")}
             : new Object[] {download, I18n.t("ui.cancel")};
 
-        final java.util.function.Function<Object[], Integer> hook = updateQuestionForTests;
+        // Download, never Download & Update: the default is what a reflex Enter does
+        final Object initial = download;
 
-        final int chose = hook != null ? hook.apply(choices.clone()) : JOptionPane.showOptionDialog(parent,
+        final java.util.function.BiFunction<Object[], Object, Integer> hook = updateQuestionForTests;
+
+        final int chose = hook != null ? hook.apply(choices.clone(), initial) : JOptionPane.showOptionDialog(parent,
             I18n.f("ui.update.available", latest, running)
                 + (canInstall ? "\n\n" + I18n.t("ui.update.explainInstall") : ""),
             I18n.t("ui.main.downloadUpdate"),
-            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, choices,
-            canInstall ? install : download);
+            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, choices, initial);
 
         if (chose == 0) return UpdateChoice.DOWNLOAD;
 
@@ -27837,6 +27862,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Download is what this item always did, saved beside the running jar now where there is one, and in the working
      * directory as before where there is not.
      *
+     * One Download & Update at a time: a second, while one is downloading, backing up or closing, is refused rather
+     * than stacked.  Whatever ends it short of the exit ends it here; once it reaches `closeForTheUpdate`, that ends it.
+     *
      * @param jar the running jar, or null
      * @param install whether to update as well
      */
@@ -27844,10 +27872,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (install)
         {
+            if (!this.updateHandOver.begin())
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("ui.update.alreadyUnderWay"));
+
+                return;
+            }
+
             final String wait = whyAnUpdateMustWait(this.model, this.stagingFlowActive || isAutonomyBusy());
 
             if (wait != null)
             {
+                this.updateHandOver.end();
+
                 JOptionPane.showMessageDialog(this, wait);
 
                 return;
@@ -27860,35 +27897,60 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
         {
+            // Whether the update reached closeForTheUpdate, which ends it itself
+            boolean handedOver = false;
+
             try
             {
-                File f = SelfUpdate.downloadTarget(jar, LATEST_VERSION);
+                final File f = SelfUpdate.downloadTarget(jar, LATEST_VERSION);
 
-                // A file of that name that is not the whole release, an earlier download cut short, is fetched again
-                // rather than installed.  Download alone keeps whatever is there, as it always has.
-                if (install && f.exists()
-                    && SelfUpdate.whyNotAWholeJar(f, LATEST_DOWNLOAD_SIZE, LATEST_DOWNLOAD_DIGEST) != null)
+                try
                 {
-                    Files.delete(f.toPath());
-                }
-
-                if (!f.exists())
-                {
-                    Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
+                    // A file of that name that is not the whole release, an earlier download cut short, is fetched
+                    // again rather than installed.  Download alone keeps whatever is there, as it always has.
+                    if (install && f.exists()
+                        && SelfUpdate.whyNotAWholeJar(f, LATEST_DOWNLOAD_SIZE, LATEST_DOWNLOAD_DIGEST) != null)
                     {
-                        javax.swing.SwingUtilities.invokeLater(() ->
+                        Files.delete(f.toPath());
+                    }
+
+                    if (!f.exists())
+                    {
+                        Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
                         {
-                            this.downloadUpdateMenuItem.setText(percent < 0
-                                ? I18n.t("ui.infoDownloadingUpdate")
-                                : I18n.f("ui.infoDownloadingUpdatePercent", percent)
-                            );
+                            javax.swing.SwingUtilities.invokeLater(() ->
+                            {
+                                this.downloadUpdateMenuItem.setText(percent < 0
+                                    ? I18n.t("ui.infoDownloadingUpdate")
+                                    : I18n.f("ui.infoDownloadingUpdatePercent", percent)
+                                );
+                            });
                         });
+                    }
+                }
+                catch (Exception e)
+                {
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("ui.errorDownloadingUpdateFile")
+                        );
                     });
+
+                    this.model.logf("ui.errorDownloadingUpdateFile");
+
+                    if (this.model.isDebug())
+                    {
+                        this.model.log(e);
+                    }
+
+                    return;
                 }
 
                 if (install)
                 {
-                    installTheDownload(jar, f);
+                    handedOver = installTheDownload(jar, f);
 
                     return;
                 }
@@ -27906,25 +27968,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     showFileExplorer(new File(f.getAbsoluteFile().toString()).getParentFile());
                 });
             }
-            catch (Exception e)
+            // ANYTHING ELSE, an Error included, is said rather than left to end this thread in silence (FR-125): a
+            // download that never reports looks like one still going, and an update that never reports, like one that
+            // never started.
+            catch (RuntimeException | Error e)
             {
+                final String why = String.valueOf(e);
+
+                this.model.logf("ui.update.errorFailed", why);
+
                 javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("ui.errorDownloadingUpdateFile")
-                    );
-                });
-
-                this.model.logf("ui.errorDownloadingUpdateFile");
-
-                if (this.model.isDebug())
-                {
-                    this.model.log(e);
-                }
+                    JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorFailed", why)));
             }
             finally
             {
+                if (install && !handedOver) this.updateHandOver.end();
+
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.downloadUpdateMenuItem.setText(I18n.t("ui.main.downloadUpdate"));
@@ -27938,13 +27997,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Download & Update, once the file is here (FR-125): checks it is a whole jar, takes the data backup, then closes
      * TrainControl for the updater.  On the download's worker thread, until the exit, which is the event thread's.
      *
-     * Each failure stops here, says why, and leaves everything as it was: the old jar is not touched until TrainControl
-     * has closed.
+     * Each failure stops here, says why in words of its own, and leaves everything as it was: the old jar is not
+     * touched until TrainControl has closed.
      *
      * @param jar the running jar
      * @param download the downloaded file, beside it
+     * @return true when the exit was asked for, which then ends the update itself
      */
-    private void installTheDownload(final File jar, final File download)
+    private boolean installTheDownload(final File jar, final File download)
     {
         final String broken = SelfUpdate.whyNotAWholeJar(download, LATEST_DOWNLOAD_SIZE, LATEST_DOWNLOAD_DIGEST);
 
@@ -27955,29 +28015,51 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             javax.swing.SwingUtilities.invokeLater(() ->
                 JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorNotWhole", broken)));
 
-            return;
+            return false;
         }
 
+        // What it is doing now: the backup takes a while, and the item would otherwise still read "Downloading 100%"
+        javax.swing.SwingUtilities.invokeLater(() ->
+            this.downloadUpdateMenuItem.setText(I18n.t("ui.update.backingUp")));
+
         // The application's own data backup, and the update goes no further without it (Adam, 2026-10-12).  Incomplete
-        // counts as failed: the backup is what makes an update safe to try, and a part of one is a part of that.
-        final BackupOutcome backup = backupData();
+        // counts as failed: the backup is what makes an update safe to try, and a part of one is a part of that.  An
+        // Error out of it is a failed backup too, and said as one.
+        BackupOutcome backup;
 
-        if (!backup.isComplete())
+        String why;
+
+        try
         {
-            final String why = backup.unsaved.isEmpty() ? I18n.t("ui.main.toolbar.backupData")
-                : String.join(", ", backup.unsaved);
+            backup = backupData();
 
-            this.model.logf("ui.update.errorBackup", why);
+            why = backup.isComplete() ? null
+                : backup.unsaved.isEmpty() ? I18n.t("ui.main.toolbar.backupData") : String.join(", ", backup.unsaved);
+        }
+        catch (RuntimeException | Error e)
+        {
+            backup = null;
+
+            why = String.valueOf(e);
+        }
+
+        if (why != null)
+        {
+            final String said = why;
+
+            this.model.logf("ui.update.errorBackup", said);
 
             javax.swing.SwingUtilities.invokeLater(() ->
-                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorBackup", why)));
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorBackup", said)));
 
-            return;
+            return false;
         }
 
         this.model.logf("ui.infoBackupCompleteSavedTo", backup.archive.getAbsolutePath());
 
         javax.swing.SwingUtilities.invokeLater(() -> closeForTheUpdate(jar, download));
+
+        return true;
     }
 
     /**
@@ -27986,49 +28068,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * Asked again first: the download and the backup took time, and a run may have started meanwhile.
      *
+     * The update is armed for the exit and disarmed whatever the exit does (`HandOver.exitWith`), so an exit that throws
+     * cannot leave it armed for a later, ordinary exit to start; and the hand-over is ended on every way out of here.
+     *
      * @param jar the running jar
      * @param download the checked download
      */
     private void closeForTheUpdate(final File jar, final File download)
     {
-        final String wait = whyAnUpdateMustWait(this.model, this.stagingFlowActive || isAutonomyBusy());
-
-        if (wait != null)
+        try
         {
-            JOptionPane.showMessageDialog(this, wait);
+            final String wait = whyAnUpdateMustWait(this.model, this.stagingFlowActive || isAutonomyBusy());
 
-            return;
+            if (wait != null)
+            {
+                JOptionPane.showMessageDialog(this, wait);
+
+                return;
+            }
+
+            this.model.logf("ui.update.logClosing", LATEST_VERSION,
+                new File(jar.getParentFile(), JarUpdater.LOG_NAME).getAbsolutePath());
+
+            // Coming back at all means TrainControl did not close.  Cancelled - an editor's Cancel, or the trains
+            // question answered No - is said here; an updater that could not start took the update and said so itself.
+            if (this.updateHandOver.exitWith(new SelfUpdate.Pending(jar, download, LATEST_VERSION),
+                () -> WindowClosed(null)))
+            {
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.cancelled", download.getName()));
+            }
         }
-
-        this.model.logf("ui.update.logClosing", LATEST_VERSION,
-            new File(jar.getParentFile(), JarUpdater.LOG_NAME).getAbsolutePath());
-
-        this.updateOnExit = new PendingUpdate(jar, download);
-
-        WindowClosed(null);
-
-        // Only reached when TrainControl did not close: an editor's Cancel, or the trains question answered No.  (An
-        // updater that could not start has already said so, and taken the update back.)
-        if (this.updateOnExit != null)
+        finally
         {
-            this.updateOnExit = null;
-
-            JOptionPane.showMessageDialog(this, I18n.f("ui.update.cancelled", download.getName()));
-        }
-    }
-
-    /**
-     * An update waiting for the exit: the jar to replace and the download to replace it with (FR-125).
-     */
-    private static final class PendingUpdate
-    {
-        final File jar;
-        final File download;
-
-        PendingUpdate(File jar, File download)
-        {
-            this.jar = jar;
-            this.download = download;
+            this.updateHandOver.end();
         }
     }
 

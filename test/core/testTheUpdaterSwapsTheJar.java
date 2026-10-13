@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -30,23 +31,37 @@ import org.traincontrol.util.SelfUpdate;
  *
  * Adam, 2026-10-12: *"after downloading the new jar, it should take a backup, then start the update script and close
  * TrainControl."*  The updater is `JarUpdater`, run by the same Java once TrainControl has closed: it renames the old
- * jar aside, moves the new one to its name, starts it, and puts the old one back on any failure.  The application's
- * half is `SelfUpdate`: whether a download is whole, and starting the updater from a copy of the jar.
+ * jar aside, moves the new one to its name, starts it, and puts the old one back when it does not start.  The
+ * application's half is `SelfUpdate`: whether a download is whole, starting the updater from a copy of the jar and
+ * hearing that it runs, and one update at a time.
  *
- * **Nothing here starts a process, ends the JVM or touches a real jar.**  Every jar is built in a temporary folder;
- * the updater's renames and its launcher are handed in, so a launch is a recorded command and a failed rename is one
- * the test throws.  The lock TrainControl holds until it exits is held by this test instead, in this JVM - which
- * `waitForLock` sees as held, as it sees another process's.
+ * **Nothing here starts TrainControl or the updater, ends this JVM or touches a real jar.**  Every jar is built in a
+ * temporary folder; the updater's renames and its launcher are handed in, so a launch is a recorded command and a failed
+ * rename is one the test throws.  The lock TrainControl holds until it exits is held by this test instead, in this JVM -
+ * except in `testALockHeldByAnotherProcessIsSeen`, which starts one plain JVM of its own (`support.HoldsALock`, nothing
+ * of TrainControl's) to hold it across a process boundary.
  *
  * MUTATIONS, each seen red: `backupName` not looking for a free name (the swap claim); `swap` not moving the backup
- * back when the second rename fails (the rollback claim); `update` ignoring a non-zero exit code (the failed-start
- * claim); `waitForLock` returning true at once (the lock, timeout and copy claims); `whyNotAWholeJar` skipping the jar
- * check (the truncated and HTML claim); `startUpdater` putting the jar itself on the updater's classpath, or keeping
- * the lock when its starter fails (the copy claim); `Request.parse` dropping the Java options (the command-line
- * claim); `downloadTarget` returning the running jar's own name (the download claim).
+ * back when the second rename fails (the rollback claim); `waitForTheStart` reading an ended process as started, or
+ * ignoring the marker, or `update` rolling back on no word (the three started-marker claims); `rollBack` leaving no
+ * note (the ended claim); `waitForLock` returning true at once (the lock, timeout, copy and process claims);
+ * `whyNotAWholeJar` skipping the jar check (the truncated and HTML claim); `startUpdater` putting the jar itself on the
+ * updater's classpath (the copy claim); `startUpdater` not waiting to hear from the updater, or keeping the lock when it
+ * does not (the updater-did-not-start claim); `HandOver.exitWith` disarming only after a normal return, or `begin`
+ * allowing a second, or `startUpdater` letting go of a lock already held (the one-at-a-time claim);
+ * `Request.parse` dropping the Java options (the command-line claim); `downloadTarget` returning the running jar's own
+ * name (the download claim).
  */
 public class testTheUpdaterSwapsTheJar
 {
+    /**
+     * What the new version does when the updater starts it.
+     */
+    private enum NewVersion
+    {
+        SAYS_STARTED_AND_RUNS, SAYS_STARTED_AND_ENDS, ENDS_SILENTLY, RUNS_SILENTLY
+    }
+
     private File folder;
     private File jar;
     private File download;
@@ -141,8 +156,9 @@ public class testTheUpdaterSwapsTheJar
 
         List<String> started = new ArrayList<>();
 
-        JarUpdater.Outcome outcome = JarUpdater.update(request(), 5000, 10, 1, 0, 1000,
-            recording(started, null), failsTheSecond, log);
+        JarUpdater.Outcome outcome = JarUpdater.update(request(), 5000, 10, 1, 0, 5000,
+            launching(started, new ArrayList<>(), new ArrayList<>(), NewVersion.RUNS_SILENTLY), failsTheSecond, log,
+            null);
 
         assertEquals(outcome, JarUpdater.Outcome.ROLLED_BACK);
 
@@ -161,32 +177,104 @@ public class testTheUpdaterSwapsTheJar
     }
 
     /**
-     * A new version that stops at once with an error, such as one built for a newer Java, is taken back out: the old
-     * jar returns to its name and is started.
+     * The new version has started when it says so - by writing the marker it is told of outside its command line -
+     * and that holds when it then ends at once, as it does when its IP question is cancelled: an exit code of 1 is
+     * not a failed start.
      *
      * @throws Exception from the files
      */
     @Test
-    public void testANewVersionThatStopsAtOnceIsTakenBack() throws Exception
+    public void testTheMarkerMeansStarted() throws Exception
+    {
+        for (NewVersion behaviour : new NewVersion[] {NewVersion.SAYS_STARTED_AND_RUNS, NewVersion.SAYS_STARTED_AND_ENDS})
+        {
+            tearDown();
+            setUp();
+
+            List<String> started = new ArrayList<>();
+            List<List<String>> commands = new ArrayList<>();
+            List<File> markers = new ArrayList<>();
+
+            JarUpdater.Outcome outcome = JarUpdater.update(request(), 5000, 10, 1, 0, 5000,
+                launching(started, commands, markers, behaviour), rename(), log, null);
+
+            assertEquals(outcome, JarUpdater.Outcome.UPDATED, behaviour + ": a version that said it had started was"
+                + " not kept");
+
+            assertEquals(started, Collections.singletonList("new"), behaviour + ": the old version was started too");
+            assertEquals(read(jar), "new");
+
+            assertNotNull(markers.get(0), "the new version was not told where to say it had started");
+
+            for (String part : commands.get(0))
+            {
+                assertFalse(part.contains(JarUpdater.STARTED_NAME), "the started marker travels on the command line,"
+                    + " where the Java options carry it into every later restart: " + part);
+            }
+
+            assertFalse(new File(folder, JarUpdater.ROLLBACK_NOTE_NAME).exists(), "a rollback note after an update"
+                + " that started");
+
+            assertFalse(new File(folder, JarUpdater.LOCK_NAME).exists(), "the lock file was left beside the jar");
+        }
+    }
+
+    /**
+     * A new version that ends before saying it has started is taken back out, whatever its exit code: the old jar
+     * returns to its name and is started, without a marker, and a note is left for it to say so once.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testAnExitBeforeTheMarkerRollsBack() throws Exception
     {
         List<String> started = new ArrayList<>();
+        List<File> markers = new ArrayList<>();
 
-        // The new one ends at once with 1; the old one, started after, keeps running
-        JarUpdater.Outcome outcome = JarUpdater.update(request(), 5000, 10, 1, 0, 1000,
-            recording(started, 1), rename(), log);
+        JarUpdater.Outcome outcome = JarUpdater.update(request(), 5000, 10, 1, 0, 5000,
+            launching(started, new ArrayList<>(), markers, NewVersion.ENDS_SILENTLY), rename(), log, null);
 
         assertEquals(outcome, JarUpdater.Outcome.ROLLED_BACK);
 
-        assertEquals(started, Arrays.asList("new", "old"), "the new version failed to start and the old one was not"
-            + " put back and started");
+        assertEquals(started, Arrays.asList("new", "old"), "the new version ended without starting and the old one"
+            + " was not put back and started");
+
+        assertNull(markers.get(1), "the old version was started with a marker of its own to write");
 
         assertEquals(read(jar), "old");
         assertEquals(read(download), "new", "the failed download should be back under its own name");
+
+        assertEquals(SelfUpdate.takeRollbackNote(folder), new String[] {"3.0.2", "3.0.1"}, "the old version is not"
+            + " told the update was put back, so it starts as though nothing happened");
+
+        assertNull(SelfUpdate.takeRollbackNote(folder), "the note is said again at the next start");
+    }
+
+    /**
+     * A new version still running that has said nothing by the cap is kept, and the log says so; nothing is put back.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testNoWordByTheCapKeepsTheNewJar() throws Exception
+    {
+        List<String> started = new ArrayList<>();
+
+        JarUpdater.Outcome outcome = JarUpdater.update(request(), 5000, 10, 1, 0, 300,
+            launching(started, new ArrayList<>(), new ArrayList<>(), NewVersion.RUNS_SILENTLY), rename(), log, null);
+
+        assertEquals(outcome, JarUpdater.Outcome.UNCONFIRMED);
+        assertEquals(read(jar), "new", "a running version that had not said it started was taken out");
+        assertEquals(started, Collections.singletonList("new"));
+        assertFalse(new File(folder, JarUpdater.ROLLBACK_NOTE_NAME).exists());
+        assertTrue(read(log.getFile()).contains("so it was kept"), "the log does not say the new version was kept"
+            + " unconfirmed");
     }
 
     /**
      * The updater waits while TrainControl holds its lock, changes nothing meanwhile, and swaps and starts the new
-     * version once the lock is let go - with the same Java, options, arguments and working directory.
+     * version once the lock is let go - with the same Java, options, arguments and working directory - and leaves no
+     * lock file behind.
      *
      * @throws Exception from the files or the thread
      */
@@ -207,15 +295,17 @@ public class testTheUpdaterSwapsTheJar
         {
             FileLock held = channel.lock();
 
-            updater = new Thread(() -> outcome.set(JarUpdater.update(request, 30000, 20, 1, 0, 1000,
-                (command, where, grace) ->
+            updater = new Thread(() -> outcome.set(JarUpdater.update(request, 30000, 20, 1, 0, 5000,
+                (command, where, marker) ->
                 {
                     commands.add(command);
                     folders.add(where);
-                    started.add(read(new File(command.get(command.indexOf("-jar") + 1))));
+                    started.add(read(jarIn(command)));
 
-                    return null;
-                }, rename(), log)));
+                    JarUpdater.writeMarker(marker);
+
+                    return () -> true;
+                }, rename(), log, null)));
 
             updater.start();
 
@@ -263,8 +353,9 @@ public class testTheUpdaterSwapsTheJar
         {
             FileLock held = channel.lock();
 
-            outcome = JarUpdater.update(request, 300, 20, 1, 0, 1000, recording(started, null), rename(),
-                log);
+            outcome = JarUpdater.update(request, 300, 20, 1, 0, 5000,
+                launching(started, new ArrayList<>(), new ArrayList<>(), NewVersion.SAYS_STARTED_AND_RUNS), rename(),
+                log, null);
 
             held.release();
         }
@@ -275,6 +366,53 @@ public class testTheUpdaterSwapsTheJar
         assertEquals(backups(), Collections.emptyList(), "a backup was made although nothing was updated");
         assertTrue(started.isEmpty(), "something was started although TrainControl never closed: a second copy");
         assertTrue(read(log.getFile()).contains("did not close"), "the log does not say why nothing happened");
+    }
+
+    /**
+     * Across a real process boundary: a lock held by another JVM reads as held, and as free once that JVM has ended
+     * without letting go - which is how TrainControl's exit releases it.
+     *
+     * @throws Exception from the files or the process
+     */
+    @Test
+    public void testALockHeldByAnotherProcessIsSeen() throws Exception
+    {
+        File lock = new File(folder, JarUpdater.LOCK_NAME);
+        File ready = new File(folder, "ready");
+        File stop = new File(folder, "stop");
+        File said = new File(folder, "other.log");
+
+        String classes = new File(support.HoldsALock.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+            .getPath();
+
+        String java = new File(new File(System.getProperty("java.home"), "bin"),
+            File.separatorChar == '\\' ? "java.exe" : "java").getPath();
+
+        Process other = new ProcessBuilder(java, "-cp", classes, "support.HoldsALock", lock.getPath(), ready.getPath(),
+            stop.getPath()).redirectErrorStream(true).redirectOutput(said).start();
+
+        try
+        {
+            long until = System.currentTimeMillis() + 20000;
+
+            while (!ready.isFile() && other.isAlive() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(ready.isFile(), "precondition: the other JVM did not take the lock: " + read(said));
+
+            assertFalse(JarUpdater.waitForLock(lock, 500, 50), "a lock another process holds read as free, so the"
+                + " updater would swap the jar under a running TrainControl");
+
+            write(stop, "stop");
+
+            assertTrue(other.waitFor(20, TimeUnit.SECONDS), "precondition: the other JVM did not end");
+
+            assertTrue(JarUpdater.waitForLock(lock, 5000, 50), "the lock still read as held after the process holding"
+                + " it ended");
+        }
+        finally
+        {
+            if (other.isAlive()) other.destroyForcibly();
+        }
     }
 
     /**
@@ -290,9 +428,12 @@ public class testTheUpdaterSwapsTheJar
         assertEquals(got.jar, sent.jar);
         assertEquals(got.newJar, sent.newJar);
         assertEquals(got.lock, sent.lock);
+        assertEquals(got.running, sent.running);
         assertEquals(got.oldVersion, "3.0.1");
+        assertEquals(got.newVersion, "3.0.2");
         assertEquals(got.workingDirectory, sent.workingDirectory);
         assertEquals(got.java, sent.java);
+        assertEquals(got.windowText, "Updating TrainControl...");
         assertEquals(got.javaOptions, sent.javaOptions);
         assertEquals(got.arguments, sent.arguments);
     }
@@ -342,9 +483,8 @@ public class testTheUpdaterSwapsTheJar
     }
 
     /**
-     * The updater runs from a copy of the jar, never the jar it replaces (a running jar is locked on Windows), with the
-     * Java this JVM runs on - and the exit lock is held from then on.  A starter that fails lets go of the lock and
-     * leaves no copy behind.
+     * The updater runs from a copy of the jar beside it, never the jar it replaces (a running jar is locked on Windows),
+     * with the Java this JVM runs on, once it has said it is running - and the exit lock is held from then on.
      *
      * @throws Exception from the files
      */
@@ -357,70 +497,181 @@ public class testTheUpdaterSwapsTheJar
 
         final List<List<String>> asked = new ArrayList<>();
 
-        File copy = null;
-
-        try
+        SelfUpdate.startUpdater(jar, download, "3.0.1", "3.0.2", "Updating TrainControl...", (command, where) ->
         {
-            SelfUpdate.startUpdater(jar, download, "3.0.1", (command, where) -> asked.add(command));
+            asked.add(command);
 
-            assertEquals(asked.size(), 1, "the updater was not started");
+            return sayingItRuns(command);
+        }, 5000);
 
-            List<String> command = asked.get(0);
+        assertEquals(asked.size(), 1, "the updater was not started");
 
-            assertEquals(command.get(0), SelfUpdate.javaExecutable());
-            assertTrue(command.get(0).startsWith(new File(System.getProperty("java.home")).getPath()),
-                "the updater is not run by the Java TrainControl runs on: " + command.get(0));
+        List<String> command = asked.get(0);
 
-            assertEquals(command.get(1), "-cp");
+        assertEquals(command.get(0), SelfUpdate.javaExecutable());
+        assertTrue(command.get(0).startsWith(new File(System.getProperty("java.home")).getPath()),
+            "the updater is not run by the Java TrainControl runs on: " + command.get(0));
 
-            copy = new File(command.get(2));
+        assertEquals(command.get(1), "-cp");
 
-            assertNotEquals(copy.getAbsoluteFile(), jar.getAbsoluteFile(), "the updater runs from the jar it replaces,"
-                + " which Windows keeps locked while it runs");
-            assertTrue(Arrays.equals(Files.readAllBytes(copy.toPath()), Files.readAllBytes(jar.toPath())),
-                "the updater's copy is not a copy of the jar");
+        File copy = new File(command.get(2));
 
-            assertEquals(command.get(3), JarUpdater.class.getName());
+        assertNotEquals(copy.getAbsoluteFile(), jar.getAbsoluteFile(), "the updater runs from the jar it replaces,"
+            + " which Windows keeps locked while it runs");
+        assertEquals(copy.getParentFile().getAbsoluteFile(), folder.getAbsoluteFile(), "the updater's copy is not"
+            + " beside the jar, whose folder is the one known to be writable");
+        assertTrue(Arrays.equals(Files.readAllBytes(copy.toPath()), Files.readAllBytes(jar.toPath())),
+            "the updater's copy is not a copy of the jar");
 
-            JarUpdater.Request request = JarUpdater.Request.parse(
-                command.subList(4, command.size()).toArray(new String[0]));
+        assertEquals(command.get(3), JarUpdater.class.getName());
 
-            assertEquals(request.jar, jar.getAbsoluteFile());
-            assertEquals(request.newJar, download.getAbsoluteFile());
-            assertEquals(request.arguments, Arrays.asList("192.168.1.5", "debug"), "the new version would start"
-                + " without TrainControl's own arguments");
-            assertEquals(request.lock.getParentFile(), folder.getAbsoluteFile());
+        JarUpdater.Request request = JarUpdater.Request.parse(
+            command.subList(4, command.size()).toArray(new String[0]));
 
-            assertTrue(SelfUpdate.isHoldingTheExitLock(), "the exit lock is not held, so the updater would not wait");
-            assertFalse(JarUpdater.waitForLock(request.lock, 0, 10), "the updater could take the lock while"
-                + " TrainControl is still running");
-        }
-        finally
+        assertEquals(request.jar, jar.getAbsoluteFile());
+        assertEquals(request.newJar, download.getAbsoluteFile());
+        assertEquals(request.newVersion, "3.0.2");
+        assertEquals(request.arguments, Arrays.asList("192.168.1.5", "debug"), "the new version would start"
+            + " without TrainControl's own arguments");
+        assertEquals(request.lock.getParentFile(), folder.getAbsoluteFile());
+
+        assertTrue(SelfUpdate.isHoldingTheExitLock(), "the exit lock is not held, so the updater would not wait");
+        assertFalse(JarUpdater.waitForLock(request.lock, 0, 10), "the updater could take the lock while"
+            + " TrainControl is still running");
+    }
+
+    /**
+     * An updater that does not say it is running keeps TrainControl open: the exit is refused, the lock let go and
+     * removed, the copy deleted - whether it ended at once or sat silent past the wait, which also ends it.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testAnUpdaterThatDoesNotStartKeepsTrainControlOpen() throws Exception
+    {
+        buildJar(jar, "TrainControl");
+
+        final List<List<String>> asked = new ArrayList<>();
+        final boolean[] stopped = {false};
+
+        for (final boolean endsAtOnce : new boolean[] {true, false})
         {
-            SelfUpdate.releaseTheExitLockForTests();
+            stopped[0] = false;
 
-            if (copy != null) copy.delete();
-        }
-
-        try
-        {
-            SelfUpdate.startUpdater(jar, download, "3.0.1", (command, where) ->
+            try
             {
-                asked.add(command);
+                SelfUpdate.startUpdater(jar, download, "3.0.1", "3.0.2", "Updating TrainControl...", (command, where) ->
+                {
+                    asked.add(command);
 
-                throw new java.io.IOException("refused by the test");
+                    return new SelfUpdate.Updater()
+                    {
+                        @Override
+                        public boolean isAlive()
+                        {
+                            return !endsAtOnce && !stopped[0];
+                        }
+
+                        @Override
+                        public void stop()
+                        {
+                            stopped[0] = true;
+                        }
+                    };
+                }, 300);
+
+                fail("an updater that never said it was running was taken as started, and TrainControl would close for"
+                    + " an update that never happens");
+            }
+            catch (java.io.IOException expected)
+            {
+                // TrainControl stays open
+            }
+
+            assertFalse(SelfUpdate.isHoldingTheExitLock(), "the exit lock is still held after the updater failed to"
+                + " start, so a later update would wait on it");
+            assertFalse(new File(folder, JarUpdater.LOCK_NAME).exists(), "the lock file was left beside the jar");
+            assertFalse(new File(asked.get(asked.size() - 1).get(2)).exists(), "the updater's copy was left behind");
+
+            if (!endsAtOnce)
+            {
+                assertTrue(stopped[0], "an updater that sat silent past the wait was left running, to take the lock"
+                    + " later and swap the jar under a TrainControl that stayed open");
+            }
+        }
+    }
+
+    /**
+     * One update at a time, and an exit that does not happen leaves none armed: a second Download & Update is refused
+     * while one is under way; an exit that throws or is cancelled disarms the update; and a second `startUpdater`
+     * while the lock is held is refused rather than letting go of the first one's lock.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testOneUpdateAtATime() throws Exception
+    {
+        SelfUpdate.HandOver handOver = new SelfUpdate.HandOver();
+
+        SelfUpdate.Pending pending = new SelfUpdate.Pending(jar, download, "3.0.2");
+
+        assertTrue(handOver.begin());
+        assertFalse(handOver.begin(), "a second update was started while one was under way: two would be stacked");
+
+        try
+        {
+            handOver.exitWith(pending, () ->
+            {
+                throw new IllegalStateException("the exit threw, as the test makes it");
             });
 
-            fail("a starter that failed was not reported");
+            fail("precondition: the exit's exception was swallowed");
+        }
+        catch (IllegalStateException expected)
+        {
+            // as the test made it
+        }
+
+        assertNull(handOver.take(), "an exit that threw left the update armed, so a later ordinary exit would start"
+            + " the updater");
+        assertTrue(handOver.begin(), "an exit that threw left an update under way for good");
+
+        assertTrue(handOver.exitWith(pending, () -> { }), "an exit that came back without taking the update did not"
+            + " read as cancelled");
+        assertNull(handOver.take(), "a cancelled exit left the update armed");
+
+        assertTrue(handOver.begin());
+        assertFalse(handOver.exitWith(pending, () -> assertSame(handOver.take(), pending)), "an exit that took the"
+            + " update read as cancelled");
+
+        // And the lock itself: held once, refused the second time, still held
+        buildJar(jar, "TrainControl");
+
+        SelfUpdate.startUpdater(jar, download, "3.0.1", "3.0.2", "Updating TrainControl...",
+            (command, where) -> sayingItRuns(command), 5000);
+
+        final int[] second = {0};
+
+        try
+        {
+            SelfUpdate.startUpdater(jar, download, "3.0.1", "3.0.2", "Updating TrainControl...", (command, where) ->
+            {
+                second[0]++;
+
+                return sayingItRuns(command);
+            }, 5000);
+
+            fail("a second updater was started while the first one's lock was held");
         }
         catch (java.io.IOException expected)
         {
-            // as it should
+            // refused, not stacked
         }
 
-        assertFalse(SelfUpdate.isHoldingTheExitLock(), "the exit lock is still held after the updater failed to"
-            + " start, so a later update would wait on it");
-        assertFalse(new File(asked.get(1).get(2)).exists(), "the updater's copy was left behind");
+        assertEquals(second[0], 0, "a second updater was started");
+        assertTrue(SelfUpdate.isHoldingTheExitLock(), "the refused second update let go of the first one's lock, so"
+            + " the first updater would swap the jar under a running TrainControl");
+        assertFalse(JarUpdater.waitForLock(new File(folder, JarUpdater.LOCK_NAME), 0, 10));
     }
 
     /**
@@ -444,22 +695,75 @@ public class testTheUpdaterSwapsTheJar
 
     private JarUpdater.Request request()
     {
-        return new JarUpdater.Request(jar, download, new File(folder, JarUpdater.LOCK_NAME), "3.0.1",
-            new File(folder, "working"), "C:/the/same/javaw.exe", Collections.singletonList("-Duser.language=de"),
+        return new JarUpdater.Request(jar, download, new File(folder, JarUpdater.LOCK_NAME),
+            new File(folder, JarUpdater.RUNNING_NAME), "3.0.1", "3.0.2", new File(folder, "working"),
+            "C:/the/same/javaw.exe", "Updating TrainControl...", Collections.singletonList("-Duser.language=de"),
             Arrays.asList("192.168.1.5", "debug"));
     }
 
     /**
-     * A launcher that records what the jar it was asked to start held, and answers with an exit code the first time.
+     * A launcher that records what the jar it was asked to start held, its command and its marker; the first start
+     * (the new version, unless the swap failed) behaves as asked, and any later one keeps running.
      */
-    private static JarUpdater.Launcher recording(final List<String> started, final Integer firstExit)
+    private static JarUpdater.Launcher launching(final List<String> started, final List<List<String>> commands,
+        final List<File> markers, final NewVersion behaviour)
     {
-        return (command, where, grace) ->
+        return (command, where, marker) ->
         {
-            started.add(read(new File(command.get(command.indexOf("-jar") + 1))));
+            started.add(read(jarIn(command)));
+            commands.add(command);
+            markers.add(marker);
 
-            return started.size() == 1 ? firstExit : null;
+            if (started.size() > 1) return () -> true;
+
+            switch (behaviour)
+            {
+                case SAYS_STARTED_AND_RUNS:
+                    JarUpdater.writeMarker(marker);
+
+                    return () -> true;
+
+                case SAYS_STARTED_AND_ENDS:
+                    JarUpdater.writeMarker(marker);
+
+                    return () -> false;
+
+                case ENDS_SILENTLY:
+                    return () -> false;
+
+                default:
+                    return () -> true;
+            }
         };
+    }
+
+    /**
+     * An updater that writes its running marker, as `JarUpdater.main` does first of all, and keeps running.
+     */
+    private static SelfUpdate.Updater sayingItRuns(List<String> command)
+    {
+        JarUpdater.writeMarker(JarUpdater.Request.parse(command.subList(4, command.size()).toArray(new String[0]))
+            .running);
+
+        return new SelfUpdate.Updater()
+        {
+            @Override
+            public boolean isAlive()
+            {
+                return true;
+            }
+
+            @Override
+            public void stop()
+            {
+                // nothing to stop
+            }
+        };
+    }
+
+    private static File jarIn(List<String> command)
+    {
+        return new File(command.get(command.indexOf("-jar") + 1));
     }
 
     private static JarUpdater.Mover rename()

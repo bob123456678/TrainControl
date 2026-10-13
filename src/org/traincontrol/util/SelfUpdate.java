@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -35,9 +37,14 @@ import java.util.jar.Manifest;
 public final class SelfUpdate
 {
     /**
-     * Where the updater's temporary copies of the jar are made, by name, so the next update can tidy the last one's.
+     * Where the updater's copies of the jar are made, beside the jar, by name, so a later start can tidy them.
      */
     public static final String UPDATER_COPY_PREFIX = "TrainControl-updater-";
+
+    /**
+     * How long the exit waits for the updater to say it is running before it gives up and stays open.
+     */
+    public static final long UPDATER_WAIT_MS = 15000;
 
     /**
      * TrainControl's own command-line arguments, as `main` was given them.
@@ -45,27 +52,173 @@ public final class SelfUpdate
     private static volatile List<String> arguments = Collections.emptyList();
 
     /**
-     * The exit lock and its channel, held from just before the updater starts until this JVM ends.  Never closed:
-     * the operating system lets go of both as the process ends, and that is the signal the updater waits for.
+     * The exit lock, its channel and its file, held from just before the updater starts until this JVM ends.  Never
+     * closed on the way out: the operating system lets go as the process ends, and that is the signal the updater waits
+     * for.
      */
     private static FileChannel exitChannel;
     private static FileLock exitLock;
+    private static File exitLockFile;
 
     /**
-     * Starts a program and does not wait for it.
+     * The updater, once started.
+     */
+    public interface Updater
+    {
+        /**
+         * @return whether it is still running
+         */
+        boolean isAlive();
+
+        /**
+         * Ends it, when it never said it was running: left alone it could take the lock later and swap the jar under
+         * a TrainControl that stayed open.
+         */
+        void stop();
+    }
+
+    /**
+     * Starts the updater and does not wait for it.
      */
     public interface ProcessStarter
     {
         /**
          * @param command the program and its arguments
          * @param folder its working directory
+         * @return the started program
          * @throws IOException when it could not be started
          */
-        void start(List<String> command, File folder) throws IOException;
+        Updater start(List<String> command, File folder) throws IOException;
+    }
+
+    /**
+     * The update the exit is to start: the jar to replace, the download to replace it with, and its version.
+     */
+    public static final class Pending
+    {
+        public final File jar;
+        public final File download;
+        public final String version;
+
+        public Pending(File jar, File download, String version)
+        {
+            this.jar = jar;
+            this.download = download;
+            this.version = version;
+        }
+    }
+
+    /**
+     * One Download & Update at a time, from its question to the exit (FR-125).
+     *
+     * `begin` refuses a second while one is under way, so two are never stacked; `exitWith` arms the update, runs the
+     * exit, and disarms it in a `finally` - so an exit that throws cannot leave an update armed for a later, ordinary
+     * exit to start.  The exit takes it with `take`, once, after everything has agreed to close.
+     */
+    public static final class HandOver
+    {
+        private final AtomicBoolean underWay = new AtomicBoolean();
+
+        private Pending armed;
+
+        /**
+         * @return false when an update is already under way, which refuses this one
+         */
+        public boolean begin()
+        {
+            return this.underWay.compareAndSet(false, true);
+        }
+
+        /**
+         * Ends an update that will not reach the exit.
+         */
+        public synchronized void end()
+        {
+            this.armed = null;
+            this.underWay.set(false);
+        }
+
+        /**
+         * @return whether an update is under way
+         */
+        public boolean isUnderWay()
+        {
+            return this.underWay.get();
+        }
+
+        /**
+         * The exit's half: the update to start, taken so that it is started once.
+         *
+         * @return the update, or null when none is armed
+         */
+        public synchronized Pending take()
+        {
+            Pending taken = this.armed;
+
+            this.armed = null;
+
+            return taken;
+        }
+
+        /**
+         * Arms the update, runs the exit, and disarms it whatever the exit did.
+         *
+         * @param pending the update
+         * @param exit the application's exit, which takes the update when nothing refuses it
+         * @return true when the exit came back without taking it: it was cancelled
+         */
+        public boolean exitWith(Pending pending, Runnable exit)
+        {
+            synchronized (this)
+            {
+                this.armed = pending;
+            }
+
+            boolean cancelled = true;
+
+            try
+            {
+                exit.run();
+            }
+            finally
+            {
+                synchronized (this)
+                {
+                    cancelled = this.armed != null;
+
+                    this.armed = null;
+                }
+
+                this.underWay.set(false);
+            }
+
+            return cancelled;
+        }
     }
 
     private SelfUpdate()
     {
+    }
+
+    /**
+     * Tells an update that is waiting to hear from this version that it has started - TrainControl.main's very first
+     * act, so the marker proves the jar runs on this Java (FR-125).
+     *
+     * Only when `JarUpdater.STARTED_ENVIRONMENT` names a file, which the updater sets for the version it starts and
+     * for nothing else.  Never throws: nothing may stop TrainControl starting.
+     */
+    public static void reportStarted()
+    {
+        try
+        {
+            String marker = System.getenv(JarUpdater.STARTED_ENVIRONMENT);
+
+            if (marker != null && !marker.trim().isEmpty()) JarUpdater.writeMarker(new File(marker.trim()));
+        }
+        catch (RuntimeException | Error e)
+        {
+            // An update that never hears keeps the new version after its cap, which is the safe side
+        }
     }
 
     /**
@@ -298,26 +451,41 @@ public final class SelfUpdate
     }
 
     /**
-     * Takes the exit lock and starts `JarUpdater`, from a temporary copy of the jar, to swap in the new one once this
-     * JVM has ended.
+     * Takes the exit lock and starts `JarUpdater`, from a copy of the jar beside it, to swap in the new one once this
+     * JVM has ended; and waits until the updater says it is running.
      *
      * Called from the exit itself, once everything has been saved and nothing can refuse the exit any more - so a
      * cancelled exit never leaves an updater waiting.  The lock is held from here until the process ends, and the
      * updater waits until it can take it.
      *
-     * On a failure the lock is let go again and the copy removed, and nothing has been changed.
+     * **The exit goes on only once the updater has said it is running** (`JarUpdater.RUNNING_NAME`, its first act).
+     * `ProcessBuilder.start` returning proves nothing: a Java that cannot run the copy ends at once, and TrainControl
+     * would have closed for an update that never happens.  An updater that ends without saying so, or says nothing
+     * within `waitMs`, is ended, the lock is let go and the copy removed, and this throws - TrainControl stays open.
+     *
+     * The copy goes beside the jar, which is writable by definition, rather than in the temporary folder: on Windows,
+     * Java 8 passes a command line in the system's code page, and a user folder named outside it cannot be passed.
+     *
+     * A second call while the lock is held is refused rather than stacked: it would otherwise let go of the first
+     * one's lock, and that updater would swap the jar under a running TrainControl.
      *
      * @param jar the running jar
      * @param newJar the checked download, beside it
      * @param oldVersion the running version
+     * @param newVersion the version being installed
+     * @param windowText what the updater's small window says, translated
      * @param starter what starts the updater
-     * @throws IOException when the updater could not be started
+     * @param waitMs how long to wait for the updater to say it is running
+     * @throws IOException when the updater could not be started, or did not say it was running
      */
-    public static synchronized void startUpdater(File jar, File newJar, String oldVersion, ProcessStarter starter)
-        throws IOException
+    public static synchronized void startUpdater(File jar, File newJar, String oldVersion, String newVersion,
+        String windowText, ProcessStarter starter, long waitMs) throws IOException
     {
+        if (exitLock != null) throw new IOException(I18n.t("ui.update.alreadyUnderWay"));
+
         File folder = jar.getAbsoluteFile().getParentFile();
         File lock = new File(folder, JarUpdater.LOCK_NAME);
+        File running = new File(folder, JarUpdater.RUNNING_NAME);
 
         holdTheExitLock(lock);
 
@@ -325,14 +493,16 @@ public final class SelfUpdate
 
         try
         {
-            tidyOldCopies();
+            tidyOldCopies(folder);
 
-            copy = File.createTempFile(UPDATER_COPY_PREFIX, ".jar");
+            running.delete();
+
+            copy = File.createTempFile(UPDATER_COPY_PREFIX, ".jar", folder);
 
             Files.copy(jar.toPath(), copy.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            JarUpdater.Request request = new JarUpdater.Request(jar, newJar, lock, oldVersion,
-                new File(System.getProperty("user.dir")), javaExecutable(), javaOptions(), getArguments());
+            JarUpdater.Request request = new JarUpdater.Request(jar, newJar, lock, running, oldVersion, newVersion,
+                new File(System.getProperty("user.dir")), javaExecutable(), windowText, javaOptions(), getArguments());
 
             List<String> command = new ArrayList<>();
 
@@ -342,35 +512,94 @@ public final class SelfUpdate
             command.add(JarUpdater.class.getName());
             command.addAll(request.toArguments());
 
-            starter.start(command, folder);
+            Updater updater = starter.start(command, folder);
+
+            if (!heardFrom(running, updater, waitMs))
+            {
+                updater.stop();
+
+                throw new IOException(I18n.f("ui.update.updaterSilent", waitMs / 1000));
+            }
+
+            running.delete();
         }
-        catch (IOException | RuntimeException e)
+        catch (IOException | RuntimeException | Error e)
         {
             letGoOfTheExitLock();
 
             if (copy != null) copy.delete();
+
+            running.delete();
 
             throw e;
         }
     }
 
     /**
-     * The real starter: the updater's output goes nowhere, because nothing will be left to read it.
+     * Whether the updater wrote its running marker before it ended or the wait ran out.
+     */
+    private static boolean heardFrom(File running, Updater updater, long waitMs)
+    {
+        long until = System.currentTimeMillis() + waitMs;
+
+        while (true)
+        {
+            if (running.isFile()) return true;
+
+            if (!updater.isAlive()) return running.isFile();
+
+            if (System.currentTimeMillis() >= until) return false;
+
+            try
+            {
+                Thread.sleep(50);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+
+                return running.isFile();
+            }
+        }
+    }
+
+    /**
+     * The real starter: the updater's output goes nowhere, because nothing will be left to read it.  Without the
+     * started-marker variable, which belongs to the start that set it.
      *
      * @param command the program and its arguments
      * @param folder its working directory
+     * @return the started updater
      * @throws IOException when it could not be started
      */
-    public static void startDetached(List<String> command, File folder) throws IOException
+    public static Updater startDetached(List<String> command, File folder) throws IOException
     {
         File nowhere = new File(File.separatorChar == '\\' ? "NUL" : "/dev/null");
 
-        new ProcessBuilder(command)
+        ProcessBuilder builder = new ProcessBuilder(command)
             .directory(folder)
             .redirectErrorStream(true)
             .redirectOutput(ProcessBuilder.Redirect.appendTo(nowhere))
-            .redirectInput(ProcessBuilder.Redirect.from(nowhere))
-            .start();
+            .redirectInput(ProcessBuilder.Redirect.from(nowhere));
+
+        builder.environment().remove(JarUpdater.STARTED_ENVIRONMENT);
+
+        final Process process = builder.start();
+
+        return new Updater()
+        {
+            @Override
+            public boolean isAlive()
+            {
+                return process.isAlive();
+            }
+
+            @Override
+            public void stop()
+            {
+                process.destroy();
+            }
+        };
     }
 
     /**
@@ -391,10 +620,57 @@ public final class SelfUpdate
         letGoOfTheExitLock();
     }
 
+    /**
+     * Reads and removes the note a rolled-back update left beside the jar, for this start to show once (FR-125).
+     *
+     * @param folder the jar's folder
+     * @return {the version that could not start, the version put back}, or null when there is no note
+     */
+    public static String[] takeRollbackNote(File folder)
+    {
+        File note = new File(folder, JarUpdater.ROLLBACK_NOTE_NAME);
+
+        if (!note.isFile()) return null;
+
+        String to = "?";
+        String from = "?";
+
+        try
+        {
+            for (String line : Files.readAllLines(note.toPath(), StandardCharsets.UTF_8))
+            {
+                if (line.startsWith("to=")) to = line.substring(3).trim();
+                if (line.startsWith("from=")) from = line.substring(5).trim();
+            }
+        }
+        catch (IOException | RuntimeException e)
+        {
+            // Still worth saying, with what could be read
+        }
+
+        // Shown once: a note that cannot be removed would say the same thing at every start
+        if (!note.delete()) return null;
+
+        return new String[] {to, from};
+    }
+
+    /**
+     * Removes the copies earlier updates left beside the jar.  The updater runs from its copy, so it cannot remove that
+     * itself; one that is still in use simply stays until the next time.
+     *
+     * @param folder the jar's folder
+     */
+    public static void tidyOldCopies(File folder)
+    {
+        File[] old = folder.listFiles((dir, name) -> name.startsWith(UPDATER_COPY_PREFIX) && name.endsWith(".jar"));
+
+        if (old == null) return;
+
+        for (File each : old) each.delete();
+    }
+
     private static void holdTheExitLock(File lock) throws IOException
     {
-        letGoOfTheExitLock();
-
         RandomAccessFile file = new RandomAccessFile(lock, "rw");
 
         FileLock taken;
@@ -419,6 +695,7 @@ public final class SelfUpdate
 
         exitChannel = file.getChannel();
         exitLock = taken;
+        exitLockFile = lock;
     }
 
     private static void letGoOfTheExitLock()
@@ -441,21 +718,10 @@ public final class SelfUpdate
             // Nothing else holds it; the process ending will
         }
 
+        if (exitLockFile != null) exitLockFile.delete();
+
         exitLock = null;
         exitChannel = null;
-    }
-
-    /**
-     * Removes the copies earlier updates left in the temporary folder.  The updater runs from its copy, so it cannot
-     * remove that itself; one that is still in use simply stays.
-     */
-    private static void tidyOldCopies()
-    {
-        File[] old = new File(System.getProperty("java.io.tmpdir")).listFiles(
-            (dir, name) -> name.startsWith(UPDATER_COPY_PREFIX) && name.endsWith(".jar"));
-
-        if (old == null) return;
-
-        for (File each : old) each.delete();
+        exitLockFile = null;
     }
 }

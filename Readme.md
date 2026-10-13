@@ -353,11 +353,13 @@ TrainControl uses your computer's language automatically.  To run it in a differ
 
 When "Check for Updates" is ticked under Preferences > Startup, TrainControl looks for a new version each time it starts.  If there is one, the Help menu gets a "*" and a "Download Update" item.  Clicking it gives you 3 choices:
 
-* Download: saves the new JAR file next to your current one, so you can swap it in yourself.
-* Download & Update: saves the new JAR file and makes a backup of your data (see below).  Then TrainControl closes, puts the new version in place of the old JAR file under the same file name, and starts again with the same settings.  Your old JAR file is kept next to it with its version in the name (for example `TrainControl_v3_0_1_old.jar`), so you can go back by renaming it.  Each step is written to `update.log` in the same folder.
+* Download: saves the new JAR file so you can swap it in yourself.  It goes next to your current JAR file when Download & Update is offered, and in the folder TrainControl was started from otherwise.
+* Download & Update: saves the new JAR file next to your current one and makes a backup of your data (see below).  Then TrainControl closes, puts the new version in place of the old JAR file under the same file name, and starts again with the same settings.  Your old JAR file is kept next to it with its version in the name (for example `TrainControl_v3_0_1_old.jar`), so you can go back by renaming it.  Each step is written to `update.log` in the same folder.
 * Cancel
 
 Download & Update is only offered when TrainControl was started from a JAR file in a folder you can write to.  It is not available while autonomy, a timetable, Return Home, or a route is running.
+
+If the backup fails, the update stops and nothing is changed.  If the new version cannot start, the update is undone: your old JAR file is put back and started, and TrainControl tells you so.  On Windows, TrainControl restarts without a console window.
 
 **Backing up and restoring your data:**
 
