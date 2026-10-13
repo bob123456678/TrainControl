@@ -29,7 +29,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * **The editor keeps one station to one caption, and the store can still hold more.** A setup edited by
  * hand, or written by an older version, carries several, so drawing has to cope with it. A station named on
  * its own square and beside it is drawn once and is no error for the setup check; only two captions beside
- * a station are an ERROR (OB-341), because they are drawn twice. The state was on Adam's own railway:
+ * a station on one page are an ERROR (OB-341), because they are drawn twice there; a caption on another page is
+ * allowed (Adam, 2026-10-12: *"It is OK to show on another page what is going on on another."*). The state was on
+ * Adam's own railway:
  * `1 - Main:6,4` is captioned on `6,5` AND on `6,4`. `AutonomySession.migrateStationLabels` used to
  * write captions through the raw store door (until OB-256), so a station already captioned on its own
  * square gained a second one the moment a `Point:` label was migrated off the page beside it.

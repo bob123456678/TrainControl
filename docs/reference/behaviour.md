@@ -876,11 +876,21 @@ square's own name buried in it is a question whose answer is already known.  The
 is present but disabled, with the reason on its tooltip - present rather than hidden, because a menu
 item that vanishes answers "what does this do" by refusing to say.
 
-**One station, one caption.**  Pointing a new square at a station clears the old one, so the diagram
-never names the same station twice with nothing to say which is current.  A setup file edited by hand, or written
-by an older version, can still carry more.  A station captioned on its own square and beside it is drawn once, the
-beside one, and is no error; two captions beside it are two names, and the setup check calls that an error (OB-341),
-naming the station and the squares.  "Stop Showing" on all but one of them clears it.
+**One caption per station per page.**  Pointing a square at a station clears the station's other caption on the same
+page, so a page never names the same station twice with nothing to say which is current; on a page where the station
+has no caption it ADDS one, and the station's captions on other pages stay.  Showing a station name on a square moves
+the caption within its page and adds one on another; dragging a caption moves it within its page only, since a drop on
+another page is refused; "Stop Showing" removes only the caption of the square clicked.  The same rule holds for the
+automatic placement, an import and the migration of old `Point:` labels, each of which captions a station only where it
+has none on that page.  Two rulings of Adam's, both 2026-10-12, made it per page: the setup check (*"The duplicate caption
+check should be per page.  It is OK to show on another page what is going on on another, unless you think this breaks
+something major."*), and then the editor, which he ruled should go the same way.
+
+A setup file edited by hand, or written by an older version, can still carry more than one on a page.  A station
+captioned on its own square and beside it on that page is drawn once, the beside one, and is no error; one on each of
+two pages is drawn on both.  Two captions beside it on one page are two names, and the setup check calls that an error
+(OB-341), naming the station and those squares.  A caption on a page left out of autonomy, or on a page that is gone, is
+drawn nowhere and counts for nothing.
 
 **A caption may sit on blank space, and it may not sit under your own text.**  Text you have written
 on a square wins, so a caption there would be invisible; the editor says so and offers to replace it

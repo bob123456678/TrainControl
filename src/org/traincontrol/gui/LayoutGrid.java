@@ -1497,6 +1497,9 @@ public class LayoutGrid
                         // Of this build, so registering its other caption of the same station spares it (RSA40-C1)
                         text.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, registeredCaptions);
 
+                        // And of this page, so another page's build does not let it go (OB-341)
+                        text.putClientProperty(TrainControlUI.LAYOUT_STATION_PAGE, layout.getName());
+
                         // This callback will populate the label
                         ui.addLayoutStation(captioned, text, parent);
 

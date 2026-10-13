@@ -2062,8 +2062,8 @@ public class AutonomySession
             // exists, it is on the page the reader is looking at, and it cannot land on somebody
             // else's track the way searching for nearby blank space can.
             //
-            // Only where the station has no caption already, like everything else here.
-            if (point.optBoolean("station", false) && captionsFor(tile).isEmpty())
+            // Only where the station has no caption on its page already, like everything else here (OB-341).
+            if (point.optBoolean("station", false) && !isCaptionedOnPage(tile, tile.getPage()))
             {
                 store.setCaption(tile, tile);
             }
@@ -3326,18 +3326,19 @@ public class AutonomySession
      * Whether the diagram draws the caption on this square: the one rule for it, asked by the drawing and by the setup
      * check alike (MT-337, OB-341).
      *
-     * A station's name is drawn once.  A caption beside the station is drawn; one on the station's own square gives way
-     * to it, because the two would land next to each other and say the same thing twice, and the beside one is the one
-     * somebody placed.  So the station's own caption is drawn only while it has no other that is drawn.
+     * A station's name is drawn once PER PAGE (Adam, 2026-10-12: *"The duplicate caption check should be per page.  It is OK
+     * to show on another page what is going on on another."*).  A caption beside the station is drawn; one on the station's
+     * own square gives way to one beside it on the SAME page, because the two would land next to each other and say the
+     * same thing twice (MT-337), and the beside one is the one somebody placed.  A caption on another page is next to
+     * nothing of the station's, and never makes it give way.
      *
      * **Only on a page that draws captions.**  No window draws one on a page left out of autonomy - the running diagram,
      * a pop-up and the autonomy editor build the same grid, which hides them (`LayoutGrid.hidesStationCaptions`) - and a
-     * page this session no longer has has no grid at all.  Such a caption is not drawn, and a station's own caption does
-     * not give way to it, or the station would be drawn nowhere.
+     * page this session no longer has has no grid at all.  Such a caption is not drawn.
      *
      * @param where the square the text sits on
      * @return false where there is no caption, where it is kept for a square that is no station now (GSE-C4), where its page
-     *         is left out or gone, and where it is a station's own and gives way
+     *         is left out or gone, and where it is a station's own and gives way to another caption on its page
      */
     public boolean isCaptionDrawn(TileKey where)
     {
@@ -3349,7 +3350,7 @@ public class AutonomySession
 
         for (TileKey elsewhere : captionsFor(station))
         {
-            if (!station.equals(elsewhere) && onAPageThatDrawsCaptions(elsewhere)) return false;
+            if (!station.equals(elsewhere) && station.getPage().equals(elsewhere.getPage())) return false;
         }
 
         return true;
@@ -3393,12 +3394,17 @@ public class AutonomySession
      */
     public void setCaption(TileKey captionTile, TileKey stationTile)
     {
-        // One station, one caption - decided HERE rather than at each door.
+        // One caption per station PER PAGE - decided HERE rather than at each door.
         //
         // There are three ways to caption a station: place it automatically, choose the square
         // yourself in the autonomy editor, and now drag the square it sits on in the track diagram
         // editor.  Only the first knew to remove the old one, so choosing a new square left the
         // station named twice on the diagram and nothing said which was current.
+        //
+        // On the new square's page, and no other (Adam, 2026-10-12, ruled that the editor goes per page like the
+        // setup check): on a page where the station has no caption this ADDS one and
+        // keeps the captions on other pages, and on the same page it MOVES it, so each page shows the name at most
+        // once.
         //
         // Cleared before setting rather than after, so moving a caption onto a square that already
         // shows the same station is not a clear-then-set of the same entry.
@@ -3795,8 +3801,8 @@ public class AutonomySession
 
         store.setCaption(from, null);
 
-        // Through setCaption, so anything already captioning that station elsewhere - including
-        // whatever was on the destination square - goes with it.
+        // Through setCaption, so anything already captioning that station elsewhere on the destination's page -
+        // including whatever was on the destination square - goes with it, and its captions on other pages stay.
         setCaption(to, station);
 
         return true;
@@ -3839,7 +3845,7 @@ public class AutonomySession
 
         if (name == null || name.trim().isEmpty()) return "autosetup.ui.labelNotNamedYet";
 
-        // A station already shown somewhere is MOVED, not refused.
+        // A station already shown somewhere on this page is MOVED, not refused.
         //
         // Asking to show a name is asking for it to be here, and answering "it is already somewhere"
         // left the user to find and delete the old one first - or, once imports began captioning every
@@ -3847,7 +3853,7 @@ public class AutonomySession
         //
         // The old ones are cleared further down, once somewhere new has actually been found, so a
         // station with nowhere to go keeps the caption it had rather than losing it to a move that
-        // then failed.
+        // then failed.  Only the ones on this page: its captions on other pages stay (OB-341).
 
         LayoutDiagram page = pageOf(tile);
 
@@ -3927,21 +3933,42 @@ public class AutonomySession
     }
 
     /**
-     * Forgets wherever this station was being shown, so that placing it again leaves exactly one.
+     * Forgets wherever this station was being shown on a page, so that placing it again leaves exactly one there.
+     *
+     * Only the captions on the page of the square being captioned: a station is shown at most once per page, and may be
+     * shown on several (Adam, 2026-10-12, ruling that the editor goes per page too), so its captions on other pages stay.
      *
      * Called only once somewhere new has been found: clearing first and then failing to place would
      * answer "show this name" by removing the name that was there.
      *
-     * @param station
+     * @param station the sensor's square
+     * @param except the square the name is now to be shown on, whose page is the one cleared
      */
     private void clearCaptions(TileKey station, TileKey except)
     {
         for (TileKey where : new LinkedHashSet<>(captionsFor(station)))
         {
-            if (where.equals(except)) continue;
+            if (where.equals(except) || !where.getPage().equals(except.getPage())) continue;
 
             store.setCaption(where, null);
         }
+    }
+
+    /**
+     * Whether a station is shown on a square of this page.
+     *
+     * @param station the sensor's square
+     * @param page the page's name
+     * @return true when one of its captions sits on that page
+     */
+    private boolean isCaptionedOnPage(TileKey station, String page)
+    {
+        for (TileKey where : captionsFor(station))
+        {
+            if (where.getPage().equals(page)) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -4071,13 +4098,14 @@ public class AutonomySession
 
                 if (station != null)
                 {
-                    // ONE STATION, ONE CAPTION, AS AT EVERY OTHER DOOR (OB-256).  `setCaption` takes a station's caption
-                    // off wherever it was, and the old-file import captions a station only where it has none; this wrote
-                    // through the store's own door, which does neither, so a station the setup already showed somewhere
-                    // gained a second caption on the label's square.  The setup's caption is the one somebody chose, so it
-                    // stays - and the label still leaves the page below: it names a station the setup already shows, and
-                    // left there it would be found again at every open.
-                    if (store.captionsFor(station).isEmpty()) store.setCaption(where, station);
+                    // ONE CAPTION PER STATION PER PAGE, AS AT EVERY OTHER DOOR (OB-256, OB-341).  `setCaption` takes a
+                    // station's caption off wherever it was on that page, and the old-file import captions a station only
+                    // where it has none there; this wrote through the store's own door, which does neither, so a station
+                    // the setup already showed on the page gained a second caption on the label's square.  The setup's
+                    // caption is the one somebody chose, so it stays - and the label still leaves the page below: it
+                    // names a station the setup already shows there, and left there it would be found again at every
+                    // open.  A label on another page than the station's caption is that page's: it becomes one there.
+                    if (!isCaptionedOnPage(station, where.getPage())) store.setCaption(where, station);
 
                     migrated = true;
 
@@ -7862,17 +7890,20 @@ public class AutonomySession
     /**
      * Every station whose name the track diagram draws in more than one place, against the squares it draws it on (OB-341).
      *
-     * What counts is what is DRAWN (`drawnCaptionsFor`, the rule the diagram uses): a station captioned on its own square
-     * and beside it is drawn once, the beside one, so it is not here; two captions beside it are two names, and are.  Every
-     * door of the editor keeps one station to one caption (OB-256), so what this finds came in past them: a setup file
-     * edited by hand, or written by an older version.
+     * What counts is what is DRAWN (`drawnCaptionsFor`, the rule the diagram uses), and PER PAGE (Adam, 2026-10-12: *"The
+     * duplicate caption check should be per page.  It is OK to show on another page what is going on on another."*): a
+     * station captioned on its own square and beside it is drawn once, the beside one, so it is not here; one beside it on
+     * each of two pages is not here either; two captions beside it on one page are two names on that page, and are, the
+     * finding naming those squares and not a lone caption on another page.  Every door of the editor keeps one station to
+     * one caption (OB-256), so what this finds came in past them: a setup file edited by hand, or written by an older
+     * version.
      *
      * Stale state is not counted, as the unlabelled-station check does not count it: a caption kept for a square that is no
      * station now is not drawn (GSE-C4), nor is one on a page that is gone or left out of autonomy, and a station that is
      * not a Point - on a page left out of autonomy, or track the diagram no longer has - is not built.  In reading order,
      * so the sentence and the list do not change from one load of the file to the next.
      *
-     * @return each such station's square, to the squares its name is drawn on
+     * @return each such station's square, to the squares of the pages that draw its name more than once
      */
     private Map<TileKey, List<TileKey>> stationsShownMoreThanOnce()
     {
@@ -7889,13 +7920,26 @@ public class AutonomySession
         {
             if (!store.isStation(station) || !reducer.getPoints().containsKey(station)) continue;
 
-            List<TileKey> drawn = drawnCaptionsFor(station);
+            // The drawn squares of each page, and the pages that draw the name more than once
+            Map<String, List<TileKey>> onPage = new LinkedHashMap<>();
 
-            if (drawn.size() < 2) continue;
+            for (TileKey square : drawnCaptionsFor(station))
+            {
+                onPage.computeIfAbsent(square.getPage(), k -> new ArrayList<>()).add(square);
+            }
 
-            drawn.sort(readingOrder);
+            List<TileKey> twice = new ArrayList<>();
 
-            out.put(station, drawn);
+            for (List<TileKey> squares : onPage.values())
+            {
+                if (squares.size() > 1) twice.addAll(squares);
+            }
+
+            if (twice.isEmpty()) continue;
+
+            twice.sort(readingOrder);
+
+            out.put(station, twice);
         }
 
         return out;

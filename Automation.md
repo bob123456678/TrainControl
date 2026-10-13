@@ -157,7 +157,7 @@ With no tool armed, a left-click on track changes which way trains may run on it
 - **A route button drawn on the track** is set on its own: a click changes that square only.  One with no track running through it is greyed and takes no clicks.
 - **A square out of service** (`No - Nothing Can Pass`) has no directions to set: clicking it only says so, and no arrows are drawn on it.
 
-**Shift+click** picks several squares (outlined in orange) so that one `Segment Length...` can give them all the same length. **Drag a station's caption** to move it to another free square.
+**Shift+click** picks several squares (outlined in orange) so that one `Segment Length...` can give them all the same length. **Drag a station's caption** to move it to another free square of the same page.
 
 ---
 
@@ -184,7 +184,7 @@ Right-click any square for everything else. The menu opens with the square's nam
 | `Entry Guard Signal...` | Signals set to red when a train arrives here at the end of its journey; the next route that needs them sets them green again |
 | `Advanced Parameters...` | `Station Priority` (higher is chosen first; 0 is the default), `Speed Multiplier` (trains run at this percentage of their speed on the track leading in to this station), `Excluded Locomotives` (trains that may not stop here, though they can still pass through it; on a sensor that is not a station, trains that may not pass it at all.  Choose `Allow only the chosen locomotives` in its window to turn the list round: the locomotives you pick are then the only ones allowed, every other one, including any you add later, is kept out, and the item reads `Allowed Locomotives Only`), and `Unavailable While Occupied` (other stations that, while occupied, keep trains away from this one: tick them, or `Pick on the Diagram...`) |
 | `Segment Length...` | How long this piece of track counts as, in your own units; see [Track lengths](#track-lengths-what-they-are-for) (Control+E) |
-| `Show a Station Name Here...` | Puts a station's caption on this square (Control+N). `Stop Showing` *station* takes it off |
+| `Show a Station Name Here...` | Puts a station's caption on this square (Control+N). A page shows a station once: if the station already has a caption on this page it moves here, and its captions on other pages stay. `Stop Showing` *station* takes off the one on this square only |
 | `Bulk Tools` | See [Bulk Tools](#bulk-tools) |
 
 ### On track, switches and signals
@@ -205,7 +205,7 @@ Names cannot sit on switches or signals.
 
 ### On text and empty squares
 
-`Show a Station Name Here...` puts a station's caption here; over your own text it asks first.
+`Show a Station Name Here...` puts a station's caption here; over your own text it asks first. A station is shown once on each page, so on a page where it already has a caption this one moves, and on another page this one is added.
 
 ---
 
@@ -273,7 +273,7 @@ Copy, paste, rotate, delete and undo belong to the track editor, and do nothing 
 
 The setup is checked as you go, and everything it finds is listed under **Things to look at** at the bottom of the editor: this page first, then the others, each marked with its page. Click a finding to go to the square it is about.
 
-- **`Must be fixed`** (red): errors. While the setup has any, autonomy will not start, and no train can be sent by Start, Execute Timetable, Return Home, or by hand. Among them: a station still with its automatic name, or shown nowhere on the diagram; a station whose name is shown twice on the diagram (right-click all but one of them and choose `Stop Showing` *station*); the same locomotive on two squares; two pages sharing one sensor; a page link that track runs into but that is not paired; a switch with no address; a train facing a way its square no longer allows (turn it with *train* `Is Facing...`, move it, or put the track back); and a station at the end of a line where trains may not change direction (mark it `Trains Must Change Direction Here`, or make it no station).
+- **`Must be fixed`** (red): errors. While the setup has any, autonomy will not start, and no train can be sent by Start, Execute Timetable, Return Home, or by hand. Among them: a station still with its automatic name, or shown nowhere on the diagram; a station whose name is shown twice on the same page of the diagram (right-click all but one of them and choose `Stop Showing` *station*); the same locomotive on two squares; two pages sharing one sensor; a page link that track runs into but that is not paired; a switch with no address; a train facing a way its square no longer allows (turn it with *train* `Is Facing...`, move it, or put the track back); and a station at the end of a line where trains may not change direction (mark it `Trains Must Change Direction Here`, or make it no station).
 - **`Warnings`** (amber): worth knowing, but they stop nothing: a train facing track that runs only towards it is simply not sent that way; a station no other station can reach; a train or station with no length while others have one.
 - **`Worth tidying`** (grey): small things, such as an unnamed sensor that is not a station, or a station with no guard signal.
 

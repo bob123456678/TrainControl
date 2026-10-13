@@ -249,7 +249,7 @@ public class AutonomyChecks
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
 
     /**
-     * A station whose name the track diagram draws in more than one place (OB-341).
+     * A station whose name the track diagram draws in more than one place on one page (OB-341).
      *
      * Adam, 2026-10-12: *"add code to make this be an error in the autonomy validator (i.e. if someone edits the file by
      * hand externally)"*.  Every door of the editor keeps one station to one caption (OB-256), so the diagram never names
@@ -260,8 +260,12 @@ public class AutonomyChecks
      * captioned on its own square and beside it is drawn once, beside, and is no error - Adam's own railway has TopMainR2
      * so.  Two captions beside a station are two names, and are.
      *
+     * **And PER PAGE** (Adam, 2026-10-12: *"The duplicate caption check should be per page.  It is OK to show on another
+     * page what is going on on another."*): a caption beside the station on each of two pages is nothing to report.
+     *
      * An ERROR, as an unlabelled station is: both are a station the diagram cannot be read by.  One finding per station,
-     * on its own square, with the squares it is drawn on as its related ones and their number as its count.
+     * on its own square, with the squares of the pages that draw its name more than once as its related ones and their
+     * number as its count.
      */
     public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
 
@@ -688,7 +692,7 @@ public class AutonomyChecks
      * the station's, as its coordinates alone would be a square of the station's own.  The station's name is the sentence's
      * {0}, as for every finding with a square.
      *
-     * @param shown each station's square, to the squares its name is drawn on, two or more
+     * @param shown each station's square, to the squares of the pages that draw its name more than once
      * @return the findings
      */
     static List<Finding> checkStationsNamedTwice(Map<TileKey, List<TileKey>> shown)

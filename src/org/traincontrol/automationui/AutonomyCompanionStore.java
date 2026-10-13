@@ -2344,17 +2344,21 @@ public class AutonomyCompanionStore
                     continue;
                 }
 
-                // ONE STATION, ONE CAPTION (OB-341).  A square the setup has no caption on is no gap when the station
-                // it names is captioned somewhere else, so the captions take only the stations the setup does not
-                // caption yet - the file's own included, taken in the order of the squares, since org.json holds keys in
-                // no order and which of a file's two would otherwise change from one run to the next.
-                Set<Object> captioned = null;
+                // ONE CAPTION PER STATION PER PAGE (OB-341; Adam, 2026-10-12: *"The duplicate caption check should be per
+                // page"*).  A square the setup has no caption on is no gap when the station it names is captioned on
+                // that square's page already, so the captions take only the stations the setup does not caption yet ON
+                // THEIR PAGE - the file's own included, taken in the order of the squares, since org.json holds keys in
+                // no order and which of a file's two would otherwise change from one run to the next.  A caption on
+                // another page is kept: it is shown beside nothing of the station's.
+                Set<String> captioned = null;
 
                 List<String> inners = new ArrayList<>(((JSONObject) value).keySet());
 
                 if ("captions".equals(key))
                 {
-                    captioned = new LinkedHashSet<>(mine.toMap().values());
+                    captioned = new LinkedHashSet<>();
+
+                    for (String held : mine.keySet()) captioned.add(captionedOnItsPage(held, mine.get(held)));
 
                     inners.sort(AutonomyCompanionStore::bySquare);
                 }
@@ -2364,7 +2368,10 @@ public class AutonomyCompanionStore
                     // Kept, not replaced.  See the note above: this is a merge, not an adoption.
                     if (mine.has(inner)) continue;
 
-                    if (captioned != null && !captioned.add(((JSONObject) value).get(inner))) continue;
+                    if (captioned != null && !captioned.add(captionedOnItsPage(inner, ((JSONObject) value).get(inner))))
+                    {
+                        continue;
+                    }
 
                     mine.put(inner, ((JSONObject) value).get(inner));
                     filled++;
@@ -6075,7 +6082,7 @@ public class AutonomyCompanionStore
      * One caption per square, by construction: the map is keyed by the square the text sits on, so a
      * second caption there replaces the first rather than fighting it.  Several squares may name the
      * same station as far as this store goes: the session takes the old ones off when a new one is chosen
-     * (OB-256), and the setup check reports a station whose name is then drawn in two places (OB-341).
+     * (OB-256), and the setup check reports a station whose name is then drawn twice on one page (OB-341).
      *
      * @param captionTile where the text goes
      * @param stationTile the sensor it is about, or null to clear
@@ -6188,6 +6195,20 @@ public class AutonomyCompanionStore
         }
 
         return dropped;
+    }
+
+    /**
+     * A station together with the page a caption of it sits on, as one value to be compared.
+     *
+     * @param captionKey the caption's square in the file
+     * @param station the station it is about, as the file has it
+     * @return the two as one value
+     */
+    private static String captionedOnItsPage(String captionKey, Object station)
+    {
+        TileKey square = parseTileKey(captionKey);
+
+        return station + "\n" + (square == null ? "" : square.getPage());
     }
 
     /**

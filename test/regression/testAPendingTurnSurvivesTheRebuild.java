@@ -909,6 +909,125 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
+     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).
+     *
+     * Adam, 2026-10-12: *"It is OK to show on another page what is going on on another."*  The main window builds every
+     * page into one panel and puts the detached ones away in its page cache, and the station map is keyed by the STATION's
+     * square, so a caption on another page than the station's is registered under the same key as the station's own.  A
+     * later page's build let go of every other label of the window not on screen - a cached page's, which is detached and
+     * alive - and coming back to that page found its caption never written again.  A label is let go of only by a
+     * successor on the SAME page, and the grid stamps each caption with its page.
+     *
+     * Two detached labels of one station on two pages under one owner, as two cached pages' are; then the window writes
+     * its captions, as it does on every publish of the running diagram.
+     *
+     * MUTATION: let a later page's label evict another page's, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAStationCaptionedOnTwoPagesKeepsACaptionOnEach() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey station = aCaptionedStationOnTheShownPage();
+
+        final javax.swing.JPanel owner = new javax.swing.JPanel();
+
+        final org.traincontrol.gui.StationCaption onPageA = new org.traincontrol.gui.StationCaption();
+        final org.traincontrol.gui.StationCaption onPageB = new org.traincontrol.gui.StationCaption();
+
+        onPageA.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
+        onPageB.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
+        onPageA.putClientProperty(TrainControlUI.LAYOUT_STATION_PAGE, "OB-341 page A");
+        onPageB.putClientProperty(TrainControlUI.LAYOUT_STATION_PAGE, "OB-341 page B");
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                ui.addLayoutStation(station, onPageA, owner);
+                ui.addLayoutStation(station, onPageB, owner);
+            });
+
+            assertTrue(ui.getLayoutStations(station).contains(onPageA), "page B's caption let go of page A's, which is"
+                + " detached in the page cache and alive: back on page A it would be written never again");
+
+            assertTrue(ui.getLayoutStations(station).contains(onPageB), "page B's caption is not registered");
+
+            // THE WINDOW WRITES ITS CAPTIONS
+            ui.updateVisiblePoints();
+
+            pump();
+            pump();
+
+            String shown = null;
+
+            for (javax.swing.JLabel real : ui.getLayoutStations(station))
+            {
+                if (real != onPageA && real != onPageB) shown = real.getText();
+            }
+
+            assertNotNull(shown, "precondition: the window has no caption of its own at " + station);
+
+            assertFalse(onPageB.getText().isEmpty(), "page B's caption was not written: it still says nothing");
+
+            assertEquals(onPageA.getText(), shown, "page A's caption was not written with the station's text");
+            assertEquals(onPageB.getText(), shown, "page B's caption was not written with the station's text");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.forgetLayoutStations(
+                java.util.Arrays.asList(onPageA, onPageB), null));
+        }
+    }
+
+    /**
+     * The grid stamps every caption it registers with the page it drew it on (OB-341), which is what lets a later page's
+     * build tell its own page's earlier label from another page's.
+     *
+     * MUTATION: leave the stamp off the grid's labels, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testTheGridStampsItsCaptionsWithTheirPage() throws Exception
+    {
+        org.traincontrol.automationui.TileGraph.TileKey station = aCaptionedStationOnTheShownPage();
+
+        for (javax.swing.JLabel real : ui.getLayoutStations(station))
+        {
+            assertEquals(real.getClientProperty(TrainControlUI.LAYOUT_STATION_PAGE), station.getPage(),
+                "a caption the grid of " + station.getPage() + " registered does not carry the page it was drawn on");
+        }
+    }
+
+    /**
+     * A station on the page shown that the window draws a caption for.
+     *
+     * @return its square
+     * @throws Exception on an event-thread failure
+     */
+    private static org.traincontrol.automationui.TileGraph.TileKey aCaptionedStationOnTheShownPage() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (shownPage.equals(square.getPage()) && session.getStore().isStation(square)
+                && !ui.getLayoutStations(square).isEmpty())
+            {
+                return square;
+            }
+        }
+
+        throw new SkipException("no captioned station on page " + shownPage);
+    }
+
+    /**
      * A station renamed while the setup cannot build keeps the train standing at it on its caption (RSA40-C2; Adam,
      * 2026-10-05: *"Yes, do it."*): the railway, left as it was, still carries the names it was built with, and the
      * caption, asked by the new name, found no Point there and went blank until the setup built.

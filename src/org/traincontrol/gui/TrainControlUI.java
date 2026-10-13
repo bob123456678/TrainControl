@@ -1768,8 +1768,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (build != null && build == existing.getClientProperty(LAYOUT_STATION_BUILD)) continue;
 
+                // AND ONLY ONE OF THE SAME PAGE (OB-341).  The map is keyed by the STATION's square, and a caption may
+                // sit on another page than its station (Adam, 2026-10-12: *"It is OK to show on another page what is
+                // going on on another"*), so two pages' captions of a station share a key and an owner.  The main
+                // window builds every page into one panel and keeps the detached ones in its page cache, so a later
+                // page's build let go of an earlier page's label that is detached and alive - and that page, back from
+                // the cache, was written never again.
                 if (existing != value && !existing.isDisplayable()
-                    && owner == existing.getClientProperty(LAYOUT_STATION_OWNER))
+                    && owner == existing.getClientProperty(LAYOUT_STATION_OWNER)
+                    && java.util.Objects.equals(existing.getClientProperty(LAYOUT_STATION_PAGE),
+                        value.getClientProperty(LAYOUT_STATION_PAGE)))
                 {
                     i.remove();
                 }
@@ -1792,6 +1800,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * registers each caption; a client property for the reason `LAYOUT_STATION_OWNER` is one.
      */
     public static final String LAYOUT_STATION_BUILD = "tcLayoutStationBuild";
+
+    /**
+     * The page a caption label is drawn on (OB-341).  Set by the grid as it registers each caption, beside
+     * `LAYOUT_STATION_BUILD`; a label with none is of no page in particular, and takes another such label's place as
+     * before.
+     */
+    public static final String LAYOUT_STATION_PAGE = "tcLayoutStationPage";
     
     /**
      * How many locomotive mapping pages there are.
@@ -6157,17 +6172,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (named == null || named.trim().isEmpty()) return null;
         }
 
-        // AND ONE NAME PER STATION, THE OFFSET ONE WINNING (MT-337).
+        // AND ONE NAME PER STATION PER PAGE, THE OFFSET ONE WINNING (MT-337, OB-341).
         //
         // Adam, 2026-09-08: "if a station has an offset label, the current home loc is shown twice
         // (once on the tile itself, once on the offset label)."
         //
-        // The editor keeps one station to one caption (behaviour.md, "One station, one caption"), but
-        // the store can still hold more than one - a setup edited by hand, or written by an older
-        // version.  Drawing has to cope with it, and the worst of it is a station captioned on its own
-        // square AND beside it: the two land next to each other and say the same thing twice, which is
-        // what he was looking at.  That is drawn ONCE, the beside one, and so is no error; two captions
-        // beside the station are drawn twice, and the setup check calls that an ERROR (OB-341).
+        // The editor keeps one caption per station per page (behaviour.md, "One caption per station per
+        // page"), but the store can still hold more than one on a page - a setup edited by hand, or
+        // written by an older version - and a caption on another page is allowed: Adam, 2026-10-12, *"The duplicate caption
+        // check should be per page.  It is OK to show on another page what is going on on another."*
+        // Drawing has to cope with it, and the worst of it is a station captioned on its own square AND
+        // beside it on the same page: the two land next to each other and say the same thing twice, which
+        // is what he was looking at.  That is drawn ONCE, the beside one, and so is no error; two captions
+        // beside the station on one page are drawn twice there, and the setup check calls that an ERROR
+        // (OB-341).
         //
         // The state was reachable without anybody asking for it.  `AutonomySession.setCaption` sweeps
         // the old caption away, but `migrateStationLabels` used to write through the raw store door
@@ -6180,8 +6198,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // and the square's own is the last resort of both.  "Once - on the caption square when there
         // is one, otherwise on the station square", which is Adam's ruling read back.
         //
-        // Only against ANOTHER square.  A station captioned only on itself keeps its caption, and two
-        // offset captions are both drawn - the setup check reports them, and this does not choose.
+        // Only against ANOTHER square OF THE SAME PAGE.  A station captioned only on itself keeps its caption, a
+        // caption on another page never takes it away, and two offset captions are both drawn - the setup check
+        // reports them, and this does not choose.
         //
         // The rule is the session's (`isCaptionDrawn`), so that the setup check counts exactly what is drawn here.
         if (caption != null && !session.isCaptionDrawn(where)) return null;

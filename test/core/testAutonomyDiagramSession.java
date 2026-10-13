@@ -5167,10 +5167,11 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A legacy label naming a station the setup already shows somewhere does not show it twice (OB-256).
+     * A legacy label naming a station the setup already shows on its page does not show it twice (OB-256; on another page
+     * it becomes a caption there, which is `testALegacyLabelOnAnotherPageStillCaptionsAStationShownOnItsOwnPage`).
      *
-     * One station, one caption: `setCaption` takes a station's caption off wherever it was, and the old-file import
-     * captions a station only where it has none.  The migration of `Point:` labels wrote through the store's own door,
+     * One caption per station per page: `setCaption` takes a station's caption off wherever it was on that page, and the
+     * old-file import captions a station only on a page where it has none.  The migration of `Point:` labels wrote through the store's own door,
      * which does neither, so a station the setup already captioned gained a second caption on the label's square.  The
      * setup's caption is the one somebody chose, so it is kept; the label still leaves the page, or the migration would
      * find it again at every open.
@@ -9041,21 +9042,19 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A caption on a page that is not drawn does not make the station's own caption give way (OB-341).
+     * A station named on its own square and on another page is drawn on both, and is no error (OB-341).
      *
-     * No window draws a caption on a page left out of autonomy - the running diagram, a pop-up and the autonomy editor all
-     * build the same grid, which hides them (`LayoutGrid.hidesStationCaptions`) - and a caption on a page that is gone has
-     * no grid at all.  A station captioned on its own square and on such a page had given way to a caption nobody can see,
-     * and was drawn nowhere.  It is drawn on its own square, and is no error.
+     * Adam, 2026-10-12: *"The duplicate caption check should be per page.  It is OK to show on another page what is going
+     * on on another."*  MT-337's trouble was the two landing next to each other, which two pages never do, so the station's
+     * own caption gives way only to a caption on its OWN page.  A caption on a page that is not drawn - one left out of
+     * autonomy, which no window draws (`LayoutGrid.hidesStationCaptions`), or one that is gone - is drawn nowhere.
      *
-     * THE CONTROL is the same two captions with the other page drawn: the own one gives way to it.
-     *
-     * MUTATION: leave the page test out of `isCaptionDrawn` and this fails.
+     * MUTATION: let the own caption give way to a caption on another page, and this fails.
      *
      * @throws Exception from the session
      */
     @Test
-    public void testACaptionOnAPageThatIsNotDrawnDoesNotMakeTheOwnOneGiveWay() throws Exception
+    public void testAStationNamedOnItsOwnSquareAndOnAnotherPageIsDrawnOnBoth() throws Exception
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
@@ -9071,91 +9070,117 @@ public class testAutonomyDiagramSession
         session.getStore().setCaption(elsewhere, station);
         session.rebuild();
 
-        assertFalse(session.isCaptionDrawn(station), "precondition: with the other page drawn, the station's own caption does"
-            + " not give way to the one on it");
+        assertTrue(session.isCaptionDrawn(station), "the station's own caption gives way to one on another page, though the"
+            + " two never land next to each other");
 
-        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(elsewhere), "precondition: the other page's caption is"
-            + " not the one that is drawn");
+        assertTrue(session.isCaptionDrawn(elsewhere), "the caption on the other page is not drawn");
 
-        // A PAGE LEFT OUT OF AUTONOMY
+        assertEquals(session.drawnCaptionsFor(station).size(), 2, "the station is not drawn on both pages: "
+            + session.drawnCaptionsFor(station));
+
+        assertTrue(shownTwice(session).isEmpty(), "a station drawn once on each of two pages is reported: " + session.check());
+
+        // THE OTHER PAGE LEFT OUT OF AUTONOMY: nothing there is drawn, and the own caption is
         session.setPageExcluded("second", true);
         session.rebuild();
 
         assertFalse(session.isCaptionDrawn(elsewhere), "a caption on a page left out of autonomy is drawn");
+        assertTrue(session.isCaptionDrawn(station), "the station is drawn nowhere");
 
-        assertTrue(session.isCaptionDrawn(station), "the station's own caption gives way to one on a page left out of"
-            + " autonomy, which no window draws - so the station is drawn nowhere");
-
-        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(station), "the station is not drawn exactly once, on"
-            + " its own square");
-
-        assertTrue(shownTwice(session).isEmpty(), "a station drawn once is reported: " + session.check());
-
-        // A PAGE THAT IS GONE
+        // THE OTHER PAGE GONE
         session.setPageExcluded("second", false);
         session.getStore().setCaption(elsewhere, null);
         session.getStore().setCaption(gone, station);
         session.rebuild();
 
         assertFalse(session.isCaptionDrawn(gone), "a caption on a page that is gone is drawn");
-
-        assertTrue(session.isCaptionDrawn(station), "the station's own caption gives way to one on a page that is gone,"
-            + " which has no grid to be drawn on");
+        assertTrue(session.isCaptionDrawn(station), "the station is drawn nowhere");
     }
 
     /**
-     * A caption on a page that is not drawn is not a place the station's name is drawn (OB-341).
+     * Only a page that draws a station's name twice is an error, and the finding names that page's squares (OB-341).
      *
-     * A station captioned beside itself and on a page left out of autonomy, or on one that is gone, is drawn once, and is
-     * no error - it had been reported as named twice, which refuses the setup.
+     * Two captions beside the station on its own page and one on another page: one finding, with the two.  Two on the
+     * OTHER page and one beside the station: one finding, with the other page's two, named with their page, and not the
+     * lone one.  A caption beside the station on each of two pages is nothing to report, and one page's two that are not
+     * drawn - the page left out of autonomy, or gone - are not two names.
      *
-     * THE CONTROL is the same two captions with the other page drawn: two places, and one finding.
+     * Adam, 2026-10-12: *"The duplicate caption check should be per page."*
      *
-     * MUTATION: leave the page test out of `isCaptionDrawn` and this fails.
+     * MUTATION: count the captions of all pages together, and this fails.
      *
      * @throws Exception from the session
      */
     @Test
-    public void testACaptionOnAPageThatIsNotDrawnIsNotAPlaceTheNameIsDrawn() throws Exception
+    public void testOnlyAPageThatDrawsTheNameTwiceIsAnErrorAndTheFindingNamesItsSquares() throws Exception
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
         TileKey station = new TileKey("main", 1, 1);
-        TileKey beside = new TileKey("main", 1, 2);
-        TileKey elsewhere = new TileKey("second", 3, 2);
-        TileKey gone = new TileKey("gone", 1, 1);
+        TileKey hereOne = new TileKey("main", 1, 2);
+        TileKey hereTwo = new TileKey("main", 1, 3);
+        TileKey thereOne = new TileKey("second", 3, 2);
+        TileKey thereTwo = new TileKey("second", 3, 3);
 
         session.getStore().setStation(station, true);
         session.getStore().setStation(new TileKey("main", 4, 1), true);
         session.setPointName(station, "Hauptbahnhof");
 
-        session.getStore().setCaption(beside, station);
-        session.getStore().setCaption(elsewhere, station);
+        // ONE BESIDE IT ON EACH PAGE: nothing to report
+        session.getStore().setCaption(hereOne, station);
+        session.getStore().setCaption(thereOne, station);
         session.rebuild();
 
-        assertEquals(shownTwice(session).size(), 1, "precondition: two places, both pages drawn, are not reported: "
+        assertEquals(session.drawnCaptionsFor(station).size(), 2, "precondition: the station is not drawn on both pages");
+        assertTrue(shownTwice(session).isEmpty(), "a caption beside the station on each of two pages is reported: "
             + session.check());
 
-        // A PAGE LEFT OUT OF AUTONOMY
+        // TWO ON ITS OWN PAGE, ONE ON THE OTHER
+        session.getStore().setCaption(hereTwo, station);
+        session.rebuild();
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
+
+        assertEquals(found.size(), 1, "two on the station's page and one on another are not one finding: " + session.check());
+        assertEquals(found.get(0).getCount(), 2, "the finding counts the lone caption on the other page");
+
+        assertEquals(found.get(0).getRelated(), Arrays.asList(hereOne, hereTwo),
+            "the finding does not name exactly the station's page's two");
+
+        // TWO ON THE OTHER PAGE, ONE ON THE STATION'S
+        session.getStore().setCaption(hereTwo, null);
+        session.getStore().setCaption(thereTwo, station);
+        session.rebuild();
+
+        found = shownTwice(session);
+
+        assertEquals(found.size(), 1, "two on the other page and one on the station's are not one finding: " + session.check());
+
+        assertEquals(found.get(0).getRelated(), Arrays.asList(thereOne, thereTwo),
+            "the finding does not name exactly the other page's two");
+
+        String said = org.traincontrol.util.I18n.f(found.get(0).getMessageKey(), session.describeTile(station),
+            found.get(0).getSubject(), found.get(0).getCount(), found.get(0).getDetail(), found.get(0).getThird());
+
+        assertTrue(said.contains("second 3,2") && said.contains("second 3,3"),
+            "the squares on the other page are not named with their page: " + said);
+
+        assertFalse(said.contains("(1,2)"), "the sentence names the lone caption on the station's page: " + said);
+
+        // THE PAGE'S TWO NOT DRAWN: left out of autonomy, then gone
         session.setPageExcluded("second", true);
         session.rebuild();
 
-        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(beside), "the station is not drawn exactly once, beside"
-            + " itself");
+        assertTrue(shownTwice(session).isEmpty(), "two captions on a page left out of autonomy are reported: " + session.check());
 
-        assertTrue(shownTwice(session).isEmpty(), "a caption on a page left out of autonomy is counted as a place the name is"
-            + " drawn, and a station drawn once is reported: " + session.check());
-
-        // A PAGE THAT IS GONE
         session.setPageExcluded("second", false);
-        session.getStore().setCaption(elsewhere, null);
-        session.getStore().setCaption(gone, station);
+        session.getStore().setCaption(thereOne, null);
+        session.getStore().setCaption(thereTwo, null);
+        session.getStore().setCaption(new TileKey("gone", 1, 1), station);
+        session.getStore().setCaption(new TileKey("gone", 1, 2), station);
         session.rebuild();
 
-        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(beside), "a caption on a page that is gone is drawn");
-
-        assertTrue(shownTwice(session).isEmpty(), "a caption on a page that is gone is counted as a place the name is drawn: "
-            + session.check());
+        assertTrue(shownTwice(session).isEmpty(), "two captions on a page that is gone are reported: " + session.check());
     }
 
     /**
@@ -9204,37 +9229,6 @@ public class testAutonomyDiagramSession
 
         assertTrue(found.get(0).getSubject().indexOf("(1,2)") < found.get(0).getSubject().indexOf("(1,3)"),
             "the sentence does not name the squares in reading order: " + found.get(0).getSubject());
-    }
-
-    /**
-     * A caption on another page is named with its page (OB-341), since a bare "1,2" would be a square of this one.
-     *
-     * @throws Exception from the session
-     */
-    @Test
-    public void testAShownTwiceErrorNamesASquareOnAnotherPageWithItsPage() throws Exception
-    {
-        session.open(Arrays.asList(runOfTrack(), secondPage()));
-
-        TileKey station = new TileKey("main", 1, 1);
-
-        session.getStore().setStation(station, true);
-        session.getStore().setStation(new TileKey("main", 4, 1), true);
-        session.setPointName(station, "Hauptbahnhof");
-        session.getStore().setCaption(new TileKey("main", 1, 2), station);
-        session.getStore().setCaption(new TileKey("second", 3, 2), station);
-
-        session.rebuild();
-
-        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
-
-        assertEquals(found.size(), 1, "a station shown on two pages is not reported once: " + session.check());
-
-        String said = org.traincontrol.util.I18n.f(found.get(0).getMessageKey(), session.describeTile(station),
-            found.get(0).getSubject(), found.get(0).getCount(), found.get(0).getDetail(), found.get(0).getThird());
-
-        assertTrue(said.contains("(1,2)"), "the square on the station's own page is not named by its coordinates: " + said);
-        assertTrue(said.contains("second 3,2"), "the square on the other page is not named with its page: " + said);
     }
 
     /**
@@ -9354,6 +9348,232 @@ public class testAutonomyDiagramSession
         }
     }
 
+    /**
+     * An import keeps a caption on another page than the station's own, and still skips a second on one page (OB-341).
+     *
+     * Adam, 2026-10-12: *"The duplicate caption check should be per page."*  The merge takes a caption of the file's only
+     * when the station has none yet ON THAT CAPTION'S PAGE, the file's own repeats included, in the order of the squares.
+     * So a station the setup captions on its own square gets the file's caption on the other page, and the file's second
+     * caption beside it on the station's page is the one that is not taken.
+     *
+     * MUTATION: compare the stations alone, without their page, and this fails.
+     *
+     * @throws Exception from the sessions
+     */
+    @Test
+    public void testAnImportKeepsACaptionOnAnotherPageAndSkipsASecondOnThePage() throws Exception
+    {
+        TileKey shown = new TileKey("main", 1, 1);
+
+        File exporting = Files.createTempDirectory("tc-autonomy-export").toFile();
+
+        try
+        {
+            // The file: the station beside itself on its own page, and on the other page
+            AutonomySession from = new AutonomySession(exporting);
+
+            from.open(Arrays.asList(runOfTrack(), secondPage()));
+            from.initialize("Evening");
+            from.setStation(shown, true);
+            from.setPointName(shown, "Hauptbahnhof");
+            from.getStore().setCaption(new TileKey("main", 1, 2), shown);
+            from.getStore().setCaption(new TileKey("second", 3, 2), shown);
+
+            org.json.JSONObject bundle = from.getStore().exportBundle("Evening");
+
+            // This setup: the station beside itself on its own page already
+            session.open(Arrays.asList(runOfTrack(), secondPage()));
+            session.initialize("Morning");
+            session.setStation(shown, true);
+            session.setPointName(shown, "Hauptbahnhof");
+            session.setCaption(new TileKey("main", 1, 3), shown);
+
+            session.importBundle("Imported", new org.json.JSONObject(bundle.toString()));
+
+            assertEquals(session.captionsFor(shown),
+                new LinkedHashSet<>(Arrays.asList(new TileKey("main", 1, 3), new TileKey("second", 3, 2))),
+                "the import did not keep the other page's caption and skip the second on the station's page");
+
+            assertTrue(shownTwice(session).isEmpty(), "the import left the setup with an error: " + session.check());
+        }
+        finally
+        {
+            delete(exporting);
+        }
+    }
+
+    /**
+     * Showing a station's name on another page ADDS a caption there; on the same page it MOVES the one that was there, and
+     * Stop Showing takes off only the one clicked (OB-341).
+     *
+     * Adam, 2026-10-12, ruled that Show Station Here goes per page like the check: on a page where the station has no
+     * caption it adds one and keeps the captions on other pages, and on the same page it still moves it, so each page
+     * shows the name at most once.  `clearCaptions` takes off only the captions on the
+     * new one's page, and `setCaption`, `placeCaption` and `moveCaption` go through it.
+     *
+     * MUTATION: clear the station's captions on every page, as before, and this fails at the first step.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testShowingAStationNameOnAnotherPageAddsAndOnTheSamePageMoves() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey beside = new TileKey("main", 1, 2);
+        TileKey there = new TileKey("second", 3, 2);
+        TileKey thereToo = new TileKey("second", 3, 3);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(new TileKey("main", 4, 1), true);
+        session.setPointName(station, "Bahnhof");
+
+        session.setCaption(station, station);
+
+        // ANOTHER PAGE ADDS: the station's own caption stays where it was
+        session.setCaption(there, station);
+
+        assertEquals(session.captionsFor(station), new LinkedHashSet<>(Arrays.asList(station, there)),
+            "showing the station on another page took its caption off its own page");
+
+        // THE SAME PAGE MOVES: the one on that page goes, the other page's stays
+        session.setCaption(beside, station);
+
+        assertEquals(session.captionsFor(station), new LinkedHashSet<>(Arrays.asList(beside, there)),
+            "showing the station on its own page again did not move the caption there, or took the other page's with it");
+
+        session.setCaption(thereToo, station);
+
+        assertEquals(session.captionsFor(station), new LinkedHashSet<>(Arrays.asList(beside, thereToo)),
+            "showing the station on the other page again did not move that page's caption");
+
+        // PLACING IT, on its own page: moves that page's, and leaves the other's
+        assertNull(session.placeCaption(station), "there was room beside the platform");
+
+        assertEquals(session.captionsFor(station).size(), 2, "placing the name beside the station left it shown "
+            + session.captionsFor(station));
+
+        assertTrue(session.captionsFor(station).contains(thereToo), "placing the name on the station's page took the"
+            + " other page's caption off");
+
+        // MOVING ONE (the drag's door): only on its own page
+        session.moveCaption(thereToo, there);
+
+        assertTrue(session.captionsFor(station).contains(there) && !session.captionsFor(station).contains(thereToo),
+            "the caption did not move to the square on its own page: " + session.captionsFor(station));
+
+        // STOP SHOWING takes off only the one clicked
+        session.setCaption(there, null);
+
+        assertEquals(session.captionsFor(station).size(), 1, "stopping the caption on the second page took the one on the"
+            + " first as well: " + session.captionsFor(station));
+
+        assertFalse(session.captionsFor(station).contains(there), "the caption that was stopped is still shown");
+    }
+
+    /**
+     * A legacy label on another page still captions a station that is captioned on its own page, and one on a page that has
+     * a caption of it does not (OB-256, OB-341).
+     *
+     * The migration captions a station only where it has none ON THAT PAGE.  The same-page meaning is
+     * `testALegacyLabelDoesNotCaptionAStationTwice`; this is the counterpart on the next page, whose label becomes a
+     * caption there and leaves the one on the first page.
+     *
+     * MUTATION: caption the label's square only when the station has no caption anywhere, as before, and this fails.
+     *
+     * @throws Exception from the session or the page files
+     */
+    @Test
+    public void testALegacyLabelOnAnotherPageStillCaptionsAStationShownOnItsOwnPage() throws Exception
+    {
+        LayoutDiagram main = pageOnDisk();
+
+        File secondFile = new File(new File(layout, "config/gleisbilder"), "second.cs2");
+
+        Files.write(secondFile.toPath(), "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
+
+        LayoutDiagram second = new LayoutDiagram("second", 8, 4,
+            "file:///" + secondFile.getAbsolutePath().replace('\\', '/'), null);
+
+        second.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        second.setPageId("2");
+
+        session.open(Arrays.asList(main, second));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey kept = new TileKey("main", 3, 2);
+        TileKey labelled = new TileKey("second", 1, 2);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Bahnhof");
+        session.setCaption(kept, station);
+        session.save();
+
+        // and the diagram of the OTHER page still carries an old-style label naming it
+        second.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
+            AutonomySession.STATION_LABEL_PREFIX + "Bahnhof");
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(main, second));
+
+        assertTrue(reopened.getMigrationFailures().isEmpty(),
+            "precondition: the page should have been written: " + reopened.getMigrationFailures());
+
+        assertEquals(reopened.captionsFor(station), new LinkedHashSet<>(Arrays.asList(kept, labelled)),
+            "the label on the other page did not become a caption there, or took the first page's off");
+
+        assertEquals(second.getComponent(1, 2).getLabel(), "", "the old label was left on the page");
+    }
+
+    /**
+     * The old-file import captions a station on its own square only where it has no caption on its page (OB-256, OB-341).
+     *
+     * One station has a caption of a setup edited by hand on ANOTHER page, and is still captioned on its own square; the
+     * other has one beside it on its own page, and is not.
+     *
+     * MUTATION: caption only a station with no caption anywhere, as before, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheOldFileImportCaptionsAStationOnlyWhereItHasNoneOnItsPage() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page, secondPage()));
+
+        TileKey other = new TileKey("main", 1, 1);
+        TileKey same = new TileKey("main", 4, 1);
+
+        session.getStore().setCaption(new TileKey("second", 3, 2), other);
+        session.getStore().setCaption(new TileKey("main", 4, 2), same);
+
+        org.json.JSONArray points = new org.json.JSONArray();
+
+        for (int s88 : new int[] {11, 12})
+        {
+            org.json.JSONObject point = new org.json.JSONObject();
+
+            point.put("name", s88 == 11 ? "Hauptbahnhof" : "Nebenbahnhof");
+            point.put("station", true);
+            point.put("s88", s88);
+
+            points.put(point);
+        }
+
+        org.json.JSONObject legacy = new org.json.JSONObject();
+        legacy.put("points", points);
+
+        session.importLegacy(legacy);
+
+        assertEquals(session.captionsFor(other), new LinkedHashSet<>(Arrays.asList(new TileKey("second", 3, 2), other)),
+            "a caption on another page kept the import from captioning the station on its own square");
+
+        assertEquals(session.captionsFor(same), new LinkedHashSet<>(Arrays.asList(new TileKey("main", 4, 2))),
+            "the import captioned a station that is captioned on its own page");
+    }
+
     /** The finding among these that is about this station, or null. */
     private static org.traincontrol.automationui.AutonomyChecks.Finding findingFor(
         List<org.traincontrol.automationui.AutonomyChecks.Finding> findings, TileKey station)
@@ -9383,7 +9603,8 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * Asking to show a station's name moves the caption rather than adding a second one.
+     * Asking to show a station's name moves the caption rather than adding a second one on the same page (OB-341: on
+     * another page it adds one, which is `testShowingAStationNameOnAnotherPageAddsAndOnTheSamePageMoves`).
      *
      * This used to refuse when the station was already shown somewhere, which left the user to find
      * and delete the old caption first - and once importing began captioning every station on its own

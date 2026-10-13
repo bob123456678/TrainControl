@@ -237,6 +237,127 @@ public class testControlNAsksTheMenusQuestion
         }
     }
 
+    /**
+     * The question about taking another station's only name is about THIS PAGE (OB-341).
+     *
+     * Adam, 2026-10-12, on the editor going per page: a page shows a station's name at most once, so the name this square
+     * shows is the station's only one ON THIS PAGE when no other square of the page names it - whatever other pages do.
+     * Taking it asks then, and does not when the station is named on another square of the page as well.
+     *
+     * MUTATION: look at the station's captions on every page, as before, and the first half fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationSquareAsksAboutAnotherStationsOnlyNameOnThisPageOnly() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-page").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main"), aPageWithARun("second")));
+
+            TileKey here = new TileKey("main", 1, 1);
+            TileKey other = new TileKey("main", 6, 1);
+
+            session.setStation(here, true);
+            session.setStation(other, true);
+
+            // THE OTHER STATION'S NAME ON THIS STATION'S SQUARE, and on the other page - its only one on this page
+            session.getStore().setCaption(here, other);
+            session.getStore().setCaption(new TileKey("second", 3, 2), other);
+
+            assertEquals(session.captionsFor(other).size(), 2, "precondition: " + session.captionsFor(other));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(false);
+
+            panel.showStationNameFor(here);
+
+            assertEquals(session.getCaptionTarget(here), other, "Show a Station Name Here took the only name another station"
+                + " had on this page off it without asking, because it is named on another page as well");
+
+            // NAMED ON ANOTHER SQUARE OF THIS PAGE TOO, through the store's door as a hand edit leaves it: not its only name
+            session.getStore().setCaption(new TileKey("main", 3, 2), other);
+
+            panel.showStationNameFor(here);
+
+            assertEquals(session.getCaptionTarget(here), here, "the question was asked, and answered No, about a name the"
+                + " station has on another square of this page as well");
+
+            assertTrue(session.captionsFor(other).contains(new TileKey("second", 3, 2)),
+                "showing this station's name took the other station's caption on the other page off");
+        }
+        finally
+        {
+            AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
+
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * A label can be dropped only on its own page, and moves only that page's caption (OB-341).
+     *
+     * `refuseCaptionDrop` has always refused a square of another page - a drag happens inside one page's grid - so a drag
+     * cannot carry a caption from page to page; on its own page it moves that page's caption through `moveCaption`, which
+     * now takes off only the station's captions on that page, and the other page's stays.
+     *
+     * MUTATION: let `moveCaption` take the station's captions off every page, and the last assertion fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testALabelDropsOnlyOnItsOwnPageAndMovesOnlyThatPagesCaption() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-drop-page").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main"), aPageWithARun("second")));
+
+            TileKey station = new TileKey("main", 1, 1);
+            TileKey here = new TileKey("main", 1, 2);
+            TileKey there = new TileKey("second", 3, 2);
+
+            session.setStation(station, true);
+            session.getStore().setCaption(here, station);
+            session.getStore().setCaption(there, station);
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            assertFalse(panel.canDropCaption(here, new TileKey("second", 3, 3), null),
+                "a label can be dropped on a square of another page");
+
+            assertFalse(panel.moveCaption(here, new TileKey("second", 3, 3), null), "a label was moved onto another page");
+
+            assertEquals(session.captionsFor(station), new java.util.LinkedHashSet<>(Arrays.asList(here, there)),
+                "a refused drop changed the captions");
+
+            // ON ITS OWN PAGE it moves, and the other page's is left alone
+            TileKey free = new TileKey("main", 1, 3);
+
+            assertTrue(panel.canDropCaption(here, free, null), "a label cannot be dropped on a free square of its own page");
+            assertTrue(panel.moveCaption(here, free, null), "the label did not move on its own page");
+
+            assertEquals(session.captionsFor(station), new java.util.LinkedHashSet<>(Arrays.asList(free, there)),
+                "moving the label took the other page's caption of the station off");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
     /** A private boolean question of the panel's, with the square or with nothing. */
     private static boolean asked(AutonomyEditorPanel panel, String name, TileKey tile) throws Exception
     {

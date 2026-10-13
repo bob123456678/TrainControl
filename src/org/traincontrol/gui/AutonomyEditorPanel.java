@@ -3575,13 +3575,17 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a station square may show its own name where it now shows the only caption of ANOTHER station - asked of
-     * the operator, naming both, and true without a question where nothing would be lost (GSE-C5).
+     * Whether a station square may show its own name where it now shows the only caption of ANOTHER station ON THIS PAGE -
+     * asked of the operator, naming both, and true without a question where nothing would be lost (GSE-C5).
      *
      * A drag can leave a station square showing another station's caption, and captioning the square with itself takes
      * that caption away: the other station is then named nowhere on the diagram, which `AutonomyChecks.checkStationLabels`
      * reports as an error.  The drop refuses the same loss outright (`refuseCaptionDrop`).  "Show a Station Name Here" is
      * live on such a square on purpose (SVV-C6, SVX-B2), so this asks rather than refuses.
+     *
+     * Per page, as the captions are (OB-341; Adam, 2026-10-12, ruling that the editor goes per page too): a page shows a
+     * station's name at most once, so the name on this square is the station's only one on this page when no other square
+     * of the page names it, whatever its captions on other pages.
      *
      * @param tile the station square
      * @return whether to go on
@@ -3595,6 +3599,8 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Set<TileKey> elsewhere = new java.util.LinkedHashSet<>(session.captionsFor(other));
 
         elsewhere.remove(tile);
+
+        elsewhere.removeIf(where -> !tile.getPage().equals(where.getPage()));
 
         if (!elsewhere.isEmpty()) return true;
 
