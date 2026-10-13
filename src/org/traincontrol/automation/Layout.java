@@ -11712,12 +11712,12 @@ public class Layout
      * SECOND, and this is the one the revert note first missed, it is an outright DEADLOCK rather
      * than a freeze. `TrainControlUI.updateVisiblePoints` and `repaintAutoLocList` are synchronized on
      * the UI and call `getPoints()`, so they would take the Layout monitor while holding the UI's.
-     * The opposite order already exists and is unavoidable: `configureAndLockPath` holds the Layout
-     * monitor and reaches `MarklinAccessory.setSwitched` -> `TrainControlUI.repaintSwitch`, which is
-     * synchronized on the UI. `DiagramMonitorDriver` calls `updateVisiblePoints` on the event thread
-     * every monitor tick during a run, so both halves fire on an ordinary run. AB-BA, unrecoverable,
-     * and it would have looked exactly like the deadlock Adam reported from a build that did not have
-     * it.
+     * The opposite order existed then: `configureAndLockPath` holds the Layout monitor and reaches
+     * `MarklinAccessory.setSwitched` -> `TrainControlUI.repaintSwitch`, which was synchronized on the UI
+     * until RSA67-C1. `DiagramMonitorDriver` calls `updateVisiblePoints` on the event thread every
+     * monitor tick during a run, so both halves fired on an ordinary run. AB-BA, unrecoverable, and it
+     * would have looked exactly like the deadlock Adam reported from a build that did not have it.
+     * Without that half it is the FIRST reason again: a freeze for as long as a dispatch holds the monitor.
      *
      * **AND THEN IT HAPPENED, BY A DIFFERENT DOOR (OB-192, 2026-09-09).** This paragraph was written
      * about `getPoints()` and read as being about `getPoints()`. `updateVisiblePoints` was already
@@ -11969,10 +11969,9 @@ public class Layout
      * its claim and that edge make the hold readable.
      *
      * Taken last: under it only what a refresh took anyway - the edges' monitors, the accessory database's, and the
-     * signal's command (the accessory's monitor, `Locomotive.accessoryMonitor`, the window's monitor in `repaintSwitch`,
-     * and `NetworkProxy`'s as it sends).  So a thread waits here for one refresh or one command of the same signal,
-     * never for a sleep.  Per signal rather than one for all, because the window can reach a refresh holding its own
-     * monitor: one lock for every signal would have it wait on another signal's command, which waits for the window.
+     * signal's command (the accessory's monitor, `Locomotive.accessoryMonitor`, and `NetworkProxy`'s as it sends; the
+     * window's repaint is only posted, never waited for).  None of them is held while this is waited for, so a thread
+     * waits here for one refresh or one command of the same signal, never for a sleep.
      */
     private final Map<Accessory, Object> signalLocks = new ConcurrentHashMap<>();
 

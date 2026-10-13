@@ -1555,9 +1555,9 @@ The editor notice about turn-round squares with no length is a different questio
 - **And never on the event thread** (OB-192). Both answers come from
   `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout` - the same monitor a
   dispatch holds for the whole of `configureAndLockPath`, a sleep per accessory of the path. Asked
-  from the event thread that is not a slow refresh but a deadlock: a driving thread inside that
-  monitor commands an accessory and `MarklinAccessory.setSwitched` calls `repaintSwitch`, which is
-  `synchronized` on the window. Adam, 2026-09-09: *"starting autonomous operation ... makes the UI
+  from the event thread that freezes the window for the whole dispatch - and it was a deadlock while
+  `repaintSwitch`, which a driving thread inside that monitor calls for every accessory it commands,
+  was `synchronized` on the window (until RSA67-C1). Adam, 2026-09-09: *"starting autonomous operation ... makes the UI
   unresponsive. Trains still run, but nothing is repainted, and controls are stuck."* So the pass runs
   on a worker and the marks land a beat after they are asked for. Nothing about **what** is drawn
   changes; only where the work happens.

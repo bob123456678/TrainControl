@@ -9383,13 +9383,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * holds that same monitor for the whole of `configureAndLockPath` - a `CONFIGURE_SLEEP` per
      * accessory of the path.
      *
-     * It is worse than a stall, and `Layout.getEdges`'s own comment already spells the shape out.  The
-     * opposite order exists and cannot be removed: a driving thread inside that monitor commands an
-     * accessory, and `MarklinAccessory.setSwitched` calls `repaintSwitch`, which is `synchronized` on
-     * this window.  So a window that takes the railway's monitor while holding its own - which is what
-     * `updateVisiblePoints` did, on the event thread, every monitor tick of a run and at both ends of
-     * every path - is AB-BA and unrecoverable.  That comment forbids exactly this and was written
-     * about `getPoints()`; the covered marks walked in through a different door.
+     * It was worse than a stall then, as `Layout.getEdges`'s own comment spells out: a driving thread
+     * inside that monitor commands an accessory, and `MarklinAccessory.setSwitched` called
+     * `repaintSwitch`, which was `synchronized` on this window until RSA67-C1.  So a window that took
+     * the railway's monitor while holding its own - which is what `updateVisiblePoints` did, on the
+     * event thread, every monitor tick of a run and at both ends of every path - was AB-BA and
+     * unrecoverable.  That comment forbids exactly this and was written about `getPoints()`; the
+     * covered marks walked in through a different door.
      *
      * THE SAME ANSWER AS BEFORE, WORKED OUT SOMEWHERE ELSE.  Nothing about the two marks changes: the
      * grey is still bounded to a running railway, the two sets are still computed together and diffed
@@ -12916,11 +12916,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     /**
      * Repaints a single switch on the keyboard
-     * @param address 
-     * @param type 
+     *
+     * Not synchronized (RSA67-C1): it only posts to the event thread, and a driving thread calls it holding the railway's
+     * monitor, a signal's lock and the accessory's, so waiting here for the window's monitor - which the window can hold
+     * while it reaches a protection refresh - was a deadlock.
+     *
+     * @param address
+     * @param type
      */
     @Override
-    synchronized public void repaintSwitch(int address, Accessory.accessoryDecoderType type)
+    public void repaintSwitch(int address, Accessory.accessoryDecoderType type)
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {

@@ -31,20 +31,21 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * railway - it is the EVENT THREAD blocked on a lock somebody else is holding.
  *
  * **THE TWO LEGS, WHICH IS WHY THERE ARE TWO TESTS.**  `Layout.java`'s own comment above `getEdges`
- * names this deadlock and forbids exactly one half of it:
+ * names this deadlock; each test claims one of its halves is gone:
  *
- * - **The railway takes the WINDOW's monitor while holding its OWN.**  `configureAndLockPath` is
- *   `synchronized (this)` on the `Layout` and commands an accessory per edge inside that block;
- *   `MarklinAccessory.setSwitched` calls `TrainControlUI.repaintSwitch`, which is `synchronized` on
- *   the window.  `testTheRailwayTakesTheWindowsMonitorWhileHoldingItsOwn` measures that this leg is
- *   real and it is meant to stay - a driving thread has to be able to say a switch has moved.
+ * - **The railway took the WINDOW's monitor while holding its OWN.**  `configureAndLockPath` is
+ *   `synchronized (this)` on the `Layout` and commands an accessory per edge inside that block, and
+ *   `MarklinAccessory.setSwitched` called `TrainControlUI.repaintSwitch`, which was `synchronized` on
+ *   the window.  Not any more (RSA67-C1): it only posts to the event thread, so a driving thread never
+ *   waits for the window - `testADrivingThreadNeverWaitsForTheWindowsMonitor` is the claim.
  *
- * - **So the window must NEVER take the RAILWAY's monitor while holding its own.**
- *   `TrainControlUI.updateVisiblePoints` is `synchronized` on the window and is called on the event
- *   thread by `DiagramMonitorDriver` every tick of a run and by `attachAutonomyRefresh` at both ends
- *   of every path.  It reached `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the
- *   `Layout`.  AB-BA, and the freeze Adam is describing.
- *   `testTheDiagramRefreshDoesNotWaitOnTheRailway` is the claim that this leg is gone.
+ * - **The window must NEVER take the RAILWAY's monitor while holding its own**, nor on the event
+ *   thread at all: a dispatch holds it across a sleep per accessory.  `TrainControlUI.updateVisiblePoints`
+ *   is `synchronized` on the window and is called on the event thread by `DiagramMonitorDriver` every
+ *   tick of a run and by `attachAutonomyRefresh` at both ends of every path.  It reached
+ *   `Layout.edgesCoveredByStandingTrains`, which is `synchronized` on the `Layout`.  AB-BA then, and the
+ *   freeze Adam is describing.  `testTheDiagramRefreshDoesNotWaitOnTheRailway` is the claim that this
+ *   leg is gone.
  *
  * **BOUNDED, ALWAYS.**  Neither test may leave a thread stuck: the monitor a helper takes is released
  * on a timer whatever happens, and every wait is a `Future.get(timeout)` that fails with a message
@@ -213,22 +214,29 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The other leg, measured rather than assumed: a thread holding the railway's monitor DOES have to
-     * wait for the window's.
+     * The other leg is gone: a driving thread commands an accessory - holding the railway's monitor, that
+     * accessory's signal lock and, inside the command, the accessory's own monitor - without waiting for
+     * the window's monitor, which another thread holds (RSA67-C1).
      *
-     * Not a rule being defended - this one is meant to stay, and `Layout.getEdges`'s comment calls it
-     * unavoidable: a driving thread commands an accessory from inside `configureAndLockPath`'s
-     * `synchronized (this)`, and `MarklinAccessory.setSwitched` tells the window to repaint that
-     * switch.  It is here because it is the PREMISE of the test above.  With both legs real the two
-     * orders make an AB-BA deadlock, and the only leg that can be removed is the window's.
+     * The window can hold its own monitor and reach a protection refresh (`updateVisiblePoints` ->
+     * `reconcileFacingWhenIdle` -> a train re-stood), which waits for that signal's lock; so a command that
+     * waited for the window under that lock was a deadlock.  The command is made as `configureEdge` makes
+     * it, through `Accessory.setState` - so `MarklinAccessory.setSwitched` and its `repaintSwitch` are the
+     * real ones - setting an accessory a path on the snapshot commands to the setting it already has.
      *
-     * `repaintSwitch` stands for that chain: it is the `synchronized` window method the accessory
-     * calls, and it is called here directly so the test does not depend on a real accessory being
-     * present on the snapshot.
+     * MUTATION: make `TrainControlUI.repaintSwitch` `synchronized` again, and this fails.
      */
     @Test
-    public void testTheRailwayTakesTheWindowsMonitorWhileHoldingItsOwn() throws Exception
+    public void testADrivingThreadNeverWaitsForTheWindowsMonitor() throws Exception
     {
+        final Accessory accessory = anAccessoryAPathCommands();
+
+        java.lang.reflect.Method lockOf = Layout.class.getDeclaredMethod("signalLock", Accessory.class);
+
+        lockOf.setAccessible(true);
+
+        final Object signalLock = lockOf.invoke(layout, accessory);
+
         final CountDownLatch driverIsIn = new CountDownLatch(1);
         final CountDownLatch driverIsOut = new CountDownLatch(1);
 
@@ -236,37 +244,62 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         {
             synchronized (layout)
             {
-                driverIsIn.countDown();
+                synchronized (signalLock)
+                {
+                    driverIsIn.countDown();
 
-                // The call a locomotive thread makes from inside configureAndLockPath.
-                ui.repaintSwitch(1, Accessory.accessoryDecoderType.MM2);
+                    // The command a dispatch or a refresh sends, to the setting the accessory already has
+                    accessory.setState(accessory.isSwitched()
+                        ? Accessory.accessorySetting.RED : Accessory.accessorySetting.GREEN);
 
-                driverIsOut.countDown();
+                    driverIsOut.countDown();
+                }
             }
-        }, "OB-192 a driving thread");
+        }, "RSA67-C1 a driving thread");
 
         driving.setDaemon(true);
 
-        // HELD FOR A MOMENT ONLY, and released in the finally whatever happens - the window's monitor
-        // is what the event thread needs to draw anything.
-        synchronized (ui)
+        try
         {
-            driving.start();
+            // HELD FOR A MOMENT ONLY, and released whatever happens - the window's monitor is what the event
+            // thread needs to draw anything.
+            synchronized (ui)
+            {
+                driving.start();
 
-            assertTrue(driverIsIn.await(30, TimeUnit.SECONDS),
-                "the helper never reached the railway's monitor, so nothing was tested");
+                assertTrue(driverIsIn.await(30, TimeUnit.SECONDS),
+                    "the helper never reached the railway's monitor, so nothing was tested");
 
-            assertFalse(driverIsOut.await(750, TimeUnit.MILLISECONDS),
-                "a thread holding the railway's monitor got through `repaintSwitch` while this test"
-                + " held the window's, so that call no longer needs the window's monitor.  If that is"
-                + " deliberate, the premise of testTheDiagramRefreshDoesNotWaitOnTheRailway has"
-                + " changed and this class needs rewriting rather than deleting");
+                assertTrue(driverIsOut.await(PATIENCE_MS, TimeUnit.MILLISECONDS),
+                    "a thread holding the railway's monitor and a signal's lock, commanding " + accessory.getName()
+                    + ", waited for the window's monitor, which this test holds - and the window can hold it while it"
+                    + " reaches a protection refresh that waits for that lock: a deadlock (RSA67-C1)");
+            }
+        }
+        finally
+        {
+            driving.join(TimeUnit.SECONDS.toMillis(30));
+        }
+    }
+
+    /**
+     * An accessory a path on the snapshot commands, found without creating one (RSA67-C1).
+     *
+     * @return the accessory
+     */
+    private static Accessory anAccessoryAPathCommands()
+    {
+        for (org.traincontrol.automation.Edge edge : layout.getEdges())
+        {
+            for (String name : edge.getConfigCommands().keySet())
+            {
+                Accessory found = model.getAccessoryByName(name);
+
+                if (found != null) return found;
+            }
         }
 
-        assertTrue(driverIsOut.await(30, TimeUnit.SECONDS),
-            "the driving thread never got the window's monitor even after it was given back");
-
-        driving.join(TimeUnit.SECONDS.toMillis(30));
+        throw new SkipException("no path on this railway commands an accessory");
     }
 
     /**
