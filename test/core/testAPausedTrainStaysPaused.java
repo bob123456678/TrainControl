@@ -612,6 +612,236 @@ public class testAPausedTrainStaysPaused
             + " snapshot did not have: " + session.getPausedLocomotives());
     }
 
+    /** The setup, its railway built with nobody paused, and the record of how it was built - the fixture of the folds below. */
+    private static final class Folded
+    {
+        AutonomySession session;
+        String configuration;
+        Layout running;
+        JSONObject asBuilt;
+    }
+
+    private static Folded builtWithNobodyPaused() throws Exception
+    {
+        List<LayoutDiagram> pages = new ArrayList<>();
+
+        for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
+
+        Folded f = new Folded();
+
+        f.session = new AutonomySession(sandbox.getFolder());
+
+        f.session.open(pages);
+
+        f.configuration = f.session.getStore().getActiveConfiguration();
+
+        assertNotNull(f.configuration, "precondition: his railway has no active configuration");
+
+        for (org.traincontrol.base.Locomotive each : model.getLocomotives()) each.setAutonomyPaused(false);
+
+        f.session.setLocomotivesPaused(new ArrayList<>(f.session.getPausedLocomotives()), false);
+
+        f.session.setGlobal("simulate", null);
+
+        model.parseAuto(f.session.buildConfiguration());
+
+        f.running = model.getAutoLayout();
+
+        f.asBuilt = AutonomySession.globalsOf(new JSONObject(f.running.toJSON()));
+
+        return f;
+    }
+
+    /**
+     * A fold takes the paused trains BY TRAIN and never replaces the setup's list (OB-343): the trains the railway gained or
+     * lost against the record are applied to the setup's own, so what the setup lists that the railway and the record do not
+     * have stays - a name no train answers to, or a train the setup paused and the railway has not been told of - and a
+     * record with no list at all is every train gained.
+     *
+     * MUTATION: put the railway's whole list in the setup in a fold, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAFoldTakesThePausedListByTrain() throws Exception
+    {
+        Folded f = builtWithNobodyPaused();
+
+        MarklinLocomotive train = model.getLocByName(SETUP_TRAIN);
+
+        // THE SETUP LISTS A NAME the railway and the record do not have
+        f.session.setLocomotivesPaused(Collections.singletonList("Zz Ghost Train"), true);
+
+        assertFalse(f.asBuilt.has(PAUSED), "precondition: the record has a list of the paused");
+
+        train.setAutonomyPaused(true);
+
+        try
+        {
+            f.session.captureTheRailwaysSettings(f.running.toJSON(), f.configuration, f.asBuilt);
+
+            assertEquals(new ArrayList<>(f.session.getPausedLocomotives()), java.util.Arrays.asList(SETUP_TRAIN, "Zz Ghost Train"),
+                "the fold replaced the setup's list of the paused with the railway's");
+
+            // A TRAIN THE RAILWAY LOSES is taken off, and the rest stays
+            train.setAutonomyPaused(false);
+
+            f.session.captureTheRailwaysSettings(f.running.toJSON(), f.configuration, f.asBuilt);
+
+            assertEquals(new ArrayList<>(f.session.getPausedLocomotives()), Collections.singletonList("Zz Ghost Train"),
+                "the fold did not take off the train the railway lost, or took off one it did not");
+
+            assertFalse(f.asBuilt.has(PAUSED), "the record still lists a train the railway has set going");
+        }
+        finally
+        {
+            train.setAutonomyPaused(false);
+
+            f.session.setLocomotivesPaused(Collections.singletonList("Zz Ghost Train"), false);
+        }
+    }
+
+    /**
+     * An edit session's Cancel keeps a card's un-pause (OB-343): the fold's note of a train the railway LOST against the record
+     * is taken off the list Cancel puts back, and a setting the railway stopped writing - Simulate turned off - is taken out
+     * of it.
+     *
+     * The railway is built with a train paused and Simulate on, the snapshot taken and an edit session begun; the train is set
+     * going and the fold taken; Simulate is turned off and the fold taken again; and the snapshot, which has both, is put back.
+     *
+     * MUTATION: leave a loss out of what Cancel puts back, or a setting the railway stopped writing, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAnEditSessionsRestoreKeepsACardsUnpauseAndAStoppedSimulation() throws Exception
+    {
+        Folded f = builtWithNobodyPaused();
+
+        MarklinLocomotive train = model.getLocByName(SETUP_TRAIN);
+
+        // BUILT PAUSED, WITH SIMULATE ON
+        f.session.setActive(train, false);
+
+        f.session.setGlobal("simulate", true);
+
+        model.parseAuto(f.session.buildConfiguration());
+
+        f.running = model.getAutoLayout();
+
+        f.asBuilt = AutonomySession.globalsOf(new JSONObject(f.running.toJSON()));
+
+        assertTrue(f.asBuilt.has(PAUSED) && f.asBuilt.optBoolean("simulate"), "precondition: the railway was not built paused,"
+            + " simulating: " + f.asBuilt);
+
+        JSONObject opened = f.session.snapshotSetup();
+
+        try
+        {
+            f.session.beginEditSession();
+
+            // A CARD SETS THE TRAIN GOING, folded
+            train.setAutonomyPaused(false);
+
+            f.session.captureTheRailwaysSettings(f.running.toJSON(), f.configuration, f.asBuilt);
+
+            assertFalse(f.session.getPausedLocomotives().contains(SETUP_TRAIN), "precondition: the fold did not take the train"
+                + " off the setup's list");
+
+            // SIMULATE TURNED OFF, folded: the railway stops writing it
+            f.running.setSimulate(false);
+
+            f.session.captureTheRailwaysSettings(f.running.toJSON(), f.configuration, f.asBuilt);
+
+            assertNull(f.session.getGlobal("simulate"), "precondition: the fold did not take Simulate out of the setup");
+
+            assertFalse(f.asBuilt.has("simulate"), "the record still has Simulate, which the railway has stopped writing");
+
+            // CANCEL
+            f.session.restoreSetup(opened);
+
+            assertFalse(f.session.getPausedLocomotives().contains(SETUP_TRAIN), "Cancel paused again a train a card set going"
+                + " while the edit session was open");
+
+            assertNull(f.session.getGlobal("simulate"), "Cancel put Simulate back, which the railway turned off while the edit"
+                + " session was open");
+        }
+        finally
+        {
+            f.session.endEditSession();
+
+            f.running.setSimulate(false);
+
+            train.setAutonomyPaused(false);
+
+            f.session.setLocomotivesPaused(Collections.singletonList(SETUP_TRAIN), false);
+
+            f.session.setGlobal("simulate", null);
+        }
+    }
+
+    /**
+     * A fold with no record of how the railway was built takes every setting of the railway's (OB-343): the paused list is the
+     * railway's own - there is nothing to tell what it gained - and an edit session's Cancel keeps all of it.
+     *
+     * MUTATION: take only the settings that differ from an empty record, or leave the pauses out of what Cancel keeps, and
+     * this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAFoldWithNoRecordTakesEverySettingAndCancelKeepsIt() throws Exception
+    {
+        Folded f = builtWithNobodyPaused();
+
+        MarklinLocomotive train = model.getLocByName(SETUP_TRAIN);
+
+        f.session.setLocomotivesPaused(Collections.singletonList("Zz Ghost Train"), true);
+
+        JSONObject opened = f.session.snapshotSetup();
+
+        int delay = f.running.getMinDelay();
+
+        int moved = delay + 1 <= f.running.getMaxDelay() ? delay + 1 : Math.max(0, delay - 1);
+
+        try
+        {
+            f.session.beginEditSession();
+
+            train.setAutonomyPaused(true);
+
+            f.running.setMinDelay(moved);
+
+            f.session.captureTheRailwaysSettings(f.running.toJSON(), f.configuration, null);
+
+            assertEquals(new ArrayList<>(f.session.getPausedLocomotives()), Collections.singletonList(SETUP_TRAIN), "a fold with"
+                + " no record did not make the setup's list the railway's");
+
+            assertEquals(String.valueOf(f.session.getGlobal("minDelay")), String.valueOf(moved), "a fold with no record did not"
+                + " take the setting the railway moved");
+
+            f.session.restoreSetup(opened);
+
+            assertTrue(f.session.getPausedLocomotives().contains(SETUP_TRAIN), "Cancel took back the pause a fold with no"
+                + " record took from the railway");
+
+            assertEquals(String.valueOf(f.session.getGlobal("minDelay")), String.valueOf(moved), "Cancel took back the setting"
+                + " a fold with no record took from the railway");
+        }
+        finally
+        {
+            f.session.endEditSession();
+
+            train.setAutonomyPaused(false);
+
+            f.session.setLocomotivesPaused(java.util.Arrays.asList(SETUP_TRAIN, "Zz Ghost Train"), false);
+
+            f.running.setMinDelay(delay);
+
+            f.session.setGlobal("minDelay", delay);
+        }
+    }
+
     // ------------------------------------------------------------------------------------------- fixtures
 
     /** Loads a configuration and returns the railway, asserting it built. */

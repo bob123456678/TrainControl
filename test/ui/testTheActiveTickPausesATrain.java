@@ -1242,7 +1242,7 @@ public class testTheActiveTickPausesATrain
      * with the railway left running.  The train is paused by its card's button after the editor has opened, the editor is
      * closed discarding, and the train must still be paused.
      *
-     * MUTATION: leave the record as the fold left it when Cancel puts the setup back, and this fails.
+     * MUTATION: leave what the fold took out of what Cancel puts back, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1463,6 +1463,212 @@ public class testTheActiveTickPausesATrain
         finally
         {
             if (editor != null) closeTheEditor(editor);
+        }
+    }
+
+    /**
+     * Cancel's own fold takes a card's pause BY TRAIN and leaves the editor's tick to be undone (OB-343), scenario 1: the
+     * editor's tick pauses a train, a card then pauses another, and Cancel puts the setup it opened with back.
+     *
+     * The record holds the tick - the tick wrote it - and the railway's list holds the tick and the card's pause, so what
+     * the railway has against the record is the card's alone.  The fold Cancel forces took the railway's whole list, and the
+     * tick, which Cancel had just taken out of the setup, came back with it.
+     *
+     * MUTATION: take the railway's whole list of the paused in a fold, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorsCancelUndoesATickWhenACardPausedAnotherTrainAfterIt() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            editor = openTheEditor();
+
+            // THE EDITOR'S TICK pauses a train
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            clickTheEditorsTick(editorsPanel(editor), label);
+
+            settleTheRebuild();
+
+            assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " in the editor did not pause " + HIS_TRAIN);
+
+            // A CARD PAUSES ANOTHER after it
+            pressTheCardsButton(card, true);
+
+            // CANCEL
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertFalse(train.isAutonomyPaused(), "the editor's own tick of " + HIS_TRAIN + " was kept by its Cancel, taken"
+                + " back into the setup with the card's pause of " + CARD_TRAIN + " (OB-343)");
+
+            assertFalse(session.getPausedLocomotives().contains(HIS_TRAIN), "the tick is still in the setup after Cancel: "
+                + session.getPausedLocomotives());
+
+            assertPausedEverywhere(card, true, "after the editor's Cancel");
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * Scenario 2 (OB-343): a train the setup had paused, ticked active in the editor, stays paused after Cancel when a card
+     * pauses another train in between.
+     *
+     * The tick left the record with no list of the paused at all, and a fold with such a record took the railway's list as
+     * the whole - the card's train alone - so the train the setup had paused came out running.
+     *
+     * MUTATION: take the railway's whole list when the record has none, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorsCancelKeepsATrainTheSetupHadPausedWhenACardPausedAnotherAfterItsTick() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            // THE SETUP HAS HIS TRAIN PAUSED, and the railway was built so
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            javax.swing.JMenuItem tick = diagramMenuItem(mainB, label);
+
+            assertNotNull(tick, "precondition: the track diagram's right-click on BottomMainB offers no " + label);
+
+            click(tick);
+
+            theNextSetupGestureRebuilds();
+
+            assertTrue(train.isAutonomyPaused() && session.getPausedLocomotives().contains(HIS_TRAIN), "precondition: "
+                + HIS_TRAIN + " was not built paused");
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            editor = openTheEditor();
+
+            // TICKED ACTIVE IN THE EDITOR: the record then lists nobody
+            clickTheEditorsTick(editorsPanel(editor), label);
+
+            settleTheRebuild();
+
+            assertFalse(train.isAutonomyPaused(), "precondition: ticking " + label + " in the editor did not set it going");
+
+            // A CARD PAUSES ANOTHER
+            pressTheCardsButton(card, true);
+
+            // CANCEL
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertTrue(train.isAutonomyPaused(), HIS_TRAIN + ", which the setup had paused, came out running after the editor's"
+                + " Cancel (OB-343)");
+
+            assertTrue(session.getPausedLocomotives().contains(HIS_TRAIN), "the setup lost the pause it opened with: "
+                + session.getPausedLocomotives());
+
+            assertPausedEverywhere(card, true, "after the editor's Cancel");
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * A bulk tool over a train a card paused leaves that pause the card's (OB-343): Deactivate All Trains names every train
+     * standing, the one a card has paused among them, and wrote that train into the record as the tool's own change - so
+     * Cancel, which takes the tool out, found the railway equal to the record and set the train going.
+     *
+     * One train paused by its card with the editor open, Deactivate All Trains from the editor's menu, and Cancel: the card's
+     * pause stays, and what the tool paused does not.
+     *
+     * MUTATION: have the door note in the record every train it names, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorsCancelKeepsACardsPauseThroughABulkToolOverIt() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+
+            editor = openTheEditor();
+
+            pressTheCardsButton(card, true);
+
+            String deactivate = I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size() - 1);
+
+            clickTheEditorsTick(editorsPanel(editor), deactivate);
+
+            settleTheRebuild();
+
+            for (String name : standing)
+            {
+                assertTrue(model.getLocByName(name).isAutonomyPaused(), "precondition: " + name + " is still active after "
+                    + deactivate);
+            }
+
+            // CANCEL
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            for (String name : standing)
+            {
+                assertEquals(model.getLocByName(name).isAutonomyPaused(), CARD_TRAIN.equals(name), name + (CARD_TRAIN.equals(name)
+                    ? ", paused by its card's button before the bulk tool, was set going by the editor's Cancel"
+                    : ", paused by the bulk tool in the editor, was kept by its Cancel") + " (OB-343)");
+            }
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
         }
     }
 

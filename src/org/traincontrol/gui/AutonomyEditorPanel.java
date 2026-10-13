@@ -2794,10 +2794,12 @@ public class AutonomyEditorPanel extends JPanel
 
         // THE TRAINS ALREADY AS ASKED GO THROUGH THE DOOR TOO.  The door writes the train and the setup's list as one, so a
         // record the card's button has outrun does not stand: Activate takes off the list every train it names, the ones the
-        // button set going among them, which `covered` leaves out as it reads the train; Deactivate lists every train standing,
-        // the ones the button paused among them.  The rebuild's fold takes the railway's list over the setup's only where the
-        // railway changed it since it was built (OB-343), and a train the setup lists that the railway was not built pausing is
-        // no such change: left listed, the rebuild this asks for would pause it again.
+        // button set going among them, which `covered` leaves out as it reads the train.  The rebuild's fold applies the trains
+        // the railway gained or lost against the record to the setup's list, and nothing else (OB-343), and a train the setup
+        // lists that the railway was not built pausing is neither: left listed, the rebuild this asks for would pause it
+        // again.  So Activate's line is needed.  Deactivate's is not, since the fold lists a train a card paused all the same;
+        // it is kept, and harmless: the door notes in the record only the trains it changes (`notePausesAsBuilt`), so a train
+        // the card paused is still the card's to the fold.
         if (active) names.addAll(session.getPausedLocomotives());
         else names.addAll(trainsStanding());
 

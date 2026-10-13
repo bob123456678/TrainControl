@@ -1194,6 +1194,127 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * An edit session's Cancel keeps the timetable the railway changed alone across a station's rename, naming the station
+     * as the restored setup names it (OB-343; the rename's own carry is RSA3-B1): a station is renamed in the editor, the
+     * railway is rebuilt with the new name, and the Auto tab changes the timetable - legs naming the new name - which a fold
+     * takes into the setup.  Cancel puts back the setup that has the old name, and the legs naming the new one were
+     * dropped by the next load, the capture after it writing the shorter timetable over the configuration (a lost timetable).
+     *
+     * The carry traces a name the build lacks through the names its builds have seen, and Cancel put that memory back to
+     * what it was when the editor opened - which has not the new name - before the legs were carried.  The names the edit's
+     * builds gave are kept in it, those the opening memory has not.
+     *
+     * MUTATION: forget the names the builds of the edit gave when the memory is put back, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testACancelKeepsTheTimetableTheRailwayChangedAloneAcrossAStationRename() throws Exception
+    {
+        threeStationsInARow("B rename");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
+
+        assertNotNull(leg, "precondition: no edge from the middle station to Gamma");
+
+        // THE EDITOR OPENS on a setup whose stations are called Alpha and Gamma
+        org.json.JSONObject opened = session.snapshotSetup();
+
+        session.beginEditSession();
+
+        try
+        {
+            // GAMMA RENAMED in the editor, and the railway rebuilt with the new name
+            session.setPointName(new TileKey("main", 5, 1), "Omega");
+
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            String[] renamed = anEdgeBetween(built, "main 3,1", "Omega");
+
+            assertNotNull(renamed, "precondition: no edge from the middle station to Omega");
+
+            // THE TIMETABLE CHANGES ON THE RAILWAY ALONE, in the new name, and a fold takes it
+            org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
+
+            built.put("timetable", aTimetableOf(renamed, renamed));
+
+            session.captureTheRailwaysSettings(built.toString(), "B rename", asBuilt);
+
+            assertEquals(new org.json.JSONArray(String.valueOf(session.getGlobal("timetable"))).length(), 2, "precondition: the"
+                + " fold did not take the timetable");
+
+            // CANCEL
+            session.restoreSetup(opened);
+
+            assertTheTimetableIsLoadable(session, "the editor's Cancel", 2);
+
+            assertTrue(legOf(session, 0)[1].startsWith("Gamma"), "the legs of the timetable the railway changed alone name "
+                + legOf(session, 0)[1] + " after Cancel, not the station as the restored setup calls it (OB-343)");
+        }
+        finally
+        {
+            session.endEditSession();
+        }
+    }
+
+    /**
+     * The same through Cancel's own fold, with no gesture in between (OB-343): the rebuild Cancel forces folds the railway's
+     * timetable - legs naming the renamed station's new name - into the restored setup, and the load after it carries the
+     * names against the memory.
+     *
+     * MUTATION: forget the names the builds of the edit gave when the memory is put back, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testCancelsOwnFoldKeepsTheTimetableAcrossAStationRename() throws Exception
+    {
+        threeStationsInARow("B rename fold");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        org.json.JSONObject opened = session.snapshotSetup();
+
+        session.beginEditSession();
+
+        try
+        {
+            session.setPointName(new TileKey("main", 5, 1), "Omega");
+
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            String[] renamed = anEdgeBetween(built, "main 3,1", "Omega");
+
+            assertNotNull(renamed, "precondition: no edge from the middle station to Omega");
+
+            // CANCEL FIRST, and then its own fold of the railway - built with the new name, its timetable changed
+            org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
+
+            built.put("timetable", aTimetableOf(renamed));
+
+            session.restoreSetup(opened);
+
+            session.captureTheRailwaysSettings(built.toString(), "B rename fold", asBuilt);
+
+            // and the load after it, which carries the names against the memory
+            session.rebuild();
+
+            assertTheTimetableIsLoadable(session, "the editor's Cancel and its own fold", 1);
+
+            assertTrue(legOf(session, 0)[1].startsWith("Gamma"), "the leg the railway's timetable names, " + legOf(session, 0)[1]
+                + ", is not the station as the restored setup calls it (OB-343)");
+        }
+        finally
+        {
+            session.endEditSession();
+        }
+    }
+
+    /**
      * Squares moved while an edit waits keep the setup's moved timetable (RSA23-C3, RSA22-C1's sibling): the fold behind
      * the editor's Save, what the railway owns, wrote the railway's timetable - in the Point names the move had just
      * replaced - over it.

@@ -3584,16 +3584,16 @@ public class AutonomySession
                 configuration.put("globals", globals);
             }
 
-            Set<String> names = namesIn(globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+            Set<String> gained = new java.util.TreeSet<>();
+            Set<String> lost = new java.util.TreeSet<>();
 
             for (Map.Entry<String, Boolean> pause : pauses.getValue().entrySet())
             {
-                if (pause.getValue()) names.add(pause.getKey());
-                else names.remove(pause.getKey());
+                if (pause.getValue()) gained.add(pause.getKey());
+                else lost.add(pause.getKey());
             }
 
-            if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
-            else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
+            applyPauses(globals, gained, lost);
         }
 
         for (Map.Entry<String, org.json.JSONObject> taken : takenFromTheRailway.entrySet())
@@ -3701,7 +3701,30 @@ public class AutonomySession
 
         // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move (RSA7-B3, RSA8-B2) - the legs
         // are the snapshot's
-        if (asTheEditBegan != null) putBack(asTheEditBegan, false);
+        //
+        // **BUT NOT THE NAMES THE EDIT'S BUILDS GAVE, which the memory as it was knows nothing of (OB-343).**  A timetable the
+        // railway changed alone during the edit names the Points the railway was built with - a station renamed in the editor
+        // has its new name - and what Cancel puts back names the old one.  The carry traces a name the build lacks through the
+        // names its builds have seen, so with the new name forgotten the legs naming it were dropped by the next load, and the
+        // capture after it wrote the shorter timetable over the configuration.  A name the opening memory has stays as it
+        // had it - that is the move's case above - and one it has not is kept, for the carry to trace to its square.
+        if (asTheEditBegan != null)
+        {
+            Map<String, TileKey> namedInTheEdit = new java.util.HashMap<>(squareOfNameSeen);
+            Map<String, String> basesOfTheEdit = new java.util.HashMap<>(baseOfNameSeen);
+
+            putBack(asTheEditBegan, false);
+
+            for (Map.Entry<String, TileKey> named : namedInTheEdit.entrySet())
+            {
+                squareOfNameSeen.putIfAbsent(named.getKey(), named.getValue());
+            }
+
+            for (Map.Entry<String, String> named : basesOfTheEdit.entrySet())
+            {
+                baseOfNameSeen.putIfAbsent(named.getKey(), named.getValue());
+            }
+        }
 
         asTheEditBegan = null;
 
@@ -7101,6 +7124,13 @@ public class AutonomySession
      * rollback took away.  An edit session's Cancel is the other way round: what a fold takes is the railway's, and Cancel
      * keeps it (`beginEditSession`).
      *
+     * **The paused trains are taken BY TRAIN (OB-343), in every fold.**  The railway's list holds the trains a card paused
+     * and the trains a tick paused, the tick having written the record as well as the setup; what the railway has against
+     * the record is the cards' alone.  So the trains it gained or lost against the record are applied to the setup's own
+     * list, and the list is never replaced: a replaced list put a tick the editor had made - or the setup's own pause of a
+     * train - back where Cancel had taken it from, whenever a card's change was taken with it.  With no record, every one of
+     * the railway's is taken, and the list is the railway's.
+     *
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
      * @param asBuilt the railway's settings as it was built, or null to take every one of them; changed in place to the
@@ -7136,10 +7166,19 @@ public class AutonomySession
             // before it, and the editor's on opening, have taken the run's timetable already.
             if ((pagesStale || squaresMoved) && "timetable".equals(key)) continue;
 
-            globals.put(key, now.get(key));
+            if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
+            {
+                // BY TRAIN, against the record before the record follows (OB-343)
+                takePausesByTrain(configurationName, globals, asBuilt == null ? null : asBuilt.opt(key), now.get(key),
+                    asBuilt == null);
+            }
+            else
+            {
+                globals.put(key, now.get(key));
 
-            // what an edit session's Cancel keeps (OB-343), read against the record before the record follows
-            takenFromTheRailway(configurationName, key, now.get(key), asBuilt == null ? null : asBuilt.opt(key));
+                // what an edit session's Cancel keeps (OB-343)
+                takenFromTheRailway(configurationName, key, now.get(key));
+            }
 
             // the railway's and the setup's both now: the record follows (OB-343)
             if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
@@ -7153,9 +7192,17 @@ public class AutonomySession
             {
                 if (now.has(key)) continue;
 
-                globals.remove(key);
+                if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
+                {
+                    // nobody paused any more: every train the record had is a loss (OB-343)
+                    takePausesByTrain(configurationName, globals, asBuilt.opt(key), org.json.JSONObject.NULL, false);
+                }
+                else
+                {
+                    globals.remove(key);
 
-                takenFromTheRailway(configurationName, key, org.json.JSONObject.NULL, asBuilt.opt(key));
+                    takenFromTheRailway(configurationName, key, org.json.JSONObject.NULL);
+                }
 
                 asBuilt.remove(key);
             }
@@ -7165,43 +7212,74 @@ public class AutonomySession
     }
 
     /**
+     * Takes the railway's paused trains into the setup's list BY TRAIN: those it gained against the record added, those it
+     * lost taken off, and the rest of the list as it was (OB-343; see `captureTheRailwaysSettings`).
+     *
+     * @param configurationName the configuration folded into
+     * @param globals its settings
+     * @param recorded the record's list of the paused, or null where there is no record
+     * @param value the railway's list, or JSON null where it pauses nobody
+     * @param wholesale whether there is no record, so that the list is the railway's own
+     */
+    private void takePausesByTrain(String configurationName, org.json.JSONObject globals, Object recorded, Object value,
+        boolean wholesale)
+    {
+        Set<String> before = namesIn(recorded);
+        Set<String> after = namesIn(value);
+
+        Set<String> gained = new java.util.TreeSet<>(after);
+        Set<String> lost = new java.util.TreeSet<>(before);
+
+        gained.removeAll(before);
+        lost.removeAll(after);
+
+        if (wholesale) putPausedNames(globals, after);
+        else applyPauses(globals, gained, lost);
+
+        if (pausesTakenFromTheRailway == null) return;
+
+        java.util.Map<String, Boolean> pauses = pausesTakenFromTheRailway.get(configurationName);
+
+        if (pauses == null)
+        {
+            pauses = new java.util.TreeMap<>();
+
+            pausesTakenFromTheRailway.put(configurationName, pauses);
+        }
+
+        for (String name : gained) pauses.put(name, Boolean.TRUE);
+
+        for (String name : lost) pauses.put(name, Boolean.FALSE);
+    }
+
+    /** The setup's list of the paused with these trains added and those taken off. */
+    private static void applyPauses(org.json.JSONObject globals, Set<String> gained, Set<String> lost)
+    {
+        Set<String> names = namesIn(globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+
+        names.addAll(gained);
+        names.removeAll(lost);
+
+        putPausedNames(globals, names);
+    }
+
+    /** The setup's list of the paused, as the railway writes it: sorted, and not at all while it names nobody. */
+    private static void putPausedNames(org.json.JSONObject globals, Set<String> names)
+    {
+        if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
+    }
+
+    /**
      * Notes a setting a fold took from the railway while an edit session is open (see `takenFromTheRailway`).
      *
      * @param configurationName the configuration folded into
      * @param key the setting
      * @param value the railway's value, or JSON null where it stopped writing one
-     * @param recorded the value the record of how the railway was built had for it, or null
      */
-    private void takenFromTheRailway(String configurationName, String key, Object value, Object recorded)
+    private void takenFromTheRailway(String configurationName, String key, Object value)
     {
         if (takenFromTheRailway == null) return;
-
-        if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
-        {
-            Set<String> before = namesIn(recorded);
-            Set<String> after = namesIn(value);
-
-            java.util.Map<String, Boolean> pauses = pausesTakenFromTheRailway.get(configurationName);
-
-            if (pauses == null)
-            {
-                pauses = new java.util.TreeMap<>();
-
-                pausesTakenFromTheRailway.put(configurationName, pauses);
-            }
-
-            for (String name : after)
-            {
-                if (!before.contains(name)) pauses.put(name, Boolean.TRUE);
-            }
-
-            for (String name : before)
-            {
-                if (!after.contains(name)) pauses.put(name, Boolean.FALSE);
-            }
-
-            return;
-        }
 
         value = copyOfSetting(value);
 

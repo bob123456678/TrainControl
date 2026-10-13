@@ -4710,6 +4710,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else
         {
+            // THE TRAINS THE DOOR CHANGES, asked before it does (OB-343): one the card's button had already paused, or set
+            // going, is named all the same - Deactivate All Trains names every train standing - and what it was is not the
+            // door's to write into the record
+            java.util.List<Locomotive> changed = new java.util.ArrayList<>();
+
+            for (Locomotive train : trains)
+            {
+                if (train != null && train.isAutonomyPaused() == active) changed.add(train);
+            }
+
             try
             {
                 setup.setTrainsActive(trains, active);
@@ -4724,10 +4734,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // on the railway and in the setup together, so for them the two agree - as if the railway had been built this
             // way.  Left as it was built, a press of the Auto tab's pause button afterwards, which changes the railway alone,
             // read to the next rebuild's fold as no change, and the setup's older answer stood: the rebuild undid the button.
-            // And not for the other trains: a press made BEFORE this call has not reached the setup, so the two do not agree
-            // about that train, and writing it as built made the fold find nothing the railway had changed (see
-            // `notePausesAsBuilt`).
-            notePausesAsBuilt(trains);
+            // And not for the other trains, the ones this call names but leaves as they were included: a press made BEFORE this
+            // call has not reached the setup, so the two do not agree about that train, and writing it as built made the fold
+            // find nothing the railway had changed (see `notePausesAsBuilt`).
+            notePausesAsBuilt(changed);
         }
 
         trainsPausedChanged();
