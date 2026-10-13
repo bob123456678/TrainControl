@@ -19,11 +19,13 @@ import org.traincontrol.util.I18n;
  *
  * Adam: *"the active locomotive info is currently text consisting of [letter] . Page [num] ([page name]) .
  * [decodertype] [address]. the page number could be condensed into a nice pill, along with the other info.  make it
- * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 to 5, on seeing it) asked for
+ * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 to 6, on seeing it) asked for
  * changes to it, so that it is now:
  *
  *   1. **a keycap** - the key's letter on a small rounded square with a heavier bottom edge, so it reads as a key;
- *   2. **the page, as plain words** - the number, a full stop, and the name, "5. Example", with no pill round them:
+ *   2. **the page, as plain words** - the number, a full stop, and the name, "5. Example", with no pill round them
+ *      (the number only when the Preferences menu's "Show Page Numbers" is ticked, off by default: otherwise just
+ *      "Example", round 6: *"When off, 5. MMMM... becomes just MMMM..."*):
  *      *"Change the page title to just the name with page number in parens after, no pill around that, in the standard
  *      blue label font"* (round 4), and then *"Change (5) to 5 as a prefix.  Example: 5. MMMMMM"* (round 5).  No word
  *      "Page" in it (*"I wouldn't like to see the word 'page' in it"*).  The standard blue label font is the one the
@@ -62,6 +64,11 @@ import org.traincontrol.util.I18n;
  * for a page that has no name.  "5." rather than a bare "5": the full stop is what says the number is a number in a
  * list of pages, as it does before a name, and a lone digit beside a key and an address would be read as either.  The
  * full words, "Page 5 (Example)", are in the tooltip.
+ *
+ * **With the page numbers switched off** the words are the name alone, and the name has the whole of the room the "5. "
+ * had.  A page with no name still shows its number, "5.": there would be nothing else to show, and a line with a
+ * keycap and nothing after it for a page reads as a page that is missing.  The tooltip always has the whole line, the
+ * number included.
  *
  * **Why not `StationCaption`.**  The diagram's captions are labels whose fill is a state colour, drawn at a size taken
  * from the tile; this is a few fixed shapes and a line of words in a fixed box.  What is borrowed is its house style for
@@ -159,8 +166,11 @@ public class CurrentKeyRow extends JComponent
         private final String name;
         private final String decoderType;
         private final String address;
+        private final boolean showNumber;
 
         /**
+         * With the page's number shown, as the row drew it before it was a setting.
+         *
          * @param key the key's letter, as on its button
          * @param page the page the key was chosen on
          * @param pageName that page's name as the operator typed it, or empty for a page with none
@@ -170,11 +180,34 @@ public class CurrentKeyRow extends JComponent
          */
         public Content(String key, int page, String pageName, String decoderType, String address)
         {
+            this(key, page, pageName, decoderType, address, true);
+        }
+
+        /**
+         * @param key the key's letter, as on its button
+         * @param page the page the key was chosen on
+         * @param pageName that page's name as the operator typed it, or empty for a page with none
+         * @param decoderType the decoder's type as the program words it ("MFX", "Multi-Unit"), or empty when no
+         *        locomotive is on the key
+         * @param address the locomotive's address, or empty
+         * @param showNumber whether the page's number goes before its name - the Preferences menu's "Show Page Numbers".
+         *        It is part of what the row says, so the window's check for whether the line has changed notices a
+         *        change to it and the line is redrawn at once.
+         */
+        public Content(String key, int page, String pageName, String decoderType, String address, boolean showNumber)
+        {
             this.key = key == null ? "" : key.trim();
             this.page = page;
             this.name = pageName == null ? "" : pageName.trim();
             this.decoderType = decoderType == null ? "" : decoderType.trim();
             this.address = address == null ? "" : address.trim();
+            this.showNumber = showNumber;
+        }
+
+        /** @return whether the page's number goes before its name in the row (it is always in the tooltip) */
+        public boolean showsNumber()
+        {
+            return showNumber;
         }
 
         /** @return the key's letter */
@@ -252,13 +285,13 @@ public class CurrentKeyRow extends JComponent
             Content c = (Content) other;
 
             return page == c.page && key.equals(c.key) && name.equals(c.name) && decoderType.equals(c.decoderType)
-                && address.equals(c.address);
+                && address.equals(c.address) && showNumber == c.showNumber;
         }
 
         @Override
         public int hashCode()
         {
-            return java.util.Objects.hash(key, page, name, decoderType, address);
+            return java.util.Objects.hash(key, page, name, decoderType, address, showNumber);
         }
 
         @Override
@@ -443,7 +476,7 @@ public class CurrentKeyRow extends JComponent
      *
      * Left to right: the keycap and the page's words from the left edge, a `GAP` apart; the decoder pill from the RIGHT
      * edge.  The decoder pill is sized first, because it takes its place at the right, and what is left between the
-     * keycap and it, less the "5. " and a gap, is the page name's.
+     * keycap and it, less the "5. " (when the number is shown) and a gap, is the page name's.
      *
      * @param width the box's width in pixels
      * @param height the box's height in pixels
@@ -510,11 +543,12 @@ public class CurrentKeyRow extends JComponent
             reserved = w + GAP;
         }
 
-        // THE PAGE'S WORDS, from the left: the number and a full stop, then the name.  The "5. " is never cut.
+        // THE PAGE'S WORDS, from the left: the number and a full stop, then the name.  The "5. " is never cut.  With the
+        // numbers switched off there is no "5. ", and the name has all of the room.
         Font pageFont = pageFont();
 
         String number = String.valueOf(c.getPage());
-        String prefix = number + ". ";
+        String prefix = c.showsNumber() ? number + ". " : "";
 
         // What is left, once the shapes that never give way have their room, is the name's.  A pixel is kept back for the
         // words being measured whole and the "5. " and the name apart, which the kerning between them can tell by a hair.
@@ -522,7 +556,7 @@ public class CurrentKeyRow extends JComponent
 
         String name = fit(c.getPageName(), nameRoom, pageFont);
 
-        // a page with no name is "5.": the number and its full stop, without the name after them
+        // a page with no name is "5.", the number and its full stop, switched on or off: the line is never empty
         String pageText = name.isEmpty() ? number + "." : prefix + name;
 
         Rectangle page = new Rectangle(x, top, (int) Math.ceil(advance(pageFont, pageText)), h);

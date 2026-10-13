@@ -329,13 +329,44 @@ public class testLocMappingPages
         String pageNameWas;
         int page;
 
-        /** A window over a model, as the application builds it; the page it is on is read from the window. */
-        static Panel open() throws Exception
+        /** The page-number preference's key, and what it held, so it can be put back as it was - unset included. */
+        String numbersKey;
+        String numbersWas;
+        boolean numbersTouched;
+
+        /**
+         * A window over a model, as the application builds it; the page it is on is read from the window.
+         *
+         * @param numbers what the "Show Page Numbers" preference is SET to before the window is built, so that the window
+         *        reads it at start-up as it does the operator's; null removes it, which is the default.  It is set and
+         *        never toggled, and put back in `close`.  Only in a run with a preference node of its own: the
+         *        operator's is not this test's to write.
+         */
+        static Panel open(Boolean numbers) throws Exception
         {
             Panel p = new Panel();
 
             try
             {
+                p.numbersKey = pageNumbersKey();
+
+                if (p.numbersKey != null)
+                {
+                    if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY, "").trim().isEmpty())
+                    {
+                        throw new org.testng.SkipException("the page-number preference is the operator's, and this run has no"
+                            + " preference node of its own to set it in");
+                    }
+
+                    java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+                    p.numbersWas = prefs.get(p.numbersKey, null);
+                    p.numbersTouched = true;
+
+                    if (numbers == null) prefs.remove(p.numbersKey);
+                    else prefs.putBoolean(p.numbersKey, numbers);
+                }
+
                 p.sandbox = support.LayoutSandbox.open();
 
                 p.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
@@ -540,11 +571,46 @@ public class testLocMappingPages
                 }
                 finally
                 {
-                    if (model != null) model.stop();
+                    try
+                    {
+                        if (model != null) model.stop();
 
-                    if (sandbox != null) sandbox.close();
+                        if (sandbox != null) sandbox.close();
+                    }
+                    finally
+                    {
+                        // AS IT WAS, including not there at all
+                        if (numbersTouched)
+                        {
+                            java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+                            if (numbersWas == null) prefs.remove(numbersKey);
+                            else prefs.put(numbersKey, numbersWas);
+                        }
+                    }
                 }
             }
+        }
+
+        /** The "Show Page Numbers" item, or null when the window has none. */
+        javax.swing.JCheckBoxMenuItem pageNumbersItem() throws Exception
+        {
+            try
+            {
+                return (javax.swing.JCheckBoxMenuItem) privateField(ui, "showPageNumbersMenuItem");
+            }
+            catch (NoSuchFieldException none)
+            {
+                return null;
+            }
+        }
+
+        /** The words the row has for the page now, once the render is done. */
+        String pageWords() throws Exception
+        {
+            waitForTheRender();
+
+            return (String) pub(geometry(row(), slot().getWidth(), slot().getHeight()), "pageText");
         }
     }
 
@@ -553,14 +619,14 @@ public class testLocMappingPages
         void run(Panel p) throws Exception;
     }
 
-    private static void withPanel(Body body) throws Exception
+    private static void withPanel(Boolean numbers, Body body) throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless())
         {
             throw new org.testng.SkipException("the locomotive panel is on a window");
         }
 
-        Panel p = Panel.open();
+        Panel p = Panel.open(numbers);
 
         try
         {
@@ -569,6 +635,19 @@ public class testLocMappingPages
         finally
         {
             p.close();
+        }
+    }
+
+    /** The key of the "Show Page Numbers" preference, or null when the window has none. */
+    private static String pageNumbersKey()
+    {
+        try
+        {
+            return (String) TrainControlUI.class.getField("SHOW_PAGE_NUMBERS").get(null);
+        }
+        catch (ReflectiveOperationException none)
+        {
+            return null;
         }
     }
 
@@ -761,7 +840,7 @@ public class testLocMappingPages
     @Test
     public void testTheLineIsAKeycapAndTwoPillsForEveryDecoder() throws Exception
     {
-        withPanel(p ->
+        withPanel(Boolean.TRUE, p ->
         {
             javax.swing.JLabel slot = p.slot();
             javax.swing.JComponent row = p.row();
@@ -955,7 +1034,7 @@ public class testLocMappingPages
     @Test
     public void testAWidePageNameGivesWayAndTheRestDoesNot() throws Exception
     {
-        withPanel(p ->
+        withPanel(Boolean.TRUE, p ->
         {
             javax.swing.JLabel slot = p.slot();
             javax.swing.JComponent row = p.row();
@@ -1118,7 +1197,7 @@ public class testLocMappingPages
     @Test
     public void testTheShapesAreThoseAdamChose() throws Exception
     {
-        withPanel(p ->
+        withPanel(Boolean.TRUE, p ->
         {
             javax.swing.JLabel slot = p.slot();
             javax.swing.JComponent row = p.row();
@@ -1259,7 +1338,7 @@ public class testLocMappingPages
     @Test
     public void testTwelvePointTextFitsTheEighteenPixelsCleanly() throws Exception
     {
-        withPanel(p ->
+        withPanel(Boolean.TRUE, p ->
         {
             javax.swing.JLabel slot = p.slot();
             javax.swing.JComponent row = p.row();
@@ -1371,6 +1450,209 @@ public class testLocMappingPages
                     "the decoder's text touches the pill's bottom rim");
             }
         });
+    }
+
+    /**
+     * "Show Page Numbers" is a checkbox in the Preferences menu's Locomotive submenu, off until it is asked for, and with
+     * it off the line over the locomotive's name has the page's name and no number (FR-128, round 6).
+     *
+     * Adam, 2026-10-13: *"Make an checkbox option called show page numbers within the preferences jmenu, under the
+     * locomotive submenu.  Default off.  When off, 5. MMMM... becomes just MMMM... .  Use the same design patterns as now
+     * with prefs."*  The preference is removed before the window is built, so what is read is the default.  The words are
+     * the name alone; a name too wide for the room is cut, and cut later than with the number, which no longer takes
+     * room; a page with no name still shows its number, "5.", so the line is never a key with nothing after it; and the
+     * tooltip has the page's number whatever the setting.
+     *
+     * MUTATION: default the preference on, leave the item out of the submenu or out of the form's menu, take the number
+     * out of the tooltip, or let an unnamed page show nothing, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testPageNumbersAreOffUntilAskedFor() throws Exception
+    {
+        withPanel(null, p ->
+        {
+            javax.swing.JCheckBoxMenuItem item = p.pageNumbersItem();
+
+            assertNotNull(item, "the window has no Show Page Numbers item (FR-128, round 6)");
+
+            // IN THE LOCOMOTIVE SUBMENU OF THE PREFERENCES MENU, with the bundle's label and a tooltip
+            javax.swing.JMenu preferences = (javax.swing.JMenu) privateField(p.ui, "interfaceMenu");
+            javax.swing.JMenu locomotive = (javax.swing.JMenu) privateField(p.ui, "locomotiveControlMenu");
+
+            assertTrue(menuHas(preferences, locomotive), "precondition: the Locomotive submenu is not in the Preferences menu");
+            assertTrue(menuHas(locomotive, item), "Show Page Numbers is not in the Preferences menu's Locomotive submenu");
+
+            assertEquals(item.getText(), org.traincontrol.util.I18n.t("ui.main.toolbar.showPageNumbers"),
+                "the item does not carry the bundle's label");
+
+            assertNotNull(item.getToolTipText(), "the item has no tooltip");
+            assertTrue(item.getToolTipText().contains(org.traincontrol.util.I18n.t("ui.main.toolbar.tooltip.showPageNumbers")),
+                "the item's tooltip is not the bundle's: " + item.getToolTipText());
+
+            // DEFAULT OFF
+            assertFalse(item.isSelected(), "Show Page Numbers is on by default.  Adam, round 6: \"Default off\"");
+
+            // THE LINE: the name alone
+            org.traincontrol.marklin.MarklinLocomotive loc = p.mfx("FR-128 numbers off", 3958);
+
+            p.nameThePage("Example");
+            p.show(loc);
+
+            assertEquals(p.pageWords(), "Example", "with the numbers off the page's words are not just the name.  Adam,"
+                + " round 6: \"When off, 5. MMMM... becomes just MMMM...\"");
+
+            // ... and the tooltip has the page's number whatever the setting
+            String tip = p.row().getToolTipText();
+
+            assertTrue(tip != null && tip.contains(org.traincontrol.util.I18n.f("page.ui.plainPageName", p.page, "Example")),
+                "the tooltip does not have the page's number with the numbers off: " + tip);
+
+            // THE 22-M NAME, cut with an ellipsis, and with more of it than the number would have left
+            p.nameThePage(WIDE_PAGE_NAME);
+            p.show(loc);
+
+            String wide = p.pageWords();
+
+            assertTrue(wide.endsWith(String.valueOf((char) 0x2026)) && wide.substring(0, wide.length() - 1).matches("M+"),
+                "with the numbers off the wide name is not a run of its Ms and an ellipsis: [" + wide + "]");
+
+            // A PAGE WITH NO NAME shows its number, so the line is not a key with nothing after it
+            p.nameThePage(null);
+            p.show(loc);
+
+            assertEquals(p.pageWords(), p.page + ".", "a page with no name, with the numbers off, is not its number and a full stop");
+        });
+    }
+
+    /**
+     * Ticking the item shows the number and keeps the choice, and unticking takes it off (FR-128, round 6).
+     *
+     * The preference is SET before the window is built, not toggled, so the first click is known to be the one from off to
+     * on; the run's preferences are a copy of the operator's, and `Panel.close` puts back what was there.  Driven by
+     * clicking the item, which is what the operator does and what runs the item's own handler: the handler stores the
+     * choice and the line is redrawn at once, which it can only be if what the row says includes the setting, so the
+     * window's check for whether the line has changed finds that it has.
+     *
+     * MUTATION: leave the choice out of the handler, leave it out of what the row says, or have the handler store the
+     * opposite, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheItemSwitchesTheNumbersAndKeepsTheChoice() throws Exception
+    {
+        withPanel(Boolean.FALSE, p ->
+        {
+            javax.swing.JCheckBoxMenuItem item = p.pageNumbersItem();
+
+            assertNotNull(item, "the window has no Show Page Numbers item (FR-128, round 6)");
+
+            String key = pageNumbersKey();
+
+            java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+            assertFalse(item.isSelected(), "precondition: the item is on with the preference set off");
+
+            org.traincontrol.marklin.MarklinLocomotive loc = p.mfx("FR-128 numbers toggled", 3959);
+
+            p.nameThePage("Example");
+            p.show(loc);
+
+            assertEquals(p.pageWords(), "Example", "precondition: the numbers are not off");
+
+            String offWide;
+
+            p.nameThePage(WIDE_PAGE_NAME);
+            p.show(loc);
+
+            offWide = p.pageWords();
+
+            p.nameThePage("Example");
+            p.show(loc);
+
+            // ON: the number comes in front of the name, at once, and the choice is stored
+            javax.swing.SwingUtilities.invokeAndWait(item::doClick);
+
+            assertTrue(item.isSelected(), "clicking the item did not tick it");
+            assertTrue(prefs.getBoolean(key, false), "ticking the item did not store the choice in the preference");
+
+            assertEquals(p.pageWords(), p.page + ". Example", "ticking the item did not put the number in front of the name at once");
+
+            // ... and the wide name is cut sooner for it
+            p.nameThePage(WIDE_PAGE_NAME);
+            p.show(loc);
+
+            String onWide = p.pageWords();
+
+            assertEquals(onWide.substring(0, (p.page + ". ").length()), p.page + ". ", "the wide name has lost its number: [" + onWide + "]");
+
+            assertTrue(onWide.length() - (p.page + ". ").length() < offWide.length(), "the wide name is not cut sooner with the number"
+                + " in front of it: [" + onWide + "] against [" + offWide + "]");
+
+            p.nameThePage("Example");
+            p.show(loc);
+
+            // OFF: the number goes, at once, and the choice is stored
+            javax.swing.SwingUtilities.invokeAndWait(item::doClick);
+
+            assertFalse(item.isSelected(), "clicking the ticked item did not untick it");
+            assertFalse(prefs.getBoolean(key, true), "unticking the item did not store the choice in the preference");
+
+            assertEquals(p.pageWords(), "Example", "unticking the item did not take the number off at once");
+
+            // an unnamed page, off, is its number alone
+            p.nameThePage(null);
+            p.show(loc);
+
+            assertEquals(p.pageWords(), p.page + ".", "an unnamed page with the numbers off is not its number and a full stop");
+        });
+    }
+
+    /**
+     * The preference is read at start-up, as the other ticks in the Locomotive submenu are (FR-128, round 6).
+     *
+     * A window built with the preference set on has the item ticked and the number in front of the name, and one built with
+     * it set off has neither - so the state the line is built from is read from the preference when the window starts,
+     * not left at the item's own default.  Set, not toggled, and put back, as above.
+     *
+     * MUTATION: leave the item's start-up state out of the start-up block, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testThePreferenceIsReadAtStartUp() throws Exception
+    {
+        for (boolean on : new boolean[] {true, false})
+        {
+            withPanel(on, p ->
+            {
+                javax.swing.JCheckBoxMenuItem item = p.pageNumbersItem();
+
+                assertNotNull(item, "the window has no Show Page Numbers item (FR-128, round 6)");
+
+                assertEquals(item.isSelected(), on, "a window started with the preference " + (on ? "on" : "off")
+                    + " has the item " + (item.isSelected() ? "ticked" : "not ticked"));
+
+                p.nameThePage("Example");
+                p.show(p.mfx("FR-128 numbers at start", 3960));
+
+                assertEquals(p.pageWords(), on ? p.page + ". Example" : "Example", "a window started with the preference "
+                    + (on ? "on" : "off") + " draws the page's words as the other way");
+            });
+        }
+    }
+
+    /** Whether this menu has this item or submenu directly in it. */
+    private static boolean menuHas(javax.swing.JMenu menu, java.awt.Component item)
+    {
+        for (java.awt.Component c : menu.getMenuComponents())
+        {
+            if (c == item) return true;
+        }
+
+        return false;
     }
 
     /** Where every other part of the locomotive panel is, as one text, for a check that none of it moved. */

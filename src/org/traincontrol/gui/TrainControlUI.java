@@ -318,6 +318,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String LAYOUT_SHOW_ADDRESSES = "LayoutShowAddresses";
     public static final String TABS_SETTING_PREF = "MappingTabs";
 
+    /** FR-128: whether the line over the locomotive's name has the page's number before the page's name.  Off until asked for. */
+    public static final String SHOW_PAGE_NUMBERS = "ShowPageNumbers";
+
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
     
@@ -434,6 +437,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The Interface menu's switch for grey station captions (FR-031).  Built by hand - see where.
      */
     private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
+
+    /**
+     * The Preferences menu's Locomotive submenu's switch for the page number before the page name on the line over the
+     * locomotive's name (FR-128).  Built by hand - see where.
+     */
+    private javax.swing.JCheckBoxMenuItem showPageNumbersMenuItem;
 
     /** FR-037: whether the ordinary diagram draws one-way arrows. */
     private javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
@@ -1021,6 +1030,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         installCurrentKeyRow();
 
+        installShowPageNumbersMenuItem();
+
         // THE WINDOWS IT OPENS FOLLOW ITS ALWAYS-ON-TOP (the popups sweep, on Adam's MT-703 note)
         this.addPropertyChangeListener("alwaysOnTop", change ->
             childWindowsFollowAlwaysOnTop(Boolean.TRUE.equals(change.getNewValue())));
@@ -1391,6 +1402,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
         this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
+
+        // OFF until asked for (FR-128): the page's name alone above the locomotive's, as it was before the number was on it
+        this.showPageNumbersMenuItem.setSelected(prefs.getBoolean(SHOW_PAGE_NUMBERS, false));
 
         // The station-caption colour, and the menu item that sets it (FR-031).
         //
@@ -11083,6 +11097,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * "Show Page Numbers", in the Preferences menu's Locomotive submenu, under "Show Locomotive Pages as Tabs" (FR-128).
+     *
+     * Adam, 2026-10-13: *"Make an checkbox option called show page numbers within the preferences jmenu, under the
+     * locomotive submenu.  Default off.  When off, 5. MMMM... becomes just MMMM... .  Use the same design patterns as now
+     * with prefs."*  The submenu is `locomotiveControlMenu`, headed "Locomotive Control" in the form, in `interfaceMenu`,
+     * which is headed Preferences.
+     *
+     * Built here rather than in the form: the form is generated, and a hand-written item in a generated block is a change
+     * the next round trip through the designer would silently drop - the rule every hand-built item in this window
+     * follows (see `buildDiagramDrawingMenu`).  It is put in the generated submenu after the tick it belongs beside, the
+     * one for pages as tabs, and ahead of the divider that sets the keyboard layouts apart from the ticks; if that tick is
+     * ever not there it goes to the end of the submenu rather than nowhere.
+     *
+     * The pattern the other ticks in that submenu follow: a preference key, read at start-up beside theirs (where this
+     * item's state is set from it), written by the item's own handler, and the line redrawn at once.  The state the line
+     * is built from is this item's, as `activeLocInTitle`'s is for the pop-ups' titles.
+     */
+    private void installShowPageNumbersMenuItem()
+    {
+        this.showPageNumbersMenuItem = new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.showPageNumbers"));
+
+        this.showPageNumbersMenuItem.setToolTipText(
+            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.showPageNumbers")));
+
+        this.showPageNumbersMenuItem.addActionListener(event ->
+        {
+            prefs.putBoolean(SHOW_PAGE_NUMBERS, this.showPageNumbersMenuItem.isSelected());
+
+            // The line over the name, at once.  What it says includes this setting, so the render's check for whether the
+            // line has changed finds that it has; nothing about the locomotive needs to.
+            this.repaintLoc();
+        });
+
+        int at = this.locomotiveControlMenu.getMenuComponentCount();
+
+        for (int i = 0; i < this.locomotiveControlMenu.getMenuComponentCount(); i++)
+        {
+            if (this.locomotiveControlMenu.getMenuComponent(i) == this.showPageTabsPreference)
+            {
+                at = i + 1;
+
+                break;
+            }
+        }
+
+        this.locomotiveControlMenu.insert(this.showPageNumbersMenuItem, at);
+    }
+
+    /**
      * What the row over the name should say for the active button.
      *
      * The page's name is the RAW one: the row cuts it to the pixel and the tooltip words the page from the bundle, so
@@ -11098,7 +11161,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private CurrentKeyRow.Content currentKeyContent(String decoderType, String address)
     {
         return new CurrentKeyRow.Content(this.currentButton.getText(), this.currentButtonlocMappingNumber,
-            this.getPageName(this.currentButtonlocMappingNumber, true), decoderType, address);
+            this.getPageName(this.currentButtonlocMappingNumber, true), decoderType, address,
+            this.showPageNumbersMenuItem.isSelected());
     }
 
     /**
