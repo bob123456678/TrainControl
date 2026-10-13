@@ -349,6 +349,16 @@ TrainControl uses your computer's language automatically.  To run it in a differ
 * ```java -Duser.language=es -Duser.country=ES -jar TrainControl.jar``` (Force Spanish locale/language)
 * ```java -Duser.language=nl -Duser.country=NL -jar TrainControl.jar``` (Force Dutch locale/language)
 
+**Updating TrainControl:**
+
+When "Check for Updates" is ticked under Preferences > Startup, TrainControl looks for a new version each time it starts.  If there is one, the Help menu gets a "*" and a "Download Update" item.  Clicking it gives you 3 choices:
+
+* Download: saves the new JAR file next to your current one, so you can swap it in yourself.
+* Download & Update: saves the new JAR file and makes a backup of your data (see below).  Then TrainControl closes, puts the new version in place of the old JAR file under the same file name, and starts again with the same settings.  Your old JAR file is kept next to it with its version in the name (for example `TrainControl_v3_0_1_old.jar`), so you can go back by renaming it.  Each step is written to `update.log` in the same folder.
+* Cancel
+
+Download & Update is only offered when TrainControl was started from a JAR file in a folder you can write to.  It is not available while autonomy, a timetable, Return Home, or a route is running.
+
 **Backing up and restoring your data:**
 
 To make a backup, select "Backup TrainControl Data" from the File menu.  This saves a single zip file in the `tc_backup` folder with your locomotives and their icons, keyboard mappings, routes, and, for a layout stored on your computer, its track diagrams and autonomy setups.

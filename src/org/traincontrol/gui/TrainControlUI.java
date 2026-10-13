@@ -137,6 +137,8 @@ import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 import org.traincontrol.util.Util;
+import org.traincontrol.util.JarUpdater;
+import org.traincontrol.util.SelfUpdate;
 
 /**
  * UI for controlling trains and switches using the keyboard
@@ -171,6 +173,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static String UPDATE_URL = "https://github.com/bob123456678/TrainControl/releases";
     public static String LATEST_VERSION = "";
     public static String LATEST_DOWNLOAD_URL = "";
+
+    // The release download's size and digest, where the release gives them, so Download & Update can tell a whole
+    // download from one cut short before anything is replaced with it (FR-125)
+    public static long LATEST_DOWNLOAD_SIZE = -1;
+    public static String LATEST_DOWNLOAD_DIGEST = null;
     
     // Preferences fields
     public static final String IP_PREF = "initIP" + Conversion.getFolderHash(10);
@@ -452,6 +459,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // second press started a second worker, which borrowed the first one's staging plan as though it
     // were the operator's timetable and restored it as such.  That loses the real one.
     private volatile boolean stagingFlowActive = false;
+
+    /**
+     * The update the exit is to start, or null (FR-125).  Set by Download & Update just before it asks for the exit, and
+     * taken by `WindowClosed` once everything is saved and nothing can refuse the exit any more.
+     */
+    private PendingUpdate updateOnExit;
     
     // Graph viewer instance
     
@@ -11503,6 +11516,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
 
                     LATEST_DOWNLOAD_URL = Util.parseDownloadURL(updateInfo);
+                    LATEST_DOWNLOAD_SIZE = Util.parseDownloadSize(updateInfo);
+                    LATEST_DOWNLOAD_DIGEST = Util.parseDownloadDigest(updateInfo);
                     
                     if (Util.parseReleaseURL(updateInfo) != null)
                     {
@@ -21591,6 +21606,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.saveState(false);
         //model.stop();
 
+        // THE UPDATE STARTS HERE, OR NOT AT ALL (FR-125).
+        //
+        // Download & Update leaves through this exit, so nothing unsaved is lost, and starts its updater here rather than
+        // before asking: everything above can still refuse the exit - an editor's Cancel, the trains question - and an
+        // updater started before a refusal would wait for an exit that never came, or swap the jar under whatever closed
+        // TrainControl later.  Here everything has agreed and is saved.  The updater waits for this process to end (it
+        // holds the exit lock until then), so nothing below is hurried.
+        //
+        // If it cannot start, TrainControl stays open and says so, and nothing has been replaced.
+        final PendingUpdate update = this.updateOnExit;
+
+        this.updateOnExit = null;
+
+        if (update != null)
+        {
+            try
+            {
+                SelfUpdate.startUpdater(update.jar, update.download, RAW_VERSION, SelfUpdate::startDetached);
+            }
+            catch (IOException | RuntimeException e)
+            {
+                this.model.logf("ui.update.errorCannotStart", String.valueOf(e.getMessage()),
+                    update.download.getAbsolutePath());
+
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorCannotStart",
+                    String.valueOf(e.getMessage()), update.download.getName()));
+
+                return;
+            }
+        }
+
         // The EDITOR is closed too, and it has to be closed properly.
         //
         // LayoutEditor.dispose() is the only thing that clears config/autonomy/setup-before-edit.json,
@@ -24428,228 +24474,280 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .replace(':', '-').replace(' ', '_');
     }
 
+    /**
+     * Writes the data backup: one archive in `tc_backup` holding the locomotive database, the window state, the routes,
+     * the layout's folder and the cropped icons - File > Backup TrainControl Data, and Download & Update before it
+     * replaces anything (FR-125).
+     *
+     * Lifted out of the menu item's handler so the update takes the very backup the menu does.  Adam, 2026-10-12, on
+     * what "take a backup" means for an update: the application's own data backup, and the old jar kept as well.
+     *
+     * On the caller's thread, which must not be the event thread: it saves, writes the archive, and may ask about the
+     * Central Station's layout through `askOnEventThread`, which waits for an answer.
+     *
+     * @return the archive, or no archive, and what could not be saved
+     */
+    private BackupOutcome backupData()
+    {
+        // The track diagram and the autonomy setup beside it.
+        //
+        // Neither used to be backed up, which was defensible while the diagram lived on the Central
+        // Station and autonomy lived in one autonomy.json this method already saved.  It is not
+        // defensible now: for a locally stored layout, config/ holds the pages AND config/autonomy
+        // holds every station name, direction, caption and configuration - and that folder is the
+        // only copy of them anywhere.
+        List<String> unsaved = new java.util.ArrayList<>();
+
+        File backupArchive = null;
+
+        // Set only once the archive has been written, so a failure part way reports no archive
+        final File[] made = new File[1];
+
+        // The temporary copy of a Central Station layout, if one was fetched (FR-020). Removed in
+        // the finally, whatever happens to the archive.
+        File centralStationCopy = null;
+
+        // And TrainControl's OWN route database, exported (FR-021). Same treatment.
+        File routesExport = null;
+
+        this.backupDataMenuItem.setEnabled(false);
+
+        // Given back whatever happens.  It is switched off so a second backup cannot start while
+        // one is running, and everything between here and the end of the try can throw - a full
+        // disk, a locked file, a tree deep enough to overflow the stack.  Left off, the only way to
+        // back up again is to restart the application, and the user is not told why.
+        try
+        {
+            // Written LIVE first, so the archive holds the state as it is now rather than as it
+            // was when something last happened to save it.
+            //
+            // WITHOUT the session capture (IAR-A2). Writing live used to imply it, and that made
+            // this menu item commit whatever was open in the autonomy editor - to setup.json and
+            // to every configuration file - from this thread, which is not the event thread. The
+            // editor's Cancel could not undo it, because discardEdits re-reads the file that had
+            // just been written. Taking a copy must not change anything.
+            this.saveState(false, false);
+            this.model.saveState(false);
+
+            // One archive, holding all of it (FR-015).
+            //
+            // Adam: "the backup menu option should export a zip file with the locdb and uistate
+            // files, track diagram files, and autonomy files - effectively, all state."
+            //
+            // The argument for one archive rather than a folder of copies is the 23 August
+            // restore: the autonomy setup is keyed by PAGE ID, and those ids are defined by
+            // config/gleisbild.cs2 - so setup.json alone means nothing, and a gleisbild.cs2 from a
+            // different day silently reattaches every station to the wrong page. These files are
+            // only a backup together.
+            java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+
+            state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
+            state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
+                new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
+
+            // TrainControl's OWN routes, exported as JSON (FR-021).
+            //
+            // Adam: "OB 90 should run an export of our route db." The `fahrstrassen.cs2` inside
+            // the config folder is the CENTRAL STATION's copy, and the two are not the same thing:
+            // routes are edited in this application, and its route database is what actually runs.
+            // A backup holding only the station's file would restore whatever the station last
+            // knew, not what the operator built.
+            //
+            // Written through the same door the Export Routes menu item uses, so the file in the
+            // archive is one that Import Routes will read back.
+            //
+            // A failure here is named and the rest of the archive still written: the routes are
+            // one of several things being saved, and losing the whole backup because one of them
+            // could not be serialised is the wrong trade.
+            try
+            {
+                routesExport = java.io.File.createTempFile("tc-routes", ".json");
+
+                java.nio.file.Files.write(routesExport.toPath(),
+                    this.model.exportRoutes().getBytes(StandardCharsets.UTF_8));
+
+                state.put("routes.json", routesExport);
+            }
+            catch (Exception routes)
+            {
+                unsaved.add("routes.json: " + routes);
+
+                if (routesExport != null)
+                {
+                    routesExport.delete();
+
+                    routesExport = null;
+                }
+            }
+
+            // The LEGACY autonomy file (IAR-B1).
+            //
+            // For an operator coming from the hand-authored graph this is what their setup is
+            // imported from - nothing writes it any more (OB-254) - and it was in neither half of
+            // the backup: not in this archive, and no longer
+            // copied into the backup folder either, because that copy only happens on a
+            // timestamped save and this menu item stopped making one. "Backup TrainControl Data"
+            // reported success with none of it in the file.
+            //
+            // Skipped silently when it is not there, like every other source - a layout driven
+            // from the diagram has no autonomy.json and never will.
+            state.put(TrainControlUI.AUTONOMY_FILE_NAME,
+                new File(TrainControlUI.AUTONOMY_FILE_NAME));
+
+            String localLayout = getLocalLayoutPath();
+
+            // The layout lives on the CENTRAL STATION, so there is nothing local to put in the
+            // archive - and until now the backup simply did not mention it (FR-020).
+            //
+            // Adam: "for cs2 files, we have a top menu option to download a layout from the
+            // station. so a backup run in this mode could ask the user if they want to include
+            // this data."
+            //
+            // Asked rather than assumed, because it is a network fetch of every page: quick on a
+            // small layout, not free, and pointless if the Central Station is off. Declining
+            // leaves the archive exactly as it was, and the dialog at the end says what is not in
+            // it either way.
+            //
+            // There is no autonomy setup to pair these with. `AutonomyCompanionStore` refuses a
+            // layout that is not local - "autonomy needs a local copy of the track diagram,
+            // because its settings are stored alongside the diagram files" - so unlike the local
+            // case these pages stand alone, and an archive holding only them is complete rather
+            // than half of a pair.
+            // Not offered without a station answering (OB-098): "backup up files from cs should
+            // not be offered in this case".  Asking is a promise to fetch, and a question whose
+            // yes cannot be honoured is worse than the file being quietly absent - the archive
+            // would come back incomplete having asked permission to be complete.
+            // Through the one predicate, like the other two offers (validation pass).
+            //
+            // getNetworkCommState alone reports whether the last SYNC succeeded, and a sync reads
+            // through CS2File, which reads a local layout folder perfectly happily - so a
+            // simulated session syncs successfully and calls itself connected.  Adam found that
+            // once already: "switch to central station layout is NOT greyed out in debug/simulate
+            // mode."  This offer was the third site and was still asking the loose half.
+            if ((localLayout == null || localLayout.isEmpty())
+                && isCentralStationConnected()
+                && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
+            {
+                try
+                {
+                    centralStationCopy = java.nio.file.Files
+                        .createTempDirectory("tc-cs-backup").toFile();
+
+                    this.model.downloadLayout(centralStationCopy);
+
+                    state.put("central-station-layout", centralStationCopy);
+                }
+                catch (Exception cs)
+                {
+                    // Named in the incomplete-backup dialog like any other source that could not
+                    // be read. The rest of the archive is still worth writing.
+                    unsaved.add(I18n.t("ui.main.toolbar.downloadCSLayout") + ": " + cs);
+
+                    if (centralStationCopy != null)
+                    {
+                        Util.deleteTree(centralStationCopy, 0);
+
+                        centralStationCopy = null;
+                    }
+                }
+            }
+
+            if (localLayout != null && !localLayout.isEmpty())
+            {
+                // The whole folder, under the LAYOUT's own name (Adam, MT-159: "we are missing the
+                // folder name of the active layout - the zip contains 'config' instead of
+                // 'cs2_sample_layout'").
+                //
+                // It matters for the thing this archive is for. Restoring means putting these
+                // files back beside a `gleisbild.cs2` of the same vintage, and a bare `config`
+                // says nothing about which layout that was - so two backups of two layouts are
+                // indistinguishable once they are off this machine, which is exactly when
+                // somebody needs to tell them apart.
+                File layoutFolder = new File(localLayout).getAbsoluteFile();
+
+                String named = layoutFolder.getName();
+
+                state.put((named == null || named.isEmpty() ? "layout" : named) + "/config",
+                    new File(layoutFolder, "config"));
+            }
+
+            // The cropped locomotive icons, which were in no backup at all (reviewer, 2026-08-28).
+            //
+            // `LocDB.data` records each locomotive's `localImageURL`, and for a cropped icon that
+            // names a file in `tc_loc_icons` - a folder this archive has never held and git does
+            // not track. So a restored backup gave every crop-carrying locomotive a URL pointing
+            // at a file the archive did not contain, and the crops were the one piece of state
+            // with no way back at all.
+            //
+            // Only if it exists: an installation where nobody has cropped anything should not
+            // gain an empty folder in its archive.
+            File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
+
+            if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
+
+            backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));
+
+            unsaved.addAll(Util.zipInto(backupArchive, state));
+
+            made[0] = backupArchive;
+        }
+        catch (RuntimeException | StackOverflowError e)
+        {
+            unsaved.add(String.valueOf(e));
+
+            if (this.model != null && this.model.isDebug()) this.model.log(String.valueOf(e));
+        }
+        finally
+        {
+            // The scratch download goes, whether or not the archive was written. A stale copy of
+            // the diagram left in a temporary folder is exactly the sort of second copy this
+            // application keeps being bitten by.
+            if (centralStationCopy != null) Util.deleteTree(centralStationCopy, 0);
+
+            if (routesExport != null) routesExport.delete();
+
+            this.backupDataMenuItem.setEnabled(true);
+        }
+
+        return new BackupOutcome(made[0], unsaved);
+    }
+
+    /**
+     * What `backupData` wrote, and what it could not (FR-125).
+     */
+    private static final class BackupOutcome
+    {
+        /** The archive, or null when none was written. */
+        final File archive;
+
+        /** What could not be saved, each with its reason; empty when the backup is whole. */
+        final List<String> unsaved;
+
+        BackupOutcome(File archive, List<String> unsaved)
+        {
+            this.archive = archive;
+            this.unsaved = unsaved;
+        }
+
+        /**
+         * @return whether the archive was written with everything in it
+         */
+        boolean isComplete()
+        {
+            return this.archive != null && this.archive.isFile() && this.unsaved.isEmpty();
+        }
+    }
+
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
         new Thread(() ->
         {
-            // The track diagram and the autonomy setup beside it.
-            //
-            // Neither used to be backed up, which was defensible while the diagram lived on the Central
-            // Station and autonomy lived in one autonomy.json this method already saved.  It is not
-            // defensible now: for a locally stored layout, config/ holds the pages AND config/autonomy
-            // holds every station name, direction, caption and configuration - and that folder is the
-            // only copy of them anywhere.
-            List<String> unsaved = new java.util.ArrayList<>();
+            // The writing is backupData's, which an update takes too (FR-125); the reporting is the menu's alone.
+            final BackupOutcome done = backupData();
 
-            File backupArchive = null;
+            final List<String> unsaved = done.unsaved;
 
             // Read from the reporting lambda below, which needs it effectively final
-            final File[] made = new File[1];
-
-            // The temporary copy of a Central Station layout, if one was fetched (FR-020). Removed in
-            // the finally, whatever happens to the archive.
-            File centralStationCopy = null;
-
-            // And TrainControl's OWN route database, exported (FR-021). Same treatment.
-            File routesExport = null;
-
-            this.backupDataMenuItem.setEnabled(false);
-
-            // Given back whatever happens.  It is switched off so a second backup cannot start while
-            // one is running, and everything between here and the end of the try can throw - a full
-            // disk, a locked file, a tree deep enough to overflow the stack.  Left off, the only way to
-            // back up again is to restart the application, and the user is not told why.
-            try
-            {
-                // Written LIVE first, so the archive holds the state as it is now rather than as it
-                // was when something last happened to save it.
-                //
-                // WITHOUT the session capture (IAR-A2). Writing live used to imply it, and that made
-                // this menu item commit whatever was open in the autonomy editor - to setup.json and
-                // to every configuration file - from this thread, which is not the event thread. The
-                // editor's Cancel could not undo it, because discardEdits re-reads the file that had
-                // just been written. Taking a copy must not change anything.
-                this.saveState(false, false);
-                this.model.saveState(false);
-
-                // One archive, holding all of it (FR-015).
-                //
-                // Adam: "the backup menu option should export a zip file with the locdb and uistate
-                // files, track diagram files, and autonomy files - effectively, all state."
-                //
-                // The argument for one archive rather than a folder of copies is the 23 August
-                // restore: the autonomy setup is keyed by PAGE ID, and those ids are defined by
-                // config/gleisbild.cs2 - so setup.json alone means nothing, and a gleisbild.cs2 from a
-                // different day silently reattaches every station to the wrong page. These files are
-                // only a backup together.
-                java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
-
-                state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
-                state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
-                    new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
-
-                // TrainControl's OWN routes, exported as JSON (FR-021).
-                //
-                // Adam: "OB 90 should run an export of our route db." The `fahrstrassen.cs2` inside
-                // the config folder is the CENTRAL STATION's copy, and the two are not the same thing:
-                // routes are edited in this application, and its route database is what actually runs.
-                // A backup holding only the station's file would restore whatever the station last
-                // knew, not what the operator built.
-                //
-                // Written through the same door the Export Routes menu item uses, so the file in the
-                // archive is one that Import Routes will read back.
-                //
-                // A failure here is named and the rest of the archive still written: the routes are
-                // one of several things being saved, and losing the whole backup because one of them
-                // could not be serialised is the wrong trade.
-                try
-                {
-                    routesExport = java.io.File.createTempFile("tc-routes", ".json");
-
-                    java.nio.file.Files.write(routesExport.toPath(),
-                        this.model.exportRoutes().getBytes(StandardCharsets.UTF_8));
-
-                    state.put("routes.json", routesExport);
-                }
-                catch (Exception routes)
-                {
-                    unsaved.add("routes.json: " + routes);
-
-                    if (routesExport != null)
-                    {
-                        routesExport.delete();
-
-                        routesExport = null;
-                    }
-                }
-
-                // The LEGACY autonomy file (IAR-B1).
-                //
-                // For an operator coming from the hand-authored graph this is what their setup is
-                // imported from - nothing writes it any more (OB-254) - and it was in neither half of
-                // the backup: not in this archive, and no longer
-                // copied into the backup folder either, because that copy only happens on a
-                // timestamped save and this menu item stopped making one. "Backup TrainControl Data"
-                // reported success with none of it in the file.
-                //
-                // Skipped silently when it is not there, like every other source - a layout driven
-                // from the diagram has no autonomy.json and never will.
-                state.put(TrainControlUI.AUTONOMY_FILE_NAME,
-                    new File(TrainControlUI.AUTONOMY_FILE_NAME));
-
-                String localLayout = getLocalLayoutPath();
-
-                // The layout lives on the CENTRAL STATION, so there is nothing local to put in the
-                // archive - and until now the backup simply did not mention it (FR-020).
-                //
-                // Adam: "for cs2 files, we have a top menu option to download a layout from the
-                // station. so a backup run in this mode could ask the user if they want to include
-                // this data."
-                //
-                // Asked rather than assumed, because it is a network fetch of every page: quick on a
-                // small layout, not free, and pointless if the Central Station is off. Declining
-                // leaves the archive exactly as it was, and the dialog at the end says what is not in
-                // it either way.
-                //
-                // There is no autonomy setup to pair these with. `AutonomyCompanionStore` refuses a
-                // layout that is not local - "autonomy needs a local copy of the track diagram,
-                // because its settings are stored alongside the diagram files" - so unlike the local
-                // case these pages stand alone, and an archive holding only them is complete rather
-                // than half of a pair.
-                // Not offered without a station answering (OB-098): "backup up files from cs should
-                // not be offered in this case".  Asking is a promise to fetch, and a question whose
-                // yes cannot be honoured is worse than the file being quietly absent - the archive
-                // would come back incomplete having asked permission to be complete.
-                // Through the one predicate, like the other two offers (validation pass).
-                //
-                // getNetworkCommState alone reports whether the last SYNC succeeded, and a sync reads
-                // through CS2File, which reads a local layout folder perfectly happily - so a
-                // simulated session syncs successfully and calls itself connected.  Adam found that
-                // once already: "switch to central station layout is NOT greyed out in debug/simulate
-                // mode."  This offer was the third site and was still asking the loose half.
-                if ((localLayout == null || localLayout.isEmpty())
-                    && isCentralStationConnected()
-                    && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
-                {
-                    try
-                    {
-                        centralStationCopy = java.nio.file.Files
-                            .createTempDirectory("tc-cs-backup").toFile();
-
-                        this.model.downloadLayout(centralStationCopy);
-
-                        state.put("central-station-layout", centralStationCopy);
-                    }
-                    catch (Exception cs)
-                    {
-                        // Named in the incomplete-backup dialog like any other source that could not
-                        // be read. The rest of the archive is still worth writing.
-                        unsaved.add(I18n.t("ui.main.toolbar.downloadCSLayout") + ": " + cs);
-
-                        if (centralStationCopy != null)
-                        {
-                            Util.deleteTree(centralStationCopy, 0);
-
-                            centralStationCopy = null;
-                        }
-                    }
-                }
-
-                if (localLayout != null && !localLayout.isEmpty())
-                {
-                    // The whole folder, under the LAYOUT's own name (Adam, MT-159: "we are missing the
-                    // folder name of the active layout - the zip contains 'config' instead of
-                    // 'cs2_sample_layout'").
-                    //
-                    // It matters for the thing this archive is for. Restoring means putting these
-                    // files back beside a `gleisbild.cs2` of the same vintage, and a bare `config`
-                    // says nothing about which layout that was - so two backups of two layouts are
-                    // indistinguishable once they are off this machine, which is exactly when
-                    // somebody needs to tell them apart.
-                    File layoutFolder = new File(localLayout).getAbsoluteFile();
-
-                    String named = layoutFolder.getName();
-
-                    state.put((named == null || named.isEmpty() ? "layout" : named) + "/config",
-                        new File(layoutFolder, "config"));
-                }
-
-                // The cropped locomotive icons, which were in no backup at all (reviewer, 2026-08-28).
-                //
-                // `LocDB.data` records each locomotive's `localImageURL`, and for a cropped icon that
-                // names a file in `tc_loc_icons` - a folder this archive has never held and git does
-                // not track. So a restored backup gave every crop-carrying locomotive a URL pointing
-                // at a file the archive did not contain, and the crops were the one piece of state
-                // with no way back at all.
-                //
-                // Only if it exists: an installation where nobody has cropped anything should not
-                // gain an empty folder in its archive.
-                File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
-
-                if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
-
-                backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));
-
-                unsaved.addAll(Util.zipInto(backupArchive, state));
-
-                made[0] = backupArchive;
-            }
-            catch (RuntimeException | StackOverflowError e)
-            {
-                unsaved.add(String.valueOf(e));
-
-                if (this.model != null && this.model.isDebug()) this.model.log(String.valueOf(e));
-            }
-            finally
-            {
-                // The scratch download goes, whether or not the archive was written. A stale copy of
-                // the diagram left in a temporary folder is exactly the sort of second copy this
-                // application keeps being bitten by.
-                if (centralStationCopy != null) Util.deleteTree(centralStationCopy, 0);
-
-                if (routesExport != null) routesExport.delete();
-
-                this.backupDataMenuItem.setEnabled(true);
-            }
+            final File[] made = {done.archive};
 
             // Derived from an actual backup path rather than from BACKUP_FOLDER: getBackupPath falls
             // back to the working directory when the folder cannot be created, and naming the folder
@@ -27605,6 +27703,156 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_checkForUpdatesActionPerformed
 
     private void downloadUpdateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_downloadUpdateMenuItemActionPerformed
+        // A question first: Download, Download & Update, or Cancel (FR-125)
+        offerTheUpdate();
+    }//GEN-LAST:event_downloadUpdateMenuItemActionPerformed
+
+    /**
+     * What the update question was answered with (FR-125).
+     */
+    public enum UpdateChoice
+    {
+        CANCEL, DOWNLOAD, DOWNLOAD_AND_UPDATE
+    }
+
+    /**
+     * Answers the update question in place of the user, in a test: given the buttons, it returns the index of the one
+     * pressed.  Null puts the real question back.
+     */
+    private static volatile java.util.function.Function<Object[], Integer> updateQuestionForTests;
+
+    /**
+     * Shows the update question's buttons to a test instead of to the user (FR-125).
+     *
+     * @param hook given the buttons, returns the index of the one pressed, or -1 for the window closed; null for the
+     * real question
+     */
+    public static void updateQuestionForTests(java.util.function.Function<Object[], Integer> hook)
+    {
+        updateQuestionForTests = hook;
+    }
+
+    /**
+     * The update question: "TrainControl vX is available (you have vY)." with Download, Download & Update and Cancel
+     * (FR-125).
+     *
+     * Adam, 2026-10-12: *"when user clicks on the new version, they see a download, download & update, or cancel
+     * button"*, and *"If no jar in current folder, it shouldn't be offered as a menu option"* - so without a jar to
+     * replace there are two buttons, Download and Cancel, and the second button is Cancel.  The answer is read
+     * against the buttons that were shown, so the two layouts cannot be mistaken for each other.
+     *
+     * Download & Update is the default where it is offered: it is the one click this was asked for.
+     *
+     * @param parent what to show it over
+     * @param latest the new version
+     * @param running this version
+     * @param canInstall whether TrainControl runs from a jar it can replace
+     * @return the answer
+     */
+    public static UpdateChoice askAboutTheUpdate(Component parent, String latest, String running, boolean canInstall)
+    {
+        final String download = I18n.t("ui.update.download");
+        final String install = I18n.t("ui.update.downloadAndUpdate");
+
+        final Object[] choices = canInstall
+            ? new Object[] {download, install, I18n.t("ui.cancel")}
+            : new Object[] {download, I18n.t("ui.cancel")};
+
+        final java.util.function.Function<Object[], Integer> hook = updateQuestionForTests;
+
+        final int chose = hook != null ? hook.apply(choices.clone()) : JOptionPane.showOptionDialog(parent,
+            I18n.f("ui.update.available", latest, running)
+                + (canInstall ? "\n\n" + I18n.t("ui.update.explainInstall") : ""),
+            I18n.t("ui.main.downloadUpdate"),
+            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, choices,
+            canInstall ? install : download);
+
+        if (chose == 0) return UpdateChoice.DOWNLOAD;
+
+        if (canInstall && chose == 1) return UpdateChoice.DOWNLOAD_AND_UPDATE;
+
+        return UpdateChoice.CANCEL;
+    }
+
+    /**
+     * Why an update cannot start now, or null (FR-125).
+     *
+     * Download & Update ends by closing TrainControl, and an exit with trains running stops to ask whether to leave them
+     * running, which is not a question an update can answer for anybody.  So it refuses first, while autonomy, a
+     * timetable, Return Home or a route is running, and says so, rather than downloading and backing up for an exit that
+     * would then stop.
+     *
+     * `isAutonomyRunning` covers autonomy, a timetable and a Return Home run (a running railway, or a staging flow);
+     * `returnHomePlanning` is the window's own flag for Return Home working out its plan, when nothing is running yet;
+     * and a route runs by hand or from a sensor with autonomy idle, so it is asked separately, as the locomotive doors
+     * ask it.
+     *
+     * @param model the railway
+     * @param returnHomePlanning whether the window has Return Home under way
+     * @return the sentence to show, or null when an update may start
+     */
+    public static String whyAnUpdateMustWait(ViewListener model, boolean returnHomePlanning)
+    {
+        boolean running = returnHomePlanning || (model != null && model.isAutonomyRunning());
+
+        if (!running && model != null)
+        {
+            for (String name : model.getRouteList())
+            {
+                Route route = model.getRoute(name);
+
+                if (route != null && route.isExecuting())
+                {
+                    running = true;
+
+                    break;
+                }
+            }
+        }
+
+        return running ? I18n.t("ui.update.refusedWhileRunning") : null;
+    }
+
+    /**
+     * Help > Download Update: asks what to do with the new version, then does it (FR-125).
+     *
+     * Download & Update is offered only when TrainControl runs from a jar it can replace - the jar it was loaded from,
+     * in a folder that can be written.  Run from an IDE or from a folder of classes there is no jar, and the question
+     * offers Download alone.
+     */
+    private void offerTheUpdate()
+    {
+        final File jar = SelfUpdate.runningJar(TrainControlUI.class);
+
+        final UpdateChoice chose = askAboutTheUpdate(this, LATEST_VERSION, RAW_VERSION, jar != null);
+
+        if (chose == UpdateChoice.DOWNLOAD) downloadTheUpdate(jar, false);
+        else if (chose == UpdateChoice.DOWNLOAD_AND_UPDATE) downloadTheUpdate(jar, true);
+    }
+
+    /**
+     * Downloads the new version with its progress on the menu item; then Download says where it is, and Download &
+     * Update installs it (FR-125).
+     *
+     * Download is what this item always did, saved beside the running jar now where there is one, and in the working
+     * directory as before where there is not.
+     *
+     * @param jar the running jar, or null
+     * @param install whether to update as well
+     */
+    private void downloadTheUpdate(final File jar, final boolean install)
+    {
+        if (install)
+        {
+            final String wait = whyAnUpdateMustWait(this.model, this.stagingFlowActive || isAutonomyBusy());
+
+            if (wait != null)
+            {
+                JOptionPane.showMessageDialog(this, wait);
+
+                return;
+            }
+        }
 
         // Without this, a second click would skip the in-progress download and report the partial file as complete
         this.downloadUpdateMenuItem.setEnabled(false);
@@ -27614,7 +27862,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                File f = new File("TrainControl_v" + LATEST_VERSION.replace(".", "_") + ".jar");
+                File f = SelfUpdate.downloadTarget(jar, LATEST_VERSION);
+
+                // A file of that name that is not the whole release, an earlier download cut short, is fetched again
+                // rather than installed.  Download alone keeps whatever is there, as it always has.
+                if (install && f.exists()
+                    && SelfUpdate.whyNotAWholeJar(f, LATEST_DOWNLOAD_SIZE, LATEST_DOWNLOAD_DIGEST) != null)
+                {
+                    Files.delete(f.toPath());
+                }
 
                 if (!f.exists())
                 {
@@ -27628,6 +27884,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             );
                         });
                     });
+                }
+
+                if (install)
+                {
+                    installTheDownload(jar, f);
+
+                    return;
                 }
 
                 javax.swing.SwingUtilities.invokeLater(() ->
@@ -27669,7 +27932,105 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 });
             }
         }).start();
-    }//GEN-LAST:event_downloadUpdateMenuItemActionPerformed
+    }
+
+    /**
+     * Download & Update, once the file is here (FR-125): checks it is a whole jar, takes the data backup, then closes
+     * TrainControl for the updater.  On the download's worker thread, until the exit, which is the event thread's.
+     *
+     * Each failure stops here, says why, and leaves everything as it was: the old jar is not touched until TrainControl
+     * has closed.
+     *
+     * @param jar the running jar
+     * @param download the downloaded file, beside it
+     */
+    private void installTheDownload(final File jar, final File download)
+    {
+        final String broken = SelfUpdate.whyNotAWholeJar(download, LATEST_DOWNLOAD_SIZE, LATEST_DOWNLOAD_DIGEST);
+
+        if (broken != null)
+        {
+            this.model.logf("ui.update.errorNotWhole", broken);
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorNotWhole", broken)));
+
+            return;
+        }
+
+        // The application's own data backup, and the update goes no further without it (Adam, 2026-10-12).  Incomplete
+        // counts as failed: the backup is what makes an update safe to try, and a part of one is a part of that.
+        final BackupOutcome backup = backupData();
+
+        if (!backup.isComplete())
+        {
+            final String why = backup.unsaved.isEmpty() ? I18n.t("ui.main.toolbar.backupData")
+                : String.join(", ", backup.unsaved);
+
+            this.model.logf("ui.update.errorBackup", why);
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorBackup", why)));
+
+            return;
+        }
+
+        this.model.logf("ui.infoBackupCompleteSavedTo", backup.archive.getAbsolutePath());
+
+        javax.swing.SwingUtilities.invokeLater(() -> closeForTheUpdate(jar, download));
+    }
+
+    /**
+     * The last step of Download & Update (FR-125): leaves through the application's own exit, which settles the open
+     * editors and saves the locomotive database and the window state, with the updater as its last act.
+     *
+     * Asked again first: the download and the backup took time, and a run may have started meanwhile.
+     *
+     * @param jar the running jar
+     * @param download the checked download
+     */
+    private void closeForTheUpdate(final File jar, final File download)
+    {
+        final String wait = whyAnUpdateMustWait(this.model, this.stagingFlowActive || isAutonomyBusy());
+
+        if (wait != null)
+        {
+            JOptionPane.showMessageDialog(this, wait);
+
+            return;
+        }
+
+        this.model.logf("ui.update.logClosing", LATEST_VERSION,
+            new File(jar.getParentFile(), JarUpdater.LOG_NAME).getAbsolutePath());
+
+        this.updateOnExit = new PendingUpdate(jar, download);
+
+        WindowClosed(null);
+
+        // Only reached when TrainControl did not close: an editor's Cancel, or the trains question answered No.  (An
+        // updater that could not start has already said so, and taken the update back.)
+        if (this.updateOnExit != null)
+        {
+            this.updateOnExit = null;
+
+            JOptionPane.showMessageDialog(this, I18n.f("ui.update.cancelled", download.getName()));
+        }
+    }
+
+    /**
+     * An update waiting for the exit: the jar to replace and the download to replace it with (FR-125).
+     */
+    private static final class PendingUpdate
+    {
+        final File jar;
+        final File download;
+
+        PendingUpdate(File jar, File download)
+        {
+            this.jar = jar;
+            this.download = download;
+        }
+    }
 
     private void powerOffStartupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_powerOffStartupActionPerformed
         if (((JRadioButtonMenuItem) evt.getSource()).isSelected())  

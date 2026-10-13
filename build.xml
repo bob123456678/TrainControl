@@ -567,6 +567,8 @@
         <test-one-class class="testSwingSpeaksOurLanguage"/>
         <test-one-class class="testDeleteAsksWhichConfiguration"/>
         <test-one-class class="testTwoYsMakeACrossing"/>
+        <test-one-class class="testTheUpdaterSwapsTheJar"/>
+        <test-one-class class="testTheUpdateQuestion"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

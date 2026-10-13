@@ -17,6 +17,9 @@ public class TrainControl
      */
     public static void main(String[] args)
     {            
+        // Kept for an update, which starts the new version with the same arguments (FR-125)
+        org.traincontrol.util.SelfUpdate.rememberArguments(args);
+
         try
         {
             boolean simulate = (args.length >= 3);
