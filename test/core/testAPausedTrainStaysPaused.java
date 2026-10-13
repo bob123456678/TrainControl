@@ -526,6 +526,92 @@ public class testAPausedTrainStaysPaused
             + " train's going into the setup");
     }
 
+    /**
+     * An edit session's Cancel puts the setup back and keeps what the railway changed alone while it was open (OB-343):
+     * the settings a fold took from the railway are the railway's, not the edit's, to undo.
+     *
+     * The setup is snapshotted and an edit session begun; a pause made on the railway is folded in; an edit of the setup's
+     * own is made; and the snapshot is put back.  The pause stays and the edit goes.  Outside an edit session, putting a
+     * snapshot back is exactly that.
+     *
+     * MUTATION: leave what the fold took out of the restore, or keep the edit, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAnEditSessionsRestoreKeepsWhatTheRailwayChangedAlone() throws Exception
+    {
+        MarklinLocomotive train = model.getLocByName(SETUP_TRAIN);
+
+        MarklinLocomotive other = model.getLocByName(ALPHA);
+
+        List<LayoutDiagram> pages = new ArrayList<>();
+
+        for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
+
+        AutonomySession session = new AutonomySession(sandbox.getFolder());
+
+        session.open(pages);
+
+        String configuration = session.getStore().getActiveConfiguration();
+
+        assertNotNull(configuration, "precondition: his railway has no active configuration");
+
+        train.setAutonomyPaused(false);
+
+        session.setLocomotivesPaused(Collections.<String>emptyList(), false);
+
+        model.parseAuto(session.buildConfiguration());
+
+        Layout running = model.getAutoLayout();
+
+        JSONObject asBuilt = AutonomySession.globalsOf(new JSONObject(running.toJSON()));
+
+        JSONObject opened = session.snapshotSetup();
+
+        try
+        {
+            session.beginEditSession();
+
+            // THE RAILWAY ALONE: paused, and folded into the setup
+            train.setAutonomyPaused(true);
+
+            session.captureTheRailwaysSettings(running.toJSON(), configuration, asBuilt);
+
+            assertTrue(session.getPausedLocomotives().contains(SETUP_TRAIN), "precondition: the fold did not take the pause");
+
+            // AN EDIT OF THE SETUP'S OWN
+            session.setLocomotivesPaused(Collections.singletonList(ALPHA), true);
+
+            assertTrue(session.getPausedLocomotives().contains(ALPHA), "precondition: the edit was not made");
+
+            // CANCEL
+            session.restoreSetup(opened);
+
+            assertTrue(session.getPausedLocomotives().contains(SETUP_TRAIN), "Cancel took back a pause the railway made alone"
+                + " while the edit session was open");
+
+            assertFalse(session.getPausedLocomotives().contains(ALPHA), "Cancel kept an edit of the setup's own: "
+                + session.getPausedLocomotives());
+        }
+        finally
+        {
+            session.endEditSession();
+
+            train.setAutonomyPaused(false);
+
+            other.setAutonomyPaused(false);
+        }
+
+        // OUTSIDE AN EDIT SESSION a restore is the snapshot, whatever was folded before it
+        session.setLocomotivesPaused(Collections.singletonList(SETUP_TRAIN), true);
+
+        session.restoreSetup(opened);
+
+        assertFalse(session.getPausedLocomotives().contains(SETUP_TRAIN), "a restore outside an edit session kept what the"
+            + " snapshot did not have: " + session.getPausedLocomotives());
+    }
+
     // ------------------------------------------------------------------------------------------- fixtures
 
     /** Loads a configuration and returns the railway, asserting it built. */

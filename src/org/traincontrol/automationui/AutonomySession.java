@@ -3518,6 +3518,11 @@ public class AutonomySession
         // AND WHAT THE CARRY REMEMBERS, as the editor's Cancel will want it (RSA9-B2) - see `asTheEditBegan`
         asTheEditBegan = remembered();
 
+        // AND WHAT THE RAILWAY CHANGES ALONE FROM HERE, which Cancel keeps (OB-343) - see `takenFromTheRailway`
+        takenFromTheRailway = new LinkedHashMap<>();
+
+        pausesTakenFromTheRailway = new LinkedHashMap<>();
+
         return store.rememberBeforeEdit(store.snapshotSetup());
     }
 
@@ -3526,7 +3531,94 @@ public class AutonomySession
      */
     public boolean endEditSession()
     {
+        takenFromTheRailway = null;
+
+        pausesTakenFromTheRailway = null;
+
         return store.forgetBeforeEdit();
+    }
+
+    /**
+     * What the settings folds took from the railway while an edit session was open: configuration name, to the settings it
+     * took - the value, or JSON null where the railway stopped writing one - or null while no edit session is open
+     * (OB-343).
+     *
+     * **A fold's settings are the railway's facts, not the edit's.**  The Auto tab and the cards are live with an editor
+     * open, so a setting moved there and a train paused on its card change the railway alone, and the next in-editor rebuild
+     * folds them into the setup.  Cancel puts back the setup the editor opened with, which has none of them, and the rebuild
+     * after it then finds the railway it built unchanged - so Cancel undid what nobody had edited, whenever an edit between
+     * had replaced the railway.  `restoreSetup` writes these over what it puts back, the railway's last word on each
+     * setting, so Cancel undoes the edit and nothing else.
+     */
+    private java.util.Map<String, org.json.JSONObject> takenFromTheRailway;
+
+    /**
+     * The same for the paused trains, which are taken BY TRAIN: configuration name, to each train the railway's list gained
+     * or lost against the record of how the railway was built, and whether it is paused (OB-343).  A fold takes the
+     * railway's whole list, and that list holds the trains the editor's own ticks paused as well as the ones a card paused;
+     * the record already holds the ticks (`TrainControlUI.notePausesAsBuilt`), so what the railway's list has against it is
+     * the cards' alone - the only trains Cancel may keep.
+     */
+    private java.util.Map<String, java.util.Map<String, Boolean>> pausesTakenFromTheRailway;
+
+    /**
+     * Writes what the settings folds took from the railway since the edit session began over the setup just put back
+     * (OB-343; see `takenFromTheRailway`).
+     */
+    private void putBackWhatTheRailwayChangedAlone()
+    {
+        if (takenFromTheRailway == null) return;
+
+        for (Map.Entry<String, java.util.Map<String, Boolean>> pauses : pausesTakenFromTheRailway.entrySet())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(pauses.getKey());
+
+            if (configuration == null) continue;
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            if (globals == null)
+            {
+                globals = new org.json.JSONObject();
+
+                configuration.put("globals", globals);
+            }
+
+            Set<String> names = namesIn(globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+
+            for (Map.Entry<String, Boolean> pause : pauses.getValue().entrySet())
+            {
+                if (pause.getValue()) names.add(pause.getKey());
+                else names.remove(pause.getKey());
+            }
+
+            if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+            else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
+        }
+
+        for (Map.Entry<String, org.json.JSONObject> taken : takenFromTheRailway.entrySet())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(taken.getKey());
+
+            if (configuration == null) continue;
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            if (globals == null)
+            {
+                globals = new org.json.JSONObject();
+
+                configuration.put("globals", globals);
+            }
+
+            for (String key : taken.getValue().keySet())
+            {
+                Object value = taken.getValue().get(key);
+
+                if (org.json.JSONObject.NULL.equals(value)) globals.remove(key);
+                else globals.put(key, copyOfSetting(value));
+            }
+        }
     }
 
     /**
@@ -3603,6 +3695,9 @@ public class AutonomySession
         if (was == null) return true;
 
         store.restoreSetup(was);
+
+        // AND WHAT THE RAILWAY CHANGED ALONE while the edit session was open stays changed (OB-343)
+        putBackWhatTheRailwayChangedAlone();
 
         // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move (RSA7-B3, RSA8-B2) - the legs
         // are the snapshot's
@@ -7002,8 +7097,9 @@ public class AutonomySession
      * how it was built, the setup's older answer stood, and the rebuild paused the train again.  A rebuild builds the record
      * again, so it matters only where none follows; and it holds for every setting alike, not only the paused trains.  A
      * door that may put the setup back after a fold keeps the record beside its snapshot of the setup and puts it back with
-     * it (`TrainControlUI.noteSettingsAsBuilt`; the old-file import, the editor's undo point): the record must never say the
-     * setup has what a rollback took away.
+     * it (`TrainControlUI.noteSettingsAsBuilt`; the old-file import): the record must never say the setup has what a
+     * rollback took away.  An edit session's Cancel is the other way round: what a fold takes is the railway's, and Cancel
+     * keeps it (`beginEditSession`).
      *
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
@@ -7042,6 +7138,9 @@ public class AutonomySession
 
             globals.put(key, now.get(key));
 
+            // what an edit session's Cancel keeps (OB-343), read against the record before the record follows
+            takenFromTheRailway(configurationName, key, now.get(key), asBuilt == null ? null : asBuilt.opt(key));
+
             // the railway's and the setup's both now: the record follows (OB-343)
             if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
         }
@@ -7056,11 +7155,82 @@ public class AutonomySession
 
                 globals.remove(key);
 
+                takenFromTheRailway(configurationName, key, org.json.JSONObject.NULL, asBuilt.opt(key));
+
                 asBuilt.remove(key);
             }
         }
 
         dirty = true;
+    }
+
+    /**
+     * Notes a setting a fold took from the railway while an edit session is open (see `takenFromTheRailway`).
+     *
+     * @param configurationName the configuration folded into
+     * @param key the setting
+     * @param value the railway's value, or JSON null where it stopped writing one
+     * @param recorded the value the record of how the railway was built had for it, or null
+     */
+    private void takenFromTheRailway(String configurationName, String key, Object value, Object recorded)
+    {
+        if (takenFromTheRailway == null) return;
+
+        if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
+        {
+            Set<String> before = namesIn(recorded);
+            Set<String> after = namesIn(value);
+
+            java.util.Map<String, Boolean> pauses = pausesTakenFromTheRailway.get(configurationName);
+
+            if (pauses == null)
+            {
+                pauses = new java.util.TreeMap<>();
+
+                pausesTakenFromTheRailway.put(configurationName, pauses);
+            }
+
+            for (String name : after)
+            {
+                if (!before.contains(name)) pauses.put(name, Boolean.TRUE);
+            }
+
+            for (String name : before)
+            {
+                if (!after.contains(name)) pauses.put(name, Boolean.FALSE);
+            }
+
+            return;
+        }
+
+        value = copyOfSetting(value);
+
+        org.json.JSONObject taken = takenFromTheRailway.get(configurationName);
+
+        if (taken == null)
+        {
+            taken = new org.json.JSONObject();
+
+            takenFromTheRailway.put(configurationName, taken);
+        }
+
+        taken.put(key, value);
+    }
+
+    /** The names in a list of trains as the setup keeps it, sorted; none for anything else. */
+    private static Set<String> namesIn(Object list)
+    {
+        Set<String> names = new java.util.TreeSet<>();
+
+        if (list instanceof org.json.JSONArray)
+        {
+            for (Object name : (org.json.JSONArray) list)
+            {
+                if (name instanceof String) names.add((String) name);
+            }
+        }
+
+        return names;
     }
 
     /** A setting's value as a copy, so the record of how the railway was built never shares an array with the setup's. */

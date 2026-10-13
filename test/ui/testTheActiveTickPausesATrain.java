@@ -1306,6 +1306,166 @@ public class testTheActiveTickPausesATrain
         }
     }
 
+    /**
+     * The editor's Cancel keeps what the railway changed alone while the editor was open, whatever was rebuilt between, and
+     * undoes what the editor changed (OB-343).
+     *
+     * With the editor open the Auto tab and the cards are live: a setting is moved and a train paused, on the railway alone.
+     * An edit in the editor then rebuilds the railway and REPLACES it, folding what the railway changed into the setup first.
+     * Cancel restores the setup the editor opened with - which has none of that - and the rebuild it makes found the new
+     * railway unchanged since it was built, so the setting and the pause went back with the edit.
+     *
+     * The edit here is another train's tick: Cancel must undo it, and keep the setting and the pause.
+     *
+     * MUTATION: leave what the folds took from the railway out of what Cancel puts back, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorsCancelKeepsWhatTheRailwayChangedAloneWhateverWasRebuiltBetween() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        final int[] delayAsFound = {-1};
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            editor = openTheEditor();
+
+            final Layout opened = railway();
+            final int delay = opened.getMinDelay();
+            final int moved = delay + 1 <= opened.getMaxDelay() ? delay + 1 : Math.max(0, delay - 1);
+
+            delayAsFound[0] = delay;
+
+            assertNotEquals(moved, delay, "precondition: the minimum delay cannot be moved");
+
+            // THE RAILWAY ALONE CHANGES with the editor open: a setting moved on the Auto tab, a train paused by its card
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    opened.setMinDelay(moved);
+                }
+                catch (Exception cannot)
+                {
+                    throw new IllegalStateException(cannot);
+                }
+            });
+
+            pressTheCardsButton(card, true);
+
+            // AN EDIT IN THE EDITOR whose rebuild replaces the railway
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            clickTheEditorsTick(editorsPanel(editor), label);
+
+            settleTheRebuild();
+
+            assertNotSame(railway(), opened, "precondition: the editor's rebuild did not replace the railway");
+
+            assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " in the editor did not pause "
+                + HIS_TRAIN);
+
+            assertEquals(railway().getMinDelay(), moved, "precondition: the rebuilt railway lost the moved setting");
+
+            // CANCEL
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertEquals(railway().getMinDelay(), moved, "the setting moved on the Auto tab while the editor was open went"
+                + " back with the editor's Cancel (OB-343)");
+
+            assertPausedEverywhere(card, true, "after the editor's Cancel, a rebuild between having replaced the railway");
+
+            assertFalse(train.isAutonomyPaused(), "the editor's own tick of " + HIS_TRAIN + " was kept by its Cancel");
+
+            assertFalse(session.getPausedLocomotives().contains(HIS_TRAIN), "the editor's own tick of " + HIS_TRAIN + " is"
+                + " still in the setup after its Cancel: " + session.getPausedLocomotives());
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            Layout now = railway();
+
+            if (now != null && delayAsFound[0] >= 0) now.setMinDelay(delayAsFound[0]);
+
+            session.restoreSetup(asFound);
+
+            theNextSetupGestureRebuilds();
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * The mirror (OB-343): a tick in the editor whose rebuild was refused is undone by Cancel.
+     *
+     * A refused rebuild leaves the railway running, the train paused and the setup and the record of how the railway was built
+     * with the tick.  Cancel restores the setup the editor opened with; the record, still holding the tick, says the railway
+     * is as the setup last agreed, so the rebuild builds from the restored setup and the tick is undone - as it is when the
+     * rebuild replaced the railway.  Put back with the setup (as the record was for a short while), the record read the tick
+     * as a change the railway had made alone and kept it.
+     *
+     * The refusal is stood in for by its effects: the door's own write, with no rebuild after it, which is all a refused
+     * build leaves of a tick (it needs a setup the graph refuses, which a claim cannot make cheaply).
+     *
+     * MUTATION: put the record back with the setup when Cancel restores it, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorsCancelUndoesATickWhoseRebuildWasRefused() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            editor = openTheEditor();
+
+            final Layout opened = railway();
+
+            SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, train, false));
+
+            assertTrue(train.isAutonomyPaused() && session.getPausedLocomotives().contains(HIS_TRAIN), "precondition: the"
+                + " door did not pause " + HIS_TRAIN + " and list it");
+
+            assertSame(railway(), opened, "precondition: the railway was replaced");
+
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertFalse(train.isAutonomyPaused(), "the tick made in the editor, whose rebuild was refused, was kept by the"
+                + " editor's Cancel (OB-343)");
+
+            assertFalse(session.getPausedLocomotives().contains(HIS_TRAIN), "the tick is still in the setup after Cancel: "
+                + session.getPausedLocomotives());
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+        }
+    }
+
     /** The editor's right-click on BottomMainB built and the tick on it clicked, as the editor's own menu does. */
     private static void clickTheEditorsTick(final AutonomyEditorPanel panel, final String label) throws Exception
     {

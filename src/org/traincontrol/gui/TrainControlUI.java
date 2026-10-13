@@ -4820,8 +4820,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The record of how the railway was built as it stood, and the railway it describes: what a door that may put the setup
-     * back keeps beside its snapshot of the setup (OB-343).
+     * The record of how the railway was built as it stood, and the railway it describes: what the old-file import keeps beside
+     * its snapshot of the setup (OB-343).
      */
     static final class SettingsAsBuiltNote
     {
@@ -4837,8 +4837,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Notes the record of how the railway was built, for a door that takes a snapshot of the setup it may put back - an
-     * import, the editor's undo point (OB-343).
+     * Notes the record of how the railway was built, for a door that takes a snapshot of the setup it may put back (OB-343): the
+     * old-file import, whose rollback is the whole of its undo.  (The editor's Cancel is not this: it keeps what the railway
+     * changed alone, which the session holds - see `AutonomySession.beginEditSession`.)
      *
      * **THE RECORD IS WHAT THE RAILWAY AND THE SETUP LAST AGREED ON, so a rollback that puts the setup back puts the record
      * back with it.**  A fold takes what the railway changed into the setup and into the record (`captureTheRailwaysSettings`),

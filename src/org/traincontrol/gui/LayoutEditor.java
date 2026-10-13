@@ -456,9 +456,6 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private org.json.JSONObject autonomyAsOpened;
 
-    /** The record of how the railway was built when `autonomyAsOpened` was taken, which Cancel puts back with it (OB-343). */
-    private TrainControlUI.SettingsAsBuiltNote settingsAsBuiltAsOpened;
-
     /**
      * Whether the last `settleUnsavedWork` ended in the user choosing Discard.
      *
@@ -537,10 +534,6 @@ public class LayoutEditor extends PositionAwareJFrame
     private void takeTheUndoPoint(org.traincontrol.automationui.AutonomySession live)
     {
         this.autonomyAsOpened = live == null ? null : live.snapshotSetup();
-
-        // AND THE RECORD OF HOW THE RAILWAY WAS BUILT, which the folds an in-editor rebuild makes update; Cancel puts the
-        // setup back and the record with it (OB-343)
-        this.settingsAsBuiltAsOpened = live == null ? null : parent.noteSettingsAsBuilt();
 
         this.autonomySessionForTheNote = live;
 
@@ -642,9 +635,6 @@ public class LayoutEditor extends PositionAwareJFrame
         else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
         else failed = null;
 
-        // THE RECORD OF HOW THE RAILWAY WAS BUILT WITH THE SETUP (OB-343), before the rebuild below folds against it
-        if (this.autonomyAsOpened != null && autonomy != null) parent.putSettingsAsBuiltBack(this.settingsAsBuiltAsOpened);
-
         // THE RAILWAY FOLLOWS AT ONCE, before the window goes (RSA26-C1, WKV-B2).  It was rebuilt after every gesture,
         // so it still carries the edit, and every door that folds it into the configuration - Export, New
         // Configuration, the exit - writes what it carries.  Left to the hand-over posted after the window closes, a
@@ -673,11 +663,7 @@ public class LayoutEditor extends PositionAwareJFrame
             parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
         }
 
-        // AND THE RECORD OF HOW THE RAILWAY WAS BUILT WITH THE SETUP (OB-343)
-        if (autonomy != null) parent.putSettingsAsBuiltBack(this.settingsAsBuiltAsOpened);
-
         this.autonomyAsOpened = null;
-        this.settingsAsBuiltAsOpened = null;
     }
 
     private void rememberAutonomy(org.traincontrol.automationui.AutonomySession autonomy)
@@ -6925,7 +6911,6 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 org.traincontrol.automationui.AutonomySession saved = parent.getAutonomySession();
 
                 this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
-                this.settingsAsBuiltAsOpened = saved == null ? null : parent.noteSettingsAsBuilt();
 
                 return true;
             }
