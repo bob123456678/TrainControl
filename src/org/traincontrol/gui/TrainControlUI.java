@@ -2706,7 +2706,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     // by name: store-active can point elsewhere after a refused load
                     session.captureFromLayout(this.model.getAutoLayout().toJSON(),
-                        this.activeDiagramConfiguration);
+                        this.activeDiagramConfiguration, settingsAsBuiltFor(this.model.getAutoLayout()));
 
                     // WITHOUT reconciling.  This is the save on the way out, and the session holds the
                     // LIVE diagram objects the track editor works on - so if an editor was open, or
@@ -3404,7 +3404,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 autonomySession.captureWhatTheRailwayOwns(railway, activeDiagramConfiguration, settingsAsBuiltFor(folding));
             }
-            else autonomySession.captureFromLayout(railway, activeDiagramConfiguration);
+            else autonomySession.captureFromLayout(railway, activeDiagramConfiguration, settingsAsBuiltFor(folding));
 
             // Written, not reconciled.  This runs because the diagram is being REPLACED - a
             // re-download, or an editor closing - and on the editor path the pages this session holds
@@ -4764,9 +4764,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * @param railway a railway
-     * @return its settings as it was built, or null where this window does not know them
+     * @return its settings as it was built, or null where this window does not know them; the folds change it in place to
+     *         what they take into the setup (OB-343)
      */
-    private org.json.JSONObject settingsAsBuiltFor(Object railway)
+    org.json.JSONObject settingsAsBuiltFor(Object railway)
     {
         return railway != null && railway == settingsBuiltFor ? settingsAsBuilt : null;
     }

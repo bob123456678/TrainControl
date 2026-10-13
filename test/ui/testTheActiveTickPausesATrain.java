@@ -28,6 +28,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * On the frozen copy of Adam's railway, with his own 75 407 DB on BottomMainB and nothing else standing.
  *
+ * THE TRAINS ARE NOT ASKED OF HIS DATABASE (C1).  The claims use about a dozen trains by name, and a database without one
+ * turned the class red.  Each the loaded database lacks is made for the class, in memory, through the model's own door, and
+ * taken out again when the class ends; the class checks that it wrote no locomotive database file.
+ *
  * The same pause is what Bulk Tools' Activate All Trains and Deactivate All Trains do for every train, and what the Auto
  * tab's locomotive commands tab sorts its cards by (FR-126; Adam: "a bulk tool to mass activate and mass deactivate all
  * trains", and "upon opening the locomotive autonomy commands tab, re-sort them to show active first, then inactive, then
@@ -66,6 +70,12 @@ public class testTheActiveTickPausesATrain
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+        // THE DATABASE FILE AS IT IS BEFORE ANYTHING HERE TOUCHES THE MODEL, for the check at the end that this class wrote
+        // none of it (C1)
+        databaseFile = new java.io.File(org.traincontrol.util.Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
+        databaseModified = databaseFile.lastModified();
+        databaseLength = databaseFile.length();
+
         model = init(null, true, true, false, true);
         model.setNetworkCommState(false);
 
@@ -81,6 +91,8 @@ public class testTheActiveTickPausesATrain
         if (session == null) throw new SkipException("no autonomy setup on this railway");
 
         assertNotNull(railway(), "the frozen railway built no autonomy layout");
+
+        makeTheTrainsTheDatabaseLacks();
 
         train = model.getLocByName(HIS_TRAIN);
 
@@ -123,8 +135,113 @@ public class testTheActiveTickPausesATrain
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            try
+            {
+                removeTheTrainsMade();
+            }
+            finally
+            {
+                try
+                {
+                    assertTheDatabaseFileWasNotWritten();
+                }
+                finally
+                {
+                    if (sandbox != null) sandbox.close();
+                }
+            }
         }
+    }
+
+    // ----------------------------------------------------------- the trains these claims use (C1)
+
+    /** The train the paused-grey claim stands on a square its facing cannot be held on. */
+    private static final String STRAY = "BR 10 001";
+
+    /** The first address of the trains made for the class, one each: nobody's but this class's. */
+    private static final int FIRST_ADDRESS = 3401;
+
+    /** The trains the class made because the database it ran against lacked them, by name. */
+    private static final List<String> made = new ArrayList<>();
+
+    /** The locomotive database file as the class began, to show that the class did not write it. */
+    private static java.io.File databaseFile;
+
+    private static long databaseModified;
+
+    private static long databaseLength;
+
+    /** Every train the claims use, by name. */
+    private static List<String> trainsNeeded()
+    {
+        List<String> names = new ArrayList<>();
+
+        names.add(HIS_TRAIN);
+
+        for (String[] each : CROWD) names.add(each[0]);
+
+        names.add(NOWHERE);
+        names.add(UNPLACED_PAUSED);
+        names.add(UNPLACED_GOING);
+        names.add(STRAY);
+
+        return names;
+    }
+
+    /**
+     * Makes each train the claims use that the database this class runs against does not have (C1): the class does not ask
+     * Adam's database for ten trains by name, which turned it red on a database without one.  In memory only, through the
+     * model's own door; nothing here or in a claim saves the model - that is the window closing and the Backup Data menu
+     * item, neither of which is used - and `removeTheTrainsMade` takes them out before the class ends all the same.
+     */
+    private static void makeTheTrainsTheDatabaseLacks()
+    {
+        int address = FIRST_ADDRESS;
+
+        for (String name : trainsNeeded())
+        {
+            if (model.getLocByName(name) == null)
+            {
+                model.newMM2Locomotive(name, address++);
+
+                made.add(name);
+            }
+        }
+    }
+
+    /**
+     * Takes the trains made for the class out of the model, with the window's own repair of the setup that names them: on
+     * the event thread, where the window's repair of the setup belongs.  Those the database already had are left.
+     */
+    private static void removeTheTrainsMade() throws Exception
+    {
+        if (model == null || made.isEmpty()) return;
+
+        final List<String> gone = new ArrayList<>(made);
+
+        made.clear();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (String name : gone) model.deleteLoc(name);
+        });
+    }
+
+    /**
+     * Shows that the class did not write the locomotive database (C1): the file the application reads - the folder this run
+     * was given, or the project's own - has the length and the time it had before the model was started.  The model saves
+     * only when the window closes or Backup Data is chosen, and the class does neither; this fails the class if that ever
+     * stops being so, with the trains made for it in the model.
+     */
+    private static void assertTheDatabaseFileWasNotWritten()
+    {
+        if (databaseFile == null) return;
+
+        assertEquals(databaseFile.length(), databaseLength, "the locomotive database " + databaseFile + " changed size"
+            + " while this class ran: something saved the model, with the trains made for the class in it");
+
+        assertEquals(databaseFile.lastModified(), databaseModified, "the locomotive database " + databaseFile + " was"
+            + " written while this class ran: something saved the model, with the trains made for the class in it");
     }
 
     /** His train set going again, so a claim that fails part way leaves the next one nothing paused. */
@@ -759,30 +876,9 @@ public class testTheActiveTickPausesATrain
 
             final Locomotive card = model.getLocByName(CARD_TRAIN);
 
-            // THE EDITOR, as Autonomy > Edit Autonomy > the page opens it
-            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(mainB.getPage()));
+            editor = openTheEditor();
 
-            for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
-            {
-                Thread.sleep(100);
-
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) editor = window;
-                }
-            }
-
-            assertNotNull(editor, "the autonomy editor did not open on " + mainB.getPage());
-
-            for (int turn = 0; turn < 6; turn++) pump();
-
-            java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
-
-            panelField.setAccessible(true);
-
-            final AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
-
-            assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
+            final AutonomyEditorPanel panel = editorsPanel(editor);
 
             String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
 
@@ -812,6 +908,176 @@ public class testTheActiveTickPausesATrain
                 + HIS_TRAIN + " going");
 
             assertPausedEverywhere(card, false, "after ticking " + label + " in the editor");
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * The autonomy editor, opened as Autonomy > Edit Autonomy > the page opens it.  Opening it folds the running railway
+     * into the setup, whole, with no rebuild after.
+     */
+    private static java.awt.Window openTheEditor() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(mainB.getPage()));
+
+        for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) editor = window;
+            }
+        }
+
+        assertNotNull(editor, "the autonomy editor did not open on " + mainB.getPage());
+
+        for (int turn = 0; turn < 6; turn++) pump();
+
+        return editor;
+    }
+
+    /** The autonomy panel of an editor window. */
+    private static AutonomyEditorPanel editorsPanel(java.awt.Window editor) throws Exception
+    {
+        java.lang.reflect.Field panelField = editor.getClass().getDeclaredField("autonomyPanel");
+
+        panelField.setAccessible(true);
+
+        AutonomyEditorPanel panel = (AutonomyEditorPanel) panelField.get(editor);
+
+        assertNotNull(panel, "precondition: the editor opened without its autonomy panel");
+
+        return panel;
+    }
+
+    /**
+     * A fold of the railway into the setup that no rebuild follows leaves how the railway was built behind (OB-343): the
+     * editor opens on the running railway's settings, whole, and its cards stay pressable - the editor is not modal.
+     *
+     * The railway was built with nobody paused, a card pauses a train, the editor opens and takes the pause into the setup;
+     * the card then sets the train going, and the railway's list is empty again, the same as when it was built.  Taken to
+     * be the railway unchanged since then, the setup's list - which now names the train - stood at the next setup gesture's
+     * rebuild, and the train was paused again.
+     *
+     * MUTATION: leave the record of how the railway was built as it was when a fold writes the railway's settings into the
+     * setup, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPauseTheEditorOpeningTookIntoTheSetupIsUndoneByItsCardForGood() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            // BUILT WITH NOBODY PAUSED
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            // PAUSED BY ITS CARD'S BUTTON: the train alone
+            pressTheCardsButton(card, true);
+
+            assertFalse(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the setup already lists "
+                + CARD_TRAIN);
+
+            // THE EDITOR OPENS: the fold takes the pause into the setup, and nothing rebuilds after it
+            editor = openTheEditor();
+
+            assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: opening the editor did not fold"
+                + " the railway's pause of " + CARD_TRAIN + " into the setup: " + session.getPausedLocomotives());
+
+            // SET GOING BY ITS CARD'S BUTTON: the railway lists nobody again, as when it was built
+            pressTheCardsButton(card, false);
+
+            // A SETUP GESTURE'S REBUILD
+            theNextSetupGestureRebuilds();
+
+            assertPausedEverywhere(card, false, "after the editor opened and took its pause into the setup");
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * The mirror, and a tick on another train in that state (OB-343): the railway was built with a train paused, the card
+     * sets it going, the editor opens and takes that into the setup, the card pauses it again - the railway's list is the
+     * list it was built with - and another train's tick in the editor, with the rebuild it asks for, must not set it going.
+     *
+     * MUTATION: leave the record of how the railway was built as it was when a fold writes the railway's settings into the
+     * setup, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPauseOnItsCardAfterTheEditorOpenedSurvivesAnotherTrainsTick() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            // BUILT WITH THE TRAIN PAUSED: through its own tick, and the rebuild after it
+            String cardsLabel = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
+
+            javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), cardsLabel);
+
+            assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no "
+                + cardsLabel);
+
+            click(own);
+
+            theNextSetupGestureRebuilds();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            assertTrue(card.isAutonomyPaused() && session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: "
+                + CARD_TRAIN + " was not built paused");
+
+            rebuildTheCards();
+
+            // SET GOING BY ITS CARD'S BUTTON, and the editor opens: the fold takes that into the setup
+            pressTheCardsButton(card, false);
+
+            editor = openTheEditor();
+
+            assertFalse(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: opening the editor did not fold"
+                + " the railway's " + CARD_TRAIN + ", going, into the setup: " + session.getPausedLocomotives());
+
+            // PAUSED AGAIN BY ITS CARD'S BUTTON: the railway lists what it was built with
+            pressTheCardsButton(card, true);
+
+            // ANOTHER TRAIN UNTICKED IN THE EDITOR
+            String label = I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN);
+
+            clickTheEditorsTick(editorsPanel(editor), label);
+
+            settleTheRebuild();
+
+            assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " in the editor did not pause "
+                + HIS_TRAIN);
+
+            assertPausedEverywhere(card, true, "after the editor opened, and " + label + " was unticked in it");
         }
         finally
         {
@@ -1843,7 +2109,7 @@ public class testTheActiveTickPausesATrain
     @Test
     public void testThePausedGreyOfATrainOnNoPointFollowsTheTools() throws Exception
     {
-        final String stray = "BR 10 001";
+        final String stray = STRAY;
 
         try
         {

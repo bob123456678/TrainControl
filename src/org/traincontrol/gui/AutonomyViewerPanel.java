@@ -844,8 +844,9 @@ public class AutonomyViewerPanel extends JPanel
             {
                 org.traincontrol.automation.Layout folding = ui.getModel().getAutoLayout();
 
+                // AND ITS SETTINGS AS BUILT FOLLOW (OB-343): a build the load then declines leaves this railway running
                 session().captureFromLayout(folding.toJSON(folding.getLastPointsReached()),
-                    ui.getActiveDiagramConfiguration());
+                    ui.getActiveDiagramConfiguration(), ui.settingsAsBuiltFor(folding));
             }
             catch (Exception e)
             {
@@ -1447,7 +1448,8 @@ public class AutonomyViewerPanel extends JPanel
             {
                 try
                 {
-                    session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into);
+                    session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into,
+                        ui.settingsAsBuiltFor(ui.getModel().getAutoLayout()));
 
                     captured = true;
                 }

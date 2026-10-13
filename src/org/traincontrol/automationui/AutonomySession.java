@@ -6568,7 +6568,21 @@ public class AutonomySession
      */
     public void captureFromLayout(String layoutJson, String configurationName)
     {
-        capture(layoutJson, configurationName, false);
+        capture(layoutJson, configurationName, false, null);
+    }
+
+    /**
+     * The same, bringing the window's record of how the railway was built up to date (OB-343): the fold writes every
+     * setting the railway has into the setup, so the two then agree about all of them, and the record - what they last
+     * agreed on - is the railway's settings as they stand.  See `captureTheRailwaysSettings` for why it matters.
+     *
+     * @param layoutJson what the running Layout serialized to
+     * @param configurationName which configuration this layout's state belongs to
+     * @param asBuilt the railway's settings as it was built, changed in place to what the fold wrote; or null
+     */
+    public void captureFromLayout(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
+    {
+        capture(layoutJson, configurationName, false, asBuilt);
     }
 
     /**
@@ -6578,8 +6592,9 @@ public class AutonomySession
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
      * @param placementsOnly whether to write where the trains stand and nothing else
+     * @param asBuilt the railway's settings as it was built, changed in place to the settings written; or null
      */
-    private void capture(String layoutJson, String configurationName, boolean placementsOnly)
+    private void capture(String layoutJson, String configurationName, boolean placementsOnly, org.json.JSONObject asBuilt)
     {
         if (layoutJson == null || reducer == null || configurationName == null) return;
 
@@ -6880,7 +6895,18 @@ public class AutonomySession
         }
 
         // and the top of the file: pace, speeds, and the rest of the settings panel
-        configuration.put("globals", globalsOf(root));
+        org.json.JSONObject globals = globalsOf(root);
+
+        configuration.put("globals", globals);
+
+        // AND THE RECORD OF HOW THE RAILWAY WAS BUILT IS THEN THE RAILWAY'S SETTINGS (OB-343): every one was just written
+        // into the setup, so the two agree about all of them.  See `captureTheRailwaysSettings`.
+        if (asBuilt != null)
+        {
+            for (String key : new ArrayList<>(asBuilt.keySet())) asBuilt.remove(key);
+
+            for (String key : globals.keySet()) asBuilt.put(key, copyOfSetting(globals.get(key)));
+        }
 
         dirty = true;
     }
@@ -6913,7 +6939,7 @@ public class AutonomySession
      */
     public void captureWhatTheRailwayOwns(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
     {
-        capture(layoutJson, configurationName, true);
+        capture(layoutJson, configurationName, true, null);
 
         captureTheRailwaysSettings(layoutJson, configurationName, asBuilt);
     }
@@ -6927,9 +6953,17 @@ public class AutonomySession
      * setup's own - a timetable put in place, a routing choice - and fold-everything wrote the railway's older value over
      * it.  A setting the railway has not touched is the setup's to say.
      *
+     * **And the record of how it was built is brought up to date with what is taken (OB-343).**  It is what the railway
+     * and the setup last agreed on, and a setting taken here is the railway's and the setup's both.  Left as it was, a fold
+     * that no rebuild follows - the editor opening, a load the build declined - left the record behind: a train the railway
+     * paused, taken into the setup, then set going again on its card, read to the next fold as the railway unchanged from
+     * how it was built, the setup's older answer stood, and the rebuild paused the train again.  A rebuild builds the record
+     * again, so it matters only where none follows; and it holds for every setting alike, not only the paused trains.
+     *
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
-     * @param asBuilt the railway's settings as it was built, or null to take every one of them
+     * @param asBuilt the railway's settings as it was built, or null to take every one of them; changed in place to the
+     *        settings taken
      */
     public void captureTheRailwaysSettings(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
     {
@@ -6962,19 +6996,36 @@ public class AutonomySession
             if ((pagesStale || squaresMoved) && "timetable".equals(key)) continue;
 
             globals.put(key, now.get(key));
+
+            // the railway's and the setup's both now: the record follows (OB-343)
+            if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
         }
 
         // AND ONE THE RAILWAY STOPPED WRITING (RSA21-C1): Simulate and the sequential flag are written only while on, so
         // turning one off left no key to compare - and the setup kept it on
         if (asBuilt != null)
         {
-            for (String key : asBuilt.keySet())
+            for (String key : new ArrayList<>(asBuilt.keySet()))
             {
-                if (!now.has(key)) globals.remove(key);
+                if (now.has(key)) continue;
+
+                globals.remove(key);
+
+                asBuilt.remove(key);
             }
         }
 
         dirty = true;
+    }
+
+    /** A setting's value as a copy, so the record of how the railway was built never shares an array with the setup's. */
+    private static Object copyOfSetting(Object value)
+    {
+        if (value instanceof org.json.JSONObject) return new org.json.JSONObject(value.toString());
+
+        if (value instanceof org.json.JSONArray) return new org.json.JSONArray(value.toString());
+
+        return value;
     }
 
     /** Whether two values of a setting are the same, as the railway writes them. */

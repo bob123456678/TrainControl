@@ -14127,7 +14127,8 @@ public class Layout
 
     /**
      * Every train the database has paused, by name and sorted (FR-117): the list `toJSON` writes under
-     * `PAUSED_LOCOMOTIVES`, and the window's settings as built take (RSA60-B1) - one answer for both.
+     * `PAUSED_LOCOMOTIVES`.  The window's settings as built used to take it too (RSA60-B1); since OB-343 they note only the
+     * trains a door has changed, and nothing but `toJSON` calls this.
      *
      * @param control the model, or null for none
      * @return the names, possibly none

@@ -135,9 +135,14 @@ public class DiagramMonitor
     public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains,
         java.util.Set<TileKey> paused)
     {
-        setTrainsOnNoPoint(trains);
-
+        // THE GREY BEFORE THE TRAINS IT IS DRAWN ON, and never an empty set between (OB-343; RSA60-C5).  A frame on the
+        // monitor's thread reads the trains and then asks of each whether it is paused, so the frame that reads the new trains
+        // finds the new set already there.  This used to write the trains through the one-argument form, which emptied the set
+        // first, and a frame between the two writes drew a paused train as one that runs.
         this.pausedOnNoPoint = paused == null ? Collections.<TileKey>emptySet() : new java.util.HashSet<>(paused);
+
+        this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, org.traincontrol.automationui.TilePorts.Side>()
+            : new LinkedHashMap<>(trains);
     }
 
     /**
@@ -147,10 +152,7 @@ public class DiagramMonitor
      */
     public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains)
     {
-        this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, org.traincontrol.automationui.TilePorts.Side>()
-            : new LinkedHashMap<>(trains);
-
-        this.pausedOnNoPoint = Collections.emptySet();
+        setTrainsOnNoPoint(trains, null);
     }
 
     /** The squares among the trains on no Point whose train is paused, drawn grey (RSA60-C5). */

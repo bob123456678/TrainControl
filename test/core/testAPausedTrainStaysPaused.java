@@ -440,6 +440,92 @@ public class testAPausedTrainStaysPaused
             + " paused in the setup after the fold");
     }
 
+    /**
+     * A fold brings the record of how the railway was built up to date with what it takes (OB-343): the record is what the
+     * railway and the setup last agreed on, and the settings a fold writes into the setup are the railway's and the setup's
+     * both.  Left behind, a pause the fold took, then undone on the railway, read to the next fold as the railway unchanged
+     * from how it was built - the same as the stale record - and the setup's older answer stood.
+     *
+     * The settings fold, the whole fold, and a setting the railway stopped writing, which the record loses too.
+     *
+     * MUTATION: leave the record as it was after a fold, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAFoldBringsTheRecordOfHowTheRailwayWasBuiltUpToDate() throws Exception
+    {
+        MarklinLocomotive train = model.getLocByName(SETUP_TRAIN);
+
+        List<LayoutDiagram> pages = new ArrayList<>();
+
+        for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
+
+        AutonomySession session = new AutonomySession(sandbox.getFolder());
+
+        session.open(pages);
+
+        String configuration = session.getStore().getActiveConfiguration();
+
+        assertNotNull(configuration, "precondition: his railway has no active configuration");
+
+        train.setAutonomyPaused(false);
+
+        session.setLocomotivesPaused(Collections.<String>emptyList(), false);
+
+        model.parseAuto(session.buildConfiguration());
+
+        Layout running = model.getAutoLayout();
+
+        JSONObject asBuilt = AutonomySession.globalsOf(new JSONObject(running.toJSON()));
+
+        assertFalse(asBuilt.has(PAUSED), "precondition: the railway was built with somebody paused");
+
+        // THE SETTINGS FOLD: a pause made on the railway is taken into the setup, and into the record
+        train.setAutonomyPaused(true);
+
+        session.captureTheRailwaysSettings(running.toJSON(), configuration, asBuilt);
+
+        assertTrue(session.getPausedLocomotives().contains(SETUP_TRAIN), "precondition: the fold did not take the pause into"
+            + " the setup");
+
+        assertEquals(names(asBuilt.optJSONArray(PAUSED)), Collections.singletonList(SETUP_TRAIN), "the fold took the pause"
+            + " into the setup and left the record of how the railway was built without it");
+
+        // SET GOING: the railway's list is empty again, as when it was built, and the fold must take that into the setup
+        train.setAutonomyPaused(false);
+
+        session.captureTheRailwaysSettings(running.toJSON(), configuration, asBuilt);
+
+        assertFalse(session.getPausedLocomotives().contains(SETUP_TRAIN), "a train paused and then set going on the railway"
+            + " is paused in the setup after the second fold");
+
+        assertFalse(asBuilt.has(PAUSED), "the record still lists a pause the railway has stopped writing");
+
+        // THE WHOLE FOLD: the record is the railway's settings as they stand
+        train.setAutonomyPaused(true);
+
+        session.captureFromLayout(running.toJSON(), configuration, asBuilt);
+
+        assertTrue(session.getPausedLocomotives().contains(SETUP_TRAIN), "precondition: the whole fold did not take the"
+            + " pause into the setup");
+
+        assertTrue(asBuilt.similar(AutonomySession.globalsOf(new JSONObject(running.toJSON()))), "the whole fold wrote the"
+            + " railway's settings into the setup and left the record of how it was built as it was: " + asBuilt);
+
+        // AND THE RECORD SHARES NOTHING WITH THE SETUP'S SETTINGS: changing one leaves the other
+        asBuilt.getJSONArray(PAUSED).put("Not A Train");
+
+        assertFalse(session.getPausedLocomotives().contains("Not A Train"), "the record and the setup's list are one array");
+
+        train.setAutonomyPaused(false);
+
+        session.captureFromLayout(running.toJSON(), configuration, asBuilt);
+
+        assertFalse(session.getPausedLocomotives().contains(SETUP_TRAIN), "precondition: the whole fold did not take the"
+            + " train's going into the setup");
+    }
+
     // ------------------------------------------------------------------------------------------- fixtures
 
     /** Loads a configuration and returns the railway, asserting it built. */
