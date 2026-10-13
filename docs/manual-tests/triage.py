@@ -1413,6 +1413,41 @@ def work_area(widget):
     return 0, 0, widget.winfo_screenwidth(), widget.winfo_screenheight()
 
 
+def on_a_screen(geometry):
+    """Whether a window saved at this geometry, "WxH+X+Y", would show on a connected monitor.
+
+    A window closed on a monitor since disconnected would otherwise open where nobody can see it, so a saved
+    position is checked before it is used (Adam, 2026-10-12).  Windows is asked whether either end of the title
+    bar is on a monitor; one end on screen is enough to see the window and drag it back.  Anywhere else, or if
+    asking fails, the geometry counts as on a screen, as it always did.  A geometry that does not parse is not.
+    """
+
+    match = re.match(r"^(\d+)x(\d+)(\+-?\d+|-\d+)(\+-?\d+|-\d+)$", geometry or "")
+
+    if not match:
+        return False
+
+    width = int(match.group(1))
+    x = int(match.group(3).lstrip("+"))     # Tk writes a negative offset as "+-1382"
+    y = int(match.group(4).lstrip("+"))
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        monitor_from_point = ctypes.windll.user32.MonitorFromPoint
+        monitor_from_point.argtypes = [wintypes.POINT, wintypes.DWORD]
+        monitor_from_point.restype = ctypes.c_void_p      # NULL comes back as None
+
+        for px in (x + 40, x + width - 40):
+            if monitor_from_point(wintypes.POINT(px, y + 10), 0):     # MONITOR_DEFAULTTONULL
+                return True
+
+        return False
+    except Exception:
+        return True
+
+
 class Triage(tk.Tk):
 
     def __init__(self):
@@ -1452,7 +1487,8 @@ class Triage(tk.Tk):
         # third instead - once; from then on its own size and dividers are remembered.
         geometry = self.state_.data.get("geometry")
 
-        if geometry and self.state_.data.get("layout") == LAYOUT:
+        # A position on a monitor since disconnected would open off screen, where nobody can see it.
+        if geometry and self.state_.data.get("layout") == LAYOUT and on_a_screen(geometry):
             self.geometry(geometry)
             self.after(200, self._restore_dividers)
         else:
