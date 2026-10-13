@@ -964,6 +964,57 @@ public class testDiagramLooksRight
     }
 
     /**
+     * An old "Point:" label is drawn as it was written, prefix and all (OB-344).
+     *
+     * The old autonomy wrote "Point:Bahnhof" straight onto the diagram. A layout served by the Central
+     * Station still carries those labels, and there is no setup there to turn them into captions, so the
+     * grid used to strip the marker and draw "Bahnhof", a name nobody typed. Adam, 2026-10-12: "stop
+     * stripping that prefix." A label is drawn as written unless autonomy has a caption for its square,
+     * and this one does not.
+     *
+     * The page is one square built in memory under a name no setup knows, so nothing on the operator's
+     * railway or in the fixture is touched and there is nothing to restore.
+     *
+     * MUTATION: putting back the branch that stripped the "Point:" prefix fails this with "Bahnhof".
+     *
+     * @throws Exception if Swing cannot build the grid
+     */
+    @Test
+    public void testAnOldPointLabelIsDrawnAsWritten() throws Exception
+    {
+        final String written = "Point:Bahnhof";
+
+        org.traincontrol.base.LayoutDiagram page =
+            new org.traincontrol.base.LayoutDiagram("OB-344 scratch page", 1, 1, null, null);
+
+        org.traincontrol.base.LayoutDiagramComponent label =
+            new org.traincontrol.base.LayoutDiagramComponent(
+                org.traincontrol.base.LayoutDiagramComponent.componentType.TEXT, 0, 0, 0, 0, 0, 0, null);
+
+        label.setLabel(written);
+
+        page.addComponent(label, 0, 0);
+
+        assertNull(ui.autonomyCaptionAt(new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), 0, 0)),
+            "the square has an autonomy caption, so this is not the case the claim is about");
+
+        java.awt.Container box = laidOut(page, 30);
+
+        java.util.List<String> drawn = new java.util.ArrayList<>();
+
+        for (java.awt.Component one : box.getComponents())
+        {
+            if (one instanceof org.traincontrol.gui.StationCaption)
+            {
+                drawn.add(((org.traincontrol.gui.StationCaption) one).getText());
+            }
+        }
+
+        assertEquals(drawn.size() == 1 ? drawn.get(0) : String.valueOf(drawn), written,
+            "an old Point: label is drawn without its prefix (OB-344)");
+    }
+
+    /**
      * How far apart two colours are, plainly.
      *
      * @param one a colour

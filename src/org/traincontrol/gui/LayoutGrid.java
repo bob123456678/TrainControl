@@ -35,14 +35,6 @@ public class LayoutGrid
     // Should the .text property be rendered in non-empty cells?
     public static final boolean ALLOW_TEXT_ANYWHERE = true;
     
-    // Prefix that denotes a station label
-    // Used to show autonomy locations on the layout
-    //
-    // Taken from the setup layer rather than declared here, so the side that decides whether a station
-    // HAS a label and the side that draws it cannot drift apart.  Every existing reference to this name
-    // still works; only where the string is defined has moved.
-    public static final String LAYOUT_STATION_PREFIX =
-        org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX;
     /**
      * A station with nothing standing on it.
      *
@@ -1720,25 +1712,12 @@ public class LayoutGrid
 
                             if (inEditor) labelColour = new Color(150, 150, 150);
                         }
-                        else if (own != null && own.startsWith(LAYOUT_STATION_PREFIX))
-                        {
-                            // A station label on a diagram autonomy cannot act on.
-                            //
-                            // These come from the old autonomy, which wrote "Point:Bahnhof" straight
-                            // onto the diagram, and they are still there on a layout served by the
-                            // Central Station - where there is no local folder, so no setup, so nothing
-                            // ever turns them into captions.  Drawn raw they showed the user an
-                            // internal marker they never typed and cannot remove from that machine.
-                            //
-                            // The name without its marker is what they meant by it, and is what the
-                            // caption would have said had autonomy been able to read it.
-                            text.setText(own.substring(LAYOUT_STATION_PREFIX.length()));
-
-                            if (autonomyEditor) labelColour = new Color(150, 150, 150);
-                        }
                         else
                         {
                             // Everything else: what the user wrote there.
+                            // This includes an old autonomy "Point:" label on a layout served by the Central
+                            // Station, which is drawn as written (OB-344; Adam, 2026-10-12: "stop stripping
+                            // that prefix.").
                             text.setText(own);
 
                             // Writing of their own, greyed while autonomy is being edited: it is still
