@@ -682,8 +682,18 @@ public class LayoutEditor extends PositionAwareJFrame
      * The sidebar has grown - a Diagram Size heading and its two buttons, and the autonomy column
      * when that mode is on - and at the old minimum the controls at the bottom of it were the first
      * thing to be squeezed out.
+     *
+     * THE RULE: the window never shrinks to a height that cuts off a control, at any diagram size.
+     * The last control in the right-hand column is Cancel, and the autonomy editor's status line
+     * under the findings is as low.  Measured at 100% display scaling, the column needs 705 pixels at
+     * Small (693 in the autonomy editor), 865 at Medium and 1005 at Large, and the floor is 630 plus
+     * this plus the growth per size.  At 50 that left Cancel 25 pixels short at Small in the track
+     * editor and 13 in the autonomy editor (OB-342; Adam, 2026-10-12: *"the min height of the autonomy
+     * editor window needs to be a few more pixels taller"*); at 80 it is 5 or more pixels clear at
+     * every size.  Both ways of setting the floor add it - `sizeForDiagram`, and the branch for a
+     * window whose size was remembered.
      */
-    private static final int EXTRA_MINIMUM_HEIGHT = 50;
+    private static final int EXTRA_MINIMUM_HEIGHT = 80;
 
     public static final int MAX_UNDO_HISTORY = 100;
     

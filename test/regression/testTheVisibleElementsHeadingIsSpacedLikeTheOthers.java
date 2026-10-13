@@ -30,6 +30,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * In both editors, because the plain one is where the column is right, and it has to stay right.
  *
+ * And the column is all there at the window's smallest height (OB-342): the floor under that height is what shows its
+ * last control.
+ *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
  *
  * @author Adam
@@ -143,6 +146,162 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         assertEquals(sizes.size(), 1, "the checkboxes under Visible Elements are not evenly spaced (OB-312) - track"
             + " editor " + track + ", autonomy editor " + autonomy);
+    }
+
+    /**
+     * The autonomy editor, shrunk as far as it will go, still shows every control (OB-342; Adam, 2026-10-12: *"It looks like
+     * the min height of the autonomy editor window needs to be a few more pixels taller"*).
+     *
+     * At Small, the window would shrink to 680 pixels and the column of tools needs 693 to show Cancel, the last control in
+     * it, and the status line under the findings (measured at 100% display scaling).  Asked at each of the three diagram
+     * sizes (Small, Medium, Large: the floor grows with the size), of every control outside the scroll panes, as wide as
+     * the layout needs so that the question is only about the height.
+     *
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheAutonomyEditorShowsEveryControlAtItsSmallestHeight() throws Exception
+    {
+        assertNothingIsCutOffAtTheSmallestHeight(true);
+    }
+
+    /**
+     * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels (OB-342).
+     *
+     * MUTATION: as above.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheTrackEditorShowsEveryControlAtItsSmallestHeight() throws Exception
+    {
+        assertNothingIsCutOffAtTheSmallestHeight(false);
+    }
+
+    private static void assertNothingIsCutOffAtTheSmallestHeight(boolean autonomy) throws Exception
+    {
+        int examined = 0;
+
+        for (int size : new int[] {30, 46, 60})
+        {
+            int[] floor = new int[1];
+
+            java.util.List<String> cut = cutOffAtTheSmallestHeight(autonomy, size, floor);
+
+            // A floor the screen holds down cannot be raised, and says nothing about the floor
+            if (cut == null) continue;
+
+            examined++;
+
+            assertTrue(cut.isEmpty(), "at its smallest height - " + floor[0] + " pixels, at diagram size " + size + " - the "
+                + (autonomy ? "autonomy" : "track diagram") + " editor cuts off controls, and nothing in the window can bring"
+                + " them back (OB-342" + (autonomy ? ", \"the min height of the autonomy editor window needs to be a few more"
+                + " pixels taller\"" : ", the same floor") + "): " + cut);
+        }
+
+        if (examined == 0) throw new SkipException("the screen is too short for the editor's smallest height at any size");
+    }
+
+    /**
+     * What an editor's window cuts off of its controls once it is shrunk to its smallest height, each as "Cancel: 13 of 23
+     * pixels"; null where the screen's height, not the editor's own floor, is what held the floor down.
+     *
+     * @param floor receives the smallest height the window allowed
+     */
+    private static java.util.List<String> cutOffAtTheSmallestHeight(final boolean autonomy, final int size, final int[] floor)
+    throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+        final java.util.List<String> out = new java.util.ArrayList<>();
+        final boolean[] heldDown = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, size, ui, 0);
+            built[0].render();
+            if (autonomy) built[0].setAutonomyMode(session);
+        });
+
+        try
+        {
+            for (int pass = 0; pass < 6; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    LayoutEditor editor = built[0];
+
+                    java.awt.GraphicsConfiguration screen = editor.getGraphicsConfiguration();
+
+                    java.awt.Insets taskbar = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(screen);
+
+                    floor[0] = editor.getMinimumSize().height;
+
+                    heldDown[0] = floor[0] >= screen.getBounds().height - taskbar.top - taskbar.bottom;
+
+                    // As wide as the layout needs, so that the width is not what cuts a control off
+                    editor.setSize(Math.max(editor.getMinimumSize().width, editor.getContentPane().getMinimumSize().width + 40),
+                        floor[0]);
+
+                    editor.validate();
+
+                    if (!((javax.swing.JButton) field(editor, "cancelButton")).isShowing())
+                    {
+                        out.add("precondition: Cancel is not showing, so nothing is asked of the controls");
+                    }
+
+                    cutOff(editor.getRootPane(), out);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+        }
+
+        return heldDown[0] ? null : out;
+    }
+
+    /**
+     * Every control showing under a container, outside the scroll panes, that its ancestors clip - the window's edge among
+     * them - with how much of it is missing.
+     */
+    private static void cutOff(Container in, java.util.List<String> out)
+    {
+        for (Component child : in.getComponents())
+        {
+            if (!child.isShowing()) continue;
+
+            String text = child instanceof AbstractButton ? ((AbstractButton) child).getText()
+                : child instanceof JLabel ? ((JLabel) child).getText() : null;
+
+            boolean control = child instanceof AbstractButton || child instanceof JComboBox
+                || (child instanceof JLabel && text != null && !text.isEmpty());
+
+            if (control && child instanceof javax.swing.JComponent)
+            {
+                javax.swing.JComponent each = (javax.swing.JComponent) child;
+
+                int missing = each.getHeight() - each.getVisibleRect().height;
+
+                if (missing > 0) out.add(child.getClass().getSimpleName() + (text == null ? "" : " '" + text + "'") + ": "
+                    + missing + " of " + each.getHeight() + " pixels");
+            }
+
+            // The controls inside a control are its own, and a scroll pane has a way to reach what it holds
+            if (child instanceof Container && !(child instanceof AbstractButton) && !(child instanceof JComboBox)
+                && !(child instanceof javax.swing.JScrollPane))
+            {
+                cutOff((Container) child, out);
+            }
+        }
     }
 
     /**
