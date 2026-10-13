@@ -699,13 +699,16 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * THE RULE: the window never shrinks to a height that cuts off a control, at any diagram size.
      * The last control in the right-hand column is Cancel, and the autonomy editor's status line
-     * under the findings is as low.  Measured at 100% display scaling, the column needs 705 pixels at
-     * Small (693 in the autonomy editor), 865 at Medium and 1005 at Large, and the floor is 630 plus
-     * this plus the growth per size.  At 50 that left Cancel 25 pixels short at Small in the track
-     * editor and 13 in the autonomy editor (OB-342; Adam, 2026-10-12: *"the min height of the autonomy
-     * editor window needs to be a few more pixels taller"*); at 80 it is 5 or more pixels clear at
-     * every size.  Both ways of setting the floor add it - `sizeForDiagram`, and the branch for a
-     * window whose size was remembered.  The floor's width has its own rule, stated at `sizeForDiagram`.
+     * under the findings is as low.  Measured at 125% display scaling - the 120 dpi this was built on -
+     * the column needs 705 pixels at Small (693 in the autonomy editor), 865 at Medium and 1005 at
+     * Large, and the floor is 630 plus this plus the growth per size.  At 50 that left Cancel 25 pixels
+     * short at Small in the track editor and 13 in the autonomy editor (OB-342; Adam, 2026-10-12: *"the
+     * min height of the autonomy editor window needs to be a few more pixels taller"*); at 80 it is 5 or
+     * more pixels clear at every size at 125%.  These are pixels and the window is not: the column
+     * needs 727 at Small at 150%, so the floor is also never below what the window's own layout asks
+     * for, which is how it follows the scale (OB-342; see `sizeForDiagram`).  Both ways of setting
+     * the floor add this - `sizeForDiagram`, and the branch for a window whose size was remembered.  The
+     * floor's width has its own rule, stated at `sizeForDiagram`.
      */
     private static final int EXTRA_MINIMUM_HEIGHT = 80;
 
@@ -6090,6 +6093,19 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      * has no minimum width and is cut with an ellipsis where the window is narrow, and not the
      * window's width forced to its sentence, which pushed the whole column off the right edge at the
      * smallest width (see `AutonomyEditorPanel.banner`).
+     *
+     * AT EVERY DISPLAY SCALE (OB-342): the numbers above are pixels, and the interface is scaled by
+     * the display (`TrainControlUI`'s `flatlaf.uiScale`, dpi / 96) - so the column needs 705 pixels at
+     * Small at 125% and 727 at 150%, 756 at 175% and 775 at 200%, and the floor stayed where it was and
+     * cut off Cancel and the status line by 17 pixels at 150%.  Scaling the pixels does not do: in
+     * proportion to 125% it would put the floor 125 pixels above what 150% needs and under what 100%
+     * needs, because most of the column is not scaled.  The window's own layout knows what it
+     * needs at any scale, in any language, so the floor is never below its minimum height plus the
+     * window's own chrome - the title bar and the borders, which the layout does not hold - and the
+     * fixed numbers stand where that is less.  Still clamped to the screen: where the screen is shorter
+     * than the floor, the window is the screen's height and the controls below that are out of reach, as
+     * for any window.  The width needs nothing of it: the column and the sidebar ask for 363 pixels at
+     * 125%, 386 at 150% and 446 at 200%, under the 700 of the smallest.
      */
     private void sizeForDiagram()
     {
@@ -6121,6 +6137,19 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             Math.min(high, usable.height)));
 
         pack();
+
+        // NEVER BELOW WHAT THE WINDOW'S OWN LAYOUT ASKS FOR (OB-342).
+        //
+        // The pixels above were found at one display scale.  The layout's minimum is what the column of tools needs
+        // at this one, with the sidebar, in this language; the chrome is what the layout does not hold, known now
+        // that pack() has given the window its peer.  The layout's minimum is a few pixels more than the controls
+        // need, which is the margin.
+        int asked = getContentPane().getMinimumSize().height + getHeight() - getContentPane().getHeight();
+
+        if (asked > getMinimumSize().height)
+        {
+            setMinimumSize(new Dimension(getMinimumSize().width, Math.min(asked, usable.height)));
+        }
 
         // Back on screen if the fit pushed it off the bottom or the right, which it can when the
         // window was already sitting near an edge - the size changed under a position chosen for the

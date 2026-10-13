@@ -153,7 +153,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      * 2026-10-12: *"It looks like the min height of the autonomy editor window needs to be a few more pixels taller"*).
      *
      * HEIGHT: at Small the window would shrink to 680 pixels and the column of tools needs 693 to show Cancel, the last
-     * control in it, and the status line under the findings (measured at 100% display scaling).
+     * control in it, and the status line under the findings (measured at 125%, the display this was built on).
      *
      * WIDTH: the status line is a label whose words are data, and its minimum width was its text's: 521 pixels in English
      * and 655 in German, so the window's layout would not go below 839 and 1004 with the sidebar and the whole tools column
@@ -161,11 +161,17 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
      * longer than any language's, put into the line, and the claim does not depend on the words of the railway it is asked
      * about.
      *
+     * SCALE (OB-342): the floor was in pixels and the window is not - at 150% the column needs 17 pixels more than at 125%
+     * and the floor did not move, so Cancel and the status line were cut off again.  Asked at 100%, 125% and 150%, which
+     * `TrainControlUI` sets from the display as dpi / 96 (`flatlaf.uiScale`, read when the look and feel is installed): here
+     * the property is set and the look and feel installed again, and put back at the end.
+     *
      * Asked at each of the three diagram sizes (Small, Medium, Large: the floor grows with the size), of every control
      * outside the scroll panes.
      *
-     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, or give the status line in `AutonomyEditorPanel` its
-     * text's width as its minimum again, and this fails.
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout asks for
+     * in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum again, and this
+     * fails.
      *
      * @throws Exception from the event thread or reflection
      */
@@ -178,7 +184,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     /**
      * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels (OB-342).
      *
-     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` back to 50, and this fails.
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` back to 50, or take out the floor the window's own layout asks for in
+     * `sizeForDiagram`, and this fails.
      *
      * @throws Exception from the event thread or reflection
      */
@@ -196,21 +203,52 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     {
         int examined = 0;
 
-        for (int size : new int[] {30, 46, 60})
+        String was = System.getProperty("flatlaf.uiScale");
+
+        try
         {
-            int[] floor = new int[2];
+            // 100%, 125% and 150% - where the floor, in pixels, was short (OB-342)
+            for (String scale : new String[] {"1.0", "1.25", "1.5"})
+            {
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    System.setProperty("flatlaf.uiScale", scale);
 
-            java.util.List<String> cut = cutOffAtTheSmallestSize(autonomy, size, floor);
+                    com.formdev.flatlaf.FlatLightLaf.setup();
+                });
 
-            // A floor the screen holds down cannot be raised, and says nothing about the floor
-            if (cut == null) continue;
+                assertEquals(com.formdev.flatlaf.util.UIScale.getUserScaleFactor(), Float.parseFloat(scale), 0.001f,
+                    "precondition: the interface did not take the scale " + scale + ", so nothing is asked of it");
 
-            examined++;
+                for (int size : new int[] {30, 46, 60})
+                {
+                    int[] floor = new int[2];
 
-            assertTrue(cut.isEmpty(), "at its smallest size - " + floor[0] + " by " + floor[1] + " pixels, at diagram size "
-                + size + " - the " + (autonomy ? "autonomy" : "track diagram") + " editor cuts off controls, and nothing in"
-                + " the window can bring them back (OB-342" + (autonomy ? ", \"the min height of the autonomy editor window"
-                + " needs to be a few more pixels taller\"" : ", the same floor") + "): " + cut);
+                    java.util.List<String> cut = cutOffAtTheSmallestSize(autonomy, size, floor);
+
+                    // A floor the screen holds down cannot be raised, and says nothing about the floor
+                    if (cut == null) continue;
+
+                    examined++;
+
+                    assertTrue(cut.isEmpty(), "at its smallest size - " + floor[0] + " by " + floor[1] + " pixels, at diagram"
+                        + " size " + size + " and an interface scaled to " + scale + " - the " + (autonomy ? "autonomy"
+                        : "track diagram") + " editor cuts off controls, and nothing in the window can bring them back (OB-342"
+                        + (autonomy ? ", \"the min height of the autonomy editor window needs to be a few more pixels taller\""
+                        : ", the same floor") + "): " + cut);
+                }
+            }
+        }
+        finally
+        {
+            // The scale the run began with, for the claims after this one
+            SwingUtilities.invokeAndWait(() ->
+            {
+                if (was == null) System.clearProperty("flatlaf.uiScale");
+                else System.setProperty("flatlaf.uiScale", was);
+
+                com.formdev.flatlaf.FlatLightLaf.setup();
+            });
         }
 
         if (examined == 0) throw new SkipException("the screen is too small for the editor's smallest size at any diagram size");
