@@ -247,6 +247,20 @@ public class AutonomyChecks
      */
     public static final String ARRIVAL_TRAPPED_NO_CLOSING = "autosetup.ui.checkArrivalTrappedNoClosing";
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
+
+    /**
+     * A station shown in more than one place on the track diagram (OB-341).
+     *
+     * Adam, 2026-10-12: *"add code to make this be an error in the autonomy validator (i.e. if someone edits the file by
+     * hand externally)"*.  Every door of the editor keeps one station to one caption (OB-256), so the diagram never names
+     * a station twice with nothing to say which is current; a setup file edited by hand, or an import, is the way round
+     * those doors, and this is what says so.
+     *
+     * An ERROR, as an unlabelled station is: both are a station the diagram cannot be read by.  One finding per station,
+     * on its own square, with the caption squares as its related ones and their number as its count.
+     */
+    public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
+
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
 
     /**
@@ -657,6 +671,38 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.ERROR, STATION_AT_THE_END_OF_A_LINE,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * An ERROR per station shown in more than one place on the track diagram (OB-341).
+     *
+     * On the station's own square, so a click goes to it and outlines the caption squares, which are the finding's related
+     * ones.  The subject is those squares in words - "(6,16) and (8,16)" - with the page added to one on a page other than
+     * the station's, as its coordinates alone would be a square of the station's own.  The station's name is the sentence's
+     * {0}, as for every finding with a square.
+     *
+     * @param shown each station's square, to the squares it is shown on, two or more
+     * @return the findings
+     */
+    static List<Finding> checkStationsNamedTwice(Map<TileKey, List<TileKey>> shown)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (Map.Entry<TileKey, List<TileKey>> station : shown.entrySet())
+        {
+            List<String> squares = new ArrayList<>();
+
+            for (TileKey square : station.getValue())
+            {
+                squares.add("(" + (square.getPage().equals(station.getKey().getPage())
+                    ? square.getX() + "," + square.getY() : GraphReducer.generatedName(square)) + ")");
+            }
+
+            findings.add(new Finding(Severity.ERROR, STATION_NAMED_TWICE, andJoined(squares), station.getKey(),
+                station.getValue().size(), 0, 0, station.getValue()));
         }
 
         return findings;
@@ -1222,6 +1268,17 @@ public class AutonomyChecks
 
         for (TilePorts.Side side : sides) words.add(org.traincontrol.util.I18n.t("autosetup.ui.side" + side.name()));
 
+        return andJoined(words);
+    }
+
+    /**
+     * Words in a list the way a sentence has it: "a", "a and b", "a, b and c".
+     *
+     * @param words the words
+     * @return the list, empty for none
+     */
+    private static String andJoined(List<String> words)
+    {
         if (words.size() < 2) return words.isEmpty() ? "" : words.get(0);
 
         return String.join(", ", words.subList(0, words.size() - 1)) + " "

@@ -877,7 +877,9 @@ is present but disabled, with the reason on its tooltip - present rather than hi
 item that vanishes answers "what does this do" by refusing to say.
 
 **One station, one caption.**  Pointing a new square at a station clears the old one, so the diagram
-never names the same station twice with nothing to say which is current.
+never names the same station twice with nothing to say which is current.  A setup file edited by hand, or written
+by an older version, can still carry two; the setup check calls that an error (OB-341), naming the station and the
+squares, and "Stop Showing" on all but one of them clears it.
 
 **A caption may sit on blank space, and it may not sit under your own text.**  Text you have written
 on a square wins, so a caption there would be invisible; the editor says so and offers to replace it

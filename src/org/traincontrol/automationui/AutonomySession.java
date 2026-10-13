@@ -7783,6 +7783,9 @@ public class AutonomySession
 
         found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, endsOfLines));
 
+        // AND A STATION SHOWN IN MORE THAN ONE PLACE, which no door of the editor makes (OB-341)
+        found.addAll(AutonomyChecks.checkStationsNamedTwice(stationsShownMoreThanOnce()));
+
         // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
         // turn there said "may" where the error says "must", and "may" then drew a notice saying "must"
         found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
@@ -7791,6 +7794,52 @@ public class AutonomySession
         AutonomyChecks.bySeverity(found);
 
         return found;
+    }
+
+    /**
+     * Every station the track diagram shows in more than one place, against the squares it shows it on (OB-341).
+     *
+     * Every door of the editor keeps one station to one caption (OB-256), so what this finds came in past them: a setup
+     * file edited by hand, or an import.  A caption kept for a square that is no station now is not drawn (GSE-C4), so it
+     * is not counted; nor is a station on a page left out of autonomy, which is not built.  In reading order, so the
+     * sentence and the list do not change from one load of the file to the next.
+     *
+     * @return each such station's square, to its caption squares
+     */
+    private Map<TileKey, List<TileKey>> stationsShownMoreThanOnce()
+    {
+        Map<TileKey, List<TileKey>> byStation = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
+        {
+            TileKey station = caption.getValue();
+
+            if (!store.isStation(station) || store.getExcludedPages().contains(station.getPage())) continue;
+
+            byStation.computeIfAbsent(station, k -> new ArrayList<>()).add(caption.getKey());
+        }
+
+        java.util.Comparator<TileKey> readingOrder = java.util.Comparator.comparing(TileKey::getPage)
+            .thenComparingInt(TileKey::getY).thenComparingInt(TileKey::getX);
+
+        List<TileKey> stations = new ArrayList<>(byStation.keySet());
+
+        stations.sort(readingOrder);
+
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        for (TileKey station : stations)
+        {
+            List<TileKey> squares = byStation.get(station);
+
+            if (squares.size() < 2) continue;
+
+            squares.sort(readingOrder);
+
+            out.put(station, squares);
+        }
+
+        return out;
     }
 
     /**

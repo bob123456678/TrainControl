@@ -2349,6 +2349,9 @@ public class AutonomyCompanionStore
                     // Kept, not replaced.  See the note above: this is a merge, not an adoption.
                     if (mine.has(inner)) continue;
 
+                    // A caption for a station already shown elsewhere is no gap: one station, one caption (OB-341)
+                    if ("captions".equals(key) && mine.toMap().containsValue(((JSONObject) value).get(inner))) continue;
+
                     mine.put(inner, ((JSONObject) value).get(inner));
                     filled++;
                 }
@@ -6057,7 +6060,8 @@ public class AutonomyCompanionStore
      *
      * One caption per square, by construction: the map is keyed by the square the text sits on, so a
      * second caption there replaces the first rather than fighting it.  Several squares may name the
-     * same station, which is deliberate - a long platform is legitimately labelled at both ends.
+     * same station as far as this store goes: the session takes the old ones off when a new one is chosen
+     * (OB-256), and the setup check calls what a file edited by hand leaves an error (OB-341).
      *
      * @param captionTile where the text goes
      * @param stationTile the sensor it is about, or null to clear

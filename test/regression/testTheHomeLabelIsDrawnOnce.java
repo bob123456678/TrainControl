@@ -26,20 +26,20 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * the station's square, and on the one with the label"*, and again: *"if a station has an offset
  * label, the current home loc is shown twice (once on the tile itself, once on the offset label)"*.
  *
- * **A station can carry more than one caption, and that is deliberate.** `AutonomyCompanionStore.
- * setCaption` says so - "several squares may name the same station, which is deliberate: a long
- * platform is legitimately labelled at both ends" - and the state is on Adam's own railway today:
- * `1 - Main:6,4` is captioned on `6,5` AND on `6,4`. `AutonomySession.migrateStationLabels` writes
- * captions through the raw store door, so a station already captioned on its own square gains a
- * second one the moment a `Point:` label is migrated off the page beside it.
+ * **The editor keeps one station to one caption, and the store can still hold more.** A setup edited by
+ * hand, or written by an older version, carries several, and the setup check calls that an ERROR
+ * (OB-341) - so drawing has to cope with it meanwhile. The state was on Adam's own railway:
+ * `1 - Main:6,4` is captioned on `6,5` AND on `6,4`. `AutonomySession.migrateStationLabels` used to
+ * write captions through the raw store door (until OB-256), so a station already captioned on its own
+ * square gained a second one the moment a `Point:` label was migrated off the page beside it.
  *
  * `LayoutGrid` draws a caption per CAPTION SQUARE and asks `autonomyHomeAt` about the station each one
  * names, so a station named twice states its home twice - side by side, on the tile and beside it.
  *
  * **The rule Adam asked for**: the home appears once, on the caption square when there is one, and
  * otherwise on the station's own square. So the self-caption is the one that gives way, and only when
- * something else is already naming that station. Two captions at opposite ends of a long platform are
- * untouched, which is the case the store's own comment exists for.
+ * something else is already naming that station. Two offset captions are untouched: both are drawn, and
+ * the setup check is what reports them.
  *
  * Asserted by DRAWING it: the editor is built, its captions are read off the container, and the home
  * name is counted. The two rules that could be got wrong instead of right - suppressing every

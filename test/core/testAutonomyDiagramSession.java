@@ -8740,6 +8740,277 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station shown in two places is an error that names the station and both squares (OB-341).
+     *
+     * Adam, 2026-10-12, on a sandbox layout whose setup held two captions for St01: *"add code to make this be an error
+     * in the autonomy validator (i.e. if someone edits the file by hand externally)"*.  Every door of the editor keeps
+     * one station to one caption (OB-256), so the state arrives from outside them, and the file is the door used here: a
+     * setup saved, a second caption written into its `captions`, and the setup opened again.
+     *
+     * One finding for the station, on its own square, carrying both caption squares and their number.  THE CONTROLS are
+     * the same setup before the edit - one station captioned once beside itself, another on its own square - and the
+     * station once it is no station, whose captions are kept but not drawn (GSE-C4).
+     *
+     * MUTATION: leave the error out, report a station with one caption, or count a square that is no station, and this
+     * fails.
+     *
+     * @throws Exception from the session or the setup file
+     */
+    @Test
+    public void testAStationShownTwiceIsAnErrorNamingTheStationAndBothSquares() throws Exception
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey other = new TileKey("main", 4, 1);
+        TileKey beside = new TileKey("main", 1, 2);
+        TileKey further = new TileKey("main", 1, 3);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(other, true);
+        session.setPointName(station, "Hauptbahnhof");
+        session.setPointName(other, "Nebenbahnhof");
+        session.setCaption(beside, station);
+        session.setCaption(other, other);
+        session.save();
+
+        // THE CONTROL: every station shown once
+        AutonomySession once = new AutonomySession(layout);
+
+        once.open(Arrays.asList(page));
+        once.rebuild();
+
+        assertTrue(shownTwice(once).isEmpty(), "a station shown once is reported as shown twice: " + once.check());
+
+        // THE EDIT: a second caption for the station, written into the file by hand
+        File setup = new File(layout, "config/autonomy/setup.json");
+
+        org.json.JSONObject file = new org.json.JSONObject(new String(Files.readAllBytes(setup.toPath()),
+            StandardCharsets.UTF_8));
+
+        assertTrue(file.getJSONObject("captions").has("1:1,2"), "precondition: the caption is not in the file under the"
+            + " page's id: " + file.getJSONObject("captions"));
+
+        file.getJSONObject("captions").put("1:1,3", "1:1,1");
+
+        Files.write(setup.toPath(), file.toString().getBytes(StandardCharsets.UTF_8));
+
+        AutonomySession edited = new AutonomySession(layout);
+
+        edited.open(Arrays.asList(page));
+        edited.rebuild();
+
+        assertEquals(edited.captionsFor(station), new LinkedHashSet<>(Arrays.asList(beside, further)),
+            "precondition: the setup did not read the second caption in");
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(edited);
+
+        assertEquals(found.size(), 1, "a station shown in two places is not reported exactly once: " + edited.check());
+
+        org.traincontrol.automationui.AutonomyChecks.Finding finding = found.get(0);
+
+        assertEquals(finding.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.ERROR,
+            "a station named twice with nothing to say which is current must stop the setup, not sit among the warnings");
+
+        assertEquals(finding.getTile(), station, "the finding is not on the station's own square");
+        assertEquals(finding.getCount(), 2, "the finding does not say how many places the station is shown in");
+
+        assertEquals(new LinkedHashSet<>(finding.getRelated()), new LinkedHashSet<>(Arrays.asList(beside, further)),
+            "the finding does not point at both caption squares");
+
+        // WHAT THE READER IS TOLD, as the editor renders it: {0} the station, {1} the finding's subject, {2} the count
+        String said = org.traincontrol.util.I18n.f(finding.getMessageKey(), edited.describeTile(finding.getTile()),
+            finding.getSubject(), finding.getCount(), finding.getDetail(), finding.getThird());
+
+        assertTrue(said.contains("Hauptbahnhof"), "the sentence does not name the station: " + said);
+        assertTrue(said.contains("(1,2)") && said.contains("(1,3)"), "the sentence does not name both squares: " + said);
+        assertFalse(said.contains("Nebenbahnhof"), "the sentence names a station that is shown once: " + said);
+
+        // and it is one more thing to fix before the setup runs, not just a line in a list
+        assertEquals(edited.errorCount(), once.errorCount() + 1, "the setup is not refused for it");
+
+        // A square that is no station now is not drawn, so it is not shown twice (GSE-C4)
+        edited.getStore().setStation(station, false);
+
+        assertTrue(shownTwice(edited).isEmpty(), "captions kept for a square that is no station are reported as shown"
+            + " twice, though nothing is drawn: " + edited.check());
+    }
+
+    /**
+     * One finding per station however many places it is shown in, and the editor's own doors clear it (OB-341).
+     *
+     * Three captions for one station and two for another are two findings, the first counting three.  The sentence tells
+     * the reader to stop showing the station on all but one square, and to show it on the one to keep: both go through
+     * `setCaption`, the door the editor's menu uses, so doing as it says is what ends the finding.
+     *
+     * MUTATION: one finding per caption square, or not clearing when the extra ones go, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationShownInThreePlacesIsOneErrorAndTheEditorClearsIt() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey other = new TileKey("main", 4, 1);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(other, true);
+        session.setPointName(station, "Hauptbahnhof");
+        session.setPointName(other, "Nebenbahnhof");
+
+        // Through the store's own door, which does not sweep - as a file edited by hand does not
+        for (TileKey where : new TileKey[] {station, new TileKey("main", 1, 2), new TileKey("main", 1, 3)})
+        {
+            session.getStore().setCaption(where, station);
+        }
+
+        for (TileKey where : new TileKey[] {new TileKey("main", 4, 2), new TileKey("main", 4, 3)})
+        {
+            session.getStore().setCaption(where, other);
+        }
+
+        session.rebuild();
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
+
+        assertEquals(found.size(), 2, "not one finding for each station shown twice: " + session.check());
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : found)
+        {
+            assertEquals(finding.getCount(), station.equals(finding.getTile()) ? 3 : 2,
+                "the count is not the number of places the station is shown in: " + finding);
+        }
+
+        // "Stop Showing" on all but one of them
+        session.setCaption(new TileKey("main", 1, 2), null);
+        session.setCaption(new TileKey("main", 1, 3), null);
+
+        assertEquals(shownTwice(session).size(), 1, "stopping the extra captions did not clear the station: "
+            + session.check());
+
+        assertEquals(shownTwice(session).get(0).getTile(), other, "it cleared the wrong station's finding");
+
+        // "Show a Station Name Here" on the one to keep: the others go
+        session.setCaption(new TileKey("main", 4, 3), other);
+
+        assertTrue(shownTwice(session).isEmpty(), "showing the station on one square did not take it off the others: "
+            + session.check());
+    }
+
+    /**
+     * A caption on another page is named with its page (OB-341), since a bare "1,2" would be a square of this one.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAShownTwiceErrorNamesASquareOnAnotherPageWithItsPage() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(new TileKey("main", 4, 1), true);
+        session.setPointName(station, "Hauptbahnhof");
+        session.getStore().setCaption(new TileKey("main", 1, 2), station);
+        session.getStore().setCaption(new TileKey("second", 3, 2), station);
+
+        session.rebuild();
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
+
+        assertEquals(found.size(), 1, "a station shown on two pages is not reported once: " + session.check());
+
+        String said = org.traincontrol.util.I18n.f(found.get(0).getMessageKey(), session.describeTile(station),
+            found.get(0).getSubject(), found.get(0).getCount(), found.get(0).getDetail(), found.get(0).getThird());
+
+        assertTrue(said.contains("(1,2)"), "the square on the station's own page is not named by its coordinates: " + said);
+        assertTrue(said.contains("second 3,2"), "the square on the other page is not named with its page: " + said);
+    }
+
+    /**
+     * An import does not caption a station the setup already shows somewhere else (OB-341).
+     *
+     * `importBundle` merges the file's `captions` square by square, keeping what is already there and filling the gaps -
+     * and a square the setup had no caption on is a gap whether or not the STATION it names is shown elsewhere.  Importing
+     * onto a layout whose stations an old-file import had captioned on their own squares gave each station named in the
+     * file a second caption beside the first: the state the setup check now calls an error.  A station the setup shows
+     * nowhere still gets the file's caption, or an import onto a fresh setup would lose them all.
+     *
+     * MUTATION: take the guard out of the `captions` merge in `importBundle`, and this fails.
+     *
+     * @throws Exception from the sessions
+     */
+    @Test
+    public void testAnImportDoesNotCaptionAStationTheSetupAlreadyShows() throws Exception
+    {
+        TileKey shown = new TileKey("main", 1, 1);
+        TileKey notShown = new TileKey("main", 4, 1);
+
+        File exporting = Files.createTempDirectory("tc-autonomy-export").toFile();
+
+        try
+        {
+            // The file's setup: both stations captioned beside themselves
+            AutonomySession from = new AutonomySession(exporting);
+
+            from.open(Arrays.asList(runOfTrack()));
+            from.initialize("Evening");
+            from.setStation(shown, true);
+            from.setStation(notShown, true);
+            from.setPointName(shown, "Hauptbahnhof");
+            from.setPointName(notShown, "Nebenbahnhof");
+            from.setCaption(new TileKey("main", 1, 2), shown);
+            from.setCaption(new TileKey("main", 4, 2), notShown);
+
+            org.json.JSONObject bundle = from.getStore().exportBundle("Evening");
+
+            // This setup: one of them captioned on its own square, as the old-file import leaves it, the other not at all
+            session.open(Arrays.asList(runOfTrack()));
+            session.initialize("Morning");
+            session.setStation(shown, true);
+            session.setStation(notShown, true);
+            session.setPointName(shown, "Hauptbahnhof");
+            session.setPointName(notShown, "Nebenbahnhof");
+            session.setCaption(shown, shown);
+
+            session.importBundle("Imported", new org.json.JSONObject(bundle.toString()));
+
+            assertEquals(session.captionsFor(shown), new LinkedHashSet<>(Arrays.asList(shown)),
+                "the import gave a station already shown a second caption");
+
+            assertEquals(session.captionsFor(notShown), new LinkedHashSet<>(Arrays.asList(new TileKey("main", 4, 2))),
+                "the import did not give a station shown nowhere the file's caption");
+
+            assertTrue(shownTwice(session).isEmpty(), "the import left the setup with an error: " + session.check());
+        }
+        finally
+        {
+            delete(exporting);
+        }
+    }
+
+    /** The setup check's findings that a station is shown in more than one place. */
+    private static List<org.traincontrol.automationui.AutonomyChecks.Finding> shownTwice(AutonomySession from)
+    {
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> out = new ArrayList<>();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : from.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.STATION_NAMED_TWICE.equals(finding.getMessageKey()))
+            {
+                out.add(finding);
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * Asking to show a station's name moves the caption rather than adding a second one.
      *
      * This used to refuse when the station was already shown somewhere, which left the user to find

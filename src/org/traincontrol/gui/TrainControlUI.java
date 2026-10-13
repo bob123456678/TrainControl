@@ -1971,8 +1971,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Every label showing the station on a square.  Several are normal - a long platform is legitimately
-     * captioned at both ends.
+     * Every label showing the station on a square.  The editor keeps one; more than one comes only from a hand edit or
+     * an older import, and the setup check reports it as an error (OB-341).
      *
      * @param station the sensor’s square
      * @return
@@ -6162,17 +6162,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Adam, 2026-09-08: "if a station has an offset label, the current home loc is shown twice
         // (once on the tile itself, once on the offset label)."
         //
-        // A station may carry more than one caption and that is deliberate - AutonomyCompanionStore.
-        // setCaption: "several squares may name the same station... a long platform is legitimately
-        // labelled at both ends" - so the store is not where this can be settled.  What is NOT
-        // deliberate is a station captioned on its own square AND beside it: the two land next to
-        // each other and say the same thing twice, which is what he was looking at.
+        // The editor keeps one station to one caption (behaviour.md, "One station, one caption"), but
+        // the store can still hold more than one - a setup edited by hand, or written by an older
+        // version - and the setup check calls that an ERROR (OB-341).  Drawing has to cope with it
+        // meanwhile, and the worst of it is a station captioned on its own square AND beside it: the
+        // two land next to each other and say the same thing twice, which is what he was looking at.
         //
-        // The state is reachable without anybody asking for it.  `AutonomySession.setCaption` sweeps
-        // the old caption away, but `migrateStationLabels` writes through the raw store door, so a
-        // station already captioned on its own square gains a second one the moment a legacy
-        // "Point:" label is migrated off the page beside it.  `1 - Main:6,4` on the operator's own
-        // railway is captioned on `6,5` and on `6,4`.
+        // The state was reachable without anybody asking for it.  `AutonomySession.setCaption` sweeps
+        // the old caption away, but `migrateStationLabels` used to write through the raw store door
+        // (until OB-256), so a station already captioned on its own square gained a second one the
+        // moment a legacy "Point:" label was migrated off the page beside it.  `1 - Main:6,4` on the
+        // operator's own railway is captioned on `6,5` and on `6,4`.
         //
         // The SELF-caption gives way, because the offset one is the one somebody placed: a caption
         // beside the platform is either where the placer put it or where `placeCaption` found room,
@@ -6180,8 +6180,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // is one, otherwise on the station square", which is Adam's ruling read back.
         //
         // Only against ANOTHER square.  A station captioned only on itself keeps its caption, and two
-        // captions at opposite ends of a platform are both offset, so neither is touched - that is
-        // the case the store's own comment exists for.
+        // offset captions are both drawn - the setup check reports them, and this does not choose.
         if (caption != null && caption.equals(where))
         {
             for (org.traincontrol.automationui.TileGraph.TileKey elsewhere
