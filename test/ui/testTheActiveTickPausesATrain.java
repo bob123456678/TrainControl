@@ -1087,6 +1087,225 @@ public class testTheActiveTickPausesATrain
         }
     }
 
+    // ------------------------------- a rollback puts the record back with the setup (OB-343)
+
+    /** The window's record of how the railway was built, for the railway given. */
+    private static org.json.JSONObject recordOf(Layout railway) throws Exception
+    {
+        Method record = TrainControlUI.class.getDeclaredMethod("settingsAsBuiltFor", Object.class);
+
+        record.setAccessible(true);
+
+        return (org.json.JSONObject) record.invoke(ui, railway);
+    }
+
+    /**
+     * An old-format import that fails after folding the running railway into the setup puts the setup back, and the record of
+     * how the railway was built with it (OB-343).
+     *
+     * The fold the import makes first is the one every fold makes, and brings the record up to date with what it took.
+     * The rollback restored the setup and left the record, so the railway - which the rollback does not touch - read to the
+     * next setup gesture's rebuild as unchanged since it was built, nothing was taken from it, and the railway was rebuilt
+     * from the older setup: a timetable entry a run captured (a lost timetable, grade B), a setting moved on the Auto tab and
+     * a train paused by its card's button all went.
+     *
+     * The railway alone gets the three; the import is of a file `detect` calls an old graph, with `edges` an object, which
+     * `whatALegacyImportLeaves` reads strictly and throws on after the fold; and a setup gesture's rebuild follows.
+     *
+     * MUTATION: leave the record as the fold left it when the import puts the setup back, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnOldFileImportThatFailsAfterItsFoldLeavesWhatTheRailwayChangedAlone() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        final int[] delayAsFound = {-1};
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+            final Layout running = railway();
+            final String configuration = ui.getActiveDiagramConfiguration();
+
+            assertNotNull(configuration, "precondition: no configuration is running");
+
+            // THE RAILWAY ALONE CHANGES, as it does while it runs: a train paused by its card's button, a timetable entry
+            // captured, a setting moved on the Auto tab
+            pressTheCardsButton(card, true);
+
+            final int entries = running.getTimetable().size();
+            final int delay = running.getMinDelay();
+            final int moved = delay + 1 <= running.getMaxDelay() ? delay + 1 : Math.max(0, delay - 1);
+
+            delayAsFound[0] = delay;
+
+            assertNotEquals(moved, delay, "precondition: the minimum delay cannot be moved");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    running.getTimetable().add(new org.traincontrol.automation.TimetablePath(train,
+                        new ArrayList<>(java.util.Collections.singletonList(running.getEdges().iterator().next())),
+                        System.currentTimeMillis()));
+
+                    running.setMinDelay(moved);
+                }
+                catch (Exception cannot)
+                {
+                    throw new IllegalStateException(cannot);
+                }
+            });
+
+            // THE IMPORT, which folds the railway into the setup first and fails after it
+            final org.traincontrol.gui.AutonomyViewerPanel viewer = ui.getAutonomyViewerPanel();
+
+            final Method importIt = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod("importLegacyGraph",
+                org.json.JSONObject.class, String.class);
+
+            importIt.setAccessible(true);
+
+            final org.json.JSONObject file = new org.json.JSONObject("{\"points\": [], \"edges\": {}}");
+
+            List<String> said = runAndDismiss(() ->
+            {
+                try
+                {
+                    importIt.invoke(viewer, file, configuration);
+                }
+                catch (ReflectiveOperationException cannot)
+                {
+                    throw new IllegalStateException(cannot);
+                }
+            });
+
+            pump();
+
+            String unreadable = I18n.f("autosetup.ui.errorImportUnreadable", "#X#").split("#X#")[0].trim();
+
+            assertTrue(said.toString().contains(unreadable), "precondition: the import did not fail as the claim needs it to,"
+                + " after its fold: " + said);
+
+            assertSame(railway(), running, "precondition: the failed import replaced the railway");
+
+            // A SETUP GESTURE'S REBUILD
+            theNextSetupGestureRebuilds();
+
+            Layout after = railway();
+
+            assertEquals(after.getTimetable().size(), entries + 1, "the timetable entry the railway captured is gone after an"
+                + " import failed and a setup gesture rebuilt it (OB-343)");
+
+            assertEquals(after.getMinDelay(), moved, "the setting moved on the Auto tab went back after an import failed"
+                + " and a setup gesture rebuilt the railway (OB-343)");
+
+            assertPausedEverywhere(card, true, "after an import failed and a setup gesture rebuilt the railway");
+        }
+        finally
+        {
+            // THE RAILWAY'S SIDE BACK FIRST, then the setup, so that the rebuild after them folds nothing back
+            Layout now = railway();
+
+            if (now != null)
+            {
+                now.getTimetable().clear();
+
+                if (delayAsFound[0] >= 0) now.setMinDelay(delayAsFound[0]);
+            }
+
+            session.restoreSetup(asFound);
+
+            theNextSetupGestureRebuilds();
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * The editor's Cancel after a fold the editor's own rebuild made keeps what the railway changed alone (OB-343).
+     *
+     * An in-editor rebuild folds the railway's changes into the setup before it builds, and a build the setup does not allow
+     * - a link left unpaired - leaves the railway running with the setup newer.  The fold brings the record up to date with
+     * what it took, and the editor's Cancel restores the setup it opened with, which does not have the change the fold took:
+     * the Cancel's rebuild then read the railway as unchanged since it was built, took nothing from it and rebuilt from the
+     * older setup - a train paused by its card's button after the editor opened went.
+     *
+     * The declined build is stood in for by its fold alone, which is all of it that touches the record: the settings fold
+     * with the railway left running.  The train is paused by its card's button after the editor has opened, the editor is
+     * closed discarding, and the train must still be paused.
+     *
+     * MUTATION: leave the record as the fold left it when Cancel puts the setup back, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorsCancelAfterAFoldItsRebuildMadeKeepsAPauseTheCardMade() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            // THE EDITOR OPENS: its undo point is the setup as it is, and the record as it is
+            editor = openTheEditor();
+
+            // PAUSED BY ITS CARD'S BUTTON after the editor has opened: the railway alone
+            pressTheCardsButton(card, true);
+
+            // THE FOLD A DECLINED IN-EDITOR REBUILD MAKES before the build is refused: the pause is taken into the setup, and
+            // the railway is left running
+            final Layout running = railway();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    session.captureTheRailwaysSettings(running.toJSON(), ui.getActiveDiagramConfiguration(),
+                        recordOf(running));
+                }
+                catch (Exception cannot)
+                {
+                    throw new IllegalStateException(cannot);
+                }
+            });
+
+            assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the fold did not take the pause into"
+                + " the setup: " + session.getPausedLocomotives());
+
+            assertSame(railway(), running, "precondition: the railway was replaced");
+
+            // CANCEL: the editor closed, discarding what was changed in it
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertPausedEverywhere(card, true, "after the editor's Cancel put the setup it opened with back");
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            uncrowd();
+        }
+    }
+
     /** The editor's right-click on BottomMainB built and the tick on it clicked, as the editor's own menu does. */
     private static void clickTheEditorsTick(final AutonomyEditorPanel panel, final String label) throws Exception
     {
@@ -2233,6 +2452,18 @@ public class testTheActiveTickPausesATrain
      */
     private static List<String> clickAndDismiss(final javax.swing.JMenuItem item) throws Exception
     {
+        return runAndDismiss(item::doClick);
+    }
+
+    /**
+     * Runs an action on the event thread and dismisses the messages it puts up, as `clickAndDismiss` does for a click.
+     *
+     * @param action what to run
+     * @return the messages that were put up
+     * @throws Exception from the window
+     */
+    private static List<String> runAndDismiss(final Runnable action) throws Exception
+    {
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
@@ -2276,7 +2507,7 @@ public class testTheActiveTickPausesATrain
             {
                 try
                 {
-                    item.doClick();
+                    action.run();
                 }
                 finally
                 {

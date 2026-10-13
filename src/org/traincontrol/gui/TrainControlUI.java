@@ -4793,6 +4793,58 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The record of how the railway was built as it stood, and the railway it describes: what a door that may put the setup
+     * back keeps beside its snapshot of the setup (OB-343).
+     */
+    static final class SettingsAsBuiltNote
+    {
+        private final Object railway;
+
+        private final org.json.JSONObject settings;
+
+        private SettingsAsBuiltNote(Object railway, org.json.JSONObject settings)
+        {
+            this.railway = railway;
+            this.settings = settings;
+        }
+    }
+
+    /**
+     * Notes the record of how the railway was built, for a door that takes a snapshot of the setup it may put back - an
+     * import, the editor's undo point (OB-343).
+     *
+     * **THE RECORD IS WHAT THE RAILWAY AND THE SETUP LAST AGREED ON, so a rollback that puts the setup back puts the record
+     * back with it.**  A fold takes what the railway changed into the setup and into the record (`captureTheRailwaysSettings`),
+     * and the setup put back without it no longer has what the fold took: the record, kept as the fold left it, said the
+     * railway was unchanged since it was built, the next rebuild took nothing from it, and what the railway had changed alone
+     * - a timetable entry, an Auto tab setting, a card's pause - went with the rollback.
+     *
+     * @return the note, or null where this window does not know how the running railway was built
+     */
+    SettingsAsBuiltNote noteSettingsAsBuilt()
+    {
+        Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (railway == null || railway != settingsBuiltFor || settingsAsBuilt == null) return null;
+
+        return new SettingsAsBuiltNote(railway, new org.json.JSONObject(settingsAsBuilt.toString()));
+    }
+
+    /**
+     * Puts the record back as a note has it, for a door that has put the setup back to the snapshot it took beside the note.
+     * Only for the railway the note was taken from: a railway built since has a record of its own, made from the setup it was
+     * built from.
+     *
+     * @param noted what `noteSettingsAsBuilt` returned, or null
+     */
+    void putSettingsAsBuiltBack(SettingsAsBuiltNote noted)
+    {
+        if (noted == null || noted.railway != settingsBuiltFor) return;
+
+        settingsAsBuilt = new org.json.JSONObject(noted.settings.toString());
+    }
+
+    /**
      * Everything that follows an autonomy configuration loading successfully, in one place so the panel
      * load and the startup resume cannot drift apart: the dependent tabs appear, the monitor follows the
      * new layout, the overlay switches on, and the view jumps to the track it is all about.

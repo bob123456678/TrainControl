@@ -6958,7 +6958,10 @@ public class AutonomySession
      * that no rebuild follows - the editor opening, a load the build declined - left the record behind: a train the railway
      * paused, taken into the setup, then set going again on its card, read to the next fold as the railway unchanged from
      * how it was built, the setup's older answer stood, and the rebuild paused the train again.  A rebuild builds the record
-     * again, so it matters only where none follows; and it holds for every setting alike, not only the paused trains.
+     * again, so it matters only where none follows; and it holds for every setting alike, not only the paused trains.  A
+     * door that may put the setup back after a fold keeps the record beside its snapshot of the setup and puts it back with
+     * it (`TrainControlUI.noteSettingsAsBuilt`; the old-file import, the editor's undo point): the record must never say the
+     * setup has what a rollback took away.
      *
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to

@@ -1388,6 +1388,10 @@ public class AutonomyViewerPanel extends JPanel
         // one the next start resumed.
         org.json.JSONObject was = session().snapshotSetup();
 
+        // AND THE RECORD OF HOW THE RAILWAY WAS BUILT WITH IT (OB-343): the fold below updates it, and the setup put
+        // back must not keep what the fold took
+        final TrainControlUI.SettingsAsBuiltNote railwaySettings = ui.noteSettingsAsBuilt();
+
         // Somewhere for the import to land, before it starts (OB-106).
         //
         // The shared half of a setup - names, stations, lengths, directions - belongs to the TRACK and
@@ -1623,6 +1627,8 @@ public class AutonomyViewerPanel extends JPanel
             {
                 session().getStore().restoreSetup(was);
                 session().rebuild();
+
+                ui.putSettingsAsBuiltBack(railwaySettings);
             }
 
             JOptionPane.showMessageDialog(ui,
