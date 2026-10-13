@@ -11021,13 +11021,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The page's name is the RAW one: the row cuts it to the pixel and the tooltip words the page from the bundle, so
      * the old shortening to twelve letters and three dots has no part in it.
      *
-     * @param decoder the decoder type and the address ("MFX 54"), or null when there is no locomotive on the button
+     * The decoder's type and its address are two things, as the row draws them apart ("MFX" and "54") and a string cut in
+     * two would be a guess about where.
+     *
+     * @param decoderType the decoder type as the program words it, or null when there is no locomotive on the button
+     * @param address the locomotive's address, or null
      * @return the content to show
      */
-    private CurrentKeyRow.Content currentKeyContent(String decoder)
+    private CurrentKeyRow.Content currentKeyContent(String decoderType, String address)
     {
         return new CurrentKeyRow.Content(this.currentButton.getText(), this.currentButtonlocMappingNumber,
-            this.getPageName(this.currentButtonlocMappingNumber, true), decoder);
+            this.getPageName(this.currentButtonlocMappingNumber, true), decoderType, address);
     }
 
     /**
@@ -14828,8 +14832,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             
                             // Pre-compute this so we can check if it has changed: the key, the page and the decoder
                             // with its address, as the row over the name draws them (FR-128)
-                            CurrentKeyRow.Content keyLine = currentKeyContent(this.activeLoc.getDecoderTypeLabel()
-                                    + " " + this.model.getLocAddress(this.activeLoc.getName()));
+                            CurrentKeyRow.Content keyLine = currentKeyContent(this.activeLoc.getDecoderTypeLabel(),
+                                    this.model.getLocAddress(this.activeLoc.getName()));
                                                         
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
@@ -15069,7 +15073,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         );
                         
                         // The key and its page, and no decoder pill: nothing is on the key
-                        this.currentKeyRow.setContent(currentKeyContent(null));
+                        this.currentKeyRow.setContent(currentKeyContent(null, null));
 
                         this.Backward.setVisible(false);
                         this.Forward.setVisible(false);

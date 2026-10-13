@@ -590,9 +590,20 @@ public class testLocMappingPages
         return row.getClass().getMethod("geometry", int.class, int.class).invoke(row, width, height);
     }
 
+    /**
+     * A public field of the row's layout, or null when it has none - so a layout without the field is an assertion that
+     * says what is missing, and not an exception that says nothing.
+     */
     private static Object pub(Object owner, String name) throws Exception
     {
-        return owner.getClass().getField(name).get(owner);
+        try
+        {
+            return owner.getClass().getField(name).get(owner);
+        }
+        catch (NoSuchFieldException none)
+        {
+            return null;
+        }
     }
 
     private static int right(Object geometry) throws Exception
@@ -610,11 +621,33 @@ public class testLocMappingPages
         return (java.awt.Rectangle) pub(geometry, name);
     }
 
-    /** What the three pieces say, joined, for a check that a word is not in any of them. */
+    /** What the pieces say, joined, for a check that a word is not in any of them. */
     private static String drawn(Object geometry) throws Exception
     {
         return pub(geometry, "key") + "|" + pub(geometry, "number") + "|" + pub(geometry, "name") + "|"
-            + pub(geometry, "decoderText");
+            + pub(geometry, "decoderType") + "|" + pub(geometry, "decoderAddress");
+    }
+
+    /** The colour of a pixel, without its alpha. */
+    private static int rgb(java.awt.image.BufferedImage image, int x, int y)
+    {
+        return image.getRGB(x, y) & 0xFFFFFF;
+    }
+
+    /** Whether any pixel in these columns and rows is white or all but - the colour of the words and the line. */
+    private static boolean whiteIn(java.awt.image.BufferedImage image, int x0, int x1, int y0, int y1)
+    {
+        for (int x = x0; x <= x1; x++)
+        {
+            for (int y = y0; y <= y1; y++)
+            {
+                int c = rgb(image, x, y);
+
+                if (Math.min((c >> 16) & 255, Math.min((c >> 8) & 255, c & 255)) >= 235) return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -623,16 +656,21 @@ public class testLocMappingPages
      * Adam: *"the active locomotive info is currently text consisting of [letter] . Page [num] ([page name]) .
      * [decodertype] [address]. the page number could be condensed into a nice pill, along with the other info.  make it
      * look more modern."*  The design he chose: the key's letter on a keycap, then a page pill with the page's NUMBER and
-     * its name, then a solid decoder pill saying what the line said before - "MFX 54".  *"I wouldn't like to see the word
-     * 'page' in it."*
+     * its name, then a solid decoder pill with the type and the address.  *"I wouldn't like to see the word 'page' in
+     * it."*  And on seeing it (round 2): the decoder pill's type and address are parted by a white vertical line, and the
+     * pill floats to the right: *"Can we also float the address to the right?"*
      *
      * One locomotive of each decoder type the program has, on the page of the window's current key: MM2, MFX, DCC, a
      * multi-unit and a consist of an MFX head with a member.  Driven through `repaintLoc`, which is what the window calls
      * to show a locomotive, and read from the row's own layout - what is drawn is what is asked, so there is no second
      * account of it to drift.
      *
-     * MUTATION: put the word Page back in the page pill (draw `getTooltip`'s page words there), swap the order of the
-     * shapes, or draw the key and the decoder as one text again, and this fails.
+     * The keycap and the page pill stay at the left, a gap apart; the decoder pill is at the slot's right edge, with more
+     * than the least gap between it and a short page name's pill, which is the proof that it floats and does not follow.
+     *
+     * MUTATION: put the word Page back in the page pill (draw `getTooltip`'s page words there), put the decoder pill
+     * back beside the page pill, join the type and the address into one text, or draw the divider outside the decoder
+     * pill, and this fails.
      *
      * @throws Exception from the window
      */
@@ -668,12 +706,13 @@ public class testLocMappingPages
             p.model.changeLocAddress(multiUnit.getName(), 4999, org.traincontrol.marklin.MarklinLocomotive.decoderType.MULTI_UNIT);
 
             // the decoder texts: the enum's own names for the three protocols; the bundle's words for the other two
+            // and each decoder is two things, the type and the address, as the pill draws them
             Object[][] kinds = {
-                {p.mm2("FR-128 MM2", 79), "MM2 79"},
-                {p.mfx("FR-128 MFX", 3954), "MFX 3954"},
-                {p.dcc("FR-128 DCC", 9871), "DCC 9871"},
-                {multiUnit, org.traincontrol.util.I18n.t("loc.multiUnit") + " 4999"},
-                {head, org.traincontrol.util.I18n.f("loc.multiUnitLinked", "MFX") + " 3912"},
+                {p.mm2("FR-128 MM2", 79), "MM2", "79"},
+                {p.mfx("FR-128 MFX", 3954), "MFX", "3954"},
+                {p.dcc("FR-128 DCC", 9871), "DCC", "9871"},
+                {multiUnit, org.traincontrol.util.I18n.t("loc.multiUnit"), "4999"},
+                {head, org.traincontrol.util.I18n.f("loc.multiUnitLinked", "MFX"), "3912"},
             };
 
             // the word the program uses for a page, out of its own bundle - "Page" in English
@@ -687,7 +726,7 @@ public class testLocMappingPages
             {
                 p.show((org.traincontrol.base.Locomotive) kind[0]);
 
-                String said = "for " + kind[1];
+                String said = "for " + kind[1] + " " + kind[2];
 
                 Object at = geometry(row, box.width, box.height);
 
@@ -700,7 +739,9 @@ public class testLocMappingPages
 
                 assertEquals(pub(at, "name"), "Example", "the page pill does not carry the page's name " + said);
 
-                assertEquals(pub(at, "decoderText"), kind[1], "the decoder pill does not say the decoder and address " + said);
+                assertEquals(pub(at, "decoderType"), kind[1], "the decoder pill does not say the decoder's type " + said);
+
+                assertEquals(pub(at, "decoderAddress"), kind[2], "the decoder pill does not say the address " + said);
 
                 String all = drawn(at).toLowerCase();
 
@@ -708,14 +749,37 @@ public class testLocMappingPages
                     "the word for a page is in the line " + said + ": " + drawn(at)
                     + ".  Adam: \"I wouldn't like to see the word 'page' in it.\"");
 
-                // keycap, then page pill, then decoder pill, a gap apart, left to right
-                java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder");
+                // THE KEYCAP AND THE PAGE PILL AT THE LEFT, a gap apart; THE DECODER PILL FLOATED TO THE RIGHT EDGE
+                java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder"),
+                    divider = rect(at, "divider");
 
                 assertNotNull(keycap, "no keycap " + said);
                 assertNotNull(decoder, "no decoder pill " + said);
 
                 assertEquals(page.x, keycap.x + keycap.width + 5, "the page pill is not a 5 px gap after the keycap " + said);
-                assertEquals(decoder.x, page.x + page.width + 5, "the decoder pill is not a 5 px gap after the page pill " + said);
+
+                assertEquals(decoder.x + decoder.width, box.width, "the decoder pill is not at the slot's right edge " + said
+                    + ": it is " + decoder + " in " + box + ".  Adam: \"float the address to the right\"");
+
+                assertTrue(decoder.x - (page.x + page.width) > 5, "the decoder pill is a least gap from a short page name's"
+                    + " pill, so it follows the page pill and does not float " + said + ": " + page + " and " + decoder);
+
+                // A WHITE LINE BETWEEN THE TYPE AND THE ADDRESS, inside the pill's rim and not through it
+                assertNotNull(divider, "the decoder pill has no line between its type and its address " + said);
+
+                assertTrue(divider.x > decoder.x && divider.x < decoder.x + decoder.width, "the divider is not inside the"
+                    + " decoder pill " + said + ": " + divider + " in " + decoder);
+
+                assertEquals(divider.y, decoder.y + 1, "the divider does not start one pixel below the pill's top rim " + said);
+
+                assertEquals(divider.y + divider.height, decoder.y + decoder.height - 1,
+                    "the divider does not stop one pixel above the pill's bottom rim " + said);
+
+                double typeX = (Double) pub(at, "typeX"), addressX = (Double) pub(at, "addressX");
+
+                assertTrue(typeX < divider.x && addressX >= divider.x + divider.width, "the type is not left of the divider and"
+                    + " the address right of it " + said + ": type at " + typeX + ", divider at " + divider.x + ", address at "
+                    + addressX);
 
                 // all three fit the slot, in height and in width
                 for (java.awt.Rectangle r : new java.awt.Rectangle[] {keycap, page, decoder})
@@ -733,7 +797,7 @@ public class testLocMappingPages
                 assertNotNull(tip, "the row has no tooltip " + said);
 
                 assertTrue(tip.contains(key) && tip.contains(org.traincontrol.util.I18n.f("page.ui.plainPageName", p.page,
-                    "Example")) && tip.contains((String) kind[1]), "the tooltip " + said + " is not the whole line: " + tip);
+                    "Example")) && tip.contains(kind[1] + " " + kind[2]), "the tooltip " + said + " is not the whole line: " + tip);
             }
 
             // A KEY WITH NO LOCOMOTIVE ON IT has the key and the page and no decoder pill
@@ -744,6 +808,9 @@ public class testLocMappingPages
             assertNotNull(bare, "nothing is drawn for a key with no locomotive: the key and its page went with it");
             assertNull(rect(bare, "decoder"), "a decoder pill is drawn for a key with no locomotive on it");
             assertEquals(pub(bare, "name"), "Example");
+
+            assertEquals(rect(bare, "page").x, rect(bare, "keycap").x + rect(bare, "keycap").width + 5,
+                "with no decoder pill the page pill is not at the left, a gap after the keycap");
         });
     }
 
@@ -755,10 +822,13 @@ public class testLocMappingPages
      * room is left and gives way; the keycap, the page number and the decoder pill are never cut.  The slot is the one the
      * old text had - 296 by 18 - and nothing below it may move.
      *
-     * Measured with the widest decoder text, the multi-unit's, because that is the one that leaves the least room.
+     * Measured with the widest decoder text, the multi-unit's, because that is the one that leaves the least room.  The
+     * decoder pill floats to the right edge, so the name's room is what lies between the number's segment and it, less a
+     * gap: the name is cut to that, and the page pill never runs under the decoder pill.
      *
-     * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, or draw
-     * the name's pill wider than the room it was given, and this fails.
+     * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, draw
+     * the name's pill wider than the room it was given, or take the decoder pill's width out of that room, and this
+     * fails.
      *
      * @throws Exception from the window
      */
@@ -815,11 +885,25 @@ public class testLocMappingPages
                 // THE PARTS THAT NEVER GIVE WAY
                 assertEquals(pub(at, "number"), String.valueOf(p.page), "the page number was cut " + said);
 
-                String decoderText = loc.getDecoderTypeLabel() + " " + p.model.getLocAddress(loc.getName());
+                String decoderType = loc.getDecoderTypeLabel(), address = p.model.getLocAddress(loc.getName());
+                String decoderText = decoderType + " " + address;
 
-                assertEquals(pub(at, "decoderText"), decoderText, "the decoder text was cut " + said);
+                assertEquals(pub(at, "decoderType"), decoderType, "the decoder's type was cut " + said);
+                assertEquals(pub(at, "decoderAddress"), address, "the address was cut " + said);
 
-                assertNotNull(rect(at, "keycap"), "the keycap went " + said);
+                java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder");
+
+                assertNotNull(keycap, "the keycap went " + said);
+                assertNotNull(decoder, "the decoder pill went " + said);
+
+                // NOTHING OVERLAPS, and the decoder pill is still at the right edge
+                assertEquals(decoder.x + decoder.width, box.width, "the decoder pill is not at the slot's right edge " + said);
+
+                assertTrue(keycap.x + keycap.width + 5 <= page.x, "the page pill is closer than the least gap to the keycap "
+                    + said + ": " + keycap + " and " + page);
+
+                assertTrue(page.x + page.width + 5 <= decoder.x, "the page pill runs under the decoder pill, or is closer"
+                    + " than the least gap to it " + said + ": " + page + " and " + decoder);
 
                 // THE WHOLE LINE IN ITS SLOT
                 assertTrue(right(at) <= box.width, "the line runs past the slot's width " + said + ": " + right(at) + " > "
@@ -860,15 +944,23 @@ public class testLocMappingPages
     }
 
     /**
-     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, a page pill that is an outline and
-     * nothing else, and a decoder pill that is solid navy (FR-128).
+     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, a page pill that is a neutral outline
+     * with a dark grey segment behind its white number, and a decoder pill that is solid navy at the slot's right edge,
+     * with a white line between its type and its address (FR-128).
      *
      * Read from the pixels the row paints, over a background that is nothing else, so a fill that is not meant to be there
      * shows as a change from it.  Each reading is a point well inside one shape and clear of its words, so it does not
      * depend on how the letters are drawn - only on whether the shape is filled, outlined or neither.
      *
-     * MUTATION: fill the page pill, draw the keycap's edge one pixel all round, or take the decoder's navy from anywhere
-     * but rgb(0,0,115), and this fails.
+     * Round 2, Adam: *"add a dark grey background behind the page number only (ending where the M's start), and make the
+     * number white.  In the decoder address pill, add a vertical line from top to bottom (white) separating the type from
+     * the number (MFX | 12) while maintaining a blue border around it ... float the address to the right"*.  So the grey
+     * ends in a straight edge before the name, the number's pixels are white, the divider is white with navy above and
+     * below it - the pill's rim, unbroken - and the pill's last painted column is the slot's last.
+     *
+     * MUTATION: fill the whole page pill, leave the number dark, run the grey on under the name, draw the divider to the
+     * pill's edge, put the decoder pill beside the page pill, draw the keycap's edge one pixel all round, or take the
+     * decoder's navy from anywhere but rgb(0,0,115), and this fails.
      *
      * @throws Exception from the window
      */
@@ -905,23 +997,80 @@ public class testLocMappingPages
 
             Object at = geometry(row, box.width, box.height);
 
-            java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder");
+            java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder"),
+                grey = rect(at, "grey"), divider = rect(at, "divider");
+
+            assertNotNull(grey, "the page pill has no grey segment behind its number");
+            assertNotNull(divider, "the decoder pill has no line between its type and its address");
+
+            final int navy = 0x000073, darkGrey = 0x444441, white = 0xFFFFFF;
+
+            int pillMid = decoder.y + decoder.height / 2;
 
             // THE DECODER PILL: solid, in the navy the old line's text was, which is CurrentKeyLabel's own foreground
-            assertEquals(image.getRGB(decoder.x + 4, decoder.y + decoder.height / 2) & 0xFFFFFF, 0x000073,
-                "the decoder pill is not solid navy rgb(0,0,115)");
+            assertEquals(rgb(image, decoder.x + 4, pillMid), navy, "the decoder pill is not solid navy rgb(0,0,115)");
 
-            // THE PAGE PILL: an outline, and nothing inside it
-            assertEquals(image.getRGB(page.x + 4, page.y + page.height / 2) & 0xFFFFFF, none,
-                "the page pill is filled - Adam chose an outline with no fill");
+            // ... and AT THE SLOT'S RIGHT EDGE: the last column anything is painted in is the slot's last, or the one before
+            int last = box.width - 1;
 
-            int top = image.getRGB(page.x + page.width / 2, page.y) & 0xFFFFFF;
-            int bottomEdge = image.getRGB(page.x + page.width / 2, page.y + page.height - 1) & 0xFFFFFF;
+            while (last > 0 && rgb(image, last, pillMid) == none) last--;
 
-            assertTrue(top != none && bottomEdge != none, "the page pill has no outline along its top and bottom");
+            assertTrue(last >= box.width - 2, "the decoder pill does not reach the slot's right edge: the last column painted"
+                + " is " + last + " of " + box.width + ".  Adam: \"float the address to the right\"");
 
-            assertEquals(image.getRGB(page.x + page.width / 2, page.y + 1) & 0xFFFFFF, none,
-                "the page pill's outline is thicker than a thin line");
+            // THE DIVIDER: white, one pixel wide, from just inside the top rim to just inside the bottom one
+            assertEquals(rgb(image, divider.x, pillMid), white, "the divider is not white");
+            assertEquals(rgb(image, divider.x, decoder.y + 1), white, "the divider does not reach the top of the pill's inside");
+            assertEquals(rgb(image, divider.x, decoder.y + decoder.height - 2), white,
+                "the divider does not reach the bottom of the pill's inside");
+
+            assertEquals(rgb(image, divider.x, decoder.y), navy, "the divider cuts through the navy rim at the top: Adam"
+                + " asked for a blue border maintained around it");
+            assertEquals(rgb(image, divider.x, decoder.y + decoder.height - 1), navy,
+                "the divider cuts through the navy rim at the bottom");
+
+            assertEquals(rgb(image, divider.x - 1, decoder.y + 2), navy, "the divider is more than one pixel wide (left)");
+            assertEquals(rgb(image, divider.x + 1, decoder.y + 2), navy, "the divider is more than one pixel wide (right)");
+
+            // THE WORDS, white, on both sides of it: the type left, the address right
+            assertTrue(whiteIn(image, decoder.x + 2, divider.x - 1, decoder.y + 2, decoder.y + decoder.height - 3),
+                "no white type text left of the divider");
+            assertTrue(whiteIn(image, divider.x + 2, decoder.x + decoder.width - 4, decoder.y + 2, decoder.y + decoder.height - 3),
+                "no white address text right of the divider");
+
+            // THE PAGE PILL: dark grey behind the number only, ending in a straight edge before the name
+            int pageMid = page.y + page.height / 2;
+
+            assertEquals(rgb(image, page.x + 4, pageMid), darkGrey, "the number's segment is not the dark grey rgb(68,68,65)");
+
+            assertEquals(rgb(image, grey.x + grey.width - 1, page.y + 3), darkGrey,
+                "the dark grey does not run to the edge of its segment");
+
+            assertEquals(rgb(image, grey.x + grey.width, page.y + 3), none,
+                "the dark grey does not end in a straight edge where the name begins");
+
+            assertEquals(rgb(image, page.x + page.width - 5, pageMid), none,
+                "the part of the page pill behind the name is filled - the grey is behind the number only");
+
+            // THE NUMBER IS WHITE: there are white pixels among the grey, which only the number can have put there
+            assertTrue(whiteIn(image, grey.x + 4, grey.x + grey.width - 5, page.y + 2, page.y + page.height - 3),
+                "the page number is not white");
+
+            // THE OUTLINE RUNS ROUND THE WHOLE PILL: along the top and bottom of the grey part and of the white part alike,
+            // neither the grey's fill nor the background
+            for (int x : new int[] {grey.x + grey.width / 2, grey.x + grey.width + 10})
+            {
+                for (int y : new int[] {page.y, page.y + page.height - 1})
+                {
+                    int c = rgb(image, x, y);
+
+                    assertTrue(c != none && c != darkGrey, "the page pill's neutral outline is missing along its "
+                        + (y == page.y ? "top" : "bottom") + " at column " + x);
+                }
+            }
+
+            assertEquals(rgb(image, grey.x + grey.width / 2, page.y + 1), darkGrey,
+                "the grey does not run up to the outline, so a band of background shows inside it");
 
             // THE KEYCAP: a thin edge all round and a heavier one along the bottom, and a face that is the panel's own
             int midX = keycap.x + keycap.width / 2, midY = keycap.y + keycap.height / 2;
