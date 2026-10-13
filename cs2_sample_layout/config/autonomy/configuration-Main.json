@@ -28,7 +28,8 @@
     "maxLocInactiveSeconds": 0,
     "activateRoutes": false,
     "activateRouteIDs": [],
-    "turnOnFunctionsOnDeparture": true
+    "turnOnFunctionsOnDeparture": true,
+    "simulate": true
   },
   "name": "Main",
   "points": {

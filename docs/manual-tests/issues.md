@@ -424,6 +424,17 @@ Adam, 2026-10-12, told that on a layout served by the Central Station the old au
 
 **For v3.0.1**, on Adam's word.  `LayoutGrid` (the branch for a label starting with `LAYOUT_STATION_PREFIX`, added in `0f743bff`) draws `Point:Bahnhof` as `Bahnhof`, greyed in the autonomy editor.  Such a label is never turned into a caption there (no local folder, so no setup).  Wanted: it is drawn as the text it is, like any other label.
 
+### FR-128 - 2026-10-13 - prettify active loc info
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-13 00:26  
+**Build:** commit 6cdaf746
+
+the active locomotive info is currently text consisting of <letter> . Page <num> (<page name>) . <decodertype> <address>
+
+the page number could be condensed into a nice pill, along with the other info.  make it look more modern.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

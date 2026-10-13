@@ -34557,6 +34557,10 @@ not something to see: a route may set a guard signal its train's path holds gree
 
 Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts as a way to back a train into a berth: the turns on the way are counted.  A train rested on another terminus sets off turned, and each reversing point it passes turns it again, so a reversing point passed on the way in (S - reversing M - terminus T, as MT-245) counts once more; one on a stub, which sends the train straight back, does not.  So in step 3 the warning shows only where neither a terminus leading straight to BottomMainC nor a reversing point on the way in brings a train there tail first.
 
+**Adam, 2026-10-13 (triage).** Works.
+
+*Run against commit 6cdaf746.*
+
 ---
 
 <a id="mt-732"></a>
@@ -34593,6 +34597,12 @@ Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts 
 Claims in `core.testControlStationFaults` (9 new, each seen red first; mutations DA-DG and EA-EB red) and
 `core.testMessageBundles.testTheFailedSyncPopupNamesItsButtonsAsLabelled`.
 
+**Adam, 2026-10-13 (triage).** Could not run this.
+
+test on your end
+
+*Run against commit 6cdaf746.*
+
 ---
 
 <a id="mt-733"></a>
@@ -34623,5 +34633,9 @@ Claims in `core.testControlStationFaults` (9 new, each seen red first; mutations
 station's exit guards green with its own accessories and holds them like them; protection does not turn red a signal an
 active path holds green.  Claims in `regression.testBothProtectingSignalsAreThrown` and
 `regression.testARouteDoesNotThrowSwitchesUnderATrain`, each seen red first.
+
+**Adam, 2026-10-13 (triage).** Works.
+
+*Run against commit 6cdaf746.*
 
 ---
