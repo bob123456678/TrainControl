@@ -1,6 +1,5 @@
 package org.traincontrol.gui;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -16,59 +15,63 @@ import javax.swing.UIManager;
 import org.traincontrol.util.I18n;
 
 /**
- * The line over the active locomotive's name: its key, its page and its decoder, drawn as three small shapes
- * instead of a sentence (FR-128).
+ * The line over the active locomotive's name: its key, its page and its decoder (FR-128).
  *
  * Adam: *"the active locomotive info is currently text consisting of [letter] . Page [num] ([page name]) .
  * [decodertype] [address]. the page number could be condensed into a nice pill, along with the other info.  make it
- * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 and 3, on seeing it) asked for
- * changes to it:
+ * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 to 4, on seeing it) asked for
+ * changes to it, so that it is now:
  *
  *   1. **a keycap** - the key's letter on a small rounded square with a heavier bottom edge, so it reads as a key;
- *   2. **a page pill** - a capsule with a thin neutral outline on the panel's own background, reading the page's NAME,
- *      a thin vertical line, and the page's NUMBER in bold dark grey: "Example | 5".  Round 3: *"move the page number to
- *      after the page name and separate it with a line.  Give it just a white background instead of dark gray."*  No
- *      word "Page" in it (*"I wouldn't like to see the word 'page' in it"*);
+ *   2. **the page, as plain words** - the name and then the number in parentheses, "Example (5)", with no pill round
+ *      them: *"Change the page title to just the name with page number in parens after, no pill around that, in the
+ *      standard blue label font.  Example: MMMM... (5)"*.  No word "Page" in it (*"I wouldn't like to see the word
+ *      'page' in it"*).  The standard blue label font is the one the line was set in before this feature, the font and
+ *      the colour of the generated `CurrentKeyLabel` the row sits in - Segoe UI Semibold 13, rgb(0,0,115);
  *   3. **a decoder pill** - a solid navy capsule with white text, in two parts the way the data is: the decoder TYPE and
  *      the ADDRESS, with a white vertical line between them ("MFX | 12"): *"add a vertical line from top to bottom
  *      (white) separating the type from the number ... while maintaining a blue border around it"*.  It floats to the
  *      RIGHT edge of the slot: *"Can we also float the address to the right?"*
  *
- * **The words are 12 point** (round 3: *"Increase font sizes by 1 notch to improve visibility - make sure everything still
- * fits vertically"*), in the same 18 pixel pills.  At 12 point Segoe UI's capitals are about 8.4 pixels tall and its
- * letters hang about 2.6 below the baseline, and the baseline is set so the capitals sit in the middle of the pill: the
- * ascenders end about 4 pixels below the top of the pill and the descenders about 1 above the outline at the bottom, so
- * nothing is clipped and nothing touches the rim.
+ * **The page's words are the label's, and are not chosen here.**  The row is a child of `CurrentKeyLabel` and inherits
+ * its font and foreground, which is what `pageFont` and `pageColour` ask.  They are read, not written down again: a
+ * change to the label in the form is a change to this line, as it was when the line was the label's own text.  A row not
+ * yet in a label draws as any label would by default.
  *
- * **The separators stay inside the border.**  The page pill's line (the outline's own colour) and the decoder pill's
- * white one each run from one pixel below the pill's top edge to one pixel above its bottom edge and are one pixel
- * wide, so the rim is continuous top and bottom and the line does not cut through it.
+ * **The pills' words are 12 point** (round 3: *"Increase font sizes by 1 notch to improve visibility - make sure
+ * everything still fits vertically"*), in 18 pixel shapes.  At 12 point Segoe UI's capitals are about 8.4 pixels tall
+ * and its letters hang about 2.8 below the baseline, and the baseline is set so the capitals sit in the middle of the
+ * pill, so nothing is clipped and nothing touches the rim.  The page's words are 13 point Semibold with no shape round
+ * them, in the same 18 pixels: its capitals are about 9.1 tall and its letters hang about 3.1 below the baseline, centred
+ * the same way, and that is the size the line was set in in the slot before there were any pills.
+ *
+ * **The divider stays inside the border.**  The decoder pill's white line runs from one pixel below the pill's top edge
+ * to one pixel above its bottom edge and is one pixel wide, so the navy rim is continuous top and bottom and the line
+ * does not cut through it.
  *
  * **It is drawn, not laid out.**  The window's panel is a generated GroupLayout with this row's slot fixed at 296 x 18
- * (`CurrentKeyLabel`), and nothing below it may move.  A component that paints three shapes into the box it is given
- * can promise that; a row of three labels and a layout manager could only hope.  It also lets the one thing that has to
- * give way - the page NAME - be measured and cut to the pixel, which a label cannot do for a piece of a sentence.
+ * (`CurrentKeyLabel`), and nothing below it may move.  A component that paints a few things into the box it is given can
+ * promise that.  It also lets the one thing that has to give way - the page NAME - be measured and cut to the pixel,
+ * which a label cannot do for a piece of a sentence.
  *
  * **What gives way, and what never does** (Adam: *"make sure we test with wide page names (like MMMMMMMMMMM)"*).  The
- * keycap, the page number with the line before it, and the decoder pill are drawn whole.  The page name takes whatever
- * room is left before the page pill's separator, at least a gap short of the decoder pill, and is cut with an ellipsis
- * when it does not fit ("MMMM... | 5"); a name with no room for even one letter and the ellipsis is left out, and the
- * line with it, and the pill is its number alone, as it is for a page that has no name.  The full words are in the
- * tooltip.  With room to spare the page pill keeps its natural width and the space opens between it and the decoder
- * pill, which stays at the right.
+ * keycap and the decoder pill are drawn whole, and so are the page's " (5)": only the page NAME is cut, with an
+ * ellipsis ("MMMM... (5)"), to whatever room is left between the keycap and the decoder pill, a gap short of each.  A
+ * name with no room for even one letter and the ellipsis is left out, and the words are "(5)" alone, as they are for a
+ * page that has no name.  A bare "(5)" rather than a bare "5": the parentheses are what say that the number is the
+ * page's, as they do after a name, where a lone digit beside a key and an address would be read as either.  The full
+ * words, "Page 5 (Example)", are in the tooltip.
  *
  * **Why not `StationCaption`.**  The diagram's captions are labels whose fill is a state colour, drawn at a size taken
- * from the tile; this is a few fixed shapes in a fixed box.  What is borrowed is its house style for painting a pill:
- * the exact shape rather than `drawRoundRect(w - 1, h - 1)`, STROKE_PURE so the four sides of an outline are the same,
- * and text centred on the capitals rather than on the ascent.  Its `LABEL_FONT` is not used because that name is
- * "Segoe UI Symbol" on machines that have it, chosen for the diagram's arrows; it has no bold, and none of this row's
- * words are arrows.  "Segoe UI" is what `LABEL_FONT` falls back to and what the line it replaces was set in.
+ * from the tile; this is a few fixed shapes and a line of words in a fixed box.  What is borrowed is its house style for
+ * painting a pill: the exact shape rather than `drawRoundRect(w - 1, h - 1)`, and text centred on the capitals rather
+ * than on the ascent.  Its `LABEL_FONT` is not used because that name is "Segoe UI Symbol" on machines that have it,
+ * chosen for the diagram's arrows; it has no bold, and none of this row's words are arrows.
  *
- * **Colours come from the look and feel where Adam did not choose one**: the outline is the component border colour
- * and the keycap's letter and the page name are the label foreground, so a theme that turns them light turns this row's
- * too.  He chose the navy and the white of the decoder pill (the navy is the exact colour the old line's text was) and,
- * in round 1, the dark grey (68,68,65) of the page number, which is its text colour again now that the pill behind it
- * is the panel's own.  This program ships only the light theme.
+ * **Colours come from the look and feel where Adam did not choose one**: the keycap's edge is the component border
+ * colour and its letter the label foreground, so a theme that turns them light turns them.  He chose the navy and the
+ * white of the decoder pill (the navy is the exact colour of the line's text before FR-128) and, by asking for the
+ * standard blue label font, the colour of the page's words.  This program ships only the light theme.
  *
  * @author Adam
  */
@@ -79,9 +82,6 @@ public class CurrentKeyRow extends JComponent
 
     /** The words on the decoder pill, and the line between its two parts. */
     public static final Color DECODER_TEXT = Color.WHITE;
-
-    /** The page number, bold, on the pill's own background (Adam's round-1 choice: about rgb 68,68,65). */
-    public static final Color NUMBER_TEXT = new Color(68, 68, 65);
 
     /** How tall the shapes are, in pixels, and the tallest this row ever is: the slot's own height. */
     public static final int PILL_HEIGHT = 18;
@@ -95,13 +95,13 @@ public class CurrentKeyRow extends JComponent
     /** Room either side of the letter on the keycap, not counting its edge. */
     private static final int KEY_PAD = 5;
 
-    /** Room between the decoder pill's curved ends and its words, and between the page pill's right end and its name. */
+    /** Room between the decoder pill's curved ends and its words. */
     private static final int PAD = 8;
 
-    /** Room each side of the divider in the decoder pill, and of the separator in the page pill. */
+    /** Room each side of the divider in the decoder pill. */
     private static final int DIVIDER_PAD = 6;
 
-    /** The text size, in points, of every word in the row: 12 in an 18 pixel pill (one notch up from round 1's 11). */
+    /** The text size, in points, of the keycap's letter and the decoder pill's words: 12 in an 18 pixel pill. */
     public static final float SIZE = 12f;
 
     /** The ellipsis a cut page name ends in. */
@@ -119,10 +119,7 @@ public class CurrentKeyRow extends JComponent
     /** The keycap's letter: medium weight - Segoe UI Semibold, and bold of the plain family where that is not installed. */
     private static final Font KEY_FONT = keyFont();
 
-    /** The page number: bold. */
-    private static final Font NUMBER_FONT = new Font("Segoe UI", Font.BOLD, 12).deriveFont(SIZE);
-
-    /** Every other word: the page name and the decoder. */
+    /** The decoder pill's words. */
     private static final Font TEXT_FONT = new Font("Segoe UI", Font.PLAIN, 12).deriveFont(SIZE);
 
     private static Font keyFont()
@@ -136,14 +133,15 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * The three fonts the row draws in - the keycap's letter, the page number, and every other word - so a test can ask
-     * what size the words are rather than take the constant's word for it.
+     * The two fonts the pills are drawn in - the keycap's letter and the decoder pill's words - so a test can ask what
+     * size they are rather than take the constant's word for it.  The page's words have no font of their own: they are
+     * the label's (`pageFont`).
      *
-     * @return the keycap letter's font, the page number's and the text's
+     * @return the keycap letter's font and the decoder pill's
      */
     public static Font[] fonts()
     {
-        return new Font[] {KEY_FONT, NUMBER_FONT, TEXT_FONT};
+        return new Font[] {KEY_FONT, TEXT_FONT};
     }
 
     /**
@@ -278,11 +276,8 @@ public class CurrentKeyRow extends JComponent
         /** The keycap, or null with no key. */
         public final Rectangle keycap;
 
-        /** The page pill: the name, a line, the number. */
+        /** The page's words: the box they are set in, as tall as the pills and as wide as the words. */
         public final Rectangle page;
-
-        /** The line between the page's name and its number, inside the pill's outline, or null for a number alone. */
-        public final Rectangle separator;
 
         /** The decoder pill, at the slot's right edge, or null when no locomotive is on the key. */
         public final Rectangle decoder;
@@ -293,11 +288,14 @@ public class CurrentKeyRow extends JComponent
         /** The key's letter as drawn. */
         public final String key;
 
-        /** The page number as drawn. */
+        /** The page number, as digits. */
         public final String number;
 
         /** The page name as drawn: whole, cut with an ellipsis, or empty when it has been left out. */
         public final String name;
+
+        /** The page's words as drawn: the name, a space and the number in parentheses - "Example (5)" - or "(5)" alone. */
+        public final String pageText;
 
         /** The decoder's type as drawn, or empty. */
         public final String decoderType;
@@ -306,25 +304,24 @@ public class CurrentKeyRow extends JComponent
         public final String decoderAddress;
 
         /** Where each piece of text starts, in pixels from the row's left. */
-        public final double keyX, numberX, nameX, typeX, addressX;
+        public final double keyX, pageX, typeX, addressX;
 
-        Geometry(Rectangle keycap, Rectangle page, Rectangle separator, Rectangle decoder, Rectangle divider, String key,
-                 String number, String name, String decoderType, String decoderAddress, double keyX, double numberX,
-                 double nameX, double typeX, double addressX)
+        Geometry(Rectangle keycap, Rectangle page, Rectangle decoder, Rectangle divider, String key, String number,
+                 String name, String pageText, String decoderType, String decoderAddress, double keyX, double pageX,
+                 double typeX, double addressX)
         {
             this.keycap = keycap;
             this.page = page;
-            this.separator = separator;
             this.decoder = decoder;
             this.divider = divider;
             this.key = key;
             this.number = number;
             this.name = name;
+            this.pageText = pageText;
             this.decoderType = decoderType;
             this.decoderAddress = decoderAddress;
             this.keyX = keyX;
-            this.numberX = numberX;
-            this.nameX = nameX;
+            this.pageX = pageX;
             this.typeX = typeX;
             this.addressX = addressX;
         }
@@ -385,6 +382,35 @@ public class CurrentKeyRow extends JComponent
         return accessibleContext;
     }
 
+    /**
+     * The font the page's words are drawn in: the one this row inherits from the label it sits in, `CurrentKeyLabel`'s
+     * own (Segoe UI Semibold 13 in the form).  Asked, not written down again.  Before the row is in a label, an ordinary
+     * label's.
+     *
+     * @return the font
+     */
+    public Font pageFont()
+    {
+        Font font = getFont();
+
+        if (font == null) font = UIManager.getFont("Label.font");
+
+        return font == null ? new Font("Dialog", Font.PLAIN, 13) : font;
+    }
+
+    /**
+     * The colour the page's words are drawn in: the label's foreground, inherited as the font is (rgb(0,0,115) in the
+     * form).
+     *
+     * @return the colour
+     */
+    public Color pageColour()
+    {
+        Color colour = getForeground();
+
+        return colour == null ? foreground() : colour;
+    }
+
     /** @return what the row shows, or null before it has been told */
     public Content getContent()
     {
@@ -414,9 +440,9 @@ public class CurrentKeyRow extends JComponent
     /**
      * Where everything goes in a box this size, or null when there is nothing to show.
      *
-     * Left to right: the keycap and the page pill from the left edge, a `GAP` apart; the decoder pill from the RIGHT
-     * edge.  The decoder pill is sized first, because it takes its place at the right and what is left of the page pill
-     * between its padding and its separator and number, less a gap before the decoder pill, is the page name's.
+     * Left to right: the keycap and the page's words from the left edge, a `GAP` apart; the decoder pill from the RIGHT
+     * edge.  The decoder pill is sized first, because it takes its place at the right, and what is left between the
+     * keycap and it, less the " (5)" and a gap, is the page name's.
      *
      * @param width the box's width in pixels
      * @param height the box's height in pixels
@@ -483,58 +509,36 @@ public class CurrentKeyRow extends JComponent
             reserved = w + GAP;
         }
 
-        // THE PAGE PILL, from the left: the name, a line, the number.  The number and the line are never cut.
+        // THE PAGE'S WORDS, from the left: the name, then the number in parentheses.  The " (5)" is never cut.
+        Font pageFont = pageFont();
+
         String number = String.valueOf(c.getPage());
-        double numberAdvance = advance(NUMBER_FONT, number);
+        String suffix = " (" + number + ")";
 
-        int numberWidth = (int) Math.ceil(numberAdvance);
+        // What is left, once the shapes that never give way have their room, is the name's.  A pixel is kept back for the
+        // words being measured whole and the name and the " (5)" apart, which the kerning between them can tell by a hair.
+        double nameRoom = width - x - reserved - Math.ceil(advance(pageFont, suffix)) - 1;
 
-        // what the pill holds besides the name: the line with room each side, the number, and the pill's two ends
-        int fixed = 2 * PAD + DIVIDER_PAD + 1 + DIVIDER_PAD + numberWidth;
+        String name = fit(c.getPageName(), nameRoom, pageFont);
 
-        // What is left, once the shapes that never give way have their room, is the name's
-        double nameRoom = width - x - reserved - fixed;
+        // a page with no name is "(5)": the number in the same parentheses, without the name before it
+        String pageText = name.isEmpty() ? "(" + number + ")" : name + suffix;
 
-        String name = fit(c.getPageName(), nameRoom);
-        double nameAdvance = name.isEmpty() ? 0 : advance(TEXT_FONT, name);
+        Rectangle page = new Rectangle(x, top, (int) Math.ceil(advance(pageFont, pageText)), h);
 
-        Rectangle page, separator = null;
-        double nameX = 0, numberX;
-
-        if (name.isEmpty())
-        {
-            // THE NUMBER ALONE, in a short pill with no line
-            page = new Rectangle(x, top, Math.max(h, numberWidth + 2 * PAD), h);
-
-            numberX = x + (page.width - numberAdvance) / 2.0;
-        }
-        else
-        {
-            int nameWidth = (int) Math.ceil(nameAdvance);
-
-            page = new Rectangle(x, top, fixed + nameWidth, h);
-
-            nameX = x + PAD;
-
-            // one pixel in from the top and from the bottom, so the outline is unbroken above and below it
-            separator = new Rectangle(x + PAD + nameWidth + DIVIDER_PAD, top + 1, 1, h - 2);
-
-            numberX = separator.x + 1 + DIVIDER_PAD;
-        }
-
-        return new Geometry(keycap, page, separator, decoder, divider, c.getKey(), number, name, type, address,
-            keycap == null ? 0 : (keycap.width - keyAdvance) / 2.0, numberX, nameX, typeX, addressX);
+        return new Geometry(keycap, page, decoder, divider, c.getKey(), number, name, pageText, type, address,
+            keycap == null ? 0 : (keycap.width - keyAdvance) / 2.0, x, typeX, addressX);
     }
 
     /**
      * The page name that fits in this much room: whole, or cut with an ellipsis, or empty when not even one letter
      * and the ellipsis fit.
      */
-    private static String fit(String name, double room)
+    private static String fit(String name, double room, Font font)
     {
-        if (name.isEmpty() || advance(TEXT_FONT, name) <= room) return name;
+        if (name.isEmpty() || advance(font, name) <= room) return name;
 
-        double dots = advance(TEXT_FONT, ELLIPSIS);
+        double dots = advance(font, ELLIPSIS);
 
         for (int n = name.length() - 1; n >= 1; n--)
         {
@@ -543,7 +547,7 @@ public class CurrentKeyRow extends JComponent
 
             String head = name.substring(0, n).trim();
 
-            if (!head.isEmpty() && advance(TEXT_FONT, head) + dots <= room) return head + ELLIPSIS;
+            if (!head.isEmpty() && advance(font, head) + dots <= room) return head + ELLIPSIS;
         }
 
         return "";
@@ -609,7 +613,7 @@ public class CurrentKeyRow extends JComponent
                 paintKeycap(g2, at, edge, text);
             }
 
-            paintPage(g2, at, edge, text);
+            paintPage(g2, at);
 
             if (at.decoder != null)
             {
@@ -623,33 +627,16 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * THE PAGE PILL: the outline on the panel's own background, the name, a thin line in the outline's colour, and the
-     * number.  The line is inside the outline, one pixel short of it at the top and the bottom, so the outline runs
-     * unbroken round the whole pill.
+     * THE PAGE'S WORDS: the name and the number in parentheses, in the label's font and colour, with nothing round them -
+     * no outline, no fill, no line - centred on their capitals in the slot's height.
      */
-    private void paintPage(Graphics2D g2, Geometry at, Color edge, Color text)
+    private void paintPage(Graphics2D g2, Geometry at)
     {
-        Rectangle p = at.page;
+        Font font = pageFont();
 
-        g2.setColor(edge);
-        g2.setStroke(new BasicStroke(1f));
-        g2.draw(new RoundRectangle2D.Double(p.x + 0.5, p.y + 0.5, p.width - 1, p.height - 1, p.height - 1, p.height - 1));
-
-        if (at.separator != null)
-        {
-            g2.fillRect(at.separator.x, at.separator.y, at.separator.width, at.separator.height);
-        }
-
-        if (!at.name.isEmpty())
-        {
-            g2.setFont(TEXT_FONT);
-            g2.setColor(text);
-            g2.drawString(at.name, (float) at.nameX, (float) baseline(p.y, p.height, TEXT_FONT));
-        }
-
-        g2.setFont(NUMBER_FONT);
-        g2.setColor(numberColour(text));
-        g2.drawString(at.number, (float) at.numberX, (float) baseline(p.y, p.height, NUMBER_FONT));
+        g2.setFont(font);
+        g2.setColor(pageColour());
+        g2.drawString(at.pageText, (float) at.pageX, (float) baseline(at.page.y, at.page.height, font));
     }
 
     /**
@@ -706,14 +693,6 @@ public class CurrentKeyRow extends JComponent
     private static double baseline(int top, int height, Font font)
     {
         return top + height / 2.0 + capHeight(font) / 2.0;
-    }
-
-    /** Adam's dark grey, or the foreground itself where the foreground is light and the grey would not show. */
-    private static Color numberColour(Color foreground)
-    {
-        double brightness = (0.299 * foreground.getRed() + 0.587 * foreground.getGreen() + 0.114 * foreground.getBlue()) / 255.0;
-
-        return brightness > 0.6 ? foreground : NUMBER_TEXT;
     }
 
     /** The words' colour: the look and feel's own for a label. */

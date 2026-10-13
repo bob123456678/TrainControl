@@ -664,20 +664,36 @@ public class testLocMappingPages
         return first < 0 ? null : new int[] {first, last};
     }
 
-    /** Whether any pixel in these columns and rows is a dark grey - the number's colour, or all but with the edge's blend. */
-    private static boolean darkGreyIn(java.awt.image.BufferedImage image, int x0, int x1, int y0, int y1)
+    /**
+     * Whether every pixel in this box is the page's words' colour on the background or a blend of the two - which, over a
+     * magenta background and navy words, is every pixel whose green is nothing.  A grey, a white or a neutral edge has
+     * some green, so a shape round the words, or a fill behind them, is a pixel that fails this.
+     */
+    private static boolean onlyWordsOnTheBackground(java.awt.image.BufferedImage image, int x0, int x1, int y0, int y1)
     {
-        for (int x = x0; x <= x1; x++)
+        for (int x = Math.max(0, x0); x <= Math.min(image.getWidth() - 1, x1); x++)
         {
-            for (int y = y0; y <= y1; y++)
+            for (int y = Math.max(0, y0); y <= Math.min(image.getHeight() - 1, y1); y++)
+            {
+                if (((image.getRGB(x, y) >> 8) & 255) != 0) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** Whether any pixel in this box is the page's words' navy: nothing red, a blue of about 115. */
+    private static boolean navyIn(java.awt.image.BufferedImage image, int x0, int x1, int y0, int y1)
+    {
+        for (int x = Math.max(0, x0); x <= Math.min(image.getWidth() - 1, x1); x++)
+        {
+            for (int y = Math.max(0, y0); y <= Math.min(image.getHeight() - 1, y1); y++)
             {
                 int c = rgb(image, x, y);
 
                 int r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
 
-                int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
-
-                if (max <= 130 && max - min <= 45) return true;
+                if (r <= 40 && g <= 40 && b >= 100 && b <= 130) return true;
             }
         }
 
@@ -722,7 +738,9 @@ public class testLocMappingPages
      * its name, then a solid decoder pill with the type and the address.  *"I wouldn't like to see the word 'page' in
      * it."*  And on seeing it (round 2): the decoder pill's type and address are parted by a white vertical line, and the
      * pill floats to the right: *"Can we also float the address to the right?"*  Round 3: *"move the page number to after
-     * the page name and separate it with a line"*, so the page pill reads NAME, a line, NUMBER.
+     * the page name and separate it with a line"*.  Round 4: *"Change the page title to just the name with page number in
+     * parens after, no pill around that, in the standard blue label font"* - so the page is plain words, "Example (5)",
+     * in `CurrentKeyLabel`'s own font and colour, and only the keycap and the decoder pill are shapes.
      *
      * One locomotive of each decoder type the program has, on the page of the window's current key: MM2, MFX, DCC, a
      * multi-unit and a consist of an MFX head with a member.  Driven through `repaintLoc`, which is what the window calls
@@ -732,9 +750,10 @@ public class testLocMappingPages
      * The keycap and the page pill stay at the left, a gap apart; the decoder pill is at the slot's right edge, with more
      * than the least gap between it and a short page name's pill, which is the proof that it floats and does not follow.
      *
-     * MUTATION: put the word Page back in the page pill (draw `getTooltip`'s page words there), put the number back
-     * before the name, put the decoder pill back beside the page pill, join the type and the address into one text, or
-     * draw either line outside its pill, and this fails.
+     * MUTATION: put the word Page back in the page's words (draw `getTooltip`'s page words there), put the number back
+     * before the name, put a line between them, put the decoder pill back beside the page's words, join the type and
+     * the address into one text, draw the divider outside its pill, or set the page's words in any font or colour but
+     * the label's, and this fails.
      *
      * @throws Exception from the window
      */
@@ -751,6 +770,28 @@ public class testLocMappingPages
 
             assertEquals(slot.getText(), "", "CurrentKeyLabel still carries the old text as well as the row, so the line"
                 + " would be said twice");
+
+            // THE PAGE'S WORDS ARE SET IN THE LABEL'S OWN FONT AND COLOUR, read from it: the "standard blue label font"
+            java.lang.reflect.Method pageFont = null, pageColour = null;
+
+            try
+            {
+                pageFont = row.getClass().getMethod("pageFont");
+                pageColour = row.getClass().getMethod("pageColour");
+            }
+            catch (NoSuchMethodException none)
+            {
+                // said below
+            }
+
+            assertNotNull(pageFont, "the row does not say what font the page's words are in");
+            assertNotNull(pageColour, "the row does not say what colour the page's words are in");
+
+            assertEquals(pageFont.invoke(row), slot.getFont(), "the page's words are not in CurrentKeyLabel's font.  Adam,"
+                + " round 4: \"in the standard blue label font\"");
+
+            assertEquals(pageColour.invoke(row), slot.getForeground(), "the page's words are not in CurrentKeyLabel's colour."
+                + "  Adam, round 4: \"in the standard blue label font\"");
 
             p.nameThePage("Example");
 
@@ -828,25 +869,12 @@ public class testLocMappingPages
                 assertTrue(decoder.x - (page.x + page.width) > 5, "the decoder pill is a least gap from a short page name's"
                     + " pill, so it follows the page pill and does not float " + said + ": " + page + " and " + decoder);
 
-                // THE PAGE PILL READS NAME, A LINE, NUMBER - no grey segment, the line inside the outline and not through it
-                assertNull(pub(at, "grey"), "the page pill still has a grey segment behind its number " + said
-                    + ".  Adam, round 3: \"Give it just a white background instead of dark gray\"");
+                // THE PAGE IS PLAIN WORDS - the name, then the number in parentheses - with no pill, no fill and no line
+                assertNull(pub(at, "separator"), "the page still has a line between its name and its number " + said
+                    + ".  Adam, round 4: \"no pill around that\"");
 
-                java.awt.Rectangle separator = rect(at, "separator");
-
-                assertNotNull(separator, "the page pill has no line between its name and its number " + said);
-
-                assertEquals(separator.width, 1, "the page pill's line is not one pixel wide " + said);
-                assertEquals(separator.y, page.y + 1, "the page pill's line does not start one pixel below its outline " + said);
-                assertEquals(separator.y + separator.height, page.y + page.height - 1,
-                    "the page pill's line does not stop one pixel above its outline " + said);
-
-                double nameX = (Double) pub(at, "nameX"), numberX = (Double) pub(at, "numberX");
-
-                assertTrue(nameX < separator.x && separator.x < numberX && numberX < page.x + page.width,
-                    "the page pill is not the name, then the line, then the number " + said + ": name at " + nameX + ", line at "
-                    + separator.x + ", number at " + numberX + " in " + page + ".  Adam, round 3: \"move the page number to"
-                    + " after the page name and separate it with a line\"");
+                assertEquals(pub(at, "pageText"), "Example (" + p.page + ")", "the page's words are not the name and then the"
+                    + " number in parentheses " + said + ".  Adam, round 4: \"just the name with page number in parens after\"");
 
                 // A WHITE LINE BETWEEN THE TYPE AND THE ADDRESS, inside the pill's rim and not through it
                 assertNotNull(divider, "the decoder pill has no line between its type and its address " + said);
@@ -892,7 +920,8 @@ public class testLocMappingPages
             assertNotNull(bare, "nothing is drawn for a key with no locomotive: the key and its page went with it");
             assertNull(rect(bare, "decoder"), "a decoder pill is drawn for a key with no locomotive on it");
             assertEquals(pub(bare, "name"), "Example");
-            assertNotNull(rect(bare, "separator"), "with no decoder pill the page pill lost its line between name and number");
+            assertEquals(pub(bare, "pageText"), "Example (" + p.page + ")",
+                "with no decoder pill the page's words are not the name and the number in parentheses");
 
             assertEquals(rect(bare, "page").x, rect(bare, "keycap").x + rect(bare, "keycap").width + 5,
                 "with no decoder pill the page pill is not at the left, a gap after the keycap");
@@ -912,12 +941,13 @@ public class testLocMappingPages
      * gap: the name is cut to that, and the page pill never runs under the decoder pill.
      *
      * Round 3, Adam: *"Increase font sizes by 1 notch to improve visibility - make sure everything still fits vertically"*:
-     * every font in the row is 12 point, and the slot is still 296 by 18.  With the 22-M name the page pill is "MMMM... | 5":
-     * the name is cut before the line, and the line and the number are whole.
+     * every font in the pills is 12 point, and the slot is still 296 by 18.  With the 22-M name the page's words are
+     * "MMMM... (5)" (round 4: *"Example: MMMM... (5)"*): the name is cut with an ellipsis and the " (5)" is whole and
+     * clear of the decoder pill.
      *
      * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, draw
-     * the name's pill wider than the room it was given, take the decoder pill's width out of that room, cut the number
-     * or the line, or set any of the fonts back to 11 point, and this fails.
+     * the page's words wider than the room they were given, take the decoder pill's width out of that room, cut the
+     * " (5)", or set any of the pills' fonts back to 11 point, and this fails.
      *
      * @throws Exception from the window
      */
@@ -958,9 +988,7 @@ public class testLocMappingPages
 
             assertNotNull(fonts, "the row does not say what fonts it draws in");
 
-            java.awt.Font[] rowFonts = (java.awt.Font[]) fonts.invoke(null);
-
-            for (java.awt.Font font : rowFonts)
+            for (java.awt.Font font : (java.awt.Font[]) fonts.invoke(null))
             {
                 assertEquals(font.getSize2D(), 12f, 0.001f, "a font in the row is " + font.getSize2D() + " point, not 12: "
                     + font + ".  Adam, round 3: \"Increase font sizes by 1 notch\"");
@@ -996,28 +1024,11 @@ public class testLocMappingPages
                 // THE PARTS THAT NEVER GIVE WAY
                 assertEquals(pub(at, "number"), String.valueOf(p.page), "the page number was cut " + said);
 
-                // ... and the line before the number, which is whole and between the cut name and the number
-                java.awt.Rectangle separator = rect(at, "separator");
+                // ... and the " (5)" after it, whole: the page's words are the cut name and then the number in parentheses
+                assertEquals(pub(at, "pageText"), name + " (" + p.page + ")", "the page's number was cut, or is not after the"
+                    + " cut name, in parentheses " + said + ": [" + pub(at, "pageText") + "]");
 
-                assertNotNull(separator, "the page pill's line before its number went when the name was cut " + said);
-
-                assertEquals(separator.height, rect(at, "page").height - 2, "the page pill's line was cut " + said);
-
-                double numberX = (Double) pub(at, "numberX");
-
-                assertTrue(separator.x + separator.width < numberX && numberX < rect(at, "page").x + rect(at, "page").width,
-                    "the page number is not after the line and inside the pill " + said + ": " + separator + ", " + numberX
-                    + " in " + rect(at, "page"));
-
-                assertTrue((Double) pub(at, "nameX") + 1 < separator.x, "the page name is not before the line " + said);
-
-                // the number is whole, in its pill: its own width, measured as it is drawn, ends inside the pill's right end
-                double numberAdvance = rowFonts[1].getStringBounds((String) pub(at, "number"),
-                    new java.awt.font.FontRenderContext(null, true, true)).getWidth();
-
-                assertTrue(numberX + numberAdvance <= rect(at, "page").x + rect(at, "page").width - 6,
-                    "the page number runs out of the end of its pill, or is crowded against it " + said + ": " + numberX + " + "
-                    + numberAdvance + " in " + rect(at, "page"));
+                assertNull(pub(at, "separator"), "the page still has a line before its number " + said);
 
                 String decoderType = loc.getDecoderTypeLabel(), address = p.model.getLocAddress(loc.getName());
                 String decoderText = decoderType + " " + address;
@@ -1066,8 +1077,8 @@ public class testLocMappingPages
 
             assertEquals(pub(unnamed, "name"), "", "a page with no name still has a name in its pill");
             assertEquals(pub(unnamed, "number"), String.valueOf(p.page), "a page with no name has lost its number");
-            assertNull(rect(unnamed, "separator"), "a page with no name has a line before its number, and nothing before it");
-            assertTrue(rect(unnamed, "page").width < 40, "a page with no name is not a short pill: " + rect(unnamed, "page"));
+            assertEquals(pub(unnamed, "pageText"), "(" + p.page + ")", "a page with no name is not the number in parentheses");
+            assertTrue(rect(unnamed, "page").width < 40, "a page with no name is not short: " + rect(unnamed, "page"));
 
             // AND A RENAME REACHES THE LINE THE WAY IT ALWAYS DID: through a repaint that is not forced.  The old line
             // compared its own text to decide whether anything had changed; the row compares what it says.
@@ -1080,24 +1091,25 @@ public class testLocMappingPages
     }
 
     /**
-     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, a page pill that is a neutral outline
-     * on the panel's own background reading the name, a thin line and a dark grey number, and a decoder pill that is solid
-     * navy at the slot's right edge, with a white line between its type and its address (FR-128).
+     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, the page as plain words in the label's
+     * navy with nothing round them, and a decoder pill that is solid navy at the slot's right edge, with a white line
+     * between its type and its address (FR-128).
      *
      * Read from the pixels the row paints, over a background that is nothing else, so a fill that is not meant to be there
      * shows as a change from it.  Each reading is a point well inside one shape and clear of its words, so it does not
      * depend on how the letters are drawn - only on whether the shape is filled, outlined or neither.
      *
      * Round 2, Adam: *"In the decoder address pill, add a vertical line from top to bottom (white) separating the type
-     * from the number (MFX | 12) while maintaining a blue border around it ... float the address to the right"*.  Round 3:
-     * *"In the FR-128 page name pill, move the page number to after the page name and separate it with a line.  Give it
-     * just a white background instead of dark gray."*  So the page pill has no fill anywhere and the number's pixels are
-     * on the background; the line is the outline's colour, inside the outline; the decoder's divider is white with navy
-     * above and below it - the rim, unbroken - and the pill's last painted column is the slot's last.
+     * from the number (MFX | 12) while maintaining a blue border around it ... float the address to the right"*.  Round 4:
+     * *"Change the page title to just the name with page number in parens after, no pill around that, in the standard
+     * blue label font ... Keep both the key and address pills as is"*.  So, between the keycap and the decoder pill, every
+     * pixel is the background or the label's navy words and a blend of the two - no outline, no fill, no line, no grey -
+     * and the words are navy; the decoder's divider is white with navy above and below it - the rim, unbroken - and the
+     * pill's last painted column is the slot's last.
      *
-     * MUTATION: fill the page pill or any part of it, draw the number in white, draw the page pill's line to the pill's
-     * edge, draw the divider to the pill's edge, put the decoder pill beside the page pill, draw the keycap's edge one
-     * pixel all round, or take the decoder's navy from anywhere but rgb(0,0,115), and this fails.
+     * MUTATION: draw any outline, fill or line round the page's words, draw them in anything but the label's navy, put the
+     * decoder pill beside them, draw the divider to the pill's edge, draw the keycap's edge one pixel all round, or take
+     * the decoder's navy from anywhere but rgb(0,0,115), and this fails.
      *
      * @throws Exception from the window
      */
@@ -1135,10 +1147,9 @@ public class testLocMappingPages
             Object at = geometry(row, box.width, box.height);
 
             java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder"),
-                separator = rect(at, "separator"), divider = rect(at, "divider");
+                divider = rect(at, "divider");
 
-            assertNull(pub(at, "grey"), "the page pill still has a grey segment behind its number");
-            assertNotNull(separator, "the page pill has no line between its name and its number");
+            assertNull(pub(at, "separator"), "the page still has a line between its name and its number");
             assertNotNull(divider, "the decoder pill has no line between its type and its address");
 
             final int navy = 0x000073, white = 0xFFFFFF;
@@ -1176,46 +1187,23 @@ public class testLocMappingPages
             assertTrue(whiteIn(image, divider.x + 2, decoder.x + decoder.width - 4, decoder.y + 2, decoder.y + decoder.height - 3),
                 "no white address text right of the divider");
 
-            // THE PAGE PILL: no fill anywhere - the panel's own background behind the name AND behind the number
-            int pageMid = page.y + page.height / 2;
+            // THE PAGE'S WORDS HAVE NO SHAPE: in all the room between the keycap and the decoder pill, every pixel is the
+            // background, the label's navy, or a blend of the two - so no outline, fill, line or grey of any kind
+            int from = keycap.x + keycap.width, to = decoder.x - 1;
 
-            assertEquals(rgb(image, page.x + 4, pageMid), none, "the page pill is filled at its left end - Adam, round 3:"
-                + " \"Give it just a white background instead of dark gray\"");
+            assertTrue(onlyWordsOnTheBackground(image, from, to, 0, box.height - 1), "something other than the page's words is"
+                + " drawn between the keycap and the decoder pill: a pill, a fill or a line.  Adam, round 4: \"no pill around"
+                + " that\"");
 
-            assertEquals(rgb(image, separator.x + 3, page.y + 2), none,
-                "the page pill is filled round its number: the background there is not the panel's own");
+            // ... and the words ARE THE LABEL'S NAVY, not black or a grey
+            assertTrue(navyIn(image, page.x, page.x + page.width, page.y, page.y + page.height - 1), "the page's words are not"
+                + " drawn in the label's navy rgb(0,0,115)");
 
-            assertEquals(rgb(image, page.x + page.width - 4, pageMid), none, "the page pill is filled at its right end");
-
-            // THE NUMBER: dark grey text on that background - dark pixels among the background's, none of them white
-            double numberX = (Double) pub(at, "numberX");
-
-            assertTrue(darkGreyIn(image, (int) numberX, page.x + page.width - 6, page.y + 2, page.y + page.height - 3),
-                "the page number is not drawn in dark grey on the background");
-            assertFalse(whiteIn(image, (int) numberX, page.x + page.width - 6, page.y + 2, page.y + page.height - 3),
-                "the page number is drawn in white, which is not seen on a white background");
-
-            // THE LINE: one pixel wide, in the outline's colour, from one pixel inside the top outline to one inside the bottom
-            int outline = rgb(image, page.x + page.width / 2, page.y);
-
-            assertTrue(outline != none, "the page pill has no outline along its top");
-
-            assertEquals(rgb(image, separator.x, page.y + 1), outline, "the line does not reach the top of the pill's inside");
-            assertEquals(rgb(image, separator.x, pageMid), outline, "the line between name and number is not the outline's colour");
-            assertEquals(rgb(image, separator.x, page.y + page.height - 2), outline,
-                "the line does not reach the bottom of the pill's inside");
-
-            assertEquals(rgb(image, separator.x - 1, page.y + 2), none, "the page pill's line is more than one pixel wide (left)");
-            assertEquals(rgb(image, separator.x + 1, page.y + 2), none, "the page pill's line is more than one pixel wide (right)");
-
-            assertEquals(rgb(image, page.x + page.width / 2, page.y + 1), none, "the page pill's outline is thicker than a thin line");
-
-            // THE OUTLINE RUNS ROUND THE WHOLE PILL, name and number alike
-            for (int x : new int[] {page.x + 14, separator.x + 4})
+            // ... with the top and bottom rows of the slot empty, where a pill's outline would be
+            for (int x = from; x <= to; x++)
             {
-                assertEquals(rgb(image, x, page.y), outline, "the page pill's outline is not unbroken along its top at column " + x);
-                assertEquals(rgb(image, x, page.y + page.height - 1), outline,
-                    "the page pill's outline is not unbroken along its bottom at column " + x);
+                assertEquals(rgb(image, x, 0), none, "something is drawn along the top of the slot at column " + x);
+                assertEquals(rgb(image, x, box.height - 1), none, "something is drawn along the bottom of the slot at column " + x);
             }
 
             // THE KEYCAP: a thin edge all round and a heavier one along the bottom, and a face that is the panel's own
@@ -1247,7 +1235,8 @@ public class testLocMappingPages
     }
 
     /**
-     * Twelve point text fits the 18 pixel pills cleanly: nothing clipped, nothing touching a rim (FR-128, round 3).
+     * Twelve point text fits the 18 pixel pills cleanly, and the page's 13 point words the slot: nothing clipped, nothing
+     * touching a rim (FR-128, rounds 3 and 4).
      *
      * Adam: *"Increase font sizes by 1 notch to improve visibility - make sure everything still fits vertically."*  The
      * slot is 296 by 18 and does not grow, so the words have to fit in the pills as they are.  A page name with letters
@@ -1256,7 +1245,12 @@ public class testLocMappingPages
      * with the descenders really there (a clipped descender is a text whose last row is the rim's) and the rim rows
      * themselves untouched, one colour along the whole run of the text.
      *
-     * MUTATION: set the fonts to 14 point, or move the baseline down a pixel or two, and this fails.
+     * Round 4 put the page back to plain words in the label's 13 point Semibold, which fitted this slot before there
+     * were any pills; "Egypt jgy Alt (12)" has its capitals and its descenders and must show all of both within the 18
+     * rows, with the top and the bottom row empty.
+     *
+     * MUTATION: set the pills' fonts to 14 point, set the page's words to a size the slot cannot hold, or move the baseline
+     * down a pixel or two, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1323,7 +1317,7 @@ public class testLocMappingPages
             Object at = geometry(row, box.width, box.height);
 
             java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder"),
-                separator = rect(at, "separator"), divider = rect(at, "divider");
+                divider = rect(at, "divider");
 
             for (java.awt.Rectangle r : new java.awt.Rectangle[] {keycap, page, decoder})
             {
@@ -1333,34 +1327,20 @@ public class testLocMappingPages
 
             int bottomRim = box.height - 1;
 
-            assertNotNull(separator, "the page pill has no line between its name and its number");
             assertNotNull(divider, "the decoder pill has no line between its type and its address");
 
-            // THE PAGE NAME, between the pill's left end and its line: below the top rim, above the bottom one, descenders in
-            int nameFrom = (int) (double) (Double) pub(at, "nameX"), nameTo = separator.x - 3;
+            // THE PAGE'S WORDS, capitals and descenders and the " (12)": in the slot, the top row and the bottom row empty
+            int[] words = inkRows(image, page.x, page.x + page.width, 0, bottomRim, false);
 
-            int[] name = inkRows(image, nameFrom, nameTo, 1, bottomRim - 1, false);
-
-            assertNotNull(name, "the page name is not drawn");
-            assertTrue(name[0] >= 2, "the page name's ascenders reach the top rim: ink from row " + name[0]);
-            assertTrue(name[1] >= box.height - 4, "the page name's descenders are not drawn: its last row is " + name[1]
+            assertNotNull(words, "the page's words are not drawn");
+            assertTrue(words[0] >= 2, "the page's ascenders reach the top of the slot: ink from row " + words[0]);
+            assertTrue(words[1] >= box.height - 4, "the page's descenders are not drawn: its last row is " + words[1]
                 + ", so they are clipped");
-            assertTrue(name[1] <= bottomRim - 1, "the page name's descenders reach the bottom rim: ink to row " + name[1]);
+            assertTrue(words[1] <= bottomRim - 1, "the page's descenders reach the bottom row of the slot: ink to row " + words[1]);
 
-            // (from the tenth column, where the capsule's rounded end has become the straight edge it is along the rest)
-            int straight = Math.max(nameFrom, page.x + 10);
-
-            assertTrue(rowIsOneColour(image, straight, nameTo, 0), "the page name touches the pill's top outline");
-            assertTrue(rowIsOneColour(image, straight, nameTo, bottomRim), "the page name touches the pill's bottom outline");
-
-            // THE PAGE NUMBER
-            int numberFrom = (int) (double) (Double) pub(at, "numberX"), numberTo = page.x + page.width - 6;
-
-            int[] number = inkRows(image, numberFrom, numberTo, 1, bottomRim - 1, false);
-
-            assertNotNull(number, "the page number is not drawn");
-            assertTrue(number[0] >= 2 && number[1] <= bottomRim - 2, "the page number is too tall for the pill: rows "
-                + number[0] + " to " + number[1]);
+            assertTrue(rowIsOneColour(image, page.x - 2, page.x + page.width + 2, 0), "something is drawn along the top row");
+            assertTrue(rowIsOneColour(image, page.x - 2, page.x + page.width + 2, bottomRim),
+                "something is drawn along the bottom row");
 
             // THE KEYCAP'S LETTER, tail and all, in the face: above the heavier bottom edge, below the top one
             int[] key = inkRows(image, keycap.x + 4, keycap.x + keycap.width - 5, 1, bottomRim - 2, false);
