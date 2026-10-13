@@ -8999,7 +8999,8 @@ public class testAutonomyDiagramSession
         session.getStore().setCaption(new TileKey("main", 7, 4), alone);
         session.rebuild();
 
-        assertFalse(session.getReducer().getPoints().containsKey(alone), "precondition: the lone sensor is a Point");
+        assertFalse(session.getReducer().getPoints().containsKey(alone), "precondition: the lone sensor should be no Point,"
+            + " and it is one");
 
         assertTrue(shownTwice(session).isEmpty(), "a caption on a page that is gone, or beside a station that is no Point,"
             + " is reported: " + session.check());
@@ -9037,6 +9038,124 @@ public class testAutonomyDiagramSession
         session.rebuild();
 
         assertTrue(shownTwice(session).isEmpty(), "a station on a page left out of autonomy is reported: " + session.check());
+    }
+
+    /**
+     * A caption on a page that is not drawn does not make the station's own caption give way (OB-341).
+     *
+     * No window draws a caption on a page left out of autonomy - the running diagram, a pop-up and the autonomy editor all
+     * build the same grid, which hides them (`LayoutGrid.hidesStationCaptions`) - and a caption on a page that is gone has
+     * no grid at all.  A station captioned on its own square and on such a page had given way to a caption nobody can see,
+     * and was drawn nowhere.  It is drawn on its own square, and is no error.
+     *
+     * THE CONTROL is the same two captions with the other page drawn: the own one gives way to it.
+     *
+     * MUTATION: leave the page test out of `isCaptionDrawn` and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testACaptionOnAPageThatIsNotDrawnDoesNotMakeTheOwnOneGiveWay() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey elsewhere = new TileKey("second", 3, 2);
+        TileKey gone = new TileKey("gone", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(new TileKey("main", 4, 1), true);
+        session.setPointName(station, "Hauptbahnhof");
+
+        session.getStore().setCaption(station, station);
+        session.getStore().setCaption(elsewhere, station);
+        session.rebuild();
+
+        assertFalse(session.isCaptionDrawn(station), "precondition: with the other page drawn, the station's own caption does"
+            + " not give way to the one on it");
+
+        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(elsewhere), "precondition: the other page's caption is"
+            + " not the one that is drawn");
+
+        // A PAGE LEFT OUT OF AUTONOMY
+        session.setPageExcluded("second", true);
+        session.rebuild();
+
+        assertFalse(session.isCaptionDrawn(elsewhere), "a caption on a page left out of autonomy is drawn");
+
+        assertTrue(session.isCaptionDrawn(station), "the station's own caption gives way to one on a page left out of"
+            + " autonomy, which no window draws - so the station is drawn nowhere");
+
+        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(station), "the station is not drawn exactly once, on"
+            + " its own square");
+
+        assertTrue(shownTwice(session).isEmpty(), "a station drawn once is reported: " + session.check());
+
+        // A PAGE THAT IS GONE
+        session.setPageExcluded("second", false);
+        session.getStore().setCaption(elsewhere, null);
+        session.getStore().setCaption(gone, station);
+        session.rebuild();
+
+        assertFalse(session.isCaptionDrawn(gone), "a caption on a page that is gone is drawn");
+
+        assertTrue(session.isCaptionDrawn(station), "the station's own caption gives way to one on a page that is gone,"
+            + " which has no grid to be drawn on");
+    }
+
+    /**
+     * A caption on a page that is not drawn is not a place the station's name is drawn (OB-341).
+     *
+     * A station captioned beside itself and on a page left out of autonomy, or on one that is gone, is drawn once, and is
+     * no error - it had been reported as named twice, which refuses the setup.
+     *
+     * THE CONTROL is the same two captions with the other page drawn: two places, and one finding.
+     *
+     * MUTATION: leave the page test out of `isCaptionDrawn` and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testACaptionOnAPageThatIsNotDrawnIsNotAPlaceTheNameIsDrawn() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey beside = new TileKey("main", 1, 2);
+        TileKey elsewhere = new TileKey("second", 3, 2);
+        TileKey gone = new TileKey("gone", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(new TileKey("main", 4, 1), true);
+        session.setPointName(station, "Hauptbahnhof");
+
+        session.getStore().setCaption(beside, station);
+        session.getStore().setCaption(elsewhere, station);
+        session.rebuild();
+
+        assertEquals(shownTwice(session).size(), 1, "precondition: two places, both pages drawn, are not reported: "
+            + session.check());
+
+        // A PAGE LEFT OUT OF AUTONOMY
+        session.setPageExcluded("second", true);
+        session.rebuild();
+
+        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(beside), "the station is not drawn exactly once, beside"
+            + " itself");
+
+        assertTrue(shownTwice(session).isEmpty(), "a caption on a page left out of autonomy is counted as a place the name is"
+            + " drawn, and a station drawn once is reported: " + session.check());
+
+        // A PAGE THAT IS GONE
+        session.setPageExcluded("second", false);
+        session.getStore().setCaption(elsewhere, null);
+        session.getStore().setCaption(gone, station);
+        session.rebuild();
+
+        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(beside), "a caption on a page that is gone is drawn");
+
+        assertTrue(shownTwice(session).isEmpty(), "a caption on a page that is gone is counted as a place the name is drawn: "
+            + session.check());
     }
 
     /**

@@ -94,6 +94,19 @@ public class testTheHomeLabelIsDrawnOnce
 
     private static TileKey offsetOnlyCaption;
 
+    /**
+     * Captioned on two neighbours and not on its own square - drawn TWICE, which is the one shape here the setup check
+     * calls an error (OB-341).  Null where the railway has no fourth station with two free squares beside it.
+     */
+    private static TileKey twoBeside;
+
+    /** The two squares that name `twoBeside` */
+    private static TileKey twoBesideFirst;
+    private static TileKey twoBesideSecond;
+
+    /** The locomotive homed at `twoBeside` */
+    private static String twoBesideHome;
+
     /** The locomotive homed at each of the three, so the three captions cannot be confused */
     private static String doubledHome;
     private static String selfHome;
@@ -193,6 +206,30 @@ public class testTheHomeLabelIsDrawnOnce
         session.setHome(doubled, doubledHome);
         session.setHome(selfOnly, selfHome);
         session.setHome(offsetOnly, offsetHome);
+
+        // A FOURTH, if the railway has one, captioned on two neighbours: moved off its own square (which sweeps), and a
+        // second put beside it through the raw store door.  Everything above is arranged first, so the squares it takes
+        // are free ones.
+        for (int at = 3; at < selfCaptioned.size() && twoBeside == null && locomotives.size() > 3; at++)
+        {
+            TileKey candidate = selfCaptioned.get(at);
+
+            // One beside it, and one on any other blank square of the page: a caption may sit on blank space anywhere
+            TileKey first = freeNeighbour(page, candidate);
+            TileKey second = first == null ? null : aBlankSquare(page, first);
+
+            if (second == null) continue;
+
+            session.moveCaption(candidate, first);
+            session.getStore().setCaption(second, candidate);
+
+            twoBeside = candidate;
+            twoBesideFirst = first;
+            twoBesideSecond = second;
+            twoBesideHome = locomotives.get(3);
+
+            session.setHome(twoBeside, twoBesideHome);
+        }
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -356,49 +393,57 @@ public class testTheHomeLabelIsDrawnOnce
     }
 
     /**
-     * The setup check calls a station an error when its name is DRAWN twice, by the rule the diagram draws by (OB-341).
+     * The setup check calls a station an error exactly when the diagram draws its name twice (OB-341).
      *
-     * Every shape this class arranges - on its own square and beside it, on its own square only, beside only - and TopMainR2
-     * on the frozen railway, which is the first of them, is drawn once and so is no error; the whole railway raises none.
-     * And the session's `isCaptionDrawn`, which the check counts by, says a caption is drawn exactly where
-     * `autonomyCaptionAt` draws it, for every caption on the page - so the two cannot be two rules.
+     * **Measured on the drawn editor, not on the rule**: each station's home locomotive is written once for every place its
+     * name is drawn, so counting it off the diagram says how many places there are without asking `isCaptionDrawn`.  A
+     * station on its own square and beside it is drawn once (TopMainR2 is one, on the frozen railway), on its own square
+     * only once, beside only once, and beside twice - the fourth, which the railway may not have - twice.  The check
+     * reports that last and none of the others, and the whole railway raises no other.
      *
-     * MUTATION: have the check count every caption square, own square included, or give `isCaptionDrawn` a rule of its
-     * own, and this fails.
+     * MUTATION: count the station's own square as a place, or let it be drawn beside a caption it should give way to, and
+     * this fails.
      */
     @Test
     public void testTheSetupCheckCountsWhatTheDiagramDraws()
     {
+        if (twoBeside == null)
+        {
+            throw new SkipException("this railway has no fourth self-captioned station with two free squares beside it");
+        }
+
+        // WHAT THE GRID SHOWS
+        assertEquals(times(caption(doubledHome)), 1, "the station on its own square and beside it is not drawn once");
+        assertEquals(times(caption(selfHome)), 1, "the station on its own square only is not drawn once");
+        assertEquals(times(caption(offsetHome)), 1, "the station beside itself only is not drawn once");
+        assertEquals(times(caption(twoBesideHome)), 2, "the station beside itself in two places is not drawn twice: "
+            + session.captionsFor(twoBeside));
+
+        // WHAT THE CHECK SAYS: the station drawn twice, once, and nothing else
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> reported = new ArrayList<>();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.STATION_NAMED_TWICE.equals(finding.getMessageKey()))
+            {
+                reported.add(finding);
+            }
+        }
+
+        assertEquals(reported.size(), 1, "the railway has one station drawn twice, and the check reports: " + reported);
+
+        assertEquals(reported.get(0).getTile(), twoBeside, "the check reports the wrong station");
+        assertEquals(reported.get(0).getCount(), 2, "the check does not count two places");
+
+        assertEquals(new java.util.LinkedHashSet<>(reported.get(0).getRelated()),
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(twoBesideFirst, twoBesideSecond)),
+            "the check does not name the two squares the name is drawn on");
+
+        // and what the setup says is drawn is what the check counted, for the stations drawn once
         for (TileKey station : new TileKey[] {doubled, selfOnly, offsetOnly, OB193})
         {
             assertEquals(session.drawnCaptionsFor(station).size(), 1,
                 station + " is drawn " + session.drawnCaptionsFor(station) + ", and it should be drawn once");
-        }
-
-        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
-        {
-            assertFalse(org.traincontrol.automationui.AutonomyChecks.STATION_NAMED_TWICE.equals(finding.getMessageKey()),
-                "a station drawn once is called an error: " + finding);
-        }
-
-        for (TileKey where : session.getCaptions().keySet())
-        {
-            if (!PAGE.equals(where.getPage())) continue;
-
-            TileKey station = session.getCaptionTarget(where);
-
-            // Kept for a square that is no station now: not drawn, and not asked
-            if (station == null) continue;
-
-            // The diagram's other rule, that has nothing to do with a station named twice: nothing for a station that is
-            // both unnamed and switched off
-            String named = session.getStore().getPointName(station);
-
-            if (Boolean.FALSE.equals(session.getPointProperty(station, "active"))
-                && (named == null || named.trim().isEmpty())) continue;
-
-            assertEquals(ui.autonomyCaptionAt(where) != null, session.isCaptionDrawn(where),
-                "the diagram and the setup check disagree about whether the caption on " + where + " is drawn");
         }
     }
 
@@ -460,6 +505,32 @@ public class testTheHomeLabelIsDrawnOnce
             if (session.getCaptionTarget(at) != null) continue;
 
             return at;
+        }
+
+        return null;
+    }
+
+    /**
+     * The first square of the page, in reading order, that carries nothing and has no caption on it.
+     *
+     * @param page the diagram
+     * @param not a square to leave out
+     * @return a blank square, or null
+     */
+    private static TileKey aBlankSquare(LayoutDiagram page, TileKey not)
+    {
+        for (int y = page.getMiny(); y <= page.getMaxy(); y++)
+        {
+            for (int x = page.getMinx(); x <= page.getMaxx(); x++)
+            {
+                if (page.getComponent(x, y) != null) continue;
+
+                TileKey at = new TileKey(not.getPage(), x, y);
+
+                if (at.equals(not) || session.getCaptionTarget(at) != null) continue;
+
+                return at;
+            }
         }
 
         return null;

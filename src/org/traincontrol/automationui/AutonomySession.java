@@ -3326,28 +3326,45 @@ public class AutonomySession
      * Whether the diagram draws the caption on this square: the one rule for it, asked by the drawing and by the setup
      * check alike (MT-337, OB-341).
      *
-     * A station's name is drawn once.  A caption beside the station is always drawn; one on the station's own square
-     * gives way to it, because the two would land next to each other and say the same thing twice, and the beside one is
-     * the one somebody placed.  So the station's own caption is drawn only while it has no other.
+     * A station's name is drawn once.  A caption beside the station is drawn; one on the station's own square gives way
+     * to it, because the two would land next to each other and say the same thing twice, and the beside one is the one
+     * somebody placed.  So the station's own caption is drawn only while it has no other that is drawn.
+     *
+     * **Only on a page that draws captions.**  No window draws one on a page left out of autonomy - the running diagram,
+     * a pop-up and the autonomy editor build the same grid, which hides them (`LayoutGrid.hidesStationCaptions`) - and a
+     * page this session no longer has has no grid at all.  Such a caption is not drawn, and a station's own caption does
+     * not give way to it, or the station would be drawn nowhere.
      *
      * @param where the square the text sits on
-     * @return false where there is no caption, where it is kept for a square that is no station now (GSE-C4), and where it
-     *         is a station's own and gives way
+     * @return false where there is no caption, where it is kept for a square that is no station now (GSE-C4), where its page
+     *         is left out or gone, and where it is a station's own and gives way
      */
     public boolean isCaptionDrawn(TileKey where)
     {
         TileKey station = getCaptionTarget(where);
 
-        if (station == null) return false;
+        if (station == null || !onAPageThatDrawsCaptions(where)) return false;
 
         if (!station.equals(where)) return true;
 
         for (TileKey elsewhere : captionsFor(station))
         {
-            if (!station.equals(elsewhere)) return false;
+            if (!station.equals(elsewhere) && onAPageThatDrawsCaptions(elsewhere)) return false;
         }
 
         return true;
+    }
+
+    /**
+     * Whether a page this session has and autonomy uses is the page of this square, which is where a caption can be drawn.
+     *
+     * @param square a square
+     * @return false for a page that is gone or left out of autonomy
+     */
+    private boolean onAPageThatDrawsCaptions(TileKey square)
+    {
+        // Page objects that a rename or a delete has left behind cannot say a page is gone (`pagesStale`)
+        return (pagesStale || pageOf(square) != null) && !store.getExcludedPages().contains(square.getPage());
     }
 
     /**
@@ -7851,9 +7868,9 @@ public class AutonomySession
      * edited by hand, or written by an older version.
      *
      * Stale state is not counted, as the unlabelled-station check does not count it: a caption kept for a square that is no
-     * station now is not drawn (GSE-C4), one on a page this session no longer has has no diagram to be drawn on, and a
-     * station that is not a Point - on a page left out of autonomy, or track the diagram no longer has - is not built.  In
-     * reading order, so the sentence and the list do not change from one load of the file to the next.
+     * station now is not drawn (GSE-C4), nor is one on a page that is gone or left out of autonomy, and a station that is
+     * not a Point - on a page left out of autonomy, or track the diagram no longer has - is not built.  In reading order,
+     * so the sentence and the list do not change from one load of the file to the next.
      *
      * @return each such station's square, to the squares its name is drawn on
      */
@@ -7872,12 +7889,7 @@ public class AutonomySession
         {
             if (!store.isStation(station) || !reducer.getPoints().containsKey(station)) continue;
 
-            List<TileKey> drawn = new ArrayList<>();
-
-            for (TileKey square : drawnCaptionsFor(station))
-            {
-                if (pageOf(square) != null) drawn.add(square);
-            }
+            List<TileKey> drawn = drawnCaptionsFor(station);
 
             if (drawn.size() < 2) continue;
 

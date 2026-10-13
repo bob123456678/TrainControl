@@ -6191,8 +6191,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Two keys in the file in the order of their squares: by page, then row, then column.  A key that is no square comes
-     * after those, as text, so the order is total.
+     * Two keys in the file in the order of their squares: by page id, as text, so "10" comes before "2", then row, then
+     * column.  A key that is no square comes after those, as text, so the order is total.
      *
      * @param a one key
      * @param b another
