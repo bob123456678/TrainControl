@@ -394,6 +394,16 @@ Adam, 2026-10-12: *"FR and build with sonnet: the current autonomy configuration
 
 **For v3.0.1**, on Adam's word.  Where those windows name the page they show, they also name the autonomy configuration that is active, when one is; with none active they read as today.
 
+### OB-342 - 2026-10-12 - for 3.0.1: the autonomy editor's smallest height is a few pixels short
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Adam, 2026-10-12: *"It looks like the min height of the autonomy editor window needs to be a few more pixels taller"*
+
+**For v3.0.1**, on Adam's word.  The editor's floor is set in `LayoutEditor`: `sizeForDiagram` for a page with no remembered size (630 plus `EXTRA_MINIMUM_HEIGHT`, 50, plus more at the larger sizes) and 650 plus 50 for a remembered one.  Wanted: at its smallest, the autonomy editor shows all of its controls.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
