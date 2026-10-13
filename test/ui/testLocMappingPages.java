@@ -306,6 +306,672 @@ public class testLocMappingPages
     {
         return message.replace("<html>", "").replace("</html>", "");
     }
+    // ------------------------------------------------------------------------------------------------------------------
+    // FR-128: the line over the locomotive's name is a keycap and two pills
+    // ------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Adam's page name that is wider than any pill can hold: 22 capital Ms, as in his own test data (FR-128: "make sure
+     * we test with wide page names (like MMMMMMMMMMM) as in the current test data").
+     */
+    private static final String WIDE_PAGE_NAME = "MMMMMMMMMMMMMMMMMMMMMM";
+
+    /** What a test of the locomotive panel needs, and what puts all of it back. */
+    private static final class Panel
+    {
+        support.LayoutSandbox sandbox;
+        org.traincontrol.marklin.MarklinControlStation model;
+        TrainControlUI ui;
+
+        final java.util.List<String> made = new java.util.ArrayList<>();
+
+        boolean pageWasNamed;
+        String pageNameWas;
+        int page;
+
+        /** A window over a model, as the application builds it; the page it is on is read from the window. */
+        static Panel open() throws Exception
+        {
+            Panel p = new Panel();
+
+            try
+            {
+                p.sandbox = support.LayoutSandbox.open();
+
+                p.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        p.ui = new TrainControlUI();
+                        p.ui.setViewListener(p.model, new java.util.concurrent.CountDownLatch(1));
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                // The window chooses its first key from a task it queues on the event thread, and draws it from a
+                // worker; wait for both, so the page and the key read below are the ones it settled on
+                p.waitForTheRender();
+
+                p.page = (Integer) privateField(p.ui, "currentButtonlocMappingNumber");
+
+                java.util.Map<Integer, String> names = p.names();
+
+                p.pageWasNamed = names.containsKey(p.page);
+                p.pageNameWas = names.get(p.page);
+
+                // laid out, so the slot has the size it has on screen
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    p.ui.pack();
+                    p.ui.validate();
+                });
+
+                return p;
+            }
+            catch (Throwable t)
+            {
+                p.close();
+
+                throw t;
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<Integer, String> names() throws Exception
+        {
+            return (java.util.Map<Integer, String>) privateField(ui, "pageNames");
+        }
+
+        /** Names the page the window is on, on the event thread, as the rename does; empty for none. */
+        void nameThePage(String name) throws Exception
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    if (name == null) names().remove(page);
+                    else names().put(page, name);
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        org.traincontrol.marklin.MarklinLocomotive mm2(String name, int address)
+        {
+            made.add(name);
+
+            return model.newMM2Locomotive(name, address);
+        }
+
+        org.traincontrol.marklin.MarklinLocomotive mfx(String name, int address)
+        {
+            made.add(name);
+
+            return model.newMFXLocomotive(name, address);
+        }
+
+        org.traincontrol.marklin.MarklinLocomotive dcc(String name, int address)
+        {
+            made.add(name);
+
+            return model.newDCCLocomotive(name, address);
+        }
+
+        /** Makes this the active locomotive and lets the window draw its panel, as `repaintLoc` does. */
+        void show(org.traincontrol.base.Locomotive loc) throws Exception
+        {
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+
+            // `repaintLoc` returns without doing anything while an earlier render is still running, and the render
+            // goes to a worker and back through the event thread - so wait for the last one before and for this one after
+            waitForTheRender();
+
+            active.set(ui, loc);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+
+            waitForTheRender();
+
+            // Showing a locomotive makes buttons visible, which invalidates the panel and lays nothing out until somebody
+            // asks - so ask, or "nothing moved" below would be true of a panel that was never laid out again
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.validate());
+        }
+
+        /** The same, without forcing - the way a change to something other than the locomotive reaches the window. */
+        void repaintWithoutForce() throws Exception
+        {
+            waitForTheRender();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(false, null));
+
+            waitForTheRender();
+        }
+
+        @SuppressWarnings("unchecked")
+        void waitForTheRender() throws Exception
+        {
+            java.lang.reflect.Field futures = TrainControlUI.class.getDeclaredField("locFutures");
+
+            futures.setAccessible(true);
+
+            long deadline = System.currentTimeMillis() + 10000;
+
+            while (System.currentTimeMillis() < deadline)
+            {
+                boolean done = true;
+
+                synchronized (ui)
+                {
+                    for (java.util.concurrent.Future<?> f : new java.util.ArrayList<>(
+                        (java.util.List<java.util.concurrent.Future<?>>) futures.get(ui)))
+                    {
+                        done &= f.isDone();
+                    }
+                }
+
+                if (done)
+                {
+                    // what the render posted to the event thread has run, too
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                    return;
+                }
+
+                Thread.sleep(20);
+            }
+
+            throw new AssertionError("the window's render did not finish within ten seconds, so what is read below would"
+                + " be whatever it last drew");
+        }
+
+        javax.swing.JLabel slot() throws Exception
+        {
+            return (javax.swing.JLabel) privateField(ui, "CurrentKeyLabel");
+        }
+
+        /** The row that draws the line, or null when the window has none. */
+        javax.swing.JComponent row() throws Exception
+        {
+            try
+            {
+                return (javax.swing.JComponent) privateField(ui, "currentKeyRow");
+            }
+            catch (NoSuchFieldException none)
+            {
+                return null;
+            }
+        }
+
+        void close() throws Exception
+        {
+            try
+            {
+                if (ui != null)
+                {
+                    waitForTheRender();
+
+                    if (page != 0) nameThePage(pageWasNamed ? pageNameWas : null);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (model != null)
+                    {
+                        for (String name : made)
+                        {
+                            if (model.getLocByName(name) != null) model.deleteLoc(name);
+                        }
+                    }
+
+                    if (ui != null) javax.swing.SwingUtilities.invokeAndWait(() -> ui.dispose());
+                }
+                finally
+                {
+                    if (model != null) model.stop();
+
+                    if (sandbox != null) sandbox.close();
+                }
+            }
+        }
+    }
+
+    private interface Body
+    {
+        void run(Panel p) throws Exception;
+    }
+
+    private static void withPanel(Body body) throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("the locomotive panel is on a window");
+        }
+
+        Panel p = Panel.open();
+
+        try
+        {
+            body.run(p);
+        }
+        finally
+        {
+            p.close();
+        }
+    }
+
+    private static Object privateField(Object owner, String name) throws Exception
+    {
+        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return f.get(owner);
+    }
+
+    /**
+     * The row's own layout for a box this size.  Asked by name, so this class still compiles - and fails, in words - on a
+     * window that has no such row.
+     */
+    private static Object geometry(javax.swing.JComponent row, int width, int height) throws Exception
+    {
+        return row.getClass().getMethod("geometry", int.class, int.class).invoke(row, width, height);
+    }
+
+    private static Object pub(Object owner, String name) throws Exception
+    {
+        return owner.getClass().getField(name).get(owner);
+    }
+
+    private static int right(Object geometry) throws Exception
+    {
+        return (Integer) geometry.getClass().getMethod("right").invoke(geometry);
+    }
+
+    private static int bottom(Object geometry) throws Exception
+    {
+        return (Integer) geometry.getClass().getMethod("bottom").invoke(geometry);
+    }
+
+    private static java.awt.Rectangle rect(Object geometry, String name) throws Exception
+    {
+        return (java.awt.Rectangle) pub(geometry, name);
+    }
+
+    /** What the three pieces say, joined, for a check that a word is not in any of them. */
+    private static String drawn(Object geometry) throws Exception
+    {
+        return pub(geometry, "key") + "|" + pub(geometry, "number") + "|" + pub(geometry, "name") + "|"
+            + pub(geometry, "decoderText");
+    }
+
+    /**
+     * The line over the locomotive's name is a keycap, a page pill and a decoder pill, for every kind of decoder (FR-128).
+     *
+     * Adam: *"the active locomotive info is currently text consisting of [letter] . Page [num] ([page name]) .
+     * [decodertype] [address]. the page number could be condensed into a nice pill, along with the other info.  make it
+     * look more modern."*  The design he chose: the key's letter on a keycap, then a page pill with the page's NUMBER and
+     * its name, then a solid decoder pill saying what the line said before - "MFX 54".  *"I wouldn't like to see the word
+     * 'page' in it."*
+     *
+     * One locomotive of each decoder type the program has, on the page of the window's current key: MM2, MFX, DCC, a
+     * multi-unit and a consist of an MFX head with a member.  Driven through `repaintLoc`, which is what the window calls
+     * to show a locomotive, and read from the row's own layout - what is drawn is what is asked, so there is no second
+     * account of it to drift.
+     *
+     * MUTATION: put the word Page back in the page pill (draw `getTooltip`'s page words there), swap the order of the
+     * shapes, or draw the key and the decoder as one text again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheLineIsAKeycapAndTwoPillsForEveryDecoder() throws Exception
+    {
+        withPanel(p ->
+        {
+            javax.swing.JLabel slot = p.slot();
+            javax.swing.JComponent row = p.row();
+
+            assertNotNull(row, "the window has no row over the locomotive's name: the line is still the old text in"
+                + " CurrentKeyLabel, which cannot draw a keycap or a pill (FR-128)");
+
+            assertEquals(slot.getText(), "", "CurrentKeyLabel still carries the old text as well as the row, so the line"
+                + " would be said twice");
+
+            p.nameThePage("Example");
+
+            String key = ((javax.swing.JButton) privateField(p.ui, "currentButton")).getText();
+
+            org.traincontrol.marklin.MarklinLocomotive head = p.mfx("FR-128 consist head", 3912);
+            org.traincontrol.marklin.MarklinLocomotive member = p.mm2("FR-128 consist member", 78);
+
+            java.util.Map<String, Double> list = new java.util.HashMap<>();
+            list.put(member.getName(), 1.0);
+            head.preSetLinkedLocomotives(list);
+            head.setLinkedLocomotives();
+
+            assertTrue(head.hasLinkedLocomotives(), "precondition: the consist is not linked, so there is no MU label to see");
+
+            org.traincontrol.marklin.MarklinLocomotive multiUnit = p.dcc("FR-128 multi-unit", 9872);
+            p.model.changeLocAddress(multiUnit.getName(), 4999, org.traincontrol.marklin.MarklinLocomotive.decoderType.MULTI_UNIT);
+
+            // the decoder texts: the enum's own names for the three protocols; the bundle's words for the other two
+            Object[][] kinds = {
+                {p.mm2("FR-128 MM2", 79), "MM2 79"},
+                {p.mfx("FR-128 MFX", 3954), "MFX 3954"},
+                {p.dcc("FR-128 DCC", 9871), "DCC 9871"},
+                {multiUnit, org.traincontrol.util.I18n.t("loc.multiUnit") + " 4999"},
+                {head, org.traincontrol.util.I18n.f("loc.multiUnitLinked", "MFX") + " 3912"},
+            };
+
+            // the word the program uses for a page, out of its own bundle - "Page" in English
+            String pageWord = org.traincontrol.util.I18n.f("page.ui.pageNo", 0).replace("0", "").trim().toLowerCase();
+
+            assertFalse(pageWord.isEmpty(), "precondition: cannot find the bundle's word for a page");
+
+            java.awt.Dimension box = slot.getSize();
+
+            for (Object[] kind : kinds)
+            {
+                p.show((org.traincontrol.base.Locomotive) kind[0]);
+
+                String said = "for " + kind[1];
+
+                Object at = geometry(row, box.width, box.height);
+
+                assertNotNull(at, "the row draws nothing " + said);
+
+                assertEquals(pub(at, "key"), key, "the keycap does not carry the key's letter " + said);
+
+                assertEquals(pub(at, "number"), String.valueOf(p.page),
+                    "the page pill does not carry the page's number " + said);
+
+                assertEquals(pub(at, "name"), "Example", "the page pill does not carry the page's name " + said);
+
+                assertEquals(pub(at, "decoderText"), kind[1], "the decoder pill does not say the decoder and address " + said);
+
+                String all = drawn(at).toLowerCase();
+
+                assertFalse(all.contains("page") || all.contains(pageWord),
+                    "the word for a page is in the line " + said + ": " + drawn(at)
+                    + ".  Adam: \"I wouldn't like to see the word 'page' in it.\"");
+
+                // keycap, then page pill, then decoder pill, a gap apart, left to right
+                java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder");
+
+                assertNotNull(keycap, "no keycap " + said);
+                assertNotNull(decoder, "no decoder pill " + said);
+
+                assertEquals(page.x, keycap.x + keycap.width + 5, "the page pill is not a 5 px gap after the keycap " + said);
+                assertEquals(decoder.x, page.x + page.width + 5, "the decoder pill is not a 5 px gap after the page pill " + said);
+
+                // all three fit the slot, in height and in width
+                for (java.awt.Rectangle r : new java.awt.Rectangle[] {keycap, page, decoder})
+                {
+                    assertTrue(r.y >= 0 && r.y + r.height <= box.height, "a shape is taller than the slot " + said + ": " + r
+                        + " in " + box);
+
+                    assertTrue(r.x >= 0 && r.x + r.width <= box.width, "a shape runs past the slot " + said + ": " + r
+                        + " in " + box);
+                }
+
+                // and the words in the tooltip are the key, the page as the program words it, and the decoder
+                String tip = ((javax.swing.JComponent) row).getToolTipText();
+
+                assertNotNull(tip, "the row has no tooltip " + said);
+
+                assertTrue(tip.contains(key) && tip.contains(org.traincontrol.util.I18n.f("page.ui.plainPageName", p.page,
+                    "Example")) && tip.contains((String) kind[1]), "the tooltip " + said + " is not the whole line: " + tip);
+            }
+
+            // A KEY WITH NO LOCOMOTIVE ON IT has the key and the page and no decoder pill
+            p.show(null);
+
+            Object bare = geometry(row, box.width, box.height);
+
+            assertNotNull(bare, "nothing is drawn for a key with no locomotive: the key and its page went with it");
+            assertNull(rect(bare, "decoder"), "a decoder pill is drawn for a key with no locomotive on it");
+            assertEquals(pub(bare, "name"), "Example");
+        });
+    }
+
+    /**
+     * A wide page name is cut with an ellipsis and nothing else is, and the line never leaves its slot (FR-128).
+     *
+     * Adam: *"make sure we test with wide page names (like MMMMMMMMMMM) as in the current test data"*, and *"manage the
+     * height so it fits in the current space"*.  His data has a page named with 22 capital Ms.  The page NAME takes what
+     * room is left and gives way; the keycap, the page number and the decoder pill are never cut.  The slot is the one the
+     * old text had - 296 by 18 - and nothing below it may move.
+     *
+     * Measured with the widest decoder text, the multi-unit's, because that is the one that leaves the least room.
+     *
+     * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, or draw
+     * the name's pill wider than the room it was given, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAWidePageNameGivesWayAndTheRestDoesNot() throws Exception
+    {
+        withPanel(p ->
+        {
+            javax.swing.JLabel slot = p.slot();
+            javax.swing.JComponent row = p.row();
+
+            assertNotNull(row, "the window has no row over the locomotive's name (FR-128)");
+
+            org.traincontrol.marklin.MarklinLocomotive multiUnit = p.dcc("FR-128 wide multi-unit", 9873);
+            p.model.changeLocAddress(multiUnit.getName(), 5120, org.traincontrol.marklin.MarklinLocomotive.decoderType.MULTI_UNIT);
+
+            org.traincontrol.marklin.MarklinLocomotive plain = p.mfx("FR-128 wide MFX", 3955);
+
+            // THE SLOT: what the form gives the label, which is what the old text had to fit
+            assertEquals(slot.getSize(), new java.awt.Dimension(296, 18),
+                "the label's slot is not the 296 x 18 the old line had, so the panel's layout has moved");
+
+            java.awt.Dimension box = slot.getSize();
+
+            assertEquals(row.getSize(), box, "the row does not fill the slot it sits in");
+
+            assertTrue(row.getPreferredSize().height <= box.height, "the row's own height, " + row.getPreferredSize().height
+                + ", is taller than the slot's " + box.height + " - Adam: \"manage the height so it fits in the current space\"");
+
+            for (org.traincontrol.base.Locomotive loc : new org.traincontrol.base.Locomotive[] {plain, multiUnit})
+            {
+                // what is below the line with a short name, for THIS locomotive, and then with the wide one
+                p.nameThePage("Example");
+                p.show(loc);
+
+                String before = whereTheOthersAre(p);
+
+                p.nameThePage(WIDE_PAGE_NAME);
+                p.show(loc);
+
+                String said = "for " + loc.getDecoderTypeLabel() + " with a page called " + WIDE_PAGE_NAME;
+
+                Object at = geometry(row, box.width, box.height);
+
+                String name = (String) pub(at, "name");
+
+                assertTrue(name.endsWith(String.valueOf((char) 0x2026)), "the page name is not cut with an ellipsis "
+                    + said + ": [" + name + "]");
+
+                assertTrue(name.length() > 2 && name.length() < WIDE_PAGE_NAME.length() + 1
+                    && name.substring(0, name.length() - 1).matches("M+"), "what is left of the page name is not a run of its"
+                    + " own letters " + said + ": [" + name + "]");
+
+                // THE PARTS THAT NEVER GIVE WAY
+                assertEquals(pub(at, "number"), String.valueOf(p.page), "the page number was cut " + said);
+
+                String decoderText = loc.getDecoderTypeLabel() + " " + p.model.getLocAddress(loc.getName());
+
+                assertEquals(pub(at, "decoderText"), decoderText, "the decoder text was cut " + said);
+
+                assertNotNull(rect(at, "keycap"), "the keycap went " + said);
+
+                // THE WHOLE LINE IN ITS SLOT
+                assertTrue(right(at) <= box.width, "the line runs past the slot's width " + said + ": " + right(at) + " > "
+                    + box.width);
+
+                assertTrue(bottom(at) <= box.height, "the line is taller than the slot " + said + ": " + bottom(at) + " > "
+                    + box.height);
+
+                // and the tooltip has all of it: the name uncut, in the program's own words for a page
+                String tip = row.getToolTipText();
+
+                assertTrue(tip != null && tip.contains(org.traincontrol.util.I18n.f("page.ui.plainPageName", p.page,
+                    WIDE_PAGE_NAME)) && tip.contains(decoderText), "the tooltip does not have the whole line " + said + ": " + tip);
+
+                // NOTHING BELOW IT MOVED, and the slot is as it was
+                assertEquals(slot.getSize(), box, "the slot changed size " + said);
+
+                assertEquals(whereTheOthersAre(p), before, "something in the panel moved when the page name got wide " + said);
+            }
+
+            // A PAGE WITH NO NAME shows the number alone
+            p.nameThePage(null);
+            p.show(plain);
+
+            Object unnamed = geometry(row, box.width, box.height);
+
+            assertEquals(pub(unnamed, "name"), "", "a page with no name still has a name in its pill");
+            assertEquals(pub(unnamed, "number"), String.valueOf(p.page), "a page with no name has lost its number");
+
+            // AND A RENAME REACHES THE LINE THE WAY IT ALWAYS DID: through a repaint that is not forced.  The old line
+            // compared its own text to decide whether anything had changed; the row compares what it says.
+            p.nameThePage("Renamed");
+            p.repaintWithoutForce();
+
+            assertEquals(pub(geometry(row, box.width, box.height), "name"), "Renamed",
+                "a changed page name did not reach the line: the check for whether it changed has stopped seeing the name");
+        });
+    }
+
+    /**
+     * What is painted is the design Adam chose: a keycap with a heavier bottom edge, a page pill that is an outline and
+     * nothing else, and a decoder pill that is solid navy (FR-128).
+     *
+     * Read from the pixels the row paints, over a background that is nothing else, so a fill that is not meant to be there
+     * shows as a change from it.  Each reading is a point well inside one shape and clear of its words, so it does not
+     * depend on how the letters are drawn - only on whether the shape is filled, outlined or neither.
+     *
+     * MUTATION: fill the page pill, draw the keycap's edge one pixel all round, or take the decoder's navy from anywhere
+     * but rgb(0,0,115), and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheShapesAreThoseAdamChose() throws Exception
+    {
+        withPanel(p ->
+        {
+            javax.swing.JLabel slot = p.slot();
+            javax.swing.JComponent row = p.row();
+
+            assertNotNull(row, "the window has no row over the locomotive's name (FR-128)");
+
+            p.nameThePage("Example");
+            p.show(p.mfx("FR-128 painted", 3956));
+
+            java.awt.Dimension box = slot.getSize();
+
+            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(box.width, box.height,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+            final int none = java.awt.Color.MAGENTA.getRGB() & 0xFFFFFF;
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                java.awt.Graphics2D g = image.createGraphics();
+
+                g.setColor(java.awt.Color.MAGENTA);
+                g.fillRect(0, 0, box.width, box.height);
+
+                row.paint(g);
+                g.dispose();
+            });
+
+            Object at = geometry(row, box.width, box.height);
+
+            java.awt.Rectangle keycap = rect(at, "keycap"), page = rect(at, "page"), decoder = rect(at, "decoder");
+
+            // THE DECODER PILL: solid, in the navy the old line's text was, which is CurrentKeyLabel's own foreground
+            assertEquals(image.getRGB(decoder.x + 4, decoder.y + decoder.height / 2) & 0xFFFFFF, 0x000073,
+                "the decoder pill is not solid navy rgb(0,0,115)");
+
+            // THE PAGE PILL: an outline, and nothing inside it
+            assertEquals(image.getRGB(page.x + 4, page.y + page.height / 2) & 0xFFFFFF, none,
+                "the page pill is filled - Adam chose an outline with no fill");
+
+            int top = image.getRGB(page.x + page.width / 2, page.y) & 0xFFFFFF;
+            int bottomEdge = image.getRGB(page.x + page.width / 2, page.y + page.height - 1) & 0xFFFFFF;
+
+            assertTrue(top != none && bottomEdge != none, "the page pill has no outline along its top and bottom");
+
+            assertEquals(image.getRGB(page.x + page.width / 2, page.y + 1) & 0xFFFFFF, none,
+                "the page pill's outline is thicker than a thin line");
+
+            // THE KEYCAP: a thin edge all round and a heavier one along the bottom, and a face that is the panel's own
+            int midX = keycap.x + keycap.width / 2, midY = keycap.y + keycap.height / 2;
+
+            assertEquals(image.getRGB(keycap.x + 3, midY) & 0xFFFFFF, none, "the keycap's face is filled");
+
+            assertTrue((image.getRGB(keycap.x, midY) & 0xFFFFFF) != none, "the keycap has no edge on its left");
+            assertEquals(image.getRGB(keycap.x + 1, midY) & 0xFFFFFF, none, "the keycap's side edge is more than one pixel");
+
+            assertTrue((image.getRGB(midX, keycap.y) & 0xFFFFFF) != none, "the keycap has no edge on its top");
+            assertEquals(image.getRGB(midX, keycap.y + 1) & 0xFFFFFF, none, "the keycap's top edge is more than one pixel");
+
+            int h = keycap.y + keycap.height;
+
+            assertTrue((image.getRGB(midX, h - 1) & 0xFFFFFF) != none && (image.getRGB(midX, h - 2) & 0xFFFFFF) != none,
+                "the keycap's bottom edge is not two pixels");
+
+            assertEquals(image.getRGB(midX, h - 3) & 0xFFFFFF, none,
+                "the keycap's bottom edge is more than two pixels, or its face is not the panel's own");
+
+            // and NOTHING IS PAINTED OUTSIDE THE THREE SHAPES: the gaps between them are the background's
+            assertEquals(image.getRGB(keycap.x + keycap.width + 2, midY) & 0xFFFFFF, none, "something is drawn in the gap"
+                + " between the keycap and the page pill");
+
+            assertEquals(image.getRGB(page.x + page.width + 2, midY) & 0xFFFFFF, none, "something is drawn in the gap"
+                + " between the page pill and the decoder pill");
+        });
+    }
+
+    /** Where every other part of the locomotive panel is, as one text, for a check that none of it moved. */
+    private static String whereTheOthersAre(Panel p) throws Exception
+    {
+        javax.swing.JComponent panel = (javax.swing.JComponent) privateField(p.ui, "LocFunctionsPanel");
+
+        StringBuilder where = new StringBuilder("panel " + panel.getSize() + " max " + panel.getMaximumSize());
+
+        for (String name : new String[] {"PowerOff", "OnButton", "CurrentKeyLabel", "ActiveLocLabel", "Backward", "Forward",
+            "SpeedSlider", "FunctionTabs", "locIcon"})
+        {
+            java.awt.Component c = (java.awt.Component) privateField(p.ui, name);
+
+            java.awt.Point at = javax.swing.SwingUtilities.convertPoint(c.getParent(), c.getLocation(), panel);
+
+            where.append("\n  ").append(name).append(" at ").append(at.x).append(",").append(at.y).append(" size ")
+                .append(c.getWidth()).append("x").append(c.getHeight());
+        }
+
+        return where.toString();
+    }
+
     private TrainControlUI build() throws Exception
     {
         // The window reads the layout preference in its constructor, so it opens Adam’s railway

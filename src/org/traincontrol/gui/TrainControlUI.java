@@ -477,6 +477,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // Page where the current button was selected
     private int currentButtonlocMappingNumber;
+
+    // The line over the active locomotive's name, drawn as a keycap and two pills (FR-128).  Sits inside CurrentKeyLabel,
+    // which stays the slot it always was.
+    private CurrentKeyRow currentKeyRow;
     
     private final HashMap<Integer, javax.swing.JButton> buttonMapping;
     private final HashMap<javax.swing.JButton, JTextField> labelMapping;
@@ -1014,6 +1018,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // now in `PositionAwareJFrame`'s static initialiser, which runs before this class is ever
         // instantiated; `init` asks as well, for the case where no window is built at all.
         initComponents();
+
+        installCurrentKeyRow();
 
         // THE WINDOWS IT OPENS FOLLOW ITS ALWAYS-ON-TOP (the popups sweep, on Adam's MT-703 note)
         this.addPropertyChangeListener("alwaysOnTop", change ->
@@ -10992,6 +10998,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Puts the line over the active locomotive's name in the label that has always held it (FR-128).
+     *
+     * The label is generated: its slot is 296 x 18 in the form's layout and nothing below it may move, and that block is
+     * not ours to edit.  So the label stays exactly where it is, its text is cleared, and the row that draws the key and
+     * the two pills goes INSIDE it, filling it.  The label's own sizes are explicit (minimum, preferred and maximum are
+     * all 296 x 18), so a child cannot change what the form's layout sees of it.
+     */
+    private void installCurrentKeyRow()
+    {
+        this.CurrentKeyLabel.setText("");
+        this.CurrentKeyLabel.setLayout(new java.awt.BorderLayout());
+
+        this.currentKeyRow = new CurrentKeyRow();
+
+        this.CurrentKeyLabel.add(this.currentKeyRow, java.awt.BorderLayout.CENTER);
+    }
+
+    /**
+     * What the row over the name should say for the active button.
+     *
+     * The page's name is the RAW one: the row cuts it to the pixel and the tooltip words the page from the bundle, so
+     * the old shortening to twelve letters and three dots has no part in it.
+     *
+     * @param decoder the decoder type and the address ("MFX 54"), or null when there is no locomotive on the button
+     * @return the content to show
+     */
+    private CurrentKeyRow.Content currentKeyContent(String decoder)
+    {
+        return new CurrentKeyRow.Content(this.currentButton.getText(), this.currentButtonlocMappingNumber,
+            this.getPageName(this.currentButtonlocMappingNumber, true), decoder);
+    }
+
+    /**
      * Optional 3rd argument...
      * @param mappingNumber
      * @param raw
@@ -14787,13 +14826,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 name = name.substring(0, MAX_LOC_NAME);
                             }
                             
-                            // Pre-compute this so we can check if it has changed
-                            // "Page " + this.currentButtonlocMappingNumber + " Button "
-                            String locLabel = "<html><nobr>" + this.currentButton.getText() + " &#8226; " 
-                                    + this.getPageName(currentButtonlocMappingNumber, false, false) + " &#8226; "
-                                    + this.activeLoc.getDecoderTypeLabel() 
-                                    + " " + this.model.getLocAddress(this.activeLoc.getName())
-                                    + "</nobr></html>";
+                            // Pre-compute this so we can check if it has changed: the key, the page and the decoder
+                            // with its address, as the row over the name draws them (FR-128)
+                            CurrentKeyRow.Content keyLine = currentKeyContent(this.activeLoc.getDecoderTypeLabel()
+                                    + " " + this.model.getLocAddress(this.activeLoc.getName()));
                                                         
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
@@ -14806,7 +14842,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             // Only repaint icon if the locomotive is changed
                             // Visual stuff
-                            if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
+                            if (!this.ActiveLocLabel.getText().equals(name) || !keyLine.equals(this.currentKeyRow.getContent()) || force)
                             {
                                 // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
                                 repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
@@ -14871,7 +14907,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                 this.ActiveLocLabel.setText(name);
 
-                                this.CurrentKeyLabel.setText(locLabel);
+                                this.currentKeyRow.setContent(keyLine);
 
                                 for (int i = 0; i < this.activeLoc.getNumF(); i++)
                                 {
@@ -15032,9 +15068,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             I18n.t("loc.ui.labelNoLocomotiveClickHere")
                         );
                         
-                        this.CurrentKeyLabel.setText("<html><nobr>" + this.currentButton.getText() + " &#8226; " 
-                                + this.getPageName(currentButtonlocMappingNumber, false, false) + "</nobr></html>"    
-                        );
+                        // The key and its page, and no decoder pill: nothing is on the key
+                        this.currentKeyRow.setContent(currentKeyContent(null));
 
                         this.Backward.setVisible(false);
                         this.Forward.setVisible(false);
