@@ -908,6 +908,77 @@ public class testControlStationFaults
     }
 
     /**
+     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338; Adam, 2026-10-13).
+     *
+     * A real Central Station 3 cannot be made to fail its first sync on purpose, so the "connected to the CS3 but the sync
+     * failed" question had no manual test.  With debug on and the switch at 2, the first two syncs fail through the same
+     * failure path a real one takes, with a reason that names the switch, and the third goes on to the station.  With debug
+     * off the switch is ignored, though it is armed, so the mode alone keeps it from firing.  The switch is read as debug
+     * mode is entered (debug(true)), which is where the constructor enters it, so the claim arms it the same way and builds
+     * no second station.  The station is asked against a port nothing listens on, as testAFailedSyncKeepsItsReason does.
+     *
+     * MUTATION: fail in every mode, fail other than N times, or leave the switch's name out of the reason, and this fails.
+     *
+     * @throws Exception reading the file parser field reflectively
+     */
+    @Test
+    public void testTheFailFirstSyncsSwitchFailsTheFirstNSyncsInDebugModeOnly() throws Exception
+    {
+        String was = support.TestStationAddress.get();
+        boolean wasDebug = model.isDebug();
+
+        final String switchName = "traincontrol.failFirstSyncs";
+
+        // The sync replaces the model's file parser, which every test here shares: put back as it was, with the address
+        java.lang.reflect.Field parser = MarklinControlStation.class.getDeclaredField("fileParser");
+        parser.setAccessible(true);
+        Object parserWas = parser.get(model);
+
+        try
+        {
+            support.TestStationAddress.set("127.0.0.1:1");
+
+            System.setProperty(switchName, "2");
+            model.debug(true);
+
+            for (int sync = 1; sync <= 2; sync++)
+            {
+                assertTrue(model.syncWithCS2() < 0, "sync " + sync + " must fail while the switch holds");
+                assertTrue(String.valueOf(model.getLastSyncError()).contains(switchName),
+                    "sync " + sync + " must say the switch failed it, but said: " + model.getLastSyncError());
+            }
+
+            model.syncWithCS2();
+
+            assertFalse(String.valueOf(model.getLastSyncError()).contains(switchName),
+                "the third sync must go on to the station, not fail for the switch again: " + model.getLastSyncError());
+
+            // Armed again, with debug mode off: the switch is ignored entirely
+            System.setProperty(switchName, "2");
+            model.debug(true);
+            model.debug(false);
+
+            model.syncWithCS2();
+
+            assertFalse(String.valueOf(model.getLastSyncError()).contains(switchName),
+                "with debug off the switch must be ignored, but the sync said: " + model.getLastSyncError());
+        }
+        finally
+        {
+            System.clearProperty(switchName);
+
+            // Re-armed from the cleared property, so no count is left over in the shared station
+            model.debug(true);
+
+            model.debug(wasDebug);
+
+            support.TestStationAddress.set(was);
+
+            parser.set(model, parserWas);
+        }
+    }
+
+    /**
      * A simulation never forgets the saved Central Station address (OB-339).
      *
      * A start that did not connect forgets the address, so that the next start asks for one.  A simulation never connects,

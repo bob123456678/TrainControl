@@ -177,6 +177,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Debug mode
     private boolean debug = false;
 
+    // Debug only: the first N syncs fail when traincontrol.failFirstSyncs=N, for a manual test (OB-338; Adam, 2026-10-13)
+    private static final String FAIL_FIRST_SYNCS = "traincontrol.failFirstSyncs";
+
+    // Read as debug mode is entered (see debug(boolean)), and counted down as the syncs fail
+    private final java.util.concurrent.atomic.AtomicInteger failFirstSyncsLeft = new java.util.concurrent.atomic.AtomicInteger(0);
+
     /**
      * Whether this session is simulating rather than talking to a Central Station.
      *
@@ -1699,6 +1705,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Fetch Central Station databases
         try
         {            
+            // Debug only, and only the first N times: caught below exactly as a real failure is (OB-338)
+            if (this.isDebug())
+            {
+                int before = this.failFirstSyncsLeft.getAndUpdate(n -> n > 0 ? n - 1 : 0);
+
+                if (before > 0)
+                {
+                    throw new IOException("Simulated sync failure for testing (traincontrol.failFirstSyncs), " + (before - 1) + " more to come");
+                }
+            }
+
             // Is this a CS2 or CS3?
             try
             {
@@ -2110,6 +2127,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final void debug(boolean state)
     {
         debug = state;
+
+        // Entering debug mode reads the switch, so that it counts syncs from this start
+        if (state) this.failFirstSyncsLeft.set(failFirstSyncsFrom(System.getProperty(FAIL_FIRST_SYNCS)));
+    }
+
+    /**
+     * The count the traincontrol.failFirstSyncs property asks for: a positive integer, and anything else is 0 (OB-338).
+     *
+     * @param value the property's value, or null when it is not set
+     * @return how many syncs to fail
+     */
+    private static int failFirstSyncsFrom(String value)
+    {
+        if (value == null) return 0;
+
+        try
+        {
+            return Math.max(0, Integer.parseInt(value.trim()));
+        }
+        catch (NumberFormatException e)
+        {
+            return 0;
+        }
     }
     
     /**
