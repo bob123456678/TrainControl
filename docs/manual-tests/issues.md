@@ -384,6 +384,16 @@ Adam, 2026-10-12: *"Add an FR to add a bulk tool to mass activate and mass deact
 
 **For v3.0.1**, on Adam's word.  Active and inactive are FR-117's: a paused train is left where it stands, its icon grey, set from the Auto tab's pause button or the `Is Active` tick, and kept with the configuration.  Two bulk tools set every train active, or every train inactive, at once.  The Auto tab's locomotive commands list is re-sorted each time the tab is opened - active trains, then inactive ones, then those on inactive stations, each group alphabetical - and not when a pause button on it is clicked, so a card does not move from under the pointer.
 
+### FR-127 - 2026-10-12 - for 3.0.1: the active autonomy configuration's name in the autonomy and layout editors and the layout pop-ups
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Adam, 2026-10-12: *"FR and build with sonnet: the current autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if active)"*
+
+**For v3.0.1**, on Adam's word.  Where those windows name the page they show, they also name the autonomy configuration that is active, when one is; with none active they read as today.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
