@@ -414,7 +414,7 @@ Tab icons provided by Freepik.
         - A train paused from its card on the Auto tab no longer starts again when another train's Is Active setting is changed
         - The setup check now reports a station whose name is shown twice on the same page, and importing a configuration no longer adds a second label for a station
         - A pop-up track diagram now updates when a station label is moved or removed, and labels can no longer be placed outside the area the track diagram shows
-        - The autonomy editor's smallest window size now shows all of its controls, at any display scaling
+        - The autonomy editor's smallest window size now shows all of its controls, with display scaling up to 175%
         - Old autonomy station labels on a layout served by the Central Station are now shown exactly as written
     - Central Station Bug Fixes
         - If the Central Station answers but its data cannot be loaded at startup, TrainControl now says why and offers to try again until it connects or you exit
