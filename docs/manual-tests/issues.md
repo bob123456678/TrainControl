@@ -414,6 +414,16 @@ Found by FR-126's build, 2026-10-12.  The Auto tab card's pause button changes t
 
 **For v3.0.1** (Adam, 2026-10-12: *"Everything is the next release unless I specify one."*).  Wanted: a train paused from its card stays paused whatever is done to another train.
 
+### OB-344 - 2026-10-12 - for 3.0.1: an old Point:name label on a Central Station layout is drawn without its Point: prefix
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-12  
+**Filed:** 2026-10-12  
+
+Adam, 2026-10-12, told that on a layout served by the Central Station the old autonomy's `Point:name` labels are drawn with the prefix stripped: *"stop stripping that prefix."*
+
+**For v3.0.1**, on Adam's word.  `LayoutGrid` (the branch for a label starting with `LAYOUT_STATION_PREFIX`, added in `0f743bff`) draws `Point:Bahnhof` as `Bahnhof`, greyed in the autonomy editor.  Such a label is never turned into a caption there (no local folder, so no setup).  Wanted: it is drawn as the text it is, like any other label.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
