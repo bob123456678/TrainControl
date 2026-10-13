@@ -526,4 +526,455 @@ public class testTheActiveTickPausesATrain
             if (c instanceof java.awt.Container) everything((java.awt.Container) c, into);
         }
     }
+
+    // ------------------------------------------------- the bulk tools and the order of the cards (FR-126)
+
+    /**
+     * Trains whose names sort differently from any order they could be put down in, and the squares they stand on: two
+     * names that part ways when capitals are ignored ("BN Lights", "Big Boy 4019 UP"), digits before letters, and a pair
+     * for each of the groups the tab is sorted into.  Not in alphabetical order, which is what the old sort gave them.
+     */
+    private static final String[][] CROWD = {
+        {"Big Boy 4019 UP", "BottomSecondary"},
+        {"BN Lights", "TunnelLongPark"},
+        {"BDymf 457 DB", "TunnelRightPark"},
+        {"ALCO UP", "TunnelCenterPark"},
+        {"118 028-0 DB", "BottomMainC"},
+        {"06 001 DRG", "TunnelLeftPark"}};
+
+    /** The two of them the claims pause, and the two whose stations they put out of use. */
+    private static final String[] PAUSED = {"BDymf 457 DB", "ALCO UP"};
+
+    private static final String[] OUT_OF_USE = {"118 028-0 DB", "06 001 DRG"};
+
+    /** The Auto tab's order once that is done: active first, then paused, then the stations out of use, each by name. */
+    private static final List<String> SORTED = java.util.Arrays.asList(HIS_TRAIN, "Big Boy 4019 UP", "BN Lights",
+        "ALCO UP", "BDymf 457 DB", "06 001 DRG", "118 028-0 DB");
+
+    /** The crowd standing on the railway and in the setup, as the class puts his train. */
+    private static void crowd() throws Exception
+    {
+        final List<TileKey> squares = new ArrayList<>();
+
+        for (String[] each : CROWD) squares.add(square(each[1]));
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (int i = 0; i < CROWD.length; i++)
+            {
+                Locomotive loco = model.getLocByName(CROWD[i][0]);
+
+                assertNotNull(loco, "precondition: this data has no " + CROWD[i][0]);
+
+                for (String copy : session.facingsFor(squares.get(i)).keySet())
+                {
+                    if (railway().getPoint(copy) != null && railway().getLocomotiveLocation(loco) == null)
+                    {
+                        railway().moveLocomotive(CROWD[i][0], copy, false);
+                    }
+                }
+
+                assertNotNull(railway().getLocomotiveLocation(loco), "precondition: " + CROWD[i][0] + " could not be stood"
+                    + " on " + CROWD[i][1]);
+
+                session.placeLocomotive(squares.get(i), CROWD[i][0]);
+            }
+        });
+    }
+
+    /** The crowd gone again, every train going and every station back in use. */
+    private static void uncrowd() throws Exception
+    {
+        final List<TileKey> squares = new ArrayList<>();
+
+        for (String[] each : CROWD) squares.add(square(each[1]));
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                for (int i = 0; i < CROWD.length; i++)
+                {
+                    Locomotive loco = model.getLocByName(CROWD[i][0]);
+
+                    if (loco == null) continue;
+
+                    loco.setAutonomyPaused(false);
+
+                    session.setLocomotivePaused(CROWD[i][0], false);
+
+                    Point at = railway().getLocomotiveLocation(loco);
+
+                    if (at != null)
+                    {
+                        at.setActive(true);
+
+                        railway().moveLocomotive(null, at.getName(), true);
+                    }
+
+                    session.placeLocomotive(squares.get(i), null);
+                }
+
+                train.setAutonomyPaused(false);
+
+                session.setLocomotivePaused(HIS_TRAIN, false);
+            }
+            catch (java.io.IOException cannotSave)
+            {
+                throw new IllegalStateException(cannotSave);
+            }
+        });
+
+        pump();
+    }
+
+    /** His train and the crowd, the ones these claims are about. */
+    private static List<String> mine()
+    {
+        List<String> names = new ArrayList<>();
+
+        names.add(HIS_TRAIN);
+
+        for (String[] each : CROWD) names.add(each[0]);
+
+        return names;
+    }
+
+    /** The names on the Auto tab's cards, in the order the tab lays them out - only the ones this class stood there. */
+    private static List<String> cardOrder() throws Exception
+    {
+        final List<String> names = new ArrayList<>();
+
+        final List<String> mine = mine();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            List<java.awt.Component> all = new ArrayList<>();
+
+            everything(ui.getContentPane(), all);
+
+            for (java.awt.Component c : all)
+            {
+                if (!(c instanceof org.traincontrol.gui.AutoLocomotiveStatus)) continue;
+
+                String name = ((org.traincontrol.gui.AutoLocomotiveStatus) c).getLocomotive().getName();
+
+                if (mine.contains(name)) names.add(name);
+            }
+        });
+
+        return names;
+    }
+
+    /** Waits for the cards to be built and for each to take its routes. */
+    private static void settleTheCards() throws Exception
+    {
+        for (long end = System.currentTimeMillis() + 20000; cardOrder().size() < mine().size()
+            && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            pump();
+        }
+
+        for (int turn = 0; turn < 8; turn++)
+        {
+            Thread.sleep(100);
+
+            pump();
+        }
+    }
+
+    /** The whole tab built again, as a placement builds it. */
+    private static void rebuildTheCards() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> ui.repaintAutoLocList(false));
+
+        settleTheCards();
+    }
+
+    /**
+     * The tab laid out with every train active, and then the trains changed behind it: two paused, as the card's own
+     * button pauses them (the train alone), and two stations put out of use under the trains standing on them.  The cards
+     * stay as they were built, which is not the order they are due.
+     */
+    private static void goStale() throws Exception
+    {
+        crowd();
+
+        rebuildTheCards();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (String name : PAUSED) model.getLocByName(name).setAutonomyPaused(true);
+
+            for (String name : OUT_OF_USE) railway().getLocomotiveLocation(model.getLocByName(name)).setActive(false);
+        });
+
+        assertNotEquals(cardOrder(), SORTED, "precondition: the cards were already in the order they are due, so"
+            + " nothing here can show a sort");
+    }
+
+    /** The commands tab opened: away to the settings tab and back, as a click on each tab does. */
+    private static void openTheCommandsTab() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> ui.showAutonomySettingsTab());
+
+        pump();
+
+        SwingUtilities.invokeAndWait(() -> ui.showAutonomyRunTab());
+
+        settleTheCards();
+    }
+
+    /**
+     * Opening the locomotive commands tab puts the active trains first, then the paused ones, then the ones on stations out
+     * of use, each group by name with capitals ignored (FR-126; Adam: "re-sort them to show active first, then inactive, then
+     * ones on inactive stations (as currently), sorted alphabetically within those groups").
+     *
+     * MUTATION: leave the tab alone when it is opened, leave the paused trains among the active, or order the names with
+     * capitals counting, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testOpeningTheCommandsTabSortsActiveThenPausedThenTheInactiveStations() throws Exception
+    {
+        try
+        {
+            goStale();
+
+            openTheCommandsTab();
+
+            assertEquals(cardOrder(), SORTED, "opening the locomotive commands tab did not lay the cards out active first,"
+                + " then paused, then the trains on stations out of use, each group by name");
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * Coming back to the Auto tab sorts too, when the commands tab was the one it was left on (FR-126): the user did open it.
+     *
+     * MUTATION: sort on the inner tabs' change only, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testComingBackToTheAutoTabSortsTheCommandsTabToo() throws Exception
+    {
+        try
+        {
+            // The commands tab is the one showing, and the user then leaves for the track diagram and returns
+            SwingUtilities.invokeAndWait(() -> ui.showAutonomyRunTab());
+
+            pump();
+
+            goStale();
+
+            SwingUtilities.invokeAndWait(() -> ui.showLayoutTab());
+
+            pump();
+
+            assertNotEquals(cardOrder(), SORTED, "leaving the Auto tab re-sorted the cards, which are due to be sorted when"
+                + " it is opened");
+
+            SwingUtilities.invokeAndWait(() -> ui.showAutonomyRunTab());
+
+            settleTheCards();
+
+            assertEquals(cardOrder(), SORTED, "coming back to the Auto tab, on the commands tab, did not sort its cards");
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * Pressing the pause button on a card does not move any card (FR-126; Adam: "Don't trigger the re-sort if you just click
+     * the pause button on the locomotive autonomy commands tab"): the train is paused, the cards stand where they were, and
+     * the next opening of the tab takes the pause into account.
+     *
+     * His train is first among the active ones, so a sort at the click would take it from the head of the tab to behind the
+     * trains still active.
+     *
+     * MUTATION: have the pause button sort the cards, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPauseClickOnACardDoesNotMoveTheCards() throws Exception
+    {
+        try
+        {
+            goStale();
+
+            openTheCommandsTab();
+
+            assertEquals(cardOrder(), SORTED, "precondition: opening the tab did not sort it");
+
+            List<String> afterThePause = new ArrayList<>(SORTED);
+
+            afterThePause.remove(HIS_TRAIN);
+            afterThePause.add(afterThePause.indexOf("ALCO UP"), HIS_TRAIN);
+
+            final javax.swing.AbstractButton button = autoTabPauseButton();
+
+            assertNotNull(button, "precondition: the Auto tab shows no pause button for " + HIS_TRAIN);
+
+            SwingUtilities.invokeAndWait(button::doClick);
+
+            settleTheCards();
+
+            assertTrue(train.isAutonomyPaused(), "precondition: the click did not pause " + HIS_TRAIN);
+
+            assertEquals(cardOrder(), SORTED, "pressing a card's pause button moved the cards");
+
+            openTheCommandsTab();
+
+            assertEquals(cardOrder(), afterThePause, "the next opening of the tab did not take the pause into account");
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * Bulk Tools has Deactivate All Trains and Activate All Trains, on the track diagram's right-click menu as in the editor:
+     * each sets every train standing on the layout, in the railway and in the setup, saves it with the configuration so a
+     * reload has it, says how many it changed, and greys when there is nothing for it to change (FR-126; Adam: "a bulk tool to
+     * mass activate and mass deactivate all trains").
+     *
+     * MUTATION: leave a train out of either tool, set the train and not the setup, or save nothing, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheBulkToolsActivateAndDeactivateEveryTrain() throws Exception
+    {
+        try
+        {
+            crowd();
+
+            // ONE PAUSED BY HAND FIRST, through the tick, so that the two tools have different counts to tell apart
+            final Locomotive alco = model.getLocByName("ALCO UP");
+
+            SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, alco, false));
+
+            pump();
+
+            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+
+            assertTrue(standing.containsAll(mine()), "precondition: not every train stands on the layout: " + standing);
+
+            // DEACTIVATE EVERY TRAIN: the count is the trains still active
+            String deactivate = I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size() - 1);
+
+            javax.swing.JMenuItem tool = diagramMenuItem(mainB, deactivate);
+
+            assertNotNull(tool, "Bulk Tools on the track diagram's right-click menu offers no " + deactivate + ": "
+                + diagramMenuTexts(mainB));
+
+            assertTrue(tool.isEnabled(), deactivate + " is greyed while " + (standing.size() - 1) + " trains are active");
+
+            assertTrue(tool.getToolTipText() != null && tool.getToolTipText().contains(String.valueOf(standing.size() - 1)),
+                deactivate + " has no tooltip saying how many it will pause: " + tool.getToolTipText());
+
+            click(tool);
+
+            for (int turn = 0; turn < 6; turn++) pump();
+
+            for (String name : standing)
+            {
+                assertTrue(model.getLocByName(name).isAutonomyPaused(), name + " is still active after " + deactivate);
+            }
+
+            assertTrue(session.getPausedLocomotives().containsAll(standing), deactivate + " paused the trains and did not"
+                + " record them all in the setup: " + session.getPausedLocomotives());
+
+            assertTrue(hintText().contains(I18n.f("autosetup.ui.infoTrainsDeactivated", standing.size() - 1)),
+                deactivate + " did not say how many it paused: " + hintText());
+
+            AutonomySession reloaded = new AutonomySession(sandbox.getFolder());
+
+            reloaded.open(pages());
+
+            assertTrue(reloaded.getPausedLocomotives().containsAll(standing), "the pauses were not saved with the"
+                + " configuration: a reload lists " + reloaded.getPausedLocomotives());
+
+            // AND NOTHING LEFT FOR IT: greyed
+            javax.swing.JMenuItem spent = diagramMenuItem(mainB, I18n.f("autosetup.ui.menuDeactivateAllTrains", 0));
+
+            assertTrue(spent != null && !spent.isEnabled(), "with every train paused, Deactivate All Trains is not greyed: "
+                + diagramMenuTexts(mainB));
+
+            // ACTIVATE EVERY TRAIN: the count is the trains paused
+            String activate = I18n.f("autosetup.ui.menuActivateAllTrains", standing.size());
+
+            tool = diagramMenuItem(mainB, activate);
+
+            assertNotNull(tool, "Bulk Tools offers no " + activate + " with every train paused: " + diagramMenuTexts(mainB));
+
+            assertTrue(tool.isEnabled(), activate + " is greyed while every train is paused");
+
+            click(tool);
+
+            for (int turn = 0; turn < 6; turn++) pump();
+
+            for (String name : standing)
+            {
+                assertFalse(model.getLocByName(name).isAutonomyPaused(), name + " is still paused after " + activate);
+            }
+
+            assertTrue(java.util.Collections.disjoint(session.getPausedLocomotives(), standing), activate + " left"
+                + " trains paused in the setup: " + session.getPausedLocomotives());
+
+            assertTrue(hintText().contains(I18n.f("autosetup.ui.infoTrainsActivated", standing.size())),
+                activate + " did not say how many it set going: " + hintText());
+
+            reloaded = new AutonomySession(sandbox.getFolder());
+
+            reloaded.open(pages());
+
+            assertTrue(java.util.Collections.disjoint(reloaded.getPausedLocomotives(), standing), "the trains set going"
+                + " are paused again after a reload: " + reloaded.getPausedLocomotives());
+
+            spent = diagramMenuItem(mainB, I18n.f("autosetup.ui.menuActivateAllTrains", 0));
+
+            assertTrue(spent != null && !spent.isEnabled(), "with no train paused, Activate All Trains is not greyed: "
+                + diagramMenuTexts(mainB));
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /** What the track diagram's borrowed autonomy menu last said in its message line. */
+    private static String hintText() throws Exception
+    {
+        java.lang.reflect.Field menus = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
+
+        menus.setAccessible(true);
+
+        java.lang.reflect.Field hint = AutonomyEditorPanel.class.getDeclaredField("hint");
+
+        hint.setAccessible(true);
+
+        return ((javax.swing.JLabel) hint.get(menus.get(ui))).getText();
+    }
+
+    /** The pages the model has, as a setup opens them. */
+    private static List<org.traincontrol.base.LayoutDiagram> pages()
+    {
+        List<org.traincontrol.base.LayoutDiagram> pages = new ArrayList<>();
+
+        for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
+
+        return pages;
+    }
 }

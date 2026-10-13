@@ -7158,13 +7158,32 @@ public class AutonomySession
     {
         if (name == null) return false;
 
-        java.util.Set<String> names = getPausedLocomotives();
+        return setLocomotivesPaused(java.util.Collections.singletonList(name), paused);
+    }
 
-        if (paused) names.add(name);
-        else names.remove(name);
+    /**
+     * Records several trains paused, or set going, in the active configuration, and saves it ONCE (FR-126).  The record
+     * `setLocomotivePaused` keeps for one train, written for the bulk tools' many in a single save.
+     *
+     * @param names the trains
+     * @param paused whether they are paused
+     * @return whether there was a configuration to write it to
+     * @throws IOException if the setup cannot be written
+     */
+    public boolean setLocomotivesPaused(java.util.Collection<String> names, boolean paused) throws IOException
+    {
+        java.util.Set<String> listed = getPausedLocomotives();
+
+        for (String name : names)
+        {
+            if (name == null) continue;
+
+            if (paused) listed.add(name);
+            else listed.remove(name);
+        }
 
         return setGlobal(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
-            names.isEmpty() ? null : new org.json.JSONArray(names));
+            listed.isEmpty() ? null : new org.json.JSONArray(listed));
     }
 
     /**
@@ -7182,6 +7201,30 @@ public class AutonomySession
         train.setAutonomyPaused(!active);
 
         setLocomotivePaused(train.getName(), !active);
+    }
+
+    /**
+     * Pauses every one of these trains or sets every one going (FR-126), as `setActive` does for one: each train itself,
+     * and this configuration's record of them all, saved once.  The model call is the same, `setAutonomyPaused`, per train.
+     *
+     * @param trains the trains
+     * @param active whether autonomy may run them
+     * @throws IOException if the setup cannot be written
+     */
+    public void setTrainsActive(java.util.Collection<Locomotive> trains, boolean active) throws IOException
+    {
+        java.util.List<String> names = new java.util.ArrayList<>();
+
+        for (Locomotive train : trains)
+        {
+            if (train == null) continue;
+
+            train.setAutonomyPaused(!active);
+
+            names.add(train.getName());
+        }
+
+        setLocomotivesPaused(names, !active);
     }
 
     /**

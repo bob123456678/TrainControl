@@ -2629,7 +2629,150 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.add(placeHome);
 
+        // ACTIVATE AND DEACTIVATE EVERY TRAIN (FR-126; Adam: "a bulk tool to mass activate and mass deactivate all
+        // trains").  The Is Active tick for every train standing on the layout at once, built like the items above:
+        // counted off the set the tool walks (`trainsStanding`), greyed on its own count with the reason in its tooltip,
+        // and saying how many it changed.  Not while trains run, as the tick is not: `item` refuses it, as it refuses
+        // every setup edit, and the Auto tab's pause button is the way to pause one train then.  Nothing to confirm: each
+        // tool undoes the other, and the tick sets one train back.
+        java.util.List<String> standingTrains = trainsStanding();
+        java.util.Set<String> listed = session == null ? new java.util.HashSet<String>() : session.getPausedLocomotives();
+
+        int pausedTrains = 0;
+
+        for (String name : standingTrains)
+        {
+            if (isPaused(name, listed)) pausedTrains++;
+        }
+
+        int goingTrains = standingTrains.size() - pausedTrains;
+
+        javax.swing.JMenuItem activateAll = item(
+            I18n.f("autosetup.ui.menuActivateAllTrains", pausedTrains), () -> setEveryTrainActive(true));
+
+        activateAll.setEnabled(pausedTrains > 0);
+        activateAll.setToolTipText(wrapped(pausedTrains > 0
+            ? I18n.f("autosetup.ui.tipActivateAllTrains", pausedTrains)
+            : I18n.t("autosetup.ui.infoNoTrainsToActivate")));
+
+        bulk.add(activateAll);
+
+        javax.swing.JMenuItem deactivateAll = item(
+            I18n.f("autosetup.ui.menuDeactivateAllTrains", goingTrains), () -> setEveryTrainActive(false));
+
+        deactivateAll.setEnabled(goingTrains > 0);
+        deactivateAll.setToolTipText(wrapped(goingTrains > 0
+            ? I18n.f("autosetup.ui.tipDeactivateAllTrains", goingTrains)
+            : I18n.t("autosetup.ui.infoNoTrainsToDeactivate")));
+
+        bulk.add(deactivateAll);
+
         return bulk;
+    }
+
+    /**
+     * The trains standing on the layout, by name, each once - the ones the Is Active tick is offered for, and the ones
+     * Activate All Trains and Deactivate All Trains walk (FR-126).  Where the railway has the trains, and the setup's
+     * placements where it has not (`trainsWhereTheyStand`).
+     *
+     * @return the names, in no particular order
+     */
+    private java.util.List<String> trainsStanding()
+    {
+        java.util.Set<String> names = new java.util.LinkedHashSet<>();
+
+        if (session != null)
+        {
+            for (String name : session.trainsWhereTheyStand().values())
+            {
+                if (name != null && !name.trim().isEmpty()) names.add(name);
+            }
+        }
+
+        return new java.util.ArrayList<>(names);
+    }
+
+    /**
+     * Whether a train is paused (FR-126): the train says so, or the setup lists it.  Either, because the Auto tab's pause
+     * button changes the train alone and the setup learns of it later, and a tool that read only the setup would grey
+     * itself over a train the operator has just paused.
+     *
+     * @param name the train
+     * @param listed the trains the setup lists as paused
+     * @return whether it is paused
+     */
+    private boolean isPaused(String name, java.util.Set<String> listed)
+    {
+        if (listed.contains(name)) return true;
+
+        TrainControlUI window = parentWindow();
+
+        org.traincontrol.base.Locomotive train = window == null || window.getModel() == null ? null
+            : window.getModel().getLocByName(name);
+
+        return train != null && train.isAutonomyPaused();
+    }
+
+    /**
+     * Pauses every train on the layout or sets every one going, and says how many that changed (FR-126).  Through the
+     * window's door where there is a window and a train of that name, as the Is Active tick goes - the train and the setup
+     * together, saved once - and through the setup alone for a name the model has no train for; then the railway is told,
+     * as every setup door tells it.
+     *
+     * The emptiness check is kept though the items grey on the same count: the greying is the affordance and this is the
+     * guard.
+     *
+     * @param active true to activate every train, false to deactivate every train
+     */
+    private void setEveryTrainActive(boolean active)
+    {
+        java.util.List<String> names = trainsStanding();
+
+        java.util.Set<String> listed = session.getPausedLocomotives();
+
+        int changed = 0;
+
+        for (String name : names)
+        {
+            if (isPaused(name, listed) == active) changed++;
+        }
+
+        if (changed == 0)
+        {
+            say(hint, I18n.t(active ? "autosetup.ui.infoNoTrainsToActivate" : "autosetup.ui.infoNoTrainsToDeactivate"));
+
+            return;
+        }
+
+        TrainControlUI window = parentWindow();
+
+        java.util.List<org.traincontrol.base.Locomotive> trains = new java.util.ArrayList<>();
+        java.util.List<String> unknown = new java.util.ArrayList<>();
+
+        for (String name : names)
+        {
+            org.traincontrol.base.Locomotive train = window == null || window.getModel() == null ? null
+                : window.getModel().getLocByName(name);
+
+            if (train != null) trains.add(train);
+            else unknown.add(name);
+        }
+
+        try
+        {
+            if (window != null) window.setLocomotivesActive(session, trains, active);
+
+            if (!unknown.isEmpty()) session.setLocomotivesPaused(unknown, !active);
+        }
+        catch (java.io.IOException cannotSave)
+        {
+            throw new IllegalStateException(cannotSave.getMessage(), cannotSave);
+        }
+
+        say(hint, active ? I18n.f("autosetup.ui.infoTrainsActivated", changed)
+            : I18n.f("autosetup.ui.infoTrainsDeactivated", changed));
+
+        setupChanged();
     }
 
     /**

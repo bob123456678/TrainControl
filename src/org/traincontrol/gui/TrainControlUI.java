@@ -1005,6 +1005,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.addPropertyChangeListener("alwaysOnTop", change ->
             childWindowsFollowAlwaysOnTop(Boolean.TRUE.equals(change.getNewValue())));
 
+        // THE LOCOMOTIVE COMMANDS TAB IS SORTED WHEN IT IS OPENED (FR-126; Adam: "Upon opening the locomotive autonomy
+        // commands tab, re-sort them to show active first, then inactive, then ones on inactive stations").  Opened from
+        // another tab of the Auto tab here; opened by coming to the Auto tab is `KeyboardTabStateChanged`.  A card's pause
+        // button changes no selection and so sorts nothing: the card stays under the pointer.
+        this.locCommandPanels.addChangeListener(change -> sortTheCommandsTabIfShown());
+
         // THE LOG IS SOMETHING TO READ (Adam, MT-362).
         //
         // *"Works, but the user should not be allowed to type anything into the log."*  A JTextArea is
@@ -4617,15 +4623,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (train == null) return;
 
+        setLocomotivesActive(setup, java.util.Collections.singletonList(train), active);
+    }
+
+    /**
+     * Pauses every one of these trains or sets every one going (FR-126), for the Bulk Tools' Activate All Trains and
+     * Deactivate All Trains: what `setLocomotiveActive` does for one train, done for all of them with one save, one redraw
+     * of the diagram and one rebuild of the Auto tab's cards.
+     *
+     * @param setup the setup the tool belongs to, or null where there is none: the trains alone
+     * @param trains the trains
+     * @param active whether autonomy may run them
+     */
+    public void setLocomotivesActive(org.traincontrol.automationui.AutonomySession setup,
+        java.util.Collection<Locomotive> trains, boolean active)
+    {
+        if (trains == null || trains.isEmpty()) return;
+
         if (setup == null)
         {
-            train.setAutonomyPaused(!active);
+            for (Locomotive train : trains)
+            {
+                if (train != null) train.setAutonomyPaused(!active);
+            }
         }
         else
         {
             try
             {
-                setup.setActive(train, active);
+                setup.setTrainsActive(trains, active);
             }
             catch (java.io.IOException cannotSave)
             {
@@ -4642,6 +4668,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         trainsPausedChanged();
 
+        // The cards are built again, and so sorted again (FR-126): a menu's door, not the card's own pause button, which
+        // never reaches here
         repaintAutoLocList(false);
     }
 
@@ -24875,6 +24903,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.stats.refresh();
         }
+
+        // The Auto tab opened on the locomotive commands tab (FR-126)
+        sortTheCommandsTabIfShown();
     }//GEN-LAST:event_KeyboardTabStateChanged
 
     private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextKeyboardActionPerformed
@@ -32104,31 +32135,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 5)
             );
             
-            // Sort alphabetically, with parked locomotives last
-            List<Locomotive> locs = new LinkedList<>(shown.getLocomotivesToRun());
-            
-            locs.sort((Locomotive l1, Locomotive l2) ->
-            {
-                Point loc1Point = shown.getLocomotiveLocation(l1);
-                Point loc2Point = shown.getLocomotiveLocation(l2);
-                
-                if (loc1Point != null && loc2Point != null)
-                {
-                    if (loc1Point.isActive() && !loc2Point.isActive()) return -1;
-                    if (!loc1Point.isActive() && loc2Point.isActive()) return 1;
-                }
-                else if (loc1Point == null)
-                {
-                    return 1;
-                }
-                else if (loc2Point == null)
-                {
-                    return -1;
-                }            
-                
-                return l1.getName().compareTo(l2.getName());
-            });
-            
+            // Active first, then paused, then the trains on stations out of use, each group by name (FR-126)
+            List<Locomotive> locs = autoTabOrder(shown, shown.getLocomotivesToRun());
+
             // The panels are built here, on the event thread, where Swing components belong - but the
             // search each one used to do in its own constructor is not done here any more.
             //
@@ -32191,6 +32200,98 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.autoLocPanel.repaint();
             this.locCommandPanels.repaint();
         });
+    }
+
+    /**
+     * The order the Auto tab lays its cards in (FR-126; Adam: "show active first, then inactive, then ones on inactive
+     * stations (as currently), sorted alphabetically within those groups"): the trains on active stations that are going,
+     * then those paused, then those on stations out of use, then any standing nowhere - each group by name with capitals
+     * ignored, and by exact name after that, so the order does not depend on how the trains were collected.
+     *
+     * Where a train stands is asked once per train, not once per comparison.
+     *
+     * @param shown the railway the cards show
+     * @param trains the trains
+     * @return the trains in the order due, in a new list
+     */
+    static List<Locomotive> autoTabOrder(Layout shown, java.util.Collection<Locomotive> trains)
+    {
+        final java.util.Map<Locomotive, Integer> group = new java.util.IdentityHashMap<>();
+
+        for (Locomotive train : trains)
+        {
+            Point at = shown.getLocomotiveLocation(train);
+
+            group.put(train, at == null ? 3 : !at.isActive() ? 2 : train.isAutonomyPaused() ? 1 : 0);
+        }
+
+        List<Locomotive> sorted = new java.util.ArrayList<>(trains);
+
+        sorted.sort(java.util.Comparator.<Locomotive>comparingInt(train -> group.get(train))
+            .thenComparing(Locomotive::getName, String.CASE_INSENSITIVE_ORDER)
+            .thenComparing(Locomotive::getName));
+
+        return sorted;
+    }
+
+    /**
+     * Lays the Auto tab's cards out again in the order due (FR-126), the cards themselves left as they are: moved, not
+     * built again, so nothing flickers and no route is searched for.  Left alone when they already stand in that order.
+     * On the event thread.
+     */
+    private void resortAutoLocList()
+    {
+        final Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (shown == null || this.autoLocPanel == null) return;
+
+        final java.util.Map<Locomotive, AutoLocomotiveStatus> cards = new java.util.IdentityHashMap<>();
+
+        final List<Component> standing = java.util.Arrays.asList(this.autoLocPanel.getComponents());
+
+        for (Component card : standing)
+        {
+            // Anything else on the panel is not ours to move
+            if (!(card instanceof AutoLocomotiveStatus)) return;
+
+            cards.put(((AutoLocomotiveStatus) card).getLocomotive(), (AutoLocomotiveStatus) card);
+        }
+
+        List<Locomotive> due = autoTabOrder(shown, cards.keySet());
+
+        boolean inOrder = due.size() == standing.size();
+
+        for (int i = 0; inOrder && i < due.size(); i++)
+        {
+            inOrder = cards.get(due.get(i)) == standing.get(i);
+        }
+
+        if (inOrder) return;
+
+        this.autoLocPanel.removeAll();
+
+        for (Locomotive train : due) this.autoLocPanel.add(cards.get(train));
+
+        this.autoLocPanel.revalidate();
+        this.autoLocPanel.repaint();
+    }
+
+    /**
+     * Sorts the cards when the locomotive commands tab is OPENED (FR-126): the Auto tab selected with that tab showing,
+     * whichever of the two selections was the one just made.  Not called from a card's pause button, which leaves the cards
+     * where the user is pointing.
+     */
+    private void sortTheCommandsTabIfShown()
+    {
+        // Selections made while the form is still being built come here too
+        if (this.autoPanel == null || this.locCommandTab == null || this.locCommandPanels == null
+            || this.KeyboardTab == null) return;
+
+        if (this.KeyboardTab.getSelectedComponent() != this.autoPanel) return;
+
+        if (this.locCommandPanels.getSelectedComponent() != this.locCommandTab) return;
+
+        resortAutoLocList();
     }
 
     @Override
