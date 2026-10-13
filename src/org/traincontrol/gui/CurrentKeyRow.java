@@ -19,15 +19,16 @@ import org.traincontrol.util.I18n;
  *
  * Adam: *"the active locomotive info is currently text consisting of [letter] . Page [num] ([page name]) .
  * [decodertype] [address]. the page number could be condensed into a nice pill, along with the other info.  make it
- * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 to 4, on seeing it) asked for
+ * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 to 5, on seeing it) asked for
  * changes to it, so that it is now:
  *
  *   1. **a keycap** - the key's letter on a small rounded square with a heavier bottom edge, so it reads as a key;
- *   2. **the page, as plain words** - the name and then the number in parentheses, "Example (5)", with no pill round
- *      them: *"Change the page title to just the name with page number in parens after, no pill around that, in the
- *      standard blue label font.  Example: MMMM... (5)"*.  No word "Page" in it (*"I wouldn't like to see the word
- *      'page' in it"*).  The standard blue label font is the one the line was set in before this feature, the font and
- *      the colour of the generated `CurrentKeyLabel` the row sits in - Segoe UI Semibold 13, rgb(0,0,115);
+ *   2. **the page, as plain words** - the number, a full stop, and the name, "5. Example", with no pill round them:
+ *      *"Change the page title to just the name with page number in parens after, no pill around that, in the standard
+ *      blue label font"* (round 4), and then *"Change (5) to 5 as a prefix.  Example: 5. MMMMMM"* (round 5).  No word
+ *      "Page" in it (*"I wouldn't like to see the word 'page' in it"*).  The standard blue label font is the one the
+ *      line was set in before this feature, the font and the colour of the generated `CurrentKeyLabel` the row sits in -
+ *      Segoe UI Semibold 13, rgb(0,0,115);
  *   3. **a decoder pill** - a solid navy capsule with white text, in two parts the way the data is: the decoder TYPE and
  *      the ADDRESS, with a white vertical line between them ("MFX | 12"): *"add a vertical line from top to bottom
  *      (white) separating the type from the number ... while maintaining a blue border around it"*.  It floats to the
@@ -55,12 +56,12 @@ import org.traincontrol.util.I18n;
  * which a label cannot do for a piece of a sentence.
  *
  * **What gives way, and what never does** (Adam: *"make sure we test with wide page names (like MMMMMMMMMMM)"*).  The
- * keycap and the decoder pill are drawn whole, and so are the page's " (5)": only the page NAME is cut, with an
- * ellipsis ("MMMM... (5)"), to whatever room is left between the keycap and the decoder pill, a gap short of each.  A
- * name with no room for even one letter and the ellipsis is left out, and the words are "(5)" alone, as they are for a
- * page that has no name.  A bare "(5)" rather than a bare "5": the parentheses are what say that the number is the
- * page's, as they do after a name, where a lone digit beside a key and an address would be read as either.  The full
- * words, "Page 5 (Example)", are in the tooltip.
+ * keycap and the decoder pill are drawn whole, and so is the page's "5. " in front of the name: only the page NAME is
+ * cut, with an ellipsis ("5. MMMM..."), to whatever room is left between the keycap and the decoder pill, a gap short of
+ * each.  A name with no room for even one letter and the ellipsis is left out, and the words are "5." alone, as they are
+ * for a page that has no name.  "5." rather than a bare "5": the full stop is what says the number is a number in a
+ * list of pages, as it does before a name, and a lone digit beside a key and an address would be read as either.  The
+ * full words, "Page 5 (Example)", are in the tooltip.
  *
  * **Why not `StationCaption`.**  The diagram's captions are labels whose fill is a state colour, drawn at a size taken
  * from the tile; this is a few fixed shapes and a line of words in a fixed box.  What is borrowed is its house style for
@@ -294,7 +295,7 @@ public class CurrentKeyRow extends JComponent
         /** The page name as drawn: whole, cut with an ellipsis, or empty when it has been left out. */
         public final String name;
 
-        /** The page's words as drawn: the name, a space and the number in parentheses - "Example (5)" - or "(5)" alone. */
+        /** The page's words as drawn: the number, a full stop, a space and the name - "5. Example" - or "5." alone. */
         public final String pageText;
 
         /** The decoder's type as drawn, or empty. */
@@ -442,7 +443,7 @@ public class CurrentKeyRow extends JComponent
      *
      * Left to right: the keycap and the page's words from the left edge, a `GAP` apart; the decoder pill from the RIGHT
      * edge.  The decoder pill is sized first, because it takes its place at the right, and what is left between the
-     * keycap and it, less the " (5)" and a gap, is the page name's.
+     * keycap and it, less the "5. " and a gap, is the page name's.
      *
      * @param width the box's width in pixels
      * @param height the box's height in pixels
@@ -509,20 +510,20 @@ public class CurrentKeyRow extends JComponent
             reserved = w + GAP;
         }
 
-        // THE PAGE'S WORDS, from the left: the name, then the number in parentheses.  The " (5)" is never cut.
+        // THE PAGE'S WORDS, from the left: the number and a full stop, then the name.  The "5. " is never cut.
         Font pageFont = pageFont();
 
         String number = String.valueOf(c.getPage());
-        String suffix = " (" + number + ")";
+        String prefix = number + ". ";
 
         // What is left, once the shapes that never give way have their room, is the name's.  A pixel is kept back for the
-        // words being measured whole and the name and the " (5)" apart, which the kerning between them can tell by a hair.
-        double nameRoom = width - x - reserved - Math.ceil(advance(pageFont, suffix)) - 1;
+        // words being measured whole and the "5. " and the name apart, which the kerning between them can tell by a hair.
+        double nameRoom = width - x - reserved - Math.ceil(advance(pageFont, prefix)) - 1;
 
         String name = fit(c.getPageName(), nameRoom, pageFont);
 
-        // a page with no name is "(5)": the number in the same parentheses, without the name before it
-        String pageText = name.isEmpty() ? "(" + number + ")" : name + suffix;
+        // a page with no name is "5.": the number and its full stop, without the name after them
+        String pageText = name.isEmpty() ? number + "." : prefix + name;
 
         Rectangle page = new Rectangle(x, top, (int) Math.ceil(advance(pageFont, pageText)), h);
 
@@ -627,7 +628,7 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * THE PAGE'S WORDS: the name and the number in parentheses, in the label's font and colour, with nothing round them -
+     * THE PAGE'S WORDS: the number, a full stop and the name, in the label's font and colour, with nothing round them -
      * no outline, no fill, no line - centred on their capitals in the slot's height.
      */
     private void paintPage(Graphics2D g2, Geometry at)

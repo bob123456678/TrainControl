@@ -739,8 +739,9 @@ public class testLocMappingPages
      * it."*  And on seeing it (round 2): the decoder pill's type and address are parted by a white vertical line, and the
      * pill floats to the right: *"Can we also float the address to the right?"*  Round 3: *"move the page number to after
      * the page name and separate it with a line"*.  Round 4: *"Change the page title to just the name with page number in
-     * parens after, no pill around that, in the standard blue label font"* - so the page is plain words, "Example (5)",
-     * in `CurrentKeyLabel`'s own font and colour, and only the keycap and the decoder pill are shapes.
+     * parens after, no pill around that, in the standard blue label font"*.  Round 5: *"Change (5) to 5 as a prefix.
+     * Example: 5. MMMMMM"* - so the page is plain words, "5. Example", in `CurrentKeyLabel`'s own font and colour, and
+     * only the keycap and the decoder pill are shapes.
      *
      * One locomotive of each decoder type the program has, on the page of the window's current key: MM2, MFX, DCC, a
      * multi-unit and a consist of an MFX head with a member.  Driven through `repaintLoc`, which is what the window calls
@@ -750,10 +751,10 @@ public class testLocMappingPages
      * The keycap and the page pill stay at the left, a gap apart; the decoder pill is at the slot's right edge, with more
      * than the least gap between it and a short page name's pill, which is the proof that it floats and does not follow.
      *
-     * MUTATION: put the word Page back in the page's words (draw `getTooltip`'s page words there), put the number back
-     * before the name, put a line between them, put the decoder pill back beside the page's words, join the type and
-     * the address into one text, draw the divider outside its pill, or set the page's words in any font or colour but
-     * the label's, and this fails.
+     * MUTATION: put the word Page back in the page's words (draw `getTooltip`'s page words there), put the number after
+     * the name or back in parentheses, leave the full stop off, put a line between them, put the decoder pill back beside
+     * the page's words, join the type and the address into one text, draw the divider outside its pill, or set the
+     * page's words in any font or colour but the label's, and this fails.
      *
      * @throws Exception from the window
      */
@@ -869,12 +870,12 @@ public class testLocMappingPages
                 assertTrue(decoder.x - (page.x + page.width) > 5, "the decoder pill is a least gap from a short page name's"
                     + " pill, so it follows the page pill and does not float " + said + ": " + page + " and " + decoder);
 
-                // THE PAGE IS PLAIN WORDS - the name, then the number in parentheses - with no pill, no fill and no line
+                // THE PAGE IS PLAIN WORDS - the number and a full stop, then the name - with no pill, no fill and no line
                 assertNull(pub(at, "separator"), "the page still has a line between its name and its number " + said
                     + ".  Adam, round 4: \"no pill around that\"");
 
-                assertEquals(pub(at, "pageText"), "Example (" + p.page + ")", "the page's words are not the name and then the"
-                    + " number in parentheses " + said + ".  Adam, round 4: \"just the name with page number in parens after\"");
+                assertEquals(pub(at, "pageText"), p.page + ". Example", "the page's words are not the number, a full stop"
+                    + " and then the name " + said + ".  Adam, round 5: \"Change (5) to 5 as a prefix.  Example: 5. MMMMMM\"");
 
                 // A WHITE LINE BETWEEN THE TYPE AND THE ADDRESS, inside the pill's rim and not through it
                 assertNotNull(divider, "the decoder pill has no line between its type and its address " + said);
@@ -920,8 +921,8 @@ public class testLocMappingPages
             assertNotNull(bare, "nothing is drawn for a key with no locomotive: the key and its page went with it");
             assertNull(rect(bare, "decoder"), "a decoder pill is drawn for a key with no locomotive on it");
             assertEquals(pub(bare, "name"), "Example");
-            assertEquals(pub(bare, "pageText"), "Example (" + p.page + ")",
-                "with no decoder pill the page's words are not the name and the number in parentheses");
+            assertEquals(pub(bare, "pageText"), p.page + ". Example",
+                "with no decoder pill the page's words are not the number, a full stop and the name");
 
             assertEquals(rect(bare, "page").x, rect(bare, "keycap").x + rect(bare, "keycap").width + 5,
                 "with no decoder pill the page pill is not at the left, a gap after the keycap");
@@ -942,12 +943,12 @@ public class testLocMappingPages
      *
      * Round 3, Adam: *"Increase font sizes by 1 notch to improve visibility - make sure everything still fits vertically"*:
      * every font in the pills is 12 point, and the slot is still 296 by 18.  With the 22-M name the page's words are
-     * "MMMM... (5)" (round 4: *"Example: MMMM... (5)"*): the name is cut with an ellipsis and the " (5)" is whole and
-     * clear of the decoder pill.
+     * "5. MMMM..." (round 5: *"Example: 5. MMMMMM"*): the name is cut with an ellipsis and the "5. " in front of it is
+     * whole and clear of the decoder pill, which the name's room is cut to leave.
      *
      * MUTATION: cut the name by letters instead of by width, leave the ellipsis off, let a pill grow past 18 px, draw
      * the page's words wider than the room they were given, take the decoder pill's width out of that room, cut the
-     * " (5)", or set any of the pills' fonts back to 11 point, and this fails.
+     * "5. ", or set any of the pills' fonts back to 11 point, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1024,9 +1025,9 @@ public class testLocMappingPages
                 // THE PARTS THAT NEVER GIVE WAY
                 assertEquals(pub(at, "number"), String.valueOf(p.page), "the page number was cut " + said);
 
-                // ... and the " (5)" after it, whole: the page's words are the cut name and then the number in parentheses
-                assertEquals(pub(at, "pageText"), name + " (" + p.page + ")", "the page's number was cut, or is not after the"
-                    + " cut name, in parentheses " + said + ": [" + pub(at, "pageText") + "]");
+                // ... and the "5. " in front of it, whole: the page's words are the number, a full stop, and the cut name
+                assertEquals(pub(at, "pageText"), p.page + ". " + name, "the page's number was cut, or is not the prefix of the"
+                    + " cut name, with its full stop " + said + ": [" + pub(at, "pageText") + "]");
 
                 assertNull(pub(at, "separator"), "the page still has a line before its number " + said);
 
@@ -1077,7 +1078,7 @@ public class testLocMappingPages
 
             assertEquals(pub(unnamed, "name"), "", "a page with no name still has a name in its pill");
             assertEquals(pub(unnamed, "number"), String.valueOf(p.page), "a page with no name has lost its number");
-            assertEquals(pub(unnamed, "pageText"), "(" + p.page + ")", "a page with no name is not the number in parentheses");
+            assertEquals(pub(unnamed, "pageText"), p.page + ".", "a page with no name is not the number and its full stop");
             assertTrue(rect(unnamed, "page").width < 40, "a page with no name is not short: " + rect(unnamed, "page"));
 
             // AND A RENAME REACHES THE LINE THE WAY IT ALWAYS DID: through a repaint that is not forced.  The old line
@@ -1102,7 +1103,8 @@ public class testLocMappingPages
      * Round 2, Adam: *"In the decoder address pill, add a vertical line from top to bottom (white) separating the type
      * from the number (MFX | 12) while maintaining a blue border around it ... float the address to the right"*.  Round 4:
      * *"Change the page title to just the name with page number in parens after, no pill around that, in the standard
-     * blue label font ... Keep both the key and address pills as is"*.  So, between the keycap and the decoder pill, every
+     * blue label font ... Keep both the key and address pills as is"*, and round 5, *"Change (5) to 5 as a prefix"*.  So,
+     * between the keycap and the decoder pill, every
      * pixel is the background or the label's navy words and a blend of the two - no outline, no fill, no line, no grey -
      * and the words are navy; the decoder's divider is white with navy above and below it - the rim, unbroken - and the
      * pill's last painted column is the slot's last.
@@ -1246,7 +1248,7 @@ public class testLocMappingPages
      * themselves untouched, one colour along the whole run of the text.
      *
      * Round 4 put the page back to plain words in the label's 13 point Semibold, which fitted this slot before there
-     * were any pills; "Egypt jgy Alt (12)" has its capitals and its descenders and must show all of both within the 18
+     * were any pills; "12. Egypt jgy Alt" has its digits, capitals and descenders and must show all of them within the 18
      * rows, with the top and the bottom row empty.
      *
      * MUTATION: set the pills' fonts to 14 point, set the page's words to a size the slot cannot hold, or move the baseline
@@ -1329,7 +1331,7 @@ public class testLocMappingPages
 
             assertNotNull(divider, "the decoder pill has no line between its type and its address");
 
-            // THE PAGE'S WORDS, capitals and descenders and the " (12)": in the slot, the top row and the bottom row empty
+            // THE PAGE'S WORDS, the "12. ", the capitals and the descenders: in the slot, the top row and the bottom row empty
             int[] words = inkRows(image, page.x, page.x + page.width, 0, bottomRim, false);
 
             assertNotNull(words, "the page's words are not drawn");
