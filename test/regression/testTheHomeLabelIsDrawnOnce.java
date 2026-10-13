@@ -27,8 +27,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * label, the current home loc is shown twice (once on the tile itself, once on the offset label)"*.
  *
  * **The editor keeps one station to one caption, and the store can still hold more.** A setup edited by
- * hand, or written by an older version, carries several, and the setup check calls that an ERROR
- * (OB-341) - so drawing has to cope with it meanwhile. The state was on Adam's own railway:
+ * hand, or written by an older version, carries several, so drawing has to cope with it. A station named on
+ * its own square and beside it is drawn once and is no error for the setup check; only two captions beside
+ * a station are an ERROR (OB-341), because they are drawn twice. The state was on Adam's own railway:
  * `1 - Main:6,4` is captioned on `6,5` AND on `6,4`. `AutonomySession.migrateStationLabels` used to
  * write captions through the raw store door (until OB-256), so a station already captioned on its own
  * square gained a second one the moment a `Point:` label was migrated off the page beside it.
@@ -68,7 +69,7 @@ public class testTheHomeLabelIsDrawnOnce
      *
      * Adam, on MT-293: *"At the time of testing, TopMainR2 still shows two labels."*
      * `live-snapshot`'s setup captions `5:6,4` on `5:6,4` AND on `5:6,5` - the state
-     * `migrateStationLabels` can produce without anybody asking for it - and `1 - Main:6,4` is
+     * `migrateStationLabels` produced, until OB-256, without anybody asking for it - and `1 - Main:6,4` is
      * TopMainR2.  It is the very square `TrainControlUI.autonomyCaptionAt`'s own comment names.
      *
      * **Held out of the arrangement below**, so the three stations this class builds its cases on can
@@ -178,7 +179,7 @@ public class testTheHomeLabelIsDrawnOnce
         offsetOnlyCaption = freeNeighbour(page, offsetOnly);
 
         // A SECOND caption through the raw store door, which is how the state arises: nothing on the
-        // session's own setCaption can produce it, and migrateStationLabels does not go through that.
+        // session's own setCaption can produce it, and migrateStationLabels did not go through that until OB-256.
         session.getStore().setCaption(doubledOffset, doubled);
 
         // And the third station's caption MOVED, which does sweep - so it is captioned only beside
@@ -323,9 +324,9 @@ public class testTheHomeLabelIsDrawnOnce
      * costs is that it pins the FIXTURE as well as the rule, which is why it says so here.
      *
      * The state is not contrived: `5:6,4` is captioned on `5:6,4` and on `5:6,5` in the snapshot's
-     * `setup.json`, and `AutonomySession.migrateStationLabels` is how it got there - it writes through
-     * the raw store door, which does not sweep, so a station already captioned on its own square gains
-     * a second caption the moment a legacy `Point:` label is migrated off the page beside it.
+     * `setup.json`, and `AutonomySession.migrateStationLabels` is how it got there - it wrote through
+     * the raw store door, which does not sweep, until OB-256, so a station already captioned on its own
+     * square gained a second caption the moment a legacy `Point:` label was migrated off the page beside it.
      *
      * If this ever fails, either the fix at `TrainControlUI.autonomyCaptionAt` has been lost or the
      * snapshot has been re-taken from a railway whose labels have moved.  The precondition tells the
@@ -352,6 +353,53 @@ public class testTheHomeLabelIsDrawnOnce
             "the label beside TopMainR2 stopped naming it, so the ONE label that survives is not the"
             + " one somebody placed - and with the self-caption suppressed as well the station would"
             + " have no name at all");
+    }
+
+    /**
+     * The setup check calls a station an error when its name is DRAWN twice, by the rule the diagram draws by (OB-341).
+     *
+     * Every shape this class arranges - on its own square and beside it, on its own square only, beside only - and TopMainR2
+     * on the frozen railway, which is the first of them, is drawn once and so is no error; the whole railway raises none.
+     * And the session's `isCaptionDrawn`, which the check counts by, says a caption is drawn exactly where
+     * `autonomyCaptionAt` draws it, for every caption on the page - so the two cannot be two rules.
+     *
+     * MUTATION: have the check count every caption square, own square included, or give `isCaptionDrawn` a rule of its
+     * own, and this fails.
+     */
+    @Test
+    public void testTheSetupCheckCountsWhatTheDiagramDraws()
+    {
+        for (TileKey station : new TileKey[] {doubled, selfOnly, offsetOnly, OB193})
+        {
+            assertEquals(session.drawnCaptionsFor(station).size(), 1,
+                station + " is drawn " + session.drawnCaptionsFor(station) + ", and it should be drawn once");
+        }
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            assertFalse(org.traincontrol.automationui.AutonomyChecks.STATION_NAMED_TWICE.equals(finding.getMessageKey()),
+                "a station drawn once is called an error: " + finding);
+        }
+
+        for (TileKey where : session.getCaptions().keySet())
+        {
+            if (!PAGE.equals(where.getPage())) continue;
+
+            TileKey station = session.getCaptionTarget(where);
+
+            // Kept for a square that is no station now: not drawn, and not asked
+            if (station == null) continue;
+
+            // The diagram's other rule, that has nothing to do with a station named twice: nothing for a station that is
+            // both unnamed and switched off
+            String named = session.getStore().getPointName(station);
+
+            if (Boolean.FALSE.equals(session.getPointProperty(station, "active"))
+                && (named == null || named.trim().isEmpty())) continue;
+
+            assertEquals(ui.autonomyCaptionAt(where) != null, session.isCaptionDrawn(where),
+                "the diagram and the setup check disagree about whether the caption on " + where + " is drawn");
+        }
     }
 
     /**

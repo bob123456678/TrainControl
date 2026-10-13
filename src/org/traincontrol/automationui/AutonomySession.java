@@ -3323,6 +3323,52 @@ public class AutonomySession
     }
 
     /**
+     * Whether the diagram draws the caption on this square: the one rule for it, asked by the drawing and by the setup
+     * check alike (MT-337, OB-341).
+     *
+     * A station's name is drawn once.  A caption beside the station is always drawn; one on the station's own square
+     * gives way to it, because the two would land next to each other and say the same thing twice, and the beside one is
+     * the one somebody placed.  So the station's own caption is drawn only while it has no other.
+     *
+     * @param where the square the text sits on
+     * @return false where there is no caption, where it is kept for a square that is no station now (GSE-C4), and where it
+     *         is a station's own and gives way
+     */
+    public boolean isCaptionDrawn(TileKey where)
+    {
+        TileKey station = getCaptionTarget(where);
+
+        if (station == null) return false;
+
+        if (!station.equals(where)) return true;
+
+        for (TileKey elsewhere : captionsFor(station))
+        {
+            if (!station.equals(elsewhere)) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * The squares the diagram draws a station's name on.
+     *
+     * @param station the sensor's square
+     * @return those of its captions that `isCaptionDrawn` says are, possibly none
+     */
+    public List<TileKey> drawnCaptionsFor(TileKey station)
+    {
+        List<TileKey> drawn = new ArrayList<>();
+
+        for (TileKey where : captionsFor(station))
+        {
+            if (isCaptionDrawn(where)) drawn.add(where);
+        }
+
+        return drawn;
+    }
+
+    /**
      * Shows a station's name on a square, or stops showing it.
      *
      * @param captionTile where the text goes
@@ -7783,7 +7829,7 @@ public class AutonomySession
 
         found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, endsOfLines));
 
-        // AND A STATION SHOWN IN MORE THAN ONE PLACE, which no door of the editor makes (OB-341)
+        // AND A STATION WHOSE NAME IS DRAWN IN MORE THAN ONE PLACE, which no door of the editor makes (OB-341)
         found.addAll(AutonomyChecks.checkStationsNamedTwice(stationsShownMoreThanOnce()));
 
         // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
@@ -7797,32 +7843,26 @@ public class AutonomySession
     }
 
     /**
-     * Every station the track diagram shows in more than one place, against the squares it shows it on (OB-341).
+     * Every station whose name the track diagram draws in more than one place, against the squares it draws it on (OB-341).
      *
-     * Every door of the editor keeps one station to one caption (OB-256), so what this finds came in past them: a setup
-     * file edited by hand, or an import.  A caption kept for a square that is no station now is not drawn (GSE-C4), so it
-     * is not counted; nor is a station on a page left out of autonomy, which is not built.  In reading order, so the
-     * sentence and the list do not change from one load of the file to the next.
+     * What counts is what is DRAWN (`drawnCaptionsFor`, the rule the diagram uses): a station captioned on its own square
+     * and beside it is drawn once, the beside one, so it is not here; two captions beside it are two names, and are.  Every
+     * door of the editor keeps one station to one caption (OB-256), so what this finds came in past them: a setup file
+     * edited by hand, or written by an older version.
      *
-     * @return each such station's square, to its caption squares
+     * Stale state is not counted, as the unlabelled-station check does not count it: a caption kept for a square that is no
+     * station now is not drawn (GSE-C4), one on a page this session no longer has has no diagram to be drawn on, and a
+     * station that is not a Point - on a page left out of autonomy, or track the diagram no longer has - is not built.  In
+     * reading order, so the sentence and the list do not change from one load of the file to the next.
+     *
+     * @return each such station's square, to the squares its name is drawn on
      */
     private Map<TileKey, List<TileKey>> stationsShownMoreThanOnce()
     {
-        Map<TileKey, List<TileKey>> byStation = new LinkedHashMap<>();
-
-        for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
-        {
-            TileKey station = caption.getValue();
-
-            if (!store.isStation(station) || store.getExcludedPages().contains(station.getPage())) continue;
-
-            byStation.computeIfAbsent(station, k -> new ArrayList<>()).add(caption.getKey());
-        }
-
         java.util.Comparator<TileKey> readingOrder = java.util.Comparator.comparing(TileKey::getPage)
             .thenComparingInt(TileKey::getY).thenComparingInt(TileKey::getX);
 
-        List<TileKey> stations = new ArrayList<>(byStation.keySet());
+        List<TileKey> stations = new ArrayList<>(new LinkedHashSet<>(store.getCaptions().values()));
 
         stations.sort(readingOrder);
 
@@ -7830,13 +7870,20 @@ public class AutonomySession
 
         for (TileKey station : stations)
         {
-            List<TileKey> squares = byStation.get(station);
+            if (!store.isStation(station) || !reducer.getPoints().containsKey(station)) continue;
 
-            if (squares.size() < 2) continue;
+            List<TileKey> drawn = new ArrayList<>();
 
-            squares.sort(readingOrder);
+            for (TileKey square : drawnCaptionsFor(station))
+            {
+                if (pageOf(square) != null) drawn.add(square);
+            }
 
-            out.put(station, squares);
+            if (drawn.size() < 2) continue;
+
+            drawn.sort(readingOrder);
+
+            out.put(station, drawn);
         }
 
         return out;

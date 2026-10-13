@@ -2344,13 +2344,27 @@ public class AutonomyCompanionStore
                     continue;
                 }
 
-                for (String inner : ((JSONObject) value).keySet())
+                // ONE STATION, ONE CAPTION (OB-341).  A square the setup has no caption on is no gap when the station
+                // it names is captioned somewhere else, so the captions take only the stations the setup does not
+                // caption yet - the file's own included, taken in the order of the squares, since org.json holds keys in
+                // no order and which of a file's two would otherwise change from one run to the next.
+                Set<Object> captioned = null;
+
+                List<String> inners = new ArrayList<>(((JSONObject) value).keySet());
+
+                if ("captions".equals(key))
+                {
+                    captioned = new LinkedHashSet<>(mine.toMap().values());
+
+                    inners.sort(AutonomyCompanionStore::bySquare);
+                }
+
+                for (String inner : inners)
                 {
                     // Kept, not replaced.  See the note above: this is a merge, not an adoption.
                     if (mine.has(inner)) continue;
 
-                    // A caption for a station already shown elsewhere is no gap: one station, one caption (OB-341)
-                    if ("captions".equals(key) && mine.toMap().containsValue(((JSONObject) value).get(inner))) continue;
+                    if (captioned != null && !captioned.add(((JSONObject) value).get(inner))) continue;
 
                     mine.put(inner, ((JSONObject) value).get(inner));
                     filled++;
@@ -6061,7 +6075,7 @@ public class AutonomyCompanionStore
      * One caption per square, by construction: the map is keyed by the square the text sits on, so a
      * second caption there replaces the first rather than fighting it.  Several squares may name the
      * same station as far as this store goes: the session takes the old ones off when a new one is chosen
-     * (OB-256), and the setup check calls what a file edited by hand leaves an error (OB-341).
+     * (OB-256), and the setup check reports a station whose name is then drawn in two places (OB-341).
      *
      * @param captionTile where the text goes
      * @param stationTile the sensor it is about, or null to clear
@@ -6174,6 +6188,33 @@ public class AutonomyCompanionStore
         }
 
         return dropped;
+    }
+
+    /**
+     * Two keys in the file in the order of their squares: by page, then row, then column.  A key that is no square comes
+     * after those, as text, so the order is total.
+     *
+     * @param a one key
+     * @param b another
+     * @return negative, zero or positive as `a` comes before, with or after `b`
+     */
+    private static int bySquare(String a, String b)
+    {
+        TileKey first = parseTileKey(a);
+        TileKey second = parseTileKey(b);
+
+        if (first == null || second == null)
+        {
+            return first == null && second == null ? a.compareTo(b) : first == null ? 1 : -1;
+        }
+
+        int byPage = first.getPage().compareTo(second.getPage());
+
+        if (byPage != 0) return byPage;
+
+        int byRow = Integer.compare(first.getY(), second.getY());
+
+        return byRow != 0 ? byRow : Integer.compare(first.getX(), second.getX());
     }
 
     // Package-private rather than private: the session prunes stale point data by tile, and has to be

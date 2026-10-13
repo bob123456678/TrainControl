@@ -424,6 +424,108 @@ public class testControlNAsksTheMenusQuestion
         }
     }
 
+    /**
+     * "Stop Showing" is on the menu of every square a caption sits on, so the setup check's error can always be cleared
+     * from the editor (OB-341).
+     *
+     * The check names the squares a station's name is drawn on.  The menu offers caption items only where a caption may be
+     * put, which is not on a switch or a signal, and a square on a page left out of autonomy offers only the bulk tools -
+     * so a caption on either, from a setup edited by hand, was named by the error and could not be stopped.  Asked
+     * through the real menu, by clicking the item.  The name item is still not offered on either square: a caption may
+     * not be PUT there, only taken off.
+     *
+     * MUTATION: leave the stop item out of either branch, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testStopShowingIsOnTheMenuOfEverySquareACaptionSitsOn() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-stop-showing").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            LayoutDiagram page = aPageWithARun("main");
+
+            // A signal, which a caption may not be put on
+            page.addComponent(componentType.SIGNAL, 8, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+            session.open(Arrays.asList(page));
+
+            TileKey station = new TileKey("main", 1, 1);
+            TileKey signal = new TileKey("main", 8, 1);
+            TileKey track = new TileKey("main", 3, 1);
+
+            session.setStation(station, true);
+            session.setPointName(station, "Hauptbahnhof");
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            String stop = I18n.f("autosetup.ui.menuClearStationHereNamed", session.describeTile(station));
+
+            // THE CONTROL: plain track with no caption on it has nothing to stop
+            assertFalse(itemNames(panel.buildTileMenu(track, null)).contains(stop),
+                "precondition: the menu offers to stop a caption that is not there: " + itemNames(panel.buildTileMenu(track, null)));
+
+            // A CAPTION ON THE SIGNAL, through the store's own door, which does not refuse where the menu does
+            session.getStore().setCaption(signal, station);
+
+            javax.swing.JPopupMenu onTheSignal = panel.buildTileMenu(signal, null);
+
+            assertFalse(offersAName(onTheSignal), "precondition: the menu offers a station name on a signal: " + itemNames(onTheSignal));
+
+            javax.swing.JMenuItem stopOnTheSignal = itemNamed(onTheSignal, stop);
+
+            assertNotNull(stopOnTheSignal, "a caption on a signal cannot be stopped from the menu: " + itemNames(onTheSignal));
+
+            stopOnTheSignal.doClick();
+
+            assertEquals(session.getCaptionTarget(signal), null, "the menu's Stop Showing left the caption on the signal");
+
+            // A CAPTION ON PLAIN TRACK ON A PAGE LEFT OUT OF AUTONOMY
+            session.getStore().setCaption(track, station);
+            session.setPageExcluded("main", true);
+
+            javax.swing.JPopupMenu onTheIgnoredTrack = panel.buildTileMenu(track, null);
+
+            assertFalse(offersAName(onTheIgnoredTrack),
+                "precondition: the menu offers a station name on an ignored square: " + itemNames(onTheIgnoredTrack));
+
+            javax.swing.JMenuItem stopOnTheTrack = itemNamed(onTheIgnoredTrack, stop);
+
+            assertNotNull(stopOnTheTrack,
+                "a caption on a page left out of autonomy cannot be stopped from the menu: " + itemNames(onTheIgnoredTrack));
+
+            stopOnTheTrack.doClick();
+
+            assertEquals(session.getCaptionTarget(track), null, "the menu's Stop Showing left the caption on the ignored page");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /** The menu's item with this text, or null. */
+    private static javax.swing.JMenuItem itemNamed(javax.swing.JPopupMenu menu, String text)
+    {
+        if (menu == null) return null;
+
+        for (java.awt.Component each : menu.getComponents())
+        {
+            if (each instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) each).getText()))
+            {
+                return (javax.swing.JMenuItem) each;
+            }
+        }
+
+        return null;
+    }
+
     /** The tooltip of the Show a Station Name Here item, in any of its three wordings, or null. */
     private static String nameTooltip(javax.swing.JPopupMenu menu)
     {

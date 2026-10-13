@@ -1761,9 +1761,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JLabel existing = i.next();
 
-                // NOT ONE OF THIS BUILD'S OWN (RSA40-C1): a station captioned on two squares - a long platform labelled
-                // at both ends - registers two labels in one build, neither on screen yet, and the second evicted the
-                // first, which was then never written
+                // NOT ONE OF THIS BUILD'S OWN (RSA40-C1): a station named on two squares - the editor never does, a setup
+                // edited by hand can, and the setup check calls it an error (OB-341) - registers two labels in one build,
+                // neither on screen yet, and the second evicted the first, which was then never written
                 Object build = value.getClientProperty(LAYOUT_STATION_BUILD);
 
                 if (build != null && build == existing.getClientProperty(LAYOUT_STATION_BUILD)) continue;
@@ -1971,8 +1971,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Every label showing the station on a square.  The editor keeps one; more than one comes only from a hand edit or
-     * an older import, and the setup check reports it as an error (OB-341).
+     * Every label drawn for the station: one in each window showing the page its caption is on, and the ones a window
+     * keeps for pages it is not showing at the moment, which are detached and still alive.
      *
      * @param station the sensor’s square
      * @return
@@ -6164,9 +6164,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // The editor keeps one station to one caption (behaviour.md, "One station, one caption"), but
         // the store can still hold more than one - a setup edited by hand, or written by an older
-        // version - and the setup check calls that an ERROR (OB-341).  Drawing has to cope with it
-        // meanwhile, and the worst of it is a station captioned on its own square AND beside it: the
-        // two land next to each other and say the same thing twice, which is what he was looking at.
+        // version.  Drawing has to cope with it, and the worst of it is a station captioned on its own
+        // square AND beside it: the two land next to each other and say the same thing twice, which is
+        // what he was looking at.  That is drawn ONCE, the beside one, and so is no error; two captions
+        // beside the station are drawn twice, and the setup check calls that an ERROR (OB-341).
         //
         // The state was reachable without anybody asking for it.  `AutonomySession.setCaption` sweeps
         // the old caption away, but `migrateStationLabels` used to write through the raw store door
@@ -6181,14 +6182,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Only against ANOTHER square.  A station captioned only on itself keeps its caption, and two
         // offset captions are both drawn - the setup check reports them, and this does not choose.
-        if (caption != null && caption.equals(where))
-        {
-            for (org.traincontrol.automationui.TileGraph.TileKey elsewhere
-                : session.captionsFor(caption))
-            {
-                if (!caption.equals(elsewhere)) return null;
-            }
-        }
+        //
+        // The rule is the session's (`isCaptionDrawn`), so that the setup check counts exactly what is drawn here.
+        if (caption != null && !session.isCaptionDrawn(where)) return null;
 
         return caption;
     }

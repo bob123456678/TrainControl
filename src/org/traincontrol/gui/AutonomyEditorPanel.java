@@ -1386,6 +1386,16 @@ public class AutonomyEditorPanel extends JPanel
 
             javax.swing.JPopupMenu only = new javax.swing.JPopupMenu();
 
+            // AND TAKING A CAPTION OFF, which the setup check names wherever it sits - on a page left out of
+            // autonomy too (OB-341).
+            if (!menuOnly && session.getCaptionTarget(tile) != null)
+            {
+                menuTarget = tile;
+
+                addCaptionItems(only, tile, onPage, "", session.getCaptionTarget(tile), true);
+                only.addSeparator();
+            }
+
             only.add(bulkTools());
 
             return only;
@@ -2165,7 +2175,16 @@ public class AutonomyEditorPanel extends JPanel
 
             String text = here == null || here.getLabel() == null ? "" : here.getLabel();
 
-            addCaptionItems(menu, tile, here, text, session.getCaptionTarget(tile));
+            addCaptionItems(menu, tile, here, text, session.getCaptionTarget(tile), false);
+        }
+        else if (!menuOnly && session.getCaptionTarget(tile) != null)
+        {
+            // A caption sits on this square all the same - a switch or a signal that was built where one was
+            // already shown, or a setup edited by hand - and the setup check names it (OB-341).  It has to be
+            // possible to take it off from here.
+            menu.addSeparator();
+
+            addCaptionItems(menu, tile, here, "", session.getCaptionTarget(tile), true);
         }
 
         // BULK TOOLS, LAST (Adam, 2026-09-11: *"can we make 'bulk tools' be the last item in the
@@ -3139,7 +3158,7 @@ public class AutonomyEditorPanel extends JPanel
         //
         // So it asks instead, naming the text it would replace.  A question is a way out; a disabled
         // menu item is not.
-        addCaptionItems(menu, tile, component, label, captioned);
+        addCaptionItems(menu, tile, component, label, captioned, false);
 
         // AND BULK TOOLS, as every square of track ends with (Adam, 2026-09-23, MT-474: *"when right clicking an
         // empty square, show the bulk tools menu option."*).  They are about the whole setup rather than the square
@@ -3165,9 +3184,11 @@ public class AutonomyEditorPanel extends JPanel
      * @param component what is drawn on it, or null for a blank square
      * @param label whatever text the square already carries
      * @param captioned the station this square is already showing, or null
+     * @param stopOnly only the item that stops showing it, for a square that may not be given a caption but has one
+     *        (OB-341)
      */
     private void addCaptionItems(javax.swing.JPopupMenu menu, final TileKey tile,
-        final LayoutDiagramComponent component, String label, TileKey captioned)
+        final LayoutDiagramComponent component, String label, TileKey captioned, boolean stopOnly)
     {
         boolean mine = label.trim().isEmpty() || captioned != null;
 
@@ -3229,29 +3250,33 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean aStationSquare = session.getStore().isStation(tile);
 
-        javax.swing.JMenuItem name = item(
-            showsItself ? I18n.t("autosetup.ui.menuStationShowsItself")
-                : showing == null || aStationSquare ? I18n.t("autosetup.ui.menuShowStationHere")
-                : I18n.t("autosetup.ui.menuShowStationHereNamed"),
-            () -> promptStationLabel(tile, component));
+        // Not on a square that may not carry one: it can only be taken off there (OB-341)
+        if (!stopOnly)
+        {
+            javax.swing.JMenuItem name = item(
+                showsItself ? I18n.t("autosetup.ui.menuStationShowsItself")
+                    : showing == null || aStationSquare ? I18n.t("autosetup.ui.menuShowStationHere")
+                    : I18n.t("autosetup.ui.menuShowStationHereNamed"),
+                () -> promptStationLabel(tile, component));
 
-        name.setEnabled(!showsItself);
+            name.setEnabled(!showsItself);
 
-        // WHAT A CAPTION IS, on the item that makes one.  Three reasons for a tooltip here and they
-        // are all the same reason: nothing else on this menu says that a caption is a live readout of
-        // another square rather than a name plate.
-        name.setToolTipText(wrapped(
-            (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
-                : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
-                : I18n.t("autosetup.ui.tooltipShowStationHere"))
-            // AND ITS KEY (FR-086, Adam on MT-397: "let's add a hotkey for 'show station name here' too").  Added to
-            // the sentence rather than replacing it: this item's tooltip is the only place that says what a caption is.
-            //
-            // IN THE EDITOR ONLY (MFX-C3): the main window builds this menu with `setMenuOnly`, and there Control+N
-            // is the notes key.
-            + (menuOnly ? "" : "  (" + SHORTCUT_STATION + ")")));
+            // WHAT A CAPTION IS, on the item that makes one.  Three reasons for a tooltip here and they
+            // are all the same reason: nothing else on this menu says that a caption is a live readout of
+            // another square rather than a name plate.
+            name.setToolTipText(wrapped(
+                (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
+                    : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
+                    : I18n.t("autosetup.ui.tooltipShowStationHere"))
+                // AND ITS KEY (FR-086, Adam on MT-397: "let's add a hotkey for 'show station name here' too").  Added to
+                // the sentence rather than replacing it: this item's tooltip is the only place that says what a caption is.
+                //
+                // IN THE EDITOR ONLY (MFX-C3): the main window builds this menu with `setMenuOnly`, and there Control+N
+                // is the notes key.
+                + (menuOnly ? "" : "  (" + SHORTCUT_STATION + ")")));
 
-        menu.add(name);
+            menu.add(name);
+        }
 
         if (captioned != null)
         {

@@ -8740,7 +8740,7 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A station shown in two places is an error that names the station and both squares (OB-341).
+     * A station whose name is drawn in two places is an error that names the station and both squares (OB-341).
      *
      * Adam, 2026-10-12, on a sandbox layout whose setup held two captions for St01: *"add code to make this be an error
      * in the autonomy validator (i.e. if someone edits the file by hand externally)"*.  Every door of the editor keeps
@@ -8752,7 +8752,7 @@ public class testAutonomyDiagramSession
      * station once it is no station, whose captions are kept but not drawn (GSE-C4).
      *
      * MUTATION: leave the error out, report a station with one caption, or count a square that is no station, and this
-     * fails.
+     * fails.  A station named on its own square and beside it is NOT an error (it is drawn once): the next claims.
      *
      * @throws Exception from the session or the setup file
      */
@@ -8839,13 +8839,15 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * One finding per station however many places it is shown in, and the editor's own doors clear it (OB-341).
+     * One finding per station however many places its name is drawn in, and the editor's own doors clear it (OB-341).
      *
-     * Three captions for one station and two for another are two findings, the first counting three.  The sentence tells
-     * the reader to stop showing the station on all but one square, and to show it on the one to keep: both go through
+     * Three captions beside one station and two beside another are two findings, the first counting three; the first
+     * station is also captioned on its own square, which gives way to them and is not counted.  The sentence tells the
+     * reader to stop showing the station on all but one square, and to show it on the one to keep: both go through
      * `setCaption`, the door the editor's menu uses, so doing as it says is what ends the finding.
      *
-     * MUTATION: one finding per caption square, or not clearing when the extra ones go, and this fails.
+     * MUTATION: one finding per caption square, counting the station's own square, or not clearing when the extra ones
+     * go, and this fails.
      *
      * @throws Exception from the session
      */
@@ -8856,6 +8858,9 @@ public class testAutonomyDiagramSession
 
         TileKey station = new TileKey("main", 1, 1);
         TileKey other = new TileKey("main", 4, 1);
+        TileKey first = new TileKey("main", 1, 2);
+        TileKey second = new TileKey("main", 1, 3);
+        TileKey third = new TileKey("main", 2, 2);
 
         session.getStore().setStation(station, true);
         session.getStore().setStation(other, true);
@@ -8863,7 +8868,7 @@ public class testAutonomyDiagramSession
         session.setPointName(other, "Nebenbahnhof");
 
         // Through the store's own door, which does not sweep - as a file edited by hand does not
-        for (TileKey where : new TileKey[] {station, new TileKey("main", 1, 2), new TileKey("main", 1, 3)})
+        for (TileKey where : new TileKey[] {station, first, second, third})
         {
             session.getStore().setCaption(where, station);
         }
@@ -8877,17 +8882,20 @@ public class testAutonomyDiagramSession
 
         List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
 
-        assertEquals(found.size(), 2, "not one finding for each station shown twice: " + session.check());
+        assertEquals(found.size(), 2, "not one finding for each station named twice: " + session.check());
 
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : found)
         {
             assertEquals(finding.getCount(), station.equals(finding.getTile()) ? 3 : 2,
-                "the count is not the number of places the station is shown in: " + finding);
+                "the count is not the number of places the name is drawn in: " + finding);
         }
 
-        // "Stop Showing" on all but one of them
-        session.setCaption(new TileKey("main", 1, 2), null);
-        session.setCaption(new TileKey("main", 1, 3), null);
+        assertFalse(findingFor(found, station).getRelated().contains(station),
+            "the station's own square is counted, though its caption gives way to the ones beside it");
+
+        // "Stop Showing" on all but one of them: what is left is the one beside it, and the station's own, which gives way
+        session.setCaption(first, null);
+        session.setCaption(second, null);
 
         assertEquals(shownTwice(session).size(), 1, "stopping the extra captions did not clear the station: "
             + session.check());
@@ -8899,6 +8907,184 @@ public class testAutonomyDiagramSession
 
         assertTrue(shownTwice(session).isEmpty(), "showing the station on one square did not take it off the others: "
             + session.check());
+    }
+
+    /**
+     * A station named on its own square and beside it is drawn once, so it is no error (OB-341).
+     *
+     * That is the shape of Adam's own railway - TopMainR2 is captioned on `5:6,4` and on `5:6,5` in `cs2_sample_layout`
+     * and every fixture copied from it - and `TrainControlUI.autonomyCaptionAt` draws it ONCE, the beside one (MT-337).
+     * The check counts what is drawn, by the session's `isCaptionDrawn` that the drawing asks as well, so the shape is no
+     * finding; a second caption beside the station makes it two names and is one.  St59 and St00AA in the sandbox that
+     * raised this are the same shape.
+     *
+     * MUTATION: count the station's own square as a place, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationNamedOnItsOwnSquareAndBesideItIsDrawnOnceAndIsNoError() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey beside = new TileKey("main", 1, 2);
+        TileKey further = new TileKey("main", 1, 3);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Hauptbahnhof");
+
+        // On its own square only: drawn there
+        session.getStore().setCaption(station, station);
+        session.rebuild();
+
+        assertTrue(session.isCaptionDrawn(station), "a station's only caption, on its own square, is not drawn");
+        assertTrue(shownTwice(session).isEmpty(), "precondition: " + session.check());
+
+        // AND BESIDE IT: drawn once, beside, and no error
+        session.getStore().setCaption(beside, station);
+        session.rebuild();
+
+        assertEquals(session.captionsFor(station).size(), 2, "precondition: the station is not named in two places");
+        assertFalse(session.isCaptionDrawn(station), "the station's own caption is drawn, beside the one it gives way to");
+        assertTrue(session.isCaptionDrawn(beside), "the caption beside the station is not drawn");
+        assertEquals(session.drawnCaptionsFor(station), Arrays.asList(beside), "the station is not drawn exactly once");
+
+        assertTrue(shownTwice(session).isEmpty(), "a station named on its own square and beside it is drawn once, and is"
+            + " reported as drawn twice: " + session.check());
+
+        // A SECOND ONE BESIDE IT: two names, drawn twice, and the station's own square is not one of the places
+        session.getStore().setCaption(further, station);
+        session.rebuild();
+
+        assertEquals(shownTwice(session).size(), 1, "two captions beside the station are not reported: " + session.check());
+
+        assertEquals(new LinkedHashSet<>(shownTwice(session).get(0).getRelated()),
+            new LinkedHashSet<>(Arrays.asList(beside, further)), "the places are not the two beside the station");
+    }
+
+    /**
+     * What is stale is not counted (OB-341): a caption on a page that is gone, and a station that is no Point.
+     *
+     * Two captions beside a station are an error, but one of them on a page the session no longer has is not drawn
+     * anywhere, and a station on a sensor with no track to it is not built - the unlabelled-station check does not count
+     * it either.  The control is the first station with a second caption that is on a page, which is reported.
+     *
+     * MUTATION: leave out the page test or the Point test in `stationsShownMoreThanOnce`, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testStaleCaptionsAreNotCounted() throws Exception
+    {
+        LayoutDiagram page = runOfTrack();
+
+        // A sensor on its own, with no track to it: marked a station, it is not a Point
+        page.addComponent(componentType.FEEDBACK, 6, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        session.open(Arrays.asList(page));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey alone = new TileKey("main", 6, 3);
+
+        session.getStore().setStation(station, true);
+        session.getStore().setStation(alone, true);
+        session.setPointName(station, "Hauptbahnhof");
+        session.setPointName(alone, "Einzelgleis");
+
+        // One real caption beside the first, and one on a page that is gone; two real ones beside the lone sensor
+        session.getStore().setCaption(new TileKey("main", 1, 2), station);
+        session.getStore().setCaption(new TileKey("gone", 1, 1), station);
+        session.getStore().setCaption(new TileKey("main", 6, 4), alone);
+        session.getStore().setCaption(new TileKey("main", 7, 4), alone);
+        session.rebuild();
+
+        assertFalse(session.getReducer().getPoints().containsKey(alone), "precondition: the lone sensor is a Point");
+
+        assertTrue(shownTwice(session).isEmpty(), "a caption on a page that is gone, or beside a station that is no Point,"
+            + " is reported: " + session.check());
+
+        // THE CONTROL: the same station with a second caption that is on a page, is reported
+        session.getStore().setCaption(new TileKey("main", 1, 3), station);
+        session.rebuild();
+
+        assertEquals(shownTwice(session).size(), 1, "precondition: a second real caption is not reported: " + session.check());
+        assertEquals(shownTwice(session).get(0).getTile(), station, "it was reported for the wrong station");
+        assertEquals(shownTwice(session).get(0).getCount(), 2, "the caption on the page that is gone was counted");
+    }
+
+    /**
+     * A station on a page left out of autonomy is not reported (OB-341), as it is not built.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testAStationOnAPageLeftOutOfAutonomyIsNotReported() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        TileKey station = new TileKey("second", 1, 1);
+
+        session.getStore().setStation(station, true);
+        session.setPointName(station, "Nebengleis");
+        session.getStore().setCaption(new TileKey("second", 1, 2), station);
+        session.getStore().setCaption(new TileKey("second", 1, 3), station);
+        session.rebuild();
+
+        assertEquals(shownTwice(session).size(), 1, "precondition: the station named twice is not reported: " + session.check());
+
+        session.setPageExcluded("second", true);
+        session.rebuild();
+
+        assertTrue(shownTwice(session).isEmpty(), "a station on a page left out of autonomy is reported: " + session.check());
+    }
+
+    /**
+     * The squares are named in reading order, and the stations are listed in it, whatever order the setup holds them in
+     * (OB-341).
+     *
+     * A file's captions load in the order the JSON gives them, which is no order at all, so the sentence and the list
+     * would change from one open to the next.  Put in through the store in the opposite order, so that only sorting gives
+     * the answer.
+     *
+     * MUTATION: leave the sorts out of `stationsShownMoreThanOnce`, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheSquaresAreNamedInReadingOrderWhateverOrderTheSetupHoldsThem() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey early = new TileKey("main", 1, 1);
+        TileKey late = new TileKey("main", 4, 1);
+
+        session.getStore().setStation(early, true);
+        session.getStore().setStation(late, true);
+        session.setPointName(early, "Hauptbahnhof");
+        session.setPointName(late, "Nebenbahnhof");
+
+        // The later station's, and the later square's, first
+        session.getStore().setCaption(new TileKey("main", 4, 3), late);
+        session.getStore().setCaption(new TileKey("main", 1, 3), early);
+        session.getStore().setCaption(new TileKey("main", 4, 2), late);
+        session.getStore().setCaption(new TileKey("main", 1, 2), early);
+        session.rebuild();
+
+        assertEquals(new ArrayList<>(session.captionsFor(early)).get(0), new TileKey("main", 1, 3),
+            "precondition: the setup does not hold the squares in the opposite order");
+
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> found = shownTwice(session);
+
+        assertEquals(found.size(), 2, "precondition: " + session.check());
+
+        assertEquals(found.get(0).getTile(), early, "the stations are not listed in reading order: " + found);
+
+        assertEquals(found.get(0).getRelated(), Arrays.asList(new TileKey("main", 1, 2), new TileKey("main", 1, 3)),
+            "the squares are not in reading order");
+
+        assertTrue(found.get(0).getSubject().indexOf("(1,2)") < found.get(0).getSubject().indexOf("(1,3)"),
+            "the sentence does not name the squares in reading order: " + found.get(0).getSubject());
     }
 
     /**
@@ -8994,7 +9180,74 @@ public class testAutonomyDiagramSession
         }
     }
 
-    /** The setup check's findings that a station is shown in more than one place. */
+    /**
+     * A file that names one station in several places gives the setup one of them, and always the same one (OB-341).
+     *
+     * The import takes only the stations the setup does not caption yet, and a file's own repeats are not exempt.  org.json
+     * holds the file's keys in no order, so which survived would be an accident of their hashes; the squares are taken in
+     * reading order - page, row, column - and the first is kept.  The keys below hash in an order that is NOT reading order,
+     * so only the sort puts the right one first.
+     *
+     * MUTATION: take the keys in the order the file gives them, and this fails.
+     *
+     * @throws Exception from the sessions
+     */
+    @Test
+    public void testAnImportThatNamesAStationSeveralTimesKeepsTheFirstSquare() throws Exception
+    {
+        TileKey shown = new TileKey("main", 1, 1);
+
+        File exporting = Files.createTempDirectory("tc-autonomy-export").toFile();
+
+        try
+        {
+            AutonomySession from = new AutonomySession(exporting);
+
+            from.open(Arrays.asList(runOfTrack()));
+            from.initialize("Evening");
+            from.setStation(shown, true);
+            from.setPointName(shown, "Hauptbahnhof");
+            from.setCaption(new TileKey("main", 1, 2), shown);
+
+            org.json.JSONObject bundle = from.getStore().exportBundle("Evening");
+
+            // the file names the station in five more places, by hand
+            org.json.JSONObject captions = bundle.getJSONObject("shared").getJSONObject("captions");
+
+            for (String more : new String[] {"1:5,2", "1:1,3", "1:7,0", "1:2,3", "1:6,1"})
+            {
+                captions.put(more, "1:1,1");
+            }
+
+            session.open(Arrays.asList(runOfTrack()));
+            session.initialize("Morning");
+            session.setStation(shown, true);
+            session.setPointName(shown, "Hauptbahnhof");
+
+            session.importBundle("Imported", new org.json.JSONObject(bundle.toString()));
+
+            assertEquals(session.captionsFor(shown), new LinkedHashSet<>(Arrays.asList(new TileKey("main", 7, 0))),
+                "the import did not keep exactly the first square, in reading order, of the ones the file names");
+        }
+        finally
+        {
+            delete(exporting);
+        }
+    }
+
+    /** The finding among these that is about this station, or null. */
+    private static org.traincontrol.automationui.AutonomyChecks.Finding findingFor(
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> findings, TileKey station)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : findings)
+        {
+            if (station.equals(finding.getTile())) return finding;
+        }
+
+        return null;
+    }
+
+    /** The setup check's findings that a station's name is drawn in more than one place. */
     private static List<org.traincontrol.automationui.AutonomyChecks.Finding> shownTwice(AutonomySession from)
     {
         List<org.traincontrol.automationui.AutonomyChecks.Finding> out = new ArrayList<>();

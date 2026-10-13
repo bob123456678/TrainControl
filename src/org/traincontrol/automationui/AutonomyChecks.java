@@ -249,15 +249,19 @@ public class AutonomyChecks
     public static final String CAPTION_COVERED = "autosetup.ui.checkCaptionCovered";
 
     /**
-     * A station shown in more than one place on the track diagram (OB-341).
+     * A station whose name the track diagram draws in more than one place (OB-341).
      *
      * Adam, 2026-10-12: *"add code to make this be an error in the autonomy validator (i.e. if someone edits the file by
      * hand externally)"*.  Every door of the editor keeps one station to one caption (OB-256), so the diagram never names
-     * a station twice with nothing to say which is current; a setup file edited by hand, or an import, is the way round
-     * those doors, and this is what says so.
+     * a station twice with nothing to say which is current; a setup file edited by hand, or written by an older version,
+     * is the way round those doors, and this is what says so.
+     *
+     * **What counts is what is DRAWN**, by the rule the diagram uses (`AutonomySession.isCaptionDrawn`): a station
+     * captioned on its own square and beside it is drawn once, beside, and is no error - Adam's own railway has TopMainR2
+     * so.  Two captions beside a station are two names, and are.
      *
      * An ERROR, as an unlabelled station is: both are a station the diagram cannot be read by.  One finding per station,
-     * on its own square, with the caption squares as its related ones and their number as its count.
+     * on its own square, with the squares it is drawn on as its related ones and their number as its count.
      */
     public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
 
@@ -677,14 +681,14 @@ public class AutonomyChecks
     }
 
     /**
-     * An ERROR per station shown in more than one place on the track diagram (OB-341).
+     * An ERROR per station whose name the track diagram draws in more than one place (OB-341).
      *
-     * On the station's own square, so a click goes to it and outlines the caption squares, which are the finding's related
-     * ones.  The subject is those squares in words - "(6,16) and (8,16)" - with the page added to one on a page other than
+     * On the station's own square, so a click goes to it and outlines the squares it is drawn on, which are the finding's
+     * related ones.  The subject is those squares in words - "(6,16) and (8,16)" - with the page added to one on a page other than
      * the station's, as its coordinates alone would be a square of the station's own.  The station's name is the sentence's
      * {0}, as for every finding with a square.
      *
-     * @param shown each station's square, to the squares it is shown on, two or more
+     * @param shown each station's square, to the squares its name is drawn on, two or more
      * @return the findings
      */
     static List<Finding> checkStationsNamedTwice(Map<TileKey, List<TileKey>> shown)
