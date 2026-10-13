@@ -6097,15 +6097,17 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
-     * The window's title for the page it shows, in one mode or the other (MT-669), with the configuration that is loaded
-     * beside it when one is (FR-127).
+     * The window's title for the page it shows, in one mode or the other (MT-669), with a configuration beside it (FR-127):
+     * the one LOADED for the track editor, and for the autonomy editor the one it EDITS - the setup's chosen one, which
+     * is not loaded when its errors stop it loading or autonomy has been stopped.
      *
      * @param autonomy whether the window is the autonomy editor
      * @return the title
      */
     private String titleFor(boolean autonomy)
     {
-        String configuration = this.parent == null ? null : this.parent.getActiveDiagramConfiguration();
+        String configuration = this.parent == null ? null
+            : autonomy ? this.parent.getEditedConfiguration() : this.parent.getActiveDiagramConfiguration();
 
         if (configuration == null)
         {

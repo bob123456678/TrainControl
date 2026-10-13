@@ -3439,8 +3439,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         activeDiagramConfiguration = null;
 
-        refreshConfigurationTitles();
-
         // AND THE TRAINS' LINES TAKEN OFF (OB-307): nothing is loaded now
         refreshCoveredTrack();
 
@@ -3448,6 +3446,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         autonomyTileMenusFor = null;
 
         mountAutonomyControls();
+
+        // After the session is built again, which an autonomy editor's title asks (FR-127)
+        refreshConfigurationTitles();
     }
 
     /**
@@ -14533,9 +14534,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Sets the titles of the windows that name a page again, for the loaded configuration having changed (FR-127): each
-     * pop-up and each editor of this window.  Called wherever the name is set - a load, a rename, a reset - so a title
-     * follows a configuration being loaded, switched, renamed or unloaded while the window is open.
+     * The configuration the autonomy editor edits: the setup's chosen one, loaded or not (FR-127).  Asked of the session
+     * there is and not built: a reset that has dropped it is not undone for a title.
+     *
+     * @return its name, or null where there is no session or none is chosen
+     */
+    public String getEditedConfiguration()
+    {
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        return session == null ? null : session.getStore().getActiveConfiguration();
+    }
+
+    /**
+     * Sets the titles of the windows that name a page again, for the configuration having changed (FR-127): each pop-up and
+     * each editor of this window.  Called wherever the name is set - a load, a rename, a reset - so a title follows a
+     * configuration being loaded, switched, renamed or unloaded while the window is open.  The store's chosen
+     * configuration, which the autonomy editor names, moves only with those: every other door that moves it is shut while
+     * an editor is open, and a refused load puts it back where it was.
      */
     private void refreshConfigurationTitles()
     {

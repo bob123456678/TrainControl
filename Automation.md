@@ -112,7 +112,7 @@ A layout is ready to run once three things are done: the diagram matches the tra
 
 ## The editor at a glance
 
-The window is titled "Autonomy Editor: *page*": the sidebar on the left, your diagram in the middle, and tools and settings on the right.
+The window is titled "Autonomy Editor: *page* (*configuration*)", naming the page and the configuration you are editing. It has the sidebar on the left, your diagram in the middle, and tools and settings on the right.
 
 ![The autonomy editor, its parts numbered](assets/automation/01-editor.png)
 

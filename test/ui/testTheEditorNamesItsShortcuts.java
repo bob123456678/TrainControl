@@ -269,18 +269,21 @@ public class testTheEditorNamesItsShortcuts
      * autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if active)"*).
      *
      * The window starts with the setup's configuration loaded (the start-up resume).  An editor open while it is unloaded,
-     * loaded, switched, renamed and unloaded is asked for its title after each, and a title with nothing loaded is today's.
+     * loaded, switched, renamed and unloaded is asked for its title after each.  The track editor names the configuration
+     * LOADED, and with nothing loaded its title is today's; the autonomy editor names the configuration it EDITS, which is
+     * the setup's chosen one, loaded or not - so after Stop Using Autonomy it still says which one is being fixed, and an
+     * autonomy editor opened then names it from the start.
      * Run last (priority 1) because unloading rebuilds the session the other claims share, which is taken afresh at the end.
      *
-     * MUTATION: build the title from the page alone, or leave a rename or an unload out of the places that set it again, and
-     * this fails.
+     * MUTATION: build the title from the page alone, leave a rename or an unload out of the places that set it again, or
+     * name the autonomy editor's configuration by what is loaded and not what is chosen, and this fails.
      *
      * @throws Exception from the event thread or the store
      */
     @Test(priority = 1)
     public void testTheEditorTitlesNameTheLoadedConfiguration() throws Exception
     {
-        final String first = ui.getActiveDiagramConfiguration();
+        final String first = theResumedConfiguration();
 
         assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
 
@@ -303,19 +306,47 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(open[1].isAutonomyMode(), "precondition: the second editor is not the autonomy editor");
 
             // OPENED WITH IT LOADED: named from the start
-            assertTitles(open, first, "of editors opened with " + first + " loaded");
+            assertTitles(open, first, first, "of editors opened with " + first + " loaded");
 
-            // UNLOADED: today's titles
+            // UNLOADED: the track editor's title is today's, and the autonomy editor still names what it edits
             unloadAutonomy();
 
-            assertTitles(open, null, "after " + first + " was unloaded");
+            assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), first, "precondition: unloading"
+                + " left a different configuration chosen than " + first);
+
+            assertTitles(open, null, first, "after " + first + " was unloaded");
+
+            // AN AUTONOMY EDITOR OPENED NOW, with it chosen and not loaded: it names what it edits from the start
+            final LayoutEditor[] late = new LayoutEditor[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                late[0] = new LayoutEditor(page, 30, ui, 0);
+                late[0].render();
+                late[0].setAutonomyMode(ui.getAutonomySession());
+            });
+
+            try
+            {
+                settleTheEditor();
+
+                assertTrue(late[0].isAutonomyMode(), "precondition: the editor opened with nothing loaded is not the"
+                    + " autonomy editor");
+
+                assertTitles(new LayoutEditor[] {null, late[0]}, null, first, "of an autonomy editor opened with " + first
+                    + " chosen and not loaded");
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(() -> late[0].dispose());
+            }
 
             // LOADED again: the title names it
             loadConfiguration(first);
 
             assertEquals(ui.getActiveDiagramConfiguration(), first, "precondition: " + first + " did not load");
 
-            assertTitles(open, first, "after " + first + " was loaded");
+            assertTitles(open, first, first, "after " + first + " was loaded");
 
             // SWITCHED to another configuration
             final String other = "FR-127 Yard";
@@ -327,23 +358,27 @@ public class testTheEditorNamesItsShortcuts
 
             assertEquals(ui.getActiveDiagramConfiguration(), other, "precondition: " + other + " did not load");
 
-            assertTitles(open, other, "after switching to " + other);
+            assertTitles(open, other, other, "after switching to " + other);
 
             // RENAMED while loaded, the way the Rename door does it
             final String renamed = "FR-127 Siding";
 
             ui.getAutonomySession().getStore().renameConfiguration(other, renamed);
+            ui.getAutonomySession().save();
 
             SwingUtilities.invokeAndWait(() -> ui.autonomySetupRenamed(other, renamed));
 
             settleTheEditor();
 
-            assertTitles(open, renamed, "after " + other + " was renamed");
+            assertTitles(open, renamed, renamed, "after " + other + " was renamed");
 
-            // UNLOADED: today's titles again
+            // UNLOADED again: the track editor's title is today's, the autonomy editor's names what it edits
             unloadAutonomy();
 
-            assertTitles(open, null, "after autonomy was unloaded");
+            assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), renamed, "precondition: unloading"
+                + " left a different configuration chosen than " + renamed);
+
+            assertTitles(open, null, renamed, "after autonomy was unloaded");
         }
         finally
         {
@@ -358,6 +393,26 @@ public class testTheEditorNamesItsShortcuts
 
             session = ui.getAutonomySession();
         }
+    }
+
+    /**
+     * The configuration the start-up resume loaded, waited for: it is posted to the event thread behind the window's
+     * set-up, and a claim run on its own reaches it before the resume has.
+     *
+     * @return its name, or null if nothing loaded in fifteen seconds
+     * @throws Exception from the event thread
+     */
+    private static String theResumedConfiguration() throws Exception
+    {
+        for (long end = System.currentTimeMillis() + 15000;
+            ui.getActiveDiagramConfiguration() == null && System.currentTimeMillis() < end; )
+        {
+            SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(100);
+        }
+
+        return ui.getActiveDiagramConfiguration();
     }
 
     /**
@@ -395,15 +450,14 @@ public class testTheEditorNamesItsShortcuts
      * What each editor's title says about the configuration (FR-127).
      *
      * @param editors the track editor and the autonomy editor, either of them null to leave it out
-     * @param configuration the one loaded, or null for none
+     * @param loaded the configuration loaded, which the track editor names, or null for none
+     * @param chosen the configuration the setup has chosen, which the autonomy editor names, or null for none
      * @param when what has just happened, for the message
      */
-    private static void assertTitles(LayoutEditor[] editors, String configuration, String when)
+    private static void assertTitles(LayoutEditor[] editors, String loaded, String chosen, String when)
     {
+        String[] shown = {loaded, chosen};
         String[] plain = {I18n.f("app.ui.windowLayoutEditorTitle", PAGE), I18n.f("autosetup.ui.windowTitle", PAGE)};
-        String[] named = configuration == null ? plain : new String[] {
-            I18n.f("app.ui.windowLayoutEditorTitleConfiguration", PAGE, configuration),
-            I18n.f("autosetup.ui.windowTitleConfiguration", PAGE, configuration)};
         String[] kind = {"track", "autonomy"};
 
         for (int i = 0; i < 2; i++)
@@ -412,31 +466,36 @@ public class testTheEditorNamesItsShortcuts
 
             String title = editors[i].getTitle();
 
-            if (configuration != null)
+            String expected = plain[i];
+
+            if (shown[i] != null)
             {
+                expected = i == 0 ? I18n.f("app.ui.windowLayoutEditorTitleConfiguration", PAGE, shown[i])
+                    : I18n.f("autosetup.ui.windowTitleConfiguration", PAGE, shown[i]);
+
                 // The page taken out first: a configuration called "Main" is in every title of the page "1 - Main"
-                assertTrue(title.contains(PAGE) && title.replace(PAGE, "").contains(configuration), "the " + kind[i]
+                assertTrue(title.contains(PAGE) && title.replace(PAGE, "").contains(shown[i]), "the " + kind[i]
                     + " editor's title '" + title + "' does not name both the page " + PAGE + " and the configuration "
-                    + configuration + " " + when + " (FR-127)");
+                    + shown[i] + " " + when + " (FR-127)");
             }
 
-            assertEquals(title, named[i], "the " + kind[i] + " editor's title " + when);
+            assertEquals(title, expected, "the " + kind[i] + " editor's title " + when);
         }
     }
 
     /**
-     * The autonomy editor's title for a page: the configuration loaded stands beside the page name (FR-127), and with none
-     * loaded it is the page alone.
+     * The autonomy editor's title for a page: the configuration it edits - the setup's chosen one - stands beside the page
+     * name (FR-127).
      *
      * @param page the page
      * @return the title
      */
     private static String autonomyTitle(String page)
     {
-        String loaded = ui.getActiveDiagramConfiguration();
+        String chosen = ui.getAutonomySession().getStore().getActiveConfiguration();
 
-        return loaded == null ? I18n.f("autosetup.ui.windowTitle", page)
-            : I18n.f("autosetup.ui.windowTitleConfiguration", page, loaded);
+        return chosen == null ? I18n.f("autosetup.ui.windowTitle", page)
+            : I18n.f("autosetup.ui.windowTitleConfiguration", page, chosen);
     }
 
     /**

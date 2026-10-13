@@ -4732,7 +4732,7 @@ public class testDiagramLooksRight
     @Test(priority = 1)
     public void testAPopUpTitleNamesTheLoadedConfiguration() throws Exception
     {
-        final String first = ui.getActiveDiagramConfiguration();
+        final String first = theResumedConfiguration();
 
         assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
 
@@ -4788,6 +4788,158 @@ public class testDiagramLooksRight
             // As the window started: the configuration loaded
             if (ui.getActiveDiagramConfiguration() == null) loadConfiguration(first);
         }
+    }
+
+    /**
+     * The window's own render of the active locomotive keeps the configuration in a pop-up's title (FR-127).
+     *
+     * Two places set the title from that render: the one with a locomotive active, which adds its text after the page, and
+     * the one with none, which takes it off.  Each is reached here by making a locomotive active and then none, the title
+     * set to something else first so that only the render can have written what is read, and the render waited for through
+     * the window's own futures - not pumps of the event thread, which do not wait for the worker that posts it.
+     *
+     * MUTATION: set either title from the page alone (`popup.getLayoutTitle() + ...`) in the render, and this fails.
+     *
+     * @throws Exception reflection, the event thread
+     */
+    @Test(priority = 1)
+    public void testALocomotiveRenderKeepsTheConfigurationInAPopUpTitle() throws Exception
+    {
+        final String loaded = theResumedConfiguration();
+
+        assertNotNull(loaded, "precondition: the start-up resume loaded no configuration, so there is none to keep");
+
+        java.lang.reflect.Field activeField = TrainControlUI.class.getDeclaredField("activeLoc");
+        activeField.setAccessible(true);
+
+        java.lang.reflect.Field tickField = TrainControlUI.class.getDeclaredField("activeLocInTitle");
+        tickField.setAccessible(true);
+
+        final javax.swing.JCheckBoxMenuItem tick = (javax.swing.JCheckBoxMenuItem) tickField.get(ui);
+        final org.traincontrol.base.Locomotive was = (org.traincontrol.base.Locomotive) activeField.get(ui);
+        final boolean ticked = tick.isSelected();
+
+        org.traincontrol.base.Locomotive shown = was;
+
+        if (shown == null && !model.getLocList().isEmpty()) shown = model.getLocByName(model.getLocList().get(0));
+
+        if (shown == null) throw new SkipException("the fixture has no locomotive to make active");
+
+        final org.traincontrol.base.Locomotive loc = shown;
+
+        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+
+        try
+        {
+            // The tick set, and not toggled: the setting is the operator's, and the title only carries the locomotive with it
+            javax.swing.SwingUtilities.invokeAndWait(() -> tick.setSelected(true));
+
+            final String page = popup.getLayoutTitle();
+
+            // WITH A LOCOMOTIVE: the page, the configuration, then the locomotive's text
+            waitForTheRender();
+            activeField.set(ui, loc);
+            javax.swing.SwingUtilities.invokeAndWait(() -> popup.setTitle("stale"));
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+            waitForTheRender();
+
+            final String[] title = new String[2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                title[0] = popup.getTitle();
+                title[1] = ui.getWindowTitleString();
+            });
+
+            assertTrue(title[1].contains(loc.getName()), "precondition: the window's title text does not carry the active"
+                + " locomotive " + loc.getName() + ": '" + title[1] + "'");
+
+            assertEquals(title[0], org.traincontrol.util.I18n.f("app.ui.windowPopupTitleConfiguration", page, loaded)
+                + title[1], "the pop-up's title after the render with " + loc.getName() + " active");
+
+            // WITH NONE: the locomotive's text off, the configuration still in
+            waitForTheRender();
+            activeField.set(ui, null);
+            javax.swing.SwingUtilities.invokeAndWait(() -> popup.setTitle("stale"));
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+            waitForTheRender();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> title[0] = popup.getTitle());
+
+            assertEquals(title[0], org.traincontrol.util.I18n.f("app.ui.windowPopupTitleConfiguration", page, loaded),
+                "the pop-up's title after the render with no locomotive active");
+        }
+        finally
+        {
+            waitForTheRender();
+            activeField.set(ui, was);
+            javax.swing.SwingUtilities.invokeAndWait(() -> tick.setSelected(ticked));
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+            waitForTheRender();
+
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+        }
+    }
+
+    /**
+     * Until every locomotive render the window has queued is finished and the event thread has run what each posted.
+     *
+     * @throws Exception reflection, the event thread, a render that does not finish
+     */
+    @SuppressWarnings("unchecked")
+    private void waitForTheRender() throws Exception
+    {
+        java.lang.reflect.Field futures = TrainControlUI.class.getDeclaredField("locFutures");
+        futures.setAccessible(true);
+
+        long deadline = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < deadline)
+        {
+            boolean done = true;
+
+            synchronized (ui)
+            {
+                for (java.util.concurrent.Future<?> f
+                    : new java.util.ArrayList<>((java.util.List<java.util.concurrent.Future<?>>) futures.get(ui)))
+                {
+                    done &= f.isDone();
+                }
+            }
+
+            if (done)
+            {
+                // A render posts its painting before its future is done, so the painting is ahead of these in the queue
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                return;
+            }
+
+            Thread.sleep(20);
+        }
+
+        throw new AssertionError("the window's locomotive render did not finish within ten seconds");
+    }
+
+    /**
+     * The configuration the start-up resume loaded, waited for: it is posted to the event thread behind the window's
+     * set-up, and a claim run on its own reaches it before the resume has.
+     *
+     * @return its name, or null if nothing loaded in fifteen seconds
+     * @throws Exception from the event thread
+     */
+    private static String theResumedConfiguration() throws Exception
+    {
+        for (long end = System.currentTimeMillis() + 15000;
+            ui.getActiveDiagramConfiguration() == null && System.currentTimeMillis() < end; )
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(100);
+        }
+
+        return ui.getActiveDiagramConfiguration();
     }
 
     /**
