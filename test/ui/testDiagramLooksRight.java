@@ -4717,6 +4717,183 @@ public class testDiagramLooksRight
     }
 
     /**
+     * A pop-up's title names the configuration that is loaded, beside the page, and follows it (FR-127; Adam: *"the current
+     * autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if active)"*).
+     *
+     * The window starts with the fixture's configuration loaded (the start-up resume).  A pop-up open while it is unloaded,
+     * loaded, switched, renamed and unloaded is asked for its title after each, and a title with nothing loaded is today's.
+     * Run last (priority 1) because unloading rebuilds the session the other claims ask the window for.
+     *
+     * MUTATION: build the title from the page alone, or leave a rename or an unload out of the places that set it again, and
+     * this fails.
+     *
+     * @throws Exception reflection, the store, the event thread
+     */
+    @Test(priority = 1)
+    public void testAPopUpTitleNamesTheLoadedConfiguration() throws Exception
+    {
+        final String first = ui.getActiveDiagramConfiguration();
+
+        assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
+
+        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+
+        try
+        {
+            // OPENED WITH IT LOADED: named from the start
+            popUpTitleIs(popup, first, "of a pop-up opened with " + first + " loaded");
+
+            // UNLOADED: today's title
+            unloadAutonomy();
+
+            popUpTitleIs(popup, null, "after " + first + " was unloaded");
+
+            // LOADED again: the title names it
+            loadConfiguration(first);
+
+            assertEquals(ui.getActiveDiagramConfiguration(), first, "precondition: " + first + " did not load");
+
+            popUpTitleIs(popup, first, "after " + first + " was loaded");
+
+            // SWITCHED to another configuration
+            final String other = "FR-127 Yard";
+
+            ui.getAutonomySession().getStore().createConfiguration(other, first, true);
+            ui.getAutonomySession().save();
+
+            loadConfiguration(other);
+
+            assertEquals(ui.getActiveDiagramConfiguration(), other, "precondition: " + other + " did not load");
+
+            popUpTitleIs(popup, other, "after switching to " + other);
+
+            // RENAMED while loaded, the way the Rename door does it
+            final String renamed = "FR-127 Siding";
+
+            ui.getAutonomySession().getStore().renameConfiguration(other, renamed);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupRenamed(other, renamed));
+
+            popUpTitleIs(popup, renamed, "after " + other + " was renamed");
+
+            // UNLOADED: today's title again
+            unloadAutonomy();
+
+            popUpTitleIs(popup, null, "after autonomy was unloaded");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+
+            // As the window started: the configuration loaded
+            if (ui.getActiveDiagramConfiguration() == null) loadConfiguration(first);
+        }
+    }
+
+    /**
+     * Stops using autonomy, the way the Autonomy menu does.
+     *
+     * @throws Exception from the event thread
+     */
+    private void unloadAutonomy() throws Exception
+    {
+        final boolean[] unloaded = new boolean[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
+
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(unloaded[0], "precondition: Stop Using Autonomy was declined");
+
+        assertNull(ui.getActiveDiagramConfiguration(), "precondition: a configuration is still loaded");
+    }
+
+    /**
+     * Opens a pop-up with the Medium button and waits for it.
+     *
+     * @return the window
+     * @throws Exception reflection, the event thread
+     */
+    private org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    {
+        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
+        buttonField.setAccessible(true);
+
+        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+
+        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
+
+        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
+
+        for (long end = System.currentTimeMillis() + 15000; System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                }
+            }
+        }
+
+        fail("the Medium button opened no pop-up window");
+
+        return null;
+    }
+
+    /**
+     * Loads a configuration the way the Autonomy menu does.
+     *
+     * @param name the configuration
+     * @throws Exception from the event thread
+     */
+    private void loadConfiguration(final String name) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(name, false));
+
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
+     * What a pop-up's title says about the configuration (FR-127).
+     *
+     * @param popup the window
+     * @param configuration the one loaded, or null for none
+     * @param when what has just happened, for the message
+     * @throws Exception from the event thread
+     */
+    private void popUpTitleIs(final org.traincontrol.gui.LayoutPopupUI popup, String configuration, String when)
+        throws Exception
+    {
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        final String[] title = new String[2];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            title[0] = popup.getTitle();
+            title[1] = popup.getLayoutTitle();
+        });
+
+        if (configuration != null)
+        {
+            // The page taken out first: a configuration called "Main" is in every title of the page "1 - Main"
+            assertTrue(title[0].contains(title[1]) && title[0].replace(title[1], "").contains(configuration), "the"
+                + " pop-up's title '" + title[0] + "' does not name both the page " + title[1] + " and the configuration "
+                + configuration + " " + when + " (FR-127)");
+        }
+
+        String expected = configuration == null ? title[1]
+            : org.traincontrol.util.I18n.f("app.ui.windowPopupTitleConfiguration", title[1], configuration);
+
+        assertEquals(title[0], expected + ui.getWindowTitleString(), "the pop-up's title " + when);
+    }
+
+    /**
      * The main window's diagram scrolls half a square at a time on both axes, at each of the three sizes (MT-726; Adam,
      * 2026-10-11: *"make scrolling in the track diagram viewer faster on both axes"*, and on MT-727: *"Make it half a
      * square at a time"*): each scroll bar steps half the shown size, and a notch of the wheel moves the diagram three of

@@ -2138,8 +2138,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Posted, not called: render() sets the title from inside its own invokeLater and this
             // method runs synchronously straight after it, so a direct call would be overwritten a
             // moment later by the one it was meant to replace.
-            javax.swing.SwingUtilities.invokeLater(() ->
-                setTitle(I18n.f("autosetup.ui.windowTitle", this.layout.getName())));
+            javax.swing.SwingUtilities.invokeLater(() -> setTitle(titleFor(true)));
 
             // Drawn again, because the first draw happened before this window knew what it was.
             // render() builds the grid and setAutonomyMode runs after it, so the labels were rendered
@@ -6098,14 +6097,32 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
-     * The window's title for the page it shows, in one mode or the other (MT-669).
+     * The window's title for the page it shows, in one mode or the other (MT-669), with the configuration that is loaded
+     * beside it when one is (FR-127).
      *
      * @param autonomy whether the window is the autonomy editor
      * @return the title
      */
     private String titleFor(boolean autonomy)
     {
-        return I18n.f(autonomy ? "autosetup.ui.windowTitle" : "app.ui.windowLayoutEditorTitle", this.layout.getName());
+        String configuration = this.parent == null ? null : this.parent.getActiveDiagramConfiguration();
+
+        if (configuration == null)
+        {
+            return I18n.f(autonomy ? "autosetup.ui.windowTitle" : "app.ui.windowLayoutEditorTitle", this.layout.getName());
+        }
+
+        return I18n.f(autonomy ? "autosetup.ui.windowTitleConfiguration" : "app.ui.windowLayoutEditorTitleConfiguration",
+            this.layout.getName(), configuration);
+    }
+
+    /**
+     * Sets the title again, for a configuration loaded, switched, renamed or unloaded while the window is open (FR-127).
+     * Event thread only.
+     */
+    void refreshTitle()
+    {
+        setTitle(titleFor(isAutonomyMode()));
     }
 
     public void render()

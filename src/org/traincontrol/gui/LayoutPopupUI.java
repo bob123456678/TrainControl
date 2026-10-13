@@ -8,6 +8,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JPanel;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.util.I18n;
 
 /**
  * Popup representing a track diagram
@@ -69,7 +70,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         // Half a square at a time on both axes, as the main window's diagram (MT-726, MT-727)
         LayoutGrid.scrollHalfASquareAtATime(this.jScrollPane1, size);
 
-        setTitle(this.layout.getName() + this.parent.getWindowTitleString());
+        setTitle(titleWith(this.parent.getWindowTitleString()));
 
         // Scale the popup according to the size of the layout
         this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
@@ -93,6 +94,30 @@ public class LayoutPopupUI extends PositionAwareJFrame
     public String getLayoutTitle()
     {
         return this.layout.getName();
+    }
+
+    /**
+     * The window's title: the page's name, the autonomy configuration that is loaded in brackets when one is (FR-127), then
+     * the locomotive text the main window adds.
+     *
+     * @param locomotive what follows the page: the active locomotive's text, or ""
+     * @return the title
+     */
+    String titleWith(String locomotive)
+    {
+        String configuration = this.parent.getActiveDiagramConfiguration();
+
+        return (configuration == null ? getLayoutTitle()
+            : I18n.f("app.ui.windowPopupTitleConfiguration", getLayoutTitle(), configuration)) + locomotive;
+    }
+
+    /**
+     * Sets the title again, for a configuration loaded, switched, renamed or unloaded while the window is open (FR-127).
+     * Event thread only.
+     */
+    void refreshTitle()
+    {
+        setTitle(titleWith(this.parent.getWindowTitleString()));
     }
     
     public void render()

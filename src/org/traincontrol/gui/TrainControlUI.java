@@ -3439,6 +3439,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         activeDiagramConfiguration = null;
 
+        refreshConfigurationTitles();
+
         // AND THE TRAINS' LINES TAKEN OFF (OB-307): nothing is loaded now
         refreshCoveredTrack();
 
@@ -4800,6 +4802,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // remembered so that exit knows which configuration the running layout's state belongs to,
         // and so the panel knows to offer the step that follows this one
         this.activeDiagramConfiguration = name;
+
+        refreshConfigurationTitles();
 
         // AND THE TRAINS' LINES DRAWN (OB-307): they are drawn only with a setup loaded, and one is now
         refreshCoveredTrack();
@@ -10468,6 +10472,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (from.equals(this.activeDiagramConfiguration))
         {
             this.activeDiagramConfiguration = to;
+
+            refreshConfigurationTitles();
         }
     }
 
@@ -14525,6 +14531,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     " " + this.activeLoc.getSpeed() + "%]";
         }
     }
+
+    /**
+     * Sets the titles of the windows that name a page again, for the loaded configuration having changed (FR-127): each
+     * pop-up and each editor of this window.  Called wherever the name is set - a load, a rename, a reset - so a title
+     * follows a configuration being loaded, switched, renamed or unloaded while the window is open.
+     */
+    private void refreshConfigurationTitles()
+    {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            javax.swing.SwingUtilities.invokeLater(this::refreshConfigurationTitles);
+
+            return;
+        }
+
+        for (LayoutPopupUI popup : this.popups) popup.refreshTitle();
+
+        for (java.awt.Frame frame : java.awt.Frame.getFrames())
+        {
+            if (frame instanceof LayoutEditor && frame.isDisplayable() && ((LayoutEditor) frame).isEditorOf(this))
+            {
+                ((LayoutEditor) frame).refreshTitle();
+            }
+        }
+    }
         
     /**
      * For tests only: run on the renderer thread just BEFORE a locomotive render is handed to the event
@@ -14635,7 +14666,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             
                             for (LayoutPopupUI popup : this.popups)
                             {
-                                popup.setTitle(popup.getLayoutTitle() + windowTitleString);
+                                popup.setTitle(popup.titleWith(windowTitleString));
                             } 
 
                             // Only repaint icon if the locomotive is changed
@@ -14884,7 +14915,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         
                         for (LayoutPopupUI popup : this.popups)
                         {
-                            popup.setTitle(popup.getLayoutTitle()); 
+                            popup.setTitle(popup.titleWith("")); 
                         }
                     }
                     
