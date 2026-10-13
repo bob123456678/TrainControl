@@ -4691,12 +4691,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Redraws the trains' icons on the diagram, for a train paused or set going (FR-117): the Is Active tick, and the Auto
-     * tab's pause button, which changes the train alone.
+     * Redraws the trains' icons on the diagram, for a train paused or set going (FR-117): the Is Active tick, the bulk tools
+     * (FR-126), and the Auto tab's pause button, which changes the train alone.
      */
     public void trainsPausedChanged()
     {
-        if (diagramMonitorDriver != null) diagramMonitorDriver.trainsPausedChanged();
+        if (diagramMonitorDriver == null) return;
+
+        diagramMonitorDriver.trainsPausedChanged();
+
+        // AND THE GREY OF A PAUSED TRAIN THE RAILWAY STANDS ON NO POINT (FR-126; RSA60-C5).  Drawn from the setup's list, which
+        // the Is Active tick and the bulk tools have just changed and the diagram was told nothing of.  On the event thread,
+        // where every caller is: the driver hands the monitor a copy of each set, and the monitor reads them on its own thread
+        // through volatile fields.
+        if (autonomySession != null) diagramMonitorDriver.trainsOnNoPointChanged(autonomySession);
     }
 
     /**

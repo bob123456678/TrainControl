@@ -28,6 +28,18 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * On the frozen copy of Adam's railway, with his own 75 407 DB on BottomMainB and nothing else standing.
  *
+ * The same pause is what Bulk Tools' Activate All Trains and Deactivate All Trains do for every train, and what the Auto
+ * tab's locomotive commands tab sorts its cards by (FR-126; Adam: "a bulk tool to mass activate and mass deactivate all
+ * trains", and "upon opening the locomotive autonomy commands tab, re-sort them to show active first, then inactive, then
+ * ones on inactive stations").  So this class also holds:
+ *
+ * - the order of the cards when the tab is opened - active, then paused, then the stations out of use (which a paused train
+ *   there belongs to), then a train standing nowhere - by name with capitals ignored, and that coming back to the Auto tab
+ *   counts as opening it;
+ * - that a card's pause button, and the refresh a run fires, move no card;
+ * - that the two tools reach every train they should, are counted and greyed on the train's own flag, save with the
+ *   configuration, are refused while autonomy runs, and tell the diagram's grey for a paused train on no Point.
+ *
  * @author Adam
  */
 public class testTheActiveTickPausesATrain
@@ -542,16 +554,35 @@ public class testTheActiveTickPausesATrain
         {"118 028-0 DB", "BottomMainC"},
         {"06 001 DRG", "TunnelLeftPark"}};
 
-    /** The two of them the claims pause, and the two whose stations they put out of use. */
-    private static final String[] PAUSED = {"BDymf 457 DB", "ALCO UP"};
+    /**
+     * The three the claims pause, as the card's own button pauses them (the train alone).  The last is on a station put out of
+     * use as well, and sorts with the stations out of use: the station is the stronger fact, and the card is greyed for it.
+     */
+    private static final String[] PAUSED = {"BDymf 457 DB", "ALCO UP", "118 028-0 DB"};
 
+    /** The two whose stations the claims put out of use. */
     private static final String[] OUT_OF_USE = {"118 028-0 DB", "06 001 DRG"};
 
-    /** The Auto tab's order once that is done: active first, then paused, then the stations out of use, each by name. */
-    private static final List<String> SORTED = java.util.Arrays.asList(HIS_TRAIN, "Big Boy 4019 UP", "BN Lights",
-        "ALCO UP", "BDymf 457 DB", "06 001 DRG", "118 028-0 DB");
+    /** A train on the railway's list to run that stands on no square, so its card has no station at all. */
+    private static final String NOWHERE = "02 0314-1 DDR";
 
-    /** The crowd standing on the railway and in the setup, as the class puts his train. */
+    /** Two trains the model has that stand on no square of the setup: one is paused, the other going. */
+    private static final String UNPLACED_PAUSED = "BR 03 1022";
+
+    private static final String UNPLACED_GOING = "BR 05 003";
+
+    /** A name the configuration may list as paused that the model has no train for. */
+    private static final String GHOST = "Zz Ghost Train";
+
+    /**
+     * The Auto tab's order once that is done: going on active stations, then paused, then the stations out of use (the paused
+     * train among them, though by name it would lead the paused), then the train standing nowhere (though by name it would
+     * lead them all) - each group by name.
+     */
+    private static final List<String> SORTED = java.util.Arrays.asList(HIS_TRAIN, "Big Boy 4019 UP", "BN Lights",
+        "ALCO UP", "BDymf 457 DB", "06 001 DRG", "118 028-0 DB", NOWHERE);
+
+    /** The crowd standing on the railway and in the setup, as the class puts his train, and the train that stands nowhere. */
     private static void crowd() throws Exception
     {
         final List<TileKey> squares = new ArrayList<>();
@@ -579,6 +610,13 @@ public class testTheActiveTickPausesATrain
 
                 session.placeLocomotive(squares.get(i), CROWD[i][0]);
             }
+
+            Locomotive nowhere = model.getLocByName(NOWHERE);
+
+            assertNotNull(nowhere, "precondition: this data has no " + NOWHERE);
+            assertNull(railway().getLocomotiveLocation(nowhere), "precondition: " + NOWHERE + " stands on the railway");
+
+            railway().getLocomotivesToRun().add(nowhere);
         });
     }
 
@@ -615,9 +653,30 @@ public class testTheActiveTickPausesATrain
                     session.placeLocomotive(squares.get(i), null);
                 }
 
+                for (String name : new String[] {NOWHERE, UNPLACED_PAUSED, UNPLACED_GOING})
+                {
+                    Locomotive loco = model.getLocByName(name);
+
+                    if (loco == null) continue;
+
+                    loco.setAutonomyPaused(false);
+
+                    railway().getLocomotivesToRun().remove(loco);
+
+                    session.setLocomotivePaused(name, false);
+                }
+
+                session.setLocomotivePaused(GHOST, false);
+
                 train.setAutonomyPaused(false);
 
                 session.setLocomotivePaused(HIS_TRAIN, false);
+
+                // EVERY OTHER TRAIN, so a claim that fails part way - after a tool has paused all that stand - leaves the
+                // next one a railway with nobody paused
+                for (Locomotive each : model.getLocomotives()) each.setAutonomyPaused(false);
+
+                session.setLocomotivesPaused(new ArrayList<>(session.getPausedLocomotives()), false);
             }
             catch (java.io.IOException cannotSave)
             {
@@ -628,7 +687,7 @@ public class testTheActiveTickPausesATrain
         pump();
     }
 
-    /** His train and the crowd, the ones these claims are about. */
+    /** His train and the crowd: the trains that stand on the layout. */
     private static List<String> mine()
     {
         List<String> names = new ArrayList<>();
@@ -640,12 +699,22 @@ public class testTheActiveTickPausesATrain
         return names;
     }
 
+    /** The trains these claims expect a card for: those that stand on the layout, and the one that stands nowhere. */
+    private static List<String> cardNames()
+    {
+        List<String> names = mine();
+
+        names.add(NOWHERE);
+
+        return names;
+    }
+
     /** The names on the Auto tab's cards, in the order the tab lays them out - only the ones this class stood there. */
     private static List<String> cardOrder() throws Exception
     {
         final List<String> names = new ArrayList<>();
 
-        final List<String> mine = mine();
+        final List<String> ours = cardNames();
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -659,7 +728,7 @@ public class testTheActiveTickPausesATrain
 
                 String name = ((org.traincontrol.gui.AutoLocomotiveStatus) c).getLocomotive().getName();
 
-                if (mine.contains(name)) names.add(name);
+                if (ours.contains(name)) names.add(name);
             }
         });
 
@@ -669,7 +738,7 @@ public class testTheActiveTickPausesATrain
     /** Waits for the cards to be built and for each to take its routes. */
     private static void settleTheCards() throws Exception
     {
-        for (long end = System.currentTimeMillis() + 20000; cardOrder().size() < mine().size()
+        for (long end = System.currentTimeMillis() + 20000; cardOrder().size() < cardNames().size()
             && System.currentTimeMillis() < end; )
         {
             Thread.sleep(100);
@@ -694,7 +763,7 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * The tab laid out with every train active, and then the trains changed behind it: two paused, as the card's own
+     * The tab laid out with every train active, and then the trains changed behind it: three paused, as the card's own
      * button pauses them (the train alone), and two stations put out of use under the trains standing on them.  The cards
      * stay as they were built, which is not the order they are due.
      */
@@ -729,11 +798,17 @@ public class testTheActiveTickPausesATrain
 
     /**
      * Opening the locomotive commands tab puts the active trains first, then the paused ones, then the ones on stations out
-     * of use, each group by name with capitals ignored (FR-126; Adam: "re-sort them to show active first, then inactive, then
-     * ones on inactive stations (as currently), sorted alphabetically within those groups").
+     * of use, then one that stands nowhere, each group by name with capitals ignored (FR-126; Adam: "re-sort them to show
+     * active first, then inactive, then ones on inactive stations (as currently), sorted alphabetically within those
+     * groups").
      *
-     * MUTATION: leave the tab alone when it is opened, leave the paused trains among the active, or order the names with
-     * capitals counting, and this fails.
+     * Two of the groups' edges are fixed here.  A train both paused and on a station out of use goes with the stations out
+     * of use ("118 028-0 DB" would lead the paused by name), and a train on no station goes last of all ("02 0314-1 DDR"
+     * would lead everything by name).
+     *
+     * MUTATION: leave the tab alone when it is opened, leave the paused trains among the active, put a paused train on a
+     * station out of use with the paused, put the train on no station before the stations out of use, or order the names
+     * with capitals counting, and this fails.
      *
      * @throws Exception from the window
      */
@@ -747,7 +822,8 @@ public class testTheActiveTickPausesATrain
             openTheCommandsTab();
 
             assertEquals(cardOrder(), SORTED, "opening the locomotive commands tab did not lay the cards out active first,"
-                + " then paused, then the trains on stations out of use, each group by name");
+                + " then paused, then the trains on stations out of use (a paused one among them), then the train on no"
+                + " station, each group by name");
         }
         finally
         {
@@ -844,10 +920,61 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
+     * What a run fires moves no card either (FR-126): the refresh the railway posts at every path start and end - the
+     * Auto tab's own repaint on a run's say-so, and every callback the railway has, the Auto tab's among them - redraws the
+     * cards in place, after a pause button has been pressed and a sort would now move one.
+     *
+     * Waited past the interval the repaint holds back for, since the repaint runs after it.
+     *
+     * MUTATION: sort the cards in the light repaint a run fires, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARunsRefreshOfTheCardsDoesNotMoveThemEither() throws Exception
+    {
+        try
+        {
+            goStale();
+
+            openTheCommandsTab();
+
+            assertEquals(cardOrder(), SORTED, "precondition: opening the tab did not sort it");
+
+            final javax.swing.AbstractButton button = autoTabPauseButton();
+
+            assertNotNull(button, "precondition: the Auto tab shows no pause button for " + HIS_TRAIN);
+
+            SwingUtilities.invokeAndWait(button::doClick);
+
+            settleTheCards();
+
+            assertTrue(train.isAutonomyPaused(), "precondition: the click did not pause " + HIS_TRAIN);
+
+            // A RUN'S REFRESH: what the window does for an arrival, and what the railway's callbacks do at a path's start
+            // and end - from a thread of its own, as a locomotive's thread fires them
+            SwingUtilities.invokeAndWait(() -> ui.repaintAutoLocList(true));
+
+            railway().refreshUI();
+
+            Thread.sleep(TrainControlUI.REPAINT_ROUTE_INTERVAL * 5);
+
+            settleTheCards();
+
+            assertEquals(cardOrder(), SORTED, "the refresh a run fires moved the cards, which only opening the tab sorts");
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
      * Bulk Tools has Deactivate All Trains and Activate All Trains, on the track diagram's right-click menu as in the editor:
-     * each sets every train standing on the layout, in the railway and in the setup, saves it with the configuration so a
-     * reload has it, says how many it changed, and greys when there is nothing for it to change (FR-126; Adam: "a bulk tool to
-     * mass activate and mass deactivate all trains").
+     * each sets every train it covers, in the railway and in the setup, saves it with the configuration so a reload has it,
+     * says how many it changed, and greys when there is nothing for it to change (FR-126; Adam: "a bulk tool to mass activate
+     * and mass deactivate all trains").  Deactivate covers the trains standing on the layout - the ones on a station put out
+     * of use too, which are on it though their cards are grey.
      *
      * MUTATION: leave a train out of either tool, set the train and not the setup, or save nothing, and this fails.
      *
@@ -859,6 +986,12 @@ public class testTheActiveTickPausesATrain
         try
         {
             crowd();
+
+            // TWO STATIONS OUT OF USE under their trains, which the tools reach all the same
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (String name : OUT_OF_USE) railway().getLocomotiveLocation(model.getLocByName(name)).setActive(false);
+            });
 
             // ONE PAUSED BY HAND FIRST, through the tick, so that the two tools have different counts to tell apart
             final Locomotive alco = model.getLocByName("ALCO UP");
@@ -890,7 +1023,8 @@ public class testTheActiveTickPausesATrain
 
             for (String name : standing)
             {
-                assertTrue(model.getLocByName(name).isAutonomyPaused(), name + " is still active after " + deactivate);
+                assertTrue(model.getLocByName(name).isAutonomyPaused(), name + " is still active after " + deactivate
+                    + (OUT_OF_USE[0].equals(name) || OUT_OF_USE[1].equals(name) ? ", though its station is out of use" : ""));
             }
 
             assertTrue(session.getPausedLocomotives().containsAll(standing), deactivate + " paused the trains and did not"
@@ -951,6 +1085,408 @@ public class testTheActiveTickPausesATrain
         finally
         {
             uncrowd();
+        }
+    }
+
+    /**
+     * Activate All Trains reaches every paused train - the ones on no square of the layout too, and a name the configuration
+     * lists that the model has no train for - and Deactivate All Trains pauses only the trains standing on the layout (FR-126).
+     * Both read the TRAIN's own flag where the model has the train, and the configuration's list only for a name it has none
+     * for: the Auto tab's pause button changes the train alone, and the list learns of it later.
+     *
+     * Set up: one standing train paused by its card's button (the flag, not the list); one standing train the list still names
+     * though its card's button set it going (the list, not the flag); a train on no square paused; a train on no square going;
+     * and a listed name with no train.  The labels count the paused ones the tool covers and the going ones it covers, and
+     * after Deactivate the train on no square that was going is still going, and after Activate nothing is paused or listed.
+     *
+     * MUTATION: have Activate cover only the trains standing, read the list before the train, or let Deactivate pause the
+     * trains on no square, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testActivateAllTrainsReachesEveryPausedTrainAndTheToolsReadTheTrain() throws Exception
+    {
+        try
+        {
+            crowd();
+
+            final Locomotive card = model.getLocByName("ALCO UP");
+            final Locomotive resumed = model.getLocByName("BN Lights");
+            final Locomotive away = model.getLocByName(UNPLACED_PAUSED);
+            final Locomotive waiting = model.getLocByName(UNPLACED_GOING);
+
+            assertNotNull(away, "precondition: this data has no " + UNPLACED_PAUSED);
+            assertNotNull(waiting, "precondition: this data has no " + UNPLACED_GOING);
+            assertNull(model.getLocByName(GHOST), "precondition: this data has a train called " + GHOST);
+
+            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+
+            assertFalse(standing.contains(UNPLACED_PAUSED) || standing.contains(UNPLACED_GOING), "precondition: a train that"
+                + " should stand on no square stands on the layout: " + standing);
+
+            // PAUSED BY ITS CARD'S BUTTON: the flag alone
+            card.setAutonomyPaused(true);
+
+            // SET GOING BY ITS CARD'S BUTTON after the list had it: the list alone
+            session.setLocomotivePaused(resumed.getName(), true);
+
+            // NOT ON THE LAYOUT: one paused as a configuration load leaves it, the train and the list agreeing (no card
+            // has a button to pause it), and a name with no train at all
+            session.setActive(away, false);
+
+            session.setLocomotivePaused(GHOST, true);
+
+            pump();
+
+            // THE LABELS: Deactivate counts the standing trains going (the resumed one among them); Activate the paused
+            // anywhere (the card's, the one away, the ghost) and not the resumed one
+            String deactivate = I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size() - 1);
+            String activate = I18n.f("autosetup.ui.menuActivateAllTrains", 3);
+
+            javax.swing.JMenuItem deactivateTool = diagramMenuItem(mainB, deactivate);
+            javax.swing.JMenuItem activateTool = diagramMenuItem(mainB, activate);
+
+            assertNotNull(deactivateTool, "Bulk Tools offers no " + deactivate + ", the trains standing that the train's own flag"
+                + " says are going: " + diagramMenuTexts(mainB));
+
+            assertNotNull(activateTool, "Bulk Tools offers no " + activate + ": the train paused by its card's button, the one"
+                + " away from the layout and the name no train has: " + diagramMenuTexts(mainB));
+
+            click(deactivateTool);
+
+            for (int turn = 0; turn < 6; turn++) pump();
+
+            for (String name : standing)
+            {
+                assertTrue(model.getLocByName(name).isAutonomyPaused(), name + " is still active after " + deactivate);
+            }
+
+            assertFalse(waiting.isAutonomyPaused(), deactivate + " paused " + UNPLACED_GOING + ", which stands on no square"
+                + " of the layout");
+
+            assertFalse(session.getPausedLocomotives().contains(UNPLACED_GOING), deactivate + " listed " + UNPLACED_GOING
+                + ", which stands on no square of the layout");
+
+            assertTrue(away.isAutonomyPaused(), deactivate + " set " + UNPLACED_PAUSED + " going");
+
+            // EVERY PAUSED TRAIN: the standing ones, the one away, and the ghost
+            activate = I18n.f("autosetup.ui.menuActivateAllTrains", standing.size() + 2);
+
+            activateTool = diagramMenuItem(mainB, activate);
+
+            assertNotNull(activateTool, "Bulk Tools offers no " + activate + " with every train standing paused, one away"
+                + " paused and a name listed: " + diagramMenuTexts(mainB));
+
+            click(activateTool);
+
+            for (int turn = 0; turn < 6; turn++) pump();
+
+            for (String name : standing)
+            {
+                assertFalse(model.getLocByName(name).isAutonomyPaused(), name + " is still paused after " + activate);
+            }
+
+            assertFalse(away.isAutonomyPaused(), activate + " left " + UNPLACED_PAUSED + " paused, which stands on no square of"
+                + " the layout");
+
+            assertFalse(session.getPausedLocomotives().contains(GHOST), activate + " left " + GHOST + " listed, which no"
+                + " train answers to");
+
+            assertTrue(hintText().contains(I18n.f("autosetup.ui.infoTrainsActivated", standing.size() + 2)),
+                activate + " did not say how many it set going: " + hintText());
+
+            assertFalse(waiting.isAutonomyPaused(), activate + " paused " + UNPLACED_GOING);
+
+            AutonomySession reloaded = new AutonomySession(sandbox.getFolder());
+
+            reloaded.open(pages());
+
+            java.util.Set<String> covered = new java.util.TreeSet<>(standing);
+
+            covered.add(UNPLACED_PAUSED);
+            covered.add(GHOST);
+
+            assertTrue(java.util.Collections.disjoint(reloaded.getPausedLocomotives(), covered), "a reload lists trains"
+                + " paused that " + activate + " set going: " + reloaded.getPausedLocomotives());
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * Both tools do nothing while autonomy runs, and say why (FR-126): they are items of the setup's menu, which every setup
+     * edit is refused from during a run, as the Is Active tick is.  Built at rest and clicked after a run has begun, which
+     * is the way a menu opened at rest can reach a run.
+     *
+     * MUTATION: let a Bulk Tools item through while autonomy runs, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheBulkToolsAreRefusedWhileAutonomyRuns() throws Exception
+    {
+        try
+        {
+            crowd();
+
+            final Locomotive alco = model.getLocByName("ALCO UP");
+
+            SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, alco, false));
+
+            pump();
+
+            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+
+            javax.swing.JMenuItem deactivate = diagramMenuItem(mainB,
+                I18n.f("autosetup.ui.menuDeactivateAllTrains", standing.size() - 1));
+            javax.swing.JMenuItem activate = diagramMenuItem(mainB, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
+
+            assertNotNull(deactivate, "precondition: Bulk Tools offers no Deactivate All Trains at rest: "
+                + diagramMenuTexts(mainB));
+
+            assertNotNull(activate, "precondition: Bulk Tools offers no Activate All Trains at rest: " + diagramMenuTexts(mainB));
+
+            java.lang.reflect.Field running = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+            running.setAccessible(true);
+
+            running.set(ui, true);
+
+            try
+            {
+                for (javax.swing.JMenuItem tool : new javax.swing.JMenuItem[] {deactivate, activate})
+                {
+                    List<String> said = clickAndDismiss(tool);
+
+                    assertTrue(said.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), tool.getText() + ", clicked"
+                        + " while autonomy ran, did not say why it did nothing: " + said);
+                }
+            }
+            finally
+            {
+                running.set(ui, false);
+            }
+
+            for (String name : standing)
+            {
+                assertEquals(model.getLocByName(name).isAutonomyPaused(), name.equals("ALCO UP"), name + " was changed by a"
+                    + " Bulk Tools item clicked while autonomy ran");
+            }
+
+            assertEquals(new java.util.TreeSet<>(session.getPausedLocomotives()), java.util.Collections.singleton("ALCO UP"),
+                "a Bulk Tools item clicked while autonomy ran changed the setup's paused trains");
+        }
+        finally
+        {
+            uncrowd();
+        }
+    }
+
+    /**
+     * A paused train on no Point is drawn grey on the diagram, and the tools tell the diagram (FR-126): its grey is read from
+     * the configuration's list, which Deactivate All Trains and Activate All Trains change, and the diagram was told only of
+     * a train placed or put back.
+     *
+     * The train is placed in the setup on a square it is recorded facing a way no copy there faces, so the railway cannot
+     * stand it on a Point.
+     *
+     * MUTATION: leave the diagram untold when the tools or the tick pause a train, or when a rebuild binds it again, and this
+     * fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testThePausedGreyOfATrainOnNoPointFollowsTheTools() throws Exception
+    {
+        final String stray = "BR 10 001";
+
+        try
+        {
+            assertNotNull(model.getLocByName(stray), "precondition: this data has no " + stray);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.placeLocomotive(mainA, stray);
+
+                session.setFacing(mainA, org.traincontrol.automationui.TilePorts.Side.N);
+            });
+
+            pump();
+
+            assertTrue(session.trainsOnNoPoint().containsKey(mainA), "precondition: " + stray + ", placed on BottomMainA facing"
+                + " north, is not a train on no Point: " + session.trainsOnNoPoint());
+
+            final List<String> standing = new ArrayList<>(new java.util.TreeSet<>(session.trainsWhereTheyStand().values()));
+
+            assertTrue(standing.contains(stray), "precondition: " + stray + " does not stand on the layout: " + standing);
+
+            // THE TICK'S OWN DOOR, which asks for no rebuild of the railway: the diagram is told by the door itself
+            final Locomotive strayTrain = model.getLocByName(stray);
+
+            SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, strayTrain, false));
+
+            pump();
+
+            assertTrue(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram does not draw " + stray + ", paused by the"
+                + " Is Active door and standing on no Point, grey: " + pausedOnNoPointOnTheDiagram());
+
+            SwingUtilities.invokeAndWait(() -> ui.setLocomotiveActive(session, strayTrain, true));
+
+            pump();
+
+            assertFalse(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram still draws " + stray + ", set going by"
+                + " the Is Active door, grey: " + pausedOnNoPointOnTheDiagram());
+
+            // EVERY TRAIN PAUSED
+            javax.swing.JMenuItem tool = diagramMenuItem(mainB, I18n.f("autosetup.ui.menuDeactivateAllTrains",
+                standing.size()));
+
+            assertNotNull(tool, "Bulk Tools offers no Deactivate All Trains (" + standing.size() + "): "
+                + diagramMenuTexts(mainB));
+
+            click(tool);
+
+            for (int turn = 0; turn < 10; turn++)
+            {
+                Thread.sleep(100);
+
+                pump();
+            }
+
+            assertTrue(session.pausedTrainsOnNoPoint().contains(mainA), "precondition: the setup does not list the train on no"
+                + " Point as paused: " + session.pausedTrainsOnNoPoint());
+
+            assertTrue(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram does not draw " + stray + ", paused by"
+                + " Deactivate All Trains and standing on no Point, grey: " + pausedOnNoPointOnTheDiagram());
+
+            // AND SET GOING AGAIN
+            tool = diagramMenuItem(mainB, I18n.f("autosetup.ui.menuActivateAllTrains", standing.size()));
+
+            assertNotNull(tool, "Bulk Tools offers no Activate All Trains (" + standing.size() + "): " + diagramMenuTexts(mainB));
+
+            click(tool);
+
+            for (int turn = 0; turn < 10; turn++)
+            {
+                Thread.sleep(100);
+
+                pump();
+            }
+
+            assertFalse(pausedOnNoPointOnTheDiagram().contains(mainA), "the diagram still draws " + stray + ", set going by"
+                + " Activate All Trains, grey: " + pausedOnNoPointOnTheDiagram());
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setFacing(mainA, null);
+
+                session.placeLocomotive(mainA, null);
+            });
+
+            uncrowd();
+        }
+    }
+
+    /** The squares the diagram draws a paused train grey on, among the trains the railway stands on no Point. */
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<TileKey> pausedOnNoPointOnTheDiagram() throws Exception
+    {
+        java.lang.reflect.Field driverField = TrainControlUI.class.getDeclaredField("diagramMonitorDriver");
+
+        driverField.setAccessible(true);
+
+        java.lang.reflect.Field monitorField = org.traincontrol.gui.DiagramMonitorDriver.class.getDeclaredField("monitor");
+
+        monitorField.setAccessible(true);
+
+        Object monitor = monitorField.get(driverField.get(ui));
+
+        assertNotNull(monitor, "precondition: the diagram has no monitor");
+
+        java.lang.reflect.Field paused = monitor.getClass().getDeclaredField("pausedOnNoPoint");
+
+        paused.setAccessible(true);
+
+        return (java.util.Set<TileKey>) paused.get(monitor);
+    }
+
+    /**
+     * Clicks an item on the event thread and dismisses the message it puts up, answering for a modal dialog that would hold
+     * the click for ever.
+     *
+     * @param item the item
+     * @return the messages that were put up
+     * @throws Exception from the window
+     */
+    private static List<String> clickAndDismiss(final javax.swing.JMenuItem item) throws Exception
+    {
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread answering = new Thread(() ->
+        {
+            while (going.get())
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                    final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                        javax.swing.JOptionPane.class);
+
+                    if (pane == null) continue;
+
+                    said.add(String.valueOf(pane.getMessage()));
+
+                    SwingUtilities.invokeLater(() -> pane.setValue(javax.swing.JOptionPane.OK_OPTION));
+                }
+
+                try
+                {
+                    Thread.sleep(50);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+            }
+        });
+
+        answering.setDaemon(true);
+        answering.start();
+
+        final java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+
+        try
+        {
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    item.doClick();
+                }
+                finally
+                {
+                    done.countDown();
+                }
+            });
+
+            assertTrue(done.await(30, java.util.concurrent.TimeUnit.SECONDS), "the click did not come back; it put up: " + said);
+
+            pump();
+
+            return new ArrayList<>(said);
+        }
+        finally
+        {
+            going.set(false);
+
+            answering.join(1000);
         }
     }
 

@@ -225,8 +225,8 @@ The last item of every right-click menu: things that act on the whole setup rath
 | `Allow Every Path` | Opens every one-way or closed piece of track both ways, on every page; Cancel puts them back. Track that can only ever run one way stays as it is |
 | `Home All Trains Where They Stand` | Makes each train's present station its home |
 | `Place All Trains at Their Homes` | Puts each train that has a home on it, facing the way it was homed, and takes the trains without a home off.  Nothing is sent to the railway: only where autonomy believes the trains stand changes |
-| `Activate All Trains` | Sets every paused train on the layout going again; the same as ticking `Is Active` on each. Greyed when no train is paused |
-| `Deactivate All Trains` | Pauses every train on the layout: autonomy and Return Home leave each one where it stands. Greyed when every train is already paused |
+| `Activate All Trains` | Sets every paused train going again, on the layout or not; the same as ticking `Is Active` on each. Greyed when no train is paused |
+| `Deactivate All Trains` | Pauses every train on the layout: autonomy and Return Home leave each one where it stands. Trains that are not on the layout are left as they are. Greyed when no train on the layout is going |
 
 Each "Clear" asks first, and says how many it would clear.
 
@@ -457,7 +457,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **The Auto tab** (the third icon on the left of the main window) is greyed until a configuration is loaded; when none is (after `Stop Using Autonomy`, or with `Load Autonomy` unticked under Preferences → Startup), the strip above the track diagram offers `Load this configuration`. Once one is loaded, the Auto tab has three tabs:
 
-- **Autonomous Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. The cards are sorted each time you open the tab: trains that are going first, then paused trains, then trains on stations that are switched off, each group by name; pressing a card's pause button does not move the cards. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
+- **Autonomous Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. The cards are sorted when you open the tab and when the list is rebuilt (a train placed or renamed, for example), not when you press a pause button: trains that are going first, then paused trains, then trains on stations that are switched off, each group by name. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
 - **Timetable**: see [Timetables](#timetables-recording-a-sequence-and-playing-it-back).
 - **Settings**: see [Settings](#settings-and-what-each-one-is-for).
 

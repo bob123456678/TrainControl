@@ -7198,9 +7198,7 @@ public class AutonomySession
     {
         if (train == null) return;
 
-        train.setAutonomyPaused(!active);
-
-        setLocomotivePaused(train.getName(), !active);
+        setTrainsActive(java.util.Collections.singletonList(train), active);
     }
 
     /**
