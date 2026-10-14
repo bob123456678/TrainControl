@@ -505,6 +505,20 @@ public final class JarUpdater
 
         if (launched != null) launched.run();
 
+        // A VERSION OLDER THAN THE MARKER CANNOT SAY IT STARTED (MT-737, Adam 2026-10-13: "after the newly updated app
+        // opens, is used by the user, and is closed, the old version is put back and opened, with a message saying that
+        // the update failed").  Waiting for its word took every exit within the cap for a failed start, so a user who
+        // closed it was put back.  It is kept as soon as it runs, as a version that says nothing by the cap is.
+        if (!marksItsStart(request.newVersion))
+        {
+            started.delete();
+
+            log.say("The new version is running.  It is older than " + FIRST_TO_MARK_ITS_START + " and cannot say it has"
+                + " started, so it was kept.  The old one is kept as " + backup.getName());
+
+            return Outcome.UNCONFIRMED;
+        }
+
         switch (waitForTheStart(started, process, startCapMs, pollMs))
         {
             case STARTED:
@@ -526,6 +540,39 @@ public final class JarUpdater
                 return rollBack(request,
                     undo(request.jar, request.newJar, backup, mover, moveAttempts, movePauseMs, log),
                     launcher, log, launched);
+        }
+    }
+
+    /** The first release that writes the started marker. */
+    public static final String FIRST_TO_MARK_ITS_START = "3.0.1";
+
+    /**
+     * Whether a version writes the started marker: 3.0.1 or later, compared number by number.  A version that cannot
+     * be read is taken to write it, which is what every release this updater can be handed does.
+     *
+     * @param version the version, as "3.0.1"
+     * @return whether to wait for its word
+     */
+    public static boolean marksItsStart(String version)
+    {
+        String[] have = version == null ? new String[0] : version.trim().split("\\.");
+        String[] first = FIRST_TO_MARK_ITS_START.split("\\.");
+
+        try
+        {
+            for (int i = 0; i < Math.max(have.length, first.length); i++)
+            {
+                int a = i < have.length ? Integer.parseInt(have[i].replaceAll("[^0-9].*$", "")) : 0;
+                int b = i < first.length ? Integer.parseInt(first[i]) : 0;
+
+                if (a != b) return a > b;
+            }
+
+            return true;
+        }
+        catch (NumberFormatException unreadable)
+        {
+            return true;
         }
     }
 

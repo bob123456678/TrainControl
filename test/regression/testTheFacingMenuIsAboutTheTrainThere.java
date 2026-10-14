@@ -247,6 +247,117 @@ public class testTheFacingMenuIsAboutTheTrainThere
     }
 
     /**
+     * A train standing on a square no track leads out of gets the Facing menu greyed, with the reason in its tooltip,
+     * rather than no menu (OB-347, Adam 2026-10-13: *"the locomotive is facing menu gets hidden when there is no way
+     * out.  rather than hiding it, grey it out."*).
+     *
+     * MUTATION: return null for no facing again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testWithNoWayOutTheMenuIsGreyedNotHidden() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor[] editor = new LayoutEditor[1];
+        String moved = null;
+        Layout running = null;
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            settle();
+
+            running = model.getAutoLayout();
+
+            // A SQUARE OF THE RAILWAY WITH NO FACING TO CHOOSE, and a copy of it to stand a train on
+            TileKey square = null;
+            Point copy = null;
+            String standing = null;
+
+            for (Point point : running.getPoints())
+            {
+                TileKey at = session.getStationIndex().squareOf(point);
+
+                if (at == null || model.getLayout(at.getPage()) == null) continue;
+
+                if (!session.facingChoices(at).isEmpty()) continue;
+
+                square = at;
+                copy = point;
+                standing = point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName();
+
+                if (standing != null) break;
+            }
+
+            if (square == null) throw new SkipException("no square of the snapshot has no way out");
+
+            for (String name : standing != null ? java.util.Collections.<String>emptyList() : model.getLocList())
+            {
+                if (running.getLocomotiveLocation(model.getLocByName(name)) != null) continue;
+
+                if (running.moveLocomotive(name, copy.getName(), false))
+                {
+                    moved = name;
+
+                    break;
+                }
+            }
+
+            if (moved == null && standing == null) throw new SkipException("no train could be stood on " + copy.getName());
+
+            final String named = standing != null ? standing : moved;
+
+            final LayoutDiagram page = model.getLayout(square.getPage());
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0] = new LayoutEditor(page, 30, ui, 0);
+                editor[0].render();
+                editor[0].setAutonomyMode(session);
+            });
+
+            settle();
+
+            final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
+            final TileKey target = square;
+            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+
+            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(target));
+
+            assertNotNull(menu[0], "the Facing menu is hidden for " + named + " on " + square + ", which no track leads"
+                + " out of - Adam: \"rather than hiding it, grey it out\" (OB-347)");
+
+            assertEquals(menu[0].getText(), I18n.f("autosetup.ui.menuFacingGroup", named));
+
+            assertFalse(menu[0].isEnabled(), "the Facing menu on a square with no way out is not greyed (OB-347)");
+
+            assertTrue(menu[0].getToolTipText() != null && menu[0].getToolTipText().contains(
+                I18n.t("autosetup.ui.hintFacingNoWayOut").substring(0, 20)), "the greyed menu does not say why: "
+                + menu[0].getToolTipText());
+        }
+        finally
+        {
+            if (editor[0] != null)
+            {
+                final LayoutEditor closing = editor[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (moved != null && running != null) running.moveLocomotive(null, running.getLocomotiveLocation(
+                model.getLocByName(moved)).getName(), false);
+
+            session.restoreSetup(asFound);
+
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            settle();
+        }
+    }
+
+    /**
      * On its way to a square it may turn at, without turning, a train's label already faces the way it will stand (OB-314).
      *
      * Adam, 2026-10-03: *"when sending et22-245 from topmainr2inter to bottommainb, the label at bottommainb shows arrival
