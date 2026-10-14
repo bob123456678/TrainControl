@@ -276,9 +276,12 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * On a square that does have ways out, where the railway does not hold the setup's train, a recorded facing the track
-     * does not run is ticked in the Is Facing menu no more than the caption shows it (V348B-C3).
+     * does not run is ticked in the Is Facing menu no more than the caption shows it (V348B-C3), and once the railway is
+     * built from that setup - which cannot stand the train, so the diagram draws it on no Point - its icon lies along the
+     * track (V348C-C1).
      *
-     * MUTATION: let the menu read the record as it stands again (OB-177's tick) and this fails.
+     * MUTATION: let the menu read the record as it stands again (OB-177's tick) and this fails; draw a train on no Point
+     * facing its record as it stands, and this fails at the icon.
      *
      * @throws Exception from the window
      */
@@ -308,6 +311,40 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             session.placeLocomotive(tunnel, OUR_TRAIN);
             session.setFacing(tunnel, Side.E);
+
+            // THE RAILWAY BUILT FROM THAT SETUP, which cannot stand the train: no copy of Tunnel faces east
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            settle();
+
+            assertTrue(session.trainsOnNoPoint().containsKey(tunnel), "precondition: the railway stands the train at Tunnel"
+                + " on a Point, so the diagram does not draw it as a train on no Point");
+
+            final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                driver.bind(session);
+                driver.setEnabled(true);
+                driver.start();
+            });
+
+            TileOverlay shown = null;
+
+            for (int tries = 0; tries < 50 && (shown == null || !shown.hasTrain()); tries++)
+            {
+                settle();
+
+                shown = ui.getDiagramTileRegistry().overlayAt(tunnel);
+
+                if (shown == null || !shown.hasTrain()) Thread.sleep(100);
+            }
+
+            assertTrue(shown != null && shown.hasTrain(), "precondition: the diagram shows no train at Tunnel: " + shown);
+
+            assertTrue(shown.getFacing() == Side.N || shown.getFacing() == Side.S, "the locomotive at Tunnel, which the"
+                + " railway cannot stand with east recorded, faces " + shown.getFacing() + " on track that runs north and"
+                + " south - Adam: \"it must be N/S or a N/S track\" (V348C-C1)");
 
             final org.traincontrol.base.LayoutDiagram page = model.getLayout(PAGE);
 

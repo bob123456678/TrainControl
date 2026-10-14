@@ -8856,6 +8856,10 @@ public class AutonomySession
      * Every train the setup records on a square the railway stands it on no Point of - no copy faces its way - and the way
      * it faces (RSA17-C2): the diagram draws it there, where the error about it says it stands.
      *
+     * ALONG ITS TRACK (V348C-C1; Adam, 2026-10-14: "it must be N/S or a N/S track, or E/W on E/W, or angled on a curved
+     * track"): a recorded facing the track does not run - left by an edit of the track under a parked train - is drawn
+     * as `facingWhereNoCopySays` draws any train no copy holds, as the caption and the Is Facing menu read it.
+     *
      * @return square to facing
      */
     public Map<TileKey, Side> trainsOnNoPoint()
@@ -8870,7 +8874,11 @@ public class AutonomySession
         {
             String train = placed.get(square);
 
-            if (train != null && !onTheRailway.contains(train)) out.put(square, getFacing(square));
+            if (train == null || onTheRailway.contains(train)) continue;
+
+            Side drawn = facingWhereNoCopySays(square);
+
+            out.put(square, drawn != null ? drawn : getFacing(square));
         }
 
         return out;
@@ -9870,7 +9878,13 @@ public class AutonomySession
             // And how far back from the platform each lies, in squares along the rail (V348B-C1)
             Map<TileKey, Integer> back = new LinkedHashMap<>();
 
-            for (GraphReducer.ReducedEdge edge : railsATailLiesAlong(running, train.getKey(), claimed))
+            List<GraphReducer.ReducedEdge> rails = railsATailLiesAlong(running, train.getKey(), claimed);
+
+            // How far back is measured from the platform only on rails into it; on the every-edge fallback it is not
+            // measured at all, and nothing is cut (V348C-D1)
+            boolean fromThePlatform = rails != null;
+
+            for (GraphReducer.ReducedEdge edge : fromThePlatform ? rails : reducer.getEdges())
             {
                 List<GraphReducer.Place> places = reducer.placesAlong(edge);
 
@@ -9919,7 +9933,7 @@ public class AutonomySession
 
             for (Map.Entry<TileKey, Set<RouteId>> square : seen.entrySet())
             {
-                if (square.getValue().size() > 1) stop = Math.min(stop, back.get(square.getKey()));
+                if (fromThePlatform && square.getValue().size() > 1) stop = Math.min(stop, back.get(square.getKey()));
             }
 
             for (Map.Entry<TileKey, Set<RouteId>> square : seen.entrySet())
@@ -9944,8 +9958,8 @@ public class AutonomySession
     /**
      * The rails a train with no covered edge can be lying along (OB-348): every rail of the reduction into the square it
      * stands on by the side it came in by, where one of them runs over every place it claims - or, where its side is not
-     * known, the rails into the square that run over every place it claims - or, where there are none, every edge of the
-     * reduction, as `drawTheTrainsThatCoverNoEdge` asked before.
+     * known, the rails into the square that run over every place it claims - or, where there are none, null, for every edge
+     * of the reduction, as `drawTheTrainsThatCoverNoEdge` asked before.
      *
      * EVERY RAIL BY ITS SIDE, NOT ONLY THE ONES AUTONOMY DRIVES.  The railway claims what the rails it was built with share,
      * and a rail the build leaves out - against a one-way arrow - is not among them; but a train placed by hand may have
@@ -9955,7 +9969,7 @@ public class AutonomySession
      * @param running the layout
      * @param train the train
      * @param claimed the places it claims
-     * @return the reduced edges to ask which road each claimed square is on
+     * @return the reduced edges to ask which road each claimed square is on, or null for every edge
      */
     private List<GraphReducer.ReducedEdge> railsATailLiesAlong(org.traincontrol.automation.Layout running,
         org.traincontrol.base.Locomotive train, Set<String> claimed)
@@ -9994,7 +10008,7 @@ public class AutonomySession
 
         if (sideRunsOverAll) return bySide;
 
-        return overAll.isEmpty() ? reducer.getEdges() : overAll;
+        return overAll.isEmpty() ? null : overAll;
     }
 
     /**
