@@ -417,6 +417,8 @@ Tab icons provided by Freepik.
         - A pop-up track diagram now updates when a station label is moved or removed, and labels can no longer be placed outside the area the track diagram shows
         - The autonomy editor's smallest window size now shows all of its controls, with display scaling up to 175%
         - Old autonomy station labels on a layout served by the Central Station are now shown exactly as written
+        - A train standing on a square with no way out now faces along its track, and its orange tail is drawn over the switches behind it
+        - A train's Is Facing menu is now shown greyed out, rather than left out, on a square no train can be driven out of
     - Central Station Bug Fixes
         - If the Central Station answers but its data cannot be loaded at startup, TrainControl now says why and offers to try again until it connects or you exit
         - Starting TrainControl in simulation no longer makes it forget your Central Station's address
