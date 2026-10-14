@@ -28,11 +28,14 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-731](#mt-731) | 2026-10-11 | Round 142: a standing train is one orange; a berth backed into from a terminus | fixed unvalidated | the validator's RSA66-C3 and C5, on round 141 and round 139 |
-| [MT-732](#mt-732) | 2026-10-12 | 3.0.1: trying autonomy in simulation; a simulation keeps the address; the Resync question | fixed unvalidated | OB-337, OB-338, OB-339 |
-| [MT-733](#mt-733) | 2026-10-12 | 3.0.1: a train leaving a station turns that station's exit guard green | fixed unvalidated | OB-340 |
+| [MT-734](#mt-734) | 2026-10-13 | 3.0.1: Activate and Deactivate All Trains; the commands tab's order; a card's pause kept | fixed unvalidated | FR-126, OB-343 |
+| [MT-735](#mt-735) | 2026-10-13 | 3.0.1: a station's name shown once on each page | fixed unvalidated | OB-341 |
+| [MT-736](#mt-736) | 2026-10-13 | 3.0.1: the configuration in the titles; the editor's smallest size; the active locomotive's line | fixed unvalidated | FR-127, OB-342, FR-128 |
+| [MT-737](#mt-737) | 2026-10-13 | 3.0.1: one-click updates - Download, Download & Update, or Cancel | fixed unvalidated | FR-125 |
+| [MT-738](#mt-738) | 2026-10-13 | 3.0.1: the Resync question against your own Central Station | fixed unvalidated | OB-338 |
 
-Everything else - 730 of 733 - needs nothing from you unless the area changes again:
-577 **fixed validated** and 153 **superseded**.
+Everything else - 732 of 738 - needs nothing from you unless the area changes again:
+579 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34566,7 +34569,7 @@ Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts 
 <a id="mt-732"></a>
 ### MT-732 - 2026-10-12 - 3.0.1: trying autonomy in simulation; a simulation keeps the address; the Resync question
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-337, OB-338, OB-339
 
 **Written:** 2026-10-12
@@ -34603,12 +34606,16 @@ test on your end
 
 *Run against commit 6cdaf746.*
 
+**Claude, 2026-10-13.**
+
+Tested on my end, as asked.  Steps 1, 2 and 4 are `core.testControlStationFaults` (OB-338's question, its Exit and OB-339's address kept in a simulation; 23 claims green in battery 94) and the guide's section was read by two validator rounds (RSA67, RSA68).  Step 3 never tested your case - a router fails before any sync starts - so the real Central Station case is MT-738, which makes the first sync fail on purpose.  Closing this one.
+
 ---
 
 <a id="mt-733"></a>
 ### MT-733 - 2026-10-12 - 3.0.1: a train leaving a station turns that station's exit guard green
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-340
 
 **Written:** 2026-10-12
@@ -34637,5 +34644,184 @@ active path holds green.  Claims in `regression.testBothProtectingSignalsAreThro
 **Adam, 2026-10-13 (triage).** Works.
 
 *Run against commit 6cdaf746.*
+
+---
+
+<a id="mt-734"></a>
+### MT-734 - 2026-10-13 - 3.0.1: Activate and Deactivate All Trains; the commands tab's order; a card's pause kept
+
+**Disposition:** fixed unvalidated
+**From:** FR-126, OB-343
+
+**Written:** 2026-10-13
+
+**Steps**
+
+1. In the autonomy editor, right-click any square and open `Bulk Tools`.  Note the numbers on `Activate All Trains`
+   and `Deactivate All Trains`, then choose `Deactivate All Trains`.
+2. Look at the Auto tab's cards and at the trains on the track diagram.
+3. Choose `Bulk Tools` > `Activate All Trains`.
+4. Pause one train with the pause button on its Auto tab card.  Then, in the autonomy editor, untick `Is Active` on a
+   different train, and close the editor.
+5. Open another tab, then come back to the Auto tab's `Autonomous Locomotive Commands` tab.  Press one card's pause
+   button.
+
+**Expected**
+
+- Step 1: it asks nothing; every train standing on the layout is paused, and the message says how many.  A train not
+  placed on the layout is left as it was.
+- Step 2: every placed train's card shows it paused, and its icon is grey.
+- Step 3: every paused train goes again, placed or not, without a question.
+- Step 4: the train you paused from its card is still paused after the editor closes.
+- Step 5: as you open the tab, the cards are sorted: going trains first, then paused ones, then trains on stations
+  that are switched off, each group by name.  Pressing a pause button does not move the cards.
+
+*What this is:* FR-126 (`9ec8d791`, `ea9df7da`) and OB-343 (`7ceed5fd`, `ef310c09`, `f80f76a1`, `237c88aa`, `6074e4de`, `7ee98fc9`): `AutonomyEditorPanel.setEveryTrainActive`,
+`TrainControlUI.autoTabOrder` and `sortTheCommandsTabIfShown`; the window's record of how the railway was built kept
+honest by every door, fold and rollback, and the editor's Cancel keeping what the railway changed alone.  Claims in
+`ui.testTheActiveTickPausesATrain`, `core.testAPausedTrainStaysPaused` and `core.testAutonomyDiagramSession`, each seen
+red first; RSA68 (D4, D5, B1 fixed) and RSA69 (D1, C1 fixed) read it.
+
+---
+
+<a id="mt-735"></a>
+### MT-735 - 2026-10-13 - 3.0.1: a station's name shown once on each page
+
+**Disposition:** fixed unvalidated
+**From:** OB-341
+
+**Written:** 2026-10-13
+
+**Steps**
+
+1. Open your `Oles kreds - TC3 sandbox` setup in the autonomy editor and look at `Things to look at`.
+2. On a page other than a station's own, right-click a blank square, choose `Show a Station Name Here...` and pick that
+   station.  Then go to the station's own page.
+3. On the station's own page, use `Show a Station Name Here...` on another blank square for the same station.
+4. Open a pop-up of that page (the S, M or L button) and leave it open.  In the editor, right-click the label you
+   added in step 3 and choose `Stop Showing` *station*, then save.
+5. Try to put a station's name on a square outside the drawn part of a page (beyond the last row or column of track).
+
+**Expected**
+
+- Step 1: St01 is listed under `Must be fixed`, named as shown more than once on the same page, with its two squares;
+  clicking it goes there.  TopMainR2 (on its own square and beside it) is not listed.
+- Step 2: the label appears on the other page, and the station keeps its label on its own page.
+- Step 3: on its own page the label moves to the new square (one per page); the other page's label stays.
+- Step 4: the pop-up drops the label at once, without being reopened.
+- Step 5: the menu item is greyed with the reason in its tooltip, and dragging a label there is refused.
+
+*What this is:* OB-341 (`36cd6bad`, `146b350f`, `57021531`, `c823a0ba`) and RSA68's caption findings (`179652cc`): the check
+counts what the diagram draws, per page (`AutonomySession.isCaptionDrawn`, `stationsShownMoreThanOnce`); the editor's
+doors and the import per page; pop-ups redrawn when their captions change; no caption outside the drawn area.  Claims in
+`core.testAutonomyDiagramSession`, `regression.testControlNAsksTheMenusQuestion`,
+`regression.testAPendingTurnSurvivesTheRebuild` and `regression.testTheHomeLabelIsDrawnOnce`.
+
+---
+
+<a id="mt-736"></a>
+### MT-736 - 2026-10-13 - 3.0.1: the configuration in the titles; the editor's smallest size; the active locomotive's line
+
+**Disposition:** fixed unvalidated
+**From:** FR-127, OB-342, FR-128
+
+**Written:** 2026-10-13
+
+**Steps**
+
+1. With a configuration loaded, open the layout editor, the autonomy editor and a pop-up, and read their titles.  Then
+   `Stop Using Autonomy` and read them again, and open the autonomy editor with nothing loaded.
+2. Shrink the autonomy editor, then the layout editor, to their smallest size, at the Small, Medium and Large sizes.
+3. Select locomotives of different decoder types (MFX, MM2, DCC, a multi-unit), including one on a page with a long
+   name and one on a page with no name.  Look at the line above the locomotive's name, and hover over it.
+4. Tick `Preferences` > `Locomotive Control` > `Show Page Numbers`.  Look at the line again, at the page tabs, and,
+   with `Show Locomotive Pages as Tabs` unticked, at the page's name between the arrows.  Then untick it.
+
+**Expected**
+
+- Step 1: each title names the configuration in brackets: "Layout Editor: *page* (Main)", "Autonomy Editor: *page*
+  (Main)", a pop-up "*page* (Main)".  After `Stop Using Autonomy` the layout editor and the pop-up show no name; the
+  autonomy editor still names the configuration it edits.
+- Step 2: every control shows at the smallest size, `Cancel` and the status line under the findings included, and the
+  tools column stays inside the window.
+- Step 3: the key in a keycap; the page's name in the line's blue, or "Page *number*" for a page with no name; the
+  decoder at the right in a navy pill, "MFX | 54".  A long name ends in "...".  The tooltip shows the whole line, with
+  the page's number.  Nothing below the line moves.
+- Step 4: `Show Page Numbers` starts unticked.  Ticked, a named page reads "*number*. *name*" on the line, on its tab
+  and between the arrows, at once; unticked, the name alone.  A page with no name reads "Page *number*" either way.
+
+*What this is:* FR-127 (`428c3eda`, `48b1f264`), OB-342 (`193ad05c`, `d013a2a8`; RSA68-C1 `bc1e1c5a` for display scaling) and
+FR-128 (`9cc8e332`, `8f1ae0e6`, `3166d3e7`, `d77fd3d2`, `a4c43d34`, `2ed0758b`, `a05d51b0`, Adam's seven rounds of
+design).  RSA69 (D4) read rounds 1 to 4.  Claims in
+`ui.testTheEditorNamesItsShortcuts`, `ui.testDiagramLooksRight`,
+`regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers` and `ui.testLocMappingPages`.
+
+---
+
+<a id="mt-737"></a>
+### MT-737 - 2026-10-13 - 3.0.1: one-click updates - Download, Download & Update, or Cancel
+
+**Disposition:** fixed unvalidated
+**From:** FR-125
+
+**Written:** 2026-10-13
+
+**Steps**
+
+1. Build a jar of this version with `RAW_VERSION` set below the latest release (for example "2.9.9"), and put it as
+   `TrainControl.jar` in a scratch folder with copies of your data files.  Start it there.
+2. Open the Help menu, hover over `Download Update`, and click it.
+3. Start autonomy, then choose `Download & Update`.  Stop autonomy.
+4. Choose `Download & Update` again.
+5. When the new version has opened, leave it running for 10 minutes, then look in the scratch folder.
+6. Run this version from NetBeans and open the same question.
+
+**Expected**
+
+- Step 2: the Help menu shows "*"; the tooltip offers to download and update; the question names both versions and
+  offers `Download`, `Download & Update` and `Cancel`, with `Download` the default.
+- Step 3: it is refused, saying why.
+- Step 4: the menu shows the download's progress, then "Backing up..."; a zip appears in `tc_backup`; TrainControl
+  closes, a small "Updating TrainControl..." window shows, and the new version opens with your data.
+- Step 5: `TrainControl.jar` is the new version, `TrainControl_v2_9_9_old.jar` sits next to it, and `update.log` lists
+  each step; no `.lock`, `.started` or `.running` file is left.  (A release older than 3.0.1 cannot say that it started,
+  so it is kept only once it has run 10 minutes; closing it sooner puts the old version back and says so.)
+- Step 6: only `Download` and `Cancel` are offered, and the tooltip offers only the download.
+
+*What this is:* FR-125 (`094ef60c`, `6cdaf746`; RSA68-C2 to C4 `d15536fa`; `44367fbb`): `SelfUpdate`, `JarUpdater`,
+`TrainControlUI.offerTheUpdate` and the exit's hook.  Claims in `core.testTheUpdaterSwapsTheJar`,
+`ui.testTheUpdateQuestion` and `regression.testTheUpdateIsWiredEndToEnd` (the real launcher against plain child JVMs);
+the real update against a real release is only this test.
+
+---
+
+<a id="mt-738"></a>
+### MT-738 - 2026-10-13 - 3.0.1: the Resync question against your own Central Station
+
+**Disposition:** fixed unvalidated
+**From:** OB-338
+
+**Written:** 2026-10-13
+
+**Steps**
+
+1. Close TrainControl.  Open a command window in your TrainControl folder and run
+   `java -Dtraincontrol.failFirstSyncs=1 -jar TrainControl.jar <your CS3's address> debug`.
+2. Press `Resync`.
+3. Close TrainControl, and run the same command with `failFirstSyncs=2`.  Press `Resync` once, then `Exit`.
+4. Start TrainControl the way you normally do.
+
+**Expected**
+
+- Step 1: a window titled `Central Station data not loaded` gives the reason (it names `traincontrol.failFirstSyncs`)
+  and what to check, with `Resync` and `Exit`.
+- Step 2: TrainControl connects as usual: locomotives and the layout load.
+- Step 3: after the first `Resync` it asks again; `Exit` closes TrainControl.
+- Step 4: it asks for the address (Exit forgets it), and with yours it connects as usual.
+
+*What this is:* OB-338 (`4fef0969`, `aa8acc53`) and its debug-only switch (`950cc74d`, Adam: *"there was no MT for the 'connected
+to CS3 but failed to sync' issue"*): `-Dtraincontrol.failFirstSyncs=N` fails the first N syncs of a start in debug
+mode through `syncWithCS2`'s own failure path; without `debug` it does nothing.  Claim in
+`core.testControlStationFaults`.
 
 ---

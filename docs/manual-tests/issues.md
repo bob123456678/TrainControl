@@ -316,18 +316,6 @@ Adam, 2026-10-11: *"FR for 3.1.0: one-click updates.  Downloads the new jar, mak
 
 To settle when it is built: a .bat on Windows and a shell script on macOS and Linux; how the script knows TrainControl has really exited (its process, or the jar no longer locked) before it swaps; keeping the old jar (renamed, say) until the new one has started, so a bad download can be undone; checking the download is whole (size, or a checksum from the release) before anything is replaced; running from somewhere other than a jar (an IDE, build\classes), where there is nothing to swap and it should say so; a jar the user cannot write over; starting again with the same Java and arguments (IP address, debug, simulate, a forced language); refusing while autonomy, a timetable or a route is running, and saving everything first; and the LocDB.data and UIState.data beside the jar, which must be left alone.
 
-### OB-337 - 2026-10-11 - for 3.0.1: the autonomy guide does not say how to start TrainControl for simulation
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-11  
-**Filed:** 2026-10-11  
-
-Adam, 2026-10-11: *"For 3.0.1, file an OB - the autonomy readme should tell the user how to start the app in debug mode so they can do simulations.  That is critical to testing autonomy.  Right now, there is just a quick mention of the simulate setting."*
-
-**For v3.0.1**, on Adam's word.  Automation.md's only word on it is one line under Preferences > Autonomy: *"(`Simulate`, on the Settings tab, is only for testing without a Central Station.)"*  The box is refused unless TrainControl was started in debug mode and is not connected to a Central Station (`Layout.setSimulate`), and the refusal (`autolayout.errorSimulationModeDebugOnly`) is the only place a user is told that debug mode means *"passing a second argument via the command line"*.  The Readme's Download and Run section has the command, `java -jar TrainControl.jar 0 debug simulate` (`TrainControl.main` counts the arguments: a second one turns on debug mode and a third simulation, whatever they say), but Automation.md does not point to it, and a user who double-clicks the jar passes none.
-
-What the guide should say, near where it first asks the user to run a setup: why to simulate (try a setup and watch the trains route with no Central Station and nothing moving); how to start TrainControl that way (the command, and a `.bat` or `.sh` file beside the jar for those who double-click); then tick `Simulate` on the Settings tab and start autonomy; and what simulation does - after a wait between the configured minimum and maximum delays each sensor on a train's route is reported occupied and then cleared behind it, the trains themselves do not run, and Path Integrity Validation is skipped - and that it cannot be changed while trains are running.  The Readme's Download and Run section can link to it.
-
 ### OB-338 - 2026-10-12 - No warning and no way to retry when the Central Station answers but the first database sync fails
 
 **Kind:** bug  
@@ -341,28 +329,6 @@ Today, at start-up `MarklinControlStation` runs `syncWithCS2()`; when it fails (
 Wanted: when the address answers but the first sync fails, a popup with the error and a Resync choice; on a failed resync, ask again, until the sync succeeds (communication on, as after a good start) or the user exits.
 
 **For v3.0.1**, on Adam's word (2026-10-12: *"Yes, 3.0.1."*).
-
-### OB-339 - 2026-10-12 - for 3.0.1: a simulation start forgets the saved Central Station address
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Found by the per-fix check of OB-337: at the end of `MarklinControlStation.init`, *"Connection failed - ask for IP on next run"* removes the saved address (`IP_PREF`) whenever communication did not come on - and a start in simulation never turns it on, so after every simulation session the next normal start asks for the Central Station's address again.  Adam, 2026-10-12, asked whether to keep it: *"Sure, avoid clearing the address from simulation sessions"*.
-
-**For v3.0.1**, on Adam's word.  A simulation start keeps the saved address; a real start that does not connect, and Exit in OB-338's question, still forget it, as before.
-
-### OB-340 - 2026-10-12 - for 3.0.1: departing a terminus, autonomy leaves its exit guard red, so a train the guard stops stays there
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Adam, 2026-10-12: *"when departing a terminus, autonomy should make its exit guard green.  otherwise, trains stopped by that guard would remain stuck.  it can flip back to red after the run ends (if wiring already exists for this), otherwise keep it at green."*
-
-**For v3.0.1**, on Adam's word.  behaviour.md 7c: an exit guard is RED while its platform is claimed - a train standing there, or a locked path that starts or ends there - and a route over the guard sets it GREEN as it is claimed edge by edge, which is how a train leaving a through station by its exit signal gets a green.  At a terminus the exit guard is often on the station's own track, where no departing route commands it, so the departing train's own claim holds it red; where the signal cuts power to a stop section, the train cannot leave.
-
-Wanted: when autonomy sends a train out of a terminus, the terminus's exit guard is turned green for it.  After the run it may go back to red where something already does that; otherwise it stays green.
 
 ### OB-341 - 2026-10-12 - for 3.0.1: two captions for one station (St01) in a setup, and the setup check does not say so
 
@@ -414,16 +380,6 @@ Found by FR-126's build, 2026-10-12.  The Auto tab card's pause button changes t
 
 **For v3.0.1** (Adam, 2026-10-12: *"Everything is the next release unless I specify one."*).  Wanted: a train paused from its card stays paused whatever is done to another train.
 
-### OB-344 - 2026-10-12 - for 3.0.1: an old Point:name label on a Central Station layout is drawn without its Point: prefix
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Adam, 2026-10-12, told that on a layout served by the Central Station the old autonomy's `Point:name` labels are drawn with the prefix stripped: *"stop stripping that prefix."*
-
-**For v3.0.1**, on Adam's word.  `LayoutGrid` (the branch for a label starting with `LAYOUT_STATION_PREFIX`, added in `0f743bff`) draws `Point:Bahnhof` as `Bahnhof`, greyed in the autonomy editor.  Such a label is never turned into a caption there (no local folder, so no setup).  Wanted: it is drawn as the text it is, like any other label.
-
 ### FR-128 - 2026-10-13 - prettify active loc info
 
 **Kind:** feature request  
@@ -434,6 +390,20 @@ Adam, 2026-10-12, told that on a layout served by the Central Station the old au
 the active locomotive info is currently text consisting of <letter> . Page <num> (<page name>) . <decodertype> <address>
 
 the page number could be condensed into a nice pill, along with the other info.  make it look more modern.
+
+### OB-345 - 2026-10-13 - for 3.1.0: editor Cancel can map a kept timetable leg to the wrong station after a chain of station renames
+
+**Kind:** bug  
+**Raised from:** the reader of OB-343 round 6 (Claude), 2026-10-13  
+**Filed:** 2026-10-13  
+
+While the autonomy editor is open, the railway's timetable changes, and in the same edit two stations are renamed in a chain, one taking the other's old name (Beta to Delta, then Alpha to Beta).  The editor's Cancel then writes back a timetable leg through those stations naming the wrong one: a leg from Alpha to Beta comes back from Beta to Beta, which the next load drops.
+
+Why: the legs Cancel keeps from the railway are carried to the names of the edit's last build (`AutonomySession.carryTheNamesAcross`), but after the restore they are read through the carry's memory, where the names it had when the edit began win (`restoreSetup`, `carry`).  A name the edit gave a different station than the one it had at the start is read as the start's.
+
+Older than 3.0.1's fixes: 3.0.0's Cancel lost the railway's whole timetable change here, and OB-343 rounds 5 and 6 left this one corner.  Found by the reader of OB-343 round 6 (`7ee98fc9` on dev), by reading.
+
+Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 
 ## What has been picked up
 
@@ -451,9 +421,17 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-13 | FR-128 | feature request | The active locomotive's line: the key in a keycap, the page's name in the line's own blue label font, the decoder in a navy pill "MFX | 54" at the right; only the name gives way.  `Preferences` > `Locomotive Control` > `Show Page Numbers` (off by default) puts "5. " before a named page's name on the line, the page tabs and the label between the arrows; a page with no name reads "Page 5" in all three.  Seven rounds of Adam's design (`9cc8e332`, `8f1ae0e6`, `3166d3e7`, `d77fd3d2`, `a4c43d34`, `2ed0758b`, `a05d51b0`). | - | MT-736 |
+| 2026-10-12 | OB-344 | bug | An old `Point:name` label on a layout served by the Central Station is drawn as written (`4e26c157`): `ui.testDiagramLooksRight.testAnOldPointLabelIsDrawnAsWritten`, red before.  **Claude, 2026-10-13:** closed on its claim - a layout served by the Central Station with old labels is not to hand for a manual test. | fixed validated | - |
+| 2026-10-12 | OB-343 | bug | A train paused or set going from its Auto tab card keeps that whatever is done to another train, and through the editor opening, a declined load, a reset, an import's rollback and the editor's Cancel: the window's record of how the railway was built notes only what a door changed, is brought up to date by every fold, and is put back by every rollback; every fold takes the paused trains one by one, and the editor's Cancel keeps what the railway changed alone, a locomotive renamed meanwhile included (`7ceed5fd`, `ef310c09`, `f80f76a1`, `237c88aa`, `6074e4de`, `7ee98fc9`).  In 3.0.0 since RSA60-B1.  One rarer corner of Cancel is OB-345, for 3.1.0. | - | MT-734 |
+| 2026-10-12 | OB-342 | bug | The editor's smallest size shows every control: 80 more pixels of height, a status line that no longer forces the width, and a floor that follows the display scale (`193ad05c`, `d013a2a8`, `bc1e1c5a`). | - | MT-736 |
+| 2026-10-12 | FR-127 | feature request | The layout editor and the pop-ups name the loaded configuration in their titles, the autonomy editor the configuration it edits (`428c3eda`, `48b1f264`). | - | MT-736 |
+| 2026-10-12 | FR-126 | feature request | Bulk Tools' `Activate All Trains` (every paused train, no question, on Adam's "no") and `Deactivate All Trains` (the trains on the layout, on his ruling); the commands tab sorted when opened, never on a pause click (`9ec8d791`, `ea9df7da`). | - | MT-734 |
+| 2026-10-12 | OB-341 | bug | Yes, an import artifact (the label migration before OB-256's fix, and the import's captions merge).  A station's name drawn twice on one page is an ERROR; one caption per station per page in the check, the drawing, the import and the editor (Adam's two rulings of 2026-10-12); RSA68's caption findings fixed (`36cd6bad`, `146b350f`, `57021531`, `c823a0ba`, `179652cc`). | - | MT-735 |
+| 2026-10-11 | FR-125 | feature request | Built for 3.0.1 on Adam's word of 2026-10-12, where it was filed for 3.1.0: `Download & Update` downloads, checks, backs up the data, keeps the old jar renamed, swaps and restarts, undoing a version that fails before its window opens (`094ef60c`, `6cdaf746`, `d15536fa`, `44367fbb`). | - | MT-737 |
 | 2026-10-12 | OB-340 | bug | A train leaving any station turns that station's exit guard signals green: the first edge of its path sets them with its own accessories and holds them like them, and protection does not turn red a signal an active path holds green, so a guard shared with an occupied platform is green for the train leaving until its tail is past the first edge (`dc5ed1e7`, `5e331d9e`). | - | MT-733 |
 | 2026-10-12 | OB-339 | bug | A simulation start keeps the saved Central Station address; a real start that does not connect, and Exit in OB-338's question, still forget it (`aa8acc53`, `MarklinControlStation.forgetsTheAddress`). | - | MT-732 |
-| 2026-10-12 | OB-338 | bug | When the Central Station answers but the first sync fails, a window gives the reason and what to check, with Resync and Exit, asking again until it connects or the user exits; never in a simulation, without an address or without a window (`4fef0969`, `aa8acc53`). | - | MT-732 |
+| 2026-10-12 | OB-338 | bug | When the Central Station answers but the first sync fails, a window gives the reason and what to check, with Resync and Exit, asking again until it connects or the user exits; never in a simulation, without an address or without a window (`4fef0969`, `aa8acc53`). | - | MT-732, MT-738 |
 | 2026-10-11 | OB-337 | bug | Automation.md's `Trying it out without a Central Station`: the command window, the command, `Simulate`, what a simulation tests and what it does not, and going back to normal; linked from Getting started, the Settings tables and the Readme (`e7b40f51`, `546d50bf`). | - | MT-732 |
 | 2026-10-08 | FR-114 | feature request | Import locomotive data from a CSV file, as Export to CSV writes it.  Closed as a duplicate of FR-049 on Adam's word (2026-10-12: *"close FR-114 as a duplicate."*); FR-049, for v3.1.0, carries it. | declined | - |
 | 2026-10-11 | OB-336 | bug | The turn-round warning on a home only at a parking berth (not an autonomy destination) no route can back a train into - one turning it at a reversing point on the way (`AutonomySession.berthsATrainCanBackInto`, off the build); no longer at an active terminus such as BottomMainC (round 141, `5526ba19`): `core.testAutonomyDiagramSession.testAHomeIsWarnedAboutTurningOnlyAtABerthNoTrainCanBackInto`, red before (*"a home on a terminus autonomy may choose is warned"*). | - | MT-730 |

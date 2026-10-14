@@ -399,7 +399,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.0.1
+* v3.0.1 [10/13/2026]
     - Updates
         - Download Update can now also install the new version for you: it backs up your data, keeps your old version next to the new one, and restarts TrainControl
     - Autonomy Features
@@ -409,6 +409,7 @@ Tab icons provided by Freepik.
         - The autonomy editor, the layout editor and the track diagram pop-ups now show the autonomy configuration's name in their titles
     - Locomotive Control
         - The active locomotive's key, page and decoder are now shown as easy-to-read labels above its name
+        - A new Show Page Numbers option in the Preferences menu shows each page's number before its name, on the page tabs, between the page arrows and above the active locomotive's name
     - Autonomy Bug Fixes
         - A train leaving a station now turns that station's exit guard signals green, so a guard that stops trains no longer holds it there
         - A train paused from its card on the Auto tab no longer starts again when another train's Is Active setting is changed
