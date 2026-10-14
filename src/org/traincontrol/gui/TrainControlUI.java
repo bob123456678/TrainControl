@@ -6586,7 +6586,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (session == null || square == null) return "";
 
-        org.traincontrol.automationui.TilePorts.Side facing = session.getFacing(square);
+        // NOT ONE THE TRACK DOES NOT RUN (OB-348), which the icon cannot be drawn along
+        org.traincontrol.automationui.TilePorts.Side facing = session.recordedFacingAlongTheTrack(square);
 
         if (facing == null) return "";
 
@@ -32505,6 +32506,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.updateStationLabels(p);
         }
 
+        // AND THE ICONS OF TRAINS ON SQUARES WHOSE COPY SAYS NOTHING, asked of the setup as the captions are (OB-348): the
+        // doors that write a facing end here, and none rebinds the diagram.  On the event thread, as the captions read it.
+        final DiagramMonitorDriver driver = diagramMonitorDriver;
+
+        if (driver != null)
+        {
+            if (SwingUtilities.isEventDispatchThread()) driver.recordedFacingsChanged();
+            else SwingUtilities.invokeLater(driver::recordedFacingsChanged);
+        }
     }
     
         

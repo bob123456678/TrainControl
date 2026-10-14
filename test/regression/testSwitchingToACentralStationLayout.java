@@ -969,8 +969,10 @@ public class testSwitchingToACentralStationLayout
         // count does not read as building one; it opens a sandbox first.
         // 65 on 2026-10-12: core.testControlStationFaults asks the real Resync question (OB-338) of a window it builds,
         // opening a sandbox first.
-        assertEquals(checked, 65,
-            checked + " test classes were found to build a window, not the 65 there were when this "
+        // 66 on 2026-10-14: ui.testATrainWithNoWayOutFacesAlongItsTrack (OB-348) reads the facing and the tail off the
+        // track diagram of a window it builds, opening a sandbox first.
+        assertEquals(checked, 66,
+            checked + " test classes were found to build a window, not the 66 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

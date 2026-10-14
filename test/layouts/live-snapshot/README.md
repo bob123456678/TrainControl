@@ -159,3 +159,5 @@ not fix it. Name the square.
 - `core.testAStopRouteStandsAlone`
 - `core.testTheFindingsAreWorkedOutOncePerEvent`
 - `ui.testTheActiveTickPausesATrain`
+- `regression.testTheOrangeRunsOverTheSwitchesBehindTheTrain`
+- `ui.testATrainWithNoWayOutFacesAlongItsTrack`
