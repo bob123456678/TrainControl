@@ -11062,7 +11062,8 @@ public class AutonomySession
     }
 
     /**
-     * Which way to draw a train standing on a square whose copy records no facing and has no single way out (OB-348): the
+     * Which way to draw a train no copy of its square holds a facing for (OB-348) - one whose copy records no facing and has
+     * no single way out, or one the railway stands on no Point (`trainsOnNoPoint`, V348C-C1): the
      * facing the setup records, where its track runs that way - the one the caption shows - or else a guess along its
      * track: the first facing the square offers, which is the one the Is Facing menu ticks where it offers one (V348D-C1),
      * or where it offers none its first way, which is north or south on track that runs north to south, east or west on
