@@ -405,6 +405,15 @@ Older than 3.0.1's fixes: 3.0.0's Cancel lost the railway's whole timetable chan
 
 Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 
+### FR-129 - 2026-10-13 - teleport to home via right click of return home
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-13 19:40  
+**Build:** commit 2ad091ce
+
+make it so that when the return home button is right clicked, an option to just teleport the locomotives back (same as what the autonomy right click menu allows) is shown.  Show a confirmation window that asks if the user wants to do this, and confirms they will manually move the trains back. 3.1.0 feature
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

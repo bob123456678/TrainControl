@@ -4,7 +4,7 @@
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](https://www.gnu.org/licenses/gpl-3.0)
 ![Java 8](https://img.shields.io/badge/Java-8-orange)
 
-**Free, open-source software for controlling and automating your Märklin (Marklin), Trix, or DCC model railroad from your computer.**  Runs on Windows, macOS, and Linux.
+**Free, open-source software for controlling and fully automating your Märklin (Marklin), Trix, or DCC model railroad from your computer.**  Runs on Windows, macOS, and Linux.
 
 Available in 🇬🇧 English · 🇩🇪 Deutsch · 🇩🇰 Dansk · 🇵🇱 Polski · 🇫🇷 Français · 🇮🇹 Italiano · 🇪🇸 Español · 🇳🇱 Nederlands
 
@@ -16,9 +16,9 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 **Why TrainControl?**
 
-* Control any locomotive instantly from your keyboard
+* Conveniently control any locomotive instantly from your keyboard
 * Interactive track diagrams that you can edit in the app, in any number of windows
-* Fully autonomous train operation using S88 sensors and digital switches (signals optional)
+* Fully hands-off, UI-built train automation based on S88 sensors and digital switches (signals optional)
 * Multi-units, function presets, conditional routes, and usage statistics
 * Locomotive and layout data downloaded automatically from your Central Station
 * Free and open source
@@ -99,20 +99,6 @@ Some sample files are included in the `cs2_sample_layout` folder.
 
 </details>
 
-**Routes**
-
-Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track, or triggering an emergency stop.  Manual routes can also be defined and activated directly or from the Track Diagram tab.
-
-In addition to all Central Station functionality, complex logical expressions are supported.
-
-![TrainControl's route editor: each command a row of dropdowns, and its conditions an indented list joined by "and" and "or"](assets/ui_route3.png?raw=true)
-
-**Keyboard**
-
-Useful for testing, individual accessories can be directly controlled via their digital address.  The cumulative number of actuations of each accessory is shown as a tooltip.
-
-![Accessory keyboard in TrainControl, used to control switches and signals directly by digital address](assets/ui_keyboard.png?raw=true)
-
 **Full Autonomy**
 
 TrainControl can run your trains on its own.  From version 3.0, you set this up on the track diagram itself, in the autonomy editor: TrainControl works out how your track connects, and you set up stations, directions and settings by right-clicking a square.  The setup is checked before it runs, and each problem it finds takes you to the square it is about.
@@ -127,13 +113,27 @@ You need S88 sensors (at least one per station) and digital switches; signals ar
 
 The track diagram shows each running train's route, the track it is holding, and where every train is standing.  While trains are stopped, you can right-click a station to place a train there.
 
-You can also record timetables and play them back, with the same protections as autonomous operation.
+You can set home stations and have TrainControl automatically route all your trains back to where they started. You can also record timetables and play them back, with the same protections as autonomous operation.
 
 <img src="assets/timetable3.png?raw=true" alt="The timetable in TrainControl: a captured sequence of journeys, played back in order" width="600">
 
 To send a train to a station yourself, right-click it on the track diagram.
 
 <img src="assets/easyauto3.png?raw=true" alt="Right-clicking a train on the track diagram to send it to a station" width="500">
+
+**Routes**
+
+Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track, or triggering an emergency stop.  Manual routes can also be defined and activated directly or from the Track Diagram tab.
+
+In addition to all Central Station functionality, complex logical expressions are supported.
+
+![TrainControl's route editor: each command a row of dropdowns, and its conditions an indented list joined by "and" and "or"](assets/ui_route3.png?raw=true)
+
+**Keyboard**
+
+Useful for testing, individual accessories can be directly controlled via their digital address.  The cumulative number of actuations of each accessory is shown as a tooltip.
+
+![Accessory keyboard in TrainControl, used to control switches and signals directly by digital address](assets/ui_keyboard.png?raw=true)
 
 **Statistics**
 
