@@ -27,15 +27,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-731](#mt-731) | 2026-10-11 | Round 142: a standing train is one orange; a berth backed into from a terminus | fixed unvalidated | the validator's RSA66-C3 and C5, on round 141 and round 139 |
-| [MT-734](#mt-734) | 2026-10-13 | 3.0.1: Activate and Deactivate All Trains; the commands tab's order; a card's pause kept | fixed unvalidated | FR-126, OB-343 |
-| [MT-735](#mt-735) | 2026-10-13 | 3.0.1: a station's name shown once on each page | fixed unvalidated | OB-341 |
-| [MT-736](#mt-736) | 2026-10-13 | 3.0.1: the configuration in the titles; the editor's smallest size; the active locomotive's line | fixed unvalidated | FR-127, OB-342, FR-128 |
 | [MT-737](#mt-737) | 2026-10-13 | 3.0.1: one-click updates - Download, Download & Update, or Cancel | fixed unvalidated | FR-125 |
-| [MT-738](#mt-738) | 2026-10-13 | 3.0.1: the Resync question against your own Central Station | fixed unvalidated | OB-338 |
+| [MT-739](#mt-739) | 2026-10-14 | FR-125: an update you close soon after it opens is kept | fixed unvalidated | FR-125, MT-737 |
+| [MT-740](#mt-740) | 2026-10-14 | OB-347: the Is Facing menu greyed where there is no way out | fixed unvalidated | OB-347 |
 
-Everything else - 732 of 738 - needs nothing from you unless the area changes again:
-579 **fixed validated** and 153 **superseded**.
+Everything else - 737 of 740 - needs nothing from you unless the area changes again:
+584 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34529,7 +34526,7 @@ Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts 
 <a id="mt-731"></a>
 ### MT-731 - 2026-10-11 - Round 142: a standing train is one orange; a berth backed into from a terminus
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** the validator's RSA66-C3 and C5, on round 141 and round 139
 
 **Written:** 2026-10-11
@@ -34563,6 +34560,10 @@ Round 143 (`dfe817f3`), on the fix-validation fanout, changed again what counts 
 **Adam, 2026-10-13 (triage).** Works.
 
 *Run against commit 6cdaf746.*
+
+**Adam, 2026-10-13 (triage).** Works.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -34650,7 +34651,7 @@ active path holds green.  Claims in `regression.testBothProtectingSignalsAreThro
 <a id="mt-734"></a>
 ### MT-734 - 2026-10-13 - 3.0.1: Activate and Deactivate All Trains; the commands tab's order; a card's pause kept
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-126, OB-343
 
 **Written:** 2026-10-13
@@ -34682,12 +34683,16 @@ honest by every door, fold and rollback, and the editor's Cancel keeping what th
 `ui.testTheActiveTickPausesATrain`, `core.testAPausedTrainStaysPaused` and `core.testAutonomyDiagramSession`, each seen
 red first; RSA68 (D4, D5, B1 fixed) and RSA69 (D1, C1 fixed) read it.
 
+**Adam, 2026-10-13 (triage).** Works.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-735"></a>
 ### MT-735 - 2026-10-13 - 3.0.1: a station's name shown once on each page
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-341
 
 **Written:** 2026-10-13
@@ -34717,12 +34722,16 @@ doors and the import per page; pop-ups redrawn when their captions change; no ca
 `core.testAutonomyDiagramSession`, `regression.testControlNAsksTheMenusQuestion`,
 `regression.testAPendingTurnSurvivesTheRebuild` and `regression.testTheHomeLabelIsDrawnOnce`.
 
+**Adam, 2026-10-13 (triage).** Works.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-736"></a>
 ### MT-736 - 2026-10-13 - 3.0.1: the configuration in the titles; the editor's smallest size; the active locomotive's line
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-127, OB-342, FR-128
 
 **Written:** 2026-10-13
@@ -34755,6 +34764,16 @@ FR-128 (`9cc8e332`, `8f1ae0e6`, `3166d3e7`, `d77fd3d2`, `a4c43d34`, `2ed0758b`, 
 design).  RSA69 (D4) read rounds 1 to 4.  Claims in
 `ui.testTheEditorNamesItsShortcuts`, `ui.testDiagramLooksRight`,
 `regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers` and `ui.testLocMappingPages`.
+
+**Adam, 2026-10-13 (triage).** Works, with notes.
+
+Works, but we should have one MT per bug/FR, not many clumped up.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-14.**
+
+Noted: one MT per bug or feature request from here on.  MT-739 and MT-740 are the first written that way.
 
 ---
 
@@ -34793,12 +34812,42 @@ design).  RSA69 (D4) read rounds 1 to 4.  Claims in
 `ui.testTheUpdateQuestion` and `regression.testTheUpdateIsWiredEndToEnd` (the real launcher against plain child JVMs);
 the real update against a real release is only this test.
 
+**Adam, 2026-10-13 (triage).** Does not work.
+
+The update itself works, but after the newly updated app opens, is used by the user, and is closed, the old version is put packed and opened, with a message saying that the updated failed.  log: 2026-10-13 23:38:31  Updating C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\store\TrainControl.jar (v2.9.9) to v3.0.0 from TrainControl_v3_0_0.jar
+2026-10-13 23:38:32  TrainControl has closed
+2026-10-13 23:38:32  Kept the old version as TrainControl_v2_9_9_old.jar
+2026-10-13 23:38:32  Moved the new version to TrainControl.jar
+2026-10-13 23:38:45  The update failed: the new version ended before it had started
+2026-10-13 23:38:46  Put the old version back as TrainControl.jar; the new one is at TrainControl_v3_0_0.jar
+2026-10-13 23:38:46  Started the old version again from TrainControl.jar
+2026-10-13 23:39:00  Updating C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\store\TrainControl.jar (v2.9.9) to v3.0.0 from TrainControl_v3_0_0.jar
+2026-10-13 23:39:00  TrainControl has closed
+2026-10-13 23:39:00  Kept the old version as TrainControl_v2_9_9_old.jar
+2026-10-13 23:39:00  Moved the new version to TrainControl.jar
+2026-10-13 23:39:18  The update failed: the new version ended before it had started
+2026-10-13 23:39:18  Put the old version back as TrainControl.jar; the new one is at TrainControl_v3_0_0.jar
+2026-10-13 23:39:18  Started the old version again from TrainControl.jar
+2026-10-13 23:39:45  Updating C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\store\TrainControl.jar (v2.9.9) to v3.0.0 from TrainControl_v3_0_0.jar
+2026-10-13 23:39:46  TrainControl has closed
+2026-10-13 23:39:46  Kept the old version as TrainControl_v2_9_9_old.jar
+2026-10-13 23:39:46  Moved the new version to TrainControl.jar
+2026-10-13 23:40:02  The update failed: the new version ended before it had started
+2026-10-13 23:40:02  Put the old version back as TrainControl.jar; the new one is at TrainControl_v3_0_0.jar
+2026-10-13 23:40:02  Started the old version again from TrainControl.jar
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-14.**
+
+Thank you - the log shows it.  The version you updated to was 3.0.0, which is older than the "I have started" signal the updater waits for, so each time you closed it within ten minutes it was taken for a failed start and put back.  Fixed in `18da7ef2`: a version older than 3.0.1 is kept once it runs.  Real updates from 3.0.1 on go to versions that send the signal.  MT-739 tests the fix on its own.
+
 ---
 
 <a id="mt-738"></a>
 ### MT-738 - 2026-10-13 - 3.0.1: the Resync question against your own Central Station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-338
 
 **Written:** 2026-10-13
@@ -34823,5 +34872,65 @@ the real update against a real release is only this test.
 to CS3 but failed to sync' issue"*): `-Dtraincontrol.failFirstSyncs=N` fails the first N syncs of a start in debug
 mode through `syncWithCS2`'s own failure path; without `debug` it does nothing.  Claim in
 `core.testControlStationFaults`.
+
+**Adam, 2026-10-13 (triage).** Works.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-739"></a>
+### MT-739 - 2026-10-14 - FR-125: an update you close soon after it opens is kept
+
+**Disposition:** fixed unvalidated
+**From:** FR-125, MT-737
+
+**Written:** 2026-10-14
+
+**Steps**
+
+1. As in MT-737: build a jar of this version with `RAW_VERSION` set below the latest release (for example "2.9.9"), put
+   it as `TrainControl.jar` in a scratch folder with copies of your data files, and start it there.
+2. Open the Help menu, click `Download Update`, and choose `Download & Update`.
+3. When the new version has opened, use it briefly and close it within a minute.
+4. Start `TrainControl.jar` again, and look at `update.log` in the scratch folder.
+
+**Expected**
+
+- Step 3: TrainControl closes and stays closed: the old version is not put back or started, and no message says the
+  update failed.
+- Step 4: the new version starts.  `update.log` ends with "The new version is running.  It is older than 3.0.1 and
+  cannot say it has started, so it was kept."  `TrainControl_v2_9_9_old.jar` is still beside it.
+
+*What this is:* FR-125 after MT-737 (`18da7ef2`): a version older than 3.0.1 cannot say it has started, so every exit within ten
+minutes read as a failed start and was put back.  It is now kept once it runs (`JarUpdater.marksItsStart`).  A real
+update from 3.0.1 on goes to a version that does say so, which MT-737's other steps covered.  Claim
+`core.testTheUpdaterSwapsTheJar.testAVersionOlderThanTheMarkerIsKeptWhenClosed`.
+
+---
+
+<a id="mt-740"></a>
+### MT-740 - 2026-10-14 - OB-347: the Is Facing menu greyed where there is no way out
+
+**Disposition:** fixed unvalidated
+**From:** OB-347
+
+**Written:** 2026-10-14
+
+**Steps**
+
+1. On the track diagram or in the autonomy editor, right-click a train standing on a square no track leads out of -
+   the square where you saw the `Is Facing` menu missing.
+2. Hover over `<train> Is Facing...`.
+
+**Expected**
+
+- Step 1: `<train> Is Facing...` is in the menu, greyed out.
+- Step 2: its tooltip says no train can be driven out of the square, so there is no facing to choose.
+
+*What this is:* OB-347 (`b1ed882d`): `AutonomyEditorPanel.buildFacingMenu` returns the submenu disabled, with
+`autosetup.ui.hintFacingNoWayOut` in 8 languages, where it returned nothing.  Claim
+`regression.testTheFacingMenuIsAboutTheTrainThere.testWithNoWayOutTheMenuIsGreyedNotHidden` skips on the test layout,
+which has no such square, so this test is the one that sees it.
 
 ---

@@ -316,81 +316,6 @@ Adam, 2026-10-11: *"FR for 3.1.0: one-click updates.  Downloads the new jar, mak
 
 To settle when it is built: a .bat on Windows and a shell script on macOS and Linux; how the script knows TrainControl has really exited (its process, or the jar no longer locked) before it swaps; keeping the old jar (renamed, say) until the new one has started, so a bad download can be undone; checking the download is whole (size, or a checksum from the release) before anything is replaced; running from somewhere other than a jar (an IDE, build\classes), where there is nothing to swap and it should say so; a jar the user cannot write over; starting again with the same Java and arguments (IP address, debug, simulate, a forced language); refusing while autonomy, a timetable or a route is running, and saving everything first; and the LocDB.data and UIState.data beside the jar, which must be left alone.
 
-### OB-338 - 2026-10-12 - No warning and no way to retry when the Central Station answers but the first database sync fails
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Adam, 2026-10-12: *"File OB: there is no warning popup in the UI, and no way to reattempt a connection, if the cs3 ip is reachable but the initial DB sync fails.  if this happens, show a popup with the error and offer a resync.  keep re-prompting as needed until a connection is established or the user exits."*
-
-Today, at start-up `MarklinControlStation` runs `syncWithCS2()`; when it fails (it returns -1 on any exception while reading the Central Station's database) the only sign is the log line `log.csNotConnected` (*"Central Station network connection not established."*) and TrainControl carries on with communication off.  That start-up block is the only place communication is turned on (`this.on = true`), so a later sync from the menu cannot bring the connection up: the user has to notice the log line and restart.
-
-Wanted: when the address answers but the first sync fails, a popup with the error and a Resync choice; on a failed resync, ask again, until the sync succeeds (communication on, as after a good start) or the user exits.
-
-**For v3.0.1**, on Adam's word (2026-10-12: *"Yes, 3.0.1."*).
-
-### OB-341 - 2026-10-12 - for 3.0.1: two captions for one station (St01) in a setup, and the setup check does not say so
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Adam, 2026-10-12: *"in C:\Users\adamo\OneDrive\Documents\NetBeansProjects\TrainControl\random_test_layout\Oles kreds - TC3 sandbox, there are two labels for the same station (St01).  This is likely an import artifact- determine if so.  And add code to make this be an error in the autonomy validator (i.e. if someone edits the file by hand externally)."*
-
-**For v3.0.1**, on Adam's word.  In that layout's `config/autonomy/setup.json`, `captions` maps two caption squares, `0:6,16` and `0:8,16`, to St01's square `0:9,16` - where every door of the editor keeps one station to one caption (OB-256).  Wanted: find whether an import (or a migration) produced it, and the setup check reports a station with more than one caption as an error, naming the station and the squares.
-
-### FR-126 - 2026-10-12 - for 3.0.1: bulk tools to activate and to deactivate every train; the locomotive commands tab sorted active first when opened
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Adam, 2026-10-12: *"Add an FR to add a bulk tool to mass activate and mass deactivate all trains.  Upon opening the locomotive autonomy commands tab, re-sort them to show active first, then inactive, then ones on inactive stations (as currently), sorted alphabetically within those groups.  Don't trigger the re-sort if you just click the pause button on the locomotive autonomy commands tab."*
-
-**For v3.0.1**, on Adam's word.  Active and inactive are FR-117's: a paused train is left where it stands, its icon grey, set from the Auto tab's pause button or the `Is Active` tick, and kept with the configuration.  Two bulk tools set every train active, or every train inactive, at once.  The Auto tab's locomotive commands list is re-sorted each time the tab is opened - active trains, then inactive ones, then those on inactive stations, each group alphabetical - and not when a pause button on it is clicked, so a card does not move from under the pointer.
-
-### FR-127 - 2026-10-12 - for 3.0.1: the active autonomy configuration's name in the autonomy and layout editors and the layout pop-ups
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Adam, 2026-10-12: *"FR and build with sonnet: the current autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if active)"*
-
-**For v3.0.1**, on Adam's word.  Where those windows name the page they show, they also name the autonomy configuration that is active, when one is; with none active they read as today.
-
-### OB-342 - 2026-10-12 - for 3.0.1: the autonomy editor's smallest height is a few pixels short
-
-**Kind:** bug  
-**Raised from:** Adam, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Adam, 2026-10-12: *"It looks like the min height of the autonomy editor window needs to be a few more pixels taller"*
-
-**For v3.0.1**, on Adam's word.  The editor's floor is set in `LayoutEditor`: `sizeForDiagram` for a page with no remembered size (630 plus `EXTRA_MINIMUM_HEIGHT`, 50, plus more at the larger sizes) and 650 plus 50 for a remembered one.  Wanted: at its smallest, the autonomy editor shows all of its controls.
-
-### OB-343 - 2026-10-12 - for 3.0.1: a train paused from its Auto tab card goes again after the Is Active tick is used on another train
-
-**Kind:** bug  
-**Raised from:** FR-126's build, 2026-10-12  
-**Filed:** 2026-10-12  
-
-Found by FR-126's build, 2026-10-12.  The Auto tab card's pause button changes the train alone (its `autonomyPaused` flag); the setup's list of paused trains learns of it later.  The `Is Active` tick, on any train, goes through the door that writes the train and the list together and tells the window the railway's pauses and the setup's agree (`notePausesAsBuilt`); the rebuild it asks for then takes the setup's list as the word on every train.  So: pause train A with its card's button, tick `Is Active` off on train B, and at the rebuild A is set going again, though nobody asked.  FR-126's bulk tools avoid it by writing every standing train through the door.
-
-**For v3.0.1** (Adam, 2026-10-12: *"Everything is the next release unless I specify one."*).  Wanted: a train paused from its card stays paused whatever is done to another train.
-
-### FR-128 - 2026-10-13 - prettify active loc info
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-13 00:26  
-**Build:** commit 6cdaf746
-
-the active locomotive info is currently text consisting of <letter> . Page <num> (<page name>) . <decodertype> <address>
-
-the page number could be condensed into a nice pill, along with the other info.  make it look more modern.
-
 ### OB-345 - 2026-10-13 - for 3.1.0: editor Cancel can map a kept timetable leg to the wrong station after a chain of station renames
 
 **Kind:** bug  
@@ -440,6 +365,15 @@ Nothing of a run is lost: no train may be sent while an editor is open.  One way
 
 Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 
+### OB-347 - 2026-10-13 - "is facing" menu for autonomy editor/track diagram viewer
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-13 23:26  
+**Build:** commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the locomotive is facing menu gets hidden when there is no way out.  rather than hiding it, grey it out.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -456,6 +390,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-13 | OB-347 | bug | The `Is Facing` menu is greyed, with the reason in its tooltip, on a square no track leads out of, rather than hidden (`b1ed882d`). | - | MT-740 |
 | 2026-10-13 | FR-128 | feature request | The active locomotive's line: the key in a keycap, the page's name in the line's own blue label font, the decoder in a navy pill "MFX | 54" at the right; only the name gives way.  `Preferences` > `Locomotive Control` > `Show Page Numbers` (off by default) puts "5. " before a named page's name on the line, the page tabs and the label between the arrows; a page with no name reads "Page 5" in all three.  Seven rounds of Adam's design (`9cc8e332`, `8f1ae0e6`, `3166d3e7`, `d77fd3d2`, `a4c43d34`, `2ed0758b`, `a05d51b0`). | - | MT-736 |
 | 2026-10-12 | OB-344 | bug | An old `Point:name` label on a layout served by the Central Station is drawn as written (`4e26c157`): `ui.testDiagramLooksRight.testAnOldPointLabelIsDrawnAsWritten`, red before.  **Claude, 2026-10-13:** closed on its claim - a layout served by the Central Station with old labels is not to hand for a manual test. | fixed validated | - |
 | 2026-10-12 | OB-343 | bug | A train paused or set going from its Auto tab card keeps that whatever is done to another train, and through the editor opening, a declined load, a reset, an import's rollback and the editor's Cancel: the window's record of how the railway was built notes only what a door changed, is brought up to date by every fold, and is put back by every rollback; every fold takes the paused trains one by one, and the editor's Cancel keeps what the railway changed alone, a locomotive renamed meanwhile included (`7ceed5fd`, `ef310c09`, `f80f76a1`, `237c88aa`, `6074e4de`, `7ee98fc9`).  In 3.0.0 since RSA60-B1.  One rarer corner of Cancel is OB-345, for 3.1.0. | - | MT-734 |
@@ -463,7 +398,7 @@ not, never both.
 | 2026-10-12 | FR-127 | feature request | The layout editor and the pop-ups name the loaded configuration in their titles, the autonomy editor the configuration it edits (`428c3eda`, `48b1f264`). | - | MT-736 |
 | 2026-10-12 | FR-126 | feature request | Bulk Tools' `Activate All Trains` (every paused train, no question, on Adam's "no") and `Deactivate All Trains` (the trains on the layout, on his ruling); the commands tab sorted when opened, never on a pause click (`9ec8d791`, `ea9df7da`). | - | MT-734 |
 | 2026-10-12 | OB-341 | bug | Yes, an import artifact (the label migration before OB-256's fix, and the import's captions merge).  A station's name drawn twice on one page is an ERROR; one caption per station per page in the check, the drawing, the import and the editor (Adam's two rulings of 2026-10-12); RSA68's caption findings fixed (`36cd6bad`, `146b350f`, `57021531`, `c823a0ba`, `179652cc`). | - | MT-735 |
-| 2026-10-11 | FR-125 | feature request | Built for 3.0.1 on Adam's word of 2026-10-12, where it was filed for 3.1.0: `Download & Update` downloads, checks, backs up the data, keeps the old jar renamed, swaps and restarts, undoing a version that fails before its window opens (`094ef60c`, `6cdaf746`, `d15536fa`, `44367fbb`). | - | MT-737 |
+| 2026-10-11 | FR-125 | feature request | Built for 3.0.1 on Adam's word of 2026-10-12, where it was filed for 3.1.0: `Download & Update` downloads, checks, backs up the data, keeps the old jar renamed, swaps and restarts, undoing a version that fails before its window opens (`094ef60c`, `6cdaf746`, `d15536fa`, `44367fbb`); an update into a version older than 3.0.1 kept once it runs (`18da7ef2`, MT-737). | - | MT-737, MT-739 |
 | 2026-10-12 | OB-340 | bug | A train leaving any station turns that station's exit guard signals green: the first edge of its path sets them with its own accessories and holds them like them, and protection does not turn red a signal an active path holds green, so a guard shared with an occupied platform is green for the train leaving until its tail is past the first edge (`dc5ed1e7`, `5e331d9e`). | - | MT-733 |
 | 2026-10-12 | OB-339 | bug | A simulation start keeps the saved Central Station address; a real start that does not connect, and Exit in OB-338's question, still forget it (`aa8acc53`, `MarklinControlStation.forgetsTheAddress`). | - | MT-732 |
 | 2026-10-12 | OB-338 | bug | When the Central Station answers but the first sync fails, a window gives the reason and what to check, with Resync and Exit, asking again until it connects or the user exits; never in a simulation, without an address or without a window (`4fef0969`, `aa8acc53`). | - | MT-732, MT-738 |
