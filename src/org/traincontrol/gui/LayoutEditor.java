@@ -682,8 +682,21 @@ public class LayoutEditor extends PositionAwareJFrame
      * The sidebar has grown - a Diagram Size heading and its two buttons, and the autonomy column
      * when that mode is on - and at the old minimum the controls at the bottom of it were the first
      * thing to be squeezed out.
+     *
+     * THE RULE: the window never shrinks to a height that cuts off a control, at any diagram size.
+     * The last control in the right-hand column is Cancel, and the autonomy editor's status line
+     * under the findings is as low.  Measured at 125% display scaling - the 120 dpi this was built on -
+     * the column needs 705 pixels at Small (693 in the autonomy editor), 865 at Medium and 1005 at
+     * Large, and the floor is 630 plus this plus the growth per size.  At 50 that left Cancel 25 pixels
+     * short at Small in the track editor and 13 in the autonomy editor (OB-342; Adam, 2026-10-12: *"the
+     * min height of the autonomy editor window needs to be a few more pixels taller"*); at 80 it is 5 or
+     * more pixels clear at every size at 125%.  These are pixels and the window is not: the column
+     * needs 727 at Small at 150%, so the floor is also never below what the window's own layout asks
+     * for, which is how it follows the scale (OB-342; see `sizeForDiagram`).  Both ways of setting
+     * the floor add this - `sizeForDiagram`, and the branch for a window whose size was remembered.  The
+     * floor's width has its own rule, stated at `sizeForDiagram`.
      */
-    private static final int EXTRA_MINIMUM_HEIGHT = 50;
+    private static final int EXTRA_MINIMUM_HEIGHT = 80;
 
     public static final int MAX_UNDO_HISTORY = 100;
     
@@ -2138,8 +2151,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Posted, not called: render() sets the title from inside its own invokeLater and this
             // method runs synchronously straight after it, so a direct call would be overwritten a
             // moment later by the one it was meant to replace.
-            javax.swing.SwingUtilities.invokeLater(() ->
-                setTitle(I18n.f("autosetup.ui.windowTitle", this.layout.getName())));
+            javax.swing.SwingUtilities.invokeLater(() -> setTitle(titleFor(true)));
 
             // Drawn again, because the first draw happened before this window knew what it was.
             // render() builds the grid and setAutonomyMode runs after it, so the labels were rendered
@@ -6056,6 +6068,30 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
      *
      * The minimum is set here rather than beside the preferred size because pack() honours it, and a
      * floor taller than the screen would defeat the cap - hence the clamp on both.
+     *
+     * THE RULE FOR THE FLOOR, in both directions: at its smallest width and its smallest height the
+     * window shows every control, at each diagram size and in each language (OB-342).  The HEIGHT is
+     * `EXTRA_MINIMUM_HEIGHT` over the size's base, and the column of tools and the status line under
+     * the findings fit in it.  The WIDTH is the diagram's 550 and the sidebar, growing with the size,
+     * and what keeps the tools column on screen in it is that nothing of the window's own asks for
+     * more: the column and the sidebar need about 380 pixels together, 376 in German.  A control whose
+     * words are data - the status line under the findings is 521 pixels in English and 655 in German -
+     * has no minimum width and is cut with an ellipsis where the window is narrow, and not the
+     * window's width forced to its sentence, which pushed the whole column off the right edge at the
+     * smallest width (see `AutonomyEditorPanel.banner`).
+     *
+     * AT EVERY DISPLAY SCALE (OB-342): the numbers above are pixels, and the interface is scaled by
+     * the display (`TrainControlUI`'s `flatlaf.uiScale`, dpi / 96) - so the column needs 705 pixels at
+     * Small at 125% and 727 at 150%, 756 at 175% and 775 at 200%, and the floor stayed where it was and
+     * cut off Cancel and the status line by 17 pixels at 150%.  Scaling the pixels does not do: in
+     * proportion to 125% it would put the floor 125 pixels above what 150% needs and under what 100%
+     * needs, because most of the column is not scaled.  The window's own layout knows what it
+     * needs at any scale, in any language, so the floor is never below its minimum height plus the
+     * window's own chrome - the title bar and the borders, which the layout does not hold - and the
+     * fixed numbers stand where that is less.  Still clamped to the screen: where the screen is shorter
+     * than the floor, the window is the screen's height and the controls below that are out of reach, as
+     * for any window.  The width needs nothing of it: the column and the sidebar ask for 363 pixels at
+     * 125%, 386 at 150% and 446 at 200%, under the 700 of the smallest.
      */
     private void sizeForDiagram()
     {
@@ -6088,6 +6124,19 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         pack();
 
+        // NEVER BELOW WHAT THE WINDOW'S OWN LAYOUT ASKS FOR (OB-342).
+        //
+        // The pixels above were found at one display scale.  The layout's minimum is what the column of tools needs
+        // at this one, with the sidebar, in this language; the chrome is what the layout does not hold, known now
+        // that pack() has given the window its peer.  The layout's minimum is a few pixels more than the controls
+        // need, which is the margin.
+        int asked = getContentPane().getMinimumSize().height + getHeight() - getContentPane().getHeight();
+
+        if (asked > getMinimumSize().height)
+        {
+            setMinimumSize(new Dimension(getMinimumSize().width, Math.min(asked, usable.height)));
+        }
+
         // Back on screen if the fit pushed it off the bottom or the right, which it can when the
         // window was already sitting near an edge - the size changed under a position chosen for the
         // old one.
@@ -6098,14 +6147,34 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     }
 
     /**
-     * The window's title for the page it shows, in one mode or the other (MT-669).
+     * The window's title for the page it shows, in one mode or the other (MT-669), with a configuration beside it (FR-127):
+     * the one LOADED for the track editor, and for the autonomy editor the one it EDITS - the setup's chosen one, which
+     * is not loaded when its errors stop it loading or autonomy has been stopped.
      *
      * @param autonomy whether the window is the autonomy editor
      * @return the title
      */
     private String titleFor(boolean autonomy)
     {
-        return I18n.f(autonomy ? "autosetup.ui.windowTitle" : "app.ui.windowLayoutEditorTitle", this.layout.getName());
+        String configuration = this.parent == null ? null
+            : autonomy ? this.parent.getEditedConfiguration() : this.parent.getActiveDiagramConfiguration();
+
+        if (configuration == null)
+        {
+            return I18n.f(autonomy ? "autosetup.ui.windowTitle" : "app.ui.windowLayoutEditorTitle", this.layout.getName());
+        }
+
+        return I18n.f(autonomy ? "autosetup.ui.windowTitleConfiguration" : "app.ui.windowLayoutEditorTitleConfiguration",
+            this.layout.getName(), configuration);
+    }
+
+    /**
+     * Sets the title again, for a configuration loaded, switched, renamed or unloaded while the window is open (FR-127).
+     * Event thread only.
+     */
+    void refreshTitle()
+    {
+        setTitle(titleFor(isAutonomyMode()));
     }
 
     public void render()
@@ -6156,10 +6225,14 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 // one place the taller minimum would otherwise not reach - the form is generated and
                 // cannot be edited by hand.
                 // Plus the sidebar, which is new since those bounds were remembered: without it the
-                // floor is a width the diagram used to have all of and now has to share.
+                // floor is a width the diagram used to have all of and now has to share.  Once, and
+                // not on top of a floor that has it already: a window that has been through
+                // `sizeForDiagram` has the sidebar in its floor, and adding it again made the floor 150
+                // pixels wider (OB-342).  So the floor is the diagram's own 550 and the sidebar, or what
+                // it is already if that is wider.
                 int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
 
-                this.setMinimumSize(new Dimension(getMinimumSize().width + sideways,
+                this.setMinimumSize(new Dimension(Math.max(getMinimumSize().width, 550 + sideways),
                     Math.max(getMinimumSize().height, 650 + EXTRA_MINIMUM_HEIGHT)));
             }
 

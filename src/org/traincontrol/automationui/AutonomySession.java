@@ -660,6 +660,17 @@ public class AutonomySession
     /** Its turning copies. */
     private Set<String> turningNow = Collections.emptySet();
 
+    /** Its Points, to their squares' own names - the names a leg carried through it follows (OB-343). */
+    private Map<String, String> baseOfNameNow = Collections.emptyMap();
+
+    /**
+     * The names of the edit's last build that Cancel put in the memory for the carry (OB-343), and what it put: forgotten
+     * when the edit session ends or the next begins, so that the next edit's opening memory does not hold them.
+     */
+    private final Map<String, TileKey> keptSquares = new java.util.HashMap<>();
+
+    private final Map<String, String> keptBases = new java.util.HashMap<>();
+
     /**
      * The name the latest build gives a Point of the running layout (RSA4-A1), found by the square it was a copy of and
      * the way a train on it faced (RSA5-A1): the name itself where the build still gives it to that square; otherwise the
@@ -835,6 +846,20 @@ public class AutonomySession
                 {
                     dirty = true;
                 }
+
+                // AND THE LEGS OF THE TIMETABLE THE EDIT SESSION'S FOLDS TOOK FROM THE RAILWAY (OB-343), which Cancel writes
+                // back: carried through each build of the edit as the setup's own are, so that they name the latest build's
+                // Points when Cancel comes - each one a single square's.  Carried only then, against a memory that had
+                // forgotten the builds between, a name an edit gave two stations in turn took a leg to the wrong one.
+                org.json.JSONObject taken = takenFromTheRailway == null ? null : takenFromTheRailway.get(name);
+
+                if (taken != null && taken.has("timetable"))
+                {
+                    List<NamedLeg> takenLegs = legsOf(new org.json.JSONObject().put("globals", taken));
+
+                    if (name.equals(active)) carry(takenLegs, tiles, bases, naming.edgesByName().keySet());
+                    else rename(takenLegs, tiles, bases);
+                }
             }
         }
         finally
@@ -849,6 +874,7 @@ public class AutonomySession
 
             // AND THIS BUILD'S, for the trains a rebuild puts back (RSA4-A1)
             squareOfNameNow = tiles;
+            baseOfNameNow = naming.baseNames();
             nameOfSquareNow = bases;
             facingOfNameNow = facings;
             turningNow = naming.turningNames();
@@ -2062,8 +2088,8 @@ public class AutonomySession
             // exists, it is on the page the reader is looking at, and it cannot land on somebody
             // else's track the way searching for nearby blank space can.
             //
-            // Only where the station has no caption already, like everything else here.
-            if (point.optBoolean("station", false) && captionsFor(tile).isEmpty())
+            // Only where the station has no caption on its page already, like everything else here (OB-341).
+            if (point.optBoolean("station", false) && !isCaptionedOnPage(tile, tile.getPage()))
             {
                 store.setCaption(tile, tile);
             }
@@ -3323,6 +3349,112 @@ public class AutonomySession
     }
 
     /**
+     * Whether the diagram draws the caption on this square: the one rule for it, asked by the drawing and by the setup
+     * check alike (MT-337, OB-341).
+     *
+     * A station's name is drawn once PER PAGE (Adam, 2026-10-12: *"The duplicate caption check should be per page.  It is OK
+     * to show on another page what is going on on another."*).  A caption beside the station is drawn; one on the station's
+     * own square gives way to one beside it on the SAME page, because the two would land next to each other and say the
+     * same thing twice (MT-337), and the beside one is the one somebody placed.  A caption on another page is next to
+     * nothing of the station's, and never makes it give way.
+     *
+     * **Only on a page that draws captions.**  No window draws one on a page left out of autonomy - the running diagram,
+     * a pop-up and the autonomy editor build the same grid, which hides them (`LayoutGrid.hidesStationCaptions`) - and a
+     * page this session no longer has has no grid at all.  Such a caption is not drawn.
+     *
+     * **And none for a station unnamed and switched off** (Adam, 2026-08-31: *"hide the label if empty and nothing can
+     * pass."*): an unnamed station draws a dash, the placeholder that says it wants a name, and on a square that is out of
+     * service there is nothing to name it FOR.  A named one keeps its name however it is switched, and an unnamed one in
+     * service keeps its dash.  This was the diagram's alone, and the check, which did not ask, called two captions beside
+     * such a station an error beside its automatic-name error (OB-341).
+     *
+     * Asked of the station, not of the station’s Point: a sensor with no track to it, marked a station, draws its captions
+     * all the same.
+     *
+     * @param where the square the text sits on
+     * @return false where there is no caption, where it is kept for a square that is no station now (GSE-C4), where its page
+     *         is left out or gone, where its station is unnamed and out of service, and where it is a station's own and
+     *         gives way to another caption on its page
+     */
+    public boolean isCaptionDrawn(TileKey where)
+    {
+        TileKey station = getCaptionTarget(where);
+
+        if (station == null || !onAPageThatDrawsCaptions(where) || isUnnamedAndSwitchedOff(station)) return false;
+
+        if (!station.equals(where)) return true;
+
+        for (TileKey elsewhere : captionsFor(station))
+        {
+            if (!station.equals(elsewhere) && station.getPage().equals(elsewhere.getPage())) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a station has no name of its own and is switched off.
+     *
+     * @param station the sensor’s square
+     * @return true for one the diagram draws no caption for (Adam, 2026-08-31)
+     */
+    private boolean isUnnamedAndSwitchedOff(TileKey station)
+    {
+        if (!Boolean.FALSE.equals(getPointProperty(station, "active"))) return false;
+
+        String named = store.getPointName(station);
+
+        return named == null || named.trim().isEmpty();
+    }
+
+    /**
+     * Whether the track diagram draws this square when trains run, which is where a caption can be seen.
+     *
+     * The autonomy editor shows the whole page, padding included, and puts the page object the session shares into edit
+     * mode, where its bounds are the whole page; the running diagram draws only the part its COMPONENTS cover, and a
+     * caption is not a component.  Worked out from the components alone, as the running grid does (AD-C6).
+     *
+     * @param square a square
+     * @return false for a square outside that part, or on a page this session does not have
+     */
+    public boolean isInTheDrawnArea(TileKey square)
+    {
+        LayoutDiagram page = pageOf(square);
+
+        return page != null && page.isDrawnWhenRunning(square.getX(), square.getY());
+    }
+
+    /**
+     * Whether a page this session has and autonomy uses is the page of this square, which is where a caption can be drawn.
+     *
+     * @param square a square
+     * @return false for a page that is gone or left out of autonomy
+     */
+    private boolean onAPageThatDrawsCaptions(TileKey square)
+    {
+        // Page objects that a rename or a delete has left behind cannot say a page is gone (`pagesStale`)
+        return (pagesStale || pageOf(square) != null) && !store.getExcludedPages().contains(square.getPage());
+    }
+
+    /**
+     * The squares the diagram draws a station's name on.
+     *
+     * @param station the sensor's square
+     * @return those of its captions that `isCaptionDrawn` says are, possibly none
+     */
+    public List<TileKey> drawnCaptionsFor(TileKey station)
+    {
+        List<TileKey> drawn = new ArrayList<>();
+
+        for (TileKey where : captionsFor(station))
+        {
+            if (isCaptionDrawn(where)) drawn.add(where);
+        }
+
+        return drawn;
+    }
+
+    /**
      * Shows a station's name on a square, or stops showing it.
      *
      * @param captionTile where the text goes
@@ -3330,12 +3462,17 @@ public class AutonomySession
      */
     public void setCaption(TileKey captionTile, TileKey stationTile)
     {
-        // One station, one caption - decided HERE rather than at each door.
+        // One caption per station PER PAGE - decided HERE rather than at each door.
         //
         // There are three ways to caption a station: place it automatically, choose the square
         // yourself in the autonomy editor, and now drag the square it sits on in the track diagram
         // editor.  Only the first knew to remove the old one, so choosing a new square left the
         // station named twice on the diagram and nothing said which was current.
+        //
+        // On the new square's page, and no other (Adam, 2026-10-12, ruled that the editor goes per page like the
+        // setup check): on a page where the station has no caption this ADDS one and
+        // keeps the captions on other pages, and on the same page it MOVES it, so each page shows the name at most
+        // once.
         //
         // Cleared before setting rather than after, so moving a caption onto a square that already
         // shows the same station is not a clear-then-set of the same entry.
@@ -3404,8 +3541,16 @@ public class AutonomySession
      */
     public boolean beginEditSession()
     {
+        // AND NOT THE NAMES A LAST EDIT'S CANCEL KEPT, which are that edit's - see `restoreSetup`
+        forgetTheNamesKept();
+
         // AND WHAT THE CARRY REMEMBERS, as the editor's Cancel will want it (RSA9-B2) - see `asTheEditBegan`
         asTheEditBegan = remembered();
+
+        // AND WHAT THE RAILWAY CHANGES ALONE FROM HERE, which Cancel keeps (OB-343) - see `takenFromTheRailway`
+        takenFromTheRailway = new LinkedHashMap<>();
+
+        pausesTakenFromTheRailway = new LinkedHashMap<>();
 
         return store.rememberBeforeEdit(store.snapshotSetup());
     }
@@ -3415,7 +3560,135 @@ public class AutonomySession
      */
     public boolean endEditSession()
     {
+        takenFromTheRailway = null;
+
+        pausesTakenFromTheRailway = null;
+
+        forgetTheNamesKept();
+
         return store.forgetBeforeEdit();
+    }
+
+    /**
+     * What the settings folds took from the railway while an edit session was open: configuration name, to the settings it
+     * took - the value, or JSON null where the railway stopped writing one - or null while no edit session is open
+     * (OB-343).
+     *
+     * **A fold's settings are the railway's facts, not the edit's.**  The Auto tab and the cards are live with an editor
+     * open, so a setting moved there and a train paused on its card change the railway alone, and the next in-editor rebuild
+     * folds them into the setup.  Cancel puts back the setup the editor opened with, which has none of them, and the rebuild
+     * after it then finds the railway it built unchanged - so Cancel undid what nobody had edited, whenever an edit between
+     * had replaced the railway.  `restoreSetup` writes these over what it puts back, the railway's last word on each
+     * setting, so Cancel undoes the edit and nothing else.
+     */
+    private java.util.Map<String, org.json.JSONObject> takenFromTheRailway;
+
+    /**
+     * The same for the paused trains, which are taken BY TRAIN: configuration name, to each train the railway's list gained
+     * or lost against the record of how the railway was built, and whether it is paused (OB-343).  The railway's list holds
+     * the trains the editor's own ticks paused as well as the ones a card paused, and a fold applies to the setup's list
+     * only the trains the railway gained or lost against the record, which already holds the ticks
+     * (`TrainControlUI.notePausesAsBuilt`) - so what is noted here is the cards' alone, the only trains Cancel may keep.
+     * By name, so a locomotive renamed meanwhile is followed here (`followALocomotiveName`).
+     */
+    private java.util.Map<String, java.util.Map<String, Boolean>> pausesTakenFromTheRailway;
+
+    /**
+     * Follows a locomotive's new name - or its deletion, `to` null - into the trains the edit session's folds noted (OB-343).
+     * The store has repaired the setup, its snapshot and the pre-edit note by then, and a name left here would be applied
+     * to a list that no longer holds it: a train set going by its card came out paused after Cancel, and one the card paused
+     * was lost, or a deleted locomotive's name was written back.
+     *
+     * @param from the name as it was
+     * @param to the new name, or null when the locomotive was deleted
+     */
+    public void followALocomotiveName(String from, String to)
+    {
+        if (pausesTakenFromTheRailway == null || from == null) return;
+
+        for (java.util.Map<String, Boolean> pauses : pausesTakenFromTheRailway.values())
+        {
+            Boolean paused = pauses.remove(from);
+
+            if (paused != null && to != null) pauses.put(to, paused);
+        }
+    }
+
+    /** Forgets the names of an edit's last build that Cancel put in the memory for the carry - see `keptSquares`. */
+    private void forgetTheNamesKept()
+    {
+        for (Map.Entry<String, TileKey> kept : keptSquares.entrySet())
+        {
+            squareOfNameSeen.remove(kept.getKey(), kept.getValue());
+        }
+
+        for (Map.Entry<String, String> kept : keptBases.entrySet())
+        {
+            baseOfNameSeen.remove(kept.getKey(), kept.getValue());
+        }
+
+        keptSquares.clear();
+        keptBases.clear();
+    }
+
+    /**
+     * Writes what the settings folds took from the railway since the edit session began over the setup just put back
+     * (OB-343; see `takenFromTheRailway`).
+     */
+    private void putBackWhatTheRailwayChangedAlone()
+    {
+        if (takenFromTheRailway == null) return;
+
+        for (Map.Entry<String, java.util.Map<String, Boolean>> pauses : pausesTakenFromTheRailway.entrySet())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(pauses.getKey());
+
+            if (configuration == null) continue;
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            if (globals == null)
+            {
+                globals = new org.json.JSONObject();
+
+                configuration.put("globals", globals);
+            }
+
+            Set<String> gained = new java.util.TreeSet<>();
+            Set<String> lost = new java.util.TreeSet<>();
+
+            for (Map.Entry<String, Boolean> pause : pauses.getValue().entrySet())
+            {
+                if (pause.getValue()) gained.add(pause.getKey());
+                else lost.add(pause.getKey());
+            }
+
+            applyPauses(globals, gained, lost);
+        }
+
+        for (Map.Entry<String, org.json.JSONObject> taken : takenFromTheRailway.entrySet())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(taken.getKey());
+
+            if (configuration == null) continue;
+
+            org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+            if (globals == null)
+            {
+                globals = new org.json.JSONObject();
+
+                configuration.put("globals", globals);
+            }
+
+            for (String key : taken.getValue().keySet())
+            {
+                Object value = taken.getValue().get(key);
+
+                if (org.json.JSONObject.NULL.equals(value)) globals.remove(key);
+                else globals.put(key, copyOfSetting(value));
+            }
+        }
     }
 
     /**
@@ -3493,9 +3766,47 @@ public class AutonomySession
 
         store.restoreSetup(was);
 
+        // AND WHAT THE RAILWAY CHANGED ALONE while the edit session was open stays changed (OB-343)
+        putBackWhatTheRailwayChangedAlone();
+
         // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move (RSA7-B3, RSA8-B2) - the legs
         // are the snapshot's
-        if (asTheEditBegan != null) putBack(asTheEditBegan, false);
+        //
+        // **BUT THE NAMES THE EDIT'S LAST BUILD GAVE ARE KEPT, which the memory as it was knows nothing of (OB-343).**  A
+        // timetable the railway changed alone during the edit names the Points the railway was built with - a station renamed
+        // in the editor has its new name - and what Cancel puts back names the old one.  The carry traces a name the build
+        // lacks through the names its builds have seen, so with the new name forgotten the legs naming it were dropped by the
+        // next load, and the capture after it wrote the shorter timetable over the configuration.
+        //
+        // The LAST build's names only: each is one square's, and the legs the folds took have been carried through every build
+        // before it (`carryTheNamesAcross`), so they name that build's Points.  A name the opening memory has stays as it had
+        // it - that is the move's case above - and one it has not is kept until the edit session ends (`keptSquares`), for
+        // Cancel's own fold and the load after it, and not into the next session's opening memory.
+        if (asTheEditBegan != null)
+        {
+            Map<String, TileKey> lastSquares = squareOfNameNow;
+            Map<String, String> lastBases = baseOfNameNow;
+
+            putBack(asTheEditBegan, false);
+
+            forgetTheNamesKept();
+
+            for (Map.Entry<String, TileKey> named : lastSquares.entrySet())
+            {
+                if (squareOfNameSeen.containsKey(named.getKey())) continue;
+
+                squareOfNameSeen.put(named.getKey(), named.getValue());
+                keptSquares.put(named.getKey(), named.getValue());
+            }
+
+            for (Map.Entry<String, String> named : lastBases.entrySet())
+            {
+                if (baseOfNameSeen.containsKey(named.getKey())) continue;
+
+                baseOfNameSeen.put(named.getKey(), named.getValue());
+                keptBases.put(named.getKey(), named.getValue());
+            }
+        }
 
         asTheEditBegan = null;
 
@@ -3732,8 +4043,8 @@ public class AutonomySession
 
         store.setCaption(from, null);
 
-        // Through setCaption, so anything already captioning that station elsewhere - including
-        // whatever was on the destination square - goes with it.
+        // Through setCaption, so anything already captioning that station elsewhere on the destination's page -
+        // including whatever was on the destination square - goes with it, and its captions on other pages stay.
         setCaption(to, station);
 
         return true;
@@ -3776,7 +4087,7 @@ public class AutonomySession
 
         if (name == null || name.trim().isEmpty()) return "autosetup.ui.labelNotNamedYet";
 
-        // A station already shown somewhere is MOVED, not refused.
+        // A station already shown somewhere on this page is MOVED, not refused.
         //
         // Asking to show a name is asking for it to be here, and answering "it is already somewhere"
         // left the user to find and delete the old one first - or, once imports began captioning every
@@ -3784,7 +4095,7 @@ public class AutonomySession
         //
         // The old ones are cleared further down, once somewhere new has actually been found, so a
         // station with nowhere to go keeps the caption it had rather than losing it to a move that
-        // then failed.
+        // then failed.  Only the ones on this page: its captions on other pages stay (OB-341).
 
         LayoutDiagram page = pageOf(tile);
 
@@ -3839,8 +4150,8 @@ public class AutonomySession
             // station against an edge had its caption filed one square outside the drawn area - shown
             // in the editor, which pads the grid, and never shown on the diagram, while the "not shown
             // anywhere" warning went quiet because a caption did exist.
-            if (at.getX() < page.getMinx() || at.getY() < page.getMiny()) continue;
-            if (at.getX() > page.getMaxx() || at.getY() > page.getMaxy()) continue;
+            // Worked out from the components, not read from the page: in edit mode its bounds are the whole page (AD-C6)
+            if (!page.isDrawnWhenRunning(at.getX(), at.getY())) continue;
 
             if (page.getComponent(at.getX(), at.getY()) != null) continue;
 
@@ -3864,21 +4175,42 @@ public class AutonomySession
     }
 
     /**
-     * Forgets wherever this station was being shown, so that placing it again leaves exactly one.
+     * Forgets wherever this station was being shown on a page, so that placing it again leaves exactly one there.
+     *
+     * Only the captions on the page of the square being captioned: a station is shown at most once per page, and may be
+     * shown on several (Adam, 2026-10-12, ruling that the editor goes per page too), so its captions on other pages stay.
      *
      * Called only once somewhere new has been found: clearing first and then failing to place would
      * answer "show this name" by removing the name that was there.
      *
-     * @param station
+     * @param station the sensor's square
+     * @param except the square the name is now to be shown on, whose page is the one cleared
      */
     private void clearCaptions(TileKey station, TileKey except)
     {
         for (TileKey where : new LinkedHashSet<>(captionsFor(station)))
         {
-            if (where.equals(except)) continue;
+            if (where.equals(except) || !where.getPage().equals(except.getPage())) continue;
 
             store.setCaption(where, null);
         }
+    }
+
+    /**
+     * Whether a station is shown on a square of this page.
+     *
+     * @param station the sensor's square
+     * @param page the page's name
+     * @return true when one of its captions sits on that page
+     */
+    private boolean isCaptionedOnPage(TileKey station, String page)
+    {
+        for (TileKey where : captionsFor(station))
+        {
+            if (where.getPage().equals(page)) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -4008,13 +4340,14 @@ public class AutonomySession
 
                 if (station != null)
                 {
-                    // ONE STATION, ONE CAPTION, AS AT EVERY OTHER DOOR (OB-256).  `setCaption` takes a station's caption
-                    // off wherever it was, and the old-file import captions a station only where it has none; this wrote
-                    // through the store's own door, which does neither, so a station the setup already showed somewhere
-                    // gained a second caption on the label's square.  The setup's caption is the one somebody chose, so it
-                    // stays - and the label still leaves the page below: it names a station the setup already shows, and
-                    // left there it would be found again at every open.
-                    if (store.captionsFor(station).isEmpty()) store.setCaption(where, station);
+                    // ONE CAPTION PER STATION PER PAGE, AS AT EVERY OTHER DOOR (OB-256, OB-341).  `setCaption` takes a
+                    // station's caption off wherever it was on that page, and the old-file import captions a station only
+                    // where it has none there; this wrote through the store's own door, which does neither, so a station
+                    // the setup already showed on the page gained a second caption on the label's square.  The setup's
+                    // caption is the one somebody chose, so it stays - and the label still leaves the page below: it
+                    // names a station the setup already shows there, and left there it would be found again at every
+                    // open.  A label on another page than the station's caption is that page's: it becomes one there.
+                    if (!isCaptionedOnPage(station, where.getPage())) store.setCaption(where, station);
 
                     migrated = true;
 
@@ -6477,7 +6810,21 @@ public class AutonomySession
      */
     public void captureFromLayout(String layoutJson, String configurationName)
     {
-        capture(layoutJson, configurationName, false);
+        capture(layoutJson, configurationName, false, null);
+    }
+
+    /**
+     * The same, bringing the window's record of how the railway was built up to date (OB-343): the fold writes every
+     * setting the railway has into the setup, so the two then agree about all of them, and the record - what they last
+     * agreed on - is the railway's settings as they stand.  See `captureTheRailwaysSettings` for why it matters.
+     *
+     * @param layoutJson what the running Layout serialized to
+     * @param configurationName which configuration this layout's state belongs to
+     * @param asBuilt the railway's settings as it was built, changed in place to what the fold wrote; or null
+     */
+    public void captureFromLayout(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
+    {
+        capture(layoutJson, configurationName, false, asBuilt);
     }
 
     /**
@@ -6487,8 +6834,9 @@ public class AutonomySession
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
      * @param placementsOnly whether to write where the trains stand and nothing else
+     * @param asBuilt the railway's settings as it was built, changed in place to the settings written; or null
      */
-    private void capture(String layoutJson, String configurationName, boolean placementsOnly)
+    private void capture(String layoutJson, String configurationName, boolean placementsOnly, org.json.JSONObject asBuilt)
     {
         if (layoutJson == null || reducer == null || configurationName == null) return;
 
@@ -6789,7 +7137,18 @@ public class AutonomySession
         }
 
         // and the top of the file: pace, speeds, and the rest of the settings panel
-        configuration.put("globals", globalsOf(root));
+        org.json.JSONObject globals = globalsOf(root);
+
+        configuration.put("globals", globals);
+
+        // AND THE RECORD OF HOW THE RAILWAY WAS BUILT IS THEN THE RAILWAY'S SETTINGS (OB-343): every one was just written
+        // into the setup, so the two agree about all of them.  See `captureTheRailwaysSettings`.
+        if (asBuilt != null)
+        {
+            for (String key : new ArrayList<>(asBuilt.keySet())) asBuilt.remove(key);
+
+            for (String key : globals.keySet()) asBuilt.put(key, copyOfSetting(globals.get(key)));
+        }
 
         dirty = true;
     }
@@ -6822,7 +7181,7 @@ public class AutonomySession
      */
     public void captureWhatTheRailwayOwns(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
     {
-        capture(layoutJson, configurationName, true);
+        capture(layoutJson, configurationName, true, null);
 
         captureTheRailwaysSettings(layoutJson, configurationName, asBuilt);
     }
@@ -6836,9 +7195,28 @@ public class AutonomySession
      * setup's own - a timetable put in place, a routing choice - and fold-everything wrote the railway's older value over
      * it.  A setting the railway has not touched is the setup's to say.
      *
+     * **And the record of how it was built is brought up to date with what is taken (OB-343).**  It is what the railway
+     * and the setup last agreed on, and a setting taken here is the railway's and the setup's both.  Left as it was, a fold
+     * that no rebuild follows - the editor opening, a load the build declined - left the record behind: a train the railway
+     * paused, taken into the setup, then set going again on its card, read to the next fold as the railway unchanged from
+     * how it was built, the setup's older answer stood, and the rebuild paused the train again.  A rebuild builds the record
+     * again, so it matters only where none follows; and it holds for every setting alike, not only the paused trains.  A
+     * door that may put the setup back after a fold keeps the record beside its snapshot of the setup and puts it back with
+     * it (`TrainControlUI.noteSettingsAsBuilt`; the old-file import): the record must never say the setup has what a
+     * rollback took away.  An edit session's Cancel is the other way round: what a fold takes is the railway's, and Cancel
+     * keeps it (`beginEditSession`).
+     *
+     * **The paused trains are taken BY TRAIN (OB-343), in every fold.**  The railway's list holds the trains a card paused
+     * and the trains a tick paused, the tick having written the record as well as the setup; what the railway has against
+     * the record is the cards' alone.  So the trains it gained or lost against the record are applied to the setup's own
+     * list, and the list is never replaced: a replaced list put a tick the editor had made - or the setup's own pause of a
+     * train - back where Cancel had taken it from, whenever a card's change was taken with it.  With no record, every one of
+     * the railway's is taken, and the list is the railway's.
+     *
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
-     * @param asBuilt the railway's settings as it was built, or null to take every one of them
+     * @param asBuilt the railway's settings as it was built, or null to take every one of them; changed in place to the
+     *        settings taken
      */
     public void captureTheRailwaysSettings(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
     {
@@ -6870,20 +7248,159 @@ public class AutonomySession
             // before it, and the editor's on opening, have taken the run's timetable already.
             if ((pagesStale || squaresMoved) && "timetable".equals(key)) continue;
 
-            globals.put(key, now.get(key));
+            if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
+            {
+                // BY TRAIN, against the record before the record follows (OB-343)
+                takePausesByTrain(configurationName, globals, asBuilt == null ? null : asBuilt.opt(key), now.get(key),
+                    asBuilt == null);
+            }
+            else
+            {
+                globals.put(key, now.get(key));
+
+                // what an edit session's Cancel keeps (OB-343)
+                takenFromTheRailway(configurationName, key, now.get(key));
+            }
+
+            // the railway's and the setup's both now: the record follows (OB-343)
+            if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
         }
 
         // AND ONE THE RAILWAY STOPPED WRITING (RSA21-C1): Simulate and the sequential flag are written only while on, so
         // turning one off left no key to compare - and the setup kept it on
         if (asBuilt != null)
         {
-            for (String key : asBuilt.keySet())
+            for (String key : new ArrayList<>(asBuilt.keySet()))
             {
-                if (!now.has(key)) globals.remove(key);
+                if (now.has(key)) continue;
+
+                if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
+                {
+                    // nobody paused any more: every train the record had is a loss (OB-343)
+                    takePausesByTrain(configurationName, globals, asBuilt.opt(key), org.json.JSONObject.NULL, false);
+                }
+                else
+                {
+                    globals.remove(key);
+
+                    takenFromTheRailway(configurationName, key, org.json.JSONObject.NULL);
+                }
+
+                asBuilt.remove(key);
             }
         }
 
         dirty = true;
+    }
+
+    /**
+     * Takes the railway's paused trains into the setup's list BY TRAIN: those it gained against the record added, those it
+     * lost taken off, and the rest of the list as it was (OB-343; see `captureTheRailwaysSettings`).
+     *
+     * @param configurationName the configuration folded into
+     * @param globals its settings
+     * @param recorded the record's list of the paused, or null where there is no record
+     * @param value the railway's list, or JSON null where it pauses nobody
+     * @param wholesale whether there is no record, so that the list is the railway's own
+     */
+    private void takePausesByTrain(String configurationName, org.json.JSONObject globals, Object recorded, Object value,
+        boolean wholesale)
+    {
+        Set<String> before = namesIn(recorded);
+        Set<String> after = namesIn(value);
+
+        Set<String> gained = new java.util.TreeSet<>(after);
+        Set<String> lost = new java.util.TreeSet<>(before);
+
+        gained.removeAll(before);
+        lost.removeAll(after);
+
+        if (wholesale) putPausedNames(globals, after);
+        else applyPauses(globals, gained, lost);
+
+        if (pausesTakenFromTheRailway == null) return;
+
+        java.util.Map<String, Boolean> pauses = pausesTakenFromTheRailway.get(configurationName);
+
+        if (pauses == null)
+        {
+            pauses = new java.util.TreeMap<>();
+
+            pausesTakenFromTheRailway.put(configurationName, pauses);
+        }
+
+        for (String name : gained) pauses.put(name, Boolean.TRUE);
+
+        for (String name : lost) pauses.put(name, Boolean.FALSE);
+    }
+
+    /** The setup's list of the paused with these trains added and those taken off. */
+    private static void applyPauses(org.json.JSONObject globals, Set<String> gained, Set<String> lost)
+    {
+        Set<String> names = namesIn(globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+
+        names.addAll(gained);
+        names.removeAll(lost);
+
+        putPausedNames(globals, names);
+    }
+
+    /** The setup's list of the paused, as the railway writes it: sorted, and not at all while it names nobody. */
+    private static void putPausedNames(org.json.JSONObject globals, Set<String> names)
+    {
+        if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
+    }
+
+    /**
+     * Notes a setting a fold took from the railway while an edit session is open (see `takenFromTheRailway`).
+     *
+     * @param configurationName the configuration folded into
+     * @param key the setting
+     * @param value the railway's value, or JSON null where it stopped writing one
+     */
+    private void takenFromTheRailway(String configurationName, String key, Object value)
+    {
+        if (takenFromTheRailway == null) return;
+
+        value = copyOfSetting(value);
+
+        org.json.JSONObject taken = takenFromTheRailway.get(configurationName);
+
+        if (taken == null)
+        {
+            taken = new org.json.JSONObject();
+
+            takenFromTheRailway.put(configurationName, taken);
+        }
+
+        taken.put(key, value);
+    }
+
+    /** The names in a list of trains as the setup keeps it, sorted; none for anything else. */
+    private static Set<String> namesIn(Object list)
+    {
+        Set<String> names = new java.util.TreeSet<>();
+
+        if (list instanceof org.json.JSONArray)
+        {
+            for (Object name : (org.json.JSONArray) list)
+            {
+                if (name instanceof String) names.add((String) name);
+            }
+        }
+
+        return names;
+    }
+
+    /** A setting's value as a copy, so the record of how the railway was built never shares an array with the setup's. */
+    private static Object copyOfSetting(Object value)
+    {
+        if (value instanceof org.json.JSONObject) return new org.json.JSONObject(value.toString());
+
+        if (value instanceof org.json.JSONArray) return new org.json.JSONArray(value.toString());
+
+        return value;
     }
 
     /** Whether two values of a setting are the same, as the railway writes them. */
@@ -7067,13 +7584,32 @@ public class AutonomySession
     {
         if (name == null) return false;
 
-        java.util.Set<String> names = getPausedLocomotives();
+        return setLocomotivesPaused(java.util.Collections.singletonList(name), paused);
+    }
 
-        if (paused) names.add(name);
-        else names.remove(name);
+    /**
+     * Records several trains paused, or set going, in the active configuration, and saves it ONCE (FR-126).  The record
+     * `setLocomotivePaused` keeps for one train, written for the bulk tools' many in a single save.
+     *
+     * @param names the trains
+     * @param paused whether they are paused
+     * @return whether there was a configuration to write it to
+     * @throws IOException if the setup cannot be written
+     */
+    public boolean setLocomotivesPaused(java.util.Collection<String> names, boolean paused) throws IOException
+    {
+        java.util.Set<String> listed = getPausedLocomotives();
+
+        for (String name : names)
+        {
+            if (name == null) continue;
+
+            if (paused) listed.add(name);
+            else listed.remove(name);
+        }
 
         return setGlobal(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
-            names.isEmpty() ? null : new org.json.JSONArray(names));
+            listed.isEmpty() ? null : new org.json.JSONArray(listed));
     }
 
     /**
@@ -7088,9 +7624,31 @@ public class AutonomySession
     {
         if (train == null) return;
 
-        train.setAutonomyPaused(!active);
+        setTrainsActive(java.util.Collections.singletonList(train), active);
+    }
 
-        setLocomotivePaused(train.getName(), !active);
+    /**
+     * Pauses every one of these trains or sets every one going (FR-126), as `setActive` does for one: each train itself,
+     * and this configuration's record of them all, saved once.  The model call is the same, `setAutonomyPaused`, per train.
+     *
+     * @param trains the trains
+     * @param active whether autonomy may run them
+     * @throws IOException if the setup cannot be written
+     */
+    public void setTrainsActive(java.util.Collection<Locomotive> trains, boolean active) throws IOException
+    {
+        java.util.List<String> names = new java.util.ArrayList<>();
+
+        for (Locomotive train : trains)
+        {
+            if (train == null) continue;
+
+            train.setAutonomyPaused(!active);
+
+            names.add(train.getName());
+        }
+
+        setLocomotivesPaused(names, !active);
     }
 
     /**
@@ -7701,12 +8259,11 @@ public class AutonomySession
         // every one of them is already on the list.
         Map<TileKey, Set<Side>> trapped = tilesWithATrappedArrival(inspected, namesForInspection, arrivalsForInspection);
 
-        // Captions the user’s own writing is sitting on top of.
+        // Captions the user’s own writing is sitting under.
         //
-        // The square belongs to the diagram - it is their drawing before it is autonomy’s data - so
-        // the text wins the square and the caption is the one that goes quiet.  Worth saying rather than
-        // silently losing: a station that looks captioned and shows nothing is exactly the puzzle this
-        // whole rework exists to stop.
+        // The grid draws the caption and hides the text (MT-017): it always has, and the editor asks before it puts a
+        // caption over text, naming the text.  Worth saying rather than silently losing: text that looks written and
+        // shows nothing is exactly the puzzle this whole rework exists to stop.
         Map<TileKey, TileKey> covered = new LinkedHashMap<>();
 
         for (Map.Entry<TileKey, TileKey> caption : store.getCaptions().entrySet())
@@ -7783,6 +8340,9 @@ public class AutonomySession
 
         found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, endsOfLines));
 
+        // AND A STATION WHOSE NAME IS DRAWN IN MORE THAN ONE PLACE, which no door of the editor makes (OB-341)
+        found.addAll(AutonomyChecks.checkStationsNamedTwice(stationsShownMoreThanOnce()));
+
         // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
         // turn there said "may" where the error says "must", and "may" then drew a notice saying "must"
         found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
@@ -7791,6 +8351,64 @@ public class AutonomySession
         AutonomyChecks.bySeverity(found);
 
         return found;
+    }
+
+    /**
+     * Every station whose name the track diagram draws in more than one place, against the squares it draws it on (OB-341).
+     *
+     * What counts is what is DRAWN (`drawnCaptionsFor`, the rule the diagram uses), and PER PAGE (Adam, 2026-10-12: *"The
+     * duplicate caption check should be per page.  It is OK to show on another page what is going on on another."*): a
+     * station captioned on its own square and beside it is drawn once, the beside one, so it is not here; one beside it on
+     * each of two pages is not here either; two captions beside it on one page are two names on that page, and are, the
+     * finding naming those squares and not a lone caption on another page.  Every door of the editor keeps one station to
+     * one caption (OB-256), so what this finds came in past them: a setup file edited by hand, or written by an older
+     * version.
+     *
+     * Stale state is not counted: a caption kept for a square that is no station now is not drawn (GSE-C4), nor is one on a
+     * page that is gone or left out of autonomy, nor one of a station unnamed and out of service.  A station that is no
+     * Point is counted, since the diagram draws its captions all the same (OB-341).  In reading order, so the sentence and
+     * the list do not change from one load of the file to the next.
+     *
+     * @return each such station's square, to the squares of the pages that draw its name more than once
+     */
+    private Map<TileKey, List<TileKey>> stationsShownMoreThanOnce()
+    {
+        java.util.Comparator<TileKey> readingOrder = java.util.Comparator.comparing(TileKey::getPage)
+            .thenComparingInt(TileKey::getY).thenComparingInt(TileKey::getX);
+
+        List<TileKey> stations = new ArrayList<>(new LinkedHashSet<>(store.getCaptions().values()));
+
+        stations.sort(readingOrder);
+
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        for (TileKey station : stations)
+        {
+            // Drawn is drawn: a station the railway built no Point for, on a sensor with no track or on a page left out, has its
+            // captions drawn all the same (OB-341).  `drawnCaptionsFor` is empty for a square that is no station.
+            // The drawn squares of each page, and the pages that draw the name more than once
+            Map<String, List<TileKey>> onPage = new LinkedHashMap<>();
+
+            for (TileKey square : drawnCaptionsFor(station))
+            {
+                onPage.computeIfAbsent(square.getPage(), k -> new ArrayList<>()).add(square);
+            }
+
+            List<TileKey> twice = new ArrayList<>();
+
+            for (List<TileKey> squares : onPage.values())
+            {
+                if (squares.size() > 1) twice.addAll(squares);
+            }
+
+            if (twice.isEmpty()) continue;
+
+            twice.sort(readingOrder);
+
+            out.put(station, twice);
+        }
+
+        return out;
     }
 
     /**

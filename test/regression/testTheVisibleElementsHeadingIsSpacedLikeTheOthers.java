@@ -30,6 +30,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * In both editors, because the plain one is where the column is right, and it has to stay right.
  *
+ * And the column is all there at the window's smallest size (OB-342): the floor's height shows its last control, and a
+ * status line that does not ask the window for its sentence's width keeps the column on the screen.
+ *
  * MUTATION: leave the gap showing when Text Labels is hidden, and the autonomy claim fails.
  *
  * @author Adam
@@ -143,6 +146,224 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         assertEquals(sizes.size(), 1, "the checkboxes under Visible Elements are not evenly spaced (OB-312) - track"
             + " editor " + track + ", autonomy editor " + autonomy);
+    }
+
+    /**
+     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342; Adam,
+     * 2026-10-12: *"It looks like the min height of the autonomy editor window needs to be a few more pixels taller"*).
+     *
+     * HEIGHT: at Small the window would shrink to 680 pixels and the column of tools needs 693 to show Cancel, the last
+     * control in it, and the status line under the findings (measured at 125%, the display this was built on).
+     *
+     * WIDTH: the status line is a label whose words are data, and its minimum width was its text's: 521 pixels in English
+     * and 655 in German, so the window's layout would not go below 839 and 1004 with the sidebar and the whole tools column
+     * went off the right edge at the smallest width, which is 700 at Small and 806 at Medium.  So the sentence here is one
+     * longer than any language's, put into the line, and the claim does not depend on the words of the railway it is asked
+     * about.
+     *
+     * SCALE (OB-342): the floor was in pixels and the window is not - at 150% the column needs 17 pixels more than at 125%
+     * and the floor did not move, so Cancel and the status line were cut off again.  Asked at 100%, 125% and 150%, which
+     * `TrainControlUI` sets from the display as dpi / 96 (`flatlaf.uiScale`, read when the look and feel is installed): here
+     * the property is set and the look and feel installed again, and put back at the end.
+     *
+     * Asked at each of the three diagram sizes (Small, Medium, Large: the floor grows with the size), of every control
+     * outside the scroll panes.
+     *
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` in `LayoutEditor` back to 50, take out the floor the window's own layout asks for
+     * in `sizeForDiagram`, or give the status line in `AutonomyEditorPanel` its text's width as its minimum again, and this
+     * fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheAutonomyEditorShowsEveryControlAtItsSmallestSize() throws Exception
+    {
+        assertNothingIsCutOffAtTheSmallestSize(true);
+    }
+
+    /**
+     * And the track diagram editor, which has the same floor: its Cancel button was cut off by up to 25 pixels (OB-342).
+     *
+     * MUTATION: put `EXTRA_MINIMUM_HEIGHT` back to 50, or take out the floor the window's own layout asks for in
+     * `sizeForDiagram`, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheTrackEditorShowsEveryControlAtItsSmallestSize() throws Exception
+    {
+        assertNothingIsCutOffAtTheSmallestSize(false);
+    }
+
+    /** A status sentence longer than any language's: 521 pixels is English and 655 German, and this is over 900 */
+    private static final String A_STATUS_LONGER_THAN_ANY_LANGUAGES = "This setup will run, with warnings.  13 of 33 stations"
+        + " can be chosen in full autonomy, and the others are held back for reasons that the findings above give one at a time.";
+
+    private static void assertNothingIsCutOffAtTheSmallestSize(boolean autonomy) throws Exception
+    {
+        int examined = 0;
+
+        String was = System.getProperty("flatlaf.uiScale");
+
+        try
+        {
+            // 100%, 125% and 150% - where the floor, in pixels, was short (OB-342)
+            for (String scale : new String[] {"1.0", "1.25", "1.5"})
+            {
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    System.setProperty("flatlaf.uiScale", scale);
+
+                    com.formdev.flatlaf.FlatLightLaf.setup();
+                });
+
+                assertEquals(com.formdev.flatlaf.util.UIScale.getUserScaleFactor(), Float.parseFloat(scale), 0.001f,
+                    "precondition: the interface did not take the scale " + scale + ", so nothing is asked of it");
+
+                for (int size : new int[] {30, 46, 60})
+                {
+                    int[] floor = new int[2];
+
+                    java.util.List<String> cut = cutOffAtTheSmallestSize(autonomy, size, floor);
+
+                    // A floor the screen holds down cannot be raised, and says nothing about the floor
+                    if (cut == null) continue;
+
+                    examined++;
+
+                    assertTrue(cut.isEmpty(), "at its smallest size - " + floor[0] + " by " + floor[1] + " pixels, at diagram"
+                        + " size " + size + " and an interface scaled to " + scale + " - the " + (autonomy ? "autonomy"
+                        : "track diagram") + " editor cuts off controls, and nothing in the window can bring them back (OB-342"
+                        + (autonomy ? ", \"the min height of the autonomy editor window needs to be a few more pixels taller\""
+                        : ", the same floor") + "): " + cut);
+                }
+            }
+        }
+        finally
+        {
+            // The scale the run began with, for the claims after this one
+            SwingUtilities.invokeAndWait(() ->
+            {
+                if (was == null) System.clearProperty("flatlaf.uiScale");
+                else System.setProperty("flatlaf.uiScale", was);
+
+                com.formdev.flatlaf.FlatLightLaf.setup();
+            });
+        }
+
+        if (examined == 0) throw new SkipException("the screen is too small for the editor's smallest size at any diagram size");
+    }
+
+    /**
+     * What an editor's window cuts off of its controls once it is shrunk to its smallest size, each as "Cancel: 13 of 23
+     * pixels high"; null where the screen, not the editor's own floor, is what held the floor down.
+     *
+     * @param floor receives the smallest width and height the window allowed
+     */
+    private static java.util.List<String> cutOffAtTheSmallestSize(final boolean autonomy, final int size, final int[] floor)
+    throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+        final java.util.List<String> out = new java.util.ArrayList<>();
+        final boolean[] heldDown = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, size, ui, 0);
+            built[0].render();
+            if (autonomy) built[0].setAutonomyMode(session);
+        });
+
+        try
+        {
+            for (int pass = 0; pass < 6; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    LayoutEditor editor = built[0];
+
+                    // The words are the railway's and the language's; the window is asked about the longest there could be
+                    if (autonomy) editor.getAutonomyPanel().getBanner().setText(A_STATUS_LONGER_THAN_ANY_LANGUAGES);
+
+                    java.awt.GraphicsConfiguration screen = editor.getGraphicsConfiguration();
+
+                    java.awt.Insets taskbar = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(screen);
+
+                    floor[0] = editor.getMinimumSize().width;
+                    floor[1] = editor.getMinimumSize().height;
+
+                    heldDown[0] = floor[0] >= screen.getBounds().width - taskbar.left - taskbar.right
+                        || floor[1] >= screen.getBounds().height - taskbar.top - taskbar.bottom;
+
+                    editor.setSize(editor.getMinimumSize());
+
+                    editor.validate();
+
+                    if (!((javax.swing.JButton) field(editor, "cancelButton")).isShowing())
+                    {
+                        out.add("precondition: Cancel is not showing, so nothing is asked of the controls");
+                    }
+
+                    cutOff(editor.getRootPane(), out);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+        }
+
+        return heldDown[0] ? null : out;
+    }
+
+    /**
+     * Every control showing under a container, outside the scroll panes, that its ancestors clip - the window's edge among
+     * them - with how much of it is missing.
+     */
+    private static void cutOff(Container in, java.util.List<String> out)
+    {
+        for (Component child : in.getComponents())
+        {
+            if (!child.isShowing()) continue;
+
+            String text = child instanceof AbstractButton ? ((AbstractButton) child).getText()
+                : child instanceof JLabel ? ((JLabel) child).getText() : null;
+
+            boolean control = child instanceof AbstractButton || child instanceof JComboBox
+                || (child instanceof JLabel && text != null && !text.isEmpty());
+
+            if (control && child instanceof javax.swing.JComponent)
+            {
+                javax.swing.JComponent each = (javax.swing.JComponent) child;
+
+                java.awt.Rectangle shown = each.getVisibleRect();
+
+                int high = each.getHeight() - shown.height;
+                int wide = each.getWidth() - shown.width;
+
+                if (high > 0 || wide > 0)
+                {
+                    out.add(child.getClass().getSimpleName() + (text == null ? "" : " '"
+                        + (text.length() > 30 ? text.substring(0, 30) + "..." : text) + "'") + ": "
+                        + (high > 0 ? high + " of " + each.getHeight() + " pixels high" : "")
+                        + (high > 0 && wide > 0 ? ", " : "")
+                        + (wide > 0 ? wide + " of " + each.getWidth() + " pixels wide" : ""));
+                }
+            }
+
+            // The controls inside a control are its own, and a scroll pane has a way to reach what it holds
+            if (child instanceof Container && !(child instanceof AbstractButton) && !(child instanceof JComboBox)
+                && !(child instanceof javax.swing.JScrollPane))
+            {
+                cutOff((Container) child, out);
+            }
+        }
     }
 
     /**

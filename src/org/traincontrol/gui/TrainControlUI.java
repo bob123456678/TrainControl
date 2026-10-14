@@ -137,6 +137,8 @@ import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 import org.traincontrol.util.Util;
+import org.traincontrol.util.JarUpdater;
+import org.traincontrol.util.SelfUpdate;
 
 /**
  * UI for controlling trains and switches using the keyboard
@@ -171,6 +173,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static String UPDATE_URL = "https://github.com/bob123456678/TrainControl/releases";
     public static String LATEST_VERSION = "";
     public static String LATEST_DOWNLOAD_URL = "";
+
+    // The release download's size and digest, where the release gives them, so Download & Update can tell a whole
+    // download from one cut short before anything is replaced with it (FR-125)
+    public static long LATEST_DOWNLOAD_SIZE = -1;
+    public static String LATEST_DOWNLOAD_DIGEST = null;
     
     // Preferences fields
     public static final String IP_PREF = "initIP" + Conversion.getFolderHash(10);
@@ -311,6 +318,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String LAYOUT_SHOW_ADDRESSES = "LayoutShowAddresses";
     public static final String TABS_SETTING_PREF = "MappingTabs";
 
+    /** FR-128: whether the line over the locomotive's name has the page's number before the page's name.  Off until asked for. */
+    public static final String SHOW_PAGE_NUMBERS = "ShowPageNumbers";
+
     // Preference defaults
     public static final boolean ONTOP_SETTING_DEFAULT = true; // This is needed because this setting is read at startup
     
@@ -428,6 +438,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private javax.swing.JCheckBoxMenuItem greyStationLabelsMenuItem;
 
+    /**
+     * The Preferences menu's Locomotive submenu's switch for the page number before the page name on the line over the
+     * locomotive's name (FR-128).  Built by hand - see where.
+     */
+    private javax.swing.JCheckBoxMenuItem showPageNumbersMenuItem;
+
     /** FR-037: whether the ordinary diagram draws one-way arrows. */
     private javax.swing.JCheckBoxMenuItem restrictionArrowsMenuItem;
     private javax.swing.JCheckBoxMenuItem allowedDirectionsMenuItem;
@@ -452,6 +468,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // second press started a second worker, which borrowed the first one's staging plan as though it
     // were the operator's timetable and restored it as such.  That loses the real one.
     private volatile boolean stagingFlowActive = false;
+
+    /**
+     * Download & Update from its question to the exit (FR-125): one at a time, and the update the exit is to start.
+     * Armed by `closeForTheUpdate` just before it asks for the exit, disarmed whatever the exit does, and taken by
+     * `WindowClosed` once everything is saved and nothing can refuse the exit any more.
+     */
+    private final SelfUpdate.HandOver updateHandOver = new SelfUpdate.HandOver();
     
     // Graph viewer instance
     
@@ -463,6 +486,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     // Page where the current button was selected
     private int currentButtonlocMappingNumber;
+
+    // The line over the active locomotive's name, drawn as a keycap and two pills (FR-128).  Sits inside CurrentKeyLabel,
+    // which stays the slot it always was.
+    private CurrentKeyRow currentKeyRow;
     
     private final HashMap<Integer, javax.swing.JButton> buttonMapping;
     private final HashMap<javax.swing.JButton, JTextField> labelMapping;
@@ -1001,9 +1028,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // instantiated; `init` asks as well, for the case where no window is built at all.
         initComponents();
 
+        installCurrentKeyRow();
+
+        installShowPageNumbersMenuItem();
+
         // THE WINDOWS IT OPENS FOLLOW ITS ALWAYS-ON-TOP (the popups sweep, on Adam's MT-703 note)
         this.addPropertyChangeListener("alwaysOnTop", change ->
             childWindowsFollowAlwaysOnTop(Boolean.TRUE.equals(change.getNewValue())));
+
+        // THE LOCOMOTIVE COMMANDS TAB IS SORTED WHEN IT IS OPENED (FR-126; Adam: "Upon opening the locomotive autonomy
+        // commands tab, re-sort them to show active first, then inactive, then ones on inactive stations").  Opened from
+        // another tab of the Auto tab here; opened by coming to the Auto tab is `KeyboardTabStateChanged`.  A card's pause
+        // button changes no selection and so sorts nothing: the card stays under the pointer.
+        this.locCommandPanels.addChangeListener(change -> sortTheCommandsTabIfShown());
 
         // THE LOG IS SOMETHING TO READ (Adam, MT-362).
         //
@@ -1365,6 +1402,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Layout.PATH_INTEGRITY_VALIDATION = this.enhancedPathValidationMenuItemCheckbox.isSelected();
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
         this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
+
+        // OFF until asked for (FR-128): the page's name alone, as it was before the number was on it - above the locomotive's
+        // name, on the page tabs and on the page label by the arrows
+        this.showPageNumbersMenuItem.setSelected(prefs.getBoolean(SHOW_PAGE_NUMBERS, false));
 
         // The station-caption colour, and the menu item that sets it (FR-031).
         //
@@ -1761,15 +1802,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 JLabel existing = i.next();
 
-                // NOT ONE OF THIS BUILD'S OWN (RSA40-C1): a station captioned on two squares - a long platform labelled
-                // at both ends - registers two labels in one build, neither on screen yet, and the second evicted the
-                // first, which was then never written
+                // NOT ONE OF THIS BUILD'S OWN (RSA40-C1): a station named on two squares - the editor never does, a setup
+                // edited by hand can, and the setup check calls it an error (OB-341) - registers two labels in one build,
+                // neither on screen yet, and the second evicted the first, which was then never written
                 Object build = value.getClientProperty(LAYOUT_STATION_BUILD);
 
                 if (build != null && build == existing.getClientProperty(LAYOUT_STATION_BUILD)) continue;
 
+                // AND ONLY ONE OF THE SAME PAGE (OB-341).  The map is keyed by the STATION's square, and a caption may
+                // sit on another page than its station (Adam, 2026-10-12: *"It is OK to show on another page what is
+                // going on on another"*), so two pages' captions of a station share a key and an owner.  The main
+                // window builds every page into one panel and keeps the detached ones in its page cache, so a later
+                // page's build let go of an earlier page's label that is detached and alive - and that page, back from
+                // the cache, was written never again.
                 if (existing != value && !existing.isDisplayable()
-                    && owner == existing.getClientProperty(LAYOUT_STATION_OWNER))
+                    && owner == existing.getClientProperty(LAYOUT_STATION_OWNER)
+                    && java.util.Objects.equals(existing.getClientProperty(LAYOUT_STATION_PAGE),
+                        value.getClientProperty(LAYOUT_STATION_PAGE)))
                 {
                     i.remove();
                 }
@@ -1792,6 +1841,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * registers each caption; a client property for the reason `LAYOUT_STATION_OWNER` is one.
      */
     public static final String LAYOUT_STATION_BUILD = "tcLayoutStationBuild";
+
+    /**
+     * The page a caption label is drawn on (OB-341).  Set by the grid as it registers each caption, beside
+     * `LAYOUT_STATION_BUILD`; a label with none is of no page in particular, and takes another such label's place as
+     * before.
+     */
+    public static final String LAYOUT_STATION_PAGE = "tcLayoutStationPage";
     
     /**
      * How many locomotive mapping pages there are.
@@ -1950,29 +2006,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * This javadoc sat above `getNumLocMappings`, which is not what it describes, and was orphaned outright
      * when a method was inserted beside it (SVB-C4).  Reattached to the method it was written for.
      *
+     * Worded by `CurrentKeyRow.pageWords`, the one rule the line over the locomotive's name and the page label follow too
+     * (FR-128, round 7): "Page 5" for a page with no name, the name for a page with one, and "5. " in front of the name when
+     * Preferences > Locomotive Control > Show Page Numbers is ticked.  Only the NAME is cut, to `MAX_PAGE_NAME_LENGTH_TAB`
+     * letters; the "Page 5" and the "5. " never are.
+     *
      * @param tabNumber the page, counting from 1
      * @return what to write on the tab
      */
     private String getLocMappingPageTabTitle(int tabNumber)
     {
-        String pageTitle = this.getPageName(tabNumber, true).trim();
-
-        if (pageTitle.isEmpty())
-        {
-            pageTitle = I18n.f("page.ui.pageNo", tabNumber);
-        }
-
-        if (pageTitle.length() > MAX_PAGE_NAME_LENGTH_TAB)
-        {
-            pageTitle = pageTitle.substring(0, MAX_PAGE_NAME_LENGTH_TAB);
-        }
-
-        return pageTitle;
+        return CurrentKeyRow.pageWords(tabNumber, this.getPageName(tabNumber, true), this.pageNumbersShown(),
+            name -> name.length() > MAX_PAGE_NAME_LENGTH_TAB ? name.substring(0, MAX_PAGE_NAME_LENGTH_TAB) : name);
     }
     
     /**
-     * Every label showing the station on a square.  Several are normal - a long platform is legitimately
-     * captioned at both ends.
+     * Every label drawn for the station: one in each window showing the page its caption is on, and the ones a window
+     * keeps for pages it is not showing at the moment, which are detached and still alive.
      *
      * @param station the sensor’s square
      * @return
@@ -2685,7 +2735,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     // by name: store-active can point elsewhere after a refused load
                     session.captureFromLayout(this.model.getAutoLayout().toJSON(),
-                        this.activeDiagramConfiguration);
+                        this.activeDiagramConfiguration, settingsAsBuiltFor(this.model.getAutoLayout()));
 
                     // WITHOUT reconciling.  This is the save on the way out, and the session holds the
                     // LIVE diagram objects the track editor works on - so if an editor was open, or
@@ -3383,7 +3433,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 autonomySession.captureWhatTheRailwayOwns(railway, activeDiagramConfiguration, settingsAsBuiltFor(folding));
             }
-            else autonomySession.captureFromLayout(railway, activeDiagramConfiguration);
+            else autonomySession.captureFromLayout(railway, activeDiagramConfiguration, settingsAsBuiltFor(folding));
 
             // Written, not reconciled.  This runs because the diagram is being REPLACED - a
             // re-download, or an editor closing - and on the editor path the pages this session holds
@@ -3446,6 +3496,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         autonomyTileMenusFor = null;
 
         mountAutonomyControls();
+
+        // After the session is built again, which an autonomy editor's title asks (FR-127)
+        refreshConfigurationTitles();
     }
 
     /**
@@ -4316,6 +4369,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             repaintLayout();
         }
+
+        refreshPopupsWhoseCaptionsChanged();
+    }
+
+    /**
+     * Draws again the pop-up diagrams whose captions are not the setup’s any more (OB-341).
+     *
+     * A pop-up’s caption labels are registered under its own window, so the main window’s rebuild never lets go of them:
+     * a caption moved or taken off went on showing in a pop-up, and `updateStationLabels` went on writing the station into
+     * it, until the page was changed there or the window opened again - and Stop Showing is the remedy the duplicate-caption
+     * error asks for.  Only the ones that differ, as the main window’s diagram is (`captionsAreAsBuilt`), so an arrow or
+     * a length changed makes none flicker; and with the size and place the operator gave each window kept, and nothing
+     * new remembered for it (OB-341).
+     */
+    private void refreshPopupsWhoseCaptionsChanged()
+    {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            javax.swing.SwingUtilities.invokeLater(this::refreshPopupsWhoseCaptionsChanged);
+
+            return;
+        }
+
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        {
+            if (popup.isVisible() && !popup.captionsAreAsBuilt()) popup.refreshCaptions();
+        }
     }
 
     /**
@@ -4599,15 +4679,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (train == null) return;
 
+        setLocomotivesActive(setup, java.util.Collections.singletonList(train), active);
+    }
+
+    /**
+     * Pauses every one of these trains or sets every one going (FR-126), for the Bulk Tools' Activate All Trains and
+     * Deactivate All Trains: what `setLocomotiveActive` does for one train, done for all of them with one save, one redraw
+     * of the diagram and one rebuild of the Auto tab's cards.
+     *
+     * @param setup the setup the tool belongs to, or null where there is none: the trains alone
+     * @param trains the trains
+     * @param active whether autonomy may run them
+     */
+    public void setLocomotivesActive(org.traincontrol.automationui.AutonomySession setup,
+        java.util.Collection<Locomotive> trains, boolean active)
+    {
+        if (trains == null || trains.isEmpty()) return;
+
         if (setup == null)
         {
-            train.setAutonomyPaused(!active);
+            for (Locomotive train : trains)
+            {
+                if (train != null) train.setAutonomyPaused(!active);
+            }
         }
         else
         {
+            // THE TRAINS THE DOOR CHANGES, asked before it does (OB-343): one the card's button had already paused, or set
+            // going, is named all the same - Deactivate All Trains names every train standing - and what it was is not the
+            // door's to write into the record
+            java.util.List<Locomotive> changed = new java.util.ArrayList<>();
+
+            for (Locomotive train : trains)
+            {
+                if (train != null && train.isAutonomyPaused() == active) changed.add(train);
+            }
+
             try
             {
-                setup.setActive(train, active);
+                setup.setTrainsActive(trains, active);
             }
             catch (java.io.IOException cannotSave)
             {
@@ -4615,42 +4725,83 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(cannotSave);
             }
 
-            // AND THE RAILWAY'S SETTINGS AS BUILT (RSA60-B1).  The tick changed the railway and the setup together, so
-            // the two agree - as if the railway had been built this way.  Left as it was built, a press of the Auto tab's
-            // pause button afterwards, which changes the railway alone, read to the next rebuild's fold as no change, and
-            // the setup's older answer stood: the rebuild undid the button.
-            notePausesAsBuilt();
+            // AND THE RAILWAY'S SETTINGS AS BUILT (RSA60-B1), for THESE TRAINS ONLY (OB-343).  The tick changed these trains
+            // on the railway and in the setup together, so for them the two agree - as if the railway had been built this
+            // way.  Left as it was built, a press of the Auto tab's pause button afterwards, which changes the railway alone,
+            // read to the next rebuild's fold as no change, and the setup's older answer stood: the rebuild undid the button.
+            // And not for the other trains, the ones this call names but leaves as they were included: a press made BEFORE this
+            // call has not reached the setup, so the two do not agree about that train, and writing it as built made the fold
+            // find nothing the railway had changed (see `notePausesAsBuilt`).
+            notePausesAsBuilt(changed);
         }
 
         trainsPausedChanged();
 
+        // The cards are built again, and so sorted again (FR-126): a menu's door, not the card's own pause button, which
+        // never reaches here
         repaintAutoLocList(false);
     }
 
     /**
-     * Writes the railway's paused trains into its settings as built (RSA60-B1), for a door that changed the railway and
-     * the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes (RSA21-C1).  Only
-     * for the railway the settings were read off.
+     * Writes these trains' pauses into the railway's settings as built (RSA60-B1), for a door that changed them on the
+     * railway and in the setup together - as `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` writes atomic routes
+     * (RSA21-C1).  Only for the railway the settings were read off.
+     *
+     * **ONLY THE TRAINS THE DOOR CHANGED (OB-343).**  The settings as built are what the railway was built with, and the
+     * fold takes whatever the railway has that these do not.  The Auto tab's pause button changes a train on the railway
+     * alone, so a train it paused is on the railway's list and not yet on the setup's - and this used to write the railway's
+     * whole list as built.  The next tick on ANOTHER train then wrote that pause as built too, the fold found the railway
+     * unchanged, and the rebuild took the setup's older list as the word on every train: the paused one was set going (and
+     * one the button set going, which the setup still listed, was paused again).  The trains the door did not change are left
+     * as they were built, so the fold still sees the button's change and takes the railway's list.
+     *
+     * @param changed the trains the door has just changed, on the railway and in the setup
      */
-    private void notePausesAsBuilt()
+    private void notePausesAsBuilt(java.util.Collection<Locomotive> changed)
     {
         Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
         if (railway == null || railway != settingsBuiltFor || settingsAsBuilt == null) return;
 
-        java.util.List<String> paused = org.traincontrol.automation.Layout.pausedNamesOf(this.model);
+        // sorted, as the railway writes its list, so the fold's comparison of the two lists reads them as the same
+        java.util.Set<String> built = new java.util.TreeSet<>();
 
-        if (paused.isEmpty()) settingsAsBuilt.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
-        else settingsAsBuilt.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(paused));
+        org.json.JSONArray list = settingsAsBuilt.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
+        for (int i = 0; list != null && i < list.length(); i++)
+        {
+            Object name = list.opt(i);
+
+            if (name instanceof String) built.add((String) name);
+        }
+
+        for (Locomotive train : changed)
+        {
+            if (train == null || train.getName() == null) continue;
+
+            if (train.isAutonomyPaused()) built.add(train.getName());
+            else built.remove(train.getName());
+        }
+
+        if (built.isEmpty()) settingsAsBuilt.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        else settingsAsBuilt.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(built));
     }
 
     /**
-     * Redraws the trains' icons on the diagram, for a train paused or set going (FR-117): the Is Active tick, and the Auto
-     * tab's pause button, which changes the train alone.
+     * Redraws the trains' icons on the diagram, for a train paused or set going (FR-117): the Is Active tick, the bulk tools
+     * (FR-126), and the Auto tab's pause button, which changes the train alone.
      */
     public void trainsPausedChanged()
     {
-        if (diagramMonitorDriver != null) diagramMonitorDriver.trainsPausedChanged();
+        if (diagramMonitorDriver == null) return;
+
+        diagramMonitorDriver.trainsPausedChanged();
+
+        // AND THE GREY OF A PAUSED TRAIN THE RAILWAY STANDS ON NO POINT (FR-126; RSA60-C5).  Drawn from the setup's list, which
+        // the Is Active tick and the bulk tools have just changed and the diagram was told nothing of.  On the event thread,
+        // where every caller is: the driver hands the monitor a copy of each set, and the monitor reads them on its own thread
+        // through volatile fields.
+        if (autonomySession != null) diagramMonitorDriver.trainsOnNoPointChanged(autonomySession);
     }
 
     /**
@@ -4679,11 +4830,65 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * @param railway a railway
-     * @return its settings as it was built, or null where this window does not know them
+     * @return its settings as it was built, or null where this window does not know them; the folds change it in place to
+     *         what they take into the setup (OB-343)
      */
-    private org.json.JSONObject settingsAsBuiltFor(Object railway)
+    org.json.JSONObject settingsAsBuiltFor(Object railway)
     {
         return railway != null && railway == settingsBuiltFor ? settingsAsBuilt : null;
+    }
+
+    /**
+     * The record of how the railway was built as it stood, and the railway it describes: what the old-file import keeps beside
+     * its snapshot of the setup (OB-343).
+     */
+    static final class SettingsAsBuiltNote
+    {
+        private final Object railway;
+
+        private final org.json.JSONObject settings;
+
+        private SettingsAsBuiltNote(Object railway, org.json.JSONObject settings)
+        {
+            this.railway = railway;
+            this.settings = settings;
+        }
+    }
+
+    /**
+     * Notes the record of how the railway was built, for a door that takes a snapshot of the setup it may put back (OB-343): the
+     * old-file import, whose rollback is the whole of its undo.  (The editor's Cancel is not this: it keeps what the railway
+     * changed alone, which the session holds - see `AutonomySession.beginEditSession`.)
+     *
+     * **THE RECORD IS WHAT THE RAILWAY AND THE SETUP LAST AGREED ON, so a rollback that puts the setup back puts the record
+     * back with it.**  A fold takes what the railway changed into the setup and into the record (`captureTheRailwaysSettings`),
+     * and the setup put back without it no longer has what the fold took: the record, kept as the fold left it, said the
+     * railway was unchanged since it was built, the next rebuild took nothing from it, and what the railway had changed alone
+     * - a timetable entry, an Auto tab setting, a card's pause - went with the rollback.
+     *
+     * @return the note, or null where this window does not know how the running railway was built
+     */
+    SettingsAsBuiltNote noteSettingsAsBuilt()
+    {
+        Object railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (railway == null || railway != settingsBuiltFor || settingsAsBuilt == null) return null;
+
+        return new SettingsAsBuiltNote(railway, new org.json.JSONObject(settingsAsBuilt.toString()));
+    }
+
+    /**
+     * Puts the record back as a note has it, for a door that has put the setup back to the snapshot it took beside the note.
+     * Only for the railway the note was taken from: a railway built since has a record of its own, made from the setup it was
+     * built from.
+     *
+     * @param noted what `noteSettingsAsBuilt` returned, or null
+     */
+    void putSettingsAsBuiltBack(SettingsAsBuiltNote noted)
+    {
+        if (noted == null || noted.railway != settingsBuiltFor) return;
+
+        settingsAsBuilt = new org.json.JSONObject(noted.settings.toString());
     }
 
     /**
@@ -4800,6 +5005,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // remembered so that exit knows which configuration the running layout's state belongs to,
         // and so the panel knows to offer the step that follows this one
         this.activeDiagramConfiguration = name;
+
+        refreshConfigurationTitles();
 
         // AND THE TRAINS' LINES DRAWN (OB-307): they are drawn only with a setup loaded, and one is now
         refreshCoveredTrack();
@@ -5124,6 +5331,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // this session has nothing in memory to repair, and the file it would repair is read the next
         // time it IS opened - by which time this rename is already in the locomotive database.
         org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        // AND THE TWO PLACES THAT NAME THE PAUSED TRAINS AND ARE NOT THE SETUP (OB-343): the record of how the railway was
+        // built, and what the edit session's folds noted.  The fold applies the trains the railway gained or lost against the
+        // record, by name, to the setup's list - which the repair below has just renamed - so a name left in either made a
+        // train set going by its card come out paused, or lost the card's pause, and Cancel write back a deleted one.
+        if (settingsAsBuilt != null) org.traincontrol.automationui.AutonomyCompanionStore.repairLocomotiveInPausedList(
+            settingsAsBuilt, from, to);
+
+        if (session != null) session.followALocomotiveName(from, to);
 
         // No session open: repair the FILE, without building one (OB-062).
         //
@@ -6134,57 +6350,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         org.traincontrol.automationui.TileGraph.TileKey caption = session.getCaptionTarget(where);
 
-        // NO LABEL ON A SQUARE THAT IS BOTH EMPTY AND SHUT (Adam, 2026-08-31).
-        //
-        // "hide the label if empty and nothing can pass."  An unnamed station draws a dash - the
-        // placeholder that says "this wants a name" - and on a square that is switched off there is
-        // nothing to name it FOR: nothing may be sent there and nothing may pass through, so the dash
-        // is an invitation to finish something that has been deliberately put out of use.
-        //
-        // Only when BOTH are true.  A named square keeps its name however it is switched, because the
-        // name is how the operator refers to it when switching it back on; and an unnamed square that
-        // is still in use keeps its dash, because that is the prompt working as intended.
-        if (caption != null
-            && Boolean.FALSE.equals(session.getPointProperty(caption, "active")))
-        {
-            String named = session.getStore().getPointName(caption);
+        // NO LABEL ON A SQUARE THAT IS BOTH EMPTY AND SHUT (Adam, 2026-08-31), asked of the session below with the rest
+        // (`isCaptionDrawn`): the setup check has to leave it alone too (OB-341).
 
-            if (named == null || named.trim().isEmpty()) return null;
-        }
-
-        // AND ONE NAME PER STATION, THE OFFSET ONE WINNING (MT-337).
+        // AND ONE NAME PER STATION PER PAGE, THE OFFSET ONE WINNING (MT-337, OB-341).
         //
         // Adam, 2026-09-08: "if a station has an offset label, the current home loc is shown twice
         // (once on the tile itself, once on the offset label)."
         //
-        // A station may carry more than one caption and that is deliberate - AutonomyCompanionStore.
-        // setCaption: "several squares may name the same station... a long platform is legitimately
-        // labelled at both ends" - so the store is not where this can be settled.  What is NOT
-        // deliberate is a station captioned on its own square AND beside it: the two land next to
-        // each other and say the same thing twice, which is what he was looking at.
+        // The editor keeps one caption per station per page (behaviour.md, "One caption per station per
+        // page"), but the store can still hold more than one on a page - a setup edited by hand, or
+        // written by an older version - and a caption on another page is allowed: Adam, 2026-10-12, *"The duplicate caption
+        // check should be per page.  It is OK to show on another page what is going on on another."*
+        // Drawing has to cope with it, and the worst of it is a station captioned on its own square AND
+        // beside it on the same page: the two land next to each other and say the same thing twice, which
+        // is what he was looking at.  That is drawn ONCE, the beside one, and so is no error; two captions
+        // beside the station on one page are drawn twice there, and the setup check calls that an ERROR
+        // (OB-341).
         //
-        // The state is reachable without anybody asking for it.  `AutonomySession.setCaption` sweeps
-        // the old caption away, but `migrateStationLabels` writes through the raw store door, so a
-        // station already captioned on its own square gains a second one the moment a legacy
-        // "Point:" label is migrated off the page beside it.  `1 - Main:6,4` on the operator's own
-        // railway is captioned on `6,5` and on `6,4`.
+        // The state was reachable without anybody asking for it.  `AutonomySession.setCaption` sweeps
+        // the old caption away, but `migrateStationLabels` used to write through the raw store door
+        // (until OB-256), so a station already captioned on its own square gained a second one the
+        // moment a legacy "Point:" label was migrated off the page beside it.  `1 - Main:6,4` on the
+        // operator's own railway is captioned on `6,5` and on `6,4`.
         //
         // The SELF-caption gives way, because the offset one is the one somebody placed: a caption
         // beside the platform is either where the placer put it or where `placeCaption` found room,
         // and the square's own is the last resort of both.  "Once - on the caption square when there
         // is one, otherwise on the station square", which is Adam's ruling read back.
         //
-        // Only against ANOTHER square.  A station captioned only on itself keeps its caption, and two
-        // captions at opposite ends of a platform are both offset, so neither is touched - that is
-        // the case the store's own comment exists for.
-        if (caption != null && caption.equals(where))
-        {
-            for (org.traincontrol.automationui.TileGraph.TileKey elsewhere
-                : session.captionsFor(caption))
-            {
-                if (!caption.equals(elsewhere)) return null;
-            }
-        }
+        // Only against ANOTHER square OF THE SAME PAGE.  A station captioned only on itself keeps its caption, a
+        // caption on another page never takes it away, and two offset captions are both drawn - the setup check
+        // reports them, and this does not choose.
+        //
+        // The rule is the session's (`isCaptionDrawn`), so that the setup check counts exactly what is drawn here.
+        if (caption != null && !session.isCaptionDrawn(where)) return null;
 
         return caption;
     }
@@ -8481,6 +8681,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         repaintLayout();
 
+        refreshPopupsWhoseCaptionsChanged();
+
         // What the diagram SAYS, not only what it draws.  The banner is decided in one place and that
         // place was never called from an editor closing - so somebody who opened the editor from "Fix
         // it", fixed the last blocking problem and pressed Save came back to a banner still telling them
@@ -9383,13 +9585,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * holds that same monitor for the whole of `configureAndLockPath` - a `CONFIGURE_SLEEP` per
      * accessory of the path.
      *
-     * It is worse than a stall, and `Layout.getEdges`'s own comment already spells the shape out.  The
-     * opposite order exists and cannot be removed: a driving thread inside that monitor commands an
-     * accessory, and `MarklinAccessory.setSwitched` calls `repaintSwitch`, which is `synchronized` on
-     * this window.  So a window that takes the railway's monitor while holding its own - which is what
-     * `updateVisiblePoints` did, on the event thread, every monitor tick of a run and at both ends of
-     * every path - is AB-BA and unrecoverable.  That comment forbids exactly this and was written
-     * about `getPoints()`; the covered marks walked in through a different door.
+     * It was worse than a stall then, as `Layout.getEdges`'s own comment spells out: a driving thread
+     * inside that monitor commands an accessory, and `MarklinAccessory.setSwitched` called
+     * `repaintSwitch`, which was `synchronized` on this window until RSA67-C1.  So a window that took
+     * the railway's monitor while holding its own - which is what `updateVisiblePoints` did, on the
+     * event thread, every monitor tick of a run and at both ends of every path - was AB-BA and
+     * unrecoverable.  That comment forbids exactly this and was written about `getPoints()`; the
+     * covered marks walked in through a different door.
      *
      * THE SAME ANSWER AS BEFORE, WORKED OUT SOMEWHERE ELSE.  Nothing about the two marks changes: the
      * grey is still bounded to a running railway, the two sets are still computed together and diffed
@@ -10468,6 +10670,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (from.equals(this.activeDiagramConfiguration))
         {
             this.activeDiagramConfiguration = to;
+
+            refreshConfigurationTitles();
         }
     }
 
@@ -10843,7 +11047,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.NextLocMapping.setEnabled(true);
             }
             
-            this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
+            this.LocMappingNumberLabel.setText(this.getPageLabelText(this.locMappingNumber));
             
             this.locKeyTabs.setSelectedIndex(this.locMappingNumber - 1);
             this.locKeyTabs.setTitleAt(this.locMappingNumber - 1, getLocMappingPageTabTitle(this.locMappingNumber));
@@ -10884,21 +11088,140 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.pageNames.put(this.locMappingNumber, name.trim());
         }
         
-        this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
+        this.LocMappingNumberLabel.setText(this.getPageLabelText(this.locMappingNumber));
         this.repaintLoc(true, null);
     }
     
     /**
-     * Optional 3rd argument...
-     * @param mappingNumber
-     * @param raw
-     * @return 
+     * Puts the line over the active locomotive's name in the label that has always held it (FR-128).
+     *
+     * The label is generated: its slot is 296 x 18 in the form's layout and nothing below it may move, and that block is
+     * not ours to edit.  So the label stays exactly where it is, its text is cleared, and the row that draws the key and
+     * the two pills goes INSIDE it, filling it.  The label's own sizes are explicit (minimum, preferred and maximum are
+     * all 296 x 18), so a child cannot change what the form's layout sees of it.
      */
-    private String getPageName(int mappingNumber, boolean raw)
+    private void installCurrentKeyRow()
     {
-        return getPageName(mappingNumber, raw, false);
+        this.CurrentKeyLabel.setText("");
+        this.CurrentKeyLabel.setLayout(new java.awt.BorderLayout());
+
+        this.currentKeyRow = new CurrentKeyRow();
+
+        this.CurrentKeyLabel.add(this.currentKeyRow, java.awt.BorderLayout.CENTER);
     }
-    
+
+    /**
+     * "Show Page Numbers", in the Preferences menu's Locomotive submenu, under "Show Locomotive Pages as Tabs" (FR-128).
+     *
+     * Adam, 2026-10-13: *"Make an checkbox option called show page numbers within the preferences jmenu, under the
+     * locomotive submenu.  Default off.  When off, 5. MMMM... becomes just MMMM... .  Use the same design patterns as now
+     * with prefs."*  The submenu is `locomotiveControlMenu`, headed "Locomotive Control" in the form, in `interfaceMenu`,
+     * which is headed Preferences.
+     *
+     * Built here rather than in the form: the form is generated, and a hand-written item in a generated block is a change
+     * the next round trip through the designer would silently drop - the rule every hand-built item in this window
+     * follows (see `buildDiagramDrawingMenu`).  It is put in the generated submenu after the tick it belongs beside, the
+     * one for pages as tabs, and ahead of the divider that sets the keyboard layouts apart from the ticks; if that tick is
+     * ever not there it goes to the end of the submenu rather than nowhere.
+     *
+     * Round 7 made it the setting for the page tabs and the page label by the arrows as well as for the line over the name,
+     * all three worded by the one rule in `CurrentKeyRow.pageWords`.  Adam: *"when the show page numbers is turned off, the
+     * keyboard tabs themselves should also not show the page number unless the page has no name."*  So a click on the item
+     * words the tabs and the label again at once (`retitlePages`), as well as the line, and the preference read at start-up
+     * reaches all three.
+     *
+     * The pattern the other ticks in that submenu follow: a preference key, read at start-up beside theirs (where this
+     * item's state is set from it), written by the item's own handler, and the line redrawn at once.  The state the line
+     * is built from is this item's, as `activeLocInTitle`'s is for the pop-ups' titles.
+     */
+    private void installShowPageNumbersMenuItem()
+    {
+        this.showPageNumbersMenuItem = new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.showPageNumbers"));
+
+        this.showPageNumbersMenuItem.setToolTipText(
+            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.showPageNumbers")));
+
+        this.showPageNumbersMenuItem.addActionListener(event ->
+        {
+            prefs.putBoolean(SHOW_PAGE_NUMBERS, this.showPageNumbersMenuItem.isSelected());
+
+            // The page tabs and the page label, at once: they are set when a page is named or chosen, and neither would
+            // otherwise notice a change to this
+            this.retitlePages();
+
+            // The line over the name, at once.  What it says includes this setting, so the render's check for whether the
+            // line has changed finds that it has; nothing about the locomotive needs to.
+            this.repaintLoc();
+        });
+
+        int at = this.locomotiveControlMenu.getMenuComponentCount();
+
+        for (int i = 0; i < this.locomotiveControlMenu.getMenuComponentCount(); i++)
+        {
+            if (this.locomotiveControlMenu.getMenuComponent(i) == this.showPageTabsPreference)
+            {
+                at = i + 1;
+
+                break;
+            }
+        }
+
+        this.locomotiveControlMenu.insert(this.showPageNumbersMenuItem, at);
+    }
+
+    /**
+     * Whether the page numbers go before the page names: the Preferences menu's "Show Page Numbers" (FR-128).  The one
+     * place the three that follow it - the line over the locomotive's name, the page tabs and the page label by the arrows -
+     * ask for it.  Not ticked before the item exists, which is the default.
+     *
+     * @return whether the item is ticked
+     */
+    private boolean pageNumbersShown()
+    {
+        return this.showPageNumbersMenuItem != null && this.showPageNumbersMenuItem.isSelected();
+    }
+
+    /**
+     * Words every page tab and the page label by the arrows again, as the setting now has it (FR-128, round 7).
+     *
+     * The tabs and the label are set when a page is named or chosen, from what the page is called then.  Changing the
+     * setting changes none of that, so something has to ask them again.  The label is left alone when it is showing
+     * nothing, as `switchLocMapping` leaves it while there is no navigation to show.  On the event thread, as the item's
+     * handler is.
+     */
+    private void retitlePages()
+    {
+        for (int at = 0; at < this.locKeyTabs.getTabCount(); at++)
+        {
+            this.locKeyTabs.setTitleAt(at, getLocMappingPageTabTitle(at + 1));
+        }
+
+        if (!this.LocMappingNumberLabel.getText().isEmpty())
+        {
+            this.LocMappingNumberLabel.setText(this.getPageLabelText(this.locMappingNumber));
+        }
+    }
+
+    /**
+     * What the row over the name should say for the active button.
+     *
+     * The page's name is the RAW one: the row cuts it to the pixel and the tooltip words the page from the bundle, so
+     * the old shortening to twelve letters and three dots has no part in it.
+     *
+     * The decoder's type and its address are two things, as the row draws them apart ("MFX" and "54") and a string cut in
+     * two would be a guess about where.
+     *
+     * @param decoderType the decoder type as the program words it, or null when there is no locomotive on the button
+     * @param address the locomotive's address, or null
+     * @return the content to show
+     */
+    private CurrentKeyRow.Content currentKeyContent(String decoderType, String address)
+    {
+        return new CurrentKeyRow.Content(this.currentButton.getText(), this.currentButtonlocMappingNumber,
+            this.getPageName(this.currentButtonlocMappingNumber, true), decoderType, address,
+            this.pageNumbersShown());
+    }
+
     /**
      * Returns the currently shown page number
      * @return 
@@ -10909,48 +11232,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Gets the name of the specified mapping page
+     * Gets the name of the specified mapping page, in the program's own words for a page: "Page 5 (Example)", the name cut
+     * to `MAX_PAGE_NAME_LENGTH_TOP` letters, or "Page 5" for a page with no name.
+     *
+     * For the menus and the dialogs, which keep these words whatever "Show Page Numbers" says.  The page tabs, the page
+     * label by the arrows and the line over the locomotive's name follow that setting and are worded by
+     * `CurrentKeyRow.pageWords` (FR-128, round 7).
      * @param mappingNumber
-     * @param raw - do we exclude the page number
-     * @return 
+     * @param raw - the name as typed, or empty for none, without the program's words round it
+     * @return
      */
-    private String getPageName(int mappingNumber, boolean raw, boolean html)
+    private String getPageName(int mappingNumber, boolean raw)
     {
         if (this.pageNames.containsKey(mappingNumber))
         {
             String name = this.pageNames.get(mappingNumber);
 
             if (!raw)
-            {                
-                if (html)
+            {
+                if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP)
                 {
-                    if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH)
-                    {
-                        name = name.substring(0, MAX_PAGE_NAME_LENGTH);
-                    }
-
-                    name = I18n.f(
-                        "page.ui.htmlPageName",
-                        name,
-                        mappingNumber
-                    );
+                    name = name.substring(0, MAX_PAGE_NAME_LENGTH_TOP) + "...";
                 }
-                else
-                {
-                    if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP)
-                    {
-                        name = name.substring(0, MAX_PAGE_NAME_LENGTH_TOP) + "...";
-                    }
 
-                    name = I18n.f(
-                        "page.ui.plainPageName",
-                        mappingNumber,
-                        name
-                    );
-                }
+                name = I18n.f(
+                    "page.ui.plainPageName",
+                    mappingNumber,
+                    name
+                );
             }
-            
-            return name;   
+
+            return name;
         }
         else
         {
@@ -10964,7 +11276,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
     }
-    
+
+    /**
+     * The words on the page label by the arrows (FR-128, round 7): "Page 5" for a page with no name, the name for a page
+     * with one, and "5. " in front of the name when "Show Page Numbers" is ticked - `CurrentKeyRow.pageWords`, the one rule
+     * the page tabs and the line over the locomotive's name follow too.  One line, as the label is one line high in the
+     * form.  Only the NAME is cut, to `MAX_PAGE_NAME_LENGTH` letters.
+     *
+     * @param mappingNumber the page, counting from 1
+     * @return what to write on the label
+     */
+    private String getPageLabelText(int mappingNumber)
+    {
+        return CurrentKeyRow.pageWords(mappingNumber, this.getPageName(mappingNumber, true), this.pageNumbersShown(),
+            name -> name.length() > MAX_PAGE_NAME_LENGTH ? name.substring(0, MAX_PAGE_NAME_LENGTH) : name);
+    }
+
     /**
      * Prompts the user for the name of the current page
      */
@@ -11391,6 +11718,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }).start();
         
+        // AN UPDATE THAT WAS PUT BACK (FR-125).  When Download & Update's new version could not start, the updater put
+        // this one back, started it, and left a note beside the jar; this is that start, so the note is said once and
+        // removed.  The copies earlier updaters ran from are tidied here too, since an updater cannot remove its own.
+        final File runningFrom = SelfUpdate.runningJar(TrainControlUI.class);
+
+        if (runningFrom != null)
+        {
+            SelfUpdate.tidyOldCopies(runningFrom.getParentFile());
+
+            final String[] putBack = SelfUpdate.takeRollbackNote(runningFrom.getParentFile());
+
+            if (putBack != null)
+            {
+                // PUT BACK ONLY WHEN IT WAS (FR-125, 2026-10-13): where the old jar could not go back under its own name,
+                // the note says which file this version is running from, and so does the message
+                final String said = putBack[2] == null ? I18n.f("ui.update.rolledBack", putBack[0], putBack[1])
+                    : I18n.f("ui.update.notPutBack", putBack[0], putBack[1], putBack[2]);
+
+                if (this.model != null) this.model.log(said);
+
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, said));
+            }
+        }
+
         // Check for updates
         this.downloadUpdateMenuItem.setVisible(false);
         
@@ -11414,6 +11765,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
 
                     LATEST_DOWNLOAD_URL = Util.parseDownloadURL(updateInfo);
+                    LATEST_DOWNLOAD_SIZE = Util.parseDownloadSize(updateInfo);
+                    LATEST_DOWNLOAD_DIGEST = Util.parseDownloadDigest(updateInfo);
                     
                     if (Util.parseReleaseURL(updateInfo) != null)
                     {
@@ -11430,6 +11783,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         javax.swing.SwingUtilities.invokeLater(() ->
                         {
                             this.downloadUpdateMenuItem.setVisible(true);
+                            this.downloadUpdateMenuItem.setToolTipText(
+                                updateItemTooltip(SelfUpdate.runningJar(TrainControlUI.class) != null));
                             this.viewReleasesMenuItem.setText("v" + LATEST_VERSION + " Update Info");
                             this.helpMenu.setText(this.helpMenu.getText() + "*");
                         });
@@ -12916,11 +13271,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     /**
      * Repaints a single switch on the keyboard
-     * @param address 
-     * @param type 
+     *
+     * Not synchronized (RSA67-C1): it only posts to the event thread, and a driving thread calls it holding the railway's
+     * monitor, a signal's lock and the accessory's, so waiting here for the window's monitor - which the window can hold
+     * while it reaches a protection refresh - was a deadlock.
+     *
+     * @param address
+     * @param type
      */
     @Override
-    synchronized public void repaintSwitch(int address, Accessory.accessoryDecoderType type)
+    public void repaintSwitch(int address, Accessory.accessoryDecoderType type)
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
@@ -14520,6 +14880,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     " " + this.activeLoc.getSpeed() + "%]";
         }
     }
+
+    /**
+     * The configuration the autonomy editor edits: the setup's chosen one, loaded or not (FR-127).  Asked of the session
+     * there is and not built: a reset that has dropped it is not undone for a title.
+     *
+     * @return its name, or null where there is no session or none is chosen
+     */
+    public String getEditedConfiguration()
+    {
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        return session == null ? null : session.getStore().getActiveConfiguration();
+    }
+
+    /**
+     * Sets the titles of the windows that name a page again, for the configuration having changed (FR-127): each pop-up and
+     * each editor of this window.  Called wherever the name is set - a load, a rename, a reset - so a title follows a
+     * configuration being loaded, switched, renamed or unloaded while the window is open.  The store's chosen
+     * configuration, which the autonomy editor names, moves only with those: every other door that moves it is shut while
+     * an editor is open, and a refused load puts it back where it was.
+     */
+    private void refreshConfigurationTitles()
+    {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            javax.swing.SwingUtilities.invokeLater(this::refreshConfigurationTitles);
+
+            return;
+        }
+
+        for (LayoutPopupUI popup : this.popups) popup.refreshTitle();
+
+        for (java.awt.Frame frame : java.awt.Frame.getFrames())
+        {
+            if (frame instanceof LayoutEditor && frame.isDisplayable() && ((LayoutEditor) frame).isEditorOf(this))
+            {
+                ((LayoutEditor) frame).refreshTitle();
+            }
+        }
+    }
         
     /**
      * For tests only: run on the renderer thread just BEFORE a locomotive render is handed to the event
@@ -14616,13 +15016,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 name = name.substring(0, MAX_LOC_NAME);
                             }
                             
-                            // Pre-compute this so we can check if it has changed
-                            // "Page " + this.currentButtonlocMappingNumber + " Button "
-                            String locLabel = "<html><nobr>" + this.currentButton.getText() + " &#8226; " 
-                                    + this.getPageName(currentButtonlocMappingNumber, false, false) + " &#8226; "
-                                    + this.activeLoc.getDecoderTypeLabel() 
-                                    + " " + this.model.getLocAddress(this.activeLoc.getName())
-                                    + "</nobr></html>";
+                            // Pre-compute this so we can check if it has changed: the key, the page and the decoder
+                            // with its address, as the row over the name draws them (FR-128)
+                            CurrentKeyRow.Content keyLine = currentKeyContent(this.activeLoc.getDecoderTypeLabel(),
+                                    this.model.getLocAddress(this.activeLoc.getName()));
                                                         
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
@@ -14630,12 +15027,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             
                             for (LayoutPopupUI popup : this.popups)
                             {
-                                popup.setTitle(popup.getLayoutTitle() + windowTitleString);
+                                popup.setTitle(popup.titleWith(windowTitleString));
                             } 
 
                             // Only repaint icon if the locomotive is changed
                             // Visual stuff
-                            if (!this.ActiveLocLabel.getText().equals(name) || !locLabel.equals(CurrentKeyLabel.getText()) || force)
+                            if (!this.ActiveLocLabel.getText().equals(name) || !keyLine.equals(this.currentKeyRow.getContent()) || force)
                             {
                                 // Do this outside of the queue b/c otherwise it would be delayed for the currently selected loc at app startup
                                 repaintIcon(this.currentButton, this.activeLoc, currentButtonlocMappingNumber);
@@ -14700,7 +15097,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                 this.ActiveLocLabel.setText(name);
 
-                                this.CurrentKeyLabel.setText(locLabel);
+                                this.currentKeyRow.setContent(keyLine);
 
                                 for (int i = 0; i < this.activeLoc.getNumF(); i++)
                                 {
@@ -14861,9 +15258,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             I18n.t("loc.ui.labelNoLocomotiveClickHere")
                         );
                         
-                        this.CurrentKeyLabel.setText("<html><nobr>" + this.currentButton.getText() + " &#8226; " 
-                                + this.getPageName(currentButtonlocMappingNumber, false, false) + "</nobr></html>"    
-                        );
+                        // The key and its page, and no decoder pill: nothing is on the key
+                        this.currentKeyRow.setContent(currentKeyContent(null, null));
 
                         this.Backward.setVisible(false);
                         this.Forward.setVisible(false);
@@ -14879,7 +15275,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         
                         for (LayoutPopupUI popup : this.popups)
                         {
-                            popup.setTitle(popup.getLayoutTitle()); 
+                            popup.setTitle(popup.titleWith("")); 
                         }
                     }
                     
@@ -21457,6 +21853,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.saveState(false);
         //model.stop();
 
+        // THE UPDATE STARTS HERE, OR NOT AT ALL (FR-125).
+        //
+        // Download & Update leaves through this exit, so nothing unsaved is lost, and starts its updater here rather than
+        // before asking: everything above can still refuse the exit - an editor's Cancel, the trains question - and an
+        // updater started before a refusal would wait for an exit that never came, or swap the jar under whatever closed
+        // TrainControl later.  Here everything has agreed and is saved.  The updater waits for this process to end (it
+        // holds the exit lock until then), so nothing below is hurried.
+        //
+        // If it cannot start, or does not say within a few seconds that it is running (`startUpdater` waits for that,
+        // because a started process proves nothing), TrainControl stays open and says so, and nothing has been replaced.
+        final SelfUpdate.Pending update = this.updateHandOver.take();
+
+        if (update != null)
+        {
+            try
+            {
+                SelfUpdate.startUpdater(update.jar, update.download, RAW_VERSION, update.version,
+                    I18n.t("ui.update.updating"), SelfUpdate::startDetached, SelfUpdate.UPDATER_WAIT_MS);
+            }
+            catch (IOException | RuntimeException e)
+            {
+                this.model.logf("ui.update.errorCannotStart", String.valueOf(e.getMessage()),
+                    update.download.getAbsolutePath());
+
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorCannotStart",
+                    String.valueOf(e.getMessage()), update.download.getName()));
+
+                return;
+            }
+        }
+
         // The EDITOR is closed too, and it has to be closed properly.
         //
         // LayoutEditor.dispose() is the only thing that clears config/autonomy/setup-before-edit.json,
@@ -24294,228 +24721,303 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .replace(':', '-').replace(' ', '_');
     }
 
+    /**
+     * Writes the data backup: one archive in `tc_backup` holding the locomotive database, the window state, the routes,
+     * the layout's folder and the cropped icons - File > Backup TrainControl Data, and Download & Update before it
+     * replaces anything (FR-125).
+     *
+     * Lifted out of the menu item's handler so the update takes the very backup the menu does.  Adam, 2026-10-12, on
+     * what "take a backup" means for an update: the application's own data backup, and the old jar kept as well.
+     *
+     * On the caller's thread, which must not be the event thread: it saves, writes the archive, and may ask about the
+     * Central Station's layout through `askOnEventThread`, which waits for an answer.
+     *
+     * ONE AT A TIME (FR-125, 2026-10-13).  The menu greys its item while it runs, which kept two menu backups apart and
+     * nothing else: Download & Update's backup started whatever the menu's state, and two at once save the locomotive
+     * database and the window state through the same staging file and name their archives to the same second.  So a
+     * second waits for the first.  Never on the event thread, so the wait holds no window.
+     *
+     * @return the archive, or no archive, and what could not be saved
+     */
+    private BackupOutcome backupData()
+    {
+        synchronized (this.oneBackupAtATime)
+        {
+            return writeTheBackup();
+        }
+    }
+
+    /**
+     * What one backup holds, while nobody else can write one (FR-125).
+     */
+    private final Object oneBackupAtATime = new Object();
+
+    /**
+     * `backupData`'s body, which only `backupData` calls.
+     *
+     * @return the archive, or no archive, and what could not be saved
+     */
+    private BackupOutcome writeTheBackup()
+    {
+        // The track diagram and the autonomy setup beside it.
+        //
+        // Neither used to be backed up, which was defensible while the diagram lived on the Central
+        // Station and autonomy lived in one autonomy.json this method already saved.  It is not
+        // defensible now: for a locally stored layout, config/ holds the pages AND config/autonomy
+        // holds every station name, direction, caption and configuration - and that folder is the
+        // only copy of them anywhere.
+        List<String> unsaved = new java.util.ArrayList<>();
+
+        File backupArchive = null;
+
+        // Set only once the archive has been written, so a failure part way reports no archive
+        final File[] made = new File[1];
+
+        // The temporary copy of a Central Station layout, if one was fetched (FR-020). Removed in
+        // the finally, whatever happens to the archive.
+        File centralStationCopy = null;
+
+        // And TrainControl's OWN route database, exported (FR-021). Same treatment.
+        File routesExport = null;
+
+        this.backupDataMenuItem.setEnabled(false);
+
+        // Given back whatever happens.  It is switched off so a second backup cannot start while
+        // one is running, and everything between here and the end of the try can throw - a full
+        // disk, a locked file, a tree deep enough to overflow the stack.  Left off, the only way to
+        // back up again is to restart the application, and the user is not told why.
+        try
+        {
+            // Written LIVE first, so the archive holds the state as it is now rather than as it
+            // was when something last happened to save it.
+            //
+            // WITHOUT the session capture (IAR-A2). Writing live used to imply it, and that made
+            // this menu item commit whatever was open in the autonomy editor - to setup.json and
+            // to every configuration file - from this thread, which is not the event thread. The
+            // editor's Cancel could not undo it, because discardEdits re-reads the file that had
+            // just been written. Taking a copy must not change anything.
+            this.saveState(false, false);
+            this.model.saveState(false);
+
+            // One archive, holding all of it (FR-015).
+            //
+            // Adam: "the backup menu option should export a zip file with the locdb and uistate
+            // files, track diagram files, and autonomy files - effectively, all state."
+            //
+            // The argument for one archive rather than a folder of copies is the 23 August
+            // restore: the autonomy setup is keyed by PAGE ID, and those ids are defined by
+            // config/gleisbild.cs2 - so setup.json alone means nothing, and a gleisbild.cs2 from a
+            // different day silently reattaches every station to the wrong page. These files are
+            // only a backup together.
+            java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+
+            state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
+            state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
+                new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
+
+            // TrainControl's OWN routes, exported as JSON (FR-021).
+            //
+            // Adam: "OB 90 should run an export of our route db." The `fahrstrassen.cs2` inside
+            // the config folder is the CENTRAL STATION's copy, and the two are not the same thing:
+            // routes are edited in this application, and its route database is what actually runs.
+            // A backup holding only the station's file would restore whatever the station last
+            // knew, not what the operator built.
+            //
+            // Written through the same door the Export Routes menu item uses, so the file in the
+            // archive is one that Import Routes will read back.
+            //
+            // A failure here is named and the rest of the archive still written: the routes are
+            // one of several things being saved, and losing the whole backup because one of them
+            // could not be serialised is the wrong trade.
+            try
+            {
+                routesExport = java.io.File.createTempFile("tc-routes", ".json");
+
+                java.nio.file.Files.write(routesExport.toPath(),
+                    this.model.exportRoutes().getBytes(StandardCharsets.UTF_8));
+
+                state.put("routes.json", routesExport);
+            }
+            catch (Exception routes)
+            {
+                unsaved.add("routes.json: " + routes);
+
+                if (routesExport != null)
+                {
+                    routesExport.delete();
+
+                    routesExport = null;
+                }
+            }
+
+            // The LEGACY autonomy file (IAR-B1).
+            //
+            // For an operator coming from the hand-authored graph this is what their setup is
+            // imported from - nothing writes it any more (OB-254) - and it was in neither half of
+            // the backup: not in this archive, and no longer
+            // copied into the backup folder either, because that copy only happens on a
+            // timestamped save and this menu item stopped making one. "Backup TrainControl Data"
+            // reported success with none of it in the file.
+            //
+            // Skipped silently when it is not there, like every other source - a layout driven
+            // from the diagram has no autonomy.json and never will.
+            state.put(TrainControlUI.AUTONOMY_FILE_NAME,
+                new File(TrainControlUI.AUTONOMY_FILE_NAME));
+
+            String localLayout = getLocalLayoutPath();
+
+            // The layout lives on the CENTRAL STATION, so there is nothing local to put in the
+            // archive - and until now the backup simply did not mention it (FR-020).
+            //
+            // Adam: "for cs2 files, we have a top menu option to download a layout from the
+            // station. so a backup run in this mode could ask the user if they want to include
+            // this data."
+            //
+            // Asked rather than assumed, because it is a network fetch of every page: quick on a
+            // small layout, not free, and pointless if the Central Station is off. Declining
+            // leaves the archive exactly as it was, and the dialog at the end says what is not in
+            // it either way.
+            //
+            // There is no autonomy setup to pair these with. `AutonomyCompanionStore` refuses a
+            // layout that is not local - "autonomy needs a local copy of the track diagram,
+            // because its settings are stored alongside the diagram files" - so unlike the local
+            // case these pages stand alone, and an archive holding only them is complete rather
+            // than half of a pair.
+            // Not offered without a station answering (OB-098): "backup up files from cs should
+            // not be offered in this case".  Asking is a promise to fetch, and a question whose
+            // yes cannot be honoured is worse than the file being quietly absent - the archive
+            // would come back incomplete having asked permission to be complete.
+            // Through the one predicate, like the other two offers (validation pass).
+            //
+            // getNetworkCommState alone reports whether the last SYNC succeeded, and a sync reads
+            // through CS2File, which reads a local layout folder perfectly happily - so a
+            // simulated session syncs successfully and calls itself connected.  Adam found that
+            // once already: "switch to central station layout is NOT greyed out in debug/simulate
+            // mode."  This offer was the third site and was still asking the loose half.
+            if ((localLayout == null || localLayout.isEmpty())
+                && isCentralStationConnected()
+                && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
+            {
+                try
+                {
+                    centralStationCopy = java.nio.file.Files
+                        .createTempDirectory("tc-cs-backup").toFile();
+
+                    this.model.downloadLayout(centralStationCopy);
+
+                    state.put("central-station-layout", centralStationCopy);
+                }
+                catch (Exception cs)
+                {
+                    // Named in the incomplete-backup dialog like any other source that could not
+                    // be read. The rest of the archive is still worth writing.
+                    unsaved.add(I18n.t("ui.main.toolbar.downloadCSLayout") + ": " + cs);
+
+                    if (centralStationCopy != null)
+                    {
+                        Util.deleteTree(centralStationCopy, 0);
+
+                        centralStationCopy = null;
+                    }
+                }
+            }
+
+            if (localLayout != null && !localLayout.isEmpty())
+            {
+                // The whole folder, under the LAYOUT's own name (Adam, MT-159: "we are missing the
+                // folder name of the active layout - the zip contains 'config' instead of
+                // 'cs2_sample_layout'").
+                //
+                // It matters for the thing this archive is for. Restoring means putting these
+                // files back beside a `gleisbild.cs2` of the same vintage, and a bare `config`
+                // says nothing about which layout that was - so two backups of two layouts are
+                // indistinguishable once they are off this machine, which is exactly when
+                // somebody needs to tell them apart.
+                File layoutFolder = new File(localLayout).getAbsoluteFile();
+
+                String named = layoutFolder.getName();
+
+                state.put((named == null || named.isEmpty() ? "layout" : named) + "/config",
+                    new File(layoutFolder, "config"));
+            }
+
+            // The cropped locomotive icons, which were in no backup at all (reviewer, 2026-08-28).
+            //
+            // `LocDB.data` records each locomotive's `localImageURL`, and for a cropped icon that
+            // names a file in `tc_loc_icons` - a folder this archive has never held and git does
+            // not track. So a restored backup gave every crop-carrying locomotive a URL pointing
+            // at a file the archive did not contain, and the crops were the one piece of state
+            // with no way back at all.
+            //
+            // Only if it exists: an installation where nobody has cropped anything should not
+            // gain an empty folder in its archive.
+            File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
+
+            if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
+
+            backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));
+
+            unsaved.addAll(Util.zipInto(backupArchive, state));
+
+            made[0] = backupArchive;
+        }
+        catch (RuntimeException | StackOverflowError e)
+        {
+            unsaved.add(String.valueOf(e));
+
+            if (this.model != null && this.model.isDebug()) this.model.log(String.valueOf(e));
+        }
+        finally
+        {
+            // The scratch download goes, whether or not the archive was written. A stale copy of
+            // the diagram left in a temporary folder is exactly the sort of second copy this
+            // application keeps being bitten by.
+            if (centralStationCopy != null) Util.deleteTree(centralStationCopy, 0);
+
+            if (routesExport != null) routesExport.delete();
+
+            this.backupDataMenuItem.setEnabled(true);
+        }
+
+        return new BackupOutcome(made[0], unsaved);
+    }
+
+    /**
+     * What `backupData` wrote, and what it could not (FR-125).
+     */
+    private static final class BackupOutcome
+    {
+        /** The archive, or null when none was written. */
+        final File archive;
+
+        /** What could not be saved, each with its reason; empty when the backup is whole. */
+        final List<String> unsaved;
+
+        BackupOutcome(File archive, List<String> unsaved)
+        {
+            this.archive = archive;
+            this.unsaved = unsaved;
+        }
+
+        /**
+         * @return whether the archive was written with everything in it
+         */
+        boolean isComplete()
+        {
+            return this.archive != null && this.archive.isFile() && this.unsaved.isEmpty();
+        }
+    }
+
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
         new Thread(() ->
         {
-            // The track diagram and the autonomy setup beside it.
-            //
-            // Neither used to be backed up, which was defensible while the diagram lived on the Central
-            // Station and autonomy lived in one autonomy.json this method already saved.  It is not
-            // defensible now: for a locally stored layout, config/ holds the pages AND config/autonomy
-            // holds every station name, direction, caption and configuration - and that folder is the
-            // only copy of them anywhere.
-            List<String> unsaved = new java.util.ArrayList<>();
+            // The writing is backupData's, which an update takes too (FR-125); the reporting is the menu's alone.
+            final BackupOutcome done = backupData();
 
-            File backupArchive = null;
+            final List<String> unsaved = done.unsaved;
 
             // Read from the reporting lambda below, which needs it effectively final
-            final File[] made = new File[1];
-
-            // The temporary copy of a Central Station layout, if one was fetched (FR-020). Removed in
-            // the finally, whatever happens to the archive.
-            File centralStationCopy = null;
-
-            // And TrainControl's OWN route database, exported (FR-021). Same treatment.
-            File routesExport = null;
-
-            this.backupDataMenuItem.setEnabled(false);
-
-            // Given back whatever happens.  It is switched off so a second backup cannot start while
-            // one is running, and everything between here and the end of the try can throw - a full
-            // disk, a locked file, a tree deep enough to overflow the stack.  Left off, the only way to
-            // back up again is to restart the application, and the user is not told why.
-            try
-            {
-                // Written LIVE first, so the archive holds the state as it is now rather than as it
-                // was when something last happened to save it.
-                //
-                // WITHOUT the session capture (IAR-A2). Writing live used to imply it, and that made
-                // this menu item commit whatever was open in the autonomy editor - to setup.json and
-                // to every configuration file - from this thread, which is not the event thread. The
-                // editor's Cancel could not undo it, because discardEdits re-reads the file that had
-                // just been written. Taking a copy must not change anything.
-                this.saveState(false, false);
-                this.model.saveState(false);
-
-                // One archive, holding all of it (FR-015).
-                //
-                // Adam: "the backup menu option should export a zip file with the locdb and uistate
-                // files, track diagram files, and autonomy files - effectively, all state."
-                //
-                // The argument for one archive rather than a folder of copies is the 23 August
-                // restore: the autonomy setup is keyed by PAGE ID, and those ids are defined by
-                // config/gleisbild.cs2 - so setup.json alone means nothing, and a gleisbild.cs2 from a
-                // different day silently reattaches every station to the wrong page. These files are
-                // only a backup together.
-                java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
-
-                state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
-                state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
-                    new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
-
-                // TrainControl's OWN routes, exported as JSON (FR-021).
-                //
-                // Adam: "OB 90 should run an export of our route db." The `fahrstrassen.cs2` inside
-                // the config folder is the CENTRAL STATION's copy, and the two are not the same thing:
-                // routes are edited in this application, and its route database is what actually runs.
-                // A backup holding only the station's file would restore whatever the station last
-                // knew, not what the operator built.
-                //
-                // Written through the same door the Export Routes menu item uses, so the file in the
-                // archive is one that Import Routes will read back.
-                //
-                // A failure here is named and the rest of the archive still written: the routes are
-                // one of several things being saved, and losing the whole backup because one of them
-                // could not be serialised is the wrong trade.
-                try
-                {
-                    routesExport = java.io.File.createTempFile("tc-routes", ".json");
-
-                    java.nio.file.Files.write(routesExport.toPath(),
-                        this.model.exportRoutes().getBytes(StandardCharsets.UTF_8));
-
-                    state.put("routes.json", routesExport);
-                }
-                catch (Exception routes)
-                {
-                    unsaved.add("routes.json: " + routes);
-
-                    if (routesExport != null)
-                    {
-                        routesExport.delete();
-
-                        routesExport = null;
-                    }
-                }
-
-                // The LEGACY autonomy file (IAR-B1).
-                //
-                // For an operator coming from the hand-authored graph this is what their setup is
-                // imported from - nothing writes it any more (OB-254) - and it was in neither half of
-                // the backup: not in this archive, and no longer
-                // copied into the backup folder either, because that copy only happens on a
-                // timestamped save and this menu item stopped making one. "Backup TrainControl Data"
-                // reported success with none of it in the file.
-                //
-                // Skipped silently when it is not there, like every other source - a layout driven
-                // from the diagram has no autonomy.json and never will.
-                state.put(TrainControlUI.AUTONOMY_FILE_NAME,
-                    new File(TrainControlUI.AUTONOMY_FILE_NAME));
-
-                String localLayout = getLocalLayoutPath();
-
-                // The layout lives on the CENTRAL STATION, so there is nothing local to put in the
-                // archive - and until now the backup simply did not mention it (FR-020).
-                //
-                // Adam: "for cs2 files, we have a top menu option to download a layout from the
-                // station. so a backup run in this mode could ask the user if they want to include
-                // this data."
-                //
-                // Asked rather than assumed, because it is a network fetch of every page: quick on a
-                // small layout, not free, and pointless if the Central Station is off. Declining
-                // leaves the archive exactly as it was, and the dialog at the end says what is not in
-                // it either way.
-                //
-                // There is no autonomy setup to pair these with. `AutonomyCompanionStore` refuses a
-                // layout that is not local - "autonomy needs a local copy of the track diagram,
-                // because its settings are stored alongside the diagram files" - so unlike the local
-                // case these pages stand alone, and an archive holding only them is complete rather
-                // than half of a pair.
-                // Not offered without a station answering (OB-098): "backup up files from cs should
-                // not be offered in this case".  Asking is a promise to fetch, and a question whose
-                // yes cannot be honoured is worse than the file being quietly absent - the archive
-                // would come back incomplete having asked permission to be complete.
-                // Through the one predicate, like the other two offers (validation pass).
-                //
-                // getNetworkCommState alone reports whether the last SYNC succeeded, and a sync reads
-                // through CS2File, which reads a local layout folder perfectly happily - so a
-                // simulated session syncs successfully and calls itself connected.  Adam found that
-                // once already: "switch to central station layout is NOT greyed out in debug/simulate
-                // mode."  This offer was the third site and was still asking the loose half.
-                if ((localLayout == null || localLayout.isEmpty())
-                    && isCentralStationConnected()
-                    && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
-                {
-                    try
-                    {
-                        centralStationCopy = java.nio.file.Files
-                            .createTempDirectory("tc-cs-backup").toFile();
-
-                        this.model.downloadLayout(centralStationCopy);
-
-                        state.put("central-station-layout", centralStationCopy);
-                    }
-                    catch (Exception cs)
-                    {
-                        // Named in the incomplete-backup dialog like any other source that could not
-                        // be read. The rest of the archive is still worth writing.
-                        unsaved.add(I18n.t("ui.main.toolbar.downloadCSLayout") + ": " + cs);
-
-                        if (centralStationCopy != null)
-                        {
-                            Util.deleteTree(centralStationCopy, 0);
-
-                            centralStationCopy = null;
-                        }
-                    }
-                }
-
-                if (localLayout != null && !localLayout.isEmpty())
-                {
-                    // The whole folder, under the LAYOUT's own name (Adam, MT-159: "we are missing the
-                    // folder name of the active layout - the zip contains 'config' instead of
-                    // 'cs2_sample_layout'").
-                    //
-                    // It matters for the thing this archive is for. Restoring means putting these
-                    // files back beside a `gleisbild.cs2` of the same vintage, and a bare `config`
-                    // says nothing about which layout that was - so two backups of two layouts are
-                    // indistinguishable once they are off this machine, which is exactly when
-                    // somebody needs to tell them apart.
-                    File layoutFolder = new File(localLayout).getAbsoluteFile();
-
-                    String named = layoutFolder.getName();
-
-                    state.put((named == null || named.isEmpty() ? "layout" : named) + "/config",
-                        new File(layoutFolder, "config"));
-                }
-
-                // The cropped locomotive icons, which were in no backup at all (reviewer, 2026-08-28).
-                //
-                // `LocDB.data` records each locomotive's `localImageURL`, and for a cropped icon that
-                // names a file in `tc_loc_icons` - a folder this archive has never held and git does
-                // not track. So a restored backup gave every crop-carrying locomotive a URL pointing
-                // at a file the archive did not contain, and the crops were the one piece of state
-                // with no way back at all.
-                //
-                // Only if it exists: an installation where nobody has cropped anything should not
-                // gain an empty folder in its archive.
-                File icons = new File(Util.LOC_ICON_FOLDER).getAbsoluteFile();
-
-                if (icons.isDirectory()) state.put(Util.LOC_ICON_FOLDER, icons);
-
-                backupArchive = new File(Util.getBackupPath(prefixForBackup() + "-TrainControl.zip"));
-
-                unsaved.addAll(Util.zipInto(backupArchive, state));
-
-                made[0] = backupArchive;
-            }
-            catch (RuntimeException | StackOverflowError e)
-            {
-                unsaved.add(String.valueOf(e));
-
-                if (this.model != null && this.model.isDebug()) this.model.log(String.valueOf(e));
-            }
-            finally
-            {
-                // The scratch download goes, whether or not the archive was written. A stale copy of
-                // the diagram left in a temporary folder is exactly the sort of second copy this
-                // application keeps being bitten by.
-                if (centralStationCopy != null) Util.deleteTree(centralStationCopy, 0);
-
-                if (routesExport != null) routesExport.delete();
-
-                this.backupDataMenuItem.setEnabled(true);
-            }
+            final File[] made = {done.archive};
 
             // Derived from an actual backup path rather than from BACKUP_FOLDER: getBackupPath falls
             // back to the working directory when the folder cannot be created, and naming the folder
@@ -24809,6 +25311,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.stats.refresh();
         }
+
+        // The Auto tab opened on the locomotive commands tab (FR-126)
+        sortTheCommandsTabIfShown();
     }//GEN-LAST:event_KeyboardTabStateChanged
 
     private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextKeyboardActionPerformed
@@ -27468,6 +27973,183 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_checkForUpdatesActionPerformed
 
     private void downloadUpdateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_downloadUpdateMenuItemActionPerformed
+        // A question first: Download, Download & Update, or Cancel (FR-125)
+        offerTheUpdate();
+    }//GEN-LAST:event_downloadUpdateMenuItemActionPerformed
+
+    /**
+     * What the update question was answered with (FR-125).
+     */
+    public enum UpdateChoice
+    {
+        CANCEL, DOWNLOAD, DOWNLOAD_AND_UPDATE
+    }
+
+    /**
+     * Answers the update question in place of the user, in a test: given the buttons and the default one, it returns
+     * the index of the one pressed.  Null puts the real question back.
+     */
+    private static volatile java.util.function.BiFunction<Object[], Object, Integer> updateQuestionForTests;
+
+    /**
+     * Shows the update question's buttons, and its default, to a test instead of to the user (FR-125).
+     *
+     * @param hook given the buttons and the default, returns the index of the one pressed, or -1 for the window
+     * closed; null for the real question
+     */
+    public static void updateQuestionForTests(java.util.function.BiFunction<Object[], Object, Integer> hook)
+    {
+        updateQuestionForTests = hook;
+    }
+
+    /**
+     * The update question: "TrainControl vX is available (you have vY)." with Download, Download & Update and Cancel
+     * (FR-125).
+     *
+     * Adam, 2026-10-12: *"when user clicks on the new version, they see a download, download & update, or cancel
+     * button"*, and *"If no jar in current folder, it shouldn't be offered as a menu option"* - so without a jar to
+     * replace there are two buttons, Download and Cancel, and the second button is Cancel.  The answer is read
+     * against the buttons that were shown, so the two layouts cannot be mistaken for each other.
+     *
+     * Download is the default, with a jar or without: Download & Update closes TrainControl, and a reflex Enter must
+     * not do that.
+     *
+     * @param parent what to show it over
+     * @param latest the new version
+     * @param running this version
+     * @param canInstall whether TrainControl runs from a jar it can replace
+     * @return the answer
+     */
+    public static UpdateChoice askAboutTheUpdate(Component parent, String latest, String running, boolean canInstall)
+    {
+        final String download = I18n.t("ui.update.download");
+        final String install = I18n.t("ui.update.downloadAndUpdate");
+
+        final Object[] choices = canInstall
+            ? new Object[] {download, install, I18n.t("ui.cancel")}
+            : new Object[] {download, I18n.t("ui.cancel")};
+
+        // Download, never Download & Update: the default is what a reflex Enter does
+        final Object initial = download;
+
+        final java.util.function.BiFunction<Object[], Object, Integer> hook = updateQuestionForTests;
+
+        final int chose = hook != null ? hook.apply(choices.clone(), initial) : JOptionPane.showOptionDialog(parent,
+            I18n.f("ui.update.available", latest, running)
+                + (canInstall ? "\n\n" + I18n.t("ui.update.explainInstall") : ""),
+            I18n.t("ui.main.downloadUpdate"),
+            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, choices, initial);
+
+        if (chose == 0) return UpdateChoice.DOWNLOAD;
+
+        if (canInstall && chose == 1) return UpdateChoice.DOWNLOAD_AND_UPDATE;
+
+        return UpdateChoice.CANCEL;
+    }
+
+    /**
+     * The Download Update item's tooltip, by what its question will offer (FR-125, 2026-10-13): with no jar to replace
+     * only Download is offered, and the tooltip does not promise an update.
+     *
+     * @param canInstall whether TrainControl runs from a jar it can replace
+     * @return the tooltip
+     */
+    public static String updateItemTooltip(boolean canInstall)
+    {
+        return I18n.t(canInstall ? "ui.main.tooltip.downloadAndUpdate" : "ui.main.tooltip.downloadUpdate");
+    }
+
+    /**
+     * Why an update cannot start now, or null (FR-125).
+     *
+     * Download & Update ends by closing TrainControl, and an exit with trains running stops to ask whether to leave them
+     * running, which is not a question an update can answer for anybody.  So it refuses first, while autonomy, a
+     * timetable, Return Home or a route is running, and says so, rather than downloading and backing up for an exit that
+     * would then stop.
+     *
+     * `isAutonomyRunning` covers autonomy, a timetable and a Return Home run (a running railway, or a staging flow);
+     * `returnHomePlanning` is the window's own flag for Return Home working out its plan, when nothing is running yet;
+     * and a route runs by hand or from a sensor with autonomy idle, so it is asked separately, as the locomotive doors
+     * ask it.
+     *
+     * @param model the railway
+     * @param returnHomePlanning whether the window has Return Home under way
+     * @return the sentence to show, or null when an update may start
+     */
+    public static String whyAnUpdateMustWait(ViewListener model, boolean returnHomePlanning)
+    {
+        boolean running = returnHomePlanning || (model != null && model.isAutonomyRunning());
+
+        if (!running && model != null)
+        {
+            for (String name : model.getRouteList())
+            {
+                Route route = model.getRoute(name);
+
+                if (route != null && route.isExecuting())
+                {
+                    running = true;
+
+                    break;
+                }
+            }
+        }
+
+        return running ? I18n.t("ui.update.refusedWhileRunning") : null;
+    }
+
+    /**
+     * Help > Download Update: asks what to do with the new version, then does it (FR-125).
+     *
+     * Download & Update is offered only when TrainControl runs from a jar it can replace - the jar it was loaded from,
+     * in a folder that can be written.  Run from an IDE or from a folder of classes there is no jar, and the question
+     * offers Download alone.
+     */
+    private void offerTheUpdate()
+    {
+        final File jar = SelfUpdate.runningJar(TrainControlUI.class);
+
+        final UpdateChoice chose = askAboutTheUpdate(this, LATEST_VERSION, RAW_VERSION, jar != null);
+
+        if (chose == UpdateChoice.DOWNLOAD) downloadTheUpdate(jar, false);
+        else if (chose == UpdateChoice.DOWNLOAD_AND_UPDATE) downloadTheUpdate(jar, true);
+    }
+
+    /**
+     * Downloads the new version with its progress on the menu item; then Download says where it is, and Download &
+     * Update installs it (FR-125).
+     *
+     * Download is what this item always did, saved beside the running jar now where there is one, and in the working
+     * directory as before where there is not.
+     *
+     * One Download & Update at a time: a second, while one is downloading, backing up or closing, is refused rather
+     * than stacked.  Whatever ends it short of the exit ends it here; once it reaches `closeForTheUpdate`, that ends it.
+     *
+     * @param jar the running jar, or null
+     * @param install whether to update as well
+     */
+    private void downloadTheUpdate(final File jar, final boolean install)
+    {
+        if (install)
+        {
+            if (!this.updateHandOver.begin())
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("ui.update.alreadyUnderWay"));
+
+                return;
+            }
+
+            final String wait = whyThisUpdateMustWait();
+
+            if (wait != null)
+            {
+                this.updateHandOver.end();
+
+                JOptionPane.showMessageDialog(this, wait);
+
+                return;
+            }
+        }
 
         // Without this, a second click would skip the in-progress download and report the partial file as complete
         this.downloadUpdateMenuItem.setEnabled(false);
@@ -27475,22 +28157,62 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
         {
+            // Whether the update reached closeForTheUpdate, which ends it itself
+            boolean handedOver = false;
+
             try
             {
-                File f = new File("TrainControl_v" + LATEST_VERSION.replace(".", "_") + ".jar");
+                final File f = SelfUpdate.downloadTarget(jar, LATEST_VERSION);
 
-                if (!f.exists())
+                try
                 {
-                    Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
+                    // A file of that name that is not the whole release, an earlier download cut short, is fetched
+                    // again rather than installed.  Download alone keeps whatever is there, as it always has.
+                    if (install && f.exists()
+                        && SelfUpdate.whyNotAWholeJar(f, LATEST_DOWNLOAD_SIZE, LATEST_DOWNLOAD_DIGEST) != null)
                     {
-                        javax.swing.SwingUtilities.invokeLater(() ->
+                        Files.delete(f.toPath());
+                    }
+
+                    if (!f.exists())
+                    {
+                        Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
                         {
-                            this.downloadUpdateMenuItem.setText(percent < 0
-                                ? I18n.t("ui.infoDownloadingUpdate")
-                                : I18n.f("ui.infoDownloadingUpdatePercent", percent)
-                            );
+                            javax.swing.SwingUtilities.invokeLater(() ->
+                            {
+                                this.downloadUpdateMenuItem.setText(percent < 0
+                                    ? I18n.t("ui.infoDownloadingUpdate")
+                                    : I18n.f("ui.infoDownloadingUpdatePercent", percent)
+                                );
+                            });
                         });
+                    }
+                }
+                catch (Exception e)
+                {
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("ui.errorDownloadingUpdateFile")
+                        );
                     });
+
+                    this.model.logf("ui.errorDownloadingUpdateFile");
+
+                    if (this.model.isDebug())
+                    {
+                        this.model.log(e);
+                    }
+
+                    return;
+                }
+
+                if (install)
+                {
+                    handedOver = installTheDownload(jar, f);
+
+                    return;
                 }
 
                 javax.swing.SwingUtilities.invokeLater(() ->
@@ -27506,25 +28228,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     showFileExplorer(new File(f.getAbsoluteFile().toString()).getParentFile());
                 });
             }
-            catch (Exception e)
+            // ANYTHING ELSE, an Error included, is said rather than left to end this thread in silence (FR-125): a
+            // download that never reports looks like one still going, and an update that never reports, like one that
+            // never started.
+            catch (RuntimeException | Error e)
             {
+                final String why = String.valueOf(e);
+
+                this.model.logf("ui.update.errorFailed", why);
+
                 javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("ui.errorDownloadingUpdateFile")
-                    );
-                });
-
-                this.model.logf("ui.errorDownloadingUpdateFile");
-
-                if (this.model.isDebug())
-                {
-                    this.model.log(e);
-                }
+                    JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorFailed", why)));
             }
             finally
             {
+                if (install && !handedOver) this.updateHandOver.end();
+
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                     this.downloadUpdateMenuItem.setText(I18n.t("ui.main.downloadUpdate"));
@@ -27532,7 +28251,197 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 });
             }
         }).start();
-    }//GEN-LAST:event_downloadUpdateMenuItemActionPerformed
+    }
+
+    /**
+     * Download & Update, once the file is here (FR-125): checks it is a whole jar, takes the data backup, then closes
+     * TrainControl for the updater.  On the download's worker thread, until the exit, which is the event thread's.
+     *
+     * Each failure stops here, says why in words of its own, and leaves everything as it was: the old jar is not
+     * touched until TrainControl has closed.
+     *
+     * @param jar the running jar
+     * @param download the downloaded file, beside it
+     * @return true when the exit was asked for, which then ends the update itself
+     */
+    private boolean installTheDownload(final File jar, final File download)
+    {
+        final String broken = SelfUpdate.whyNotAWholeJar(download, LATEST_DOWNLOAD_SIZE, LATEST_DOWNLOAD_DIGEST);
+
+        if (broken != null)
+        {
+            this.model.logf("ui.update.errorNotWhole", broken);
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorNotWhole", broken)));
+
+            return false;
+        }
+
+        // What it is doing now: the backup takes a while, and the item would otherwise still read "Downloading 100%"
+        javax.swing.SwingUtilities.invokeLater(() ->
+            this.downloadUpdateMenuItem.setText(I18n.t("ui.update.backingUp")));
+
+        // The application's own data backup, and the update goes no further without it (Adam, 2026-10-12).  Incomplete
+        // counts as failed: the backup is what makes an update safe to try, and a part of one is a part of that.  An
+        // Error out of it is a failed backup too, and said as one.
+        BackupOutcome backup;
+
+        String why;
+
+        try
+        {
+            backup = backupData();
+
+            why = backup.isComplete() ? null
+                : backup.unsaved.isEmpty() ? I18n.t("ui.main.toolbar.backupData") : String.join(", ", backup.unsaved);
+        }
+        catch (RuntimeException | Error e)
+        {
+            backup = null;
+
+            why = String.valueOf(e);
+        }
+
+        if (why != null)
+        {
+            final String said = why;
+
+            this.model.logf("ui.update.errorBackup", said);
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.errorBackup", said)));
+
+            return false;
+        }
+
+        this.model.logf("ui.infoBackupCompleteSavedTo", backup.archive.getAbsolutePath());
+
+        javax.swing.SwingUtilities.invokeLater(() -> closeForTheUpdate(jar, download));
+
+        return true;
+    }
+
+    /**
+     * Why this window's update cannot start now, or null (FR-125): `whyAnUpdateMustWait`, asked with everything the
+     * Auto tab waits for (`theAutoTabWaits`) - autonomy busy, a hand send under way from its click, Graceful Stop
+     * offered - and Return Home's own flag.  `isAutonomyBusy` alone missed a send between its click and its thread
+     * counting itself (2026-10-13).
+     *
+     * @return the sentence to show, or null
+     */
+    private String whyThisUpdateMustWait()
+    {
+        return whyAnUpdateMustWait(this.model, this.stagingFlowActive || theAutoTabWaits());
+    }
+
+    /**
+     * Whether a modal dialog of this application is on screen (FR-125).
+     *
+     * @return true while one is showing
+     */
+    public static boolean aModalDialogIsShowing()
+    {
+        for (Window window : Window.getWindows())
+        {
+            if (window instanceof Dialog && ((Dialog) window).isModal() && window.isShowing()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Runs something on the event thread now, or once no modal dialog is showing (FR-125, 2026-10-13).
+     *
+     * The update's exit is posted for whenever its backup ends, and a posted task runs inside whatever modal dialog is
+     * open then: `System.exit` closed a rename or locomotive dialog with the typing in it unapplied.  So while one is
+     * showing this waits, looking again every `pollMs`, and runs once it has closed.
+     *
+     * @param then what to run, on the event thread
+     * @param dialogShowing whether a modal dialog is showing
+     * @param pollMs how often to look again
+     * @return true when it ran at once
+     */
+    public static boolean whenNoModalDialog(final Runnable then, final java.util.function.BooleanSupplier dialogShowing,
+        int pollMs)
+    {
+        if (!dialogShowing.getAsBoolean())
+        {
+            then.run();
+
+            return true;
+        }
+
+        final javax.swing.Timer later = new javax.swing.Timer(pollMs, null);
+
+        later.addActionListener(e ->
+        {
+            if (dialogShowing.getAsBoolean()) return;
+
+            later.stop();
+
+            then.run();
+        });
+
+        later.start();
+
+        return false;
+    }
+
+    /**
+     * The last step of Download & Update (FR-125): once no modal dialog is open, leaves through the application's own
+     * exit.  The update stays under way while it waits, so a second is still refused.
+     *
+     * @param jar the running jar
+     * @param download the checked download
+     */
+    private void closeForTheUpdate(final File jar, final File download)
+    {
+        whenNoModalDialog(() -> closeNowForTheUpdate(jar, download), TrainControlUI::aModalDialogIsShowing, 500);
+    }
+
+    /**
+     * Leaves through the application's own exit, which settles the open editors and saves the locomotive database and
+     * the window state, with the updater as its last act (FR-125).
+     *
+     * Asked again first, as the Auto tab asks: the download and the backup took time, and a run may have started
+     * meanwhile.
+     *
+     * The update is armed for the exit and disarmed whatever the exit does (`HandOver.exitWith`), so an exit that throws
+     * cannot leave it armed for a later, ordinary exit to start; and the hand-over is ended on every way out of here.
+     *
+     * @param jar the running jar
+     * @param download the checked download
+     */
+    private void closeNowForTheUpdate(final File jar, final File download)
+    {
+        try
+        {
+            final String wait = whyThisUpdateMustWait();
+
+            if (wait != null)
+            {
+                JOptionPane.showMessageDialog(this, wait);
+
+                return;
+            }
+
+            this.model.logf("ui.update.logClosing", LATEST_VERSION,
+                new File(jar.getParentFile(), JarUpdater.LOG_NAME).getAbsolutePath());
+
+            // Coming back at all means TrainControl did not close.  Cancelled - an editor's Cancel, or the trains
+            // question answered No - is said here; an updater that could not start took the update and said so itself.
+            if (this.updateHandOver.exitWith(new SelfUpdate.Pending(jar, download, LATEST_VERSION),
+                () -> WindowClosed(null)))
+            {
+                JOptionPane.showMessageDialog(this, I18n.f("ui.update.cancelled", download.getName()));
+            }
+        }
+        finally
+        {
+            this.updateHandOver.end();
+        }
+    }
 
     private void powerOffStartupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_powerOffStartupActionPerformed
         if (((JRadioButtonMenuItem) evt.getSource()).isSelected())  
@@ -32038,31 +32947,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 5)
             );
             
-            // Sort alphabetically, with parked locomotives last
-            List<Locomotive> locs = new LinkedList<>(shown.getLocomotivesToRun());
-            
-            locs.sort((Locomotive l1, Locomotive l2) ->
-            {
-                Point loc1Point = shown.getLocomotiveLocation(l1);
-                Point loc2Point = shown.getLocomotiveLocation(l2);
-                
-                if (loc1Point != null && loc2Point != null)
-                {
-                    if (loc1Point.isActive() && !loc2Point.isActive()) return -1;
-                    if (!loc1Point.isActive() && loc2Point.isActive()) return 1;
-                }
-                else if (loc1Point == null)
-                {
-                    return 1;
-                }
-                else if (loc2Point == null)
-                {
-                    return -1;
-                }            
-                
-                return l1.getName().compareTo(l2.getName());
-            });
-            
+            // Active first, then paused, then the trains on stations out of use, each group by name (FR-126)
+            List<Locomotive> locs = autoTabOrder(shown, shown.getLocomotivesToRun());
+
             // The panels are built here, on the event thread, where Swing components belong - but the
             // search each one used to do in its own constructor is not done here any more.
             //
@@ -32127,6 +33014,98 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
+    /**
+     * The order the Auto tab lays its cards in (FR-126; Adam: "show active first, then inactive, then ones on inactive
+     * stations (as currently), sorted alphabetically within those groups"): the trains on active stations that are going,
+     * then those paused, then those on stations out of use, then any standing nowhere - each group by name with capitals
+     * ignored, and by exact name after that, so the order does not depend on how the trains were collected.
+     *
+     * Where a train stands is asked once per train, not once per comparison.
+     *
+     * @param shown the railway the cards show
+     * @param trains the trains
+     * @return the trains in the order due, in a new list
+     */
+    static List<Locomotive> autoTabOrder(Layout shown, java.util.Collection<Locomotive> trains)
+    {
+        final java.util.Map<Locomotive, Integer> group = new java.util.IdentityHashMap<>();
+
+        for (Locomotive train : trains)
+        {
+            Point at = shown.getLocomotiveLocation(train);
+
+            group.put(train, at == null ? 3 : !at.isActive() ? 2 : train.isAutonomyPaused() ? 1 : 0);
+        }
+
+        List<Locomotive> sorted = new java.util.ArrayList<>(trains);
+
+        sorted.sort(java.util.Comparator.<Locomotive>comparingInt(train -> group.get(train))
+            .thenComparing(Locomotive::getName, String.CASE_INSENSITIVE_ORDER)
+            .thenComparing(Locomotive::getName));
+
+        return sorted;
+    }
+
+    /**
+     * Lays the Auto tab's cards out again in the order due (FR-126), the cards themselves left as they are: moved, not
+     * built again, so nothing flickers and no route is searched for.  Left alone when they already stand in that order.
+     * On the event thread.
+     */
+    private void resortAutoLocList()
+    {
+        final Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (shown == null || this.autoLocPanel == null) return;
+
+        final java.util.Map<Locomotive, AutoLocomotiveStatus> cards = new java.util.IdentityHashMap<>();
+
+        final List<Component> standing = java.util.Arrays.asList(this.autoLocPanel.getComponents());
+
+        for (Component card : standing)
+        {
+            // Anything else on the panel is not ours to move
+            if (!(card instanceof AutoLocomotiveStatus)) return;
+
+            cards.put(((AutoLocomotiveStatus) card).getLocomotive(), (AutoLocomotiveStatus) card);
+        }
+
+        List<Locomotive> due = autoTabOrder(shown, cards.keySet());
+
+        boolean inOrder = due.size() == standing.size();
+
+        for (int i = 0; inOrder && i < due.size(); i++)
+        {
+            inOrder = cards.get(due.get(i)) == standing.get(i);
+        }
+
+        if (inOrder) return;
+
+        this.autoLocPanel.removeAll();
+
+        for (Locomotive train : due) this.autoLocPanel.add(cards.get(train));
+
+        this.autoLocPanel.revalidate();
+        this.autoLocPanel.repaint();
+    }
+
+    /**
+     * Sorts the cards when the locomotive commands tab is OPENED (FR-126): the Auto tab selected with that tab showing,
+     * whichever of the two selections was the one just made.  Not called from a card's pause button, which leaves the cards
+     * where the user is pointing.
+     */
+    private void sortTheCommandsTabIfShown()
+    {
+        // Selections made while the form is still being built come here too
+        if (this.autoPanel == null || this.locCommandTab == null || this.locCommandPanels == null
+            || this.KeyboardTab == null) return;
+
+        if (this.KeyboardTab.getSelectedComponent() != this.autoPanel) return;
+
+        if (this.locCommandPanels.getSelectedComponent() != this.locCommandTab) return;
+
+        resortAutoLocList();
+    }
+
     @Override
     public boolean confirmRouteConflictMidway(Route r, String accessory, String reason)
     {
@@ -32164,6 +33143,64 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 )
             );
         });
+    }
+
+    @Override
+    public boolean offerResync(String error)
+    {
+        // Asked from the start-up thread, which waits here, so the dialog goes up on the event thread (OB-338).
+        // No model yet at this point: the window is only showing its connecting notice.
+        final boolean[] resync = {false};
+
+        Runnable ask = () ->
+        {
+            Object[] options = { I18n.t("ui.startupSyncResync"), I18n.t("ui.main.toolbar.exit") };
+
+            // A long reason wraps at a word instead of widening the dialog past the screen
+            JOptionPane pane = new JOptionPane(I18n.f("ui.startupSyncFailed", error == null ? "" : error),
+                JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION, null, options, options[0])
+            {
+                @Override
+                public int getMaxCharactersPerLineCount()
+                {
+                    return 70;
+                }
+            };
+
+            JDialog dialog = pane.createDialog(this, I18n.t("ui.startupSyncFailedTitle"));
+
+            applyWindowIcon(dialog);
+
+            // Owned by this window, which is already on screen with the connecting notice, and on top besides: the
+            // application may not hold the foreground yet while it starts
+            dialog.setAlwaysOnTop(true);
+            dialog.setVisible(true);
+            dialog.dispose();
+
+            // Only the first button syncs again; the close box and Escape leave
+            resync[0] = options[0].equals(pane.getValue());
+        };
+
+        try
+        {
+            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
+            else javax.swing.SwingUtilities.invokeAndWait(ask);
+        }
+        catch (InterruptedException interrupted)
+        {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
+        catch (java.lang.reflect.InvocationTargetException couldNotAsk)
+        {
+            // A question nobody could be asked is not a Resync: asking again would spin, so the start-up leaves
+            couldNotAsk.printStackTrace();
+
+            return false;
+        }
+
+        return resync[0];
     }
 
     @Override

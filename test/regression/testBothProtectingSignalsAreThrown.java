@@ -13,6 +13,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -1079,6 +1080,1253 @@ public class testBothProtectingSignalsAreThrown
 
         layout.createEdge("EG A", "EG B");
         layout.createEdge("EG B", "EG C");
+
+        return layout;
+    }
+
+    // ------------------------------------------------------------------------------------ OB-340: leaving a terminus
+
+    /**
+     * A train leaving a terminus is let past its exit guard (OB-340).
+     *
+     * Adam, 2026-10-12: *"when departing a terminus, autonomy should make its exit guard green.  otherwise, trains stopped
+     * by that guard would remain stuck."*  No route out commands this guard - it stands on the station's own track - and
+     * the journey setting off still claims the platform, so protection held the guard red over the train meant to leave.
+     * The first edge out now sets it GREEN with its own accessories, and holds it as it holds them.
+     *
+     * Read where the train sets off (its departure functions, just before it is given its speed) and again at the first
+     * station on the way, the platform still held by the journey and the first edge still held: GREEN, and held GREEN, so
+     * a route may not turn it red in front of the train.  After the run the platform is free, and the guard green.
+     *
+     * MUTATION: leave the guards out of what the first edge sets, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testATrainLeavingATerminusTurnsItsExitGuardGreen() throws Exception
+    {
+        final Layout layout = terminusLine(true);
+
+        layout.getPoint("TX T").setProtectingSignal(near.getName());
+
+        final Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "TX T", false), "precondition - the train must stand at the terminus");
+
+        // RED, as protection holds it over the train standing there
+        near.setState(Accessory.accessorySetting.RED);
+
+        final String[] atDeparture = {"not read"};
+        final String[] onTheWay = {"not read"};
+        final Object[] heldAt = {"not read"};
+        final Object[] heldAfter = {"not read"};
+
+        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
+            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            atDeparture[0] = aspectOver(layout, "TX T", loc, near);
+
+            heldAt[0] = layout.getActiveAccSettings().get(near);
+
+            startWas.accept(l);
+        });
+
+        // The first start is the run being registered; the second, the train at TX M
+        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+
+        layout.setCallback("OB-340 watcher", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
+
+            onTheWay[0] = aspectOver(layout, "TX T", loc, near);
+
+            heldAfter[0] = layout.getActiveAccSettings().get(near);
+
+            return null;
+        });
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("TX T", "TX M"));
+        path.add(layout.getEdge("TX M", "TX B"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, loc, 30, null), "the dispatch did not complete, so nothing below tests anything");
+
+            assertEquals(atDeparture[0], "GREEN, the train holding the platform",
+                "a train setting off from a terminus found its exit guard RED - no route out commands it, and the train's"
+                + " own claim on the platform held it red, so a guard that stops trains keeps this one there (OB-340)");
+
+            assertEquals(onTheWay[0], "GREEN, the train holding the platform",
+                "the exit guard of the terminus the train is leaving went back to red while its journey still held the"
+                + " platform (OB-340)");
+
+            assertEquals(heldAt[0], Boolean.FALSE,
+                "the journey leaving the terminus does not hold its exit guard GREEN, so a route may turn it red in front"
+                + " of the train (OB-340)");
+
+            assertEquals(heldAfter[0], Boolean.FALSE, "the journey's first edge, still held, does not hold the exit guard"
+                + " GREEN with its own accessories (OB-340)");
+
+            assertFalse(near.isSwitched(), "the terminus is free after the run, and its exit guard is not green");
+        }
+        finally
+        {
+            loc.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            layout.getPoint("TX B").setLocomotive(null);
+            layout.getPoint("TX T").setLocomotive(null);
+        }
+    }
+
+    /**
+     * A train standing at a terminus keeps its exit guard red - the control for the claim above (OB-340).
+     *
+     * A train run in to stand there turns the guard red as its path claims the platform, and leaves it red once it has
+     * arrived: only the first edge out of it sets the guard green.  The guard starts GREEN, as a departure leaves it over
+     * the empty platform, so this is also the next train in after one has left.
+     *
+     * MUTATION: let the last edge in set the guards of the station it reaches green, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testATrainArrivingAtATerminusTurnsItsExitGuardRed() throws Exception
+    {
+        final Layout layout = terminusLine(true);
+
+        layout.getPoint("TX T").setProtectingSignal(near.getName());
+
+        final Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        final Locomotive.locDirection facing = loc.getDirection();
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "TX B", false), "precondition - the train must start at B");
+
+        // GREEN, as a train that left the terminus left it
+        near.setState(Accessory.accessorySetting.GREEN);
+
+        final String[] onTheWayIn = {"not read"};
+
+        layout.setCallback("OB-340 arrival watcher", (edges, l, started) ->
+        {
+            if (Boolean.TRUE.equals(started) && "not read".equals(onTheWayIn[0]))
+            {
+                onTheWayIn[0] = near.isSwitched() ? "RED" : "GREEN";
+            }
+
+            return null;
+        });
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("TX B", "TX M"));
+        path.add(layout.getEdge("TX M", "TX T"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, loc, 30, null), "the dispatch did not complete, so nothing below tests anything");
+
+            assertEquals(onTheWayIn[0], "RED", "a train bound for the terminus left its exit guard GREEN on the way in");
+
+            assertEquals(layout.getPoint("TX T").getCurrentLocomotive(), loc, "precondition - the train must stand there");
+
+            assertTrue(near.isSwitched(), "a train standing at the terminus at the end of its journey left its exit guard"
+                + " GREEN - only a train leaving it may (OB-340)");
+        }
+        finally
+        {
+            loc.setDirection(facing);
+
+            layout.getPoint("TX T").setLocomotive(null);
+            layout.getPoint("TX B").setLocomotive(null);
+        }
+    }
+
+    /**
+     * A train leaving a through station turns its exit guards green too (OB-340; Adam, 2026-10-12: *"extend the rule to
+     * MAY TURN stations too.  just make the exit guard green when something departs."*).
+     *
+     * Its exit signal is its route's to set, green as the route is claimed, as before; a guard no route out commands, which
+     * the journey's own claim held red, now turns green with the first edge's accessories, is held GREEN with them, and
+     * stays green asked again on the way.
+     *
+     * MUTATION: leave the guards out of what the first edge sets, or let protection turn red a signal a path holds green,
+     * and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAThroughStationsExitGuardsTurnGreenAsATrainLeaves() throws Exception
+    {
+        final Layout layout = terminusLine(false);
+
+        // near: the exit signal the route out commands; far: a guard no route out commands
+        layout.getPoint("TX T").setProtectingSignals(Arrays.asList(near.getName(), far.getName()));
+
+        layout.getEdge("TX T", "TX M").addConfigCommand(near.getName(), Accessory.accessorySetting.GREEN);
+
+        final Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "TX T", false), "precondition - the train must stand at the station");
+
+        near.setState(Accessory.accessorySetting.RED);
+        far.setState(Accessory.accessorySetting.RED);
+
+        final String[] atDeparture = {"not read"};
+        final String[] onTheWay = {"not read"};
+        final Object[] farHeld = {"not read"};
+        final String[] farAskedAgain = {"not read"};
+
+        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
+            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            atDeparture[0] = aspects();
+
+            farHeld[0] = layout.getActiveAccSettings().get(far);
+
+            startWas.accept(l);
+        });
+
+        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+
+        layout.setCallback("OB-340 through watcher", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
+
+            onTheWay[0] = aspects();
+
+            // every guard asked again, the journey still holding the platform
+            layout.refreshAllProtectingSignals();
+
+            farAskedAgain[0] = far.isSwitched() ? "RED" : "GREEN";
+
+            return null;
+        });
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("TX T", "TX M"));
+        path.add(layout.getEdge("TX M", "TX B"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, loc, 30, null), "the dispatch did not complete, so nothing below tests anything");
+
+            assertEquals(atDeparture[0], "near GREEN, far GREEN", "a train setting off from a through station did not"
+                + " find both its exit guards GREEN: the exit signal its route commands, and the guard no route commands,"
+                + " which the journey's own claim held red (OB-340)");
+
+            assertEquals(onTheWay[0], "near GREEN, far GREEN", "a through station's exit guards went back to red while the"
+                + " journey leaving it still held the platform (OB-340)");
+
+            assertEquals(farHeld[0], Boolean.FALSE, "the journey leaving a through station does not hold its exit guard"
+                + " GREEN, so a route may turn it red in front of the train (OB-340)");
+
+            assertEquals(farAskedAgain[0], "GREEN", "a through station's guard, asked again while the journey leaving it"
+                + " still held the platform, went RED in front of the train (OB-340)");
+        }
+        finally
+        {
+            loc.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            layout.getPoint("TX B").setLocomotive(null);
+            layout.getPoint("TX T").setLocomotive(null);
+        }
+    }
+
+    /**
+     * A train leaving a station trains MAY turn at, forward from its plain copy, turns the station's exit guard green
+     * (OB-340): the rule is the departure's, from any station, whichever copy the train stands on.
+     *
+     * MUTATION: set only a terminus copy's guards with the first edge, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAMayTurnStationsForwardDepartureTurnsItsExitGuardGreen() throws Exception
+    {
+        assertEquals(leaveACopy(false), "GREEN, the train holding the platform", "a train leaving a may-turn station"
+            + " forward found its exit guard RED (OB-340)");
+    }
+
+    /**
+     * A train leaving a must-turn station from a copy that is not a terminus - the turning copy of an arrival side that is
+     * barred, built as a reversing point - turns the station's exit guard green (OB-340).
+     *
+     * MUTATION: set only a terminus copy's guards with the first edge, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAMustTurnStationsBarredCopyDepartureTurnsItsExitGuardGreen() throws Exception
+    {
+        assertEquals(leaveACopy(true), "GREEN, the train holding the platform", "a train leaving a must-turn station from"
+            + " its barred side's copy found its exit guard RED (OB-340)");
+    }
+
+    /**
+     * An exit guard a terminus shares with another platform turns GREEN for the train leaving the terminus, though another
+     * train stands on that platform, and protection leaves it green while the first edge out holds it - asked again by an
+     * occupancy change there on the way; once the journey has given its track back it is RED for the train standing
+     * there (OB-340; Adam's ruling of 2026-10-12 on a shared guard).
+     *
+     * MUTATION: leave the guards out of what the first edge sets, and the first claim fails; let protection turn red a
+     * signal a path holds green, and the second does.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAnExitGuardSharedWithAnotherTrainsPlatformIsGreenWhileTheTrainLeaves() throws Exception
+    {
+        assertEquals(leaveBesideAnotherTrain(false), Arrays.asList("GREEN, the train holding the platform",
+            "GREEN, the train holding the platform", "RED, the train holding the platform"),
+            "a shared exit guard, read as the train leaves the terminus, on its way with the other platform's occupancy"
+            + " asked again, and over the other train once the run is over: GREEN, GREEN, then RED (OB-340)");
+    }
+
+    /**
+     * The exit signal a train's route out turns green, shared with another platform a train stands on, stays GREEN while
+     * the route holds it, asked again on the way, and is RED for the standing train once the run is over (OB-340).  Adam's
+     * own railway pairs signals 63 and 64 with TopMainR0, R1 and R2, and only the routes out of those platforms set them.
+     *
+     * MUTATION: let protection turn red a signal a path holds green, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAnExitSignalSharedWithAnOccupiedPlatformStaysGreenForTheTrainLeaving() throws Exception
+    {
+        assertEquals(leaveBesideAnotherTrain(true), Arrays.asList("GREEN, the train holding the platform",
+            "GREEN, the train holding the platform", "RED, the train holding the platform"), "the exit signal the route"
+            + " out set GREEN, shared with an occupied platform, read as the train sets off, on its way with the other"
+            + " platform's occupancy asked again, and over the other train once the run is over (OB-340)");
+    }
+
+    /**
+     * A train leaves the terminus TX T while another stands at TX P, both guarded by `near` (OB-340).
+     *
+     * @param routeCommandsIt whether the first edge out commands `near` green, as a route out does its exit signal
+     * @return the guard as the train sets off; at TX M, once the other train has been taken off P and put back; and over
+     *         the other train once the run is over - each as `aspectOver` reads it
+     */
+    private List<String> leaveBesideAnotherTrain(boolean routeCommandsIt) throws Exception
+    {
+        final Layout layout = terminusLine(true);
+
+        layout.getPoint("TX T").setProtectingSignal(near.getName());
+        layout.getPoint("TX P").setProtectingSignal(near.getName());
+
+        if (routeCommandsIt) layout.getEdge("TX T", "TX M").addConfigCommand(near.getName(), Accessory.accessorySetting.GREEN);
+
+        final Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+        final Locomotive standing = model.getLocByName(model.getLocList().get(1));
+
+        assertNotEquals(leaving.getName(), standing.getName(), "this test needs two different locomotives");
+
+        assertTrue(layout.moveLocomotive(leaving.getName(), "TX T", false), "precondition - a train must stand at the terminus");
+        assertTrue(layout.moveLocomotive(standing.getName(), "TX P", false), "precondition - another must stand at P");
+
+        near.setState(Accessory.accessorySetting.RED);
+
+        final String[] read = {"not read", "not read", "not read"};
+
+        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
+            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        leaving.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            read[0] = aspectOver(layout, "TX T", leaving, near);
+
+            startWas.accept(l);
+        });
+
+        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+
+        // At TX M, the first edge still held: P's occupancy changes and back, which asks protection again
+        layout.setCallback("OB-340 shared watcher", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started) || starts.incrementAndGet() != 2) return null;
+
+            layout.getPoint("TX P").setLocomotive(null);
+            layout.getPoint("TX P").setLocomotive(standing);
+
+            read[1] = aspectOver(layout, "TX T", leaving, near);
+
+            return null;
+        });
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("TX T", "TX M"));
+        path.add(layout.getEdge("TX M", "TX B"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, leaving, 30, null), "the dispatch did not complete, so nothing tests"
+                + " anything");
+
+            read[2] = aspectOver(layout, "TX P", standing, near);
+        }
+        finally
+        {
+            leaving.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            layout.getPoint("TX B").setLocomotive(null);
+            layout.getPoint("TX T").setLocomotive(null);
+            layout.getPoint("TX P").setLocomotive(null);
+        }
+
+        return Arrays.asList(read);
+    }
+
+    /**
+     * With Atomic Routes off - Adam's own setting - a guard shared with a platform another train stands at is GREEN as the
+     * train leaves and still GREEN while the first edge out holds it, and RED over the other train once the tail has
+     * cleared that edge: the hold lapses there, and the start, given back at once, asks it again (OB-340).
+     *
+     * A journey of four edges, none measured, so the tail clears the first edge when the head finishes the second.
+     *
+     * MUTATION: leave the start unreleased where the tail clears the first edge, so nothing asks its guards then, and
+     * this fails.  (Keeping the first edge's hold past its clearing does not: non-atomic routes give the edge itself back
+     * before the start, so nothing holds the guard either way - the claim below, with Atomic Routes on, is that one's.)
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testASharedGuardGoesBackToRedAsTheTailClearsTheFirstEdgeWithAtomicRoutesOff() throws Exception
+    {
+        assertEquals(leaveBesideAnotherTrainOverFourEdges(false), Arrays.asList("GREEN, the train holding the platform",
+            "GREEN, the train holding the platform", "RED, the train holding the platform",
+            "RED, the train holding the platform"), "a shared exit guard with Atomic Routes off: as the train leaves, at"
+            + " the end of its first edge, once its tail has cleared that edge, and after an occupancy change at the other"
+            + " platform (OB-340)");
+    }
+
+    /**
+     * With Atomic Routes on, the first edge's hold on a shared guard lapses when the tail has cleared it, but nothing asks
+     * the guard then: it stays GREEN over the train at the other platform until the next change of occupancy there turns
+     * it RED (OB-340).
+     *
+     * MUTATION: keep the first edge's hold once its tail has cleared it, or record the clearing only where non-atomic
+     * routes give the edge back, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testASharedGuardIsAskedAgainOnceTheTailHasClearedTheFirstEdgeWithAtomicRoutesOn() throws Exception
+    {
+        assertEquals(leaveBesideAnotherTrainOverFourEdges(true), Arrays.asList("GREEN, the train holding the platform",
+            "GREEN, the train holding the platform", "GREEN, the train holding the platform",
+            "RED, the train holding the platform"), "a shared exit guard with Atomic Routes on: as the train leaves, at"
+            + " the end of its first edge, once its tail has cleared that edge, and after an occupancy change at the other"
+            + " platform (OB-340)");
+    }
+
+    /**
+     * A train leaves the terminus FE T over four edges - FE M, FE N, FE O, FE B - while another stands at FE P, both
+     * guarded by `near`; this class's own feedbacks 47481-47486 (OB-340).
+     *
+     * @param atomic Atomic Routes
+     * @return the guard as the train sets off and at FE M, beside the train leaving; then at FE N, where the tail has
+     *         cleared the first edge, and there once the other train has been taken off P and put back, beside that one
+     */
+    private List<String> leaveBesideAnotherTrainOverFourEdges(boolean atomic) throws Exception
+    {
+        String[] names = {"FE T", "FE M", "FE N", "FE O", "FE B", "FE P"};
+
+        final Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+        layout.setAtomicRoutes(atomic);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            String feedback = Integer.toString(47481 + i);
+
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(47481 + i, null);
+
+            model.setFeedbackState(feedback, false);
+
+            layout.createPoint(names[i], true, feedback);
+        }
+
+        layout.getPoint("FE T").setTerminus(true);
+        layout.getPoint("FE T").setProtectingSignal(near.getName());
+        layout.getPoint("FE P").setProtectingSignal(near.getName());
+
+        List<Edge> path = new LinkedList<>();
+
+        for (int i = 0; i < 4; i++) path.add(layout.createEdge(names[i], names[i + 1]));
+
+        final Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+        final Locomotive standing = model.getLocByName(model.getLocList().get(1));
+
+        assertNotEquals(leaving.getName(), standing.getName(), "this test needs two different locomotives");
+
+        assertTrue(layout.moveLocomotive(leaving.getName(), "FE T", false), "precondition - a train must stand at the terminus");
+        assertTrue(layout.moveLocomotive(standing.getName(), "FE P", false), "precondition - another must stand at P");
+
+        near.setState(Accessory.accessorySetting.RED);
+
+        final String[] read = {"not read", "not read", "not read", "not read"};
+
+        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
+            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        leaving.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            read[0] = aspectOver(layout, "FE T", leaving, near);
+
+            startWas.accept(l);
+        });
+
+        final java.util.concurrent.atomic.AtomicInteger starts = new java.util.concurrent.atomic.AtomicInteger();
+
+        // The second start is the head at FE M; the third, the head at FE N, the tail past the first edge
+        layout.setCallback("OB-340 four-edge watcher", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            int start = starts.incrementAndGet();
+
+            if (start == 2) read[1] = aspectOver(layout, "FE T", leaving, near);
+
+            if (start == 3)
+            {
+                read[2] = aspectOver(layout, "FE P", standing, near);
+
+                layout.getPoint("FE P").setLocomotive(null);
+                layout.getPoint("FE P").setLocomotive(standing);
+
+                read[3] = aspectOver(layout, "FE P", standing, near);
+            }
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(path, leaving, 30, null), "the dispatch did not complete, so nothing tests"
+                + " anything");
+        }
+        finally
+        {
+            leaving.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            for (String name : names) layout.getPoint(name).setLocomotive(null);
+        }
+
+        return Arrays.asList(read);
+    }
+
+    /**
+     * What every reading of `raceTheRefresh` is: GREEN and held GREEN as the train sets off, GREEN after the refresh, and
+     * the departure's GREEN sent only once its hold could be read
+     */
+    private static final String STAYS_GREEN = "GREEN, the train holding the platform, held GREEN; after the other thread's"
+        + " refresh: GREEN, the train holding the platform; the GREEN commanded with its hold readable";
+
+    /** How long any one step of `raceTheRefresh` may wait, so that a wrong answer is a failure and never a hang */
+    private static final long RACE_BOUND_MS = 20000;
+
+    /** How long the whole departure of `raceTheRefresh` may take: each step it can wait for, and then some */
+    private static final long DEPARTURE_BOUND_MS = 3 * RACE_BOUND_MS;
+
+    /**
+     * A protection refresh on another train's thread that has read the holds BEFORE a departure claims its route does not
+     * turn the leaving train's exit guard RED after the departure has set it GREEN, with Atomic Routes off - nor does the
+     * same refresh made after the claim (RSA67-C1, OB-340).  The refresh reads the holds and commands the signal as one
+     * step against the departure's GREEN, so it either commands first and the GREEN lands last, or reads the hold.
+     *
+     * MUTATION: take the signal's lock out of `Layout.refreshOneSignal`, or out of the departure's GREEN in
+     * `configureAndLockPath`, and the forced reading goes RED after the refresh; command that GREEN before the claim and
+     * the first edge are taken, and the GREEN is sent before its hold can be read.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff() throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, false, false), raceTheRefresh(false, false, false)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform, the"
+            + " leaving train's exit guard, as it sets off and once another thread's refresh of it is done - that refresh"
+            + " forced to read the holds before the claim and to finish after the departure, and then made after the claim"
+            + " (RSA67-C1)");
+    }
+
+    /**
+     * The same with Atomic Routes on (RSA67-C1, OB-340).
+     *
+     * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOff`.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesItsGuardGreenWithAtomicRoutesOn() throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, true, false), raceTheRefresh(false, true, false)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform, the"
+            + " leaving train's exit guard, as it sets off and once another thread's refresh of it is done - that refresh"
+            + " forced to read the holds before the claim and to finish after the departure, and then made after the claim"
+            + " (RSA67-C1)");
+    }
+
+    /**
+     * The same where the first edge out commands the shared guard GREEN itself, as a route out does its exit signal, with
+     * Atomic Routes off: the edge's own command is held as the exit guards are, so it too is sent under the signal's lock
+     * once the edge is taken (RSA67-C1, OB-340).
+     *
+     * MUTATION: take the signal's lock out of `Layout.configureEdge`'s command, and the forced reading goes RED after the
+     * refresh.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff()
+        throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, false, true), raceTheRefresh(false, false, true)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform that the"
+            + " leaving train's first edge commands GREEN, as it sets off and once another thread's refresh of it is done -"
+            + " that refresh forced to read the holds before the claim and to finish after the departure, and then made"
+            + " after the claim (RSA67-C1)");
+    }
+
+    /**
+     * The same with Atomic Routes on (RSA67-C1, OB-340).
+     *
+     * MUTATION: as `testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOff`.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testARefreshStraddlingADeparturesClaimLeavesTheGreenItsFirstEdgeCommandsWithAtomicRoutesOn()
+        throws Exception
+    {
+        assertEquals(Arrays.asList(raceTheRefresh(true, true, true), raceTheRefresh(false, true, true)), Arrays.asList(
+            "forced: " + STAYS_GREEN, "after the claim: " + STAYS_GREEN), "a guard shared with another platform that the"
+            + " leaving train's first edge commands GREEN, as it sets off and once another thread's refresh of it is done -"
+            + " that refresh forced to read the holds before the claim and to finish after the departure, and then made"
+            + " after the claim (RSA67-C1)");
+    }
+
+    /**
+     * A train leaves RR S for RR N by RR M while another thread refreshes `near`, the guard RR S shares with RR P; this
+     * class's own feedbacks 47491-47496 (RSA67-C1).
+     *
+     * Another train is under way on one held edge, RR X to RR Y, put among the journeys directly, so that a refresh walks
+     * that edge's commands as it reads the holds.  Forced, the refresh runs on a thread of its own before the departure,
+     * and that walk waits there, once, until the departure has been handed over - its guard set GREEN, its speed not yet
+     * given - or until the departure is waiting for a monitor the refresh holds: so the refresh has read the holds before
+     * the claim, and finishes after the GREEN unless the departure waits for it.  Unforced, the same refresh is made on
+     * the departing thread at the hand-over, after the claim.
+     *
+     * Every GREEN the departure sends `near` before its hand-over is checked against the holds as it is sent, through the
+     * control station's sent-message observer.  The departure runs on a thread of its own, joined with a bound, so that
+     * a refresh that came to wait for the railway's monitor fails here rather than hanging the class.
+     *
+     * @param forced whether the refresh straddles the claim
+     * @param atomic Atomic Routes
+     * @param edgeCommandsIt whether the first edge out commands `near` GREEN itself, rather than the departure adding it
+     *        as an exit guard of RR S
+     * @return the guard as `aspectOver` reads it, with the setting the paths hold it at, as the train sets off; as
+     *         `aspectOver` reads it once the refresh is done; and whether the GREEN was sent with its hold readable
+     */
+    private String raceTheRefresh(final boolean forced, boolean atomic, boolean edgeCommandsIt) throws Exception
+    {
+        String[] names = {"RR S", "RR M", "RR N", "RR P", "RR X", "RR Y"};
+
+        final Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+        layout.setAtomicRoutes(atomic);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            String feedback = Integer.toString(47491 + i);
+
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(47491 + i, null);
+
+            model.setFeedbackState(feedback, false);
+
+            layout.createPoint(names[i], true, feedback);
+        }
+
+        layout.getPoint("RR S").setProtectingSignal(near.getName());
+        layout.getPoint("RR P").setProtectingSignal(near.getName());
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.createEdge("RR S", "RR M"));
+        path.add(layout.createEdge("RR M", "RR N"));
+
+        if (edgeCommandsIt) path.get(0).addConfigCommand(near.getName(), Accessory.accessorySetting.GREEN);
+
+        final Locomotive leaving = model.getLocByName(model.getLocList().get(0));
+        final Locomotive other = model.getLocByName(model.getLocList().get(1));
+
+        assertNotEquals(leaving.getName(), other.getName(), "this test needs two different locomotives");
+
+        layout.getPoint("RR S").setLocomotive(leaving);
+
+        final java.util.concurrent.CountDownLatch refreshIsReading = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch letTheRefreshGo = new java.util.concurrent.CountDownLatch(1);
+        final Thread[] refresher = {null};
+        final String[] read = {"not read", "not read", "not refreshed"};
+        final java.util.concurrent.atomic.AtomicBoolean handedOver = new java.util.concurrent.atomic.AtomicBoolean();
+        final List<String> greens = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        // The other train's one held edge: on the refresh's thread, the first walk of its commands waits
+        Edge held = new Edge(layout.getPoint("RR X"), layout.getPoint("RR Y"))
+        {
+            @Override
+            public java.util.Map<String, Accessory.accessorySetting> getConfigCommands()
+            {
+                if (Thread.currentThread() == refresher[0] && refreshIsReading.getCount() > 0)
+                {
+                    refreshIsReading.countDown();
+
+                    try
+                    {
+                        letTheRefreshGo.await(RACE_BOUND_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return super.getConfigCommands();
+            }
+        };
+
+        held.setOccupied();
+
+        journeys(layout).put(other, Arrays.asList(held));
+
+        near.setState(Accessory.accessorySetting.RED);
+
+        final java.util.function.Consumer<Locomotive> startWas = leaving.hasCallback(Layout.CB_ROUTE_START)
+            ? leaving.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        leaving.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            handedOver.set(true);
+
+            java.util.Map<Accessory, Boolean> holds = layout.getActiveAccSettings();
+
+            read[0] = aspectOver(layout, "RR S", leaving, near) + ", " + (!holds.containsKey(near) ? "not held"
+                : holds.get(near) == null ? "held both ways" : holds.get(near) ? "held RED" : "held GREEN");
+
+            if (forced)
+            {
+                letTheRefreshGo.countDown();
+
+                try
+                {
+                    refresher[0].join(RACE_BOUND_MS);
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            else
+            {
+                read[2] = refreshOn(layout, "RR P");
+            }
+
+            read[1] = aspectOver(layout, "RR S", leaving, near);
+
+            startWas.accept(l);
+        });
+
+        final Object[] ran = {"not finished"};
+
+        final Thread departing = new Thread(() ->
+        {
+            try
+            {
+                ran[0] = layout.executePath(path, leaving, 30, null);
+            }
+            catch (Throwable e)
+            {
+                ran[0] = e;
+            }
+        }, "RSA67-C1 departure");
+
+        departing.setDaemon(true);
+
+        // Each GREEN of the guard the departure sends before its hand-over, and whether the holds already had it then
+        model.setSentMessageObserver(m ->
+        {
+            if (Thread.currentThread() != departing || handedOver.get()) return;
+
+            if (!Integer.valueOf(CS2Message.CMD_ACC_SWITCH).equals(m.getCommand()) || m.extractUID() != near.getUID()
+                || m.getData().length < 5 || m.getData()[4] != 1) return;
+
+            greens.add(Boolean.FALSE.equals(layout.getActiveAccSettings().get(near)) ? "held" : "not yet held");
+        });
+
+        Thread watcher = null;
+
+        try
+        {
+            if (forced)
+            {
+                refresher[0] = new Thread(() -> read[2] = refreshOn(layout, "RR P"), "RSA67-C1 refresh");
+                refresher[0].setDaemon(true);
+                refresher[0].start();
+
+                assertTrue(refreshIsReading.await(RACE_BOUND_MS, java.util.concurrent.TimeUnit.MILLISECONDS),
+                    "precondition: the other thread's refresh must be reading the holds before the claim");
+
+                // Lets the refresh go once the departure is waiting for it, where it can never reach its hand-over
+                watcher = new Thread(() ->
+                {
+                    long until = System.currentTimeMillis() + RACE_BOUND_MS;
+
+                    while (letTheRefreshGo.getCount() > 0 && System.currentTimeMillis() < until)
+                    {
+                        if (waitsForAMonitorHeldBy(departing, refresher[0]))
+                        {
+                            letTheRefreshGo.countDown();
+                        }
+
+                        try
+                        {
+                            Thread.sleep(1);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            return;
+                        }
+                    }
+                }, "RSA67-C1 watcher");
+
+                watcher.setDaemon(true);
+                watcher.start();
+            }
+
+            departing.start();
+            departing.join(DEPARTURE_BOUND_MS);
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+
+            letTheRefreshGo.countDown();
+
+            leaving.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            if (watcher != null)
+            {
+                watcher.interrupt();
+                watcher.join(RACE_BOUND_MS);
+            }
+
+            if (refresher[0] != null) refresher[0].join(RACE_BOUND_MS);
+
+            journeys(layout).remove(other);
+
+            held.setUnoccupied();
+
+            // Not while a departure is stuck: clearing a platform asks the guard, and may wait on what it holds
+            if (!departing.isAlive()) for (String name : names) layout.getPoint(name).setLocomotive(null);
+        }
+
+        assertFalse(departing.isAlive(), "the departure did not finish within " + DEPARTURE_BOUND_MS + " ms - it is waiting"
+            + " for something that waits for it, as a refresh needing the railway's monitor would");
+
+        assertEquals(ran[0], Boolean.TRUE, "the dispatch did not complete, so nothing tests anything");
+
+        assertEquals(read[2], "refreshed", "the other thread's refresh must have run to its end");
+
+        String green = greens.isEmpty() ? "no GREEN commanded" : greens.contains("not yet held")
+            ? "a GREEN commanded before its hold was readable " + greens : "the GREEN commanded with its hold readable";
+
+        return (forced ? "forced: " : "after the claim: ") + read[0] + "; after the other thread's refresh: " + read[1]
+            + "; " + green;
+    }
+
+    /**
+     * A protection refresh of one Point, as an occupancy change there makes it (RSA67-C1).
+     *
+     * @param layout the railway
+     * @param point the Point
+     * @return "refreshed", or what it threw
+     */
+    private static String refreshOn(Layout layout, String point)
+    {
+        try
+        {
+            java.lang.reflect.Method refresh = Layout.class.getDeclaredMethod("refreshProtectingSignal",
+                org.traincontrol.automation.Point.class);
+
+            refresh.setAccessible(true);
+            refresh.invoke(layout, layout.getPoint(point));
+
+            return "refreshed";
+        }
+        catch (Exception e)
+        {
+            return "the refresh threw " + e;
+        }
+    }
+
+    /**
+     * The railway's journeys under way, so that a test can put a train among them without running it (RSA67-C1).
+     *
+     * @param layout the railway
+     * @return its live map of each train under way to its path
+     */
+    @SuppressWarnings("unchecked")
+    private static java.util.Map<Locomotive, List<Edge>> journeys(Layout layout) throws Exception
+    {
+        java.lang.reflect.Field active = Layout.class.getDeclaredField("activeLocomotives");
+
+        active.setAccessible(true);
+
+        return (java.util.Map<Locomotive, List<Edge>>) active.get(layout);
+    }
+
+    /**
+     * Whether one thread is BLOCKED entering a monitor another thread holds - the departure waiting for the refresh, which
+     * is the fix's shape and which the forcing must let through rather than deadlock on (RSA67-C1).
+     *
+     * @param waiting the thread that may be waiting
+     * @param holding the thread that may hold what it waits for
+     * @return true when it does
+     */
+    private static boolean waitsForAMonitorHeldBy(Thread waiting, Thread holding)
+    {
+        java.lang.management.ThreadMXBean threads = java.lang.management.ManagementFactory.getThreadMXBean();
+
+        java.lang.management.ThreadInfo blocked = threads.getThreadInfo(new long[] {waiting.getId()}, false, false)[0];
+
+        if (blocked == null || blocked.getThreadState() != Thread.State.BLOCKED || blocked.getLockInfo() == null) return false;
+
+        java.lang.management.ThreadInfo holder = threads.getThreadInfo(new long[] {holding.getId()}, true, false)[0];
+
+        if (holder == null) return false;
+
+        for (java.lang.management.MonitorInfo monitor : holder.getLockedMonitors())
+        {
+            if (monitor.getIdentityHashCode() == blocked.getLockInfo().getIdentityHashCode()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Where the first edge out commands its own station's exit guard, the edge's setting stands (OB-340): one commanding it
+     * RED - under one spelling of its name where the station uses the other, one accessory - leaves it RED, held RED.
+     *
+     * MUTATION: set every guard of the station green whatever the edge commands, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testTheFirstEdgesOwnSettingOfAGuardStands() throws Exception
+    {
+        final Layout layout = terminusLine(true);
+
+        final String otherSpelling = near.getName().startsWith("Switch ")
+            ? "Signal " + near.getName().substring("Switch ".length())
+            : "Switch " + near.getName().substring(near.getName().indexOf(' ') + 1);
+
+        assertEquals(model.getAccessoryByName(otherSpelling), near, "precondition: both spellings must name one accessory");
+
+        layout.getPoint("TX T").setProtectingSignal(otherSpelling);
+
+        layout.getEdge("TX T", "TX M").addConfigCommand(near.getName(), Accessory.accessorySetting.RED);
+
+        final Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "TX T", false), "precondition - the train must stand at the terminus");
+
+        // GREEN, so a red at the departure is the edge's doing
+        near.setState(Accessory.accessorySetting.GREEN);
+
+        final Object[] read = {"not read", "not read"};
+
+        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
+            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            read[0] = near.isSwitched() ? "RED" : "GREEN";
+            read[1] = layout.getActiveAccSettings().get(near);
+
+            startWas.accept(l);
+        });
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("TX T", "TX M"));
+        path.add(layout.getEdge("TX M", "TX B"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, loc, 30, null), "the dispatch did not complete, so nothing below tests anything");
+
+            assertEquals(Arrays.asList(read), Arrays.asList("RED", Boolean.TRUE), "a first edge commanding its own"
+                + " station's exit guard RED, read as the train sets off: the guard and the setting it is held at (OB-340)");
+        }
+        finally
+        {
+            loc.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            layout.getPoint("TX B").setLocomotive(null);
+            layout.getPoint("TX T").setLocomotive(null);
+        }
+    }
+
+    /**
+     * A departure given back unrun - a stop ordered while its route was being set - leaves the station's exit guard RED
+     * over the train still standing there, though the first edge had already set it GREEN (OB-340): the route is given back
+     * and the start reserved again, which asks the guard.
+     *
+     * MUTATION: give the route back without reserving the start again, and this fails.
+     *
+     * @throws Exception from the dispatch
+     */
+    @Test
+    public void testADepartureGivenBackForAStopLeavesItsGuardRed() throws Exception
+    {
+        assertEquals(failADeparture(false), Arrays.asList("GREEN", "RED, the train holding the platform"), "the exit"
+            + " guard while the route was being set, and after a stop gave it back (OB-340)");
+    }
+
+    /**
+     * A departure that fails while its route is being set - an accessory that cannot be commanded - leaves the station's
+     * exit guard RED over the train still standing there, though the first edge had already set it GREEN (OB-340): what
+     * was taken is released and the start reserved again, which asks the guard.
+     *
+     * MUTATION: release a failed route without reserving the start again, and this fails.
+     *
+     * @throws Exception from the dispatch
+     */
+    @Test
+    public void testADepartureThatFailsWhileItsRouteIsSetLeavesItsGuardRed() throws Exception
+    {
+        assertEquals(failADeparture(true), Arrays.asList("GREEN", "RED, the train holding the platform"), "the exit"
+            + " guard while the route was being set, and after the route failed (OB-340)");
+    }
+
+    /**
+     * A departure from the terminus TX T, guarded by `near`, that does not happen: while its second edge is being set up -
+     * the first edge's accessories and guards set - a stop is ordered, or the edge cannot be configured (OB-340).
+     *
+     * @param fails true for an edge that cannot be configured, false for a stop
+     * @return the guard as the second edge is set up, and after the departure as `aspectOver` reads it
+     */
+    private List<String> failADeparture(boolean fails) throws Exception
+    {
+        final Layout layout = terminusLine(true);
+
+        layout.getPoint("TX T").setProtectingSignal(near.getName());
+
+        final Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "TX T", false), "precondition - the train must stand at the terminus");
+
+        near.setState(Accessory.accessorySetting.RED);
+
+        final String[] read = {"not read", "not read"};
+
+        final java.util.concurrent.atomic.AtomicBoolean asked = new java.util.concurrent.atomic.AtomicBoolean();
+
+        // Asked once its claim is taken - the configuration preview before it is let through
+        Edge second = new Edge(layout.getPoint("TX M"), layout.getPoint("TX B"))
+        {
+            @Override
+            public java.util.Map<String, Accessory.accessorySetting> getConfigCommands()
+            {
+                if (layout.isAlreadyUnderway(loc) && asked.compareAndSet(false, true))
+                {
+                    read[0] = near.isSwitched() ? "RED" : "GREEN";
+
+                    if (fails) throw new IllegalStateException("the accessory went away mid-lock");
+
+                    layout.stopEveryTrainWhereItIs();
+                }
+
+                return super.getConfigCommands();
+            }
+        };
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("TX T", "TX M"));
+        path.add(second);
+
+        try
+        {
+            boolean ran;
+
+            try
+            {
+                ran = layout.executePath(path, loc, 30, null);
+            }
+            catch (RuntimeException failed)
+            {
+                ran = false;
+            }
+
+            assertFalse(ran, "precondition: the departure must not happen");
+
+            read[1] = aspectOver(layout, "TX T", loc, near);
+        }
+        finally
+        {
+            layout.getPoint("TX T").setLocomotive(null);
+        }
+
+        return Arrays.asList(read);
+    }
+
+    /**
+     * Two copies of one station square, CP 1 and CP 2, each a way out to CP M and on to CP B, both guarded by `near`; a
+     * train leaves from CP 2 or CP 1 - whichever is not a terminus - and the guard is read where it sets off (OB-340).
+     *
+     * @param mustTurn true: CP 1 a terminus and CP 2 the turning copy of a barred side, a reversing point and no
+     *        destination - the train leaves from CP 2; false: CP 1 a plain copy and CP 2 the turning one - the train leaves
+     *        forward from CP 1
+     * @return the guard's aspect where the train sets off, as `aspectOver` reads it
+     */
+    private String leaveACopy(boolean mustTurn) throws Exception
+    {
+        for (String feedback : new String[] {"47475", "47476", "47477", "47478"})
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+
+            model.setFeedbackState(feedback, false);
+        }
+
+        final Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        layout.createPoint("CP 1", true, "47475");
+        layout.createPoint("CP 2", !mustTurn, "47476");
+        layout.createPoint("CP M", true, "47477");
+        layout.createPoint("CP B", true, "47478");
+
+        if (mustTurn)
+        {
+            layout.getPoint("CP 1").setTerminus(true);
+            layout.getPoint("CP 2").setReversing(true);
+        }
+        else
+        {
+            layout.getPoint("CP 2").setTerminus(true);
+        }
+
+        final String from = mustTurn ? "CP 2" : "CP 1";
+
+        for (String copy : new String[] {"CP 1", "CP 2"})
+        {
+            layout.getPoint(copy).setBlock("CP square");
+            layout.getPoint(copy).setProtectingSignal(near.getName());
+
+            layout.createEdge(copy, "CP M");
+        }
+
+        layout.createEdge("CP M", "CP B");
+
+        final Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // Stood there by hand, as a train on a barred side's copy can only be
+        layout.getPoint(from).setLocomotive(loc);
+
+        near.setState(Accessory.accessorySetting.RED);
+
+        final String[] atDeparture = {"not read"};
+
+        final java.util.function.Consumer<Locomotive> startWas = loc.hasCallback(Layout.CB_ROUTE_START)
+            ? loc.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        loc.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            atDeparture[0] = aspectOver(layout, from, loc, near);
+
+            startWas.accept(l);
+        });
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge(from, "CP M"));
+        path.add(layout.getEdge("CP M", "CP B"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, loc, 30, null), "the dispatch did not complete, so nothing tests anything");
+        }
+        finally
+        {
+            loc.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            layout.getPoint("CP B").setLocomotive(null);
+            layout.getPoint(from).setLocomotive(null);
+        }
+
+        return atDeparture[0];
+    }
+
+    /**
+     * A signal's aspect, and whether the train still holds the platform it guards - the claims above read the two at the
+     * same instant, since the platform held is what made the guard red.
+     */
+    private static String aspectOver(Layout layout, String platform, Locomotive train, MarklinAccessory signal)
+    {
+        return (signal.isSwitched() ? "RED" : "GREEN")
+            + (train.equals(layout.getPoint(platform).getCurrentLocomotive()) ? ", the train holding the platform"
+                : ", the platform let go");
+    }
+
+    /** Both signals' aspects, near first */
+    private static String aspects()
+    {
+        return "near " + (near.isSwitched() ? "RED" : "GREEN") + ", far " + (far.isSwitched() ? "RED" : "GREEN");
+    }
+
+    /**
+     * T, M, B in a line, joined both ways, and P apart: this class's own feedbacks 47471-47474, simulated and with no
+     * delays (OB-340).
+     *
+     * @param terminus whether T is a terminus
+     */
+    private Layout terminusLine(boolean terminus) throws Exception
+    {
+        for (String feedback : new String[] {"47471", "47472", "47473", "47474"})
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+
+            model.setFeedbackState(feedback, false);
+        }
+
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        layout.createPoint("TX T", true, "47471");
+        layout.createPoint("TX M", true, "47472");
+        layout.createPoint("TX B", true, "47473");
+        layout.createPoint("TX P", true, "47474");
+
+        if (terminus) layout.getPoint("TX T").setTerminus(true);
+
+        layout.createEdge("TX T", "TX M");
+        layout.createEdge("TX M", "TX B");
+        layout.createEdge("TX B", "TX M");
+        layout.createEdge("TX M", "TX T");
 
         return layout;
     }

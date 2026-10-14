@@ -1043,8 +1043,11 @@ public class testAutoLayout
         Layout layout = new Layout(model);
 
         layout.createPoint("RS_A", false, null);
-        layout.createPoint("RS_B", true, "1");
-        layout.createPoint("RS_C", true, "2");
+        // Sensors of its own: 1 and 2 are the live layout's, whose saved occupancy can refuse the path
+        model.newFeedback(9901, null);
+        model.newFeedback(9902, null);
+        layout.createPoint("RS_B", true, "9901");
+        layout.createPoint("RS_C", true, "9902");
 
         Edge ab = layout.createEdge("RS_A", "RS_B");
         Edge bc = layout.createEdge("RS_B", "RS_C");

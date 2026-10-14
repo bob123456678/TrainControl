@@ -964,6 +964,57 @@ public class testDiagramLooksRight
     }
 
     /**
+     * An old "Point:" label is drawn as it was written, prefix and all (OB-344).
+     *
+     * The old autonomy wrote "Point:Bahnhof" straight onto the diagram. A layout served by the Central
+     * Station still carries those labels, and there is no setup there to turn them into captions, so the
+     * grid used to strip the marker and draw "Bahnhof", a name nobody typed. Adam, 2026-10-12: "stop
+     * stripping that prefix." A label is drawn as written unless autonomy has a caption for its square,
+     * and this one does not.
+     *
+     * The page is one square built in memory under a name no setup knows, so nothing on the operator's
+     * railway or in the fixture is touched and there is nothing to restore.
+     *
+     * MUTATION: putting back the branch that stripped the "Point:" prefix fails this with "Bahnhof".
+     *
+     * @throws Exception if Swing cannot build the grid
+     */
+    @Test
+    public void testAnOldPointLabelIsDrawnAsWritten() throws Exception
+    {
+        final String written = "Point:Bahnhof";
+
+        org.traincontrol.base.LayoutDiagram page =
+            new org.traincontrol.base.LayoutDiagram("OB-344 scratch page", 1, 1, null, null);
+
+        org.traincontrol.base.LayoutDiagramComponent label =
+            new org.traincontrol.base.LayoutDiagramComponent(
+                org.traincontrol.base.LayoutDiagramComponent.componentType.TEXT, 0, 0, 0, 0, 0, 0, null);
+
+        label.setLabel(written);
+
+        page.addComponent(label, 0, 0);
+
+        assertNull(ui.autonomyCaptionAt(new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), 0, 0)),
+            "the square has an autonomy caption, so this is not the case the claim is about");
+
+        java.awt.Container box = laidOut(page, 30);
+
+        java.util.List<String> drawn = new java.util.ArrayList<>();
+
+        for (java.awt.Component one : box.getComponents())
+        {
+            if (one instanceof org.traincontrol.gui.StationCaption)
+            {
+                drawn.add(((org.traincontrol.gui.StationCaption) one).getText());
+            }
+        }
+
+        assertEquals(drawn.size() == 1 ? drawn.get(0) : String.valueOf(drawn), written,
+            "an old Point: label is drawn without its prefix (OB-344)");
+    }
+
+    /**
      * How far apart two colours are, plainly.
      *
      * @param one a colour
@@ -4714,6 +4765,335 @@ public class testDiagramLooksRight
         {
             javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
         }
+    }
+
+    /**
+     * A pop-up's title names the configuration that is loaded, beside the page, and follows it (FR-127; Adam: *"the current
+     * autonomy configuration name (not just the page name) in the autonomy/layout editor and layout popups. (if active)"*).
+     *
+     * The window starts with the fixture's configuration loaded (the start-up resume).  A pop-up open while it is unloaded,
+     * loaded, switched, renamed and unloaded is asked for its title after each, and a title with nothing loaded is today's.
+     * Run last (priority 1) because unloading rebuilds the session the other claims ask the window for.
+     *
+     * MUTATION: build the title from the page alone, or leave a rename or an unload out of the places that set it again, and
+     * this fails.
+     *
+     * @throws Exception reflection, the store, the event thread
+     */
+    @Test(priority = 1)
+    public void testAPopUpTitleNamesTheLoadedConfiguration() throws Exception
+    {
+        final String first = theResumedConfiguration();
+
+        assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
+
+        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+
+        try
+        {
+            // OPENED WITH IT LOADED: named from the start
+            popUpTitleIs(popup, first, "of a pop-up opened with " + first + " loaded");
+
+            // UNLOADED: today's title
+            unloadAutonomy();
+
+            popUpTitleIs(popup, null, "after " + first + " was unloaded");
+
+            // LOADED again: the title names it
+            loadConfiguration(first);
+
+            assertEquals(ui.getActiveDiagramConfiguration(), first, "precondition: " + first + " did not load");
+
+            popUpTitleIs(popup, first, "after " + first + " was loaded");
+
+            // SWITCHED to another configuration
+            final String other = "FR-127 Yard";
+
+            ui.getAutonomySession().getStore().createConfiguration(other, first, true);
+            ui.getAutonomySession().save();
+
+            loadConfiguration(other);
+
+            assertEquals(ui.getActiveDiagramConfiguration(), other, "precondition: " + other + " did not load");
+
+            popUpTitleIs(popup, other, "after switching to " + other);
+
+            // RENAMED while loaded, the way the Rename door does it
+            final String renamed = "FR-127 Siding";
+
+            ui.getAutonomySession().getStore().renameConfiguration(other, renamed);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupRenamed(other, renamed));
+
+            popUpTitleIs(popup, renamed, "after " + other + " was renamed");
+
+            // UNLOADED: today's title again
+            unloadAutonomy();
+
+            popUpTitleIs(popup, null, "after autonomy was unloaded");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+
+            // As the window started: the configuration loaded
+            if (ui.getActiveDiagramConfiguration() == null) loadConfiguration(first);
+        }
+    }
+
+    /**
+     * The window's own render of the active locomotive keeps the configuration in a pop-up's title (FR-127).
+     *
+     * Two places set the title from that render: the one with a locomotive active, which adds its text after the page, and
+     * the one with none, which takes it off.  Each is reached here by making a locomotive active and then none, the title
+     * set to something else first so that only the render can have written what is read, and the render waited for through
+     * the window's own futures - not pumps of the event thread, which do not wait for the worker that posts it.
+     *
+     * MUTATION: set either title from the page alone (`popup.getLayoutTitle() + ...`) in the render, and this fails.
+     *
+     * @throws Exception reflection, the event thread
+     */
+    @Test(priority = 1)
+    public void testALocomotiveRenderKeepsTheConfigurationInAPopUpTitle() throws Exception
+    {
+        final String loaded = theResumedConfiguration();
+
+        assertNotNull(loaded, "precondition: the start-up resume loaded no configuration, so there is none to keep");
+
+        java.lang.reflect.Field activeField = TrainControlUI.class.getDeclaredField("activeLoc");
+        activeField.setAccessible(true);
+
+        java.lang.reflect.Field tickField = TrainControlUI.class.getDeclaredField("activeLocInTitle");
+        tickField.setAccessible(true);
+
+        final javax.swing.JCheckBoxMenuItem tick = (javax.swing.JCheckBoxMenuItem) tickField.get(ui);
+        final org.traincontrol.base.Locomotive was = (org.traincontrol.base.Locomotive) activeField.get(ui);
+        final boolean ticked = tick.isSelected();
+
+        org.traincontrol.base.Locomotive shown = was;
+
+        if (shown == null && !model.getLocList().isEmpty()) shown = model.getLocByName(model.getLocList().get(0));
+
+        if (shown == null) throw new SkipException("the fixture has no locomotive to make active");
+
+        final org.traincontrol.base.Locomotive loc = shown;
+
+        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+
+        try
+        {
+            // The tick set, and not toggled: the setting is the operator's, and the title only carries the locomotive with it
+            javax.swing.SwingUtilities.invokeAndWait(() -> tick.setSelected(true));
+
+            final String page = popup.getLayoutTitle();
+
+            // WITH A LOCOMOTIVE: the page, the configuration, then the locomotive's text
+            waitForTheRender();
+            activeField.set(ui, loc);
+            javax.swing.SwingUtilities.invokeAndWait(() -> popup.setTitle("stale"));
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+            waitForTheRender();
+
+            final String[] title = new String[2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                title[0] = popup.getTitle();
+                title[1] = ui.getWindowTitleString();
+            });
+
+            assertTrue(title[1].contains(loc.getName()), "precondition: the window's title text does not carry the active"
+                + " locomotive " + loc.getName() + ": '" + title[1] + "'");
+
+            assertEquals(title[0], org.traincontrol.util.I18n.f("app.ui.windowPopupTitleConfiguration", page, loaded)
+                + title[1], "the pop-up's title after the render with " + loc.getName() + " active");
+
+            // WITH NONE: the locomotive's text off, the configuration still in
+            waitForTheRender();
+            activeField.set(ui, null);
+            javax.swing.SwingUtilities.invokeAndWait(() -> popup.setTitle("stale"));
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+            waitForTheRender();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> title[0] = popup.getTitle());
+
+            assertEquals(title[0], org.traincontrol.util.I18n.f("app.ui.windowPopupTitleConfiguration", page, loaded),
+                "the pop-up's title after the render with no locomotive active");
+        }
+        finally
+        {
+            waitForTheRender();
+            activeField.set(ui, was);
+            javax.swing.SwingUtilities.invokeAndWait(() -> tick.setSelected(ticked));
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+            waitForTheRender();
+
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+        }
+    }
+
+    /**
+     * Until every locomotive render the window has queued is finished and the event thread has run what each posted.
+     *
+     * @throws Exception reflection, the event thread, a render that does not finish
+     */
+    @SuppressWarnings("unchecked")
+    private void waitForTheRender() throws Exception
+    {
+        java.lang.reflect.Field futures = TrainControlUI.class.getDeclaredField("locFutures");
+        futures.setAccessible(true);
+
+        long deadline = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < deadline)
+        {
+            boolean done = true;
+
+            synchronized (ui)
+            {
+                for (java.util.concurrent.Future<?> f
+                    : new java.util.ArrayList<>((java.util.List<java.util.concurrent.Future<?>>) futures.get(ui)))
+                {
+                    done &= f.isDone();
+                }
+            }
+
+            if (done)
+            {
+                // A render posts its painting before its future is done, so the painting is ahead of these in the queue
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                return;
+            }
+
+            Thread.sleep(20);
+        }
+
+        throw new AssertionError("the window's locomotive render did not finish within ten seconds");
+    }
+
+    /**
+     * The configuration the start-up resume loaded, waited for: it is posted to the event thread behind the window's
+     * set-up, and a claim run on its own reaches it before the resume has.
+     *
+     * @return its name, or null if nothing loaded in fifteen seconds
+     * @throws Exception from the event thread
+     */
+    private static String theResumedConfiguration() throws Exception
+    {
+        for (long end = System.currentTimeMillis() + 15000;
+            ui.getActiveDiagramConfiguration() == null && System.currentTimeMillis() < end; )
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(100);
+        }
+
+        return ui.getActiveDiagramConfiguration();
+    }
+
+    /**
+     * Stops using autonomy, the way the Autonomy menu does.
+     *
+     * @throws Exception from the event thread
+     */
+    private void unloadAutonomy() throws Exception
+    {
+        final boolean[] unloaded = new boolean[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
+
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(unloaded[0], "precondition: Stop Using Autonomy was declined");
+
+        assertNull(ui.getActiveDiagramConfiguration(), "precondition: a configuration is still loaded");
+    }
+
+    /**
+     * Opens a pop-up with the Medium button and waits for it.
+     *
+     * @return the window
+     * @throws Exception reflection, the event thread
+     */
+    private org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    {
+        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
+        buttonField.setAccessible(true);
+
+        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+
+        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
+
+        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
+
+        for (long end = System.currentTimeMillis() + 15000; System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                }
+            }
+        }
+
+        fail("the Medium button opened no pop-up window");
+
+        return null;
+    }
+
+    /**
+     * Loads a configuration the way the Autonomy menu does.
+     *
+     * @param name the configuration
+     * @throws Exception from the event thread
+     */
+    private void loadConfiguration(final String name) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(name, false));
+
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
+     * What a pop-up's title says about the configuration (FR-127).
+     *
+     * @param popup the window
+     * @param configuration the one loaded, or null for none
+     * @param when what has just happened, for the message
+     * @throws Exception from the event thread
+     */
+    private void popUpTitleIs(final org.traincontrol.gui.LayoutPopupUI popup, String configuration, String when)
+        throws Exception
+    {
+        for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        final String[] title = new String[2];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            title[0] = popup.getTitle();
+            title[1] = popup.getLayoutTitle();
+        });
+
+        if (configuration != null)
+        {
+            // The page taken out first: a configuration called "Main" is in every title of the page "1 - Main"
+            assertTrue(title[0].contains(title[1]) && title[0].replace(title[1], "").contains(configuration), "the"
+                + " pop-up's title '" + title[0] + "' does not name both the page " + title[1] + " and the configuration "
+                + configuration + " " + when + " (FR-127)");
+        }
+
+        String expected = configuration == null ? title[1]
+            : org.traincontrol.util.I18n.f("app.ui.windowPopupTitleConfiguration", title[1], configuration);
+
+        assertEquals(title[0], expected + ui.getWindowTitleString(), "the pop-up's title " + when);
     }
 
     /**

@@ -183,7 +183,23 @@ public class AutonomyEditorPanel extends JPanel
         return component;
     }
 
-    private final JLabel banner = new JLabel();
+    /**
+     * The verdict and the count, on the one line under the findings.
+     *
+     * ITS WORDS ARE DATA, so it may be given less width than they need (OB-342).  A label asks for the width of its text
+     * as its minimum, and the sentence is 521 pixels in English and 655 in German: the window's layout took that as the
+     * least it could be, 839 and 1004 pixels with the sidebar, and at the window's smallest width the whole tools column
+     * was pushed off its right edge.  With no minimum width the line is cut with an ellipsis where the window is narrow,
+     * and its tooltip has the whole of it (see `refresh`).
+     */
+    private final JLabel banner = new JLabel()
+    {
+        @Override
+        public java.awt.Dimension getMinimumSize()
+        {
+            return new java.awt.Dimension(0, super.getMinimumSize().height);
+        }
+    };
     private final JLabel hint = new JLabel();
     private final DefaultListModel<String> findingsModel = new DefaultListModel<>();
     private final JList<String> findings = new JList<>(findingsModel);
@@ -1370,6 +1386,16 @@ public class AutonomyEditorPanel extends JPanel
 
             javax.swing.JPopupMenu only = new javax.swing.JPopupMenu();
 
+            // AND TAKING A CAPTION OFF, which the setup check names wherever it sits - on a page left out of
+            // autonomy too (OB-341).
+            if (!menuOnly && session.getCaptionTarget(tile) != null)
+            {
+                menuTarget = tile;
+
+                addCaptionItems(only, tile, onPage, "", session.getCaptionTarget(tile), true);
+                only.addSeparator();
+            }
+
             only.add(bulkTools());
 
             return only;
@@ -2149,7 +2175,16 @@ public class AutonomyEditorPanel extends JPanel
 
             String text = here == null || here.getLabel() == null ? "" : here.getLabel();
 
-            addCaptionItems(menu, tile, here, text, session.getCaptionTarget(tile));
+            addCaptionItems(menu, tile, here, text, session.getCaptionTarget(tile), false);
+        }
+        else if (!menuOnly && session.getCaptionTarget(tile) != null)
+        {
+            // A caption sits on this square all the same - a switch or a signal that was built where one was
+            // already shown, or a setup edited by hand - and the setup check names it (OB-341).  It has to be
+            // possible to take it off from here.
+            menu.addSeparator();
+
+            addCaptionItems(menu, tile, here, "", session.getCaptionTarget(tile), true);
         }
 
         // BULK TOOLS, LAST (Adam, 2026-09-11: *"can we make 'bulk tools' be the last item in the
@@ -2594,7 +2629,208 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.add(placeHome);
 
+        // ACTIVATE AND DEACTIVATE EVERY TRAIN (FR-126; Adam: "a bulk tool to mass activate and mass deactivate all
+        // trains").  The Is Active tick for many trains at once, built like the items above: counted off the set the tool
+        // walks, greyed on its own count with the reason in its tooltip, and saying how many it changed.  Activate covers
+        // every train that is paused, on the layout or not (`pausedTrains`); Deactivate every train standing on the layout
+        // that is going (`goingTrainsStanding`), since pausing a train that is not placed would only surprise the user
+        // when it is.  Not while trains run, as the tick is not: `item` refuses it, as it refuses every setup edit, and the
+        // Auto tab's pause button is the way to pause one train then.  Nothing to confirm: each tool undoes the other, and
+        // the tick sets one train back.
+        int pausedTrains = pausedTrains().size();
+        int goingTrains = goingTrainsStanding().size();
+
+        javax.swing.JMenuItem activateAll = item(
+            I18n.f("autosetup.ui.menuActivateAllTrains", pausedTrains), () -> setEveryTrainActive(true));
+
+        activateAll.setEnabled(pausedTrains > 0);
+        activateAll.setToolTipText(wrapped(pausedTrains > 0
+            ? I18n.f("autosetup.ui.tipActivateAllTrains", pausedTrains)
+            : I18n.t("autosetup.ui.infoNoTrainsToActivate")));
+
+        bulk.add(activateAll);
+
+        javax.swing.JMenuItem deactivateAll = item(
+            I18n.f("autosetup.ui.menuDeactivateAllTrains", goingTrains), () -> setEveryTrainActive(false));
+
+        deactivateAll.setEnabled(goingTrains > 0);
+        deactivateAll.setToolTipText(wrapped(goingTrains > 0
+            ? I18n.f("autosetup.ui.tipDeactivateAllTrains", goingTrains)
+            : I18n.t("autosetup.ui.infoNoTrainsToDeactivate")));
+
+        bulk.add(deactivateAll);
+
         return bulk;
+    }
+
+    /**
+     * The trains standing on the layout, by name, each once - the ones the Is Active tick is offered for, and the ones
+     * Activate All Trains and Deactivate All Trains walk (FR-126).  Where the railway has the trains, and the setup's
+     * placements where it has not (`trainsWhereTheyStand`).
+     *
+     * @return the names, in no particular order
+     */
+    private java.util.List<String> trainsStanding()
+    {
+        java.util.Set<String> names = new java.util.LinkedHashSet<>();
+
+        if (session != null)
+        {
+            for (String name : session.trainsWhereTheyStand().values())
+            {
+                if (name != null && !name.trim().isEmpty()) names.add(name);
+            }
+        }
+
+        return new java.util.ArrayList<>(names);
+    }
+
+    /**
+     * The model's train of this name, or null where there is no window or the model has none (FR-126).
+     *
+     * @param name the train
+     * @return the train
+     */
+    private org.traincontrol.base.Locomotive modelTrain(String name)
+    {
+        TrainControlUI window = parentWindow();
+
+        return window == null || window.getModel() == null ? null : window.getModel().getLocByName(name);
+    }
+
+    /**
+     * Whether a train is paused (FR-126): what the TRAIN says where the model has it, and the setup's list only for a name
+     * the model has no train for.  The Auto tab's pause button changes the train alone and the setup learns of it later,
+     * so the train is the later word whichever way the button went: a list that still names a train the button has set
+     * going is out of date, and a tool that believed it would count the train paused.
+     *
+     * @param name the train
+     * @param listed the trains the setup lists as paused
+     * @return whether it is paused
+     */
+    private boolean isPaused(String name, java.util.Set<String> listed)
+    {
+        org.traincontrol.base.Locomotive train = modelTrain(name);
+
+        return train != null ? train.isAutonomyPaused() : listed.contains(name);
+    }
+
+    /**
+     * Every train that is paused, on the layout or not (FR-126): the model's trains whose flag is set, and the names the
+     * setup lists that the model has no train for.  What Activate All Trains counts and sets going.
+     *
+     * @return the names, sorted
+     */
+    private java.util.List<String> pausedTrains()
+    {
+        java.util.Set<String> names = new java.util.TreeSet<>();
+
+        TrainControlUI window = parentWindow();
+
+        if (window != null && window.getModel() != null)
+        {
+            for (org.traincontrol.base.Locomotive train : window.getModel().getLocomotives())
+            {
+                if (train != null && train.getName() != null && train.isAutonomyPaused()) names.add(train.getName());
+            }
+        }
+
+        if (session != null)
+        {
+            for (String name : session.getPausedLocomotives())
+            {
+                if (modelTrain(name) == null) names.add(name);
+            }
+        }
+
+        return new java.util.ArrayList<>(names);
+    }
+
+    /**
+     * Every train standing on the layout that is going (FR-126).  What Deactivate All Trains counts and pauses.
+     *
+     * @return the names
+     */
+    private java.util.List<String> goingTrainsStanding()
+    {
+        java.util.Set<String> listed = session == null ? new java.util.HashSet<String>() : session.getPausedLocomotives();
+
+        java.util.List<String> going = new java.util.ArrayList<>();
+
+        for (String name : trainsStanding())
+        {
+            if (!isPaused(name, listed)) going.add(name);
+        }
+
+        return going;
+    }
+
+    /**
+     * Sets every paused train going, or pauses every train standing on the layout that is going, and says how many that
+     * changed (FR-126).  Through the window's door where there is a window and a train of that name, as the Is Active tick
+     * goes - the train and the setup together, saved once - and through the setup alone for a name the model has no train
+     * for; then the railway is told, as every setup door tells it.
+     *
+     * Activate also clears what the setup lists for a train the model has, going or not, so a record the card's button has
+     * outrun does not stand.
+     *
+     * The emptiness check is kept though the items grey on the same count: the greying is the affordance and this is the
+     * guard.
+     *
+     * @param active true to activate every paused train, false to deactivate every train standing that is going
+     */
+    private void setEveryTrainActive(boolean active)
+    {
+        java.util.List<String> covered = active ? pausedTrains() : goingTrainsStanding();
+
+        if (covered.isEmpty())
+        {
+            say(hint, I18n.t(active ? "autosetup.ui.infoNoTrainsToActivate" : "autosetup.ui.infoNoTrainsToDeactivate"));
+
+            return;
+        }
+
+        java.util.Set<String> names = new java.util.LinkedHashSet<>(covered);
+
+        // THE TRAINS ALREADY AS ASKED GO THROUGH THE DOOR TOO.  The door writes the train and the setup's list as one, so a
+        // record the card's button has outrun does not stand: Activate takes off the list every train it names, the ones the
+        // button set going among them, which `covered` leaves out as it reads the train.  The rebuild's fold applies the trains
+        // the railway gained or lost against the record to the setup's list, and nothing else (OB-343), and a train the setup
+        // lists that the railway was not built pausing is neither: left listed, the rebuild this asks for would pause it
+        // again.  So Activate's line is needed.  Deactivate's is not, since the fold lists a train a card paused all the same;
+        // it is kept, and harmless: the door notes in the record only the trains it changes (`notePausesAsBuilt`), so a train
+        // the card paused is still the card's to the fold.
+        if (active) names.addAll(session.getPausedLocomotives());
+        else names.addAll(trainsStanding());
+
+        TrainControlUI window = parentWindow();
+
+        java.util.List<org.traincontrol.base.Locomotive> trains = new java.util.ArrayList<>();
+        java.util.List<String> unknown = new java.util.ArrayList<>();
+
+        for (String name : names)
+        {
+            org.traincontrol.base.Locomotive train = modelTrain(name);
+
+            if (train != null) trains.add(train);
+            else unknown.add(name);
+        }
+
+        try
+        {
+            if (window != null) window.setLocomotivesActive(session, trains, active);
+
+            if (!unknown.isEmpty()) session.setLocomotivesPaused(unknown, !active);
+        }
+        catch (java.io.IOException cannotSave)
+        {
+            throw new IllegalStateException(cannotSave.getMessage(), cannotSave);
+        }
+
+        say(hint, active ? I18n.f("autosetup.ui.infoTrainsActivated", covered.size())
+            : I18n.f("autosetup.ui.infoTrainsDeactivated", covered.size()));
+
+        setupChanged();
     }
 
     /**
@@ -3123,7 +3359,7 @@ public class AutonomyEditorPanel extends JPanel
         //
         // So it asks instead, naming the text it would replace.  A question is a way out; a disabled
         // menu item is not.
-        addCaptionItems(menu, tile, component, label, captioned);
+        addCaptionItems(menu, tile, component, label, captioned, false);
 
         // AND BULK TOOLS, as every square of track ends with (Adam, 2026-09-23, MT-474: *"when right clicking an
         // empty square, show the bulk tools menu option."*).  They are about the whole setup rather than the square
@@ -3149,9 +3385,11 @@ public class AutonomyEditorPanel extends JPanel
      * @param component what is drawn on it, or null for a blank square
      * @param label whatever text the square already carries
      * @param captioned the station this square is already showing, or null
+     * @param stopOnly only the item that stops showing it, for a square that may not be given a caption but has one
+     *        (OB-341)
      */
     private void addCaptionItems(javax.swing.JPopupMenu menu, final TileKey tile,
-        final LayoutDiagramComponent component, String label, TileKey captioned)
+        final LayoutDiagramComponent component, String label, TileKey captioned, boolean stopOnly)
     {
         boolean mine = label.trim().isEmpty() || captioned != null;
 
@@ -3213,29 +3451,37 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean aStationSquare = session.getStore().isStation(tile);
 
-        javax.swing.JMenuItem name = item(
-            showsItself ? I18n.t("autosetup.ui.menuStationShowsItself")
-                : showing == null || aStationSquare ? I18n.t("autosetup.ui.menuShowStationHere")
-                : I18n.t("autosetup.ui.menuShowStationHereNamed"),
-            () -> promptStationLabel(tile, component));
+        // Not on a square that may not carry one: it can only be taken off there (OB-341)
+        if (!stopOnly)
+        {
+            javax.swing.JMenuItem name = item(
+                showsItself ? I18n.t("autosetup.ui.menuStationShowsItself")
+                    : showing == null || aStationSquare ? I18n.t("autosetup.ui.menuShowStationHere")
+                    : I18n.t("autosetup.ui.menuShowStationHereNamed"),
+                () -> promptStationLabel(tile, component));
 
-        name.setEnabled(!showsItself);
+            // Greyed, with the reason, on a square the running diagram does not draw (AD-C6)
+            boolean inTheDrawnArea = session.isInTheDrawnArea(tile);
 
-        // WHAT A CAPTION IS, on the item that makes one.  Three reasons for a tooltip here and they
-        // are all the same reason: nothing else on this menu says that a caption is a live readout of
-        // another square rather than a name plate.
-        name.setToolTipText(wrapped(
-            (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
-                : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
-                : I18n.t("autosetup.ui.tooltipShowStationHere"))
-            // AND ITS KEY (FR-086, Adam on MT-397: "let's add a hotkey for 'show station name here' too").  Added to
-            // the sentence rather than replacing it: this item's tooltip is the only place that says what a caption is.
-            //
-            // IN THE EDITOR ONLY (MFX-C3): the main window builds this menu with `setMenuOnly`, and there Control+N
-            // is the notes key.
-            + (menuOnly ? "" : "  (" + SHORTCUT_STATION + ")")));
+            name.setEnabled(!showsItself && inTheDrawnArea);
 
-        menu.add(name);
+            // WHAT A CAPTION IS, on the item that makes one.  Three reasons for a tooltip here and they
+            // are all the same reason: nothing else on this menu says that a caption is a live readout of
+            // another square rather than a name plate.
+            name.setToolTipText(!inTheDrawnArea && !showsItself ? wrapped(I18n.t("autosetup.ui.captionOutsideTheDrawnArea"))
+                : wrapped(
+                (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
+                    : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
+                    : I18n.t("autosetup.ui.tooltipShowStationHere"))
+                // AND ITS KEY (FR-086, Adam on MT-397: "let's add a hotkey for 'show station name here' too").  Added to
+                // the sentence rather than replacing it: this item's tooltip is the only place that says what a caption is.
+                //
+                // IN THE EDITOR ONLY (MFX-C3): the main window builds this menu with `setMenuOnly`, and there Control+N
+                // is the notes key.
+                + (menuOnly ? "" : "  (" + SHORTCUT_STATION + ")")));
+
+            menu.add(name);
+        }
 
         if (captioned != null)
         {
@@ -3335,6 +3581,9 @@ public class AutonomyEditorPanel extends JPanel
         {
             return I18n.t("autosetup.ui.errorDropOffDiagram");
         }
+
+        // Outside the part of the page the running diagram draws, where nobody would see it (AD-C6)
+        if (!session.isInTheDrawnArea(to)) return I18n.t("autosetup.ui.captionOutsideTheDrawnArea");
 
         // A control, where a click throws real ironwork and a name would sit in the way of it.
         if (!mayCarryACaption(onTarget)) return I18n.t("autosetup.ui.errorDropOnControl");
@@ -3533,14 +3782,30 @@ public class AutonomyEditorPanel extends JPanel
         takeAnotherNameAnswerForTests = answer;
     }
 
+    /** The question last put about taking another station's only name, or answered for a test (OB-341). */
+    private static volatile String takeAnotherNameQuestion;
+
     /**
-     * Whether a station square may show its own name where it now shows the only caption of ANOTHER station - asked of
-     * the operator, naming both, and true without a question where nothing would be lost (GSE-C5).
+     * @return the words of the question about taking another station's only name that was last put, or answered through
+     *         `answerTakeAnotherNameForTests`, for a test of what it says (OB-341)
+     */
+    public static String takeAnotherNameQuestionForTests()
+    {
+        return takeAnotherNameQuestion;
+    }
+
+    /**
+     * Whether a station square may show its own name where it now shows the only caption of ANOTHER station ON THIS PAGE -
+     * asked of the operator, naming both, and true without a question where nothing would be lost (GSE-C5).
      *
      * A drag can leave a station square showing another station's caption, and captioning the square with itself takes
      * that caption away: the other station is then named nowhere on the diagram, which `AutonomyChecks.checkStationLabels`
      * reports as an error.  The drop refuses the same loss outright (`refuseCaptionDrop`).  "Show a Station Name Here" is
      * live on such a square on purpose (SVV-C6, SVX-B2), so this asks rather than refuses.
+     *
+     * Per page, as the captions are (OB-341; Adam, 2026-10-12, ruling that the editor goes per page too): a page shows a
+     * station's name at most once, so the name on this square is the station's only one on this page when no other square
+     * of the page names it, whatever its captions on other pages.
      *
      * @param tile the station square
      * @return whether to go on
@@ -3555,7 +3820,18 @@ public class AutonomyEditorPanel extends JPanel
 
         elsewhere.remove(tile);
 
+        // On another page too: Yes leaves it shown there, so the question says only this page (OB-341)
+        boolean shownOnOtherPages = !elsewhere.isEmpty();
+
+        elsewhere.removeIf(where -> !tile.getPage().equals(where.getPage()));
+
         if (!elsewhere.isEmpty()) return true;
+
+        // Its only caption anywhere: Yes leaves it shown nowhere, and the question says off the diagram
+        String question = I18n.f(shownOnOtherPages ? "autosetup.ui.confirmTakeAnotherStationsName"
+            : "autosetup.ui.confirmTakeAnotherStationsOnlyName", describeTile(other), describeTile(tile));
+
+        takeAnotherNameQuestion = question;
 
         Boolean given = takeAnotherNameAnswerForTests;
 
@@ -3563,8 +3839,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // TrainControl's own buttons, as the question about replacing text asks, and No the default: Yes takes a name off
         // the diagram.  An INDEX comes back, where 0 is Yes.
-        return JOptionPane.showOptionDialog(owner(),
-            I18n.f("autosetup.ui.confirmTakeAnotherStationsName", describeTile(other), describeTile(tile)),
+        return JOptionPane.showOptionDialog(owner(), question,
             I18n.t("autosetup.ui.titleStationLabel"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
     }
@@ -6354,11 +6629,12 @@ public class AutonomyEditorPanel extends JPanel
 
         LayoutDiagramComponent onPage = componentAt(tile);
 
-        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return true;
+        // Only on a square the running diagram draws (AD-C6): a name put anywhere else would never be seen
+        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return session.isInTheDrawnArea(tile);
 
         if (isIgnored(tile)) return false;
 
-        if (menuOnly || !mayCarryACaption(onPage)) return false;
+        if (menuOnly || !mayCarryACaption(onPage) || !session.isInTheDrawnArea(tile)) return false;
 
         return !(session.getStore().isStation(tile) && tile.equals(session.getCaptionTarget(tile)));
     }
@@ -10522,7 +10798,7 @@ public class AutonomyEditorPanel extends JPanel
         for (AutonomyChecks.Finding finding : session.check())
         {
             String subject = finding.getTile() == null
-                ? finding.getSubject() : describeTile(finding.getTile());
+                ? finding.getSubject() : describeTile(finding.getAbout());
 
             // BOTH, because {0} alone cannot say which train (OB-153).
             //
@@ -10637,6 +10913,9 @@ public class AutonomyEditorPanel extends JPanel
             banner.setBackground(warningRows.size() > 0
                 ? new java.awt.Color(255, 240, 200) : new java.awt.Color(214, 245, 214));
         }
+
+        // THE WHOLE SENTENCE, for where the window is too narrow to show it (OB-342)
+        banner.setToolTipText(banner.getText());
 
         if (!selection.isEmpty())
         {

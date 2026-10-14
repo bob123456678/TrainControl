@@ -1338,8 +1338,10 @@ public class testAutonomyDiagramStore
     /**
      * One square holds one caption, and one station may be captioned in several places.
      *
-     * The second half is deliberate rather than tolerated: a long platform is legitimately labelled at
-     * both ends, and the running state is written to every label showing it.
+     * The store itself holds a station's captions in as many places as it is told, which is how a setup edited by hand
+     * or written by an older version can carry several.  The editor never makes them (the session sweeps, OB-256) and
+     * the setup check reports a station whose name is then drawn twice on one page - two captions beside it - as an ERROR
+     * (OB-341).
      */
     @Test
     public void testASquareHoldsOneCaptionAndAStationMayHaveSeveral()

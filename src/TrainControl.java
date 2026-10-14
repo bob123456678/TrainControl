@@ -17,6 +17,11 @@ public class TrainControl
      */
     public static void main(String[] args)
     {            
+        // Kept for an update, which starts the new version with the same arguments (FR-125).  An update waiting to hear
+        // that this version started is told once its window is on screen (`SelfUpdate.reportStarted`, in `init`), not
+        // here: a version that fails in its own start-up after this line has not started.
+        org.traincontrol.util.SelfUpdate.rememberArguments(args);
+
         try
         {
             boolean simulate = (args.length >= 3);

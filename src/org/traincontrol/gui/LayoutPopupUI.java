@@ -8,6 +8,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JPanel;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.util.I18n;
 
 /**
  * Popup representing a track diagram
@@ -41,7 +42,14 @@ public class LayoutPopupUI extends PositionAwareJFrame
     // The grid on screen now, so that the next one can tell it to stop
     private LayoutGrid grid;
     
-    private void drawGrid()
+    /**
+     * Draws the page into the window.
+     *
+     * @param fit whether to size the window to the page and keep where it stands: true when the window is opened and when
+     *        its page is changed or refreshed, false for a redraw of the captions alone, which leaves the size and the
+     *        place the operator gave it, and saves nothing (OB-341)
+     */
+    private void drawGrid(boolean fit)
     {
         // The grid being replaced is told to stop first.
         //
@@ -69,37 +77,78 @@ public class LayoutPopupUI extends PositionAwareJFrame
         // Half a square at a time on both axes, as the main window's diagram (MT-726, MT-727)
         LayoutGrid.scrollHalfASquareAtATime(this.jScrollPane1, size);
 
-        setTitle(this.layout.getName() + this.parent.getWindowTitleString());
+        setTitle(titleWith(this.parent.getWindowTitleString()));
 
-        // Scale the popup according to the size of the layout
-        this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
-        pack();
-        
-        // Remember window location for different layouts and sizes
-        this.setWindowIndex(this.layout.getName()+ "_" + this.getLayoutSize());
-        
-        // Only load location once
-        if (!this.isLoaded())
+        // A caption redraw is not a new page: the window stays as the operator left it, and what is remembered for it is
+        // theirs.  Packing it to its natural size, and saving that, undid a size they had chosen on every caption gesture
+        // in the autonomy editor on this page (OB-341).
+        if (fit)
         {
-            loadWindowBounds();
+            // Scale the popup according to the size of the layout
+            this.setPreferredSize(new Dimension(grid.maxWidth + 100, grid.maxHeight + 100));
+            pack();
+
+            // Remember window location for different layouts and sizes
+            this.setWindowIndex(this.layout.getName()+ "_" + this.getLayoutSize());
+
+            // Only load location once
+            if (!this.isLoaded())
+            {
+                loadWindowBounds();
+            }
+
+            saveWindowBounds();
         }
-        
-        saveWindowBounds();
         
         // Update auto layout station labels on the track diagram
         this.parent.updateVisiblePoints();
     }
     
+    /**
+     * Whether the setup still gives every square of the grid on screen the caption it was drawn with, and every caption its
+     * name (OB-341).
+     *
+     * @return false where it does not, and for a window not drawn yet
+     */
+    boolean captionsAreAsBuilt()
+    {
+        return this.grid != null && this.grid.captionsAreAsBuilt();
+    }
+
     public String getLayoutTitle()
     {
         return this.layout.getName();
+    }
+
+    /**
+     * The window's title: the page's name, the autonomy configuration that is loaded in brackets when one is (FR-127), then
+     * the locomotive text the main window adds.
+     *
+     * @param locomotive what follows the page: the active locomotive's text, or ""
+     * @return the title
+     */
+    String titleWith(String locomotive)
+    {
+        String configuration = this.parent.getActiveDiagramConfiguration();
+
+        return (configuration == null ? getLayoutTitle()
+            : I18n.f("app.ui.windowPopupTitleConfiguration", getLayoutTitle(), configuration)) + locomotive;
+    }
+
+    /**
+     * Sets the title again, for a configuration loaded, switched, renamed or unloaded while the window is open (FR-127).
+     * Event thread only.
+     */
+    void refreshTitle()
+    {
+        setTitle(titleWith(this.parent.getWindowTitleString()));
     }
     
     public void render()
     {        
         this.setAlwaysOnTop(parent.isAlwaysOnTop());
                       
-        drawGrid();
+        drawGrid(true);
              
         setVisible(true);
         
@@ -121,12 +170,32 @@ public class LayoutPopupUI extends PositionAwareJFrame
     {
         this.goToLayoutPage(this.pageIndex);
     }
+
+    /**
+     * Draws the page again for the captions on it alone, keeping the window's size and place and saving nothing
+     * (OB-341).
+     */
+    void refreshCaptions()
+    {
+        this.goToLayoutPage(this.pageIndex, false);
+    }
     
     /**
      * Updates the layout page
      * @param index
      */
     public void goToLayoutPage(int index)
+    {
+        this.goToLayoutPage(index, true);
+    }
+
+    /**
+     * Updates the layout page.
+     *
+     * @param index the page
+     * @param fit whether to size the window to it, as `drawGrid` says
+     */
+    private void goToLayoutPage(int index, boolean fit)
     {
         javax.swing.SwingUtilities.invokeLater( () -> 
         {
@@ -140,7 +209,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
                     this.parent.getModel().getLayoutList().get(index)
                 );
 
-                drawGrid();
+                drawGrid(fit);
                 this.repaint();
 
                 // Update saved index

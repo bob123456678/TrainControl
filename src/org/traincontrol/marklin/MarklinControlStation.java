@@ -34,6 +34,9 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.IntSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -78,7 +81,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "3.0.0";
+    public static final String RAW_VERSION = "3.0.1";
 
     /**
      * Whether this is a build on the way to a release rather than a release.
@@ -91,11 +94,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * result carried a provenance line naming a commit three days older than the code actually run,
      * and the report nearly read as evidence the fix had been tested too early.
      *
-     * **Set to false when 3.0.0 ships.**  Nothing derives it - a constant somebody changes on purpose
-     * is the point, because a build that guesses whether it is a release will guess wrong on the one
-     * day it matters.
+     * **False in a release commit, true on dev between releases** (docs/RELEASE.md).  Nothing derives it -
+     * a constant somebody changes on purpose is the point, because a build that guesses whether it is a
+     * release will guess wrong on the one day it matters.
      */
-    public static final boolean IS_PRE_RELEASE = false;
+    public static final boolean IS_PRE_RELEASE = true;
 
     /**
      * Which build this is, for a pre-release: when the code being run was built.
@@ -173,6 +176,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     // Debug mode
     private boolean debug = false;
+
+    // Debug only: the first N syncs fail when traincontrol.failFirstSyncs=N, for a manual test (OB-338; Adam, 2026-10-13)
+    private static final String FAIL_FIRST_SYNCS = "traincontrol.failFirstSyncs";
+
+    // Read as debug mode is entered (see debug(boolean)), and counted down as the syncs fail
+    private final java.util.concurrent.atomic.AtomicInteger failFirstSyncsLeft = new java.util.concurrent.atomic.AtomicInteger(0);
 
     /**
      * Whether this session is simulating rather than talking to a Central Station.
@@ -403,7 +412,30 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     private static final Logger log = Logger.getLogger(MarklinControlStation.class.getName());
                     
+    /**
+     * Builds the station for a start that is not a simulation, and makes the first sync: the five-argument constructor
+     * with simulate false.
+     *
+     * @param network the connection to the Central Station
+     * @param view the window, or null when there is none
+     * @param autoPowerOn whether to turn the track power on once connected
+     * @param debug whether debug mode is on
+     */
     public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug)
+    {
+        this(network, view, autoPowerOn, debug, false);
+    }
+
+    /**
+     * Builds the station and makes the first sync.
+     *
+     * @param network the connection to the Central Station
+     * @param view the window, or null when there is none
+     * @param autoPowerOn whether to turn the track power on once connected
+     * @param debug whether debug mode is on
+     * @param simulate whether there is no Central Station to reach, in which case a failed first sync is never asked about
+     */
+    public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn, boolean debug, boolean simulate)
     {       
         // Configure logger
         log.setUseParentHandlers(false);
@@ -486,7 +518,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 
         this.logf("log.restored");
         
-        if (syncWithCS2() >= 0)
+        // Asked again until it connects or the user exits, where a window can ask (OB-338)
+        Predicate<String> asker = resyncAsker(this.cs2Address(), simulate, GraphicsEnvironment.isHeadless() ? null : view);
+
+        if (syncUntilConnected(this::syncWithCS2, this::getLastSyncError, asker, MarklinControlStation::exitUnconnected) >= 0)
         {
             this.logf("log.csDataImported", network.getIP());
 
@@ -1509,12 +1544,145 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
+     * What the last sync failed with, in words, or null when the last sync did not fail.
+     */
+    private volatile String lastSyncError = null;
+
+    /**
+     * What the last sync failed with (OB-338).
+     *
+     * @return the failure, or null when the last sync did not fail
+     */
+    public String getLastSyncError()
+    {
+        return this.lastSyncError;
+    }
+
+    /**
+     * Syncs, and while the sync fails asks whether to try it again (OB-338).
+     *
+     * The first sync is the only thing that brings communication up, so a failure here left the application running
+     * with no way to connect.  The question is put after every failure, with that failure's reason, until a sync works
+     * or the answer is to exit.  With nobody to ask the sync is made once, as it always was.
+     *
+     * @param sync the sync; negative when it failed
+     * @param lastError the reason the sync that just failed gave
+     * @param asker given that reason, true to sync again and false to exit; null when nothing can be asked
+     * @param exit what to do when the answer is to exit
+     * @return the last sync's result, or -1 when the answer was to exit
+     */
+    public static int syncUntilConnected(IntSupplier sync, Supplier<String> lastError, Predicate<String> asker, Runnable exit)
+    {
+        int result = sync.getAsInt();
+
+        while (result < 0 && asker != null)
+        {
+            if (!asker.test(lastError.get()))
+            {
+                exit.run();
+
+                return -1;
+            }
+
+            result = sync.getAsInt();
+        }
+
+        return result;
+    }
+
+    /**
+     * Who to ask when the first sync fails (OB-338).
+     *
+     * There is somebody to ask only when there is a Central Station to reach and a window to ask in.  A simulation has
+     * no station, so its sync is expected to fail and must never raise a question.
+     *
+     * @param address the Central Station's address
+     * @param simulate whether this is a simulation
+     * @param view the window, or null when there is none
+     * @return the question for the user, or null when nothing is to be asked
+     */
+    public static Predicate<String> resyncAsker(String address, boolean simulate, View view)
+    {
+        if (simulate || view == null || address == null || address.trim().isEmpty()) return null;
+
+        return view::offerResync;
+    }
+
+    /**
+     * Ends the application when the user gave up on the first sync (OB-338).
+     *
+     * The saved address is forgotten, so that the next start asks for one: it may be the wrong one, and a saved address
+     * that cannot sync would otherwise lead to this question on every start.  The exit code is the one the address
+     * prompt gives for leaving the start-up.
+     */
+    private static void exitUnconnected()
+    {
+        exitUnconnected(TrainControlUI.getPrefs(), () -> System.exit(1));
+    }
+
+    /**
+     * Forgets the saved address in the given preferences, then runs the exit (OB-338, RSA67-C3).
+     *
+     * Both halves are arguments so that a claim can run Exit without ending the JVM or touching the operator's own
+     * preferences.  The address is forgotten first, and the exit runs even when the preferences refuse the removal.
+     *
+     * @param prefs where the address is saved
+     * @param exit what ends the application
+     */
+    public static void exitUnconnected(java.util.prefs.Preferences prefs, Runnable exit)
+    {
+        try
+        {
+            prefs.remove(TrainControlUI.IP_PREF);
+        }
+        catch (Exception ex)
+        {
+            System.out.println(I18n.t("ui.errorUpdatingPreferences"));
+        }
+
+        // LEFT ON PURPOSE, from a question this version asked: an update waiting to hear from it is told it started, so
+        // the user's own choice is not taken for a version that cannot start (FR-125).  Nothing unless an updater
+        // started this run.
+        org.traincontrol.util.SelfUpdate.reportStarted();
+
+        exit.run();
+    }
+
+    /**
+     * Whether a start leaves the saved Central Station address to be asked for again (OB-339).
+     *
+     * A start that did not connect forgets it, in case it was the wrong one.  A simulation never connects, by design, and
+     * says nothing about the address, so it keeps it.
+     *
+     * @param simulate whether this start is a simulation
+     * @param connected whether communication with the Central Station came on
+     * @return true to forget the saved address
+     */
+    public static boolean forgetsTheAddress(boolean simulate, boolean connected)
+    {
+        return !simulate && !connected;
+    }
+
+    /**
+     * A failure in a few words: what kind it was, and what it said.
+     */
+    private static String describe(Exception failure)
+    {
+        String said = failure.getMessage();
+        String kind = failure.getClass().getSimpleName();
+
+        return said == null || said.trim().isEmpty() ? kind : kind + ": " + said.trim();
+    }
+
+    /**
      * Synchronizes CS2 state
      * @return 
      */
     @Override
     public final int syncWithCS2()
     {        
+        this.lastSyncError = null;
+
         // Read remote config files
         this.fileParser = new CS2File(cs2Address(), this);
              
@@ -1542,6 +1710,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Fetch Central Station databases
         try
         {            
+            // Debug only, and only the first N times: caught below exactly as a real failure is (OB-338)
+            if (this.isDebug())
+            {
+                int before = this.failFirstSyncsLeft.getAndUpdate(n -> n > 0 ? n - 1 : 0);
+
+                if (before > 0)
+                {
+                    throw new IOException("Simulated sync failure for testing (traincontrol.failFirstSyncs), " + (before - 1) + " more to come");
+                }
+            }
+
             // Is this a CS2 or CS3?
             try
             {
@@ -1663,6 +1842,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (Exception e)
         {
+            this.lastSyncError = describe(e);
+
             this.logf("loc.dbSyncFailed");
             this.log(e);
              
@@ -1951,6 +2132,29 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final void debug(boolean state)
     {
         debug = state;
+
+        // Entering debug mode reads the switch, so that it counts syncs from this start
+        if (state) this.failFirstSyncsLeft.set(failFirstSyncsFrom(System.getProperty(FAIL_FIRST_SYNCS)));
+    }
+
+    /**
+     * The count the traincontrol.failFirstSyncs property asks for: a positive integer, and anything else is 0 (OB-338).
+     *
+     * @param value the property's value, or null when it is not set
+     * @return how many syncs to fail
+     */
+    private static int failFirstSyncsFrom(String value)
+    {
+        if (value == null) return 0;
+
+        try
+        {
+            return Math.max(0, Integer.parseInt(value.trim()));
+        }
+        catch (NumberFormatException e)
+        {
+            return 0;
+        }
     }
     
     /**
@@ -5028,6 +5232,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 JOptionPane.showMessageDialog(null, I18n.t("ui.noIpEnteredShutdown"));
                             }
                             
+                            // Left on purpose, from this version's own question: it started (FR-125)
+                            org.traincontrol.util.SelfUpdate.reportStarted();
+
                             System.exit(1);
                         }
                     }
@@ -5142,7 +5349,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             proxy = new NetworkProxy(InetAddress.getByName(initIP));
 
             // Initialize the central station
-            model = new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug);
+            model = new MarklinControlStation(proxy, showUI ? ui : null, autoPowerOn, debug, simulate);
         }
         catch (Exception ex)
         {
@@ -5311,6 +5518,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     theUI.display();
 
                     model.logf("ui.initialized");
+
+                    // UP: the window is on screen.  An update waiting to hear that this version started is told here
+                    // rather than at main's first line, so a version that fails anywhere in its start-up is put back
+                    // (FR-125, 2026-10-13).  Does nothing unless the updater started this run.
+                    org.traincontrol.util.SelfUpdate.reportStarted();
                 });
             }
             catch (Exception ex)
@@ -5333,7 +5545,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         proxy.setModel(model);
         
         // Connection failed - ask for IP on next run
-        if (!model.getNetworkCommState())
+        if (forgetsTheAddress(simulate, model.getNetworkCommState()))
         {
             TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
         }

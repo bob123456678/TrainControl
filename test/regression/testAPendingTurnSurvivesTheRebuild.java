@@ -909,6 +909,430 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
+     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).
+     *
+     * Adam, 2026-10-12: *"It is OK to show on another page what is going on on another."*  The main window builds every
+     * page into one panel and puts the detached ones away in its page cache, and the station map is keyed by the STATION's
+     * square, so a caption on another page than the station's is registered under the same key as the station's own.  A
+     * later page's build let go of every other label of the window not on screen - a cached page's, which is detached and
+     * alive - and coming back to that page found its caption never written again.  A label is let go of only by a
+     * successor on the SAME page, and the grid stamps each caption with its page.
+     *
+     * Two detached labels of one station on two pages under one owner, as two cached pages' are; then the window writes
+     * its captions, as it does on every publish of the running diagram.
+     *
+     * MUTATION: let a later page's label evict another page's, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAStationCaptionedOnTwoPagesKeepsACaptionOnEach() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey station = aCaptionedStationOnTheShownPage();
+
+        final javax.swing.JPanel owner = new javax.swing.JPanel();
+
+        final org.traincontrol.gui.StationCaption onPageA = new org.traincontrol.gui.StationCaption();
+        final org.traincontrol.gui.StationCaption onPageB = new org.traincontrol.gui.StationCaption();
+
+        onPageA.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
+        onPageB.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
+        onPageA.putClientProperty(TrainControlUI.LAYOUT_STATION_PAGE, "OB-341 page A");
+        onPageB.putClientProperty(TrainControlUI.LAYOUT_STATION_PAGE, "OB-341 page B");
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                ui.addLayoutStation(station, onPageA, owner);
+                ui.addLayoutStation(station, onPageB, owner);
+            });
+
+            assertTrue(ui.getLayoutStations(station).contains(onPageA), "page B's caption let go of page A's, which is"
+                + " detached in the page cache and alive: back on page A it would be written never again");
+
+            assertTrue(ui.getLayoutStations(station).contains(onPageB), "page B's caption is not registered");
+
+            // THE WINDOW WRITES ITS CAPTIONS
+            ui.updateVisiblePoints();
+
+            pump();
+            pump();
+
+            String shown = null;
+
+            for (javax.swing.JLabel real : ui.getLayoutStations(station))
+            {
+                if (real != onPageA && real != onPageB) shown = real.getText();
+            }
+
+            assertNotNull(shown, "precondition: the window has no caption of its own at " + station);
+
+            assertFalse(onPageB.getText().isEmpty(), "page B's caption was not written: it still says nothing");
+
+            assertEquals(onPageA.getText(), shown, "page A's caption was not written with the station's text");
+            assertEquals(onPageB.getText(), shown, "page B's caption was not written with the station's text");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.forgetLayoutStations(
+                java.util.Arrays.asList(onPageA, onPageB), null));
+        }
+    }
+
+    /**
+     * The grid stamps every caption it registers with the page it drew it on (OB-341), which is what lets a later page's
+     * build tell its own page's earlier label from another page's.
+     *
+     * MUTATION: leave the stamp off the grid's labels, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testTheGridStampsItsCaptionsWithTheirPage() throws Exception
+    {
+        org.traincontrol.automationui.TileGraph.TileKey station = aCaptionedStationOnTheShownPage();
+
+        for (javax.swing.JLabel real : ui.getLayoutStations(station))
+        {
+            assertEquals(real.getClientProperty(TrainControlUI.LAYOUT_STATION_PAGE), station.getPage(),
+                "a caption the grid of " + station.getPage() + " registered does not carry the page it was drawn on");
+        }
+    }
+
+    /**
+     * A pop-up diagram follows a caption that is taken off, and stops writing the station into it (OB-341).
+     *
+     * `autonomySetupChanged` brought the main window's diagram into step with the setup and left the pop-ups alone - they
+     * were refreshed by the track editor and the address switch only - and a pop-up's caption labels are registered under
+     * its own owner, so the main window's rebuild never let go of them: the pop-up went on showing the caption, and
+     * `updateStationLabels` went on writing the station's live text into it, until the page was changed or the window
+     * opened again.  "Stop Showing" is the remedy the setup check's duplicate-caption error asks for.
+     *
+     * MUTATION: leave the pop-ups out of `autonomySetupChanged`, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAPopUpFollowsACaptionThatIsTakenOff() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
+        org.traincontrol.automationui.TileGraph.TileKey found = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
+                || ui.getLayoutStations(square).isEmpty())
+            {
+                continue;
+            }
+
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
+
+            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
+            {
+                found = square;
+                drawnAt = drawn.get(0);
+                break;
+            }
+        }
+
+        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+
+        final org.traincontrol.automationui.TileGraph.TileKey station = found;
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
+
+        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+
+        try
+        {
+            pump();
+            pump();
+
+            assertTrue(labelsInPopup(station, popup) > 0, "precondition: the pop-up draws no caption of " + station);
+
+            // TAKEN OFF through the editor's door, and the window told as the editor tells it
+            session.setCaption(square, null);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            for (int i = 0; i < 20; i++) pump();
+
+            assertEquals(labelsInPopup(station, popup), 0, "the pop-up still holds a caption of " + station + " that was taken"
+                + " off the setup, and goes on writing the station into it");
+        }
+        finally
+        {
+            session.setCaption(square, station);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
+
+            pump();
+        }
+    }
+
+    /**
+     * A pop-up the operator has sized and placed keeps its size and place when a caption on its page changes, and the
+     * bounds remembered for it are not overwritten (OB-341).
+     *
+     * RSA68-C8 made a caption change redraw the pop-ups it affects, and the redraw packed the window to its natural size and
+     * saved that over the operator's - on every caption gesture in the autonomy editor on that page.  A caption-only redraw
+     * leaves the window's size and place alone and saves nothing; an explicit page change still sizes the window as it did.
+     *
+     * Modelled on the validator's probe: the Medium pop-up opened, made 160 pixels narrower and 120 shorter and moved, one
+     * caption of its page taken off as the editor takes it off, and the window told.  Remember Window Location is switched
+     * on, put back after, and the bounds kept for this window are read from the preferences.
+     *
+     * MUTATION: let the caption redraw pack and save as `refreshDiagram` does, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testAPopUpKeepsItsSizeAndPlaceWhenACaptionChanges() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        org.traincontrol.automationui.TileGraph.TileKey drawnAt = null;
+        org.traincontrol.automationui.TileGraph.TileKey found = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (!shownPage.equals(square.getPage()) || !session.getStore().isStation(square)
+                || ui.getLayoutStations(square).isEmpty())
+            {
+                continue;
+            }
+
+            java.util.List<org.traincontrol.automationui.TileGraph.TileKey> drawn = session.drawnCaptionsFor(square);
+
+            if (drawn.size() == 1 && shownPage.equals(drawn.get(0).getPage()))
+            {
+                found = square;
+                drawnAt = drawn.get(0);
+                break;
+            }
+        }
+
+        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+
+        final org.traincontrol.automationui.TileGraph.TileKey station = found;
+        final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
+
+        // REMEMBER WINDOW LOCATION ON, the operator's own choice put back below, with whatever was kept for the window
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        final String rememberWas = prefs.get(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+
+        prefs.putBoolean(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
+
+        org.traincontrol.gui.LayoutPopupUI popup = null;
+        String kept = null;
+
+        try
+        {
+            popup = openAMediumPopUp();
+
+            final org.traincontrol.gui.LayoutPopupUI window = popup;
+
+            kept = "LayoutPopupUI_" + window.getLayoutTitle() + "_" + window.getLayoutSize();
+
+            for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
+
+            pump();
+            pump();
+
+            final java.awt.Dimension[] natural = new java.awt.Dimension[1];
+            final java.awt.Dimension[] sized = new java.awt.Dimension[1];
+            final java.awt.Point[] placed = new java.awt.Point[1];
+
+            // THE OPERATOR SIZES IT AND MOVES IT
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                natural[0] = window.getSize();
+
+                window.setSize(Math.max(300, natural[0].width - 160), Math.max(250, natural[0].height - 120));
+                window.setLocation(window.getX() + 37, window.getY() + 23);
+            });
+
+            for (int i = 0; i < 10; i++) pump();
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                sized[0] = window.getSize();
+                placed[0] = window.getLocation();
+            });
+
+            assertTrue(sized[0].width < natural[0].width && sized[0].height < natural[0].height,
+                "precondition: the pop-up was not made smaller: " + natural[0] + " then " + sized[0]);
+
+            assertEquals(prefs.getInt(kept + "_width", -1), sized[0].width,
+                "precondition: the size the operator chose is not what is remembered for the window");
+
+            // A CAPTION OF ITS PAGE TAKEN OFF, the window told as the editor tells it
+            session.setCaption(square, null);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            for (int i = 0; i < 20; i++) pump();
+
+            Thread.sleep(500);
+
+            for (int i = 0; i < 5; i++) pump();
+
+            // IT WAS REDRAWN, or what follows would pass for a window nothing touched
+            assertEquals(labelsInPopup(station, window), 0, "precondition: the pop-up was not redrawn, so nothing here was"
+                + " asked");
+
+            final java.awt.Dimension[] after = new java.awt.Dimension[1];
+            final java.awt.Point[] stands = new java.awt.Point[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                after[0] = window.getSize();
+                stands[0] = window.getLocation();
+            });
+
+            assertEquals(after[0], sized[0], "the pop-up the operator sized went back to " + after[0] + " when a caption of"
+                + " its page changed");
+
+            assertEquals(stands[0], placed[0], "the pop-up the operator moved went to " + stands[0] + " when a caption of"
+                + " its page changed");
+
+            assertEquals(prefs.getInt(kept + "_width", -1), sized[0].width, "the width remembered for the window was written"
+                + " over with the natural size");
+
+            assertEquals(prefs.getInt(kept + "_height", -1), sized[0].height, "the height remembered for the window was written"
+                + " over with the natural size");
+
+            // AN EXPLICIT PAGE CHANGE STILL SIZES IT, as it did: the page is drawn and the window fits it
+            final int shown = pages.getSelectedIndex();
+
+            window.goToLayoutPage(shown);
+
+            for (int i = 0; i < 20; i++) pump();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> after[0] = window.getSize());
+
+            assertEquals(after[0], natural[0], "a page change no longer sizes the pop-up to its page");
+        }
+        finally
+        {
+            session.setCaption(square, station);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
+
+            if (popup != null)
+            {
+                final org.traincontrol.gui.LayoutPopupUI closing = popup;
+
+                javax.swing.SwingUtilities.invokeAndWait(closing::dispose);
+            }
+
+            if (kept != null)
+            {
+                for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
+            }
+
+            if (rememberWas == null) prefs.remove(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else prefs.put(org.traincontrol.gui.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
+
+            pump();
+        }
+    }
+
+    /** How many of the station's registered caption labels sit inside this pop-up. */
+    private static int labelsInPopup(final org.traincontrol.automationui.TileGraph.TileKey station,
+        final org.traincontrol.gui.LayoutPopupUI popup) throws Exception
+    {
+        final int[] count = new int[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (javax.swing.JLabel label : ui.getLayoutStations(station))
+            {
+                if (javax.swing.SwingUtilities.isDescendingFrom(label, popup)) count[0]++;
+            }
+        });
+
+        return count[0];
+    }
+
+    /** The Medium button's pop-up of the page shown, once it is up. */
+    private static org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    {
+        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
+        buttonField.setAccessible(true);
+
+        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+
+        java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
+
+        javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
+
+        for (long end = System.currentTimeMillis() + 15000; System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                    Thread.sleep(1500);
+
+                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                }
+            }
+        }
+
+        org.testng.Assert.fail("the Medium button opened no pop-up window");
+
+        return null;
+    }
+
+    /**
+     * A station on the page shown that the window draws a caption for.
+     *
+     * @return its square
+     * @throws Exception on an event-thread failure
+     */
+    private static org.traincontrol.automationui.TileGraph.TileKey aCaptionedStationOnTheShownPage() throws Exception
+    {
+        settle();
+
+        @SuppressWarnings("unchecked")
+        final javax.swing.JComboBox<Object> pages = (javax.swing.JComboBox<Object>) windowField("LayoutList");
+
+        String shownPage = String.valueOf(pages.getSelectedItem());
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (shownPage.equals(square.getPage()) && session.getStore().isStation(square)
+                && !ui.getLayoutStations(square).isEmpty())
+            {
+                return square;
+            }
+        }
+
+        throw new SkipException("no captioned station on page " + shownPage);
+    }
+
+    /**
      * A station renamed while the setup cannot build keeps the train standing at it on its caption (RSA40-C2; Adam,
      * 2026-10-05: *"Yes, do it."*): the railway, left as it was, still carries the names it was built with, and the
      * caption, asked by the new name, found no Point there and went blank until the setup built.

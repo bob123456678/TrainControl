@@ -1058,7 +1058,7 @@ public class Layout
     }
     
     /**
-     * Returns all accessories along active routes
+     * Returns all accessories along active routes, the exit guards each path's first edge sets among them (OB-340)
      *
      * NOT synchronized, deliberately (IAR-B2).
      *
@@ -1089,7 +1089,8 @@ public class Layout
      * Every accessory along an active route, with the setting its route holds it at: true for TURN and RED, the sense
      * `RouteCommand.getSetting` and `Accessory.isSwitched` use - so that a route's command can be told from the one
      * the path is holding (Adam, 2026-10-11: "make sure the code allows switching to the correct (same) setting that
-     * autonomy is using").  Null for an accessory two routes underway ask different settings of.
+     * autonomy is using").  Null for an accessory two routes underway ask different settings of.  A path's first edge
+     * holds the exit guards of the station it leaves at GREEN, with its own accessories (OB-340).
      *
      * Not synchronized, for the reason `getActiveAccs` gives.
      *
@@ -1195,10 +1196,46 @@ public class Layout
                         activeAccessories.put(a, setting);
                     }
                 }
+
+                // AND THE EXIT GUARDS ITS FIRST EDGE SETS GREEN, held with that edge's own accessories (OB-340)
+                if (e == active.getValue().get(0))
+                {
+                    for (Accessory guard : this.exitGuardsLeftBy(e))
+                    {
+                        activeAccessories.put(guard, activeAccessories.containsKey(guard)
+                            && !Boolean.FALSE.equals(activeAccessories.get(guard)) ? null : Boolean.FALSE);
+                    }
+                }
             }
         }
         
         return activeAccessories;
+    }
+
+    /**
+     * The exit guards of the station a path's first edge leaves, which that edge sets GREEN with its own accessories and
+     * holds as it holds them (OB-340): each resolved to its accessory, and left out where the edge commands it itself.
+     *
+     * @param first the first edge of a path
+     * @return the guards
+     */
+    private Set<Accessory> exitGuardsLeftBy(Edge first)
+    {
+        Set<Accessory> guards = new LinkedHashSet<>();
+
+        for (String name : first.getStart().getProtectingSignals())
+        {
+            Accessory guard = this.control.getAccessoryByName(name);
+
+            if (guard != null) guards.add(guard);
+        }
+
+        for (String name : first.getConfigCommands().keySet())
+        {
+            guards.remove(this.control.getAccessoryByName(name));
+        }
+
+        return guards;
     }
     
     /**
@@ -3870,7 +3907,16 @@ public class Layout
                     state.toString().toLowerCase()
                 );
 
-                if (!acc.setState(state))
+                boolean commanded;
+
+                // UNDER THE ACCESSORY'S SIGNAL LOCK, as the exit guards are: the edge is taken, so its hold is readable,
+                // and a refresh that read the holds before that has commanded already (RSA67-C1, `signalLocks`)
+                synchronized (this.signalLock(acc))
+                {
+                    commanded = acc.setState(state);
+                }
+
+                if (!commanded)
                 {
                     // This should never happen - but if it does the accessory was not commanded, so
                     // the edge is not configured and the caller must not release the locomotive
@@ -4803,6 +4849,20 @@ public class Layout
                     break;
                 }
 
+                // AND THE FIRST EDGE SETS THE EXIT GUARDS OF THE STATION IT LEAVES GREEN, with its own accessories
+                // (OB-340) - each under its signal's lock, now that the claim and this edge make the hold readable, so a
+                // refresh that read the holds before them has commanded already (RSA67-C1, `signalLocks`)
+                if (e == path.get(0))
+                {
+                    for (Accessory guard : this.exitGuardsLeftBy(e))
+                    {
+                        synchronized (this.signalLock(guard))
+                        {
+                            guard.setState(Accessory.accessorySetting.GREEN);
+                        }
+                    }
+                }
+
                 loc.delay(CONFIGURE_SLEEP);
             }
             }
@@ -5139,12 +5199,13 @@ public class Layout
 
             if (this.atomicRoutes && heldItAll)
             {            
+                // THE EDGE GIVEN BACK FIRST, so the start's guards are asked with this path no longer holding them (OB-340)
+                e.setUnoccupied();
+
                 if (i == 0)
                 {
                     e.getStart().setLocomotive(null);
                 }
-
-                e.setUnoccupied();
 
                 if (i < path.size() - 1)
                 {
@@ -11651,12 +11712,12 @@ public class Layout
      * SECOND, and this is the one the revert note first missed, it is an outright DEADLOCK rather
      * than a freeze. `TrainControlUI.updateVisiblePoints` and `repaintAutoLocList` are synchronized on
      * the UI and call `getPoints()`, so they would take the Layout monitor while holding the UI's.
-     * The opposite order already exists and is unavoidable: `configureAndLockPath` holds the Layout
-     * monitor and reaches `MarklinAccessory.setSwitched` -> `TrainControlUI.repaintSwitch`, which is
-     * synchronized on the UI. `DiagramMonitorDriver` calls `updateVisiblePoints` on the event thread
-     * every monitor tick during a run, so both halves fire on an ordinary run. AB-BA, unrecoverable,
-     * and it would have looked exactly like the deadlock Adam reported from a build that did not have
-     * it.
+     * The opposite order existed then: `configureAndLockPath` holds the Layout monitor and reaches
+     * `MarklinAccessory.setSwitched` -> `TrainControlUI.repaintSwitch`, which was synchronized on the UI
+     * until RSA67-C1. `DiagramMonitorDriver` calls `updateVisiblePoints` on the event thread every
+     * monitor tick during a run, so both halves fired on an ordinary run. AB-BA, unrecoverable, and it
+     * would have looked exactly like the deadlock Adam reported from a build that did not have it.
+     * Without that half it is the FIRST reason again: a freeze for as long as a dispatch holds the monitor.
      *
      * **AND THEN IT HAPPENED, BY A DIFFERENT DOOR (OB-192, 2026-09-09).** This paragraph was written
      * about `getPoints()` and read as being about `getPoints()`. `updateVisiblePoints` was already
@@ -11852,7 +11913,9 @@ public class Layout
     /**
      * Sets a station's protecting signal to match whether its platform is claimed.
      *
-     * Red when a train is standing there or a locked path has reserved it, green when it is free.
+     * Red when a train is standing there or a locked path has reserved it, green when it is free - and
+     * never turned red while an active path holds it green, as a path's first edge holds the guards of
+     * the station it leaves (OB-340).
      * Derived rather than remembered, so nothing has to undo it: a path released after a failure
      * clears the reservation, and the signal follows on the same call.
      *
@@ -11895,6 +11958,35 @@ public class Layout
     }
 
     /**
+     * A lock per signal, so that a protection refresh decides and commands as one step against a departure that sets the
+     * signal GREEN (RSA67-C1, OB-340).
+     *
+     * A refresh need not hold the railway's monitor - the early release on another train's thread, an arrival's re-stand,
+     * a placement by hand - so one that had read the holds could command RED after a departure claimed its route and set
+     * a shared guard GREEN: RED in front of the leaving train, held GREEN, until the next change of occupancy.
+     * `refreshOneSignal` holds this from its read to its command; a departure holds it to command each accessory of an
+     * edge it has taken (`configureEdge`) and the exit guards its first edge sets GREEN (`configureAndLockPath`), once
+     * its claim and that edge make the hold readable.
+     *
+     * Taken last: under it only what a refresh took anyway - the edges' monitors, the accessory database's, and the
+     * signal's command (the accessory's monitor, `Locomotive.accessoryMonitor`, and `NetworkProxy`'s as it sends; the
+     * window's repaint is only posted, never waited for).  None of them is held while this is waited for, so a thread
+     * waits here for one refresh or one command of the same signal, never for a sleep.
+     */
+    private final Map<Accessory, Object> signalLocks = new ConcurrentHashMap<>();
+
+    /**
+     * The lock of one signal, or of any accessory a path commands (RSA67-C1): see `signalLocks`.
+     *
+     * @param signal the accessory
+     * @return its lock, the same object for every caller
+     */
+    private Object signalLock(Accessory signal)
+    {
+        return this.signalLocks.computeIfAbsent(signal, any -> new Object());
+    }
+
+    /**
      * Throws one protecting signal to whatever the platforms behind it now say.
      *
      * Per SIGNAL rather than per point, because that is the thing being commanded and because a signal
@@ -11908,75 +12000,84 @@ public class Layout
     {
         try
         {
-            // Red if ANY platform this signal protects is claimed.
-            //
-            // Asked of the SIGNAL rather than of the square, which fixes two things at once.  Every
-            // copy of a square carries the same accessory, so this covers the whole platform without
-            // having to ask for the block - and it also covers the case the pairing UI allows and
-            // nothing else handled: two different stations paired to one signal.  A signal can only
-            // show one aspect, so it must stay red while either of them is occupied.
-            boolean claimed = false;
-
-            for (Point other : this.points.values())
-            {
-                if (!other.getProtectingSignals().contains(accessory)) continue;
-
-                Locomotive holding = other.getCurrentLocomotive();
-
-                // NOT BY A TRAIN ONLY PASSING THROUGH (OB-315, OB-316).  Adam, 2026-10-03: *"the exit guard signals are
-                // applied for more than just the arrival station"* - a locked path reserves every station along it, so
-                // each one a train only passed turned its exit guard red.  Its own start and its destination still count.
-                if (holding != null && !onlyPassing(holding, other))
-                {
-                    claimed = true;
-                    break;
-                }
-            }
-
-            // Only when it CHANGES.  This fires from every occupancy change, including each point a
-            // locked path reserves - and configureAndLockPath holds the layout monitor across that
-            // whole loop, so a command per reservation would put a burst of accessory traffic under
-            // the lock the event thread also needs.  A signal already showing the right aspect needs
-            // nothing sent to it.
-            //
-            // Remembered against the SIGNAL, not against a Point.  It used to be a field on Point
-            // while "claimed" was a fact about the whole square, so a refresh on one copy that saw the
-            // square claimed through ANOTHER copy wrote true into its own memo while standing empty.
-            // Nothing ever wrote false back - the clearing transition was recorded on the other copy -
-            // so the next real arrival there matched its stale memo and sent no command at all, and
-            // the signal stayed GREEN with a train standing at the platform.
             Accessory acc = this.control.getAccessoryByName(accessory);
 
             if (acc == null) return;
 
-            Boolean showing = this.signalAspects.get(accessory);
+            // ONE STEP, FROM THE READ TO THE COMMAND, against a departure that sets this signal GREEN once its hold is
+            // readable: so a refresh either commands first, and the GREEN lands last, or reads the hold (RSA67-C1,
+            // `signalLocks`)
+            synchronized (this.signalLock(acc))
+            {
+                // Red if ANY platform this signal protects is claimed.
+                //
+                // Asked of the SIGNAL rather than of the square, which fixes two things at once.  Every
+                // copy of a square carries the same accessory, so this covers the whole platform without
+                // having to ask for the block - and it also covers the case the pairing UI allows and
+                // nothing else handled: two different stations paired to one signal.  A signal can only
+                // show one aspect, so it must stay red while either of them is occupied.
+                boolean claimed = false;
 
-            // The memo AND the signal, because the memo is only the aspect protection last commanded
-            // and it is not the only thing that commands this accessory.  TilePorts gives a SIGNAL tile
-            // a GREEN configuration command, so a path configured across one drives it green through
-            // getConfigCommands - the same Accessory, and configureAndLockPath does it in the same loop
-            // that reserves the point, immediately after.  Protection then agreed with its own memo,
-            // sent nothing, and went on agreeing: the signal stood GREEN over an occupied platform
-            // until the train left, and no later occupancy change corrected it.
-            //
-            // Adam's ruling, 2026-08-23: a signal a path crosses and a signal protecting the
-            // destination are two different signals, so a railway wired the way he intends never asks
-            // which of them wins.  Nothing stops the two being paired to one accessory, though, and
-            // when they are the failure is silent - so what protection may not do is skip because of
-            // something it REMEMBERS.  Whatever moved the signal, the next occupancy change is decided
-            // by looking.
-            //
-            // isRed() rather than a second memo: Accessory.switched is set optimistically by every
-            // caller, protection and path configuration alike, so it is the one record that cannot go
-            // stale behind somebody's back.
-            if (showing != null && showing == claimed && acc.isRed() == claimed) return;
+                for (Point other : this.points.values())
+                {
+                    if (!other.getProtectingSignals().contains(accessory)) continue;
 
-            this.signalAspects.put(accessory, claimed);
+                    Locomotive holding = other.getCurrentLocomotive();
 
-            // Through Accessory.setState, the same door the edge configuration uses, so a signal
-            // thrown here is thrown exactly as one thrown by a route.
-            acc.setState(claimed
-                ? Accessory.accessorySetting.RED : Accessory.accessorySetting.GREEN);
+                    // NOT BY A TRAIN ONLY PASSING THROUGH (OB-315, OB-316).  Adam, 2026-10-03: *"the exit guard signals are
+                    // applied for more than just the arrival station"* - a locked path reserves every station along it, so
+                    // each one a train only passed turned its exit guard red.  Its own start and its destination still count.
+                    if (holding != null && !onlyPassing(holding, other))
+                    {
+                        claimed = true;
+                        break;
+                    }
+                }
+
+                // Only when it CHANGES.  This fires from every occupancy change, including each point a
+                // locked path reserves - and configureAndLockPath holds the layout monitor across that
+                // whole loop, so a command per reservation would put a burst of accessory traffic under
+                // the lock the event thread also needs.  A signal already showing the right aspect needs
+                // nothing sent to it.
+                //
+                // Remembered against the SIGNAL, not against a Point.  It used to be a field on Point
+                // while "claimed" was a fact about the whole square, so a refresh on one copy that saw the
+                // square claimed through ANOTHER copy wrote true into its own memo while standing empty.
+                // Nothing ever wrote false back - the clearing transition was recorded on the other copy -
+                // so the next real arrival there matched its stale memo and sent no command at all, and
+                // the signal stayed GREEN with a train standing at the platform.
+                // NOT RED UNDER A PATH THAT HOLDS IT GREEN (OB-340): the train it lets go goes first
+                if (claimed && Boolean.FALSE.equals(this.getActiveAccSettings().get(acc))) return;
+
+                Boolean showing = this.signalAspects.get(accessory);
+
+                // The memo AND the signal, because the memo is only the aspect protection last commanded
+                // and it is not the only thing that commands this accessory.  TilePorts gives a SIGNAL tile
+                // a GREEN configuration command, so a path configured across one drives it green through
+                // getConfigCommands - the same Accessory, and configureAndLockPath does it in the same loop
+                // that reserves the point, immediately after.  Protection then agreed with its own memo,
+                // sent nothing, and went on agreeing: the signal stood GREEN over an occupied platform
+                // until the train left, and no later occupancy change corrected it.
+                //
+                // Adam's ruling, 2026-08-23: a signal a path crosses and a signal protecting the
+                // destination are two different signals, so a railway wired the way he intends never asks
+                // which of them wins.  Nothing stops the two being paired to one accessory, though, and
+                // when they are the failure is silent - so what protection may not do is skip because of
+                // something it REMEMBERS.  Whatever moved the signal, the next occupancy change is decided
+                // by looking.
+                //
+                // isRed() rather than a second memo: Accessory.switched is set optimistically by every
+                // caller, protection and path configuration alike, so it is the one record that cannot go
+                // stale behind somebody's back.
+                if (showing != null && showing == claimed && acc.isRed() == claimed) return;
+
+                this.signalAspects.put(accessory, claimed);
+
+                // Through Accessory.setState, the same door the edge configuration uses, so a signal
+                // thrown here is thrown exactly as one thrown by a route.
+                acc.setState(claimed
+                    ? Accessory.accessorySetting.RED : Accessory.accessorySetting.GREEN);
+            }
         }
         catch (Exception e)
         {
@@ -14026,7 +14127,8 @@ public class Layout
 
     /**
      * Every train the database has paused, by name and sorted (FR-117): the list `toJSON` writes under
-     * `PAUSED_LOCOMOTIVES`, and the window's settings as built take (RSA60-B1) - one answer for both.
+     * `PAUSED_LOCOMOTIVES`.  The window's settings as built used to take it too (RSA60-B1); since OB-343 they note only the
+     * trains a door has changed, and nothing but `toJSON` calls this.
      *
      * @param control the model, or null for none
      * @return the names, possibly none

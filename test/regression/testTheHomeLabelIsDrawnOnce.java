@@ -26,20 +26,23 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * the station's square, and on the one with the label"*, and again: *"if a station has an offset
  * label, the current home loc is shown twice (once on the tile itself, once on the offset label)"*.
  *
- * **A station can carry more than one caption, and that is deliberate.** `AutonomyCompanionStore.
- * setCaption` says so - "several squares may name the same station, which is deliberate: a long
- * platform is legitimately labelled at both ends" - and the state is on Adam's own railway today:
- * `1 - Main:6,4` is captioned on `6,5` AND on `6,4`. `AutonomySession.migrateStationLabels` writes
- * captions through the raw store door, so a station already captioned on its own square gains a
- * second one the moment a `Point:` label is migrated off the page beside it.
+ * **The editor keeps one station to one caption, and the store can still hold more.** A setup edited by
+ * hand, or written by an older version, carries several, so drawing has to cope with it. A station named on
+ * its own square and beside it is drawn once and is no error for the setup check; only two captions beside
+ * a station on one page are an ERROR (OB-341), because they are drawn twice there; a caption on another page is
+ * allowed (Adam, 2026-10-12: *"It is OK to show on another page what is going on on another."*). The state was on
+ * Adam's own railway:
+ * `1 - Main:6,4` is captioned on `6,5` AND on `6,4`. `AutonomySession.migrateStationLabels` used to
+ * write captions through the raw store door (until OB-256), so a station already captioned on its own
+ * square gained a second one the moment a `Point:` label was migrated off the page beside it.
  *
  * `LayoutGrid` draws a caption per CAPTION SQUARE and asks `autonomyHomeAt` about the station each one
  * names, so a station named twice states its home twice - side by side, on the tile and beside it.
  *
  * **The rule Adam asked for**: the home appears once, on the caption square when there is one, and
  * otherwise on the station's own square. So the self-caption is the one that gives way, and only when
- * something else is already naming that station. Two captions at opposite ends of a long platform are
- * untouched, which is the case the store's own comment exists for.
+ * something else is already naming that station. Two offset captions are untouched: both are drawn, and
+ * the setup check is what reports them.
  *
  * Asserted by DRAWING it: the editor is built, its captions are read off the container, and the home
  * name is counted. The two rules that could be got wrong instead of right - suppressing every
@@ -68,7 +71,7 @@ public class testTheHomeLabelIsDrawnOnce
      *
      * Adam, on MT-293: *"At the time of testing, TopMainR2 still shows two labels."*
      * `live-snapshot`'s setup captions `5:6,4` on `5:6,4` AND on `5:6,5` - the state
-     * `migrateStationLabels` can produce without anybody asking for it - and `1 - Main:6,4` is
+     * `migrateStationLabels` produced, until OB-256, without anybody asking for it - and `1 - Main:6,4` is
      * TopMainR2.  It is the very square `TrainControlUI.autonomyCaptionAt`'s own comment names.
      *
      * **Held out of the arrangement below**, so the three stations this class builds its cases on can
@@ -92,6 +95,19 @@ public class testTheHomeLabelIsDrawnOnce
     private static TileKey offsetOnly;
 
     private static TileKey offsetOnlyCaption;
+
+    /**
+     * Captioned on two neighbours and not on its own square - drawn TWICE, which is the one shape here the setup check
+     * calls an error (OB-341).  Null where the railway has no fourth station with two free squares beside it.
+     */
+    private static TileKey twoBeside;
+
+    /** The two squares that name `twoBeside` */
+    private static TileKey twoBesideFirst;
+    private static TileKey twoBesideSecond;
+
+    /** The locomotive homed at `twoBeside` */
+    private static String twoBesideHome;
 
     /** The locomotive homed at each of the three, so the three captions cannot be confused */
     private static String doubledHome;
@@ -178,7 +194,7 @@ public class testTheHomeLabelIsDrawnOnce
         offsetOnlyCaption = freeNeighbour(page, offsetOnly);
 
         // A SECOND caption through the raw store door, which is how the state arises: nothing on the
-        // session's own setCaption can produce it, and migrateStationLabels does not go through that.
+        // session's own setCaption can produce it, and migrateStationLabels did not go through that until OB-256.
         session.getStore().setCaption(doubledOffset, doubled);
 
         // And the third station's caption MOVED, which does sweep - so it is captioned only beside
@@ -192,6 +208,30 @@ public class testTheHomeLabelIsDrawnOnce
         session.setHome(doubled, doubledHome);
         session.setHome(selfOnly, selfHome);
         session.setHome(offsetOnly, offsetHome);
+
+        // A FOURTH, if the railway has one, captioned on two neighbours: moved off its own square (which sweeps), and a
+        // second put beside it through the raw store door.  Everything above is arranged first, so the squares it takes
+        // are free ones.
+        for (int at = 3; at < selfCaptioned.size() && twoBeside == null && locomotives.size() > 3; at++)
+        {
+            TileKey candidate = selfCaptioned.get(at);
+
+            // One beside it, and one on any other blank square of the page: a caption may sit on blank space anywhere
+            TileKey first = freeNeighbour(page, candidate);
+            TileKey second = first == null ? null : aBlankSquare(page, first);
+
+            if (second == null) continue;
+
+            session.moveCaption(candidate, first);
+            session.getStore().setCaption(second, candidate);
+
+            twoBeside = candidate;
+            twoBesideFirst = first;
+            twoBesideSecond = second;
+            twoBesideHome = locomotives.get(3);
+
+            session.setHome(twoBeside, twoBesideHome);
+        }
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -323,9 +363,9 @@ public class testTheHomeLabelIsDrawnOnce
      * costs is that it pins the FIXTURE as well as the rule, which is why it says so here.
      *
      * The state is not contrived: `5:6,4` is captioned on `5:6,4` and on `5:6,5` in the snapshot's
-     * `setup.json`, and `AutonomySession.migrateStationLabels` is how it got there - it writes through
-     * the raw store door, which does not sweep, so a station already captioned on its own square gains
-     * a second caption the moment a legacy `Point:` label is migrated off the page beside it.
+     * `setup.json`, and `AutonomySession.migrateStationLabels` is how it got there - it wrote through
+     * the raw store door, which does not sweep, until OB-256, so a station already captioned on its own
+     * square gained a second caption the moment a legacy `Point:` label was migrated off the page beside it.
      *
      * If this ever fails, either the fix at `TrainControlUI.autonomyCaptionAt` has been lost or the
      * snapshot has been re-taken from a railway whose labels have moved.  The precondition tells the
@@ -352,6 +392,61 @@ public class testTheHomeLabelIsDrawnOnce
             "the label beside TopMainR2 stopped naming it, so the ONE label that survives is not the"
             + " one somebody placed - and with the self-caption suppressed as well the station would"
             + " have no name at all");
+    }
+
+    /**
+     * The setup check calls a station an error exactly when the diagram draws its name twice (OB-341).
+     *
+     * **Measured on the drawn editor, not on the rule**: each station's home locomotive is written once for every place its
+     * name is drawn, so counting it off the diagram says how many places there are without asking `isCaptionDrawn`.  A
+     * station on its own square and beside it is drawn once (TopMainR2 is one, on the frozen railway), on its own square
+     * only once, beside only once, and beside twice - the fourth, which the railway may not have - twice.  The check
+     * reports that last and none of the others, and the whole railway raises no other.
+     *
+     * MUTATION: count the station's own square as a place, or let it be drawn beside a caption it should give way to, and
+     * this fails.
+     */
+    @Test
+    public void testTheSetupCheckCountsWhatTheDiagramDraws()
+    {
+        if (twoBeside == null)
+        {
+            throw new SkipException("this railway has no fourth self-captioned station with two free squares beside it");
+        }
+
+        // WHAT THE GRID SHOWS
+        assertEquals(times(caption(doubledHome)), 1, "the station on its own square and beside it is not drawn once");
+        assertEquals(times(caption(selfHome)), 1, "the station on its own square only is not drawn once");
+        assertEquals(times(caption(offsetHome)), 1, "the station beside itself only is not drawn once");
+        assertEquals(times(caption(twoBesideHome)), 2, "the station beside itself in two places is not drawn twice: "
+            + session.captionsFor(twoBeside));
+
+        // WHAT THE CHECK SAYS: the station drawn twice, once, and nothing else
+        List<org.traincontrol.automationui.AutonomyChecks.Finding> reported = new ArrayList<>();
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.STATION_NAMED_TWICE.equals(finding.getMessageKey()))
+            {
+                reported.add(finding);
+            }
+        }
+
+        assertEquals(reported.size(), 1, "the railway has one station drawn twice, and the check reports: " + reported);
+
+        assertEquals(reported.get(0).getAbout(), twoBeside, "the check reports the wrong station");
+        assertEquals(reported.get(0).getCount(), 2, "the check does not count two places");
+
+        assertEquals(new java.util.LinkedHashSet<>(reported.get(0).getRelated()),
+            new java.util.LinkedHashSet<>(java.util.Arrays.asList(twoBesideFirst, twoBesideSecond)),
+            "the check does not name the two squares the name is drawn on");
+
+        // and what the setup says is drawn is what the check counted, for the stations drawn once
+        for (TileKey station : new TileKey[] {doubled, selfOnly, offsetOnly, OB193})
+        {
+            assertEquals(session.drawnCaptionsFor(station).size(), 1,
+                station + " is drawn " + session.drawnCaptionsFor(station) + ", and it should be drawn once");
+        }
     }
 
     /**
@@ -412,6 +507,32 @@ public class testTheHomeLabelIsDrawnOnce
             if (session.getCaptionTarget(at) != null) continue;
 
             return at;
+        }
+
+        return null;
+    }
+
+    /**
+     * The first square of the page, in reading order, that carries nothing and has no caption on it.
+     *
+     * @param page the diagram
+     * @param not a square to leave out
+     * @return a blank square, or null
+     */
+    private static TileKey aBlankSquare(LayoutDiagram page, TileKey not)
+    {
+        for (int y = page.getMiny(); y <= page.getMaxy(); y++)
+        {
+            for (int x = page.getMinx(); x <= page.getMaxx(); x++)
+            {
+                if (page.getComponent(x, y) != null) continue;
+
+                TileKey at = new TileKey(not.getPage(), x, y);
+
+                if (at.equals(not) || session.getCaptionTarget(at) != null) continue;
+
+                return at;
+            }
         }
 
         return null;

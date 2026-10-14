@@ -1822,8 +1822,19 @@ public class AutonomyCompanionStore
      */
     private static void repairLocomotiveInPausedTrains(JSONObject configuration, String from, String to)
     {
-        JSONObject globals = configuration.optJSONObject("globals");
+        repairLocomotiveInPausedList(configuration.optJSONObject("globals"), from, to);
+    }
 
+    /**
+     * The same for any settings that hold the list - a configuration's "globals", or the window's record of the settings
+     * its railway was built with, which names the paused trains too (OB-343).
+     *
+     * @param globals the settings, modified in place, or null
+     * @param from the locomotive's name as it was
+     * @param to the new name, or null when the locomotive is being deleted
+     */
+    public static void repairLocomotiveInPausedList(JSONObject globals, String from, String to)
+    {
         org.json.JSONArray list = globals == null ? null
             : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
 
@@ -2344,10 +2355,34 @@ public class AutonomyCompanionStore
                     continue;
                 }
 
-                for (String inner : ((JSONObject) value).keySet())
+                // ONE CAPTION PER STATION PER PAGE (OB-341; Adam, 2026-10-12: *"The duplicate caption check should be per
+                // page"*).  A square the setup has no caption on is no gap when the station it names is captioned on
+                // that square's page already, so the captions take only the stations the setup does not caption yet ON
+                // THEIR PAGE - the file's own included, taken in the order of the squares, since org.json holds keys in
+                // no order and which of a file's two would otherwise change from one run to the next.  A caption on
+                // another page is kept: it is shown beside nothing of the station's.
+                Set<String> captioned = null;
+
+                List<String> inners = new ArrayList<>(((JSONObject) value).keySet());
+
+                if ("captions".equals(key))
+                {
+                    captioned = new LinkedHashSet<>();
+
+                    for (String held : mine.keySet()) captioned.add(captionedOnItsPage(held, mine.get(held)));
+
+                    inners.sort(AutonomyCompanionStore::bySquare);
+                }
+
+                for (String inner : inners)
                 {
                     // Kept, not replaced.  See the note above: this is a merge, not an adoption.
                     if (mine.has(inner)) continue;
+
+                    if (captioned != null && !captioned.add(captionedOnItsPage(inner, ((JSONObject) value).get(inner))))
+                    {
+                        continue;
+                    }
 
                     mine.put(inner, ((JSONObject) value).get(inner));
                     filled++;
@@ -6057,7 +6092,8 @@ public class AutonomyCompanionStore
      *
      * One caption per square, by construction: the map is keyed by the square the text sits on, so a
      * second caption there replaces the first rather than fighting it.  Several squares may name the
-     * same station, which is deliberate - a long platform is legitimately labelled at both ends.
+     * same station as far as this store goes: the session takes the old ones off when a new one is chosen
+     * (OB-256), and the setup check reports a station whose name is then drawn twice on one page (OB-341).
      *
      * @param captionTile where the text goes
      * @param stationTile the sensor it is about, or null to clear
@@ -6170,6 +6206,47 @@ public class AutonomyCompanionStore
         }
 
         return dropped;
+    }
+
+    /**
+     * A station together with the page a caption of it sits on, as one value to be compared.
+     *
+     * @param captionKey the caption's square in the file
+     * @param station the station it is about, as the file has it
+     * @return the two as one value
+     */
+    private static String captionedOnItsPage(String captionKey, Object station)
+    {
+        TileKey square = parseTileKey(captionKey);
+
+        return station + "\n" + (square == null ? "" : square.getPage());
+    }
+
+    /**
+     * Two keys in the file in the order of their squares: by page id, as text, so "10" comes before "2", then row, then
+     * column.  A key that is no square comes after those, as text, so the order is total.
+     *
+     * @param a one key
+     * @param b another
+     * @return negative, zero or positive as `a` comes before, with or after `b`
+     */
+    private static int bySquare(String a, String b)
+    {
+        TileKey first = parseTileKey(a);
+        TileKey second = parseTileKey(b);
+
+        if (first == null || second == null)
+        {
+            return first == null && second == null ? a.compareTo(b) : first == null ? 1 : -1;
+        }
+
+        int byPage = first.getPage().compareTo(second.getPage());
+
+        if (byPage != 0) return byPage;
+
+        int byRow = Integer.compare(first.getY(), second.getY());
+
+        return byRow != 0 ? byRow : Integer.compare(first.getX(), second.getX());
     }
 
     // Package-private rather than private: the session prunes stale point data by tile, and has to be

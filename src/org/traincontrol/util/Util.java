@@ -803,6 +803,30 @@ public class Util
     }
     
     /**
+     * The size in bytes of the release download, so an update can tell a whole download from one cut short (FR-125).
+     *
+     * @param gitHubReleaseInfo
+     * @return the size, or -1 when the release does not give one
+     */
+    public static long parseDownloadSize(JSONObject gitHubReleaseInfo)
+    {
+        return gitHubReleaseInfo.getJSONArray("assets").getJSONObject(0).optLong("size", -1);
+    }
+
+    /**
+     * The release download's digest, `sha256:<hex>`, where the release gives one (FR-125).
+     *
+     * @param gitHubReleaseInfo
+     * @return the digest, or null
+     */
+    public static String parseDownloadDigest(JSONObject gitHubReleaseInfo)
+    {
+        String digest = gitHubReleaseInfo.getJSONArray("assets").getJSONObject(0).optString("digest", "");
+
+        return digest.trim().isEmpty() ? null : digest.trim();
+    }
+    
+    /**
      * Parses the release page URL from getLatestReleaseInfo
      * @param gitHubReleaseInfo
      * @return 

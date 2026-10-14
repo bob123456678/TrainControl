@@ -844,8 +844,9 @@ public class AutonomyViewerPanel extends JPanel
             {
                 org.traincontrol.automation.Layout folding = ui.getModel().getAutoLayout();
 
+                // AND ITS SETTINGS AS BUILT FOLLOW (OB-343): a build the load then declines leaves this railway running
                 session().captureFromLayout(folding.toJSON(folding.getLastPointsReached()),
-                    ui.getActiveDiagramConfiguration());
+                    ui.getActiveDiagramConfiguration(), ui.settingsAsBuiltFor(folding));
             }
             catch (Exception e)
             {
@@ -1387,6 +1388,10 @@ public class AutonomyViewerPanel extends JPanel
         // one the next start resumed.
         org.json.JSONObject was = session().snapshotSetup();
 
+        // AND THE RECORD OF HOW THE RAILWAY WAS BUILT WITH IT (OB-343): the fold below updates it, and the setup put
+        // back must not keep what the fold took
+        final TrainControlUI.SettingsAsBuiltNote railwaySettings = ui.noteSettingsAsBuilt();
+
         // Somewhere for the import to land, before it starts (OB-106).
         //
         // The shared half of a setup - names, stations, lengths, directions - belongs to the TRACK and
@@ -1447,7 +1452,8 @@ public class AutonomyViewerPanel extends JPanel
             {
                 try
                 {
-                    session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into);
+                    session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into,
+                        ui.settingsAsBuiltFor(ui.getModel().getAutoLayout()));
 
                     captured = true;
                 }
@@ -1621,6 +1627,8 @@ public class AutonomyViewerPanel extends JPanel
             {
                 session().getStore().restoreSetup(was);
                 session().rebuild();
+
+                ui.putSettingsAsBuiltBack(railwaySettings);
             }
 
             JOptionPane.showMessageDialog(ui,
@@ -2038,7 +2046,7 @@ public class AutonomyViewerPanel extends JPanel
             // The subject is usually a Point name, and an unnamed Point's name is its coordinate - so
             // where there is a tile, say what the tile is instead.
             String subject = finding.getTile() == null
-                ? finding.getSubject() : describeTile(finding.getTile());
+                ? finding.getSubject() : describeTile(finding.getAbout());
 
             // Errors and warnings only, and a notice is neither.
             //

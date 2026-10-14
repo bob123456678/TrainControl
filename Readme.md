@@ -4,7 +4,7 @@
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](https://www.gnu.org/licenses/gpl-3.0)
 ![Java 8](https://img.shields.io/badge/Java-8-orange)
 
-**Free, open-source software for controlling and automating your Märklin (Marklin), Trix, or DCC model railroad from your computer.**  Runs on Windows, macOS, and Linux.
+**Free, open-source software for controlling and fully automating your Märklin (Marklin), Trix, or DCC model railroad from your computer.**  Runs on Windows, macOS, and Linux.
 
 Available in 🇬🇧 English · 🇩🇪 Deutsch · 🇩🇰 Dansk · 🇵🇱 Polski · 🇫🇷 Français · 🇮🇹 Italiano · 🇪🇸 Español · 🇳🇱 Nederlands
 
@@ -16,9 +16,9 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 **Why TrainControl?**
 
-* Control any locomotive instantly from your keyboard
+* Conveniently control any locomotive instantly from your keyboard
 * Interactive track diagrams that you can edit in the app, in any number of windows
-* Fully autonomous train operation using S88 sensors and digital switches (signals optional)
+* Fully hands-off, UI-built train automation based on S88 sensors and digital switches (signals optional)
 * Multi-units, function presets, conditional routes, and usage statistics
 * Locomotive and layout data downloaded automatically from your Central Station
 * Free and open source
@@ -99,20 +99,6 @@ Some sample files are included in the `cs2_sample_layout` folder.
 
 </details>
 
-**Routes**
-
-Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track, or triggering an emergency stop.  Manual routes can also be defined and activated directly or from the Track Diagram tab.
-
-In addition to all Central Station functionality, complex logical expressions are supported.
-
-![TrainControl's route editor: each command a row of dropdowns, and its conditions an indented list joined by "and" and "or"](assets/ui_route3.png?raw=true)
-
-**Keyboard**
-
-Useful for testing, individual accessories can be directly controlled via their digital address.  The cumulative number of actuations of each accessory is shown as a tooltip.
-
-![Accessory keyboard in TrainControl, used to control switches and signals directly by digital address](assets/ui_keyboard.png?raw=true)
-
 **Full Autonomy**
 
 TrainControl can run your trains on its own.  From version 3.0, you set this up on the track diagram itself, in the autonomy editor: TrainControl works out how your track connects, and you set up stations, directions and settings by right-clicking a square.  The setup is checked before it runs, and each problem it finds takes you to the square it is about.
@@ -127,13 +113,27 @@ You need S88 sensors (at least one per station) and digital switches; signals ar
 
 The track diagram shows each running train's route, the track it is holding, and where every train is standing.  While trains are stopped, you can right-click a station to place a train there.
 
-You can also record timetables and play them back, with the same protections as autonomous operation.
+You can set home stations and have TrainControl automatically route all your trains back to where they started. You can also record timetables and play them back, with the same protections as autonomous operation.
 
 <img src="assets/timetable3.png?raw=true" alt="The timetable in TrainControl: a captured sequence of journeys, played back in order" width="600">
 
 To send a train to a station yourself, right-click it on the track diagram.
 
 <img src="assets/easyauto3.png?raw=true" alt="Right-clicking a train on the track diagram to send it to a station" width="500">
+
+**Routes**
+
+Conditional routes can be defined for semi-automatic layout operation, such as setting a switch to guide an incoming train to an unoccupied station track, or triggering an emergency stop.  Manual routes can also be defined and activated directly or from the Track Diagram tab.
+
+In addition to all Central Station functionality, complex logical expressions are supported.
+
+![TrainControl's route editor: each command a row of dropdowns, and its conditions an indented list joined by "and" and "or"](assets/ui_route3.png?raw=true)
+
+**Keyboard**
+
+Useful for testing, individual accessories can be directly controlled via their digital address.  The cumulative number of actuations of each accessory is shown as a tooltip.
+
+![Accessory keyboard in TrainControl, used to control switches and signals directly by digital address](assets/ui_keyboard.png?raw=true)
 
 **Statistics**
 
@@ -336,7 +336,7 @@ Examples:
 * ```java -jar TrainControl.jar``` (UI will prompt for IP)
 * ```java -jar TrainControl.jar 192.168.50.10``` (Will attempt to connect to the Central Station at 192.168.50.10)
 * ```java -jar TrainControl.jar 192.168.50.10 debug``` (Same as above, but with debug mode: extra error logging)
-* ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station)
+* ```java -jar TrainControl.jar 0 debug simulate``` (Same as above, but allows the program to run without any central station; [how to test autonomy this way](Automation.md#trying-it-out-without-a-central-station))
 
 TrainControl uses your computer's language automatically.  To run it in a different language, add the locale flags shown below.
 
@@ -348,6 +348,18 @@ TrainControl uses your computer's language automatically.  To run it in a differ
 * ```java -Duser.language=it -Duser.country=IT -jar TrainControl.jar``` (Force Italian locale/language)
 * ```java -Duser.language=es -Duser.country=ES -jar TrainControl.jar``` (Force Spanish locale/language)
 * ```java -Duser.language=nl -Duser.country=NL -jar TrainControl.jar``` (Force Dutch locale/language)
+
+**Updating TrainControl:**
+
+When "Check for Updates" is ticked under Preferences > Startup, TrainControl looks for a new version each time it starts.  If there is one, the Help menu gets a "*" and a "Download Update" item.  Clicking it gives you 3 choices:
+
+* Download: saves the new JAR file so you can swap it in yourself.  It goes next to your current JAR file when Download & Update is offered, and in the folder TrainControl was started from otherwise.
+* Download & Update: saves the new JAR file next to your current one and makes a backup of your data (see below).  Then TrainControl closes, puts the new version in place of the old JAR file under the same file name, and starts again with the same settings.  Your old JAR file is kept next to it with its version in the name (for example `TrainControl_v3_0_1_old.jar`), so you can go back by renaming it.  Each step is written to `update.log` in the same folder.
+* Cancel
+
+Download & Update is only offered when TrainControl was started from a JAR file in a folder you can write to.  It is refused while autonomy, a timetable, Return Home, or a route is running.
+
+If the backup fails, the update stops and nothing is changed.  If the new version stops with an error before its main window opens, the update is undone: your old JAR file is put back and started, and TrainControl tells you so (or, if it could not be renamed back, which file it is running from).  A new version that gets as far as its window, or is still starting after 10 minutes, is kept.  Either way your old JAR file stays next to it, so you can go back by renaming it.  On Windows, TrainControl restarts without a console window.
 
 **Backing up and restoring your data:**
 
@@ -387,6 +399,29 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.1 [10/13/2026]
+    - Updates
+        - Download Update can now also install the new version for you: it backs up your data, keeps your old version next to the new one, and restarts TrainControl
+    - Autonomy Features
+        - Bulk Tools can now activate or deactivate all trains at once
+        - The Autonomous Locomotive Commands tab now sorts its trains each time you open it: active trains first, then paused ones, then those on stations that are switched off
+        - A station's name can now be shown on more than one page of the track diagram, once on each page
+        - The autonomy editor, the layout editor and the track diagram pop-ups now show the autonomy configuration's name in their titles
+    - Locomotive Control
+        - The active locomotive's key, page and decoder are now shown as easy-to-read labels above its name
+        - A new Show Page Numbers option in the Preferences menu shows each page's number before its name, on the page tabs, between the page arrows and above the active locomotive's name
+    - Autonomy Bug Fixes
+        - A train leaving a station now turns that station's exit guard signals green, so a guard that stops trains no longer holds it there
+        - A train paused from its card on the Auto tab no longer starts again when another train's Is Active setting is changed
+        - The setup check now reports a station whose name is shown twice on the same page, and importing a configuration no longer adds a second label for a station
+        - A pop-up track diagram now updates when a station label is moved or removed, and labels can no longer be placed outside the area the track diagram shows
+        - The autonomy editor's smallest window size now shows all of its controls, with display scaling up to 175%
+        - Old autonomy station labels on a layout served by the Central Station are now shown exactly as written
+    - Central Station Bug Fixes
+        - If the Central Station answers but its data cannot be loaded at startup, TrainControl now says why and offers to try again until it connects or you exit
+        - Starting TrainControl in simulation no longer makes it forget your Central Station's address
+    - Documentation
+        - The autonomy guide explains how to start TrainControl in simulation, to try a setup without a Central Station
 * v3.0.0 [10/12/2026]
     - Features
         - Autonomy

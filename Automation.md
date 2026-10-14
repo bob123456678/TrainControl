@@ -24,6 +24,7 @@ This guide takes you from a track diagram with nothing set up on it to a layout 
 - [Example 4: a through station that only takes trains one way](#example-4-a-through-station-that-only-takes-trains-one-way)
 - [Track lengths: what they are for](#track-lengths-what-they-are-for)
 - [Running and watching](#running-and-watching)
+- [Trying it out without a Central Station](#trying-it-out-without-a-central-station)
 - [Choosing how trains pick their route](#choosing-how-trains-pick-their-route)
 - [Timetables: recording a sequence and playing it back](#timetables-recording-a-sequence-and-playing-it-back)
 - [Sending everything home](#sending-everything-home)
@@ -99,11 +100,11 @@ A layout is ready to run once three things are done: the diagram matches the tra
 
 **6. Place your trains.** Right-click the station each train is standing at → `Add a Locomotive to Autonomy...`. From then on TrainControl keeps track of them.
 
-**7. Check, save and start.** `Things to look at` lists anything still to do. When the line under it says the setup is ready to run, press `Save Changes`, then `Start Autonomous Operation` on the strip above the track diagram.
+**7. Check, save and start.** `Things to look at` lists anything still to do. When the line under it says the setup is ready to run, press `Save Changes`, then `Start Autonomous Operation` on the strip above the track diagram. To try it first without a Central Station, see [Trying it out without a Central Station](#trying-it-out-without-a-central-station).
 
 **Optional, when you want them:**
 
-- **Guard signals.** On a station's right-click menu, `Exit Guard Signal...` holds signals at red while a train stands there or is on its way, and `Entry Guard Signal...` turns them red when a train arrives. They are for the look of it and an extra layer of safety: autonomy stops trains on their sensors either way.
+- **Guard signals.** On a station's right-click menu, `Exit Guard Signal...` holds signals at red while a train stands there or is on its way, and turns them green as a train leaves, and `Entry Guard Signal...` turns them red when a train arrives. They are for the look of it and an extra layer of safety: autonomy stops trains on their sensors either way.
 - **Exclusions.** Keep trains off what they should not use: click track to make it one-way or close it (or `Trains May Depart...`); leave a whole page out with `Exclude Page`; take a station out of service with `Station (...)` → `No - Nothing Can Pass`; untick `Can Be Chosen in Full Autonomy` for a parking berth only you and Return Home will use; and keep particular trains from stopping at a station, or from passing a sensor that is not one, with `Advanced Parameters...` → `Excluded Locomotives`.
 - **Advanced parameters.** A station's `Advanced Parameters...` has `Station Priority`, `Speed Multiplier` and `Unavailable While Occupied`; `Station (...)` has its `Maximum Train Length`; and `Trains May Arrive...` says which sides it takes trains from. Settings for the whole railway (delays, speeds, how many trains run at once) are on the Auto tab: see [Settings](#settings-and-what-each-one-is-for).
 
@@ -111,7 +112,7 @@ A layout is ready to run once three things are done: the diagram matches the tra
 
 ## The editor at a glance
 
-The window is titled "Autonomy Editor: *page*": the sidebar on the left, your diagram in the middle, and tools and settings on the right.
+The window is titled "Autonomy Editor: *page* (*configuration*)", naming the page and the configuration you are editing. It has the sidebar on the left, your diagram in the middle, and tools and settings on the right.
 
 ![The autonomy editor, its parts numbered](assets/automation/01-editor.png)
 
@@ -156,7 +157,7 @@ With no tool armed, a left-click on track changes which way trains may run on it
 - **A route button drawn on the track** is set on its own: a click changes that square only.  One with no track running through it is greyed and takes no clicks.
 - **A square out of service** (`No - Nothing Can Pass`) has no directions to set: clicking it only says so, and no arrows are drawn on it.
 
-**Shift+click** picks several squares (outlined in orange) so that one `Segment Length...` can give them all the same length. **Drag a station's caption** to move it to another free square.
+**Shift+click** picks several squares (outlined in orange) so that one `Segment Length...` can give them all the same length. **Drag a station's caption** to move it to another free square of the same page.
 
 ---
 
@@ -179,11 +180,11 @@ Right-click any square for everything else. The menu opens with the square's nam
 | `Changing Direction` | `Trains Never Change Direction Here`, `Trains May Change Direction Here` (stop, reverse and carry on, to reach a siding behind it, say), or `Trains Must Change Direction Here` (every train turns round: a terminus, or a berth trains back into) |
 | `Trains May Arrive...` | Which sides of the station a train may arrive from and stop. Passing through is not affected. See [Example 4](#example-4-a-through-station-that-only-takes-trains-one-way) |
 | `Trains May Depart...` | Which ways trains may leave this square: see the track items below |
-| `Exit Guard Signal...` | Signals held at red while a train is standing at this station, or on its way, and set green again once it is free. Pick each by clicking it on the diagram, or by typing its address |
+| `Exit Guard Signal...` | Signals held at red while a train is standing at this station, or on its way, and set green when a train leaves or once it is free. Pick each by clicking it on the diagram, or by typing its address |
 | `Entry Guard Signal...` | Signals set to red when a train arrives here at the end of its journey; the next route that needs them sets them green again |
 | `Advanced Parameters...` | `Station Priority` (higher is chosen first; 0 is the default), `Speed Multiplier` (trains run at this percentage of their speed on the track leading in to this station), `Excluded Locomotives` (trains that may not stop here, though they can still pass through it; on a sensor that is not a station, trains that may not pass it at all.  Choose `Allow only the chosen locomotives` in its window to turn the list round: the locomotives you pick are then the only ones allowed, every other one, including any you add later, is kept out, and the item reads `Allowed Locomotives Only`), and `Unavailable While Occupied` (other stations that, while occupied, keep trains away from this one: tick them, or `Pick on the Diagram...`) |
 | `Segment Length...` | How long this piece of track counts as, in your own units; see [Track lengths](#track-lengths-what-they-are-for) (Control+E) |
-| `Show a Station Name Here...` | Puts a station's caption on this square (Control+N). `Stop Showing` *station* takes it off |
+| `Show a Station Name Here...` | Puts a station's caption on this square (Control+N). A page shows a station once: if the station already has a caption on this page it moves here, and its captions on other pages stay. `Stop Showing` *station* takes off the one on this square only |
 | `Bulk Tools` | See [Bulk Tools](#bulk-tools) |
 
 ### On track, switches and signals
@@ -204,7 +205,7 @@ Names cannot sit on switches or signals.
 
 ### On text and empty squares
 
-`Show a Station Name Here...` puts a station's caption here; over your own text it asks first.
+`Show a Station Name Here...` puts a station's caption here; over your own text it asks first, because the caption is drawn and your text is hidden. It is greyed on a square outside the part of the page the track diagram draws. A station is shown once on each page, so on a page where it already has a caption this one moves, and on another page this one is added.
 
 ---
 
@@ -224,6 +225,8 @@ The last item of every right-click menu: things that act on the whole setup rath
 | `Allow Every Path` | Opens every one-way or closed piece of track both ways, on every page; Cancel puts them back. Track that can only ever run one way stays as it is |
 | `Home All Trains Where They Stand` | Makes each train's present station its home |
 | `Place All Trains at Their Homes` | Puts each train that has a home on it, facing the way it was homed, and takes the trains without a home off.  Nothing is sent to the railway: only where autonomy believes the trains stand changes |
+| `Activate All Trains` | Sets every paused train going again, on the layout or not; the same as ticking `Is Active` on each. Greyed when no train is paused |
+| `Deactivate All Trains` | Pauses every train on the layout: autonomy and Return Home leave each one where it stands. Trains that are not on the layout are left as they are. Greyed when no train on the layout is going |
 
 Each "Clear" asks first, and says how many it would clear.
 
@@ -272,7 +275,7 @@ Copy, paste, rotate, delete and undo belong to the track editor, and do nothing 
 
 The setup is checked as you go, and everything it finds is listed under **Things to look at** at the bottom of the editor: this page first, then the others, each marked with its page. Click a finding to go to the square it is about.
 
-- **`Must be fixed`** (red): errors. While the setup has any, autonomy will not start, and no train can be sent by Start, Execute Timetable, Return Home, or by hand. Among them: a station still with its automatic name, or shown nowhere on the diagram; the same locomotive on two squares; two pages sharing one sensor; a page link that track runs into but that is not paired; a switch with no address; a train facing a way its square no longer allows (turn it with *train* `Is Facing...`, move it, or put the track back); and a station at the end of a line where trains may not change direction (mark it `Trains Must Change Direction Here`, or make it no station).
+- **`Must be fixed`** (red): errors. While the setup has any, autonomy will not start, and no train can be sent by Start, Execute Timetable, Return Home, or by hand. Among them: a station still with its automatic name, or shown nowhere on the diagram; a station whose name is shown twice on the same page of the diagram (right-click all but one of them and choose `Stop Showing` *station*); the same locomotive on two squares; two pages sharing one sensor; a page link that track runs into but that is not paired; a switch with no address; a train facing a way its square no longer allows (turn it with *train* `Is Facing...`, move it, or put the track back); and a station at the end of a line where trains may not change direction (mark it `Trains Must Change Direction Here`, or make it no station).
 - **`Warnings`** (amber): worth knowing, but they stop nothing: a train facing track that runs only towards it is simply not sent that way; a station no other station can reach; a train or station with no length while others have one.
 - **`Worth tidying`** (grey): small things, such as an unnamed sensor that is not a station, or a station with no guard signal.
 
@@ -454,7 +457,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **The Auto tab** (the third icon on the left of the main window) is greyed until a configuration is loaded; when none is (after `Stop Using Autonomy`, or with `Load Autonomy` unticked under Preferences → Startup), the strip above the track diagram offers `Load this configuration`. Once one is loaded, the Auto tab has three tabs:
 
-- **Autonomous Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
+- **Autonomous Locomotive Commands**: `Start Autonomous Operation`, `Graceful Stop` and `Return Home`, and a card for each train saying where it is and where it can go. The cards are sorted when you open the tab and when the list is rebuilt (a train placed or renamed, for example), not when you press a pause button: trains that are going first, then paused trains, then trains on stations that are switched off, each group by name. Double-click a destination to send the train there yourself. Hover over "No available paths" to see, for each station, why not, or click it for the whole list in a window. After a station's name, `*` marks the timetable's starting station and `-` one autonomy will never choose for that train; a train standing at its own home has a small house beside the line below its station.
 - **Timetable**: see [Timetables](#timetables-recording-a-sequence-and-playing-it-back).
 - **Settings**: see [Settings](#settings-and-what-each-one-is-for).
 
@@ -467,6 +470,20 @@ When you send a train that can reverse to a station where trains may change dire
 The diagram's right-click `Autonomy Setup` menu has the same station settings as the editor, but changes made there are saved at once, with no Cancel. With autonomy stopped, you can also move trains from the keyboard: point at a station and press Control+X to pick its train up, Control+V to put it (or the locomotive selected in the main window) down, or Delete to take it off.
 
 ![A running layout: ICE 3 on its way from Ashby to Carlton, its route drawn in blue with white arrows; BR 218 parked at Bramley](assets/automation/12-running.png)
+
+---
+
+## Trying it out without a Central Station
+
+Autonomy can run in simulation: trains move on the diagram, but nothing is sent to a Central Station and no real train moves. It shows whether your stations, routes and settings do what you meant, without powering up the layout.
+
+1. **Start TrainControl with debug and simulation on.** Open the folder you normally start TrainControl from, the one with `TrainControl.jar` (your locomotives and window settings are kept there). On Windows, click the File Explorer address bar, type `cmd` and press Enter. In the window that opens, run `java -jar TrainControl.jar 0 debug simulate`. If it says `java` is not recognized, install Java first ([Requirements](Readme.md#requirements)). All 3 words after the jar's name must be there: the first stands for the Central Station's address and is not used, the second turns on debug mode and the third simulation. Double-clicking the jar passes none of them, so to start this way again, save the command as a `.bat` file (`.sh` on Mac and Linux) in that same folder.
+2. **Tick `Simulate`.** With a configuration loaded, open `Autonomy` → `Autonomy Settings...` and tick it. It is greyed out while trains are running, and refused if TrainControl was not started as in step 1. TrainControl may tell you it has turned on `Echo Sent Commands` (Preferences → Debug); simulation needs it.
+3. **Start autonomy as usual.** If `Simulate` is not ticked, Start warns that the trains will never move and asks whether to go ahead.
+
+**What happens.** Trains are sent as usual, but TrainControl answers for the sensors: after a random wait between `Minimum Action Delay` and `Maximum Action Delay` (in seconds) it reports each sensor on a train's route as occupied, and after another such wait it clears it behind the train. Lower the delays to go faster, and put them back before you run real trains: they also set how long a real train waits before leaving. Nothing on your layout takes part, so a simulation checks your setup and not your hardware: a sensor drawn on the wrong square, a dead sensor or a switch that does not answer will not show up, and `Path Integrity Validation` is skipped.
+
+**Afterward.** Your real trains have not moved, but TrainControl saves where the simulated ones finished: stop autonomy and use `Return Home` before you close, or place the trains again where they really stand. `Simulate` is saved with the configuration; when you start TrainControl normally, it loads unticked and the log says why. To go back to normal, close TrainControl and start it as you usually do.
 
 ---
 
@@ -531,7 +548,7 @@ These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings
 
 | Setting | What it is for |
 | --- | --- |
-| Minimum and Maximum Action Delay | How long a train waits before leaving again, in seconds. A range rather than a number, so departures do not fall into lockstep |
+| Minimum and Maximum Action Delay | How long a train waits before leaving again, in seconds. A range rather than a number, so departures do not fall into lockstep. In a simulation they also pace the simulated sensors |
 | Default Locomotive Speed | Used for a locomotive with no preferred speed of its own |
 | Pre-arrival Speed Multiplier | How much a train slows on the approach. This is what the sensor before the stopping point is for |
 
@@ -557,6 +574,12 @@ These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings
 | Turn Off Functions on Arrival, Turn On Functions on Departure | On departure, switch on the locomotive's saved function preset (right-click the locomotive → `Save Current Functions as Preset`, or Alt+S); on arrival, switch all its functions off. Untick the arrival one to keep sound running between routes. Separately, one function can be toggled as each train leaves and one as it arrives, whatever these two say: right-click that function's button and tick `Autonomy Departure Function` or `Autonomy Arrival Function` |
 | Linked Routes | `Toggle specified routes`: whenever this configuration is loaded, and as soon as you tick a route, the routes ticked in the list are switched on and every other route is switched off, and they stay that way after autonomy stops. Use it for emergency stops, sound effects, or safety signals. Only routes triggered by a sensor can be switched on this way |
 
+**Testing**
+
+| Setting | What it is for |
+| --- | --- |
+| Simulate | Runs autonomy with no Central Station, to try a setup. Only when TrainControl was started in simulation: see [Trying it out without a Central Station](#trying-it-out-without-a-central-station) |
+
 Per-station settings (priority, speed, train length, excluded locomotives) are on the station's right-click menu, under `Station (...)` and `Advanced Parameters...`.
 
 A few more autonomy settings are under Preferences → Autonomy, because they belong to this computer rather than to the configuration:
@@ -564,8 +587,6 @@ A few more autonomy settings are under Preferences → Autonomy, because they be
 - `Path Integrity Validation` (on, and recommended) makes each train wait until the Central Station confirms every switch and signal on its route. If it cannot, the train does not leave, autonomy tries again, and a message names the accessories.
 - `Display Travel Restrictions` and `Display Allowed Directions` draw the red and green direction marks on the ordinary track diagram.
 - `Show Inactive Labels` and `Grey Station Labels` decide which station captions are shown and in what colour.
-
-(`Simulate`, on the Settings tab, is only for testing without a Central Station.)
 
 ---
 

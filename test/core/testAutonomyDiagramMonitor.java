@@ -4937,6 +4937,78 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * No frame draws a paused train on no Point as one that runs while the monitor is told which trains are paused (OB-343;
+     * FR-126): the trains and the set of the paused were written one after the other with the set emptied between, and a
+     * frame on the monitor's thread in that gap published the picture with no grey.
+     *
+     * The monitor is told the same picture over and over while frames are taken on another thread, and not one of them may
+     * show the train without its grey.  A race, so a failure is a matter of chance - the more it is told, the surer - and a
+     * pass proves nothing by itself; the mutation below fails it every time it is run.
+     *
+     * MUTATION: write the trains of the two-argument form and then empty the paused set before filling it, and this fails.
+     *
+     * @throws Exception from the frames' thread
+     */
+    @Test
+    public void testNoFrameDrawsAPausedTrainOnNoPointWithoutItsGrey() throws Exception
+    {
+        StubLayout layout = new StubLayout();
+
+        final java.util.concurrent.atomic.AtomicInteger bare = new java.util.concurrent.atomic.AtomicInteger();
+
+        final TileKey greyed = key("main", 3, 1);
+
+        final DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(),
+            new LinkedHashMap<String, TileKey>(), overlays ->
+            {
+                TileOverlay mark = overlays.get(greyed);
+
+                if (mark != null && !mark.isPaused()) bare.incrementAndGet();
+            });
+
+        final Map<TileKey, Side> nowhere = new LinkedHashMap<>();
+
+        nowhere.put(greyed, Side.W);
+        nowhere.put(key("main", 6, 1), Side.E);
+
+        final java.util.Set<TileKey> paused = java.util.Collections.singleton(greyed);
+
+        monitor.setTrainsOnNoPoint(nowhere, paused);
+
+        monitor.refresh();
+
+        assertEquals(bare.get(), 0, "precondition: the first picture draws the paused train without its grey");
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread frames = new Thread(() ->
+        {
+            while (going.get()) monitor.refresh();
+        });
+
+        frames.setDaemon(true);
+        frames.start();
+
+        try
+        {
+            for (long end = System.currentTimeMillis() + 10000, told = 0; bare.get() == 0 && told < 2000000
+                && System.currentTimeMillis() < end; told++)
+            {
+                monitor.setTrainsOnNoPoint(nowhere, paused);
+            }
+        }
+        finally
+        {
+            going.set(false);
+
+            frames.join(5000);
+        }
+
+        assertEquals(bare.get(), 0, "a frame drew the paused train on no Point without its grey while the monitor was told"
+            + " which trains are paused");
+    }
+
+    /**
      * A double-curve sensor's arrival chevrons keep off its direction arrows and off each other (MT-714; Adam, 2026-10-10:
      * *"when a double curve with a s88 has arrival directions set, the arrow icons may overlap.  Hard to fix given how
      * little space we have."*).
