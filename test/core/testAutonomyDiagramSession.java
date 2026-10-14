@@ -1315,6 +1315,100 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A name an edit gives to two stations in turn does not carry a timetable leg to the wrong one (OB-343): a station is
+     * renamed, the railway captures a leg through it, the station is renamed again and another takes the first name; Cancel
+     * puts the old names back.  The leg named a station by a name the memory then knew as another's.
+     *
+     * The legs the folds took are carried through each build of the edit as the setup's own are, so that they name the latest
+     * build's Points when Cancel comes - and each of those names is one square's.
+     *
+     * MUTATION: carry the taken legs only at Cancel, against the memory as the whole edit left it, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testACancelMapsATakenLegThroughANameTheEditGaveTwoStations() throws Exception
+    {
+        threeStationsInARow("C1 reuse");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        org.json.JSONObject opened = session.snapshotSetup();
+
+        session.beginEditSession();
+
+        try
+        {
+            // GAMMA BECOMES OMEGA, and the railway captures a leg through it
+            session.setPointName(new TileKey("main", 5, 1), "Omega");
+
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            String[] renamed = anEdgeBetween(built, "main 3,1", "Omega");
+
+            assertNotNull(renamed, "precondition: no edge from the middle station to Omega");
+
+            org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
+
+            built.put("timetable", aTimetableOf(renamed));
+
+            session.captureTheRailwaysSettings(built.toString(), "C1 reuse", asBuilt);
+
+            // THAT STATION GIVES THE NAME UP and the first one takes it
+            session.setPointName(new TileKey("main", 5, 1), "Beta");
+            session.setPointName(new TileKey("main", 1, 1), "Omega");
+
+            // CANCEL
+            session.restoreSetup(opened);
+
+            assertTheTimetableIsLoadable(session, "the editor's Cancel after a name was reused", 1);
+
+            assertTrue(legOf(session, 0)[1].startsWith("Gamma"), "the leg through the station that was Gamma names "
+                + legOf(session, 0)[1] + " after Cancel, the station that took its name later (OB-343)");
+        }
+        finally
+        {
+            session.endEditSession();
+        }
+    }
+
+    /**
+     * The names an edit's builds gave are forgotten when the edit session ends (OB-343): they were kept for Cancel's carry of
+     * the legs the railway's folds took, and the next edit session's opening memory must not hold them, to beat a legitimate
+     * reassignment of the name.
+     *
+     * MUTATION: keep the names after the edit session, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testTheNamesAnEditGaveAreForgottenWhenItEnds() throws Exception
+    {
+        threeStationsInARow("C1 forget");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        org.json.JSONObject opened = session.snapshotSetup();
+
+        session.beginEditSession();
+
+        session.setPointName(new TileKey("main", 5, 1), "Omega");
+
+        session.restoreSetup(opened);
+
+        session.endEditSession();
+
+        java.lang.reflect.Field seen = AutonomySession.class.getDeclaredField("squareOfNameSeen");
+
+        seen.setAccessible(true);
+
+        assertFalse(((java.util.Map<?, ?>) seen.get(session)).containsKey("Omega"), "the memory still knows a name only the"
+            + " edit gave, after the edit session: it would be the next one's opening memory (OB-343)");
+    }
+
+    /**
      * Squares moved while an edit waits keep the setup's moved timetable (RSA23-C3, RSA22-C1's sibling): the fold behind
      * the editor's Save, what the railway owns, wrote the railway's timetable - in the Point names the move had just
      * replaced - over it.

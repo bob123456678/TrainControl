@@ -660,6 +660,17 @@ public class AutonomySession
     /** Its turning copies. */
     private Set<String> turningNow = Collections.emptySet();
 
+    /** Its Points, to their squares' own names - the names a leg carried through it follows (OB-343). */
+    private Map<String, String> baseOfNameNow = Collections.emptyMap();
+
+    /**
+     * The names of the edit's last build that Cancel put in the memory for the carry (OB-343), and what it put: forgotten
+     * when the edit session ends or the next begins, so that the next edit's opening memory does not hold them.
+     */
+    private final Map<String, TileKey> keptSquares = new java.util.HashMap<>();
+
+    private final Map<String, String> keptBases = new java.util.HashMap<>();
+
     /**
      * The name the latest build gives a Point of the running layout (RSA4-A1), found by the square it was a copy of and
      * the way a train on it faced (RSA5-A1): the name itself where the build still gives it to that square; otherwise the
@@ -835,6 +846,20 @@ public class AutonomySession
                 {
                     dirty = true;
                 }
+
+                // AND THE LEGS OF THE TIMETABLE THE EDIT SESSION'S FOLDS TOOK FROM THE RAILWAY (OB-343), which Cancel writes
+                // back: carried through each build of the edit as the setup's own are, so that they name the latest build's
+                // Points when Cancel comes - each one a single square's.  Carried only then, against a memory that had
+                // forgotten the builds between, a name an edit gave two stations in turn took a leg to the wrong one.
+                org.json.JSONObject taken = takenFromTheRailway == null ? null : takenFromTheRailway.get(name);
+
+                if (taken != null && taken.has("timetable"))
+                {
+                    List<NamedLeg> takenLegs = legsOf(new org.json.JSONObject().put("globals", taken));
+
+                    if (name.equals(active)) carry(takenLegs, tiles, bases, naming.edgesByName().keySet());
+                    else rename(takenLegs, tiles, bases);
+                }
             }
         }
         finally
@@ -849,6 +874,7 @@ public class AutonomySession
 
             // AND THIS BUILD'S, for the trains a rebuild puts back (RSA4-A1)
             squareOfNameNow = tiles;
+            baseOfNameNow = naming.baseNames();
             nameOfSquareNow = bases;
             facingOfNameNow = facings;
             turningNow = naming.turningNames();
@@ -3515,6 +3541,9 @@ public class AutonomySession
      */
     public boolean beginEditSession()
     {
+        // AND NOT THE NAMES A LAST EDIT'S CANCEL KEPT, which are that edit's - see `restoreSetup`
+        forgetTheNamesKept();
+
         // AND WHAT THE CARRY REMEMBERS, as the editor's Cancel will want it (RSA9-B2) - see `asTheEditBegan`
         asTheEditBegan = remembered();
 
@@ -3535,6 +3564,8 @@ public class AutonomySession
 
         pausesTakenFromTheRailway = null;
 
+        forgetTheNamesKept();
+
         return store.forgetBeforeEdit();
     }
 
@@ -3554,12 +3585,51 @@ public class AutonomySession
 
     /**
      * The same for the paused trains, which are taken BY TRAIN: configuration name, to each train the railway's list gained
-     * or lost against the record of how the railway was built, and whether it is paused (OB-343).  A fold takes the
-     * railway's whole list, and that list holds the trains the editor's own ticks paused as well as the ones a card paused;
-     * the record already holds the ticks (`TrainControlUI.notePausesAsBuilt`), so what the railway's list has against it is
-     * the cards' alone - the only trains Cancel may keep.
+     * or lost against the record of how the railway was built, and whether it is paused (OB-343).  The railway's list holds
+     * the trains the editor's own ticks paused as well as the ones a card paused, and a fold applies to the setup's list
+     * only the trains the railway gained or lost against the record, which already holds the ticks
+     * (`TrainControlUI.notePausesAsBuilt`) - so what is noted here is the cards' alone, the only trains Cancel may keep.
+     * By name, so a locomotive renamed meanwhile is followed here (`followALocomotiveName`).
      */
     private java.util.Map<String, java.util.Map<String, Boolean>> pausesTakenFromTheRailway;
+
+    /**
+     * Follows a locomotive's new name - or its deletion, `to` null - into the trains the edit session's folds noted (OB-343).
+     * The store has repaired the setup, its snapshot and the pre-edit note by then, and a name left here would be applied
+     * to a list that no longer holds it: a train set going by its card came out paused after Cancel, and one the card paused
+     * was lost, or a deleted locomotive's name was written back.
+     *
+     * @param from the name as it was
+     * @param to the new name, or null when the locomotive was deleted
+     */
+    public void followALocomotiveName(String from, String to)
+    {
+        if (pausesTakenFromTheRailway == null || from == null) return;
+
+        for (java.util.Map<String, Boolean> pauses : pausesTakenFromTheRailway.values())
+        {
+            Boolean paused = pauses.remove(from);
+
+            if (paused != null && to != null) pauses.put(to, paused);
+        }
+    }
+
+    /** Forgets the names of an edit's last build that Cancel put in the memory for the carry - see `keptSquares`. */
+    private void forgetTheNamesKept()
+    {
+        for (Map.Entry<String, TileKey> kept : keptSquares.entrySet())
+        {
+            squareOfNameSeen.remove(kept.getKey(), kept.getValue());
+        }
+
+        for (Map.Entry<String, String> kept : keptBases.entrySet())
+        {
+            baseOfNameSeen.remove(kept.getKey(), kept.getValue());
+        }
+
+        keptSquares.clear();
+        keptBases.clear();
+    }
 
     /**
      * Writes what the settings folds took from the railway since the edit session began over the setup just put back
@@ -3702,27 +3772,39 @@ public class AutonomySession
         // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move (RSA7-B3, RSA8-B2) - the legs
         // are the snapshot's
         //
-        // **BUT NOT THE NAMES THE EDIT'S BUILDS GAVE, which the memory as it was knows nothing of (OB-343).**  A timetable the
-        // railway changed alone during the edit names the Points the railway was built with - a station renamed in the editor
-        // has its new name - and what Cancel puts back names the old one.  The carry traces a name the build lacks through the
-        // names its builds have seen, so with the new name forgotten the legs naming it were dropped by the next load, and the
-        // capture after it wrote the shorter timetable over the configuration.  A name the opening memory has stays as it
-        // had it - that is the move's case above - and one it has not is kept, for the carry to trace to its square.
+        // **BUT THE NAMES THE EDIT'S LAST BUILD GAVE ARE KEPT, which the memory as it was knows nothing of (OB-343).**  A
+        // timetable the railway changed alone during the edit names the Points the railway was built with - a station renamed
+        // in the editor has its new name - and what Cancel puts back names the old one.  The carry traces a name the build
+        // lacks through the names its builds have seen, so with the new name forgotten the legs naming it were dropped by the
+        // next load, and the capture after it wrote the shorter timetable over the configuration.
+        //
+        // The LAST build's names only: each is one square's, and the legs the folds took have been carried through every build
+        // before it (`carryTheNamesAcross`), so they name that build's Points.  A name the opening memory has stays as it had
+        // it - that is the move's case above - and one it has not is kept until the edit session ends (`keptSquares`), for
+        // Cancel's own fold and the load after it, and not into the next session's opening memory.
         if (asTheEditBegan != null)
         {
-            Map<String, TileKey> namedInTheEdit = new java.util.HashMap<>(squareOfNameSeen);
-            Map<String, String> basesOfTheEdit = new java.util.HashMap<>(baseOfNameSeen);
+            Map<String, TileKey> lastSquares = squareOfNameNow;
+            Map<String, String> lastBases = baseOfNameNow;
 
             putBack(asTheEditBegan, false);
 
-            for (Map.Entry<String, TileKey> named : namedInTheEdit.entrySet())
+            forgetTheNamesKept();
+
+            for (Map.Entry<String, TileKey> named : lastSquares.entrySet())
             {
-                squareOfNameSeen.putIfAbsent(named.getKey(), named.getValue());
+                if (squareOfNameSeen.containsKey(named.getKey())) continue;
+
+                squareOfNameSeen.put(named.getKey(), named.getValue());
+                keptSquares.put(named.getKey(), named.getValue());
             }
 
-            for (Map.Entry<String, String> named : basesOfTheEdit.entrySet())
+            for (Map.Entry<String, String> named : lastBases.entrySet())
             {
-                baseOfNameSeen.putIfAbsent(named.getKey(), named.getValue());
+                if (baseOfNameSeen.containsKey(named.getKey())) continue;
+
+                baseOfNameSeen.put(named.getKey(), named.getValue());
+                keptBases.put(named.getKey(), named.getValue());
             }
         }
 

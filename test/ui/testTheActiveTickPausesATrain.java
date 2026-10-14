@@ -1672,6 +1672,284 @@ public class testTheActiveTickPausesATrain
         }
     }
 
+    // ----------------------------------------------------- a locomotive renamed, with a card's change not yet folded (OB-343)
+
+    /** What the card's train is called while a claim has it renamed. */
+    private static final String RENAMED_TRAIN = "ALCO UP Renamed";
+
+    /** The locomotive renamed as its window's rename door does it, on the event thread. */
+    private static void renameATrain(final String from, final String to) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> assertTrue(model.renameLoc(from, to), "precondition: " + from + " could not be"
+            + " renamed to " + to));
+
+        pump();
+    }
+
+    /** The card's train called what it is called, whatever a claim did to it. */
+    private static void nameTheCardsTrainAsItWas() throws Exception
+    {
+        if (model.getLocByName(RENAMED_TRAIN) != null) renameATrain(RENAMED_TRAIN, CARD_TRAIN);
+    }
+
+    /** The card's train paused through its own tick and the railway built so: the setup, the record and the train agree. */
+    private static Locomotive theCardsTrainBuiltPaused() throws Exception
+    {
+        String label = I18n.f("autolayout.ui.menuLocomotiveActive", CARD_TRAIN);
+
+        javax.swing.JMenuItem own = diagramMenuItem(square(CARD_TRAIN_SQUARE), label);
+
+        assertNotNull(own, "precondition: the track diagram's right-click on " + CARD_TRAIN_SQUARE + " offers no " + label);
+
+        click(own);
+
+        theNextSetupGestureRebuilds();
+
+        final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+        assertTrue(card.isAutonomyPaused() && session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: "
+            + CARD_TRAIN + " was not built paused");
+
+        rebuildTheCards();
+
+        return card;
+    }
+
+    /**
+     * A locomotive renamed after a card set it going stays going (OB-343): the setup, the record of how the railway was built
+     * and the railway all had the train paused; the card's button sets it going, which the railway alone knows; and the rename
+     * repairs the setup's list but not the record, which still named the old one.  The fold applies the trains the railway
+     * lost against the record, by name, and removed nothing from a list holding the new name - so the rebuild paused the
+     * train again, where the list the fold replaced used to be right.
+     *
+     * MUTATION: leave the record's list of the paused as it was when a locomotive is renamed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testALocomotiveRenamedAfterACardSetItGoingStaysGoing() throws Exception
+    {
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            final Locomotive card = theCardsTrainBuiltPaused();
+
+            pressTheCardsButton(card, false);
+
+            renameATrain(CARD_TRAIN, RENAMED_TRAIN);
+
+            theNextSetupGestureRebuilds();
+
+            assertFalse(card.isAutonomyPaused(), CARD_TRAIN + ", set going by its card and then renamed, was paused again by the"
+                + " next rebuild (OB-343)");
+
+            assertFalse(session.getPausedLocomotives().contains(RENAMED_TRAIN) || session.getPausedLocomotives().contains(CARD_TRAIN),
+                "the setup still lists the train, set going by its card, after it was renamed: " + session.getPausedLocomotives());
+        }
+        finally
+        {
+            nameTheCardsTrainAsItWas();
+
+            uncrowd();
+        }
+    }
+
+    /** The variant (OB-343): renamed first, set going by the card after. */
+    @Test
+    public void testALocomotiveRenamedBeforeACardSetItGoingStaysGoing() throws Exception
+    {
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            final Locomotive card = theCardsTrainBuiltPaused();
+
+            renameATrain(CARD_TRAIN, RENAMED_TRAIN);
+
+            pressTheCardsButton(card, false);
+
+            theNextSetupGestureRebuilds();
+
+            assertFalse(card.isAutonomyPaused(), CARD_TRAIN + ", renamed and then set going by its card, was paused again by the"
+                + " next rebuild (OB-343)");
+
+            assertFalse(session.getPausedLocomotives().contains(RENAMED_TRAIN) || session.getPausedLocomotives().contains(CARD_TRAIN),
+                "the setup still lists the train, set going by its card, after it was renamed: " + session.getPausedLocomotives());
+        }
+        finally
+        {
+            nameTheCardsTrainAsItWas();
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * Through Cancel (OB-343): a train the setup had paused is set going by its card with the editor open, an edit's rebuild
+     * folds that, and the train is renamed; Cancel puts back the setup - whose snapshot the rename repaired - and what the
+     * folds took, which named the old train, so the card's going was not applied and the train came out paused.
+     *
+     * MUTATION: leave the names in what the folds took as they were when a locomotive is renamed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testACancelKeepsACardsGoingOfATrainRenamedMeanwhile() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            final Locomotive card = theCardsTrainBuiltPaused();
+
+            editor = openTheEditor();
+
+            pressTheCardsButton(card, false);
+
+            // AN EDIT whose rebuild folds the card's change
+            clickTheEditorsTick(editorsPanel(editor), I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
+
+            settleTheRebuild();
+
+            assertFalse(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the fold did not take the card's going");
+
+            renameATrain(CARD_TRAIN, RENAMED_TRAIN);
+
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertFalse(card.isAutonomyPaused(), CARD_TRAIN + ", set going by its card and renamed with the editor open, came out"
+                + " paused after the editor's Cancel (OB-343)");
+
+            assertFalse(session.getPausedLocomotives().contains(RENAMED_TRAIN) || session.getPausedLocomotives().contains(CARD_TRAIN),
+                "the setup lists the train after Cancel: " + session.getPausedLocomotives());
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            nameTheCardsTrainAsItWas();
+
+            uncrowd();
+        }
+    }
+
+    /** The other direction (OB-343): paused by its card with the editor open, renamed, Cancel - paused still, under its new name. */
+    @Test
+    public void testACancelKeepsACardsPauseOfATrainRenamedMeanwhile() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            crowd();
+
+            rebuildTheCards();
+
+            final Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            editor = openTheEditor();
+
+            pressTheCardsButton(card, true);
+
+            clickTheEditorsTick(editorsPanel(editor), I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
+
+            settleTheRebuild();
+
+            assertTrue(session.getPausedLocomotives().contains(CARD_TRAIN), "precondition: the fold did not take the card's pause");
+
+            renameATrain(CARD_TRAIN, RENAMED_TRAIN);
+
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertTrue(card.isAutonomyPaused(), CARD_TRAIN + ", paused by its card and renamed with the editor open, came out"
+                + " running after the editor's Cancel (OB-343)");
+
+            assertTrue(session.getPausedLocomotives().contains(RENAMED_TRAIN) && !session.getPausedLocomotives().contains(CARD_TRAIN),
+                "the setup does not list the train under its new name, and only that, after Cancel: "
+                + session.getPausedLocomotives());
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            nameTheCardsTrainAsItWas();
+
+            uncrowd();
+        }
+    }
+
+    /**
+     * A locomotive deleted with the editor open is not written back by Cancel (OB-343): the pause a fold took for it is dropped
+     * with the locomotive, as the setup's list and the snapshot are by the delete.
+     *
+     * MUTATION: leave the names the folds noted as they were when a locomotive is deleted, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testACancelDoesNotWriteBackADeletedTrainsPause() throws Exception
+    {
+        java.awt.Window editor = null;
+
+        final String doomed = "Zz Doomed Train";
+
+        try
+        {
+            theNextSetupGestureRebuilds();
+
+            Locomotive made = model.newMM2Locomotive(doomed, 3499);
+
+            editor = openTheEditor();
+
+            // PAUSED, as a card pauses it: the train alone, and an edit's rebuild folds it
+            made.setAutonomyPaused(true);
+
+            clickTheEditorsTick(editorsPanel(editor), I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
+
+            settleTheRebuild();
+
+            assertTrue(session.getPausedLocomotives().contains(doomed), "precondition: the fold did not take the pause");
+
+            SwingUtilities.invokeAndWait(() -> model.deleteLoc(doomed));
+
+            closeTheEditor(editor);
+
+            editor = null;
+
+            settleTheRebuild();
+
+            assertFalse(session.getPausedLocomotives().contains(doomed), "Cancel wrote the name of a locomotive that was deleted"
+                + " back into the setup's list of the paused: " + session.getPausedLocomotives());
+        }
+        finally
+        {
+            if (editor != null) closeTheEditor(editor);
+
+            if (model.getLocByName(doomed) != null) model.deleteLoc(doomed);
+
+            uncrowd();
+        }
+    }
+
     /** The editor's right-click on BottomMainB built and the tick on it clicked, as the editor's own menu does. */
     private static void clickTheEditorsTick(final AutonomyEditorPanel panel, final String label) throws Exception
     {

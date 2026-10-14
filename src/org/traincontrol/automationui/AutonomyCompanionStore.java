@@ -1822,8 +1822,19 @@ public class AutonomyCompanionStore
      */
     private static void repairLocomotiveInPausedTrains(JSONObject configuration, String from, String to)
     {
-        JSONObject globals = configuration.optJSONObject("globals");
+        repairLocomotiveInPausedList(configuration.optJSONObject("globals"), from, to);
+    }
 
+    /**
+     * The same for any settings that hold the list - a configuration's "globals", or the window's record of the settings
+     * its railway was built with, which names the paused trains too (OB-343).
+     *
+     * @param globals the settings, modified in place, or null
+     * @param from the locomotive's name as it was
+     * @param to the new name, or null when the locomotive is being deleted
+     */
+    public static void repairLocomotiveInPausedList(JSONObject globals, String from, String to)
+    {
         org.json.JSONArray list = globals == null ? null
             : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
 

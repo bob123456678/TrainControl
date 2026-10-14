@@ -5337,6 +5337,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // time it IS opened - by which time this rename is already in the locomotive database.
         org.traincontrol.automationui.AutonomySession session = this.autonomySession;
 
+        // AND THE TWO PLACES THAT NAME THE PAUSED TRAINS AND ARE NOT THE SETUP (OB-343): the record of how the railway was
+        // built, and what the edit session's folds noted.  The fold applies the trains the railway gained or lost against the
+        // record, by name, to the setup's list - which the repair below has just renamed - so a name left in either made a
+        // train set going by its card come out paused, or lost the card's pause, and Cancel write back a deleted one.
+        if (settingsAsBuilt != null) org.traincontrol.automationui.AutonomyCompanionStore.repairLocomotiveInPausedList(
+            settingsAsBuilt, from, to);
+
+        if (session != null) session.followALocomotiveName(from, to);
+
         // No session open: repair the FILE, without building one (OB-062).
         //
         // The paragraph above is right that a session must not be built here, and wrong about what
