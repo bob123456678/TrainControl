@@ -4368,8 +4368,8 @@ public class AutonomyEditorPanel extends JPanel
      * locomotive's settings.  Inside Autonomy Setup it was one level further down than everything it
      * belongs with, and the deep menu no longer offers it.
      *
-     * Null unless a locomotive is standing there AND the square has more than one facing to choose
-     * between: on a square one line reaches, the facing is not a question.
+     * Null unless a locomotive is standing there.  Where the square has no facing to choose - no track leads out of
+     * it - the submenu is there and greyed, with the reason in its tooltip (OB-347).
      *
      * @param target the square
      * @return the submenu, or null
@@ -4440,7 +4440,19 @@ public class AutonomyEditorPanel extends JPanel
         // where the railway holds one would be `facingsThatCannotBeHeld` manufactured on purpose.
         //
         // So the one facing is shown, ticked, with a line saying why there is nothing to choose.
-        if (facings.isEmpty()) return null;
+        //
+        // AND GREYED, NOT HIDDEN, WHERE NO TRACK LEADS OUT (OB-347, Adam 2026-10-13: "the locomotive is facing menu gets
+        // hidden when there is no way out.  rather than hiding it, grey it out.").  The same reason as above: a menu that
+        // vanishes reads as a fault, one that is there and grey says there is nothing to choose, and its tooltip says why.
+        if (facings.isEmpty())
+        {
+            javax.swing.JMenu none = new javax.swing.JMenu(I18n.f("autosetup.ui.menuFacingGroup", standing));
+
+            none.setEnabled(false);
+            none.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacingNoWayOut")));
+
+            return none;
+        }
 
         javax.swing.JMenu facingMenu = new javax.swing.JMenu(
             I18n.f("autosetup.ui.menuFacingGroup", standing));
