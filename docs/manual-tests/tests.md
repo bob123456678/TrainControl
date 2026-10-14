@@ -34977,4 +34977,8 @@ read as two roads and were drawn along none (`AutonomySession.drawTheTrainsThatC
 TunnelLeftPark are asked now.  Claims `ui.testATrainWithNoWayOutFacesAlongItsTrack` and
 `regression.testTheOrangeRunsOverTheSwitchesBehindTheTrain`.
 
+**Claude, 2026-10-14.**
+
+Since this was written, the validator's findings on OB-348 are fixed (`eb6aa1f8`, V348).  The steps and Expected above still hold.  Also, if you want to look: with nothing recorded on TunnelLeftPark the icon guesses along the track (north), as you allowed; after placing a different train there by hand the icon follows straight away, with no rebuild; and the orange behind Tunnel leaves the switch at 11,3 without a line, because a rail autonomy does not drive (against the arrows) takes its other leg.
+
 ---

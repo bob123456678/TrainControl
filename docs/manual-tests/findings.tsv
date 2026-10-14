@@ -4897,6 +4897,14 @@ V34-D6	2026-09-02-fourth-validation.md	Closed	correct	"the queue is FIFO", and t
 V34-D7	2026-09-02-fourth-validation.md	Closed	all three correct	the three claims about the route guard
 V34-D8	2026-09-02-fourth-validation.md	Closed	correct — no false negative and no false positive	the three-way conclusion holds in all four states
 V34-D9	2026-09-02-fourth-validation.md	Closed	honest; the play-button door really did stop asking	the `SVN-B7` disposition is honest
+V348-C1	V348.md	Closed	Fixed (`eb6aa1f8`), on Adam's word of 2026-10-14: the icon may guess, along the track; an 	With nothing recorded, the icon invents a facing; with a facing off the track, the icon disagrees with the caption and the menu
+V348-C2	V348.md	Closed	Fixed (`eb6aa1f8`): the guessed facings are asked of the setup whenever the captions are	The no-way-out icon keeps the facing recorded at the last bind, then flips at an unrelated rebind
+V348-C3	V348.md	Closed	Fixed (`eb6aa1f8`): every rail into the square by the arrival side is asked, driven or not	The orange now picks one leg of a switch where a rail autonomy does not drive also reaches the platform
+V348-C4	V348.md	Closed	Fixed in part (`eb6aa1f8`): geometric expectation at 9,7 and 7,8; the side and end filters	Two branches of `railsATailLiesAlong` are untested, and the tail claim's oracle restates the implementation
+V348-D1	V348.md	Closed	Checked - clean.	The icon fallback reaches only squares with no way out, so split, turn-around and one-way-out squares are unchanged
+V348-D2	V348.md	Closed	Checked - clean.	The tail: the orange stays on claimed squares, follows the railway's rails, and the under-draw is gone
+V348-D3	V348.md	Closed	Checked - clean.	Threads: nothing new on the event thread takes the Layout's monitor
+V348-D4	V348.md	Closed	Checked - clean.	The claims were red before, and the neighbouring classes are unchanged
 V35-C1	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	Clear All Home Locomotives greys on an excluded page, though the action is setup-wide
 V35-C2	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	the protecting-signal question is asked only in the power-on branch
 V35-C3	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02 (`76d7bb70`)	the RG3-B1 changelog fix is claimed by a commit message and exists only uncommitted
