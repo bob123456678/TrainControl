@@ -4905,6 +4905,13 @@ V348-D1	V348.md	Closed	Checked - clean.	The icon fallback reaches only squares w
 V348-D2	V348.md	Closed	Checked - clean.	The tail: the orange stays on claimed squares, follows the railway's rails, and the under-draw is gone
 V348-D3	V348.md	Closed	Checked - clean.	Threads: nothing new on the event thread takes the Layout's monitor
 V348-D4	V348.md	Closed	Checked - clean.	The claims were red before, and the neighbouring classes are unchanged
+V348B-C1	V348B.md	Closed	Fixed (`518ae3c8`), on Adam's word of 2026-10-14: the tail stops at the first square whose	The undriven-rail fix blanks the switch but still draws the leg beyond it: orange on both sides of a grey switch
+V348B-C2	V348B.md	Closed	Fixed (`518ae3c8`): the submenu is built once and greyed; the other rule holds OB-347's gr	Two source-rule claims on `buildFacingMenu` have been red since OB-347, and eb6aa1f edited that method without reconciling them
+V348B-C3	V348B.md	Closed	Fixed (`518ae3c8`): the menu ticks the record along the track, as the caption shows it	On a square with ways out, where the railway does not hold the setup's train, the editor caption hides an off-track facing that the Is Facing menu sti
+V348B-D1	V348B.md	Closed	Checked - clean.	The icon now follows Adam's ruling on every door I reached, and agrees with the caption and the greyed menu
+V348B-D2	V348B.md	Closed	Checked - clean.	The tail: nothing is drawn off the train's claims or along a wrong road, and Adam's TunnelLeftPark case is unchanged
+V348B-D3	V348B.md	Closed	Checked - clean.	Threads: nothing new takes the Layout's monitor on the event thread
+V348B-D4	V348B.md	Closed	Checked - clean.	The claims were red before, and bite on three of the four mutations
 V35-C1	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	Clear All Home Locomotives greys on an excluded page, though the action is setup-wide
 V35-C2	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	the protecting-signal question is asked only in the power-on branch
 V35-C3	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02 (`76d7bb70`)	the RG3-B1 changelog fix is claimed by a commit message and exists only uncommitted

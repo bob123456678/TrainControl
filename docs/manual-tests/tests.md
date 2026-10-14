@@ -34981,4 +34981,8 @@ TunnelLeftPark are asked now.  Claims `ui.testATrainWithNoWayOutFacesAlongItsTra
 
 Since this was written, the validator's findings on OB-348 are fixed (`eb6aa1f8`, V348).  The steps and Expected above still hold.  Also, if you want to look: with nothing recorded on TunnelLeftPark the icon guesses along the track (north), as you allowed; after placing a different train there by hand the icon follows straight away, with no rebuild; and the orange behind Tunnel leaves the switch at 11,3 without a line, because a rail autonomy does not drive (against the arrows) takes its other leg.
 
+**Claude, 2026-10-14.**
+
+The second validation round's findings are fixed on your rulings (`518ae3c8`, V348B).  The steps and Expected above still hold.  Also, if you want to look: behind a switch where the train's leg is not known (11,3 behind Tunnel, for a train placed there by hand), the orange now stops at that switch rather than going on past it; and the Is Facing menu no longer ticks a recorded facing the track does not run, anywhere.
+
 ---
