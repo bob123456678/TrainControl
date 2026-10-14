@@ -56,7 +56,8 @@ import org.traincontrol.util.I18n;
  * yet in a label draws as any label would by default.
  *
  * **The pills' words are 12 point** (round 3: *"Increase font sizes by 1 notch to improve visibility - make sure
- * everything still fits vertically"*), in 18 pixel shapes.  At 12 point Segoe UI's capitals are about 8.4 pixels tall
+ * everything still fits vertically"*), in 18 pixel shapes, and the decoder pill's 13 (*"increase the font size inside
+ * the blue mfx+address pill slightly"*, after 3.0.1).  At 12 point Segoe UI's capitals are about 8.4 pixels tall
  * and its letters hang about 2.8 below the baseline, and the baseline is set so the capitals sit in the middle of the
  * pill, so nothing is clipped and nothing touches the rim.  The page's words are 13 point Semibold with no shape round
  * them, in the same 18 pixels: its capitals are about 9.1 tall and its letters hang about 3.1 below the baseline, centred
@@ -128,6 +129,12 @@ public class CurrentKeyRow extends JComponent
     /** The text size, in points, of the keycap's letter and the decoder pill's words: 12 in an 18 pixel pill. */
     public static final float SIZE = 12f;
 
+    /**
+     * The decoder pill's words: one notch larger than the keycap's letter (Adam, 2026-10-13: *"Can we increase the font
+     * size inside the blue mfx+address pill slightly?"*), in the same 18 pixel pill.
+     */
+    public static final float DECODER_SIZE = 13f;
+
     /** The ellipsis a cut page name ends in. */
     public static final String ELLIPSIS = String.valueOf((char) 0x2026);
 
@@ -144,7 +151,7 @@ public class CurrentKeyRow extends JComponent
     private static final Font KEY_FONT = keyFont();
 
     /** The decoder pill's words. */
-    private static final Font TEXT_FONT = new Font("Segoe UI", Font.PLAIN, 12).deriveFont(SIZE);
+    private static final Font TEXT_FONT = new Font("Segoe UI", Font.PLAIN, 12).deriveFont(DECODER_SIZE);
 
     private static Font keyFont()
     {
