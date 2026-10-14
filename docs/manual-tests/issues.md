@@ -405,6 +405,8 @@ Older than 3.0.1's fixes: 3.0.0's Cancel lost the railway's whole timetable chan
 
 Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 
+**Claude, 2026-10-13:** RSA70 (C3) found the corner reaches further: the chain need not be in one edit (a name another station had in an earlier, saved edit of the session is read as that station's at Cancel), and one rename that gives a station a name another station has can point the railway's timetable leg at the wrong station at the in-editor fold itself, with no Cancel, so Save keeps it too (the fold order of 3.0.0).  The leg is kept as written and refused when its entry is run, not dropped.  One way to settle all three: carry the railway's timetable to the latest build's names before a gesture's derive moves the carry's memory, and key the kept legs by square rather than by name.
+
 ### FR-129 - 2026-10-13 - teleport to home via right click of return home
 
 **Kind:** feature request  
@@ -413,6 +415,30 @@ Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 **Build:** commit 2ad091ce
 
 make it so that when the return home button is right clicked, an option to just teleport the locomotives back (same as what the autonomy right click menu allows) is shown.  Show a confirmation window that asks if the user wants to do this, and confirms they will manually move the trains back. 3.1.0 feature
+
+### FR-130 - 2026-10-13 - locomotive icon transparency
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-13 21:49  
+**Build:** commit f91531c3
+
+the autonomy locomotive icon (steam engine, black) has no transparency.  Give it 10% transparency so that labels under it can be faintly seen still.  consider adding a glow around the black label text as needed.  3.0.2 or 3.1.0
+
+### OB-346 - 2026-10-13 - for 3.1.0: with the editor open, an editor gesture can overtake a card's pause before Cancel, and the editor's tick shows a card's change only after a rebuild
+
+**Kind:** bug  
+**Raised from:** RSA70 (C1, C2), 2026-10-13  
+**Filed:** 2026-10-13  
+
+Two corners of a card's pause while the autonomy editor is open, found by RSA70 (C1, C2):
+
+1. A train paused by its Auto tab card while the editor is open, then set going by an editor gesture (Bulk Tools' `Activate All Trains`, or the editor's `Is Active` tick once a rebuild has shown the pause): the editor's Cancel keeps the gesture and the card's pause is lost - when no in-editor rebuild came between the card and the gesture (no fold noted the card's pause), and whenever the gesture leaves the setup as the editor opened it (the editor sees nothing to discard).  With an unrelated edit and a rebuild between, Cancel keeps the pause.  The mirror (a card's going, then `Deactivate All Trains`) has the same shape.  Older: 3.0.0's Cancel lost the card's pause in these shapes and more.
+2. The editor's `Is Active` tick reads the setup's list of paused trains, where the track diagram's tick, Bulk Tools and the card read the train: a train paused or set going by its card reads the other way on the editor's tick until the next in-editor rebuild.  A click on it never undoes the card.  Since FR-117 (3.0.0).
+
+Nothing of a run is lost: no train may be sent while an editor is open.  One way to settle both: a door that flips a train notes, before it writes, a train whose state the record does not hold as the railway's own; and the tick reads the train, as the diagram's does.
+
+Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 
 ## What has been picked up
 

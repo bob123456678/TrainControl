@@ -2867,7 +2867,7 @@ setup's, and a Cancel or an undo puts them back (RSA7-B3, RSA8-B3), so a carry w
 train's square as it now is.  What the carry of names remembers of each build moves with a move too, and a Cancel or an
 undo puts it back with every stored leg - each by where it is, a road by its square (RSA9-C1) - so a timetable through
 stations moved - saved, cancelled or undone - stays on those stations (RSA8-B2).  What the carry remembers is taken as
-the editor opens, so a Cancel after two stations' names were swapped puts every leg back on its station too (RSA9-B2).  A station name two pages share is settled over
+the editor opens, so a Cancel after two stations' names were swapped puts every leg of the setup back on its station too (RSA9-B2).  Since 3.0.1 Cancel also keeps what the railway changed alone while the editor was open - an Auto tab setting, a timetable entry, a card's pause - whatever was rebuilt in between, with the legs of a kept timetable carried to the names of the edit's last build (RSA69-C1, OB-343).  Known exceptions, for 3.1.0: a chain of renames that hands one station's name to another can point such a leg, or the railway's leg at the fold itself, at the wrong station (OB-345, RSA70-C3); and an editor gesture can overtake a card's pause no fold has noted yet (OB-346, RSA70-C1).  A station name two pages share is settled over
 every page, those out of autonomy too, so the plain name does not move to the other page while one is out (RSA6-C1).
 
 **A page ticked out of autonomy keeps its timetable entries** (Adam, 2026-09-30: *"Just keep the entries, and if a
@@ -3045,7 +3045,7 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **5,590 rows for 5,233
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **5,600 rows for 5,243
 findings**, because a finding written up in two documents has a row for each, and reading the row count
 as a finding count is a mistake three documents have made (VD15-T5) - with the document they
 came from, the line in it, the severity, what it was about, the file and line of the evidence, the

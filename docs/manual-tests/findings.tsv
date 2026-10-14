@@ -3486,6 +3486,16 @@ RSA7-D6	RSA7.md	Closed	Checked - clean, apart from RSA7-B1.	RSA6-B3: a dead end 
 RSA7-D7	RSA7.md	Closed	Checked - clean.	RSA6-C1: names settled over every page
 RSA7-D8	RSA7.md	Closed	Checked - clean.	The other gestures that change a square's copies keep a standing train's
 RSA7-D9	RSA7.md	Closed	Checked - clean.	The probes' controls, and the baseline
+RSA70-C1	RSA70.md	Open - deferred	Open - for 3.1.0: deferred when the 3.0.1 release was cut on this round's convergence (Ada	New corners of RSA69-C1's fix: an editor gesture that sets going a train its card paused while the editor was open - Bulk Tools' Activate All Trains,
+RSA70-C2	RSA70.md	Open - deferred	Open - for 3.1.0: deferred when the 3.0.1 release was cut on this round's convergence (Ada	Older, FR-117: the autonomy editor's Is Active tick reads the setup's list of the paused, where the track diagram's tick, the editor's own Bulk Tools
+RSA70-C3	RSA70.md	Open - deferred	Open - for 3.1.0 with OB-345, on Adam's "keep that edge case for 3.1.0": a note on OB-345 	OB-345's corner reaches further than its record: the chain need not be in one edit (a name another station had earlier in the session is read as that
+RSA70-D1	RSA70.md	Closed	Checked - clean (but C1, C3).	RSA69-C1's fix end to end: the editor's Cancel and Discard keep what the railway changed alone while the editor was open - the Auto tab's setting, a t
+RSA70-D2	RSA70.md	Closed	Checked - clean (but C1).	The folds take the paused trains one by one against the record, a door notes only the trains it flipped, and a locomotive renamed or deleted is follow
+RSA70-D3	RSA70.md	Closed	Checked - clean.	RSA69-C2's fix: a pop-up whose captions changed is redrawn at the size and place its operator gave it, and nothing is saved over theirs; a page change
+RSA70-D4	RSA70.md	Closed	Checked - clean.	FR-128 rounds 5 to 7 against Adam's words: one rule words the page tabs, the label between the arrows and the active locomotive's line - "Page 5" with
+RSA70-D5	RSA70.md	Closed	Checked - clean.	Threads, the monitor rule and runs: nothing new runs during a run or puts the railway's monitor on the event thread
+RSA70-D6	RSA70.md	Closed	Checked - clean (but C3's behaviour.md sentence).	The documentation and bundles: the Readme's 3.0.1 changelog says what the program does (Show Page Numbers, display scaling up to 175%); the guide's Ca
+RSA70-D7	RSA70.md	Closed	Checked - clean.	No regression where these changes touch: every class run is green but for the known want-of-database skip
 RSA8-B1	RSA8.md	Closed	Fixed - a build for inspection settles the timetable for the look and puts it back (Autono	The Autonomy menu's Pages tick loses every timetable entry set aside for a page when it is ticked back in: the findings refresh it runs before its rel
 RSA8-B2	RSA8.md	Closed	Fixed - a move moves what the carry of names remembers (squareOfNameSeen) with the squares	A move of stations in the track editor - saved, cancelled or undone - rebinds the timetable's legs through them to the stations now on the squares the
 RSA8-B3	RSA8.md	Closed	Fixed with B2 - the undo point holds the railway's squares and an undo puts them back, as 	The track editor's Ctrl+Z after a move puts back the page's setup and not the railway's squares, which round 23 now moves: while a declined edit waits
