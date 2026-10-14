@@ -23,6 +23,7 @@ import org.traincontrol.gui.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -270,6 +271,95 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             }
 
             putBack(asFound, copy);
+        }
+    }
+
+    /**
+     * On a square that does have ways out, where the railway does not hold the setup's train, a recorded facing the track
+     * does not run is ticked in the Is Facing menu no more than the caption shows it (V348B-C3).
+     *
+     * MUTATION: let the menu read the record as it stands again (OB-177's tick) and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testOffTheTrackTheMenuAndTheCaptionAgreeWhereThereIsAWayOut() throws Exception
+    {
+        final TileKey tunnel = new TileKey(PAGE, 7, 7);
+        final org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor[] editor = new LayoutEditor[1];
+
+        try
+        {
+            assertFalse(session.facingChoices(tunnel).isEmpty(), "precondition: Tunnel has no way out on this snapshot");
+
+            assertFalse(session.getRoutes(tunnel).values().iterator().next().touches(Side.E), "precondition: Tunnel's"
+                + " track runs east");
+
+            // NO TRAIN THERE ON THE RAILWAY, and this class's in the setup, recorded facing east
+            Layout running = model.getAutoLayout();
+
+            for (String name : session.getStationIndex().pointNamesAt(tunnel))
+            {
+                Point copy = running.getPoint(name);
+
+                if (copy != null) copy.setLocomotive(null);
+            }
+
+            session.placeLocomotive(tunnel, OUR_TRAIN);
+            session.setFacing(tunnel, Side.E);
+
+            final org.traincontrol.base.LayoutDiagram page = model.getLayout(PAGE);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0] = new LayoutEditor(page, 30, ui, 0);
+                editor[0].render();
+                editor[0].setAutonomyMode(session);
+            });
+
+            settle();
+
+            final String[] caption = new String[1];
+            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                caption[0] = ui.autonomyCaptionTextAt(tunnel);
+                menu[0] = editor[0].getAutonomyPanel().buildFacingMenu(tunnel);
+            });
+
+            assertNotNull(menu[0], "precondition: no Is Facing menu for the train placed at Tunnel");
+
+            assertTrue(caption[0] == null || !caption[0].contains(StationCaption.ARROW_E), "precondition: the caption at"
+                + " Tunnel points east, on track that runs north and south: " + caption[0]);
+
+            String east = I18n.t("autosetup.ui.facingE");
+
+            for (java.awt.Component item : menu[0].getMenuComponents())
+            {
+                if (!(item instanceof javax.swing.JRadioButtonMenuItem)) continue;
+
+                javax.swing.JRadioButtonMenuItem radio = (javax.swing.JRadioButtonMenuItem) item;
+
+                assertFalse(radio.isSelected() && east.equals(radio.getText()), "the Is Facing menu at Tunnel ticks east,"
+                    + " on track that runs north and south, where the caption shows no arrow (V348B-C3)");
+            }
+        }
+        finally
+        {
+            if (editor[0] != null)
+            {
+                final LayoutEditor closing = editor[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            session.restoreSetup(asFound);
+
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            settle();
         }
     }
 

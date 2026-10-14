@@ -47,6 +47,11 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * MUTATION: ask only the rails the railway drives, the ones that run over every place the train claims, and the third
  * claim fails at 11,3.
  *
+ * And nothing past such a switch (V348B-C1; Adam, 2026-10-14: "stop at unknown.  but if it's not thrown and the train
+ * must pass through the thrown arm, then do draw it"): beyond it the tail may lie on either road.
+ *
+ * MUTATION: draw every claimed square the rails agree on, wherever it lies, and the third and fourth claims fail.
+ *
  * @author Adam
  */
 public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
@@ -281,6 +286,15 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
             assertTrue(orange.containsKey(fork) && orange.get(fork).isEmpty(), "the switch at 11,3, which a rail into"
                 + " Tunnel autonomy does not drive crosses on its other leg, is drawn along " + orange.get(fork) + " for a"
                 + " train placed at Tunnel by hand - it may have come along that rail (V348-C3).  Orange: " + orange);
+
+            TileKey beyond = new TileKey(PAGE, 11, 4);
+
+            assertTrue(claims.contains(placeOf(beyond)), "precondition: the tail does not reach back past 11,3 to 11,4: "
+                + claims);
+
+            assertTrue(orange.get(beyond) == null || orange.get(beyond).isEmpty(), "11,4, past the switch at 11,3 whose leg"
+                + " is not known, is drawn along " + orange.get(beyond) + " - Adam: \"stop at unknown\" (V348B-C1).  Orange: "
+                + orange);
         }
         finally
         {
@@ -292,6 +306,133 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
             platform.setArrivedFrom("S");
             platform.setArrivedAlong(null);
         }
+    }
+
+    /**
+     * Nowhere on the railway is a tail drawn farther back than a square it lies on whose road is not known (V348B-C1).
+     *
+     * Every Point of the snapshot, in by every side a rail reaches it by, at three lengths, with no road: past a square the
+     * orange lists with no road - the switch where the rails into the platform part - nothing is drawn along one.  How far
+     * back is asked of the rails into the platform by that side that run over every place the train claims.
+     */
+    @Test
+    public void testNothingIsDrawnPastASwitchWhoseLegIsNotKnown()
+    {
+        int length = train.getTrainLength();
+
+        platform.setLocomotive(null);
+
+        int asked = 0;
+        int blanks = 0;
+
+        try
+        {
+            for (Point at : new ArrayList<>(layout.getPoints()))
+            {
+                TileKey square = session.getStationIndex().squareOf(at.getName());
+
+                if (square == null || at.getCurrentLocomotive() != null) continue;
+
+                Set<Side> sides = new LinkedHashSet<>();
+
+                for (GraphReducer.ReducedEdge rail : session.getReducer().getEdges())
+                {
+                    if (square.equals(rail.getEnd()) && rail.getEntrySide() != null) sides.add(rail.getEntrySide());
+                }
+
+                for (Side side : sides)
+                {
+                    for (int units : new int[] {4, 12, 40})
+                    {
+                        at.setLocomotive(train);
+                        at.setArrivedFrom(side.name());
+                        at.setArrivedAlong(null);
+
+                        train.setTrainLength(units);
+
+                        try
+                        {
+                            boolean covers = false;
+
+                            for (Locomotive coverer : layout.edgesCoveredByStandingTrains().values())
+                            {
+                                covers |= coverer == train;
+                            }
+
+                            if (covers) continue;
+
+                            Set<String> claims = claimsOfOurTrain();
+
+                            Map<TileKey, Integer> back = new LinkedHashMap<>();
+
+                            for (GraphReducer.ReducedEdge rail : session.getReducer().getEdges())
+                            {
+                                if (!square.equals(rail.getEnd()) || rail.getEntrySide() != side) continue;
+
+                                List<GraphReducer.Place> places = session.getReducer().placesAlong(rail);
+
+                                List<String> ids = new ArrayList<>();
+
+                                for (GraphReducer.Place place : places) ids.add(place.getId());
+
+                                if (!ids.containsAll(claims)) continue;
+
+                                for (int i = 0; i < rail.getPath().size() && i < places.size(); i++)
+                                {
+                                    if (!claims.contains(ids.get(i))) continue;
+
+                                    TileKey tile = rail.getPath().get(i).getTile();
+
+                                    Integer was = back.get(tile);
+
+                                    if (was == null || places.size() - 1 - i < was) back.put(tile, places.size() - 1 - i);
+                                }
+                            }
+
+                            Map<TileKey, Set<RouteId>> orange = session.routesCoveredByStandingTrains(layout);
+
+                            asked++;
+
+                            for (Map.Entry<TileKey, Integer> blank : back.entrySet())
+                            {
+                                Set<RouteId> drawn = orange.get(blank.getKey());
+
+                                if (drawn == null || !drawn.isEmpty()) continue;
+
+                                blanks++;
+
+                                for (Map.Entry<TileKey, Integer> farther : back.entrySet())
+                                {
+                                    if (farther.getValue() <= blank.getValue()) continue;
+
+                                    Set<RouteId> past = orange.get(farther.getKey());
+
+                                    assertTrue(past == null || past.isEmpty(), "a train of " + units + " units standing at "
+                                        + at.getName() + ", in by " + side + " with no road, is drawn along " + past + " at "
+                                        + farther.getKey() + ", past " + blank.getKey() + " whose road is not known - Adam:"
+                                        + " \"stop at unknown\" (V348B-C1).  Orange: " + orange);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            at.setLocomotive(null);
+                        }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            train.setTrainLength(length);
+
+            platform.setLocomotive(train);
+            platform.setArrivedFrom("S");
+            platform.setArrivedAlong(null);
+        }
+
+        assertTrue(asked > 0 && blanks > 0, "precondition: the sweep asked " + asked + " placements and found " + blanks
+            + " squares left without a road, so it says nothing");
     }
 
     /**

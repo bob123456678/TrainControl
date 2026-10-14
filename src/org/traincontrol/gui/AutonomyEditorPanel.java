@@ -4406,8 +4406,9 @@ public class AutonomyEditorPanel extends JPanel
         org.traincontrol.automationui.TilePorts.Side facingOnTheRailway =
             session.facingOnTheRailway(target, showing);
 
+        // NOT ONE THE TRACK DOES NOT RUN (OB-348), which the caption does not show and the icon cannot be drawn along
         final org.traincontrol.automationui.TilePorts.Side recorded =
-            facingOnTheRailway != null ? facingOnTheRailway : session.getFacing(target);
+            facingOnTheRailway != null ? facingOnTheRailway : session.recordedFacingAlongTheTrack(target);
 
         // AND WHATEVER IS ACTUALLY RECORDED, even when this square cannot hold it (OB-177).
         //
@@ -4447,18 +4448,19 @@ public class AutonomyEditorPanel extends JPanel
         // AND GREYED, NOT HIDDEN, WHERE NO TRACK LEADS OUT (OB-347, Adam 2026-10-13: "the locomotive is facing menu gets
         // hidden when there is no way out.  rather than hiding it, grey it out.").  The same reason as above: a menu that
         // vanishes reads as a fault, one that is there and grey says there is nothing to choose, and its tooltip says why.
-        if (facings.isEmpty())
-        {
-            javax.swing.JMenu none = new javax.swing.JMenu(I18n.f("autosetup.ui.menuFacingGroup", standing));
-
-            none.setEnabled(false);
-            none.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacingNoWayOut")));
-
-            return none;
-        }
-
+        //
+        // ONE SUBMENU, greyed where there is nothing to choose (OB-348): the menu is built once, here, so the track diagram
+        // and the editor cannot offer two that drift apart.
         javax.swing.JMenu facingMenu = new javax.swing.JMenu(
             I18n.f("autosetup.ui.menuFacingGroup", standing));
+
+        if (facings.isEmpty())
+        {
+            facingMenu.setEnabled(false);
+            facingMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacingNoWayOut")));
+
+            return facingMenu;
+        }
 
         facingMenu.setToolTipText(wrapped(I18n.t("autosetup.ui.hintFacing")));
 

@@ -9867,6 +9867,9 @@ public class AutonomySession
             // and the square a rail arrives at - a Point's, which is never a step - by the side the rail reaches it.
             Map<TileKey, Set<RouteId>> seen = new LinkedHashMap<>();
 
+            // And how far back from the platform each lies, in squares along the rail (V348B-C1)
+            Map<TileKey, Integer> back = new LinkedHashMap<>();
+
             for (GraphReducer.ReducedEdge edge : railsATailLiesAlong(running, train.getKey(), claimed))
             {
                 List<GraphReducer.Place> places = reducer.placesAlong(edge);
@@ -9898,11 +9901,31 @@ public class AutonomySession
                     }
 
                     if (road != null) roads.add(road);
+
+                    int behind = places.size() - 1 - at;
+
+                    Integer was = back.get(tile);
+
+                    if (was == null || behind < was) back.put(tile, behind);
                 }
+            }
+
+            // NOTHING PAST THE FIRST SQUARE WHOSE ROAD IS NOT KNOWN (V348B-C1; Adam, 2026-10-14: "stop at unknown.  but if
+            // it's not thrown and the train must pass through the thrown arm, then do draw it").  Beyond a switch the tail
+            // may have come through on either leg, the train lies on one road or the other, and a line along the one the
+            // railway drives would say which.  A switch every rail into the platform crosses on the same arm is not
+            // unknown, and is drawn along that arm whichever way it is set: nothing here reads a switch's position.
+            int stop = Integer.MAX_VALUE;
+
+            for (Map.Entry<TileKey, Set<RouteId>> square : seen.entrySet())
+            {
+                if (square.getValue().size() > 1) stop = Math.min(stop, back.get(square.getKey()));
             }
 
             for (Map.Entry<TileKey, Set<RouteId>> square : seen.entrySet())
             {
+                if (back.get(square.getKey()) > stop) continue;
+
                 Set<RouteId> roads = out.get(square.getKey());
 
                 if (roads == null)

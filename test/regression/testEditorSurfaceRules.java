@@ -83,8 +83,14 @@ public class testEditorSurfaceRules
             "the facing menu still vanishes when a square holds one facing, so the operator is given "
             + "no answer at all rather than the answer that there is nothing to choose");
 
-        assertTrue(source.contains("if (facings.isEmpty()) return null;"),
-            "the menu no longer refuses a square with NO facing, which is a menu with nothing in it");
+        // GREYED, NOT REFUSED, where there is no facing (OB-347; Adam, 2026-10-13: "rather than hiding it, grey it out."),
+        // which is what this used to hold the other way round
+        assertFalse(source.contains("if (facings.isEmpty()) return null;"),
+            "the menu is hidden on a square with NO facing, where Adam asked for it greyed (OB-347)");
+
+        assertTrue(source.contains("if (facings.isEmpty()) { facingMenu.setEnabled(false);")
+                && source.contains("autosetup.ui.hintFacingNoWayOut"),
+            "the menu on a square with NO facing is not greyed with its reason (OB-347)");
 
         assertTrue(source.contains("if (facings.size() == 1)")
                 && source.contains("autosetup.ui.facingOnlyOne"),
