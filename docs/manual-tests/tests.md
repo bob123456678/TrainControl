@@ -34994,4 +34994,8 @@ The second validation round's findings are fixed on your rulings (`518ae3c8`, V3
 
 A third validation round's finding is fixed (`4400ab1b`, V348C): a train the railway cannot stand, with a recorded facing its track does not run, now has its icon along the track too.  The steps and Expected above still hold.
 
+**Claude, 2026-10-14.**
+
+A fourth validation round's finding is fixed (`5cd6eebd`, V348D): a train the railway cannot stand on a square with one way out now faces that way out, as the Is Facing menu ticks it.  The steps and Expected above still hold.
+
 ---
