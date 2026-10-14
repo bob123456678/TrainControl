@@ -9821,9 +9821,16 @@ public class AutonomySession
      * MT-543, *"With not known, there is no orange tail."*  A train with no road is every train stood by hand, answered
      * Not known, or re-stood by a restart or an edit - none of which keeps the road it drove.
      *
-     * Each claimed square is drawn along the road every edge through it agrees on.  Where they disagree - the switch
-     * itself, whose legs are different roads - the square is listed and no line drawn: the train is on it, and on which
-     * leg is not known.  The grey still says it is taken.
+     * Each claimed square is drawn along the road every rail the train can lie along agrees on.  Where they disagree - the
+     * switch itself, whose legs are different roads - the square is listed and no line drawn: the train is on it, and on
+     * which leg is not known.  The grey still says it is taken.
+     *
+     * **THE RAILS INTO ITS SQUARE THAT RUN OVER ALL ITS CLAIMS, not every edge through a claimed square (OB-348).**  The
+     * railway claims what the rails arriving at the platform share (`Layout.claimUpToWhereTheRailsPart`), so those rails
+     * are the ones that say which road the tail is on.  Every edge of the railway through the square used to be asked,
+     * and a switch behind the platform whose other leg carries rails that never reach it read as two roads and was drawn
+     * along none - Adam, 2026-10-14, at TunnelLeftPark: *"it is not drawn over the thrown arm of the switch and 7,8, even
+     * though I see orange before and after."*  Where no such rail is found, every edge is asked, as before.
      *
      * @param running the layout
      * @param drawn the trains the walk above drew
@@ -9832,68 +9839,117 @@ public class AutonomySession
     private void drawTheTrainsThatCoverNoEdge(org.traincontrol.automation.Layout running,
         Set<org.traincontrol.base.Locomotive> drawn, Map<TileKey, Set<RouteId>> out)
     {
-        Set<String> claimed = new java.util.HashSet<>();
+        // PER TRAIN, so each is asked of its own rails (OB-348)
+        Map<org.traincontrol.base.Locomotive, Set<String>> claimedBy = new LinkedHashMap<>();
 
         for (Map.Entry<String, org.traincontrol.base.Locomotive> claim
             : running.placesCoveredByStandingTrains().entrySet())
         {
-            if (!drawn.contains(claim.getValue())) claimed.add(claim.getKey());
+            if (drawn.contains(claim.getValue())) continue;
+
+            Set<String> claims = claimedBy.get(claim.getValue());
+
+            if (claims == null)
+            {
+                claims = new java.util.HashSet<>();
+
+                claimedBy.put(claim.getValue(), claims);
+            }
+
+            claims.add(claim.getKey());
         }
 
-        if (claimed.isEmpty()) return;
-
-        // Every road each claimed square is run along, by every edge naming the claim: a step by the route it records,
-        // and the square an edge arrives at - a Point's, which is never a step - by the side the edge reaches it.
-        Map<TileKey, Set<RouteId>> seen = new LinkedHashMap<>();
-
-        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        for (Map.Entry<org.traincontrol.base.Locomotive, Set<String>> train : claimedBy.entrySet())
         {
-            List<GraphReducer.Place> places = reducer.placesAlong(edge);
+            Set<String> claimed = train.getValue();
 
-            List<GraphReducer.TileStep> path = edge.getPath();
+            // Every road each claimed square is run along, by every rail naming the claim: a step by the route it records,
+            // and the square a rail arrives at - a Point's, which is never a step - by the side the rail reaches it.
+            Map<TileKey, Set<RouteId>> seen = new LinkedHashMap<>();
 
-            // One place per step, then the square the edge arrives at - `placesAlong`'s own shape.
-            if (places.size() != path.size() + 1) continue;
-
-            for (int at = 0; at < places.size(); at++)
+            for (GraphReducer.ReducedEdge edge : railsATailLiesAlong(running, train.getKey(), claimed))
             {
-                if (!claimed.contains(places.get(at).getId())) continue;
+                List<GraphReducer.Place> places = reducer.placesAlong(edge);
 
-                boolean onTheWay = at < path.size();
+                List<GraphReducer.TileStep> path = edge.getPath();
 
-                TileKey tile = onTheWay ? path.get(at).getTile() : edge.getEnd();
+                // One place per step, then the square the edge arrives at - `placesAlong`'s own shape.
+                if (places.size() != path.size() + 1) continue;
 
-                if (tile == null) continue;
+                for (int at = 0; at < places.size(); at++)
+                {
+                    if (!claimed.contains(places.get(at).getId())) continue;
 
-                RouteId road = onTheWay ? path.get(at).getRouteId() : roadOn(edge.getEnd(), edge.getEntrySide());
+                    boolean onTheWay = at < path.size();
 
-                Set<RouteId> roads = seen.get(tile);
+                    TileKey tile = onTheWay ? path.get(at).getTile() : edge.getEnd();
+
+                    if (tile == null) continue;
+
+                    RouteId road = onTheWay ? path.get(at).getRouteId() : roadOn(edge.getEnd(), edge.getEntrySide());
+
+                    Set<RouteId> roads = seen.get(tile);
+
+                    if (roads == null)
+                    {
+                        roads = new LinkedHashSet<>();
+
+                        seen.put(tile, roads);
+                    }
+
+                    if (road != null) roads.add(road);
+                }
+            }
+
+            for (Map.Entry<TileKey, Set<RouteId>> square : seen.entrySet())
+            {
+                Set<RouteId> roads = out.get(square.getKey());
 
                 if (roads == null)
                 {
                     roads = new LinkedHashSet<>();
 
-                    seen.put(tile, roads);
+                    out.put(square.getKey(), roads);
                 }
 
-                if (road != null) roads.add(road);
+                // ONE ROAD OR NONE: a line along two would say the train is on both legs of the switch.
+                if (square.getValue().size() == 1) roads.addAll(square.getValue());
             }
         }
+    }
 
-        for (Map.Entry<TileKey, Set<RouteId>> square : seen.entrySet())
+    /**
+     * The rails a train with no covered edge can be lying along: those into the square it stands on that run over every
+     * place it claims (OB-348) - or, where there are none, every edge of the reduction, as `drawTheTrainsThatCoverNoEdge`
+     * asked before.
+     *
+     * @param running the layout
+     * @param train the train
+     * @param claimed the places it claims
+     * @return the reduced edges to ask which road each claimed square is on
+     */
+    private List<GraphReducer.ReducedEdge> railsATailLiesAlong(org.traincontrol.automation.Layout running,
+        org.traincontrol.base.Locomotive train, Set<String> claimed)
+    {
+        org.traincontrol.automation.Point standing = running.whereTheTrainIs(train);
+
+        TileKey at = standing == null ? null : getStationIndex().squareOf(standing.getName());
+
+        List<GraphReducer.ReducedEdge> rails = new ArrayList<>();
+
+        for (GraphReducer.ReducedEdge edge : at == null ? java.util.Collections.<GraphReducer.ReducedEdge>emptyList()
+            : reducer.getEdges())
         {
-            Set<RouteId> roads = out.get(square.getKey());
+            if (!at.equals(edge.getEnd())) continue;
 
-            if (roads == null)
-            {
-                roads = new LinkedHashSet<>();
+            Set<String> along = new java.util.HashSet<>();
 
-                out.put(square.getKey(), roads);
-            }
+            for (GraphReducer.Place place : reducer.placesAlong(edge)) along.add(place.getId());
 
-            // ONE ROAD OR NONE: a line along two would say the train is on both legs of the switch.
-            if (square.getValue().size() == 1) roads.addAll(square.getValue());
+            if (along.containsAll(claimed)) rails.add(edge);
         }
+
+        return rails.isEmpty() ? reducer.getEdges() : rails;
     }
 
     /**
@@ -10944,6 +11000,39 @@ public class AutonomySession
         }
 
         return null;
+    }
+
+    /**
+     * Which way to draw a train standing on a square whose copy records no facing and has no single way out (OB-348): the
+     * facing the setup records, where its track runs that way - the one the caption shows - or else the first way its
+     * track runs.  Null where the square has no track to ask.
+     *
+     * Adam, 2026-10-14: *"on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the
+     * east, even though the only allowed directions are n/s."*  A square no track leads out of is emitted whole, with no
+     * facing, and an icon given none is drawn as its picture is: east.
+     *
+     * @param square the diagram square
+     * @return a side its track runs to, or null
+     */
+    public Side facingWhereNoCopySays(TileKey square)
+    {
+        List<Side> track = new ArrayList<>();
+
+        Map<RouteId, Route> routes = square == null ? null : getRoutes(square);
+
+        for (Route route : routes == null ? java.util.Collections.<Route>emptyList() : routes.values())
+        {
+            for (Side end : new Side[] {route.getA(), route.getB()})
+            {
+                if (end != null && !track.contains(end)) track.add(end);
+            }
+        }
+
+        if (track.isEmpty()) return null;
+
+        Side recorded = getFacing(square);
+
+        return recorded != null && track.contains(recorded) ? recorded : track.get(0);
     }
 
     /**

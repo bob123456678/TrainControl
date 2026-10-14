@@ -128,7 +128,7 @@ public class DiagramMonitorDriver
             monitor.setEdges(builder.edgesByName(), names);
         }
 
-        monitor.setFacings(facingsOf(builder, names));
+        monitor.setFacings(facingsOf(builder, names, session));
 
         // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form takes the grey
         // away: a tool that paused a train on no Point told the monitor, and the rebuild its change asks for then undid it.
@@ -169,12 +169,19 @@ public class DiagramMonitorDriver
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
      * a single copy's only way out where it has one (Adam, 2026-10-01 - the icon of a parked train turns to it).
      *
+     * AND WHERE IT HAS NONE, A WAY ITS TRACK RUNS (OB-348; Adam, 2026-10-14: "on tunnelleftpark, if there is no way out
+     * (both arrows at 8,7 red), the icon is rotated to the east, even though the only allowed directions are n/s").  A
+     * square no track leads out of has neither, and an icon given no facing is drawn east; it is given the setup's
+     * facing where the track runs that way, as the caption is, or else the track's first way
+     * (`AutonomySession.facingWhereNoCopySays`).
+     *
      * @param builder the builder the names came from
      * @param names every Point name and its square
+     * @param session the setup, for a square whose copy says nothing
      * @return Point name to the side a train's front faces there
      */
     private static Map<String, org.traincontrol.automationui.TilePorts.Side> facingsOf(AutonomyBuilder builder,
-        Map<String, TileKey> names)
+        Map<String, TileKey> names, AutonomySession session)
     {
         Map<String, org.traincontrol.automationui.TilePorts.Side> out = new java.util.LinkedHashMap<>(builder.facingByName());
 
@@ -183,6 +190,8 @@ public class DiagramMonitorDriver
             if (out.containsKey(entry.getKey())) continue;
 
             org.traincontrol.automationui.TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
+
+            if (only == null) only = session.facingWhereNoCopySays(entry.getValue());
 
             if (only != null) out.put(entry.getKey(), only);
         }
