@@ -304,18 +304,6 @@ Adam, 2026-10-11: *"FR for 3.1.0: a restore from backup option in the file menu"
 
 To settle when it is built: choosing the archive (opening on `tc_backup`); showing what it holds and what it will replace before anything is written; backing up the current data first, so a restore can be undone; where the layout folder goes (back where it was, or a folder the user picks) and pointing TrainControl at it; refusing while autonomy or a timetable is running; restarting, or reloading everything, afterwards; an archive from an older or newer version; and the CS3's own locomotive, route and accessory files, which a backup carries but TrainControl does not read.
 
-### FR-125 - 2026-10-11 - for 3.1.0: one-click updates - download, swap the jar, restart
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-11  
-**Filed:** 2026-10-11  
-
-Adam, 2026-10-11: *"FR for 3.1.0: one-click updates.  Downloads the new jar, makes a script to swap it with the current one in the current folder (if it exists), and runs that script then exits so it can be done, then restarts."*
-
-**For v3.1.0**, on Adam's word.  Today Check for Updates (Preferences > Startup) finds a newer release, and the main window's Download Update saves the new jar and ends with *"Replace your existing .jar with the new file"* (`ui.infoDownloadedUpdateReplaceExistingJar`): the swap and the restart are the user's.  One click should do all of it: download the jar, write a small script that waits for TrainControl to close, replaces the jar it is running from in the current folder with the new one (where that jar exists), and starts TrainControl again; run the script, and exit.
-
-To settle when it is built: a .bat on Windows and a shell script on macOS and Linux; how the script knows TrainControl has really exited (its process, or the jar no longer locked) before it swaps; keeping the old jar (renamed, say) until the new one has started, so a bad download can be undone; checking the download is whole (size, or a checksum from the release) before anything is replaced; running from somewhere other than a jar (an IDE, build\classes), where there is nothing to swap and it should say so; a jar the user cannot write over; starting again with the same Java and arguments (IP address, debug, simulate, a forced language); refusing while autonomy, a timetable or a route is running, and saving everything first; and the LocDB.data and UIState.data beside the jar, which must be left alone.
-
 ### OB-345 - 2026-10-13 - for 3.1.0: editor Cancel can map a kept timetable leg to the wrong station after a chain of station renames
 
 **Kind:** bug  
@@ -365,14 +353,14 @@ Nothing of a run is lost: no train may be sent while an editor is open.  One way
 
 Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 
-### OB-347 - 2026-10-13 - "is facing" menu for autonomy editor/track diagram viewer
+### OB-348 - 2026-10-14 - loc facing icon inconsistency
 
 **Kind:** bug  
 **Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-13 23:26  
+**Filed:** 2026-10-14 00:19  
 **Build:** commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
-the locomotive is facing menu gets hidden when there is no way out.  rather than hiding it, grey it out.
+on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the east, even though the only allowed directions are n/s.  Also, when the tail reaches bottommainbcpre, it is not drawn over the thrown arm of the switch and 7,8, even though I see orange before and after.
 
 ## What has been picked up
 

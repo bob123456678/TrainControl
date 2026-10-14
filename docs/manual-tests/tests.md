@@ -27,12 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-737](#mt-737) | 2026-10-13 | 3.0.1: one-click updates - Download, Download & Update, or Cancel | fixed unvalidated | FR-125 |
-| [MT-739](#mt-739) | 2026-10-14 | FR-125: an update you close soon after it opens is kept | fixed unvalidated | FR-125, MT-737 |
-| [MT-740](#mt-740) | 2026-10-14 | OB-347: the Is Facing menu greyed where there is no way out | fixed unvalidated | OB-347 |
 
-Everything else - 737 of 740 - needs nothing from you unless the area changes again:
-584 **fixed validated** and 153 **superseded**.
+
+Everything else - 740 of 740 - needs nothing from you unless the area changes again:
+587 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -34780,7 +34778,7 @@ Noted: one MT per bug or feature request from here on.  MT-739 and MT-740 are th
 <a id="mt-737"></a>
 ### MT-737 - 2026-10-13 - 3.0.1: one-click updates - Download, Download & Update, or Cancel
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-125
 
 **Written:** 2026-10-13
@@ -34842,6 +34840,10 @@ The update itself works, but after the newly updated app opens, is used by the u
 
 Thank you - the log shows it.  The version you updated to was 3.0.0, which is older than the "I have started" signal the updater waits for, so each time you closed it within ten minutes it was taken for a failed start and put back.  Fixed in `18da7ef2`: a version older than 3.0.1 is kept once it runs.  Real updates from 3.0.1 on go to versions that send the signal.  MT-739 tests the fix on its own.
 
+**Adam, 2026-10-14 (triage).** Works.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-738"></a>
@@ -34882,7 +34884,7 @@ mode through `syncWithCS2`'s own failure path; without `debug` it does nothing. 
 <a id="mt-739"></a>
 ### MT-739 - 2026-10-14 - FR-125: an update you close soon after it opens is kept
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-125, MT-737
 
 **Written:** 2026-10-14
@@ -34907,12 +34909,16 @@ minutes read as a failed start and was put back.  It is now kept once it runs (`
 update from 3.0.1 on goes to a version that does say so, which MT-737's other steps covered.  Claim
 `core.testTheUpdaterSwapsTheJar.testAVersionOlderThanTheMarkerIsKeptWhenClosed`.
 
+**Adam, 2026-10-14 (triage).** Works.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-740"></a>
 ### MT-740 - 2026-10-14 - OB-347: the Is Facing menu greyed where there is no way out
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-347
 
 **Written:** 2026-10-14
@@ -34932,5 +34938,9 @@ update from 3.0.1 on goes to a version that does say so, which MT-737's other st
 `autosetup.ui.hintFacingNoWayOut` in 8 languages, where it returned nothing.  Claim
 `regression.testTheFacingMenuIsAboutTheTrainThere.testWithNoWayOutTheMenuIsGreyedNotHidden` skips on the test layout,
 which has no such square, so this test is the one that sees it.
+
+**Adam, 2026-10-14 (triage).** Works.
+
+*Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

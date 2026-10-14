@@ -28,8 +28,7 @@
     "maxLocInactiveSeconds": 0,
     "activateRoutes": false,
     "activateRouteIDs": [],
-    "turnOnFunctionsOnDeparture": true,
-    "simulate": true
+    "turnOnFunctionsOnDeparture": true
   },
   "name": "Main",
   "points": {
@@ -69,7 +68,6 @@
       "mustReverse": true,
       "maxTrainLength": 2,
       "homeFacing": "W",
-      "facing": "W",
       "priority": 2,
       "home": "EN57-947"
     },
@@ -292,9 +290,12 @@
     },
     "1 - Main:8,6": {
       "parking": true,
+      "loc": {"name": "02 0314-1 DDR"},
       "mustReverse": true,
       "maxTrainLength": 2,
-      "autoDestination": false
+      "facing": "S",
+      "autoDestination": false,
+      "arrivedFrom": "S"
     },
     "2 - Bottom:17,6": {
       "parking": true,
@@ -361,26 +362,7 @@
     "1 - Main:19,7": {},
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {
-      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 3,
-      "arrivedAlong": [
-        [
-          "TopMainR1",
-          "TopMainPost (eastbound)"
-        ],
-        [
-          "TopMainPost (eastbound)",
-          "RampDown (southbound)"
-        ],
-        [
-          "RampDown (southbound)",
-          "1 - Main 17,10 (westbound)"
-        ],
-        [
-          "1 - Main 17,10 (westbound)",
-          "BottomInner (northbound)"
-        ]
-      ],
       "homeFacing": "W",
       "facing": "W",
       "excludedLocs": [
@@ -391,7 +373,6 @@
         "MZ 1425 DSB",
         "SP45-204"
       ],
-      "arrivedFrom": "S",
       "priority": -3,
       "home": "02 0314-1 DDR"
     },
