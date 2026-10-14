@@ -27,10 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-289](#mt-289) | 2026-09-07 | The facing menu ticks a facing the square cannot hold | fixed unvalidated | OB-177 (split from MT-274) |
 | [MT-741](#mt-741) | 2026-10-14 | OB-348: a train at TunnelLeftPark faces along its track, and its tail is drawn over the switches behind it | fixed unvalidated | OB-348 |
 
-Everything else - 740 of 741 - needs nothing from you unless the area changes again:
-587 **fixed validated** and 153 **superseded**.
+Everything else - 739 of 741 - needs nothing from you unless the area changes again:
+586 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -16389,7 +16390,7 @@ Filed. The follow-up in the comment above - *"we need a keyboard shortcut to set
 
 ### MT-289 - 2026-09-07 - The facing menu ticks a facing the square cannot hold
 
-**Disposition:** fixed validated
+**Disposition:** fixed unvalidated
 **From:** OB-177 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16415,6 +16416,10 @@ I don't know how to reproduce this, things seem to work now.
 **Adam, 2026-09-12 (triage).** Works.
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-14.**
+
+Back to fixed unvalidated: OB-348 changed what this checks, for one kind of recorded facing.  On your ruling of 2026-10-14 (V348B-C3, "fix c3": the menu should agree with the caption), a recorded facing the square's TRACK does not run - east on track that runs north and south, left by an edit of the track under a parked train - is no longer listed and ticked: the menu offers the facings the square can hold with none ticked, the caption shows no arrow, and the locomotive icon lies along the track (`518ae3c8`, `4400ab1b`).  A recorded facing the track does run but the square cannot hold is still listed and ticked, as the steps above expect.  To check both: give a train standing on Tunnel (7,7) a facing of east in the setup, then of a way the track runs that the square cannot hold, if your layout has one.
 
 ---
 
@@ -34984,5 +34989,9 @@ Since this was written, the validator's findings on OB-348 are fixed (`eb6aa1f8`
 **Claude, 2026-10-14.**
 
 The second validation round's findings are fixed on your rulings (`518ae3c8`, V348B).  The steps and Expected above still hold.  Also, if you want to look: behind a switch where the train's leg is not known (11,3 behind Tunnel, for a train placed there by hand), the orange now stops at that switch rather than going on past it; and the Is Facing menu no longer ticks a recorded facing the track does not run, anywhere.
+
+**Claude, 2026-10-14.**
+
+A third validation round's finding is fixed (`4400ab1b`, V348C): a train the railway cannot stand, with a recorded facing its track does not run, now has its icon along the track too.  The steps and Expected above still hold.
 
 ---

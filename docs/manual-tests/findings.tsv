@@ -4912,6 +4912,11 @@ V348B-D1	V348B.md	Closed	Checked - clean.	The icon now follows Adam's ruling on 
 V348B-D2	V348B.md	Closed	Checked - clean.	The tail: nothing is drawn off the train's claims or along a wrong road, and Adam's TunnelLeftPark case is unchanged
 V348B-D3	V348B.md	Closed	Checked - clean.	Threads: nothing new takes the Layout's monitor on the event thread
 V348B-D4	V348B.md	Closed	Checked - clean.	The claims were red before, and bite on three of the four mutations
+V348C-C1	V348C.md	Closed	Fixed (`4400ab1b`): a train the railway cannot stand is drawn along its track; the caption	Where the railway cannot stand a train whose recorded facing its track does not run, the Is Facing menu now ticks nothing and the caption shows no arr
+V348C-D1	V348C.md	Closed	Checked - clean (its caveat: the every-edge fallback is no longer cut, `4400ab1b`).	The tail stops at the first square whose road is not known, draws the arm every rail crosses, and draws nothing wrong
+V348C-D2	V348C.md	Closed	Checked - clean.	On a square with no way out, the facing icon, caption and greyed menu are unchanged and agree; the menu is one submenu
+V348C-D3	V348C.md	Closed	Checked - clean.	Threads: nothing new takes the Layout's monitor on the event thread
+V348C-D4	V348C.md	Closed	Checked - clean.	518ae3c's claims were red before the fix and fail on their mutations
 V35-C1	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	Clear All Home Locomotives greys on an excluded page, though the action is setup-wide
 V35-C2	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	the protecting-signal question is asked only in the power-on branch
 V35-C3	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02 (`76d7bb70`)	the RG3-B1 changelog fix is claimed by a commit message and exists only uncommitted
