@@ -11064,8 +11064,9 @@ public class AutonomySession
     /**
      * Which way to draw a train standing on a square whose copy records no facing and has no single way out (OB-348): the
      * facing the setup records, where its track runs that way - the one the caption shows - or else a guess along its
-     * track: its first way, which is north or south on track that runs north to south, east or west on track that runs
-     * across, and along the curve on a curve.  Null where the square has no track to ask.
+     * track: the first facing the square offers, which is the one the Is Facing menu ticks where it offers one (V348D-C1),
+     * or where it offers none its first way, which is north or south on track that runs north to south, east or west on
+     * track that runs across, and along the curve on a curve.  Null where the square has no track to ask.
      *
      * Adam, 2026-10-14: *"on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the
      * east, even though the only allowed directions are n/s."*  A square no track leads out of is emitted whole, with no
@@ -11083,7 +11084,11 @@ public class AutonomySession
 
         Side recorded = recordedFacingAlongTheTrack(square);
 
-        return recorded != null ? recorded : track.get(0);
+        if (recorded != null) return recorded;
+
+        List<Side> offered = facingChoices(square);
+
+        return offered.isEmpty() ? track.get(0) : offered.get(0);
     }
 
     /**

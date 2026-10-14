@@ -401,6 +401,168 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
+     * The same on every square of the snapshot that offers one facing, for every way its track does not run (V348D-C1).
+     */
+    @Test
+    public void testEverySquareWithOneWayOutGuessesIt()
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        int asked = 0;
+
+        try
+        {
+            for (TileKey square : new java.util.ArrayList<>(session.getStationIndex().squares()))
+            {
+                List<Side> offered = session.facingChoices(square);
+
+                if (offered.size() != 1) continue;
+
+                java.util.Set<Side> track = new java.util.HashSet<>();
+
+                for (org.traincontrol.automationui.TilePorts.Route route : session.getRoutes(square).values())
+                {
+                    track.add(route.getA());
+                    track.add(route.getB());
+                }
+
+                for (Side off : Side.values())
+                {
+                    if (track.contains(off)) continue;
+
+                    session.setFacing(square, off);
+
+                    asked++;
+
+                    assertEquals(session.facingWhereNoCopySays(square), offered.get(0), "a train recorded facing " + off
+                        + " at " + square + ", whose track does not run that way and whose one way out is "
+                        + offered.get(0) + ", is drawn facing elsewhere (V348D-C1)");
+                }
+            }
+        }
+        finally
+        {
+            session.restoreSetup(asFound);
+        }
+
+        assertTrue(asked > 0, "precondition: no square of the snapshot offers one facing");
+    }
+
+    /**
+     * On a square with one way out, a train the railway cannot stand - its recorded facing off the track - faces that way
+     * out, which the Is Facing menu ticks (V348D-C1).
+     *
+     * MUTATION: guess the track's first way before the facing the square offers, and this fails at TunnelRightPark, whose
+     * one way out is south on track that runs from the north.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testOffTheTrackWithOneWayOutItFacesThatWay() throws Exception
+    {
+        final TileKey square = new TileKey(PAGE, 10, 6);
+        final org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor[] editor = new LayoutEditor[1];
+
+        try
+        {
+            List<Side> offered = session.facingChoices(square);
+
+            if (offered.size() != 1) throw new SkipException("TunnelRightPark does not offer one facing here: " + offered);
+
+            assertFalse(session.getRoutes(square).values().iterator().next().touches(Side.E), "precondition:"
+                + " TunnelRightPark's track runs east");
+
+            Layout running = model.getAutoLayout();
+
+            for (String name : session.getStationIndex().pointNamesAt(square))
+            {
+                Point copy = running.getPoint(name);
+
+                if (copy != null) copy.setLocomotive(null);
+            }
+
+            session.placeLocomotive(square, OUR_TRAIN);
+            session.setFacing(square, Side.E);
+
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            settle();
+
+            assertTrue(session.trainsOnNoPoint().containsKey(square), "precondition: the railway stands the train at"
+                + " TunnelRightPark on a Point");
+
+            final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                driver.bind(session);
+                driver.setEnabled(true);
+                driver.start();
+            });
+
+            TileOverlay shown = null;
+
+            for (int tries = 0; tries < 50 && (shown == null || !shown.hasTrain()); tries++)
+            {
+                settle();
+
+                shown = ui.getDiagramTileRegistry().overlayAt(square);
+
+                if (shown == null || !shown.hasTrain()) Thread.sleep(100);
+            }
+
+            assertTrue(shown != null && shown.hasTrain(), "precondition: no train shown at TunnelRightPark: " + shown);
+
+            final org.traincontrol.base.LayoutDiagram page = model.getLayout(PAGE);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0] = new LayoutEditor(page, 30, ui, 0);
+                editor[0].render();
+                editor[0].setAutonomyMode(session);
+            });
+
+            settle();
+
+            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+
+            SwingUtilities.invokeAndWait(() -> menu[0] = editor[0].getAutonomyPanel().buildFacingMenu(square));
+
+            String ticked = null;
+
+            for (java.awt.Component item : menu[0] == null ? new java.awt.Component[0] : menu[0].getMenuComponents())
+            {
+                if (item instanceof javax.swing.JRadioButtonMenuItem && ((javax.swing.JRadioButtonMenuItem) item).isSelected())
+                {
+                    ticked = ((javax.swing.JRadioButtonMenuItem) item).getText();
+                }
+            }
+
+            assertEquals(ticked, I18n.t("autosetup.ui.facing" + offered.get(0).name()), "precondition: the Is Facing"
+                + " menu does not tick TunnelRightPark's one way out");
+
+            assertEquals(shown.getFacing(), offered.get(0), "the locomotive at TunnelRightPark, which the railway cannot"
+                + " stand with east recorded, faces away from the one way out the Is Facing menu ticks (V348D-C1)");
+        }
+        finally
+        {
+            if (editor[0] != null)
+            {
+                final LayoutEditor closing = editor[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            session.restoreSetup(asFound);
+
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            settle();
+        }
+    }
+
+    /**
      * Makes both arrows of 8,7 red, records the facing given on TunnelLeftPark, stands this class's train there and
      * returns what the diagram shows on the square - the setup put back afterwards.
      *
