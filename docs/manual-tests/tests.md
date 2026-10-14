@@ -27,9 +27,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-741](#mt-741) | 2026-10-14 | OB-348: a train at TunnelLeftPark faces along its track, and its tail is drawn over the switches behind it | fixed unvalidated | OB-348 |
 
-
-Everything else - 740 of 740 - needs nothing from you unless the area changes again:
+Everything else - 740 of 741 - needs nothing from you unless the area changes again:
 587 **fixed validated** and 153 **superseded**.
 
 ---
@@ -34942,5 +34942,39 @@ which has no such square, so this test is the one that sees it.
 **Adam, 2026-10-14 (triage).** Works.
 
 *Run against commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-741"></a>
+### MT-741 - 2026-10-14 - OB-348: a train at TunnelLeftPark faces along its track, and its tail is drawn over the switches behind it
+
+**Disposition:** fixed unvalidated
+**From:** OB-348
+
+**Written:** 2026-10-14
+
+**Steps**
+
+1. In the autonomy editor, make both arrows at 8,7 red, so no track leads out of TunnelLeftPark, and save.  With a
+   train standing on TunnelLeftPark (02 0314-1 DDR stands there now), look at its locomotive icon on the track diagram.
+2. Put the arrows at 8,7 back as they were and save.  Give the train on TunnelLeftPark a train length of 12, and with
+   autonomy loaded and no run going, look at the orange line behind it.
+
+**Expected**
+
+- Step 1: the icon points down the diagram (south), the way the caption's arrow points - not right (east).
+- Step 2: the orange runs unbroken from TunnelLeftPark over 8,7, the switch at 9,7 along its arm towards 8,7, 9,8, 8,8,
+  7,8 along its curved arm, and down 7,9 to 7,11.  The switch at 7,12, where the line from BottomMainAPre joins, is
+  greyed with no orange: which of its two legs the tail lies on is not known.
+
+*What this is:* OB-348 (`c282c77d`).  The icon: a square no track leads out of has no copy facing and no single way
+out, so `DiagramMonitorDriver.facingsOf` gave it no facing and the picture was drawn east; it now takes
+`AutonomySession.facingWhereNoCopySays` - the setup's facing where the track runs that way, or else the track's first
+way (north here, with nothing recorded).  The tail: a train with no road - placed by hand, as 02 0314-1 DDR is - is drawn
+from the places the railway claims, each square along the road the rails agree on, and those roads were asked of every
+edge through the square, so 9,7 and 7,8, whose other legs carry the rails from Tunnel and from the other tunnel berths,
+read as two roads and were drawn along none (`AutonomySession.drawTheTrainsThatCoverNoEdge`); only the rails into
+TunnelLeftPark are asked now.  Claims `ui.testATrainWithNoWayOutFacesAlongItsTrack` and
+`regression.testTheOrangeRunsOverTheSwitchesBehindTheTrain`.
 
 ---
