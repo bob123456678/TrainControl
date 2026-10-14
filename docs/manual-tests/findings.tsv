@@ -4922,6 +4922,11 @@ V348D-D1	V348D.md	Closed	Checked - clean.	V348C-C1 is fixed: at Tunnel the icon 
 V348D-D2	V348D.md	Closed	Checked - clean.	On a square with no way out, the icon, caption and greyed menu are unchanged and agree, after a refresh, a rebuild and a reload
 V348D-D3	V348D.md	Closed	Checked - clean.	The tail: 4400ab1's fallback change is sound, and the sweep is unchanged
 V348D-D4	V348D.md	Closed	Checked - clean.	Threads: nothing new takes the Layout's monitor on the event thread
+V348E-D1	V348E.md	Closed	Checked - clean.	V348D-C1 is fixed: with one way out, an off-track record is drawn facing that way, which is the facing the menu ticks
+V348E-D2	V348E.md	Closed	Checked - clean.	The change reaches no other icon: guessed Points, two-way squares and no-way-out squares are drawn as ruled
+V348E-D3	V348E.md	Closed	Checked - clean.	The tail is unchanged and sound
+V348E-D4	V348E.md	Closed	Checked - clean.	The claims: red before the fix, green after, and the record-first rule is held by another class
+V348E-D5	V348E.md	Closed	Checked - clean.	No regression in the neighbouring classes, and nothing new on the event thread
 V35-C1	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	Clear All Home Locomotives greys on an excluded page, though the action is setup-wide
 V35-C2	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02	the protecting-signal question is asked only in the power-on branch
 V35-C3	2026-09-02-fifth-validation.md	Closed	FIXED 2026-09-02 (`76d7bb70`)	the RG3-B1 changelog fix is claimed by a commit message and exists only uncommitted
