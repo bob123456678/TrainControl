@@ -4424,7 +4424,10 @@ public class AutonomyEditorPanel extends JPanel
         // the record or the track under it - is not this menu's to decide.  The finding says the
         // square cannot hold it; the menu says what the train is down as; clicking any other entry
         // resolves both.
-        if (recorded != null && !facings.contains(recorded)) facings.add(recorded);
+        //
+        // NOT WHERE NO TRACK LEADS OUT (OB-348): there the menu is greyed (OB-347) whatever is recorded, and a record the
+        // track does not run was ticked in an open menu while the icon lay along the track.
+        if (recorded != null && !facings.isEmpty() && !facings.contains(recorded)) facings.add(recorded);
 
         // SHOWN EVEN WITH ONE ANSWER, so the menu explains itself instead of vanishing
         // (Adam, 2026-09-06).

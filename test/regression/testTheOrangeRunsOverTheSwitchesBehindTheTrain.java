@@ -18,6 +18,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -38,7 +39,13 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * and this class's own train long enough to reach back to where the rails part.
  *
  * MUTATION: let every edge through a claimed square say which road it runs along again, as
- * `AutonomySession.drawTheTrainsThatCoverNoEdge` did, and this fails at 9,7 and 7,8.
+ * `AutonomySession.drawTheTrainsThatCoverNoEdge` did, and the first claim fails at 9,7 and 7,8.
+ *
+ * And at Tunnel, where a rail autonomy does not drive - against a one-way arrow - runs through the other leg of the switch
+ * at 11,3 behind the platform (V348-C3): a train placed there by hand may have come along it, so which leg is not known.
+ *
+ * MUTATION: ask only the rails the railway drives, the ones that run over every place the train claims, and the third
+ * claim fails at 11,3.
  *
  * @author Adam
  */
@@ -149,6 +156,14 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
         Map<TileKey, Set<RouteId>> orange = session.routesCoveredByStandingTrains(layout);
 
+        // ASKED OF THE TRACK, not of the rails (V348-C4): the leg of 9,7 between its west and south sides, which 8,7's
+        // curve leads into, and the leg of 7,8 between its east and south sides, which 8,8 leads into
+        assertEquals(roads.get(THREE_WAY), legBetween(THREE_WAY, Side.W, Side.S), "precondition: the rails into"
+            + " TunnelLeftPark do not run over 9,7's leg from 8,7");
+
+        assertEquals(roads.get(SEVEN_EIGHT), legBetween(SEVEN_EIGHT, Side.E, Side.S), "precondition: the rails into"
+            + " TunnelLeftPark do not run over 7,8's leg from 8,8");
+
         for (TileKey square : new TileKey[] {THREE_WAY, SEVEN_EIGHT})
         {
             assertEquals(orange.get(square), roads.get(square), "the tail of a train standing at TunnelLeftPark is not"
@@ -191,6 +206,150 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
         assertTrue(parted, "precondition: the tail never reaches the switch where the rails into TunnelLeftPark part."
             + "  Claimed squares: " + roads);
+    }
+
+    /**
+     * Where a rail autonomy does not drive runs through a switch behind the platform on the other leg, the switch is drawn
+     * along no road: the train may have come along it (V348-C3).
+     */
+    @Test
+    public void testASwitchAnUndrivenRailCrossesIsDrawnAlongNoRoad()
+    {
+        TileKey tunnel = new TileKey(PAGE, 7, 7);
+        TileKey fork = new TileKey(PAGE, 11, 3);
+
+        Point southbound = null;
+
+        for (Map.Entry<String, Side> copy : session.getStationIndex().facingsAt(tunnel).entrySet())
+        {
+            if (copy.getValue() == Side.S) southbound = layout.getPoint(copy.getKey());
+        }
+
+        if (southbound == null) throw new SkipException("Tunnel has no southbound copy on this snapshot");
+
+        int length = train.getTrainLength();
+
+        platform.setLocomotive(null);
+
+        try
+        {
+            // PLACED BY HAND: in from the north, and no road
+            southbound.setLocomotive(train);
+            southbound.setArrivedFrom("N");
+            southbound.setArrivedAlong(null);
+
+            train.setTrainLength(40);
+
+            for (Map.Entry<Edge, Locomotive> covered : layout.edgesCoveredByStandingTrains().entrySet())
+            {
+                assertFalse(covered.getValue() == train, "precondition: the tail covers the edge "
+                    + covered.getKey().getName() + ", so this is not a train with no road");
+            }
+
+            Set<String> claims = claimsOfOurTrain();
+
+            assertTrue(claims.contains(placeOf(fork)), "precondition: the tail does not reach back over 11,3: " + claims);
+
+            // THE RAILS INTO TUNNEL BY THE NORTH OVER 11,3: those the railway drives run over all the claims, and one at
+            // least, which it does not, over the other leg
+            Set<RouteId> driven = new LinkedHashSet<>();
+            Set<RouteId> undriven = new LinkedHashSet<>();
+
+            for (GraphReducer.ReducedEdge rail : session.getReducer().getEdges())
+            {
+                if (!tunnel.equals(rail.getEnd()) || rail.getEntrySide() != Side.N) continue;
+
+                List<String> ids = new ArrayList<>();
+
+                for (GraphReducer.Place place : session.getReducer().placesAlong(rail)) ids.add(place.getId());
+
+                for (GraphReducer.TileStep step : rail.getPath())
+                {
+                    if (!fork.equals(step.getTile()) || step.getRouteId() == null) continue;
+
+                    (ids.containsAll(claims) ? driven : undriven).add(step.getRouteId());
+                }
+            }
+
+            undriven.removeAll(driven);
+
+            assertTrue(driven.size() == 1 && !undriven.isEmpty(), "precondition: no rail into Tunnel by the north runs over"
+                + " 11,3 on a leg the railway's rails do not take: driven " + driven + ", other " + undriven);
+
+            Map<TileKey, Set<RouteId>> orange = session.routesCoveredByStandingTrains(layout);
+
+            assertTrue(orange.containsKey(fork) && orange.get(fork).isEmpty(), "the switch at 11,3, which a rail into"
+                + " Tunnel autonomy does not drive crosses on its other leg, is drawn along " + orange.get(fork) + " for a"
+                + " train placed at Tunnel by hand - it may have come along that rail (V348-C3).  Orange: " + orange);
+        }
+        finally
+        {
+            southbound.setLocomotive(null);
+
+            train.setTrainLength(length);
+
+            platform.setLocomotive(train);
+            platform.setArrivedFrom("S");
+            platform.setArrivedAlong(null);
+        }
+    }
+
+    /**
+     * The one road of a square that runs between the two sides given.
+     *
+     * @param square the square
+     * @param a one side
+     * @param b the other
+     * @return the road, as a set of one, or an empty set
+     */
+    private static Set<RouteId> legBetween(TileKey square, Side a, Side b)
+    {
+        Set<RouteId> out = new LinkedHashSet<>();
+
+        for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> road : session.getRoutes(square).entrySet())
+        {
+            if (road.getValue().touches(a) && road.getValue().touches(b)) out.add(road.getKey());
+        }
+
+        return out;
+    }
+
+    /**
+     * The places this class's train claims.
+     *
+     * @return the place ids
+     */
+    private static Set<String> claimsOfOurTrain()
+    {
+        Set<String> claims = new LinkedHashSet<>();
+
+        for (Map.Entry<String, Locomotive> claim : layout.placesCoveredByStandingTrains().entrySet())
+        {
+            if (claim.getValue() == train) claims.add(claim.getKey());
+        }
+
+        return claims;
+    }
+
+    /**
+     * The place id the reduction gives a whole square, as a switch's is.
+     *
+     * @param square the square
+     * @return the id, or null where no edge names the square as a whole
+     */
+    private static String placeOf(TileKey square)
+    {
+        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
+        {
+            List<GraphReducer.Place> places = session.getReducer().placesAlong(edge);
+
+            for (int at = 0; at < edge.getPath().size() && at < places.size(); at++)
+            {
+                if (square.equals(edge.getPath().get(at).getTile())) return places.get(at).getId();
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -43,6 +43,13 @@ public class DiagramMonitorDriver
     // Volatile because both are written on the event thread (bind, setEnabled, stop) and read on the
     // timer thread (tick); without the fence the timer could legally see a stale monitor forever.
     private volatile DiagramMonitor monitor;
+
+    // What the last bind's builder says each Point faces, the Points it says nothing about, with their squares, the setup
+    // they were bound with, and the facings last handed to the monitor (OB-348).  Written and read on the event thread.
+    private Map<String, org.traincontrol.automationui.TilePorts.Side> built;
+    private Map<String, TileKey> guessed = new java.util.LinkedHashMap<>();
+    private AutonomySession boundTo;
+    private Map<String, org.traincontrol.automationui.TilePorts.Side> facingsShown;
     private volatile Timer timer;
 
     // Whether monitoring is wanted at all.  Kept separate from whether the timer is running, so turning
@@ -128,7 +135,22 @@ public class DiagramMonitorDriver
             monitor.setEdges(builder.edgesByName(), names);
         }
 
-        monitor.setFacings(facingsOf(builder, names, session));
+        built = facingsOf(builder, names);
+
+        // THE SQUARES WHOSE FACING IS THE SETUP'S, or a guess along their track (OB-348): asked again whenever the captions
+        // are, so the icon follows a facing a door writes (`recordedFacingsChanged`)
+        Map<String, TileKey> guesses = new java.util.LinkedHashMap<>();
+
+        for (Map.Entry<String, TileKey> entry : names.entrySet())
+        {
+            if (!built.containsKey(entry.getKey())) guesses.put(entry.getKey(), entry.getValue());
+        }
+
+        guessed = guesses;
+        boundTo = session;
+        facingsShown = null;
+
+        recordedFacingsChanged();
 
         // WITH WHICH OF THEM ARE PAUSED (FR-126).  Binding follows every rebuild, and the one-argument form takes the grey
         // away: a tool that paused a train on no Point told the monitor, and the rebuild its change asks for then undid it.
@@ -169,19 +191,12 @@ public class DiagramMonitorDriver
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
      * a single copy's only way out where it has one (Adam, 2026-10-01 - the icon of a parked train turns to it).
      *
-     * AND WHERE IT HAS NONE, A WAY ITS TRACK RUNS (OB-348; Adam, 2026-10-14: "on tunnelleftpark, if there is no way out
-     * (both arrows at 8,7 red), the icon is rotated to the east, even though the only allowed directions are n/s").  A
-     * square no track leads out of has neither, and an icon given no facing is drawn east; it is given the setup's
-     * facing where the track runs that way, as the caption is, or else the track's first way
-     * (`AutonomySession.facingWhereNoCopySays`).
-     *
      * @param builder the builder the names came from
      * @param names every Point name and its square
-     * @param session the setup, for a square whose copy says nothing
      * @return Point name to the side a train's front faces there
      */
     private static Map<String, org.traincontrol.automationui.TilePorts.Side> facingsOf(AutonomyBuilder builder,
-        Map<String, TileKey> names, AutonomySession session)
+        Map<String, TileKey> names)
     {
         Map<String, org.traincontrol.automationui.TilePorts.Side> out = new java.util.LinkedHashMap<>(builder.facingByName());
 
@@ -191,12 +206,49 @@ public class DiagramMonitorDriver
 
             org.traincontrol.automationui.TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
 
-            if (only == null) only = session.facingWhereNoCopySays(entry.getValue());
-
             if (only != null) out.put(entry.getKey(), only);
         }
 
         return out;
+    }
+
+    /**
+     * The facings of the Points whose copy says nothing, asked of the setup again, and the diagram redrawn where one changed
+     * (OB-348).
+     *
+     * A square no track leads out of has no copy facing and no single way out, and an icon given no facing is drawn east;
+     * Adam, 2026-10-14: *"on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the
+     * east, even though the only allowed directions are n/s."*  It is given `AutonomySession.facingWhereNoCopySays`: the
+     * setup's facing where the track runs that way, as the caption shows, or else a way along its track.
+     *
+     * WHENEVER THE CAPTIONS ARE ASKED, not only at a bind: every door that writes a facing or places a train ends by
+     * redrawing the captions (`TrainControlUI.updateVisiblePoints`), and none rebinds - so a facing read at the bind kept
+     * the last one recorded until an unrelated rebuild turned the icon round.  On the event thread, where the captions
+     * read the setup.
+     */
+    public void recordedFacingsChanged()
+    {
+        DiagramMonitor current = monitor;
+        AutonomySession session = boundTo;
+
+        if (current == null || session == null || built == null) return;
+
+        Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new java.util.LinkedHashMap<>(built);
+
+        for (Map.Entry<String, TileKey> entry : guessed.entrySet())
+        {
+            org.traincontrol.automationui.TilePorts.Side guess = session.facingWhereNoCopySays(entry.getValue());
+
+            if (guess != null) facings.put(entry.getKey(), guess);
+        }
+
+        if (facings.equals(facingsShown)) return;
+
+        facingsShown = facings;
+
+        current.setFacings(facings);
+
+        current.markDirty();
     }
 
     /**

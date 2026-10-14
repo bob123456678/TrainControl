@@ -9919,9 +9919,15 @@ public class AutonomySession
     }
 
     /**
-     * The rails a train with no covered edge can be lying along: those into the square it stands on that run over every
-     * place it claims (OB-348) - or, where there are none, every edge of the reduction, as `drawTheTrainsThatCoverNoEdge`
-     * asked before.
+     * The rails a train with no covered edge can be lying along (OB-348): every rail of the reduction into the square it
+     * stands on by the side it came in by, where one of them runs over every place it claims - or, where its side is not
+     * known, the rails into the square that run over every place it claims - or, where there are none, every edge of the
+     * reduction, as `drawTheTrainsThatCoverNoEdge` asked before.
+     *
+     * EVERY RAIL BY ITS SIDE, NOT ONLY THE ONES AUTONOMY DRIVES.  The railway claims what the rails it was built with share,
+     * and a rail the build leaves out - against a one-way arrow - is not among them; but a train placed by hand may have
+     * come along it.  Where such a rail runs through a switch behind the platform on the other leg, which leg the tail is
+     * on is not known, and the switch is drawn along no road, as it was before.
      *
      * @param running the layout
      * @param train the train
@@ -9935,7 +9941,12 @@ public class AutonomySession
 
         TileKey at = standing == null ? null : getStationIndex().squareOf(standing.getName());
 
-        List<GraphReducer.ReducedEdge> rails = new ArrayList<>();
+        String side = standing == null ? null : standing.getArrivedFrom();
+
+        List<GraphReducer.ReducedEdge> bySide = new ArrayList<>();
+        List<GraphReducer.ReducedEdge> overAll = new ArrayList<>();
+
+        boolean sideRunsOverAll = false;
 
         for (GraphReducer.ReducedEdge edge : at == null ? java.util.Collections.<GraphReducer.ReducedEdge>emptyList()
             : reducer.getEdges())
@@ -9946,10 +9957,21 @@ public class AutonomySession
 
             for (GraphReducer.Place place : reducer.placesAlong(edge)) along.add(place.getId());
 
-            if (along.containsAll(claimed)) rails.add(edge);
+            boolean all = along.containsAll(claimed);
+
+            if (all) overAll.add(edge);
+
+            if (side != null && edge.getEntrySide() != null && side.equalsIgnoreCase(edge.getEntrySide().name()))
+            {
+                bySide.add(edge);
+
+                sideRunsOverAll |= all;
+            }
         }
 
-        return rails.isEmpty() ? reducer.getEdges() : rails;
+        if (sideRunsOverAll) return bySide;
+
+        return overAll.isEmpty() ? reducer.getEdges() : overAll;
     }
 
     /**
@@ -11004,17 +11026,57 @@ public class AutonomySession
 
     /**
      * Which way to draw a train standing on a square whose copy records no facing and has no single way out (OB-348): the
-     * facing the setup records, where its track runs that way - the one the caption shows - or else the first way its
-     * track runs.  Null where the square has no track to ask.
+     * facing the setup records, where its track runs that way - the one the caption shows - or else a guess along its
+     * track: its first way, which is north or south on track that runs north to south, east or west on track that runs
+     * across, and along the curve on a curve.  Null where the square has no track to ask.
      *
      * Adam, 2026-10-14: *"on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the
      * east, even though the only allowed directions are n/s."*  A square no track leads out of is emitted whole, with no
-     * facing, and an icon given none is drawn as its picture is: east.
+     * facing, and an icon given none is drawn as its picture is: east.  And on the guess: *"The icon can guess in that
+     * case, but it must be N/S or a N/S track, or E/W on E/W, or angled on a curved track."*
      *
      * @param square the diagram square
      * @return a side its track runs to, or null
      */
     public Side facingWhereNoCopySays(TileKey square)
+    {
+        List<Side> track = waysTheTrackRuns(square);
+
+        if (track.isEmpty()) return null;
+
+        Side recorded = recordedFacingAlongTheTrack(square);
+
+        return recorded != null ? recorded : track.get(0);
+    }
+
+    /**
+     * The facing the setup records for the train on a square, where the square's track runs that way, or null (OB-348).
+     *
+     * A record the track does not run - left by an edit of the track under it - is no direction a train there can face,
+     * and the icon cannot be drawn along it; the caption and the Is Facing menu read this, so the three say the same.
+     * Where the square's track cannot be asked, the record as it stands.
+     *
+     * @param square the diagram square
+     * @return the recorded side, or null
+     */
+    public Side recordedFacingAlongTheTrack(TileKey square)
+    {
+        Side recorded = getFacing(square);
+
+        if (recorded == null) return null;
+
+        List<Side> track = waysTheTrackRuns(square);
+
+        return track.isEmpty() || track.contains(recorded) ? recorded : null;
+    }
+
+    /**
+     * The sides a square's track runs to, in the order of its routes, without repeats; empty where it cannot be asked.
+     *
+     * @param square the diagram square
+     * @return the sides
+     */
+    private List<Side> waysTheTrackRuns(TileKey square)
     {
         List<Side> track = new ArrayList<>();
 
@@ -11028,11 +11090,7 @@ public class AutonomySession
             }
         }
 
-        if (track.isEmpty()) return null;
-
-        Side recorded = getFacing(square);
-
-        return recorded != null && track.contains(recorded) ? recorded : track.get(0);
+        return track;
     }
 
     /**
