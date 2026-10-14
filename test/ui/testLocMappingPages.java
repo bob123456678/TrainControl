@@ -329,10 +329,34 @@ public class testLocMappingPages
         String pageNameWas;
         int page;
 
-        /** The page-number preference's key, and what it held, so it can be put back as it was - unset included. */
-        String numbersKey;
-        String numbersWas;
-        boolean numbersTouched;
+        /**
+         * What each preference this run set held before it was set, by key - null for none at all - so that every one can
+         * be put back as it was, unset included.
+         */
+        final java.util.Map<String, String> prefsWas = new java.util.LinkedHashMap<>();
+
+        /**
+         * Sets a preference in the run's own node, remembering what it held.  Set, never toggled: the node starts as a copy
+         * of the operator's, so a toggle would be a coin toss.
+         *
+         * @param key the preference
+         * @param value what to set it to; null removes it, which is its default
+         */
+        void setPref(String key, Boolean value)
+        {
+            java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+            if (!prefsWas.containsKey(key)) prefsWas.put(key, prefs.get(key, null));
+
+            if (value == null) prefs.remove(key);
+            else prefs.putBoolean(key, value);
+        }
+
+        /** The same, with the pages left as tabs or as arrows the way the run's copy of the operator's preferences has them. */
+        static Panel open(Boolean numbers) throws Exception
+        {
+            return open(numbers, null);
+        }
 
         /**
          * A window over a model, as the application builds it; the page it is on is read from the window.
@@ -341,30 +365,28 @@ public class testLocMappingPages
          *        reads it at start-up as it does the operator's; null removes it, which is the default.  It is set and
          *        never toggled, and put back in `close`.  Only in a run with a preference node of its own: the
          *        operator's is not this test's to write.
+         * @param tabs what "Show Locomotive Pages as Tabs" is SET to, in the same way - the page tabs when true, the page
+         *        label between the arrows when false - or null to leave it as the run's copy of the operator's has it
          */
-        static Panel open(Boolean numbers) throws Exception
+        static Panel open(Boolean numbers, Boolean tabs) throws Exception
         {
             Panel p = new Panel();
 
             try
             {
-                p.numbersKey = pageNumbersKey();
+                String numbersKey = pageNumbersKey();
 
-                if (p.numbersKey != null)
+                if (numbersKey != null || tabs != null)
                 {
                     if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY, "").trim().isEmpty())
                     {
-                        throw new org.testng.SkipException("the page-number preference is the operator's, and this run has no"
-                            + " preference node of its own to set it in");
+                        throw new org.testng.SkipException("the page preferences are the operator's, and this run has no"
+                            + " preference node of its own to set them in");
                     }
 
-                    java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+                    if (numbersKey != null) p.setPref(numbersKey, numbers);
 
-                    p.numbersWas = prefs.get(p.numbersKey, null);
-                    p.numbersTouched = true;
-
-                    if (numbers == null) prefs.remove(p.numbersKey);
-                    else prefs.putBoolean(p.numbersKey, numbers);
+                    if (tabs != null) p.setPref(TrainControlUI.TABS_SETTING_PREF, tabs);
                 }
 
                 p.sandbox = support.LayoutSandbox.open();
@@ -579,13 +601,13 @@ public class testLocMappingPages
                     }
                     finally
                     {
-                        // AS IT WAS, including not there at all
-                        if (numbersTouched)
-                        {
-                            java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+                        // AS THEY WERE, including not there at all
+                        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
-                            if (numbersWas == null) prefs.remove(numbersKey);
-                            else prefs.put(numbersKey, numbersWas);
+                        for (java.util.Map.Entry<String, String> was : prefsWas.entrySet())
+                        {
+                            if (was.getValue() == null) prefs.remove(was.getKey());
+                            else prefs.put(was.getKey(), was.getValue());
                         }
                     }
                 }
@@ -612,6 +634,91 @@ public class testLocMappingPages
 
             return (String) pub(geometry(row(), slot().getWidth(), slot().getHeight()), "pageText");
         }
+
+        /** The page the window is showing, whose words are on the page label between the arrows. */
+        int shown()
+        {
+            return ui.getLocMappingNumber();
+        }
+
+        /**
+         * Names the page the window is showing the way the operator's Rename does once its dialog is answered - the
+         * window's own `setPageName`, which words the label and asks for a render - on the event thread; null for none.
+         */
+        void renameTheShownPage(String name) throws Exception
+        {
+            java.lang.reflect.Method rename = TrainControlUI.class.getDeclaredMethod("setPageName", String.class);
+
+            rename.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    rename.invoke(ui, name);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            waitForTheRender();
+        }
+
+        /**
+         * Everything the window has queued for the tabs done: the renders, the mapping renderer's thread - which words
+         * every tab, and posts that to the event thread - and what that posted.
+         */
+        void settle() throws Exception
+        {
+            waitForTheRender();
+
+            java.util.concurrent.ExecutorService renderer =
+                (java.util.concurrent.ExecutorService) privateField(ui, "MappingRenderer");
+
+            renderer.submit(() -> { }).get(10, java.util.concurrent.TimeUnit.SECONDS);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+        }
+
+        /** The caption on the tab of this page, once the window has done wording the tabs. */
+        String tab(int page) throws Exception
+        {
+            settle();
+
+            javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) privateField(ui, "locKeyTabs");
+            final String[] title = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> title[0] = tabs.getTitleAt(page - 1));
+
+            return title[0];
+        }
+
+        /** The tooltip on the tab of this page. */
+        String tabTip(int page) throws Exception
+        {
+            settle();
+
+            javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) privateField(ui, "locKeyTabs");
+            final String[] tip = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> tip[0] = tabs.getToolTipTextAt(page - 1));
+
+            return tip[0];
+        }
+
+        /** The words on the page label between the arrows. */
+        String label() throws Exception
+        {
+            javax.swing.JLabel label = (javax.swing.JLabel) privateField(ui, "LocMappingNumberLabel");
+            final String[] text = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> text[0] = label.getText());
+
+            return text[0];
+        }
     }
 
     private interface Body
@@ -621,12 +728,24 @@ public class testLocMappingPages
 
     private static void withPanel(Boolean numbers, Body body) throws Exception
     {
+        withPanel(numbers, null, body);
+    }
+
+    /**
+     * A panel with both page preferences set before the window is built.
+     *
+     * @param numbers "Show Page Numbers", or null for its default
+     * @param tabs "Show Locomotive Pages as Tabs", or null to leave it as the run's copy of the operator's has it
+     * @param body what to do with it
+     */
+    private static void withPanel(Boolean numbers, Boolean tabs, Body body) throws Exception
+    {
         if (java.awt.GraphicsEnvironment.isHeadless())
         {
             throw new org.testng.SkipException("the locomotive panel is on a window");
         }
 
-        Panel p = Panel.open(numbers);
+        Panel p = Panel.open(numbers, tabs);
 
         try
         {
@@ -1149,7 +1268,7 @@ public class testLocMappingPages
                 assertEquals(whereTheOthersAre(p), before, "something in the panel moved when the page name got wide " + said);
             }
 
-            // A PAGE WITH NO NAME shows the number alone
+            // A PAGE WITH NO NAME reads "Page 5", drawn whole (round 7)
             p.nameThePage(null);
             p.show(plain);
 
@@ -1157,8 +1276,9 @@ public class testLocMappingPages
 
             assertEquals(pub(unnamed, "name"), "", "a page with no name still has a name in its pill");
             assertEquals(pub(unnamed, "number"), String.valueOf(p.page), "a page with no name has lost its number");
-            assertEquals(pub(unnamed, "pageText"), p.page + ".", "a page with no name is not the number and its full stop");
-            assertTrue(rect(unnamed, "page").width < 40, "a page with no name is not short: " + rect(unnamed, "page"));
+            assertEquals(pub(unnamed, "pageText"), unnamedWords(p.page), "a page with no name is not 'Page N'.  Adam, round 7:"
+                + " \"the text next to the locomotive key should be 'Page 5', not '5' if the page is unnamed\"");
+            assertTrue(rect(unnamed, "page").width < 60, "a page with no name is not short: " + rect(unnamed, "page"));
 
             // AND A RENAME REACHES THE LINE THE WAY IT ALWAYS DID: through a repaint that is not forced.  The old line
             // compared its own text to decide whether anything had changed; the row compares what it says.
@@ -1460,11 +1580,12 @@ public class testLocMappingPages
      * locomotive submenu.  Default off.  When off, 5. MMMM... becomes just MMMM... .  Use the same design patterns as now
      * with prefs."*  The preference is removed before the window is built, so what is read is the default.  The words are
      * the name alone; a name too wide for the room is cut, and cut later than with the number, which no longer takes
-     * room; a page with no name still shows its number, "5.", so the line is never a key with nothing after it; and the
-     * tooltip has the page's number whatever the setting.
+     * room; a page with no name reads "Page 5", so the line is never a key with nothing after it (round 7, Adam: *"the
+     * text next to the locomotive key should be 'Page 5', not '5' if the page is unnamed"*); and the tooltip has the page's
+     * number whatever the setting.
      *
      * MUTATION: default the preference on, leave the item out of the submenu or out of the form's menu, take the number
-     * out of the tooltip, or let an unnamed page show nothing, and this fails.
+     * out of the tooltip, let an unnamed page show nothing, or let it read "5.", and this fails.
      *
      * @throws Exception from the window
      */
@@ -1518,11 +1639,12 @@ public class testLocMappingPages
             assertTrue(wide.endsWith(String.valueOf((char) 0x2026)) && wide.substring(0, wide.length() - 1).matches("M+"),
                 "with the numbers off the wide name is not a run of its Ms and an ellipsis: [" + wide + "]");
 
-            // A PAGE WITH NO NAME shows its number, so the line is not a key with nothing after it
+            // A PAGE WITH NO NAME reads "Page 5", so the line is not a key with nothing after it (round 7)
             p.nameThePage(null);
             p.show(loc);
 
-            assertEquals(p.pageWords(), p.page + ".", "a page with no name, with the numbers off, is not its number and a full stop");
+            assertEquals(p.pageWords(), unnamedWords(p.page), "a page with no name, with the numbers off, does not read 'Page N'."
+                + "  Adam, round 7: \"the text next to the locomotive key should be 'Page 5', not '5' if the page is unnamed\"");
         });
     }
 
@@ -1534,6 +1656,8 @@ public class testLocMappingPages
      * clicking the item, which is what the operator does and what runs the item's own handler: the handler stores the
      * choice and the line is redrawn at once, which it can only be if what the row says includes the setting, so the
      * window's check for whether the line has changed finds that it has.
+     *
+     * Round 7: a page with no name reads "Page 5" ticked or not, which is read at both ends of the click.
      *
      * MUTATION: leave the choice out of the handler, leave it out of what the row says, or have the handler store the
      * opposite, and this fails.
@@ -1602,11 +1726,19 @@ public class testLocMappingPages
 
             assertEquals(p.pageWords(), "Example", "unticking the item did not take the number off at once");
 
-            // an unnamed page, off, is its number alone
+            // an unnamed page, off, reads "Page 5" (round 7) ...
             p.nameThePage(null);
             p.show(loc);
 
-            assertEquals(p.pageWords(), p.page + ".", "an unnamed page with the numbers off is not its number and a full stop");
+            assertEquals(p.pageWords(), unnamedWords(p.page), "an unnamed page with the numbers off does not read 'Page N'");
+
+            // ... and ticked again, the same: the number setting is for a page that has a name
+            javax.swing.SwingUtilities.invokeAndWait(item::doClick);
+
+            assertTrue(item.isSelected(), "clicking the item again did not tick it");
+
+            assertEquals(p.pageWords(), unnamedWords(p.page), "an unnamed page with the numbers on does not read 'Page N'.  Adam,"
+                + " round 7: \"If no name, use Page 5\"");
         });
     }
 
@@ -1617,7 +1749,11 @@ public class testLocMappingPages
      * it set off has neither - so the state the line is built from is read from the preference when the window starts,
      * not left at the item's own default.  Set, not toggled, and put back, as above.
      *
-     * MUTATION: leave the item's start-up state out of the start-up block, and this fails.
+     * Round 7: the same reading reaches the page tabs and the page label between the arrows, in all three cases of the one rule
+     * - a name with the numbers on, a name with them off, and a page with no name, which reads "Page 5" either way.
+     *
+     * MUTATION: leave the item's start-up state out of the start-up block, or word the tabs or the label without asking
+     * it, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1635,13 +1771,539 @@ public class testLocMappingPages
                 assertEquals(item.isSelected(), on, "a window started with the preference " + (on ? "on" : "off")
                     + " has the item " + (item.isSelected() ? "ticked" : "not ticked"));
 
-                p.nameThePage("Example");
-                p.show(p.mfx("FR-128 numbers at start", 3960));
+                int page = p.shown();
 
-                assertEquals(p.pageWords(), on ? p.page + ". Example" : "Example", "a window started with the preference "
-                    + (on ? "on" : "off") + " draws the page's words as the other way");
+                assertEquals(page, p.page, "precondition: the page the label shows is not the page of the active key");
+
+                org.traincontrol.marklin.MarklinLocomotive loc = p.mfx("FR-128 numbers at start", 3960);
+
+                for (String name : new String[] {"Example", WIDE_PAGE_NAME, null})
+                {
+                    p.renameTheShownPage(name);
+                    p.show(loc);
+
+                    String said = " for " + (name == null ? "a page with no name" : "a page called " + name)
+                        + " in a window started with the preference " + (on ? "on" : "off");
+
+                    // THE LINE OVER THE NAME
+                    String row = p.pageWords();
+
+                    if (WIDE_PAGE_NAME.equals(name))
+                    {
+                        assertTrue(row.startsWith(on ? page + ". M" : "M") && row.endsWith(String.valueOf((char) 0x2026)),
+                            "the line over the name is not a cut run of Ms" + said + ": [" + row + "]");
+                    }
+                    else
+                    {
+                        assertEquals(row, wording(page, name, on, Integer.MAX_VALUE), "the line over the name is worded as the"
+                            + " other way" + said);
+                    }
+
+                    // THE PAGE TAB, and THE PAGE LABEL
+                    assertEquals(p.tab(page), wording(page, name, on, TrainControlUI.MAX_PAGE_NAME_LENGTH_TAB),
+                        "the page tab is not worded by the preference read at start-up" + said);
+
+                    assertEquals(p.label(), wording(page, name, on, TrainControlUI.MAX_PAGE_NAME_LENGTH),
+                        "the page label is not worded by the preference read at start-up" + said);
+                }
             });
         }
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------
+    // FR-128, round 7: the page tabs and the page label follow the one rule the line over the name does
+    // ------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Forty-four Ms: wider than the page label's forty-letter cut, which the 22-M page is not.
+     */
+    private static final String LONG_PAGE_NAME = WIDE_PAGE_NAME + WIDE_PAGE_NAME;
+
+    /** The bundle's words for a page with no name, "Page 5" in English. */
+    private static String unnamedWords(int page)
+    {
+        return org.traincontrol.util.I18n.f("page.ui.pageNo", page);
+    }
+
+    /**
+     * Adam's rule, written out again for the claims to hold the program to: for page 5 with the name N, "Page 5" with no
+     * name, "N" with the numbers off, "5. N" with them on - and only the NAME cut, to the room the place has for it.
+     *
+     * @param page the page
+     * @param name its name, or null for none
+     * @param on whether the numbers are shown
+     * @param cutTo how many letters of the name the place has room for
+     * @return the words
+     */
+    private static String wording(int page, String name, boolean on, int cutTo)
+    {
+        if (name == null || name.trim().isEmpty()) return unnamedWords(page);
+
+        String cut = name.length() > cutTo ? name.substring(0, cutTo) : name;
+
+        return on ? page + ". " + cut : cut;
+    }
+
+    /**
+     * Clicks the item and reads the tab and the label in the SAME event-thread task, so that nothing but the click's own
+     * handler can have worded them in between: the window's renders land on the event thread later, and would hide a
+     * handler that left the tabs and the label to them.
+     */
+    private static String[] clickAndRead(Panel p, javax.swing.JCheckBoxMenuItem item, int page) throws Exception
+    {
+        javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) privateField(p.ui, "locKeyTabs");
+        javax.swing.JLabel label = (javax.swing.JLabel) privateField(p.ui, "LocMappingNumberLabel");
+
+        final String[] read = new String[2];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            item.doClick();
+
+            read[0] = tabs.getTitleAt(page - 1);
+            read[1] = label.getText();
+        });
+
+        return read;
+    }
+
+    /** Where everything that shares the page label's panel is, except the label itself, as one text. */
+    private static String whereTheLabelsNeighboursAre(Panel p) throws Exception
+    {
+        javax.swing.JLabel label = (javax.swing.JLabel) privateField(p.ui, "LocMappingNumberLabel");
+        java.awt.Container parent = label.getParent();
+
+        StringBuilder where = new StringBuilder("panel " + parent.getSize() + " window " + p.ui.getSize());
+
+        for (Field f : TrainControlUI.class.getDeclaredFields())
+        {
+            if (!java.awt.Component.class.isAssignableFrom(f.getType())) continue;
+
+            f.setAccessible(true);
+
+            java.awt.Component c = (java.awt.Component) f.get(p.ui);
+
+            if (c == null || c == label || c.getParent() != parent) continue;
+
+            where.append("\n  ").append(f.getName()).append(" at ").append(c.getBounds());
+        }
+
+        return where.toString();
+    }
+
+    /**
+     * The rule itself, with no window: for page 5 with the name N, "Page 5" with no name, "N" with the numbers off, "5. N"
+     * with them on - and only the NAME is the caller's to cut (FR-128, round 7).
+     *
+     * Adam: *"when the show page numbers is turned off, the keyboard tabs themselves should also not show the page number
+     * unless the page has no name.  If no name, use Page 5.  If yes name, MMM if show is off, and 5. MMM if show is on."*
+     * and *"That way, all are consistent."*  So there is one rule, asked by every place that follows the setting, and this
+     * is it asked directly: every case, the cuts that are the caller's, and the one thing the rule keeps for itself - a
+     * name that had no room at all leaves the number and its full stop.
+     *
+     * Asked by name, so this class still compiles - and fails, in words - on a window without the rule.
+     *
+     * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or leave it out, cut the
+     * number or the "Page 5" with the name, ask the caller to cut an unnamed page, or lose a name's trim, and this fails.
+     *
+     * @throws Exception from the rule
+     */
+    @Test
+    public void testTheRuleWordsAPageThreeWays() throws Exception
+    {
+        java.lang.reflect.Method rule = null;
+
+        try
+        {
+            rule = Class.forName("org.traincontrol.gui.CurrentKeyRow").getMethod("pageWords", int.class, String.class,
+                boolean.class, java.util.function.UnaryOperator.class);
+        }
+        catch (NoSuchMethodException none)
+        {
+            // said below
+        }
+
+        assertNotNull(rule, "there is no one rule the line, the tabs and the label ask for the page's words (FR-128, round 7)");
+
+        final java.lang.reflect.Method pageWords = rule;
+
+        java.util.function.UnaryOperator<String> whole = name -> name;
+        java.util.function.UnaryOperator<String> fourteen = name -> name.length() > 14 ? name.substring(0, 14) : name;
+        java.util.function.UnaryOperator<String> noRoom = name -> "";
+        java.util.function.UnaryOperator<String> notAsked = name ->
+        {
+            throw new AssertionError("a page with no name was handed to the caller to cut: [" + name + "]");
+        };
+
+        // A PAGE WITH NO NAME: "Page 5", whatever the setting, and nothing for the caller to cut
+        for (boolean on : new boolean[] {false, true})
+        {
+            for (String none : new String[] {null, "", "   "})
+            {
+                assertEquals(pageWords.invoke(null, 5, none, on, notAsked), unnamedWords(5), "a page with no name ["
+                    + none + "] does not read 'Page 5' with the numbers " + (on ? "on" : "off") + ".  Adam, round 7: \"If no"
+                    + " name, use Page 5\"");
+            }
+        }
+
+        // A NAME, with the numbers off: the name; on: "5. " and the name
+        assertEquals(pageWords.invoke(null, 5, "Example", false, whole), "Example",
+            "with the numbers off a named page is not just its name");
+
+        assertEquals(pageWords.invoke(null, 5, "Example", true, whole), "5. Example",
+            "with the numbers on a named page is not its number, a full stop and its name");
+
+        assertEquals(pageWords.invoke(null, 12, "Example", true, whole), "12. Example",
+            "a two-digit page is not its number, a full stop and its name");
+
+        // THE NAME IS TRIMMED, as it is typed with spaces round it
+        assertEquals(pageWords.invoke(null, 5, "  Example ", true, whole), "5. Example", "a name with spaces round it is not trimmed");
+
+        // ONLY THE NAME IS CUT: fourteen letters of the 22 Ms, and the "5. " in front of them whole
+        String cut = WIDE_PAGE_NAME.substring(0, 14);
+
+        assertEquals(pageWords.invoke(null, 5, WIDE_PAGE_NAME, false, fourteen), cut, "the wide name is not cut by the caller");
+
+        assertEquals(pageWords.invoke(null, 5, WIDE_PAGE_NAME, true, fourteen), "5. " + cut,
+            "the number went with the cut, or is inside it: it is the name that is cut, never the '5. '");
+
+        assertEquals(pageWords.invoke(null, 12, WIDE_PAGE_NAME, true, fourteen), "12. " + cut, "the two-digit number was cut");
+
+        // A NAME WITH NO ROOM AT ALL leaves the number and its full stop, with the numbers on or off: never nothing
+        for (boolean on : new boolean[] {false, true})
+        {
+            assertEquals(pageWords.invoke(null, 5, "Example", on, noRoom), "5.", "a name with no room at all is not left as the"
+                + " number and its full stop with the numbers " + (on ? "on" : "off"));
+        }
+    }
+
+    /**
+     * The page tabs are worded by the one rule (FR-128, round 7).
+     *
+     * Adam: *"when the show page numbers is turned off, the keyboard tabs themselves should also not show the page number
+     * unless the page has no name.  If no name, use Page 5.  If yes name, MMM if show is off, and 5. MMM if show is on."*
+     * The page tabs are the ones shown with "Show Locomotive Pages as Tabs" ticked, in a window built with the numbers off
+     * and again with them on - set before the window, not toggled - and a page is a page with no name, a page called
+     * Example and the 22-M page.  A tab has room for fourteen letters of the NAME: the 22 Ms are cut to 14, and with the
+     * numbers on the "5. " is in front of those fourteen and is not one of them.  The tab's tooltip, "Page 5", is the same
+     * in every case.
+     *
+     * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5." or by its name's cut, let the
+     * tabs ignore the setting, cut the "5. " with the name, or change the tab's tooltip, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testThePageTabsFollowTheRule() throws Exception
+    {
+        for (boolean on : new boolean[] {false, true})
+        {
+            withPanel(on, Boolean.TRUE, p ->
+            {
+                int page = p.page;
+
+                for (String name : new String[] {null, "Example", WIDE_PAGE_NAME})
+                {
+                    p.nameThePage(name);
+                    p.show(null);
+
+                    String said = " for " + (name == null ? "a page with no name" : "a page called " + name) + " with the numbers "
+                        + (on ? "on" : "off");
+
+                    assertEquals(p.tab(page), wording(page, name, on, TrainControlUI.MAX_PAGE_NAME_LENGTH_TAB),
+                        "the page tab is not worded by the rule" + said + ".  Adam, round 7: \"If no name, use Page 5.  If yes"
+                        + " name, MMM if show is off, and 5. MMM if show is on.\"");
+
+                    assertEquals(p.tabTip(page), unnamedWords(page), "the tab's tooltip is not 'Page N'" + said);
+                }
+            });
+        }
+    }
+
+    /**
+     * The page label between the arrows is worded by the one rule, in one line, and moves nothing (FR-128, round 7).
+     *
+     * Adam: *"That way, all are consistent."*  The label is the one shown with the tabs off, and it was the name on one line
+     * and "Page 5" under it; it is now the rule's words on one line - "Page 5" for a page with no name, "N" with the numbers
+     * off, "5. N" with them on - with its own cut of forty letters of the NAME: the 22-M page is whole, a 44-M page is cut
+     * to 40.
+     *
+     * One line is shorter than the two the label had for a named page.  It is a generated component in a fixed layout, and
+     * this reads that nothing around it moved or was resized, whatever the page is called: the panel, the window and every
+     * other component are where they are for a page with no name, and the label is the height and the place it is for a
+     * page with no name - which was always one line.
+     *
+     * MUTATION: show the number whatever the setting, never show it, word an unnamed page "5.", put the name back on a line
+     * of its own over "Page 5", cut the forty letters short or not at all, or cut the "5. ", and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testThePageLabelFollowsTheRuleAndMovesNothing() throws Exception
+    {
+        for (boolean on : new boolean[] {false, true})
+        {
+            withPanel(on, Boolean.FALSE, p ->
+            {
+                javax.swing.JLabel label = (javax.swing.JLabel) privateField(p.ui, "LocMappingNumberLabel");
+
+                assertTrue(label.isVisible(), "precondition: with the tabs off the page label is not the one shown");
+
+                int page = p.shown();
+
+                assertEquals(page, p.page, "precondition: the page the label shows is not the page of the active key");
+
+                // A PAGE WITH NO NAME is the reference for where everything is: it has always been one line
+                p.renameTheShownPage(null);
+                javax.swing.SwingUtilities.invokeAndWait(() -> p.ui.validate());
+
+                java.awt.Rectangle labelAt = label.getBounds();
+                String around = whereTheLabelsNeighboursAre(p);
+
+                assertEquals(p.label(), unnamedWords(page), "the page label of a page with no name is not 'Page N' with the numbers "
+                    + (on ? "on" : "off") + ".  Adam, round 7: \"If no name, use Page 5\"");
+
+                assertTrue(labelAt.height > 0 && labelAt.width > 0, "precondition: the label has no size: " + labelAt);
+
+                for (String name : new String[] {"Example", WIDE_PAGE_NAME, LONG_PAGE_NAME})
+                {
+                    p.renameTheShownPage(name);
+                    javax.swing.SwingUtilities.invokeAndWait(() -> p.ui.validate());
+
+                    String said = " for a page called " + name + " with the numbers " + (on ? "on" : "off");
+
+                    String text = p.label();
+
+                    assertEquals(text, wording(page, name, on, TrainControlUI.MAX_PAGE_NAME_LENGTH),
+                        "the page label is not worded by the rule" + said + ".  Adam, round 7: \"If yes name, MMM if show is off,"
+                        + " and 5. MMM if show is on.\"");
+
+                    assertFalse(text.toLowerCase().contains("<html") || text.toLowerCase().contains("<br"),
+                        "the page label is more than one line" + said + ": [" + text + "]");
+
+                    assertEquals(label.getBounds(), labelAt, "the page label moved or changed size" + said);
+
+                    assertEquals(whereTheLabelsNeighboursAre(p), around, "something round the page label moved or changed size"
+                        + said);
+                }
+
+                // the cut is the name's alone: 40 Ms of 44, and the 22 whole
+                assertEquals(TrainControlUI.MAX_PAGE_NAME_LENGTH.intValue(), 40, "the label's cut is not the forty letters it had");
+
+                // BACK TO NO NAME: where it was
+                p.renameTheShownPage(null);
+                javax.swing.SwingUtilities.invokeAndWait(() -> p.ui.validate());
+
+                assertEquals(label.getBounds(), labelAt, "the page label did not come back to where it was");
+            });
+        }
+    }
+
+    /**
+     * Ticking or unticking the item words the page tabs and the page label again at once (FR-128, round 7).
+     *
+     * The tabs and the label are set when a page is named or chosen, so nothing about a change to the setting reaches them
+     * unless the item's own handler sends it.  Driven by clicking the item, as the operator does, with the tab and the label
+     * read in the SAME event-thread task as the click: the renders the click also asks for land on the event thread later and
+     * would word the tabs on their own, which would hide a handler that left it to them.  The line over the name is read
+     * once its render is done.  A page with no name, a page called Example and the 22-M page, each ticked and unticked.
+     *
+     * MUTATION: leave the tabs or the label out of the handler, or word them from the setting as it was before the click,
+     * and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheItemRetitlesTheTabsAndTheLabelAtOnce() throws Exception
+    {
+        withPanel(Boolean.FALSE, Boolean.FALSE, p ->
+        {
+            javax.swing.JCheckBoxMenuItem item = p.pageNumbersItem();
+
+            assertNotNull(item, "the window has no Show Page Numbers item (FR-128, round 6)");
+            assertFalse(item.isSelected(), "precondition: the item is on with the preference set off");
+
+            int page = p.shown();
+
+            assertEquals(page, p.page, "precondition: the page the label shows is not the page of the active key");
+
+            org.traincontrol.marklin.MarklinLocomotive loc = p.mfx("FR-128 numbers retitled", 3961);
+
+            for (String name : new String[] {"Example", WIDE_PAGE_NAME, null})
+            {
+                p.renameTheShownPage(name);
+                p.show(loc);
+
+                String said = " for " + (name == null ? "a page with no name" : "a page called " + name);
+
+                // OFF to begin with, as the preference was set
+                assertEquals(p.tab(page), wording(page, name, false, TrainControlUI.MAX_PAGE_NAME_LENGTH_TAB),
+                    "precondition: the tab is not worded for the numbers off" + said);
+
+                assertEquals(p.label(), wording(page, name, false, TrainControlUI.MAX_PAGE_NAME_LENGTH),
+                    "precondition: the label is not worded for the numbers off" + said);
+
+                // TICK: the tab and the label at once
+                String[] ticked = clickAndRead(p, item, page);
+
+                assertTrue(item.isSelected(), "clicking the item did not tick it" + said);
+
+                assertEquals(ticked[0], wording(page, name, true, TrainControlUI.MAX_PAGE_NAME_LENGTH_TAB),
+                    "ticking the item did not word the page tab again at once" + said);
+
+                assertEquals(ticked[1], wording(page, name, true, TrainControlUI.MAX_PAGE_NAME_LENGTH),
+                    "ticking the item did not word the page label again at once" + said);
+
+                // ... and the line over the name with them
+                String row = p.pageWords();
+
+                if (WIDE_PAGE_NAME.equals(name))
+                {
+                    assertTrue(row.startsWith(page + ". M") && row.endsWith(String.valueOf((char) 0x2026)),
+                        "ticking the item did not word the line over the name" + said + ": [" + row + "]");
+                }
+                else
+                {
+                    assertEquals(row, wording(page, name, true, Integer.MAX_VALUE),
+                        "ticking the item did not word the line over the name" + said);
+                }
+
+                // UNTICK: back
+                String[] unticked = clickAndRead(p, item, page);
+
+                assertFalse(item.isSelected(), "clicking the ticked item did not untick it" + said);
+
+                assertEquals(unticked[0], wording(page, name, false, TrainControlUI.MAX_PAGE_NAME_LENGTH_TAB),
+                    "unticking the item did not word the page tab again at once" + said);
+
+                assertEquals(unticked[1], wording(page, name, false, TrainControlUI.MAX_PAGE_NAME_LENGTH),
+                    "unticking the item did not word the page label again at once" + said);
+            }
+        });
+    }
+
+    /**
+     * A page name with no room for a letter leaves the number alone, and a page with no name is drawn whole (FR-128, round 7).
+     *
+     * Round 6 left a named page with no room for even one letter and the ellipsis at the number and its full stop, "5.", and
+     * round 7 keeps that, with the numbers on or off; a page with no name reads "Page 5" at every width, and is not cut to
+     * fit.  Asked of the row in boxes from wide to narrower than the keycap and the decoder pill together, so that the cut
+     * takes the name to nothing somewhere along the way - and there the words are the number alone, and everywhere else the
+     * name, whole or cut, with its "5. " when the numbers are on.
+     *
+     * MUTATION: show nothing, or "Page 5", for a name with no room, drop the full stop, cut "Page 5" with the room, or leave
+     * the "5. " off the cut name, and this fails.
+     *
+     * @throws Exception from the row
+     */
+    @Test
+    public void testANameWithNoRoomLeavesTheNumberAloneAndAnUnnamedPageIsWhole() throws Exception
+    {
+        Class<?> rowClass = Class.forName("org.traincontrol.gui.CurrentKeyRow");
+        Class<?> contentClass = Class.forName("org.traincontrol.gui.CurrentKeyRow$Content");
+
+        java.lang.reflect.Constructor<?> make = contentClass.getConstructor(String.class, int.class, String.class, String.class,
+            String.class, boolean.class);
+
+        java.lang.reflect.Method set = rowClass.getMethod("setContent", contentClass);
+
+        for (boolean on : new boolean[] {false, true})
+        {
+            for (String name : new String[] {"Example", WIDE_PAGE_NAME, null})
+            {
+                javax.swing.JComponent row = (javax.swing.JComponent) rowClass.getConstructor().newInstance();
+
+                set.invoke(row, make.newInstance("A", 5, name, "Multi-Unit", "5120", on));
+
+                String said = " for " + (name == null ? "a page with no name" : "a page called " + name) + " with the numbers "
+                    + (on ? "on" : "off");
+
+                boolean sawNoRoom = false;
+
+                for (int width = 400; width >= 60; width--)
+                {
+                    Object at = geometry(row, width, 18);
+
+                    String text = (String) pub(at, "pageText"), cut = (String) pub(at, "name");
+
+                    String where = said + " in a box " + width + " wide: [" + text + "]";
+
+                    if (name == null)
+                    {
+                        assertEquals(text, unnamedWords(5), "a page with no name is not 'Page 5', whole" + where);
+                        assertEquals(cut, "", "a page with no name has a name drawn" + where);
+                    }
+                    else if (cut.isEmpty())
+                    {
+                        sawNoRoom = true;
+
+                        assertEquals(text, "5.", "a name with no room is not left as the number and its full stop" + where);
+                    }
+                    else
+                    {
+                        assertEquals(text, on ? "5. " + cut : cut, "a name that has room is not worded by the rule" + where);
+                    }
+                }
+
+                if (name != null)
+                {
+                    assertTrue(sawNoRoom, "the boxes never left a name without room, so the corner was not asked" + said);
+                }
+            }
+        }
+    }
+
+    /**
+     * The item's tooltip says where the number goes: on the page tabs, beside the page arrows and over the locomotive's
+     * name (FR-128, round 7), in every language the program has.
+     *
+     * The English text is read from its bundle and has to name the three places; each of the other seven has to be there and
+     * not be the English text left in.  Read from the files, not through the bundle, because the bundle chooses by the
+     * machine's language.
+     *
+     * MUTATION: leave the tabs, the arrows or the locomotive out of the English text, or leave a language's untranslated,
+     * and this fails.
+     *
+     * @throws Exception from reading the bundles
+     */
+    @Test
+    public void testTheTooltipSaysWhereTheNumbersGo() throws Exception
+    {
+        String key = "ui.main.toolbar.tooltip.showPageNumbers";
+
+        String english = bundleValue("messages.properties", key);
+
+        assertNotNull(english, "the English bundle has no tooltip for Show Page Numbers");
+
+        String lower = english.toLowerCase();
+
+        assertTrue(lower.contains("tabs"), "the tooltip does not say the number goes on the page tabs: " + english);
+        assertTrue(lower.contains("arrows"), "the tooltip does not say the number goes beside the page arrows: " + english);
+        assertTrue(lower.contains("name of the locomotive"), "the tooltip no longer says the number goes above the name of the"
+            + " locomotive: " + english);
+
+        for (String language : new String[] {"da", "de", "es", "fr", "it", "nl", "pl"})
+        {
+            String there = bundleValue("messages_" + language + ".properties", key);
+
+            assertNotNull(there, "the " + language + " bundle has no tooltip for Show Page Numbers");
+            assertFalse(there.trim().isEmpty(), "the " + language + " tooltip is empty");
+            assertFalse(there.equals(english), "the " + language + " tooltip is the English text, untranslated");
+        }
+    }
+
+    /** One value from one of the message bundles, read from the file as the program reads it. */
+    private static String bundleValue(String file, String key) throws Exception
+    {
+        java.util.Properties values = new java.util.Properties();
+
+        try (java.io.Reader in = new java.io.InputStreamReader(new java.io.FileInputStream(
+            "src/org/traincontrol/resources/" + file), java.nio.charset.StandardCharsets.UTF_8))
+        {
+            values.load(in);
+        }
+
+        return values.getProperty(key);
     }
 
     /** Whether this menu has this item or submenu directly in it. */

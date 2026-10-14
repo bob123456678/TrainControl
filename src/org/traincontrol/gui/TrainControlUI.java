@@ -1403,7 +1403,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.menuItemShowLayoutAddresses.setSelected(prefs.getBoolean(LAYOUT_SHOW_ADDRESSES, false));
         this.showPageTabsPreference.setSelected(prefs.getBoolean(TABS_SETTING_PREF, false));
 
-        // OFF until asked for (FR-128): the page's name alone above the locomotive's, as it was before the number was on it
+        // OFF until asked for (FR-128): the page's name alone, as it was before the number was on it - above the locomotive's
+        // name, on the page tabs and on the page label by the arrows
         this.showPageNumbersMenuItem.setSelected(prefs.getBoolean(SHOW_PAGE_NUMBERS, false));
 
         // The station-caption colour, and the menu item that sets it (FR-031).
@@ -2005,24 +2006,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * This javadoc sat above `getNumLocMappings`, which is not what it describes, and was orphaned outright
      * when a method was inserted beside it (SVB-C4).  Reattached to the method it was written for.
      *
+     * Worded by `CurrentKeyRow.pageWords`, the one rule the line over the locomotive's name and the page label follow too
+     * (FR-128, round 7): "Page 5" for a page with no name, the name for a page with one, and "5. " in front of the name when
+     * Preferences > Locomotive Control > Show Page Numbers is ticked.  Only the NAME is cut, to `MAX_PAGE_NAME_LENGTH_TAB`
+     * letters; the "Page 5" and the "5. " never are.
+     *
      * @param tabNumber the page, counting from 1
      * @return what to write on the tab
      */
     private String getLocMappingPageTabTitle(int tabNumber)
     {
-        String pageTitle = this.getPageName(tabNumber, true).trim();
-
-        if (pageTitle.isEmpty())
-        {
-            pageTitle = I18n.f("page.ui.pageNo", tabNumber);
-        }
-
-        if (pageTitle.length() > MAX_PAGE_NAME_LENGTH_TAB)
-        {
-            pageTitle = pageTitle.substring(0, MAX_PAGE_NAME_LENGTH_TAB);
-        }
-
-        return pageTitle;
+        return CurrentKeyRow.pageWords(tabNumber, this.getPageName(tabNumber, true), this.pageNumbersShown(),
+            name -> name.length() > MAX_PAGE_NAME_LENGTH_TAB ? name.substring(0, MAX_PAGE_NAME_LENGTH_TAB) : name);
     }
     
     /**
@@ -11052,7 +11047,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.NextLocMapping.setEnabled(true);
             }
             
-            this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
+            this.LocMappingNumberLabel.setText(this.getPageLabelText(this.locMappingNumber));
             
             this.locKeyTabs.setSelectedIndex(this.locMappingNumber - 1);
             this.locKeyTabs.setTitleAt(this.locMappingNumber - 1, getLocMappingPageTabTitle(this.locMappingNumber));
@@ -11093,7 +11088,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.pageNames.put(this.locMappingNumber, name.trim());
         }
         
-        this.LocMappingNumberLabel.setText(this.getPageName(this.locMappingNumber, false, true));
+        this.LocMappingNumberLabel.setText(this.getPageLabelText(this.locMappingNumber));
         this.repaintLoc(true, null);
     }
     
@@ -11129,6 +11124,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * one for pages as tabs, and ahead of the divider that sets the keyboard layouts apart from the ticks; if that tick is
      * ever not there it goes to the end of the submenu rather than nowhere.
      *
+     * Round 7 made it the setting for the page tabs and the page label by the arrows as well as for the line over the name,
+     * all three worded by the one rule in `CurrentKeyRow.pageWords`.  Adam: *"when the show page numbers is turned off, the
+     * keyboard tabs themselves should also not show the page number unless the page has no name."*  So a click on the item
+     * words the tabs and the label again at once (`retitlePages`), as well as the line, and the preference read at start-up
+     * reaches all three.
+     *
      * The pattern the other ticks in that submenu follow: a preference key, read at start-up beside theirs (where this
      * item's state is set from it), written by the item's own handler, and the line redrawn at once.  The state the line
      * is built from is this item's, as `activeLocInTitle`'s is for the pop-ups' titles.
@@ -11143,6 +11144,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.showPageNumbersMenuItem.addActionListener(event ->
         {
             prefs.putBoolean(SHOW_PAGE_NUMBERS, this.showPageNumbersMenuItem.isSelected());
+
+            // The page tabs and the page label, at once: they are set when a page is named or chosen, and neither would
+            // otherwise notice a change to this
+            this.retitlePages();
 
             // The line over the name, at once.  What it says includes this setting, so the render's check for whether the
             // line has changed finds that it has; nothing about the locomotive needs to.
@@ -11165,6 +11170,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether the page numbers go before the page names: the Preferences menu's "Show Page Numbers" (FR-128).  The one
+     * place the three that follow it - the line over the locomotive's name, the page tabs and the page label by the arrows -
+     * ask for it.  Not ticked before the item exists, which is the default.
+     *
+     * @return whether the item is ticked
+     */
+    private boolean pageNumbersShown()
+    {
+        return this.showPageNumbersMenuItem != null && this.showPageNumbersMenuItem.isSelected();
+    }
+
+    /**
+     * Words every page tab and the page label by the arrows again, as the setting now has it (FR-128, round 7).
+     *
+     * The tabs and the label are set when a page is named or chosen, from what the page is called then.  Changing the
+     * setting changes none of that, so something has to ask them again.  The label is left alone when it is showing
+     * nothing, as `switchLocMapping` leaves it while there is no navigation to show.  On the event thread, as the item's
+     * handler is.
+     */
+    private void retitlePages()
+    {
+        for (int at = 0; at < this.locKeyTabs.getTabCount(); at++)
+        {
+            this.locKeyTabs.setTitleAt(at, getLocMappingPageTabTitle(at + 1));
+        }
+
+        if (!this.LocMappingNumberLabel.getText().isEmpty())
+        {
+            this.LocMappingNumberLabel.setText(this.getPageLabelText(this.locMappingNumber));
+        }
+    }
+
+    /**
      * What the row over the name should say for the active button.
      *
      * The page's name is the RAW one: the row cuts it to the pixel and the tooltip words the page from the bundle, so
@@ -11181,20 +11219,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         return new CurrentKeyRow.Content(this.currentButton.getText(), this.currentButtonlocMappingNumber,
             this.getPageName(this.currentButtonlocMappingNumber, true), decoderType, address,
-            this.showPageNumbersMenuItem.isSelected());
+            this.pageNumbersShown());
     }
 
-    /**
-     * Optional 3rd argument...
-     * @param mappingNumber
-     * @param raw
-     * @return 
-     */
-    private String getPageName(int mappingNumber, boolean raw)
-    {
-        return getPageName(mappingNumber, raw, false);
-    }
-    
     /**
      * Returns the currently shown page number
      * @return 
@@ -11205,48 +11232,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Gets the name of the specified mapping page
+     * Gets the name of the specified mapping page, in the program's own words for a page: "Page 5 (Example)", the name cut
+     * to `MAX_PAGE_NAME_LENGTH_TOP` letters, or "Page 5" for a page with no name.
+     *
+     * For the menus and the dialogs, which keep these words whatever "Show Page Numbers" says.  The page tabs, the page
+     * label by the arrows and the line over the locomotive's name follow that setting and are worded by
+     * `CurrentKeyRow.pageWords` (FR-128, round 7).
      * @param mappingNumber
-     * @param raw - do we exclude the page number
-     * @return 
+     * @param raw - the name as typed, or empty for none, without the program's words round it
+     * @return
      */
-    private String getPageName(int mappingNumber, boolean raw, boolean html)
+    private String getPageName(int mappingNumber, boolean raw)
     {
         if (this.pageNames.containsKey(mappingNumber))
         {
             String name = this.pageNames.get(mappingNumber);
 
             if (!raw)
-            {                
-                if (html)
+            {
+                if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP)
                 {
-                    if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH)
-                    {
-                        name = name.substring(0, MAX_PAGE_NAME_LENGTH);
-                    }
-
-                    name = I18n.f(
-                        "page.ui.htmlPageName",
-                        name,
-                        mappingNumber
-                    );
+                    name = name.substring(0, MAX_PAGE_NAME_LENGTH_TOP) + "...";
                 }
-                else
-                {
-                    if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP)
-                    {
-                        name = name.substring(0, MAX_PAGE_NAME_LENGTH_TOP) + "...";
-                    }
 
-                    name = I18n.f(
-                        "page.ui.plainPageName",
-                        mappingNumber,
-                        name
-                    );
-                }
+                name = I18n.f(
+                    "page.ui.plainPageName",
+                    mappingNumber,
+                    name
+                );
             }
-            
-            return name;   
+
+            return name;
         }
         else
         {
@@ -11260,7 +11276,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
     }
-    
+
+    /**
+     * The words on the page label by the arrows (FR-128, round 7): "Page 5" for a page with no name, the name for a page
+     * with one, and "5. " in front of the name when "Show Page Numbers" is ticked - `CurrentKeyRow.pageWords`, the one rule
+     * the page tabs and the line over the locomotive's name follow too.  One line, as the label is one line high in the
+     * form.  Only the NAME is cut, to `MAX_PAGE_NAME_LENGTH` letters.
+     *
+     * @param mappingNumber the page, counting from 1
+     * @return what to write on the label
+     */
+    private String getPageLabelText(int mappingNumber)
+    {
+        return CurrentKeyRow.pageWords(mappingNumber, this.getPageName(mappingNumber, true), this.pageNumbersShown(),
+            name -> name.length() > MAX_PAGE_NAME_LENGTH ? name.substring(0, MAX_PAGE_NAME_LENGTH) : name);
+    }
+
     /**
      * Prompts the user for the name of the current page
      */

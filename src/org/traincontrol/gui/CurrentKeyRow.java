@@ -10,6 +10,7 @@ import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Area;
 import java.awt.geom.RoundRectangle2D;
+import java.util.function.UnaryOperator;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
 import org.traincontrol.util.I18n;
@@ -19,22 +20,35 @@ import org.traincontrol.util.I18n;
  *
  * Adam: *"the active locomotive info is currently text consisting of [letter] . Page [num] ([page name]) .
  * [decodertype] [address]. the page number could be condensed into a nice pill, along with the other info.  make it
- * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 to 6, on seeing it) asked for
+ * look more modern."*  He chose, from mockups, the one he called D, and then (rounds 2 to 7, on seeing it) asked for
  * changes to it, so that it is now:
  *
  *   1. **a keycap** - the key's letter on a small rounded square with a heavier bottom edge, so it reads as a key;
- *   2. **the page, as plain words** - the number, a full stop, and the name, "5. Example", with no pill round them
- *      (the number only when the Preferences menu's "Show Page Numbers" is ticked, off by default: otherwise just
- *      "Example", round 6: *"When off, 5. MMMM... becomes just MMMM..."*):
+ *   2. **the page, as plain words** - the name, with the number and a full stop before it, "5. Example", when the
+ *      Preferences menu's "Show Page Numbers" is ticked, and just "Example" when it is not (off by default, round 6:
+ *      *"When off, 5. MMMM... becomes just MMMM..."*), and "Page 5" for a page that has no name, ticked or not (round 7:
+ *      *"the text next to the locomotive key should be 'Page 5', not '5' if the page is unnamed,  5. MMM if show is on,
+ *      and MMM is show is off."*), with no pill round them:
  *      *"Change the page title to just the name with page number in parens after, no pill around that, in the standard
  *      blue label font"* (round 4), and then *"Change (5) to 5 as a prefix.  Example: 5. MMMMMM"* (round 5).  No word
- *      "Page" in it (*"I wouldn't like to see the word 'page' in it"*).  The standard blue label font is the one the
+ *      "Page" in a page that has a name (*"I wouldn't like to see the word 'page' in it"*); the page with no name is the
+ *      one place the word is back.  The standard blue label font is the one the
  *      line was set in before this feature, the font and the colour of the generated `CurrentKeyLabel` the row sits in -
  *      Segoe UI Semibold 13, rgb(0,0,115);
  *   3. **a decoder pill** - a solid navy capsule with white text, in two parts the way the data is: the decoder TYPE and
  *      the ADDRESS, with a white vertical line between them ("MFX | 12"): *"add a vertical line from top to bottom
  *      (white) separating the type from the number ... while maintaining a blue border around it"*.  It floats to the
  *      RIGHT edge of the slot: *"Can we also float the address to the right?"*
+ *
+ * **One rule words the page, here and in two other places** (round 7, Adam: *"For FR-128: when the show page numbers is
+ * turned off, the keyboard tabs themselves should also not show the page number unless the page has no name.  If no name,
+ * use Page 5.  If yes name, MMM if show is off, and 5. MMM if show is on."*, and *"That way, all are consistent."*).  For
+ * page 5 with the name N: with no name it is "Page 5", whatever the setting; with a name and the setting off it is "N";
+ * with a name and the setting on it is "5. N".  `pageWords` is that rule and the only place it is written down: this row
+ * asks it, and so does the window, for the page tabs and for the page label by the arrows, each handing it its own way of
+ * cutting the NAME (to the pixel here, to fourteen letters on a tab, to forty on the label).  What is cut is the name and
+ * nothing else - never the number, its full stop or "Page 5".  The menus ("Rename Page 5"), the dialogs and this row's
+ * tooltip keep the program's own wording for a page, the number included, whatever the setting.
  *
  * **The page's words are the label's, and are not chosen here.**  The row is a child of `CurrentKeyLabel` and inherits
  * its font and foreground, which is what `pageFont` and `pageColour` ask.  They are read, not written down again: a
@@ -58,16 +72,18 @@ import org.traincontrol.util.I18n;
  * which a label cannot do for a piece of a sentence.
  *
  * **What gives way, and what never does** (Adam: *"make sure we test with wide page names (like MMMMMMMMMMM)"*).  The
- * keycap and the decoder pill are drawn whole, and so is the page's "5. " in front of the name: only the page NAME is
- * cut, with an ellipsis ("5. MMMM..."), to whatever room is left between the keycap and the decoder pill, a gap short of
- * each.  A name with no room for even one letter and the ellipsis is left out, and the words are "5." alone, as they are
- * for a page that has no name.  "5." rather than a bare "5": the full stop is what says the number is a number in a
- * list of pages, as it does before a name, and a lone digit beside a key and an address would be read as either.  The
- * full words, "Page 5 (Example)", are in the tooltip.
+ * keycap and the decoder pill are drawn whole, and so are the page's "5. " in front of the name and the "Page 5" of a
+ * page with no name: only the page NAME is cut, with an ellipsis ("5. MMMM..."), to whatever room is left between the
+ * keycap and the decoder pill, a gap short of each.  A name with no room for even one letter and the ellipsis is left
+ * out, and the words are "5." alone, with the setting on or off, as round 6 left them.  "5." rather than a bare "5": the
+ * full stop is what says the number is a number in a list of pages, as it does before a name, and a lone digit beside a
+ * key and an address would be read as either; and rather than "Page 5", which is wider than the letter and the ellipsis
+ * that had no room.  The full words, "Page 5 (Example)", are in the tooltip.
  *
  * **With the page numbers switched off** the words are the name alone, and the name has the whole of the room the "5. "
- * had.  A page with no name still shows its number, "5.": there would be nothing else to show, and a line with a
- * keycap and nothing after it for a page reads as a page that is missing.  The tooltip always has the whole line, the
+ * had.  A page with no name reads "Page 5" with them off as with them on: there would be nothing else to show, and a line
+ * with a keycap and nothing after it for a page reads as a page that is missing.  (Round 6 showed "5." there; round 7
+ * asked for "Page 5" so that the line, the tabs and the label say the same.)  The tooltip always has the whole line, the
  * number included.
  *
  * **Why not `StationCaption`.**  The diagram's captions are labels whose fill is a state colour, drawn at a size taken
@@ -153,6 +169,51 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
+     * What goes in front of a page's name when the page numbers are shown: the number, a full stop and a space, "5. ".
+     *
+     * @param page the page, counting from 1
+     * @return the prefix
+     */
+    public static String pageNumberPrefix(int page)
+    {
+        return page + ". ";
+    }
+
+    /**
+     * THE ONE RULE for how a page is worded, for every place that follows the Preferences menu's "Show Page Numbers"
+     * (FR-128, round 7), and written nowhere else: the line over the locomotive's name, the page tabs and the page label
+     * by the arrows each ask it.
+     *
+     * Adam: *"If no name, use Page 5.  If yes name, MMM if show is off, and 5. MMM if show is on."*  So, for page 5:
+     * with no name the program's own words for a page, "Page 5", whatever the setting; with a name and the setting off,
+     * the name; with a name and the setting on, "5. " and the name.  Only the NAME is ever cut: the caller says how, for
+     * its own room, and the number, its full stop and "Page 5" are not the caller's to shorten.
+     *
+     * A name the caller has no room for at all (it gives back nothing) leaves the number and its full stop, "5.", in
+     * either setting - the words of a page are never empty, which is what a line with a keycap and nothing after it for a
+     * page would read as.  Only the line over the name can have no room; a tab and the label cut to a number of letters.
+     *
+     * @param page the page, counting from 1
+     * @param name the page's name as the operator typed it, or null or empty for none
+     * @param showNumber whether "Show Page Numbers" is ticked
+     * @param cutName this place's way of shortening a name that is too long for it: given the name, trimmed and not
+     *        empty, it gives back what fits, or empty for no room at all.  Not asked of a page with no name.
+     * @return the page's words
+     */
+    public static String pageWords(int page, String name, boolean showNumber, UnaryOperator<String> cutName)
+    {
+        String named = name == null ? "" : name.trim();
+
+        if (named.isEmpty()) return I18n.f("page.ui.pageNo", page);
+
+        String cut = cutName.apply(named);
+
+        if (cut == null || cut.isEmpty()) return page + ".";
+
+        return showNumber ? pageNumberPrefix(page) + cut : cut;
+    }
+
+    /**
      * What the row says.  A value, so the window can ask whether what it is about to show is what it shows already.
      *
      * The window used to compare the line's HTML text for that, to decide whether the locomotive's picture needed
@@ -191,8 +252,8 @@ public class CurrentKeyRow extends JComponent
          *        locomotive is on the key
          * @param address the locomotive's address, or empty
          * @param showNumber whether the page's number goes before its name - the Preferences menu's "Show Page Numbers".
-         *        It is part of what the row says, so the window's check for whether the line has changed notices a
-         *        change to it and the line is redrawn at once.
+         *        A page with no name reads "Page 5" either way.  It is part of what the row says, so the window's check
+         *        for whether the line has changed notices a change to it and the line is redrawn at once.
          */
         public Content(String key, int page, String pageName, String decoderType, String address, boolean showNumber)
         {
@@ -328,7 +389,10 @@ public class CurrentKeyRow extends JComponent
         /** The page name as drawn: whole, cut with an ellipsis, or empty when it has been left out. */
         public final String name;
 
-        /** The page's words as drawn: the number, a full stop, a space and the name - "5. Example" - or "5." alone. */
+        /**
+         * The page's words as drawn, as `pageWords` words them: "5. Example" or "Example", "Page 5" for a page with no
+         * name, or "5." alone for a name that had no room.
+         */
         public final String pageText;
 
         /** The decoder's type as drawn, or empty. */
@@ -543,21 +607,26 @@ public class CurrentKeyRow extends JComponent
             reserved = w + GAP;
         }
 
-        // THE PAGE'S WORDS, from the left: the number and a full stop, then the name.  The "5. " is never cut.  With the
-        // numbers switched off there is no "5. ", and the name has all of the room.
-        Font pageFont = pageFont();
+        // THE PAGE'S WORDS, from the left, as `pageWords` words them: "Page 5" for a page with no name, otherwise the name
+        // with "5. " in front of it when the numbers are shown.  The "5. " and the "Page 5" are never cut.  With the numbers
+        // switched off there is no "5. ", and the name has all of the room.
+        final Font pageFont = pageFont();
 
         String number = String.valueOf(c.getPage());
-        String prefix = c.showsNumber() ? number + ". " : "";
+        String prefix = c.showsNumber() ? pageNumberPrefix(c.getPage()) : "";
 
         // What is left, once the shapes that never give way have their room, is the name's.  A pixel is kept back for the
         // words being measured whole and the "5. " and the name apart, which the kerning between them can tell by a hair.
-        double nameRoom = width - x - reserved - Math.ceil(advance(pageFont, prefix)) - 1;
+        final double nameRoom = width - x - reserved - Math.ceil(advance(pageFont, prefix)) - 1;
 
-        String name = fit(c.getPageName(), nameRoom, pageFont);
+        // The name as it is drawn.  `pageWords` hands the name over to be cut and gives back the words; the cut name is kept
+        // as well, to be told apart from them ("" for a page with no name, or for a name that had no room)
+        final String[] drawnName = {""};
 
-        // a page with no name is "5.", the number and its full stop, switched on or off: the line is never empty
-        String pageText = name.isEmpty() ? number + "." : prefix + name;
+        String pageText = pageWords(c.getPage(), c.getPageName(), c.showsNumber(),
+            named -> drawnName[0] = fit(named, nameRoom, pageFont));
+
+        String name = drawnName[0];
 
         Rectangle page = new Rectangle(x, top, (int) Math.ceil(advance(pageFont, pageText)), h);
 
@@ -662,8 +731,8 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * THE PAGE'S WORDS: the number, a full stop and the name, in the label's font and colour, with nothing round them -
-     * no outline, no fill, no line - centred on their capitals in the slot's height.
+     * THE PAGE'S WORDS, as `pageWords` words them, in the label's font and colour, with nothing round them - no outline,
+     * no fill, no line - centred on their capitals in the slot's height.
      */
     private void paintPage(Graphics2D g2, Geometry at)
     {
