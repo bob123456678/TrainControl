@@ -299,6 +299,38 @@ public class testTheUpdaterSwapsTheJar
     }
 
     /**
+     * A new version older than the started marker (3.0.0, as in MT-737) is kept once it runs, even when the user closes
+     * it at once: it cannot say it started, so its exit is no sign of a failed start (Adam, 2026-10-13: "after the newly
+     * updated app opens, is used by the user, and is closed, the old version is put back").
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testAVersionOlderThanTheMarkerIsKeptWhenClosed() throws Exception
+    {
+        List<String> started = new ArrayList<>();
+
+        JarUpdater.Request older = new JarUpdater.Request(jar, download, new File(folder, JarUpdater.LOCK_NAME),
+            new File(folder, JarUpdater.RUNNING_NAME), "2.9.9", "3.0.0", new File(folder, "working"),
+            "C:/the/same/javaw.exe", "Updating TrainControl...", Collections.singletonList("-Duser.language=de"),
+            Arrays.asList("192.168.1.5", "debug"));
+
+        JarUpdater.Outcome outcome = JarUpdater.update(older, 5000, 10, 1, 0, 5000,
+            launching(started, new ArrayList<>(), new ArrayList<>(), NewVersion.ENDS_SILENTLY), rename(), log, null);
+
+        assertEquals(outcome, JarUpdater.Outcome.UNCONFIRMED, "a 3.0.0 the user closed was taken for a failed start");
+        assertEquals(started, Collections.singletonList("new"), "the old version was put back and started");
+        assertEquals(read(jar), "new");
+        assertFalse(new File(folder, JarUpdater.ROLLBACK_NOTE_NAME).exists(), "a note says the update failed");
+
+        assertTrue(JarUpdater.marksItsStart("3.0.1") && JarUpdater.marksItsStart("3.0.2")
+            && JarUpdater.marksItsStart("3.1") && JarUpdater.marksItsStart("4.0.0") && JarUpdater.marksItsStart("?"),
+            "a version that writes the marker is not waited for");
+        assertFalse(JarUpdater.marksItsStart("3.0.0") || JarUpdater.marksItsStart("2.9.9")
+            || JarUpdater.marksItsStart("2.10.4"), "a version older than the marker is waited for");
+    }
+
+    /**
      * A new version still running that has said nothing by the cap is kept, and the log says so; nothing is put back.
      *
      * @throws Exception from the files
