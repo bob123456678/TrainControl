@@ -1187,11 +1187,14 @@ public class testLocMappingPages
 
             assertNotNull(fonts, "the row does not say what fonts it draws in");
 
-            for (java.awt.Font font : (java.awt.Font[]) fonts.invoke(null))
-            {
-                assertEquals(font.getSize2D(), 12f, 0.001f, "a font in the row is " + font.getSize2D() + " point, not 12: "
-                    + font + ".  Adam, round 3: \"Increase font sizes by 1 notch\"");
-            }
+            java.awt.Font[] drawn = (java.awt.Font[]) fonts.invoke(null);
+
+            assertEquals(drawn[0].getSize2D(), 12f, 0.001f, "the keycap's letter is " + drawn[0].getSize2D()
+                + " point, not 12: " + drawn[0] + ".  Adam, round 3: \"Increase font sizes by 1 notch\"");
+
+            assertEquals(drawn[1].getSize2D(), 13f, 0.001f, "the decoder pill's words are " + drawn[1].getSize2D()
+                + " point, not 13: " + drawn[1] + ".  Adam: \"increase the font size inside the blue mfx+address pill"
+                + " slightly\"");
 
             assertTrue(row.getPreferredSize().height <= box.height, "the row's own height, " + row.getPreferredSize().height
                 + ", is taller than the slot's " + box.height + " - Adam: \"manage the height so it fits in the current space\"");
