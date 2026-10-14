@@ -27,11 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-289](#mt-289) | 2026-09-07 | The facing menu ticks a facing the square cannot hold | fixed unvalidated | OB-177 (split from MT-274) |
-| [MT-741](#mt-741) | 2026-10-14 | OB-348: a train at TunnelLeftPark faces along its track, and its tail is drawn over the switches behind it | fixed unvalidated | OB-348 |
 
-Everything else - 739 of 741 - needs nothing from you unless the area changes again:
-586 **fixed validated** and 153 **superseded**.
+
+Everything else - 741 of 741 - needs nothing from you unless the area changes again:
+588 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -16390,7 +16389,7 @@ Filed. The follow-up in the comment above - *"we need a keyboard shortcut to set
 
 ### MT-289 - 2026-09-07 - The facing menu ticks a facing the square cannot hold
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-177 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16420,6 +16419,10 @@ I don't know how to reproduce this, things seem to work now.
 **Claude, 2026-10-14.**
 
 Back to fixed unvalidated: OB-348 changed what this checks, for one kind of recorded facing.  On your ruling of 2026-10-14 (V348B-C3, "fix c3": the menu should agree with the caption), a recorded facing the square's TRACK does not run - east on track that runs north and south, left by an edit of the track under a parked train - is no longer listed and ticked: the menu offers the facings the square can hold with none ticked, the caption shows no arrow, and the locomotive icon lies along the track (`518ae3c8`, `4400ab1b`).  A recorded facing the track does run but the square cannot hold is still listed and ticked, as the steps above expect.  To check both: give a train standing on Tunnel (7,7) a facing of east in the setup, then of a way the track runs that the square cannot hold, if your layout has one.
+
+**Adam, 2026-10-14 (triage).** Works.
+
+*Run against commit 0e5ee1cc.*
 
 ---
 
@@ -34953,7 +34956,7 @@ which has no such square, so this test is the one that sees it.
 <a id="mt-741"></a>
 ### MT-741 - 2026-10-14 - OB-348: a train at TunnelLeftPark faces along its track, and its tail is drawn over the switches behind it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-348
 
 **Written:** 2026-10-14
@@ -34997,5 +35000,9 @@ A third validation round's finding is fixed (`4400ab1b`, V348C): a train the rai
 **Claude, 2026-10-14.**
 
 A fourth validation round's finding is fixed (`5cd6eebd`, V348D): a train the railway cannot stand on a square with one way out now faces that way out, as the Is Facing menu ticks it.  The steps and Expected above still hold.
+
+**Adam, 2026-10-14 (triage).** Works.
+
+*Run against commit 0e5ee1cc.*
 
 ---

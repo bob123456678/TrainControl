@@ -353,15 +353,6 @@ Nothing of a run is lost: no train may be sent while an editor is open.  One way
 
 Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 
-### OB-348 - 2026-10-14 - loc facing icon inconsistency
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-14 00:19  
-**Build:** commit 1e212c13, in English - build\classes, compiled 13 Oct 19:32 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the east, even though the only allowed directions are n/s.  Also, when the tail reaches bottommainbcpre, it is not drawn over the thrown arm of the switch and 7,8, even though I see orange before and after.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
