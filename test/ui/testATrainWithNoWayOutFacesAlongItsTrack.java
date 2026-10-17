@@ -45,6 +45,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * whenever the captions are, so a facing a door writes reaches the icon without a rebuild; and a recorded facing the track
  * does not run is shown by none of the icon, the caption and the Is Facing menu.
  *
+ * And a train can be put there (OB-350), Adam: *"the track viewer doesn't allow autonomy locomotive placements
+ * on stations that have no way in (option greyed out), but the autonomy editor does.  they should be consistent, and
+ * allowed."*  The track diagram's Place and Control+V stand the train where the editor's Place does, recording the same
+ * facing.
+ *
  * MUTATION: take the setup's facing out of `DiagramMonitorDriver.recordedFacingsChanged` and the first claim fails; return
  * null from `AutonomySession.facingWhereNoCopySays` where nothing is recorded and the second does; ask the facings only at
  * a bind and the third does; let the caption read the record as it stands, or the menu add it, and the fourth does.
@@ -560,6 +565,379 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             settle();
         }
+    }
+
+    /**
+     * On TunnelLeftPark with no way out, the track diagram's Place is offered and stands the train where the editor's
+     * Place does, with the same facing recorded (OB-350).
+     *
+     * Adam, OB-350: *"the track viewer doesn't allow autonomy locomotive placements on stations that have no way in
+     * (option greyed out), but the autonomy editor does.  they should be consistent, and allowed."*
+     *
+     * MUTATION: grey the diagram's Place where no copy can leave again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheDiagramsPlaceStandsItWhereTheEditorsDoes() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            final Object[] byTheEditor = placedByTheEditor();
+
+            closeItOff();
+
+            placeByTheDiagram();
+
+            assertEquals(standingOn(), byTheEditor[0], "the track diagram's Place stood the train on another Point of"
+                + " TunnelLeftPark, which no track leads out of, than the editor's Place does (OB-350)");
+
+            assertEquals(session.getFacing(PLATFORM), byTheEditor[1], "the track diagram's Place recorded another facing"
+                + " on TunnelLeftPark than the editor's Place does (OB-350)");
+        }
+        finally
+        {
+            liftIt();
+
+            putBack(asFound, null);
+        }
+    }
+
+    /**
+     * And Control+V there stands it where the editor's Place does, with the same facing recorded (OB-350).
+     *
+     * MUTATION: refuse the paste where no copy can leave again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testThePasteStandsItWhereTheEditorsPlaceDoes() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            final Object[] byTheEditor = placedByTheEditor();
+
+            closeItOff();
+
+            makeItTheActiveTrain();
+
+            final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
+                int.class, boolean.class);
+
+            door.setAccessible(true);
+
+            final Object[] handled = new Object[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    ui.setHoveredDiagramTile(PLATFORM.getPage(), PLATFORM.getX(), PLATFORM.getY());
+
+                    handled[0] = door.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
+                }
+                catch (ReflectiveOperationException refused)
+                {
+                    handled[0] = refused;
+                }
+            });
+
+            settle();
+
+            assertEquals(handled[0], Boolean.TRUE, "Control+V over TunnelLeftPark was not taken");
+
+            assertEquals(standingOn(), byTheEditor[0], "Control+V stood the train on another Point of TunnelLeftPark,"
+                + " which no track leads out of, than the editor's Place does (OB-350)");
+
+            assertEquals(session.getFacing(PLATFORM), byTheEditor[1], "Control+V recorded another facing on"
+                + " TunnelLeftPark than the editor's Place does (OB-350)");
+        }
+        finally
+        {
+            liftIt();
+
+            putBack(asFound, null);
+        }
+    }
+
+    /**
+     * Closes TunnelLeftPark off, then puts this class's train there by the editor's Place and builds the railway from the
+     * setup, as closing the editor does.
+     *
+     * @return the Point the train stands on, and the facing recorded
+     * @throws Exception from the window
+     */
+    private static Object[] placedByTheEditor() throws Exception
+    {
+        closeItOff();
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, PAGE, () -> { });
+
+        panel.setRunningLayoutSource(() -> model.getAutoLayout());
+        panel.setLayoutSource(() -> model.getAutoLayout());
+        panel.setLocomotiveNames(() -> model.getLocList());
+
+        final java.lang.reflect.Method place = AutonomyEditorPanel.class.getDeclaredMethod("placeLocomotive",
+            TileKey.class);
+
+        place.setAccessible(true);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                place.invoke(panel, PLATFORM);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new IllegalStateException(failed);
+            }
+        });
+
+        final javax.swing.JDialog asked = awaitDialogStarting(I18n.t("autosetup.ui.menuAddToAutonomy"));
+
+        final javax.swing.JList<?> list = find(asked.getContentPane(), javax.swing.JList.class);
+        final javax.swing.JOptionPane pane = find(asked.getContentPane(), javax.swing.JOptionPane.class);
+
+        assertTrue(list != null && pane != null, "precondition: the editor's Place asks no list of locomotives");
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            list.setSelectedValue(OUR_TRAIN, true);
+
+            assertEquals(list.getSelectedValue(), OUR_TRAIN, "precondition: the editor's Place does not offer the train");
+
+            pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
+        });
+
+        for (long end = System.currentTimeMillis() + 10000; !OUR_TRAIN.equals(session.getLocomotiveNameAt(PLATFORM))
+            && System.currentTimeMillis() < end; ) Thread.sleep(50);
+
+        assertEquals(session.getLocomotiveNameAt(PLATFORM), OUR_TRAIN, "precondition: the editor's Place did not put the"
+            + " train on TunnelLeftPark");
+
+        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+        settle();
+
+        String on = standingOn();
+
+        assertNotNull(on, "precondition: the railway built from the editor's Place stands the train on no Point");
+
+        return new Object[] {on, session.getFacing(PLATFORM)};
+    }
+
+    /**
+     * Makes both arrows of 8,7 red, records TunnelLeftPark facing south, takes this class's train off the railway and the
+     * setup, and builds the railway from the setup - so a door that records no facing is told apart from one that leaves
+     * the record standing.
+     *
+     * @throws Exception from the window
+     */
+    private static void closeItOff() throws Exception
+    {
+        if (!session.getRoutes(PLATFORM).values().iterator().next().touches(Side.N))
+        {
+            throw new SkipException("TunnelLeftPark does not run north to south on this snapshot");
+        }
+
+        liftIt();
+
+        // NOTHING STANDING THERE, in the setup or on the railway: the snapshot has a train on it
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (String name : session.getStationIndex().pointNamesAt(PLATFORM))
+            {
+                Point copy = model.getAutoLayout().getPoint(name);
+
+                if (copy != null) copy.setLocomotive(null);
+            }
+        });
+
+        session.placeLocomotive(PLATFORM, null);
+
+        for (RouteId road : session.getRoutes(BELOW).keySet()) session.setDirection(BELOW, road, Direction.NONE);
+
+        session.setFacing(PLATFORM, Side.S);
+
+        SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+        settle();
+
+        assertTrue(session.facingChoices(PLATFORM).isEmpty(), "precondition: TunnelLeftPark still has a way out: "
+            + session.facingChoices(PLATFORM));
+
+        assertNull(session.getLocomotiveNameAt(PLATFORM), "precondition: the setup still places a train on"
+            + " TunnelLeftPark");
+
+        assertNull(standingOn(), "precondition: the train still stands on TunnelLeftPark");
+
+        assertEquals(session.getFacing(PLATFORM), Side.S, "precondition: the setup does not record TunnelLeftPark facing"
+            + " south");
+
+        // EVERY QUESTION A PLACEMENT MAY ASK, answered so nothing waits for a person
+        List<Side> sides = session.unbarredArrivalSides(PLATFORM);
+
+        org.traincontrol.gui.ArrivalSidePrompt.answerForTests(sides == null || sides.isEmpty() ? "N" : sides.get(0).name());
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+    }
+
+    /** Right-clicks TunnelLeftPark on the track diagram and chooses Place, with this class's train the active one. */
+    private static void placeByTheDiagram() throws Exception
+    {
+        makeItTheActiveTrain();
+
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+
+        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
+            Point.class);
+
+        gather.setAccessible(true);
+
+        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+
+        make.setAccessible(true);
+
+        final Point[] standing = new Point[1];
+
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(PLATFORM));
+
+        final Object options = gather.invoke(null, ui, standing[0]);
+
+        final javax.swing.JMenuItem[] place = new javax.swing.JMenuItem[1];
+
+        final String label = I18n.f("layout.ui.menuPlaceLocomotive", OUR_TRAIN);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                place[0] = itemNamed((javax.swing.JPopupMenu) make.newInstance(ui, PLATFORM, PLATFORM, options), label);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new IllegalStateException(failed);
+            }
+        });
+
+        assertNotNull(place[0], "the right-click menu on TunnelLeftPark has no " + label + " item");
+
+        assertTrue(place[0].isEnabled(), "the right-click menu on TunnelLeftPark, which no track leads out of, greys "
+            + label + " while the editor's Place puts the train there - Adam, OB-350: \"they should be consistent, and"
+            + " allowed.\" (" + place[0].getToolTipText() + ")");
+
+        SwingUtilities.invokeLater(place[0]::doClick);
+
+        for (long end = System.currentTimeMillis() + 10000; standingOn() == null && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(50);
+        }
+
+        settle();
+
+        assertNotNull(standingOn(), "the right-click Place did not put the train on TunnelLeftPark");
+    }
+
+    /** Makes this class's train the active locomotive, as the window makes one. */
+    private static void makeItTheActiveTrain() throws Exception
+    {
+        // NOT AGAIN: mapping the active train to its button a second time takes it off
+        if (ui.getActiveLoc() == null || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(OUR_TRAIN);
+
+        for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
+            || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) settle();
+
+        assertTrue(ui.getActiveLoc() != null && OUR_TRAIN.equals(ui.getActiveLoc().getName()), "precondition: "
+            + OUR_TRAIN + " could not be made the active locomotive");
+    }
+
+    /** The Point of TunnelLeftPark this class's train stands on, or null. */
+    private static String standingOn()
+    {
+        Point at = model.getAutoLayout().getLocomotiveLocation(train);
+
+        return at != null && session.getStationIndex().pointNamesAt(PLATFORM).contains(at.getName()) ? at.getName() : null;
+    }
+
+    /** Takes this class's train off the railway, wherever it stands, and puts the questions' dialogs back. */
+    private static void liftIt() throws Exception
+    {
+        org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getCurrentLocomotive() == train) point.setLocomotive(null);
+            }
+        });
+    }
+
+    private static javax.swing.JDialog awaitDialogStarting(String title) throws Exception
+    {
+        for (long end = System.currentTimeMillis() + 15000; System.currentTimeMillis() < end; )
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing()
+                    && String.valueOf(((javax.swing.JDialog) window).getTitle()).startsWith(title))
+                {
+                    return (javax.swing.JDialog) window;
+                }
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("no dialog titled \"" + title + "...\" appeared");
+
+        return null;
+    }
+
+    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
+    {
+        java.awt.Component[] children = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component child : children)
+        {
+            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
+            {
+                return (javax.swing.JMenuItem) child;
+            }
+
+            if (child instanceof javax.swing.JMenu)
+            {
+                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static <T> T find(java.awt.Container container, Class<T> type)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (type.isInstance(child)) return type.cast(child);
+
+            if (child instanceof java.awt.Container)
+            {
+                T found = find((java.awt.Container) child, type);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -755,9 +755,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         // 2026-09-24, OB-296: "Yes, keep the train's heading.").  Turning it is the
                         // facing item below.
                         //
-                        // And if NO copy can leave, placing here is placing a train that cannot
-                        // move.  Refused with a reason, rather than accepted and reported much
-                        // later as a setup that will not run.
+                        // And where NO copy can leave, offered all the same, as the editor's Place is (OB-350):
+                        // `placeSomewhereLegal` stands the train where the build would and records no facing.
+                        // The setup check still warns about the square.
                         final java.util.List<String> usable = placeableCopies();
 
                         // OFFERED ON THE ACTION'S OWN QUESTION (ADU2-C2): every copy the train could leave by,
@@ -782,16 +782,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
                         );
 
-                        menuItem.setEnabled(!departable.isEmpty());
-
-                        if (departable.isEmpty())
-                        {
-                            menuItem.setToolTipText(I18n.t("layout.ui.hintNoWayOut"));
-                        }
-                        else
-                        {
-                            menuItem.addActionListener(event -> placeSomewhereLegal(offered));
-                        }
+                        menuItem.addActionListener(event -> placeSomewhereLegal(offered));
 
                         add(menuItem);
                     }
@@ -1182,12 +1173,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * way faced either way - the one placement door OB-270, GUI-B1 and OB-284's rule had not reached.  The heading is
      * read before the move, from the copy the train stands on (`facingOf`, CONF-B1), and the rule is the paste's.
      *
-     * @param usable the copies a train can be driven away from
+     * Where no copy can leave, the copy the build stands an unfaced train on, with no facing recorded - the editor's Place
+     * (OB-350).
+     *
+     * @param usable the copies a train can be driven away from, empty where there are none
      */
     private void placeSomewhereLegal(java.util.List<String> usable)
     {
-        if (usable.isEmpty()) return;
-
         String loc = ui.getActiveLoc() == null ? null : ui.getActiveLoc().getName();
 
         org.traincontrol.automation.Layout running = org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel());
@@ -1195,9 +1187,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // ITS HEADING, read before the move, from the copy it stands on (CONF-B1).
         org.traincontrol.automationui.TilePorts.Side keep = session == null ? null : session.facingOf(loc, running);
 
-        String name = copyToPlaceOn(session, station, running, keep, usable);
+        String name = usable.isEmpty() ? null : copyToPlaceOn(session, station, running, keep, usable);
 
-        placeFacing(loc, name, session == null ? null : session.facingsFor(station).get(name));
+        // NO WAY OUT (OB-350): where the build stands a train nothing says the facing of
+        if (usable.isEmpty() && session != null)
+        {
+            org.traincontrol.automation.Point unfaced = session.copyWithNoFacing(station, running);
+
+            name = unfaced == null ? null : unfaced.getName();
+        }
+
+        if (name == null) return;
+
+        placeFacing(loc, name, session == null || usable.isEmpty() ? null : session.facingsFor(station).get(name));
     }
 
     /**
@@ -1369,8 +1371,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             session.placeLocomotive(station, locName);
 
             // THE FACING, BEFORE THE TAIL QUESTION (TDU3-C1), as the locomotive dialog writes it: it was chosen before,
-            // and written after it was dropped with a late answer - where only the road can have gone stale.
-            if (facing != null) session.setFacing(station, facing);
+            // and written after it was dropped with a late answer - where only the road can have gone stale.  None where
+            // no copy can say, as the editor's Place records none (OB-350).
+            session.setFacing(station, facing);
 
             // AND THE TAIL, into BOTH stores (REV9-B2, and VAL8-A2 for the second of them).  The walk
             // that blocks track reads the live Point; the setup value only reaches it at the next

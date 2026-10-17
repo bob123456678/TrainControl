@@ -2822,6 +2822,37 @@ public class AutonomySession
     }
 
     /**
+     * The copy of a square a train stands on where nothing says which way it faces: the build's own choice for a
+     * placement with no facing (`AutonomyBuilder.startableCopy`), read off the running layout - a copy trains may arrive
+     * at, the plain one first, else the first copy.
+     *
+     * Where no copy of a station can leave, the doors that put a train down stand it here and record no facing, as the
+     * editor's Place does through the build (OB-350).
+     *
+     * @param square the square
+     * @param running the running layout, or null
+     * @return that copy, or null when the railway has no Point on the square
+     */
+    public org.traincontrol.automation.Point copyWithNoFacing(TileKey square, org.traincontrol.automation.Layout running)
+    {
+        if (square == null || running == null || getStationIndex() == null) return null;
+
+        List<org.traincontrol.automation.Point> all = getStationIndex().pointsAt(running, square);
+
+        for (org.traincontrol.automation.Point copy : all)
+        {
+            if (copy.isDestination() && !copy.isTerminus() && !copy.isReversing()) return copy;
+        }
+
+        for (org.traincontrol.automation.Point copy : all)
+        {
+            if (copy.isDestination()) return copy;
+        }
+
+        return all.isEmpty() ? null : all.get(0);
+    }
+
+    /**
      * The way one named locomotive faces on a square, read off the copy the running layout has it on - or null when the
      * railway does not have it there.  `facingOnTheRailway`'s question for a particular train, asked of the same index.
      *

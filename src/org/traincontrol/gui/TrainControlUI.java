@@ -8949,20 +8949,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // a station is the one outcome they cannot have meant.
             if (placing == null) return true;
 
-            // Somewhere the train could actually be driven away from.
-            //
-            // The right-click menu has always refused this: "if NO copy can leave, placing here is
-            // placing a train that cannot move.  Refused with a reason, rather than accepted and
-            // reported much later as a setup that will not run."  It greys the item and says why.
-            //
-            // This door said nothing and did it anyway - Adam, MT-136: "There is a condition where
-            // place {locname} is greyed out saying it can't possibly leave so can be placed, but Place
-            // Locomotive still works."  Two ways to reach one action and the rule on only one of them.
-            //
-            // Asked of the POINT rather than of the square's copies, because by here the copy is
-            // already chosen: the menu enumerates copies precisely to pick one, and its item goes grey
-            // only when every copy has nowhere to go at all. For a copy already in hand that is the
-            // same question, asked directly.
+            // Somewhere the train could actually be driven away from - one rule with the right-click Place
+            // (MT-136), which since OB-350 places on a station no copy can leave as well.
             java.util.List<org.traincontrol.automation.Edge> away =
                 this.model.getAutoLayout().getNeighbors(point);
 
@@ -8977,7 +8965,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 ? (away != null && !away.isEmpty())
                 : getAutonomySession().canDepartFrom(this.model.getAutoLayout(), aimed);
 
-            if (!anyWayOut)
+            // BUT A STATION NO COPY CAN LEAVE IS PLACED ON, as the editor's Place and the right-click Place place there
+            // (OB-350): the train stands where the build would, with no facing recorded.  Only somewhere that is no
+            // station is refused.
+            boolean aStation = getAutonomySession() != null && getAutonomySession().getStore().isStation(aimed);
+
+            if (!anyWayOut && !aStation)
             {
                 this.model.logf("autolayout.warnNoWayOutOfPoint", point.getName());
 
@@ -9151,7 +9144,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
                         placeableFacings(aimed), facingAtTheLanding, point.getName());
 
-                org.traincontrol.automation.Point facingThatWay = copyFacing(aimed, intended);
+                org.traincontrol.automation.Point facingThatWay = !anyWayOut
+                    ? getAutonomySession().copyWithNoFacing(aimed, this.model.getAutoLayout())
+                    : copyFacing(aimed, intended);
 
                 if (facingThatWay != null) point = facingThatWay;
             }
