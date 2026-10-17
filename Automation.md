@@ -124,8 +124,8 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 6. **`Autonomy Tools`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
 7. **`Path Type`**: `Auto` or `Manual`: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
 8. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…`.
-9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected).
-10. **`Text Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), `None`, or `Labels Only` (your own diagram text instead). Control+L steps through them.
+9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn.
+10. **`Station Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), or `Hide`. Control+L steps through them.
 11. **`Track Directions`** chooses which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut, the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
 12. **`Save Changes`** and **`Cancel`**: see [Saving, cancelling, and changing page](#saving-cancelling-and-changing-page).
 
@@ -260,7 +260,7 @@ These act on the square under the pointer.
 | Control+B | The station's Maximum Train Length |
 | Control+H | The station's home locomotive |
 | Control+G | Show or hide Track Lengths |
-| Control+L | Step through the Text Labels choices |
+| Control+L | Step through the Station Labels choices |
 | Control+D | Show or hide Addresses |
 | Control+K | Show or hide the Grid |
 | + and - | Next and previous page |
@@ -449,7 +449,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **What the marks on the diagram mean.** Each station has a mark on its square, the same on the track diagram and in the editor. The shape says whether trains turn round there: a circle where they do not, a diamond where they may (`Trains May Change Direction Here`), and a square where they must (`Trains Must Change Direction Here`) or where the track runs out. The mark is blue, or grey where autonomy will not choose the station by itself (`Can Be Chosen in Full Autonomy` unticked), and hollow until the station has a name. A sensor that is not a station gets a smaller mark of the same kind: on every sensor in the editor, and on the track diagram only where trains turn round. A station or sensor out of service (`No - Nothing Can Pass`) shows an orange sign with an X instead: solid orange with a white X on a station, white with an orange ring and X on a plain sensor.
 
-**Station names are shown on the diagram.** In the editor, right-click a square beside a station and choose `Show a Station Name Here...` (or press Control+N over it); a station square shows its own name. `Text Labels` then chooses what every such caption shows: the station, the train parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption, and removed from its page so it is not shown twice; the page keeps a `.bak` copy of itself as it was, and the log names each page changed. To hide the names of stations autonomy will never send a train to, or to draw captions in blue rather than light grey, see **Preferences** → Autonomy.
+**Station names are shown on the diagram.** In the editor, right-click a square beside a station and choose `Show a Station Name Here...` (or press Control+N over it); a station square shows its own name. `Station Labels` then chooses what every such caption shows: the station, the train parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption, and removed from its page so it is not shown twice; the page keeps a `.bak` copy of itself as it was, and the log names each page changed. To hide the names of stations autonomy will never send a train to, or to draw captions in blue rather than light grey, see **Preferences** → Autonomy.
 
 **A signal paired with a station** (`Exit Guard Signal...`) goes red while a train is standing there, and green again once it leaves.
 
@@ -536,7 +536,7 @@ Getting everyone home is rarely as simple as driving each train to its own stati
 
 Trains must be stopped first, so use `Graceful Stop` if autonomy is running. The button is greyed when there is nothing to do, and its tooltip says why. If no arrangement can be found you are told so and nothing moves. A paused train stays where it stands, and the others are worked round it. To put every train back on its home without driving anything (after moving them by hand, say), use `Bulk Tools` → `Place All Trains at Their Homes`.
 
-To see the homes on the diagram, set `Text Labels` to **Home Locs**: each station caption then names its home locomotive, on an ordinary caption when that locomotive is standing there, and in white on dark grey when it is somewhere else. Return Home moves every dark grey one, and also a train standing on its own home turned round (where the home was set facing a way), which the caption, comparing names only, draws as an ordinary one.
+To see the homes on the diagram, set `Station Labels` to **Home Locs**: each station caption then names its home locomotive, on an ordinary caption when that locomotive is standing there, and in white on dark grey when it is somewhere else. Return Home moves every dark grey one, and also a train standing on its own home turned round (where the home was set facing a way), which the caption, comparing names only, draws as an ordinary one.
 
 ---
 

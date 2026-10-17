@@ -2040,6 +2040,14 @@ choice keeps its meaning, the grid draws a caption under the three caption modes
 Only, and in the track editor Control+L is still the text switch.
 `regression.testARememberedNoneOpensWithTheCaptionsOff`.
 
+**Since FR-133 the text labels are a box of their own, and Control+L steps the four caption options** (Adam,
+2026-10-17: *"move the "labels only" setting currently in the dropdown to a Text Labels checkbox below Show Trains.
+Rename the current "Text Labels" heading above the dropdown to be "Station Labels".  And change "None" in the dropdown
+to "Hide""*). The paragraph above is superseded: the dropdown, headed Station Labels, is Station Names, Standing Locs,
+Home Locs and Hide; the `Text Labels` box under Show Trains draws the writing on the diagram, and the two are
+independent. Both are remembered between opens; a remembered Labels Only opens as Hide with the box ticked.
+`regression.testARememberedNoneOpensWithTheCaptionsOff`.
+
 **Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is
 `buildTileMenu`'s three early returns in one place — a page the session knows, not a text label, not an
 ignored square — and the menu adds its item inside it, so the guard and the affordance are one
