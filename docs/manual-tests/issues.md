@@ -320,15 +320,6 @@ Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 
 **Claude, 2026-10-13:** RSA70 (C3) found the corner reaches further: the chain need not be in one edit (a name another station had in an earlier, saved edit of the session is read as that station's at Cancel), and one rename that gives a station a name another station has can point the railway's timetable leg at the wrong station at the in-editor fold itself, with no Cancel, so Save keeps it too (the fold order of 3.0.0).  The leg is kept as written and refused when its entry is run, not dropped.  One way to settle all three: carry the railway's timetable to the latest build's names before a gesture's derive moves the carry's memory, and key the kept legs by square rather than by name.
 
-### FR-129 - 2026-10-13 - teleport to home via right click of return home
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-13 19:40  
-**Build:** commit 2ad091ce
-
-make it so that when the return home button is right clicked, an option to just teleport the locomotives back (same as what the autonomy right click menu allows) is shown.  Show a confirmation window that asks if the user wants to do this, and confirms they will manually move the trains back. 3.1.0 feature
-
 ### FR-130 - 2026-10-13 - locomotive icon transparency
 
 **Kind:** feature request  
@@ -398,15 +389,6 @@ instead of a generic icon, show the actual locomotive image on the track diagram
 
 the app currently has a fixed size and is therefore suboptimal for larger screens.  reimagine the UI to be maximizable and support modular UI components (3.5.0+)
 
-### FR-133 - 2026-10-17 - autonomy editor labels
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-17 00:48  
-**Build:** commit a5e787aa, in English - build\classes, compiled 16 Oct 18:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the autonomy setting, move the "labels only" setting currently in the dropdown to a Text Labels checkbox below Show Trains.  Rename the current "Text Labels" heading above the dropdown to be "Station Labels".  And change "None" in the dropdown to "Hide". 3.0.2 change
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -423,6 +405,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-17 | FR-133 | feature request | The autonomy editor's caption dropdown is headed `Station Labels` and offers Station Names, Standing Locs, Home Locs and Hide; Labels Only is a `Text Labels` box under Show Trains, remembered (`1dabc78e`). | - | MT-743 |
+| 2026-10-13 | FR-129 | feature request | Right-click `Return Home` for `Place All Trains at Their Homes`, which asks first and says to move the real trains by hand; greyed with the reason while anything runs or an editor is open (`591c7acf`). | - | MT-742 |
 | 2026-10-14 | OB-348 | bug | A train on a square no track leads out of faces the setup's facing where its track runs that way, or else along its track - never east across north-south track; a train standing with no road is drawn in orange over the switch arms every rail into its platform takes (9,7 and 7,8 behind TunnelLeftPark), the switch where those rails part still drawn along no road (`c282c77d`). | - | MT-741 |
 | 2026-10-13 | OB-347 | bug | The `Is Facing` menu is greyed, with the reason in its tooltip, on a square no track leads out of, rather than hidden (`b1ed882d`). | - | MT-740 |
 | 2026-10-13 | FR-128 | feature request | The active locomotive's line: the key in a keycap, the page's name in the line's own blue label font, the decoder in a navy pill "MFX | 54" at the right; only the name gives way.  `Preferences` > `Locomotive Control` > `Show Page Numbers` (off by default) puts "5. " before a named page's name on the line, the page tabs and the label between the arrows; a page with no name reads "Page 5" in all three.  Seven rounds of Adam's design (`9cc8e332`, `8f1ae0e6`, `3166d3e7`, `d77fd3d2`, `a4c43d34`, `2ed0758b`, `a05d51b0`). | - | MT-736 |

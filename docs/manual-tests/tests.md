@@ -27,9 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-742](#mt-742) | 2026-10-17 | FR-129: right-click Return Home to place the trains at their homes | fixed unvalidated | FR-129 |
+| [MT-743](#mt-743) | 2026-10-17 | FR-133: the autonomy editor's Station Labels dropdown and Text Labels box | fixed unvalidated | FR-133 |
 
-
-Everything else - 741 of 741 - needs nothing from you unless the area changes again:
+Everything else - 741 of 743 - needs nothing from you unless the area changes again:
 588 **fixed validated** and 153 **superseded**.
 
 ---
@@ -35004,5 +35005,68 @@ A fourth validation round's finding is fixed (`5cd6eebd`, V348D): a train the ra
 **Adam, 2026-10-14 (triage).** Works.
 
 *Run against commit 0e5ee1cc.*
+
+---
+
+<a id="mt-742"></a>
+### MT-742 - 2026-10-17 - FR-129: right-click Return Home to place the trains at their homes
+
+**Disposition:** fixed unvalidated
+**From:** FR-129
+
+**Written:** 2026-10-17
+
+**Steps**
+
+1. With autonomy loaded and stopped, at least one train with a home standing somewhere else, and no editor open,
+   right-click `Return Home` on the Auto tab.
+2. Hover over `Place All Trains at Their Homes (n)`, then click it.
+3. Answer `No`.  Then do steps 1 and 2 again and answer `Yes`.
+4. Start autonomy (or a route), right-click `Return Home` again and hover over the item.  Stop it again, open the
+   autonomy editor, and right-click `Return Home` once more.
+
+**Expected**
+
+- Step 1: a menu with the one item, `Place All Trains at Their Homes (n)`, n the number of trains with a home.
+- Step 2: its tooltip says what it does.  The question says each train with a home goes on it, facing the way it was
+  homed, the trains without one come off the layout, nothing is sent to the railway, and you must then move the real
+  trains to these places by hand.
+- Step 3: No changes nothing.  Yes puts each homed train on its home on the track diagram, the others off, and the log
+  says how many; the change is still there after a restart.
+- Step 4: the item is greyed each time, and its tooltip says why: something is running, or an editor is open.
+
+*What this is:* FR-129 (`591c7acf`): the editor's Bulk Tools item, offered from Return Home and saved to the live setup.  One question
+greys it and refuses it (`TrainControlUI.whyTheTrainsCannotBePlacedAtTheirHomes`): autonomy unavailable, an editor
+open, anything running (autonomy, a timetable, Return Home running or planning, a route), no train with a home.
+Claims `regression.testReturnHomeRightClickPlacesTheTrainsAtHome`.
+
+---
+
+<a id="mt-743"></a>
+### MT-743 - 2026-10-17 - FR-133: the autonomy editor's Station Labels dropdown and Text Labels box
+
+**Disposition:** fixed unvalidated
+**From:** FR-133
+
+**Written:** 2026-10-17
+
+**Steps**
+
+1. Open the autonomy editor.  Look at the right-hand panel under `Show Trains`, and at the dropdown below it.
+2. Tick and untick `Text Labels`, with the dropdown on `Station Names`.
+3. Set the dropdown to `Hide`, then press Control+L five times.
+4. Tick `Text Labels`, close the editor, and open it again.
+
+**Expected**
+
+- Step 1: a `Text Labels` box directly under `Show Trains`.  The dropdown's heading reads `Station Labels`, and it
+  offers `Station Names`, `Standing Locs`, `Home Locs` and `Hide` - no `Labels Only`.
+- Step 2: the box shows and hides the text written on the diagram; the station captions stay as they are.
+- Step 3: `Hide` shows no captions.  Control+L steps Station Names, Standing Locs, Home Locs, Hide, Station Names; the
+  box does not change.
+- Step 4: the box is still ticked, and the dropdown is on what you left it.
+
+*What this is:* FR-133 (`1dabc78e`): Labels Only leaves the dropdown for its own box, remembered beside the caption mode; a remembered
+Labels Only opens as Hide with the box ticked.  Claims `regression.testARememberedNoneOpensWithTheCaptionsOff`.
 
 ---
