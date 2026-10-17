@@ -2639,10 +2639,15 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JMenuItem placeHome = item(
             I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes), () -> placeEveryTrainAtHome());
 
-        placeHome.setEnabled(homes > 0);
-        placeHome.setToolTipText(wrapped(homes > 0
+        // ON THE TRACK DIAGRAM, RETURN HOME'S QUESTION (FR-129): the live setup, so the item is refused while anything runs
+        String placeRefused = menuOnly && parentWindow() != null
+            ? parentWindow().whyTheTrainsCannotBePlacedAtTheirHomes()
+            : homes > 0 ? null : I18n.t("autosetup.ui.infoNoHomesToPlace");
+
+        placeHome.setEnabled(placeRefused == null);
+        placeHome.setToolTipText(wrapped(placeRefused == null
             ? I18n.f("autosetup.ui.tipPlaceEveryTrainAtHome", homes)
-            : I18n.t("autosetup.ui.infoNoHomesToPlace")));
+            : placeRefused));
 
         bulk.add(placeHome);
 
@@ -2913,6 +2918,18 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void placeEveryTrainAtHome()
     {
+        // ON THE TRACK DIAGRAM AS FROM RETURN HOME (FR-129): there is no banner and no Cancel, so it asks as Return Home's
+        // item asks, re-checks the same question, and says the result in the log
+        final TrainControlUI window = menuOnly ? parentWindow() : null;
+
+        if (window != null)
+        {
+            placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand",
+                window::whyTheTrainsCannotBePlacedAtTheirHomes, said -> window.getModel().log(said));
+
+            return;
+        }
+
         placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHome", () -> null, text -> say(hint, text));
     }
 

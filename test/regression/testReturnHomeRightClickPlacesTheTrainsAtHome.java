@@ -438,6 +438,133 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
     }
 
     /**
+     * The track diagram's own Bulk Tools item is the same door as Return Home's: refused while anything runs, asking with
+     * the by-hand sentence, and saying its result in the log rather than on a banner the track diagram does not have.
+     *
+     * MUTATION: let the track diagram's item ask the editor's question and say its result on the editor's banner, as it
+     * did, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheTrackDiagramsBulkToolsItemIsTheSameDoor() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final AutonomySession session = ui.getAutonomySession();
+            final Layout layout = ((MarklinControlStation) ui.getModel()).getAutoLayout();
+
+            Map<TileKey, String> homes = new LinkedHashMap<>(session.homesToPlace());
+
+            String stray = aTrainWithNoHome(ui, homes);
+
+            session.clearEveryPlacement();
+            session.placeLocomotive(homes.keySet().iterator().next(), stray);
+
+            // WHILE A RUN IS UNDER WAY: greyed with Return Home's reason
+            java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
+
+            flag.setAccessible(true);
+            flag.setBoolean(layout, true);
+
+            try
+            {
+                JMenuItem running = trackDiagramsPlaceItem(window, session);
+
+                assertFalse(running.isEnabled(), "the track diagram's item is offered while autonomy runs");
+
+                assertTrue(running.getToolTipText() != null
+                    && running.getToolTipText().contains(I18n.t("ui.main.tooltip.placeAtHomesWhileRunning")),
+                    "the track diagram's greyed item does not say why: " + running.getToolTipText());
+            }
+            finally
+            {
+                flag.setBoolean(layout, false);
+            }
+
+            // AT REST: the by-hand question, and the result in the log
+            final JMenuItem item = trackDiagramsPlaceItem(window, session);
+
+            assertTrue(item.isEnabled(), "precondition: the track diagram's item is greyed at rest");
+
+            int logSize = logged().length();
+
+            List<String> asked = answering(message -> 0, () -> item.doClick());
+
+            String byHand = I18n.f("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand", 987654, 876543);
+
+            byHand = byHand.substring(byHand.indexOf("876543") + "876543".length());
+
+            assertEquals(asked.size(), 1, "the track diagram's item asked " + asked.size() + " questions: " + asked);
+
+            assertTrue(asked.get(0).endsWith(byHand), "the track diagram's item did not ask with the by-hand sentence: "
+                + asked.get(0));
+
+            for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertHomed(session.placementsAutonomyWillWrite(), homes, stray, "the live setup");
+
+            assertTrue(logged().substring(logSize).contains(saidPlaced(homes.size())),
+                "the track diagram's item did not say its result in the log");
+        }
+        finally
+        {
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
+    /** Place All Trains at Their Homes, from the Bulk Tools menu of the track diagram's right-click on some square. */
+    private static JMenuItem trackDiagramsPlaceItem(final TrainControlUI ui, AutonomySession session) throws Exception
+    {
+        final String label = I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", session.homesToPlace().size());
+
+        final List<TileKey> squares = new ArrayList<>(session.getGraph().getTiles().keySet());
+
+        final JMenuItem[] found = new JMenuItem[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (TileKey square : squares)
+            {
+                JPopupMenu menu = found[0] == null ? ui.buildAutonomyTileMenu(square) : null;
+
+                if (menu != null) found[0] = itemNamed(menu.getSubElements(), label);
+            }
+        });
+
+        assertNotNull(found[0], "no square's right-click on the track diagram offers " + label);
+
+        return found[0];
+    }
+
+    private static JMenuItem itemNamed(javax.swing.MenuElement[] elements, String label)
+    {
+        for (javax.swing.MenuElement element : elements)
+        {
+            if (element instanceof JMenuItem && label.equals(((JMenuItem) element).getText())) return (JMenuItem) element;
+
+            JMenuItem inside = itemNamed(element.getSubElements(), label);
+
+            if (inside != null) return inside;
+        }
+
+        return null;
+    }
+
+    /**
      * A run that begins while the confirmation is on screen stops the placement: the question is asked again after it.
      *
      * MUTATION: take the second question out of the panel's door, and this fails.
