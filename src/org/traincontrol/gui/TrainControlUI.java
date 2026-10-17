@@ -1032,6 +1032,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         installShowPageNumbersMenuItem();
 
+        installReturnHomeMenu();
+
         // THE WINDOWS IT OPENS FOLLOW ITS ALWAYS-ON-TOP (the popups sweep, on Adam's MT-703 note)
         this.addPropertyChangeListener("alwaysOnTop", change ->
             childWindowsFollowAlwaysOnTop(Boolean.TRUE.equals(change.getNewValue())));
@@ -5520,7 +5522,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public javax.swing.JPopupMenu buildAutonomyTileMenu(
         org.traincontrol.automationui.TileGraph.TileKey tile)
     {
-        if (tile == null || !this.isLocalLayout()) return null;
+        if (tile == null || liveSetupPanel() == null) return null;
+
+        // WHAT THE PANEL KNOWS IS REFRESHED BEFORE THE MENU IS BUILT (AUS-B1).
+        //
+        // This panel is built once per session and kept, and it learns which squares are runs - and which
+        // square speaks for each run - only when it refreshes, which it does after its OWN actions.  Nothing
+        // told it when the editor changed the railway underneath it: after a page was brought back into
+        // autonomy, the first right-click on a run there found no leader for the square and bound every item
+        // to the square itself, so Segment Length wrote the follower - the run then measured leader plus
+        // follower - and a direction choice one-wayed a single square of the run.  Refreshing here costs one
+        // cheap derivation per right-click and cannot go stale at all.
+        autonomyTileMenus.refreshRunLeaders();
+
+        return autonomyTileMenus.buildTileMenu(tile, null);
+    }
+
+    /**
+     * The panel the live setup is edited through from outside the editor - the track diagram's menu and the Return Home
+     * button's (FR-129) - brought up to date with the session behind it.
+     *
+     * @return the panel, or null when there is no local setup to edit or an editor holds it
+     */
+    private AutonomyEditorPanel liveSetupPanel()
+    {
+        if (!this.isLocalLayout()) return null;
 
         // Not while an editor holds the setup (OB-076).
         //
@@ -5611,18 +5637,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             listening[0] = true;
         }
 
-        // WHAT THE PANEL KNOWS IS REFRESHED BEFORE THE MENU IS BUILT (AUS-B1).
-        //
-        // This panel is built once per session and kept, and it learns which squares are runs - and which
-        // square speaks for each run - only when it refreshes, which it does after its OWN actions.  Nothing
-        // told it when the editor changed the railway underneath it: after a page was brought back into
-        // autonomy, the first right-click on a run there found no leader for the square and bound every item
-        // to the square itself, so Segment Length wrote the follower - the run then measured leader plus
-        // follower - and a direction choice one-wayed a single square of the run.  Refreshing here costs one
-        // cheap derivation per right-click and cannot go stale at all.
-        autonomyTileMenus.refreshRunLeaders();
-
-        return autonomyTileMenus.buildTileMenu(tile, null);
+        return autonomyTileMenus;
     }
 
     /**
@@ -27266,6 +27281,139 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.returnHomeButton == null ? null : this.returnHomeButton.getToolTipText();
     }
 
+    /**
+     * Why the trains cannot be put on their homes now, or null (FR-129): the one question the Return Home menu's item is
+     * greyed by and the press is refused by, so the two cannot disagree.
+     *
+     * Not while anything runs - autonomy, a timetable, Return Home or a route, which `somethingIsRunning` asks and the
+     * Auto tab's own holds (`theAutoTabWaits`) - since no setup edit is made during a run (Adam, 2026-09-28: "There should
+     * be no setup edit possible during a run").  Not while an editor holds the setup, or the diagram is reloading, as the
+     * gate every train-sending door asks (`whyNoTrainMayBeSent`).  And not without a local setup, or with no home to put a
+     * train on.
+     *
+     * @return the sentence to show, or null where the placement may go ahead
+     */
+    public String whyTheTrainsCannotBePlacedAtTheirHomes()
+    {
+        String unavailable = whyAutonomyIsUnavailable();
+
+        if (unavailable != null) return unavailable;
+
+        if (anEditorIsOpenOrOnItsWay()) return I18n.t("autosetup.ui.menuEditorOpen");
+
+        if (refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
+
+        if (somethingIsRunning(this.model, this.stagingFlowActive || theAutoTabWaits()))
+        {
+            return I18n.t("ui.main.tooltip.placeAtHomesWhileRunning");
+        }
+
+        if (!isLocalLayout()) return I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles");
+
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null)
+        {
+            return sayWhyAutonomyEditorCannotOpen(whyTheSetupCannotBeRead() != null
+                ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit");
+        }
+
+        return session.homesToPlace().isEmpty() ? I18n.t("autosetup.ui.infoNoHomesToPlace") : null;
+    }
+
+    /** The popup the last right-click on Return Home opened; for tests. */
+    private javax.swing.JPopupMenu returnHomePopup;
+
+    /**
+     * Right-click on Return Home opens its menu, greyed button or not - Swing delivers the mouse to a disabled button, and
+     * a right-click that did nothing would not say why (FR-129).
+     */
+    private void installReturnHomeMenu()
+    {
+        this.returnHomeButton.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                if (!SwingUtilities.isRightMouseButton(e)) return;
+
+                returnHomePopup = buildReturnHomeMenu();
+
+                // A button that is not on screen has nowhere to open it
+                if (returnHomeButton.isShowing()) returnHomePopup.show(returnHomeButton, e.getX(), e.getY());
+            }
+        });
+    }
+
+    /**
+     * Return Home's right-click menu: Place All Trains at Their Homes, which puts each homed train on its home in the setup
+     * and takes the others off the layout without sending anything to the railway (FR-129).  The item is greyed with its
+     * reason while `whyTheTrainsCannotBePlacedAtTheirHomes` says no.
+     *
+     * @return the menu, freshly built
+     */
+    javax.swing.JPopupMenu buildReturnHomeMenu()
+    {
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        String why = whyTheTrainsCannotBePlacedAtTheirHomes();
+
+        org.traincontrol.automationui.AutonomySession session = canUseAutonomy() ? getAutonomySession() : null;
+
+        int homes = session == null ? 0 : session.homesToPlace().size();
+
+        javax.swing.JMenuItem place = new javax.swing.JMenuItem(I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes));
+
+        place.setEnabled(why == null);
+        place.setToolTipText(AutonomyEditorPanel.wrapped(why == null
+            ? I18n.f("autosetup.ui.tipPlaceEveryTrainAtHome", homes) : why));
+        place.addActionListener(e -> placeEveryTrainAtItsHome());
+
+        menu.add(place);
+
+        return menu;
+    }
+
+    /**
+     * Puts every train with a home on it, and takes the rest off the layout, after confirming that the user will move the
+     * real trains by hand; saved with the live setup the way the track diagram's own placements are (FR-129).  The guard is
+     * asked again here, because the item was built a moment ago, and again after the confirmation, which can stay on screen
+     * while the railway changes.
+     */
+    private void placeEveryTrainAtItsHome()
+    {
+        String why = whyTheTrainsCannotBePlacedAtTheirHomes();
+
+        if (why != null)
+        {
+            JOptionPane.showMessageDialog(this, why);
+
+            return;
+        }
+
+        AutonomyEditorPanel panel = liveSetupPanel();
+
+        if (panel == null)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
+
+            return;
+        }
+
+        panel.placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand",
+            this::whyTheTrainsCannotBePlacedAtTheirHomes, said -> this.model.log(said));
+    }
+
+    /**
+     * For tests: the popup the last right-click on Return Home opened.
+     *
+     * @return the popup, or null when none was opened
+     */
+    public javax.swing.JPopupMenu returnHomePopupForTest()
+    {
+        return this.returnHomePopup;
+    }
+
     /** What the railway last said about sending trains home; null means there is work to do. */
     private volatile HomeStaging.Outcome returnHomeTriage = null;
 
@@ -28079,6 +28227,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static String whyAnUpdateMustWait(ViewListener model, boolean returnHomePlanning)
     {
+        return somethingIsRunning(model, returnHomePlanning) ? I18n.t("ui.update.refusedWhileRunning") : null;
+    }
+
+    /**
+     * Whether autonomy, a timetable, a Return Home run, Return Home planning or a route is running (FR-125, FR-129): the
+     * question an update and Return Home's place-at-home item both ask, so they cannot disagree.
+     *
+     * @param model the railway
+     * @param returnHomePlanning whether the window has Return Home under way
+     * @return true while any of them is
+     */
+    public static boolean somethingIsRunning(ViewListener model, boolean returnHomePlanning)
+    {
         boolean running = returnHomePlanning || (model != null && model.isAutonomyRunning());
 
         if (!running && model != null)
@@ -28096,7 +28257,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
-        return running ? I18n.t("ui.update.refusedWhileRunning") : null;
+        return running;
     }
 
     /**

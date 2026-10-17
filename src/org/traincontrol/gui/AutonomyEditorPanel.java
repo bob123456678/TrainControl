@@ -2913,11 +2913,26 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void placeEveryTrainAtHome()
     {
+        placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHome", () -> null, text -> say(hint, text));
+    }
+
+    /**
+     * The door behind Place All Trains at Their Homes, for the editor's menu and for the main window's Return Home
+     * button, which has no editor open (FR-129).  The caller's question is asked again once the confirmation has been
+     * answered, because the railway can change while it is on screen.
+     *
+     * @param confirmKey the bundle key of the confirmation text, which takes the homed count and the homeless count
+     * @param refusedBecause why the placement is not allowed now, or null; asked after the confirmation
+     * @param saying where the outcome is said
+     */
+    void placeEveryTrainAtHome(String confirmKey, java.util.function.Supplier<String> refusedBecause,
+        java.util.function.Consumer<String> saying)
+    {
         java.util.Map<TileKey, String> homes = session.homesToPlace();
 
         if (homes.isEmpty())
         {
-            say(hint, I18n.t("autosetup.ui.infoNoHomesToPlace"));
+            saying.accept(I18n.t("autosetup.ui.infoNoHomesToPlace"));
             return;
         }
 
@@ -2932,7 +2947,7 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         if (JOptionPane.showOptionDialog(owner(),
-            I18n.f("autolayout.ui.confirmPlaceEveryTrainAtHome", homes.size(), homeless),
+            I18n.f(confirmKey, homes.size(), homeless),
             I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -2940,9 +2955,17 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        String refused = refusedBecause.get();
+
+        if (refused != null)
+        {
+            JOptionPane.showMessageDialog(owner(), refused);
+            return;
+        }
+
         java.util.Set<String> touched = session.placeEveryTrainAtHome(homeCopyFacings());
 
-        say(hint, I18n.f("autosetup.ui.infoTrainsPlacedAtHome", homes.size(), homeless));
+        saying.accept(I18n.f("autosetup.ui.infoTrainsPlacedAtHome", homes.size(), homeless));
 
         placementChanged(touched);
     }
