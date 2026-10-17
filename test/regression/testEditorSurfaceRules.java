@@ -2111,26 +2111,28 @@ public class testEditorSurfaceRules
             "the two caption flags are not set from the mode, so they can both be on at once - which"
             + " is a state the dropdown cannot show and the operator cannot get out of (FR-061)");
 
-        assertTrue(applier.contains("turnTextLabelsOff()") && applier.contains("turnTextLabelsOn()"),
-            "the choice does not drive the text switch both ways. None must turn captions off, and the"
-            + " other three must turn them on - otherwise picking one changes nothing anybody can see,"
-            + " which is the defect OB-174 reported");
+        // THE TEXT SWITCH IS THE TEXT LABELS BOX'S, NOT THE DROPDOWN'S (FR-133): choosing a caption option
+        // changes the captions and nothing else, and the box is applied by its own method.
+        assertFalse(applier.contains("turnTextLabelsOff()") || applier.contains("turnTextLabelsOn()"),
+            "the caption choice drives the diagram's text switch again. The Text Labels box under Show Trains"
+            + " is the text's own setting (FR-133) and the dropdown only decides the captions");
 
-        // AND AT OPEN AS WELL (RGD-C3).  The mode is remembered between opens and the text switch is
-        // not, so a version that skipped the switch when the window opened restored None as a word and
-        // not as an effect: the dropdown said None over station names it had not turned off.
-        assertFalse(applier.contains("if (!interactive) return"),
-            "the caption mode is applied to the internal flags at open but not to the text switch, so"
-            + " a remembered None comes back as a dropdown saying None with the captions still drawn"
-            + " - which is exactly the contradiction four exclusive options exist to make impossible"
-            + " (RGD-C3)");
+        String textApplier = bodyOf(panel, "private void applyTextLabels()");
 
-        // AND THE OTHER DIRECTION: Control+L still reaches the switch in autonomy mode, where the
-        // checkbox that used to show its state is hidden.
+        assertTrue(textApplier.contains("turnTextLabelsOff()") && textApplier.contains("turnTextLabelsOn()"),
+            "the Text Labels box does not drive the diagram's text switch both ways");
+
+        // AND AT OPEN AS WELL (RGD-C3).  The box is remembered between opens and the text switch is
+        // not, so a version that skipped it when the window opened restored an unticked box over text
+        // still drawn.
+        assertTrue(bodyOf(panel, "public void applyRememberedCaptionMode()").contains("applyTextLabels()"),
+            "the remembered Text Labels box is not applied to the diagram when the window opens, so it comes"
+            + " back as a box saying one thing over a diagram drawing the other (RGD-C3)");
+
+        // AND THE OTHER DIRECTION: the plain text switch moving ticks and unticks the box.
         assertTrue(panel.contains("public void textLabelsChanged(boolean shown)"),
-            "nothing tells the dropdown the text switch moved. Control+L is still bound in autonomy"
-            + " mode and the Text Labels checkbox is hidden there, so without this the captions vanish"
-            + " under a control still naming one - OB-174's symptom by another road (RGD-C3)");
+            "nothing tells the Text Labels box the text switch moved, so the box goes on saying the"
+            + " opposite of the diagram (RGD-C3, FR-133)");
 
         String editorSource = new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutEditor.java")),
@@ -2138,7 +2140,7 @@ public class testEditorSurfaceRules
 
         assertTrue(codeOnly(editorSource).contains("autonomyPanel.textLabelsChanged("),
             "the text toggle does not tell the autonomy panel, so the method above is never called and"
-            + " the dropdown goes on naming a caption nobody can see (RGD-C3)");
+            + " the Text Labels box goes on saying the opposite of the diagram (RGD-C3)");
 
         // AND THE OLD COUPLING IS GONE.  Leaving it would be harmless today and would be the thing a
         // future reader copies.

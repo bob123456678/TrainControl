@@ -1452,10 +1452,10 @@ public class LayoutGrid
                     if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
 
                     // WHETHER THIS LABEL IS DRAWN AT ALL (OB-272).  In the autonomy editor a CAPTION follows
-                    // the caption dropdown and the user's own writing follows the text switch, which only
-                    // Labels Only turns on - Adam, 2026-09-23: *"make text labels be a dedicated setting, and
-                    // hide the text labels unless it is selected."*  Everywhere else one switch decides both,
-                    // as it always has.
+                    // the caption dropdown and the user's own writing follows the text switch, which only the
+                    // Text Labels box turns on (FR-133) - Adam, 2026-09-23: *"make text labels be a dedicated
+                    // setting, and hide the text labels unless it is selected."*  Everywhere else one switch
+                    // decides both, as it always has.
                     final AutonomyEditorPanel captionPanel = autonomyEditor && master instanceof LayoutEditor
                         ? ((LayoutEditor) master).getAutonomyPanel() : null;
 

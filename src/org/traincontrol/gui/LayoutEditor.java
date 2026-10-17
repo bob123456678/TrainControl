@@ -1744,13 +1744,12 @@ public class LayoutEditor extends PositionAwareJFrame
         if (this.plusButton != null) this.plusButton.setVisible(session == null);
         if (this.minusButton != null) this.minusButton.setVisible(session == null);
 
-        // AND THE TEXT LABELS BOX, which the autonomy caption choice subsumes (FR-061).
+        // AND THE TEXT LABELS BOX, which the autonomy editor mounts its own copy of (FR-133).
         //
-        // Its Labels Only option IS this switch turned on (OB-272; under FR-061 None was it turned
-        // off), so showing both would be two controls for one decision - and the one that is only a
-        // switch cannot express the other four options.  Hidden rather than removed: it belongs to the
-        // generated form, and it is the plain editor's control.  Control+L reaches it only there; in
-        // the autonomy editor Control+L steps the caption dropdown (`cycleCaptionMode`).
+        // The panel's Text Labels box under Show Trains IS this switch, so showing both would be two controls
+        // for one decision.  Hidden rather than removed: it belongs to the generated form, and it is the plain
+        // editor's control.  Control+L reaches it only there; in the autonomy editor Control+L steps the
+        // caption dropdown (`cycleCaptionMode`).
         if (this.showTextCheckbox != null) this.showTextCheckbox.setVisible(session == null);
 
         // And the gap under it, which is its own (OB-289).
@@ -2010,6 +2009,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowTrains().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTrains());
 
+                // AND THE DIAGRAM'S TEXT directly under it, the same kind of switch (FR-133)
+                autonomyPanel.getShowTextLabels().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                visibility.add(autonomyPanel.getShowTextLabels());
+
                 // WHAT THE CAPTIONS SAY, as one choice (FR-061).
                 //
                 // Adam: "add a Text Labels label and dropdown right above Track Directions, with the
@@ -2017,14 +2020,13 @@ public class LayoutEditor extends PositionAwareJFrame
                 //
                 // It replaces two tick boxes and the form's own Text Labels switch, which were not
                 // independent: ticking either box while the text was off changed nothing anybody could
-                // see, so each box turned the text on for you (OB-174). Options that exclude one another -
-                // five since OB-272 added Labels Only - cannot be in a state that needs correcting, which is
-                // what "fully address it" means here.
+                // see, so each box turned the text on for you (OB-174). Options that exclude one another
+                // cannot be in a state that needs correcting, which is what "fully address it" means here.
                 //
                 // In the window's own heading style, copied off jLabel1 rather than restated, like the
                 // Track Directions heading below it.
                 javax.swing.JLabel captionsLabel =
-                    new javax.swing.JLabel(I18n.t("layout.ui.textLabels"));
+                    new javax.swing.JLabel(I18n.t("autosetup.ui.captionsHeading"));
                 captionsLabel.setFont(this.jLabel1.getFont());
                 captionsLabel.setForeground(this.jLabel1.getForeground());
                 captionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
@@ -5502,9 +5504,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * Turns the diagram's text labels on, leaving them on if they already are (OB-174).
      *
      * `toggleText` flips, which is the wrong verb for a caller that needs them ON.  The autonomy
-     * editor calls this for Labels Only, which IS the switch turned on (OB-272); the captions no
-     * longer depend on it - the grid asks the caption dropdown for those.  A flip there would turn
-     * the text OFF for somebody who already had it on.
+     * editor calls this for a ticked Text Labels box (FR-133); the captions do not depend on it - the
+     * grid asks the caption dropdown for those.  A flip there would turn the text OFF for somebody
+     * who already had it on.
      *
      * Idempotent, and it does not touch the flag when nothing needs to change - so it costs no grid
      * rebuild in the ordinary case.
@@ -5520,8 +5522,8 @@ public class LayoutEditor extends PositionAwareJFrame
      * Hides the writing on the diagram, idempotently - the other half of the pair (FR-061).  The
      * station captions stay: since OB-272 the caption dropdown draws them, whatever this switch says.
      *
-     * The autonomy editor calls it for every caption option but Labels Only, which is the switch
-     * turned on (OB-272; under FR-061 it was None alone). Written as a twin of
+     * The autonomy editor calls it for an unticked Text Labels box (FR-133; under FR-061 it was None
+     * alone). Written as a twin of
      * `showTextLabels` rather than as a call to `toggleText`, for the reason given there: a flip is the
      * wrong verb for a caller that needs a particular state, and would turn the text back ON for
      * somebody who already had it off.
@@ -5545,14 +5547,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
             refreshGrid();
 
-            // AND THE CAPTION DROPDOWN, which is the only visible state of this switch in autonomy
-            // mode (RGD-C3).  The checkbox above is hidden there because Labels Only IS this switch
-            // on (OB-272), so without this the diagram's writing changed under a dropdown still naming
-            // another option.  (Control+L no longer reaches here in autonomy mode: it steps the
-            // dropdown instead.)
+            // AND THE AUTONOMY PANEL'S TEXT LABELS BOX, which is the visible state of this switch in
+            // autonomy mode (RGD-C3, FR-133).  The checkbox above is hidden there, so without this the
+            // diagram's writing changed under a box still saying the other thing.  (Control+L no longer
+            // reaches here in autonomy mode: it steps the caption dropdown instead.)
             //
-            // After the rebuild, not before: the panel answers by changing its selection, which asks
-            // for a rebuild of its own.
+            // After the rebuild, not before.
             if (autonomyPanel != null && autonomyPanel.isVisible())
             {
                 autonomyPanel.textLabelsChanged(!this.layout.getEditHideText());
@@ -7679,10 +7679,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // the original bug.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
-                // IN THE AUTONOMY EDITOR, THE NEXT CAPTION OPTION (Adam, 2026-09-23, OB-272: *"make control+L
-                // cycle the options"* - *"the dropdown's 4, plus ... the labels only"*).  The same test
-                // `toggleText` uses to decide the dropdown is showing.  In the track editor it is still the
-                // text switch, which is the only text setting there.
+                // IN THE AUTONOMY EDITOR, THE NEXT CAPTION OPTION (OB-272: *"make control+L cycle the options"*),
+                // which since FR-133 are the dropdown's four; the Text Labels box is not part of the cycle.  The
+                // same test `toggleText` uses to decide the dropdown is showing.  In the track editor it is still
+                // the text switch, which is the only text setting there.
                 if (autonomyPanel != null && autonomyPanel.isVisible()) autonomyPanel.cycleCaptionMode();
                 else toggleText();
 

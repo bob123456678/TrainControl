@@ -38,6 +38,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * MUTATION: remove `applyRememberedCaptionMode` from `LayoutEditor.setAutonomyMode` and the None
  * opening draws every caption the Station Names ones do.
  *
+ * **The dropdown is four options and the Text Labels box is the fifth state's home (FR-133).** Adam:
+ * *"move the "labels only" setting currently in the dropdown to a Text Labels checkbox below Show Trains."*
+ * The box shows the writing on the diagram, the dropdown only decides the station captions, and a remembered
+ * 4 (the old Labels Only) opens as Hide with the box ticked.
+ *
  * @author Adam
  */
 public class testARememberedNoneOpensWithTheCaptionsOff
@@ -63,15 +68,64 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     /** And the writing on the diagram that is not a caption, for each opening (OB-272) */
     private static List<String> ownUnderNamedFirst;
     private static List<String> ownUnderNone;
-    private static List<String> withLabelsOnly;
-    private static List<String> ownUnderLabelsOnly;
-    private static boolean hiddenAfterLabelsOnly;
+
+    /** A remembered 4, the old Labels Only (FR-133): what it drew, and how the controls came up */
+    private static List<String> withOldLabelsOnly;
+    private static List<String> ownUnderOldLabelsOnly;
+    private static boolean hiddenAfterOldLabelsOnly;
+    private static Opening oldLabelsOnly;
+
+    /** The Station Names openings with the box unticked and ticked (FR-133) */
+    private static Opening boxOff;
+    private static Opening boxOn;
+    private static List<String> namedWithBoxOn;
+    private static List<String> ownWithBoxOn;
+
+    /** What the controls looked like at an opening: the dropdown, the box, and where the box sits */
+    private static final class Opening
+    {
+        int mode;
+        int items;
+        String lastItem;
+        boolean box;
+        boolean boxBelowTrains;
+        boolean boxIsShown;
+    }
+
+    private static Opening lastOpening;
+
+    /** Clicking the box on a Station Names editor (FR-133) */
+    private static Clicked clicked;
+
+    private static final class Clicked
+    {
+        int modeBefore;
+        int modeAfter;
+        boolean hiddenBefore;
+        boolean hiddenAfter;
+        int captionsBefore;
+        int captionsAfter;
+        int ownBefore;
+        int ownAfter;
+        boolean boxAfterClick;
+        boolean prefAfterClick;
+        boolean boxAfterTheDiagramSwitch;
+        boolean hiddenAfterTheDiagramSwitch;
+        int modeAfterTheDiagramSwitch;
+    }
 
     /** The caption option after each press of Control+L, starting from Station Names */
     private static List<Integer> cycled;
 
+    /** And the box and the diagram's text switch after each press, with the box ticked to begin with (FR-133) */
+    private static List<Boolean> boxWhileCycling;
+    private static List<Boolean> hiddenWhileCycling;
+
     /** What the preference said before this class touched it */
     private static int captionModeWas;
+
+    /** The box's preference before this class touched it - null when it was never stored */
+    private static String textWas;
 
     /**
      * The preference the panel restores from, named here rather than reached through the panel.
@@ -87,6 +141,11 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     }
 
     private static final String PREF_CAPTION_MODE = "autonomyEditorCaptionMode";
+
+    private static final String PREF_TEXT_LABELS = "autonomyEditorTextLabels";
+
+    /** What an earlier version remembered for Labels Only, which was the fifth option (OB-272) */
+    private static final int OLD_LABELS_ONLY = 4;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -117,10 +176,12 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         if (page == null) throw new SkipException("no page " + PAGE);
 
         captionModeWas = prefs().getInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
+        textWas = prefs().get(PREF_TEXT_LABELS, null);
 
         namedFirst = openWith(AutonomyEditorPanel.CAPTIONS_STATIONS);
         ownUnderNamedFirst = lastOwn;
         movableUnderNamedFirst = lastMovable;
+        boxOff = lastOpening;
         hiddenAfterNamedFirst = page.getEditHideText();
 
         withNone = openWith(AutonomyEditorPanel.CAPTIONS_NONE);
@@ -130,11 +191,18 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         namedAgain = openWith(AutonomyEditorPanel.CAPTIONS_STATIONS);
         hiddenAfterNamedAgain = page.getEditHideText();
 
-        withLabelsOnly = openWith(AutonomyEditorPanel.CAPTIONS_LABELS);
-        ownUnderLabelsOnly = lastOwn;
-        hiddenAfterLabelsOnly = page.getEditHideText();
+        withOldLabelsOnly = openWith(OLD_LABELS_ONLY);
+        ownUnderOldLabelsOnly = lastOwn;
+        hiddenAfterOldLabelsOnly = page.getEditHideText();
+        oldLabelsOnly = lastOpening;
 
-        cycled = pressControlLFiveTimes();
+        namedWithBoxOn = openWith(AutonomyEditorPanel.CAPTIONS_STATIONS, true);
+        ownWithBoxOn = lastOwn;
+        boxOn = lastOpening;
+
+        clicked = clickTheBox();
+
+        pressControlLFiveTimes();
     }
 
     @AfterClass(alwaysRun = true)
@@ -143,6 +211,9 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         try
         {
             prefs().putInt(PREF_CAPTION_MODE, captionModeWas);
+
+            if (textWas == null) prefs().remove(PREF_TEXT_LABELS);
+            else prefs().put(PREF_TEXT_LABELS, textWas);
 
             if (ui != null)
             {
@@ -222,36 +293,117 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     }
 
     /**
-     * Labels Only draws the writing on the diagram and no caption (Adam, 2026-09-23, OB-272).
+     * A remembered 4, which was Labels Only, opens as Hide with the Text Labels box ticked (FR-133).
      *
-     * *"make text labels be a dedicated setting, and hide the text labels unless it is selected"*, and *"add an
-     * option to the dropdown that shows the labels only"*.  The page carries writing of his own - "Inner Loop" and
-     * the rest - so this is not satisfied by a page with nothing to show; None, beside it, draws none of it.
+     * The dropdown lost its fifth option and the box took its job, so somebody who had Labels Only keeps what they saw:
+     * the writing on the diagram and no caption.  The page carries writing of his own - "Inner Loop" and the rest - so
+     * this is not satisfied by a page with nothing to show; None, beside it, draws none of it.
      */
     @Test
-    public void testLabelsOnlyDrawsTheWritingAndNoCaption()
+    public void testARememberedFourOpensAsHideWithTheBoxTicked()
     {
-        assertEquals(withLabelsOnly.size(), 0, "Labels Only drew captions: " + withLabelsOnly);
+        assertEquals(oldLabelsOnly.mode, AutonomyEditorPanel.CAPTIONS_NONE,
+            "a remembered 4 did not open as Hide, the dropdown's last option");
 
-        assertTrue(ownUnderLabelsOnly.size() > 0,
-            "Labels Only drew none of the writing on the diagram, which is the one thing it is for");
+        assertTrue(oldLabelsOnly.box, "a remembered 4 did not tick the Text Labels box");
 
-        assertFalse(hiddenAfterLabelsOnly, "the text switch is off under Labels Only");
+        assertEquals(withOldLabelsOnly.size(), 0, "a remembered 4 drew captions: " + withOldLabelsOnly);
 
-        assertEquals(ownUnderNone.size(), 0, "None drew writing that is not a caption: " + ownUnderNone);
+        assertTrue(ownUnderOldLabelsOnly.size() > 0,
+            "a remembered 4 drew none of the writing on the diagram, which is the one thing it was for");
+
+        assertFalse(hiddenAfterOldLabelsOnly, "the diagram's text switch is off after a remembered 4");
+
+        assertEquals(ownUnderNone.size(), 0, "Hide drew writing that is not a caption: " + ownUnderNone);
     }
 
     /**
-     * Control+L steps through all five options and wraps (OB-272: *"make control+L cycle the options"* - *"the
-     * dropdown's 4, plus ... the labels only"*).  Pressed through the editor's own key handler, so the key and the
-     * option are asked together.
+     * The dropdown is Station Names, Standing Locs, Home Locs and Hide - exactly four, Hide last (FR-133).
      */
     @Test
-    public void testControlLStepsThroughTheFiveAndWraps()
+    public void testTheDropdownIsFourOptionsWithHideLast()
+    {
+        assertEquals(boxOff.items, 4, "the caption dropdown does not have exactly four options");
+
+        assertEquals(boxOff.lastItem, org.traincontrol.util.I18n.t("autosetup.ui.captionsNone"),
+            "the dropdown's last option is not the Hide one");
+
+        assertEquals(boxOff.lastItem, "Hide", "the last option does not read Hide");
+    }
+
+    /**
+     * The Text Labels box sits directly below Show Trains (FR-133: *"a Text Labels checkbox below Show Trains"*).
+     */
+    @Test
+    public void testTheBoxSitsBelowShowTrains()
+    {
+        assertTrue(boxOff.boxIsShown, "the Text Labels box is not in the window");
+
+        assertTrue(boxOff.boxBelowTrains, "the Text Labels box is not directly below Show Trains");
+    }
+
+    /**
+     * The box is remembered, and it is independent of the dropdown (FR-133): with Station Names chosen, a ticked box
+     * draws the writing as well as the captions, and an unticked one draws the captions alone.
+     */
+    @Test
+    public void testTheBoxIsRememberedAndIndependentOfTheDropdown()
+    {
+        assertFalse(boxOff.box, "the box came up ticked with nothing remembered, so the text is drawn by default");
+
+        assertTrue(boxOn.box, "a remembered tick did not open the box ticked");
+
+        assertEquals(boxOn.mode, AutonomyEditorPanel.CAPTIONS_STATIONS, "the box changed the dropdown at open");
+
+        assertTrue(ownWithBoxOn.size() > 0, "the ticked box drew none of the writing on the diagram");
+
+        assertEquals(ownUnderNamedFirst.size(), 0, "the unticked box drew writing: " + ownUnderNamedFirst);
+
+        assertEquals(namedWithBoxOn.size(), namedFirst.size(),
+            "ticking the box changed the station captions drawn: " + namedWithBoxOn + " against " + namedFirst);
+    }
+
+    /**
+     * Clicking the box shows and hides the diagram's text and leaves the dropdown alone (FR-133), and the diagram's own
+     * text switch moving ticks and unticks the box without touching the dropdown either.
+     */
+    @Test
+    public void testClickingTheBoxTogglesTheTextAndNotTheDropdown()
+    {
+        assertTrue(clicked.hiddenBefore, "precondition: the text was hidden before the click");
+        assertFalse(clicked.hiddenAfter, "clicking the box did not show the diagram's text");
+        assertTrue(clicked.boxAfterClick, "the box is not ticked after the click");
+        assertTrue(clicked.prefAfterClick, "the tick was not remembered");
+
+        assertEquals(clicked.ownBefore, 0, "precondition: no writing was drawn before the click");
+        assertTrue(clicked.ownAfter > 0, "no writing was drawn after the click");
+
+        assertEquals(clicked.modeAfter, clicked.modeBefore, "clicking the box changed the dropdown");
+        assertEquals(clicked.captionsAfter, clicked.captionsBefore, "clicking the box changed the station captions");
+
+        assertTrue(clicked.hiddenAfterTheDiagramSwitch, "precondition: the diagram's text switch went off");
+        assertFalse(clicked.boxAfterTheDiagramSwitch, "the diagram's text switch went off and the box stayed ticked");
+        assertEquals(clicked.modeAfterTheDiagramSwitch, clicked.modeBefore,
+            "the diagram's text switch moved the dropdown");
+    }
+
+    /**
+     * Control+L steps the dropdown's four options and wraps, and never touches the box (FR-133; OB-272 had it step the
+     * dropdown's options plus Labels Only).  Pressed through the editor's own key handler, so the key and the option are
+     * asked together.
+     */
+    @Test
+    public void testControlLStepsThroughTheFourAndWraps()
     {
         assertEquals(cycled, java.util.Arrays.asList(AutonomyEditorPanel.CAPTIONS_PARKED, AutonomyEditorPanel.CAPTIONS_HOMES,
-            AutonomyEditorPanel.CAPTIONS_NONE, AutonomyEditorPanel.CAPTIONS_LABELS, AutonomyEditorPanel.CAPTIONS_STATIONS),
-            "Control+L from Station Names did not step Parked, Homes, None, Labels Only and back to Station Names");
+            AutonomyEditorPanel.CAPTIONS_NONE, AutonomyEditorPanel.CAPTIONS_STATIONS, AutonomyEditorPanel.CAPTIONS_PARKED),
+            "Control+L from Station Names did not step Parked, Homes, Hide and back to Station Names");
+
+        assertEquals(boxWhileCycling, java.util.Arrays.asList(true, true, true, true, true),
+            "Control+L unticked the Text Labels box");
+
+        assertEquals(hiddenWhileCycling, java.util.Arrays.asList(false, false, false, false, false),
+            "Control+L moved the diagram's text switch");
     }
 
     /** The writing that is not a caption, from the last `openWith` */
@@ -280,9 +432,10 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             + " captions can be picked up - the drag is asking the text switch, which OB-272 turned off here");
     }
 
-    private static List<Integer> pressControlLFiveTimes() throws Exception
+    private static void pressControlLFiveTimes() throws Exception
     {
         prefs().putInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
+        prefs().putBoolean(PREF_TEXT_LABELS, true);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -296,6 +449,8 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         settle();
 
         final List<Integer> out = new ArrayList<>();
+        final List<Boolean> boxes = new ArrayList<>();
+        final List<Boolean> hidden = new ArrayList<>();
 
         final java.lang.reflect.Method press =
             LayoutEditor.class.getDeclaredMethod("formKeyPressed", java.awt.event.KeyEvent.class);
@@ -320,12 +475,81 @@ public class testARememberedNoneOpensWithTheCaptionsOff
 
             // READ AFTER THE HANDLER'S OWN POSTED WORK: `formKeyPressed` does everything in an `invokeLater`, so
             // the answer is one turn of the queue behind the press.
-            javax.swing.SwingUtilities.invokeAndWait(() -> out.add(built[0].getAutonomyPanel().getCaptionMode()));
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                out.add(built[0].getAutonomyPanel().getCaptionMode());
+                boxes.add(built[0].getAutonomyPanel().getShowTextLabels().isSelected());
+                hidden.add(page.getEditHideText());
+            });
         }
 
         javax.swing.SwingUtilities.invokeAndWait(() -> built[0].dispose());
 
+        cycled = out;
+        boxWhileCycling = boxes;
+        hiddenWhileCycling = hidden;
+    }
+
+    /**
+     * Opens Station Names with the box unticked, clicks the box, then moves the diagram's own text switch back.
+     */
+    private static Clicked clickTheBox() throws Exception
+    {
+        prefs().putInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
+        prefs().putBoolean(PREF_TEXT_LABELS, false);
+
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0].render();
+            built[0].setAutonomyMode(session);
+        });
+
+        settle();
+
+        final Clicked out = new Clicked();
+        final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
+
+        out.modeBefore = panel.getCaptionMode();
+        out.hiddenBefore = page.getEditHideText();
+        out.captionsBefore = drawnNow(built[0], true);
+        out.ownBefore = drawnNow(built[0], false);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.getShowTextLabels().doClick());
+
+        settle();
+
+        out.modeAfter = panel.getCaptionMode();
+        out.hiddenAfter = page.getEditHideText();
+        out.captionsAfter = drawnNow(built[0], true);
+        out.ownAfter = drawnNow(built[0], false);
+        out.boxAfterClick = panel.getShowTextLabels().isSelected();
+        out.prefAfterClick = prefs().getBoolean(PREF_TEXT_LABELS, false);
+
+        // The diagram's own switch (the plain editor's checkbox, Control+L there): off again
+        javax.swing.SwingUtilities.invokeAndWait(() -> built[0].toggleText());
+
+        settle();
+
+        out.hiddenAfterTheDiagramSwitch = page.getEditHideText();
+        out.boxAfterTheDiagramSwitch = panel.getShowTextLabels().isSelected();
+        out.modeAfterTheDiagramSwitch = panel.getCaptionMode();
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> built[0].dispose());
+
         return out;
+    }
+
+    private static int drawnNow(LayoutEditor editor, boolean captions) throws Exception
+    {
+        final List<String> drawn = new ArrayList<>();
+        final List<String> own = new ArrayList<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> collect(editor.getContentPane(), drawn, own, new ArrayList<>()));
+
+        return captions ? drawn.size() : own.size();
     }
 
     /**
@@ -333,7 +557,13 @@ public class testARememberedNoneOpensWithTheCaptionsOff
      */
     private static List<String> openWith(int mode) throws Exception
     {
+        return openWith(mode, false);
+    }
+
+    private static List<String> openWith(int mode, boolean text) throws Exception
+    {
         prefs().putInt(PREF_CAPTION_MODE, mode);
+        prefs().putBoolean(PREF_TEXT_LABELS, text);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -350,8 +580,31 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         final List<String> own = new ArrayList<>();
         final List<String> movable = new ArrayList<>();
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> collect(built[0].getContentPane(), drawn, own, movable));
+        final Opening opening = new Opening();
 
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            collect(built[0].getContentPane(), drawn, own, movable);
+
+            AutonomyEditorPanel panel = built[0].getAutonomyPanel();
+
+            opening.mode = panel.getCaptionMode();
+            opening.items = panel.getCaptionChoice().getItemCount();
+            opening.lastItem = panel.getCaptionChoice().getItemAt(opening.items - 1);
+            opening.box = panel.getShowTextLabels().isSelected();
+
+            java.awt.Container column = panel.getShowTrains().getParent();
+            java.awt.Component[] kids = column == null ? new java.awt.Component[0] : column.getComponents();
+
+            for (int i = 0; i + 1 < kids.length; i++)
+            {
+                if (kids[i] == panel.getShowTrains()) opening.boxBelowTrains = kids[i + 1] == panel.getShowTextLabels();
+            }
+
+            opening.boxIsShown = panel.getShowTextLabels().getParent() != null;
+        });
+
+        lastOpening = opening;
         lastOwn = own;
         lastMovable = movable;
 
