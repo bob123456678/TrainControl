@@ -35040,6 +35040,10 @@ greys it and refuses it (`TrainControlUI.whyTheTrainsCannotBePlacedAtTheirHomes`
 open, anything running (autonomy, a timetable, Return Home running or planning, a route), no train with a home.
 Claims `regression.testReturnHomeRightClickPlacesTheTrainsAtHome`.
 
+**Claude, 2026-10-17.**
+
+The track diagram's own right-click Bulk Tools > Place All Trains at Their Homes now behaves the same way (`7c3e5a4f`): greyed with the reason while anything runs, the same question, and the result in the log.
+
 ---
 
 <a id="mt-743"></a>
