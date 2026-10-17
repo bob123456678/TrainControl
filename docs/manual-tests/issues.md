@@ -353,6 +353,60 @@ Nothing of a run is lost: no train may be sent while an editor is open.  One way
 
 Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 
+### OB-349 - 2026-10-16 - nonexistent "is facing" in right-click autonomy
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-16 18:49  
+**Build:** commit 0e5ee1cc
+
+suppose we import an autonomy layout with a locomotive that is not currently in the locomotive database placed on a station.  when loaded, the station correctly shows empty on its label in the track diagram viewer, but right-clicking that square still shows the "<locomotive> is facing" option, greyed out, with the name of the nonexistent locomotive.  this locomotive should not be in the layout state, and so the greyed out option should be shown at all.  example: BR39 at St00A in tc3 kreds 261016 0810.zip.
+
+### OB-350 - 2026-10-16 - can't place train on station that can't be reached
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-16 19:06  
+**Build:** commit 0e5ee1cc
+
+the track viewer doesn't allow autonomy locomotive placements on stations that have no way in (option greyed out), but the autonomy editor does.  they should be consistent, and allowed.  example: St00A in tc3 kreds 261016 0810.zip .
+
+### OB-351 - 2026-10-16 - path connection issue
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-16 19:14  
+**Build:** commit 0e5ee1cc
+
+in tc3 kreds 261016 0810.zip, there is no manual path from st01pre to st00A (tested via is it running in autonomy editor), even though they are connected.  it should be possible to go in to st00A but not out in the current setup. if I cycle the direction arrows of switch 118, it works again in the same setup, some something must be inconsistent somewhere.
+
+### FR-131 - 2026-10-17 - locomotive icons on the track diagram
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 00:19  
+**Build:** commit a5e787aa, in English - build\classes, compiled 16 Oct 18:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+instead of a generic icon, show the actual locomotive image on the track diagram.  3.2.0+ feature
+
+### FR-132 - 2026-10-17 - updated app layout
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 00:38  
+**Build:** commit a5e787aa, in English - build\classes, compiled 16 Oct 18:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+the app currently has a fixed size and is therefore suboptimal for larger screens.  reimagine the UI to be maximizable and support modular UI components (3.5.0+)
+
+### FR-133 - 2026-10-17 - autonomy editor labels
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 00:48  
+**Build:** commit a5e787aa, in English - build\classes, compiled 16 Oct 18:39 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the autonomy setting, move the "labels only" setting currently in the dropdown to a Text Labels checkbox below Show Trains.  Rename the current "Text Labels" heading above the dropdown to be "Station Labels".  And change "None" in the dropdown to "Hide". 3.0.2 change
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
