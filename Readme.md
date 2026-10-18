@@ -414,8 +414,9 @@ Tab icons provided by Freepik.
         - A locomotive that is not in your locomotive database is now taken out of the autonomy setup when it loads, and a popup tells you which ones.
         - You can now place a train from the Track Diagram on a station no train can leave, as you can in the editor.
         - On switches, three-way switches and double slips, the direction arrows now decide fully which way trains may run, and older setups with a hidden closed road are brought in line with their arrows, with the log listing the switches.
-        - Setup edits (in the editors, on the Auto tab, in the timetable, when loading or exporting a configuration, and routes on or off) are now refused with a message while a route is running, not only while autonomy is.
+        - Setup edits (in the editors, on the Auto tab, in the timetable, when loading or exporting a configuration, with `Stop Using Autonomy`, and routes on or off) are now refused with a message while a route is running, not only while autonomy is.
         - Every finding you click in the setup check is now outlined in the autonomy editor's diagram.
+        - A locomotive turned round while a route is running, by the route or by hand, is now turned round in the autonomy setup when the route finishes.
         - Track that no station can be reached along no longer shows direction arrows and is greyed out in the editor.
         - Clicking a train in Test a Path or Why not Moving? now picks the station it stands on.
         - When the only trains away from home are paused, Return Home now names them and says how to set them going, instead of saying every locomotive is already at its home.
