@@ -3254,6 +3254,12 @@ public class AutonomySession
         if (tail != null) onto.setArrivedFrom(tail);
 
         if (along != null) onto.setArrivedAlong(along);
+
+        // AND THE RAILWAY'S WATCHERS TOLD, as `moveLocomotive` tells them (MT-759).  The diagram draws a standing train's
+        // icon from the copy it is on and redraws only when the railway says something moved, so a train turned here kept
+        // its old icon while the caption, which reads the copy at once, turned - Adam: "make sure the icon matches the
+        // label".
+        running.refreshUI();
     }
 
     /**

@@ -35,8 +35,12 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * which is what the last direction says (Adam, on finding C8: *"it should reverse, but be careful to avoid duplication in
  * code mechanisms on how this is done"*).
  *
+ * A followed turn turns the train's icon on the diagram too, to the facing the caption's arrow shows (MT-759; Adam: "make
+ * sure the icon matches the label").
+ *
  * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.  Take the `routeFinished`
- * call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.
+ * call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.  Take the
+ * `refreshUI` out of `AutonomySession.moveOntoFacingCopy`, and the icon is left facing east in three.
  *
  * @author Adam
  */
@@ -94,6 +98,9 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             session.setFacing(MAIN_A, Side.E);
 
             model.parseAuto(session.buildConfiguration());
+
+            // AND THE DIAGRAM WATCHING THE RAILWAY JUST BUILT, as the window's own loads leave it (`autonomyLoadedFromDiagram`)
+            ui.getDiagramMonitorDriver().bind(session);
         });
 
         settle();
@@ -131,6 +138,8 @@ public class testAThrottleReversalIsFollowedFromItsEcho
     @Test
     public void testTheThrottleTurnsTheTrainRoundInAutonomy() throws Exception
     {
+        standEast();
+
         assertEquals(session.getFacing(MAIN_A), Side.E, "precondition: the train is not recorded facing east");
 
         Locomotive train = model.getLocByName(PROBE);
@@ -154,6 +163,8 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         assertEquals(facing, Side.W, "reversed on the throttle at BottomMainA, with its command echoed as a Central"
             + " Station echoes it, the train is still recorded facing east - Adam, 2026-09-24: \"reversing it on the"
             + " throttle has no effect on autonomy\"");
+
+        assertTheDiagramShows(Side.W);
     }
 
     /**
@@ -180,12 +191,16 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             assertEquals(session.getFacing(MAIN_A), Side.E, "the setup was turned while a route runs - Adam: \"There"
                 + " should be no setup edit possible during a run\"");
 
+            assertEquals(iconFacing(), Side.E, "the diagram turned the train while a route runs");
+
             endTheRoute(hold);
 
             waitFor(() -> session.getFacing(MAIN_A) == Side.W, "the reversal made during a route was never followed: the"
                 + " setup still has the train facing " + session.getFacing(MAIN_A) + " after the route ended");
 
             assertFalse(held().contains(PROBE), "the turn is still held after it was followed");
+
+            assertTheDiagramShows(Side.W);
         }
         finally
         {
@@ -275,6 +290,8 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             waitFor(() -> session.getFacing(MAIN_A) == Side.W, "the route turned the train and the setup still has it"
                 + " facing " + session.getFacing(MAIN_A) + " after the route ended");
+
+            assertTheDiagramShows(Side.W);
         }
         finally
         {
@@ -287,6 +304,37 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
             standEast();
         }
+    }
+
+    /**
+     * The facing the diagram's icon, the station caption's arrow and the setup show for the train at BottomMainA, all one
+     * (MT-759; Adam: "make sure the icon matches the label").
+     */
+    private static void assertTheDiagramShows(Side facing) throws Exception
+    {
+        assertEquals(session.facingOnTheRailway(MAIN_A, model.getAutoLayout()), facing, "the railway, which the caption's"
+            + " arrow reads, does not have the train facing " + facing);
+
+        waitFor(() -> iconFacing() == facing, "the train was turned to face " + facing + " and its icon on the diagram"
+            + " still faces " + iconFacing() + " - Adam, on MT-759: \"the label's arrow direction changes, but it does not"
+            + " match the locomotive icon direction on the track diagram\"");
+    }
+
+    /** Which way the diagram draws the train standing at BottomMainA, as its squares were last told, or null. */
+    private static Side iconFacing()
+    {
+        final org.traincontrol.automationui.TileOverlay[] drawn = new org.traincontrol.automationui.TileOverlay[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> drawn[0] = ui.getDiagramTileRegistry().overlayAt(MAIN_A));
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+
+        return drawn[0] == null || !drawn[0].isParked() ? null : drawn[0].getFacing();
     }
 
     private static final String HOLD = "held route";
@@ -325,11 +373,45 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             session.setFacing(MAIN_A, Side.E);
 
             model.parseAuto(session.buildConfiguration());
+
+            // AND THE DIAGRAM WATCHING THE RAILWAY JUST BUILT, as the window's own loads leave it (`autonomyLoadedFromDiagram`)
+            ui.getDiagramMonitorDriver().bind(session);
         });
 
         settle();
 
         SwingUtilities.invokeAndWait(() -> ui.reconcileFacingWhenIdle());
+
+        // DRAWN FROM THE RAILWAY JUST BUILT, and nothing left for the diagram to look at: a look still owed would redraw the
+        // icon after the turn whether or not the turn asked for it
+        waitFor(() -> !theDiagramOwesALook(), "the diagram never looked at the railway just built");
+
+        waitFor(() -> iconFacing() == Side.E, "the train stood facing east is drawn facing " + iconFacing());
+    }
+
+    /** Whether the diagram has been told something moved and has not yet looked (`DiagramMonitor.markDirty`). */
+    private static boolean theDiagramOwesALook()
+    {
+        try
+        {
+            Object driver = ui.getDiagramMonitorDriver();
+
+            java.lang.reflect.Field monitor = driver.getClass().getDeclaredField("monitor");
+
+            monitor.setAccessible(true);
+
+            Object watching = monitor.get(driver);
+
+            java.lang.reflect.Field dirty = watching.getClass().getDeclaredField("dirty");
+
+            dirty.setAccessible(true);
+
+            return ((java.util.concurrent.atomic.AtomicBoolean) dirty.get(watching)).get();
+        }
+        catch (ReflectiveOperationException failed)
+        {
+            throw new IllegalStateException(failed);
+        }
     }
 
     /** The throttle's own call. */
