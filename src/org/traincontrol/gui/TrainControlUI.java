@@ -5100,6 +5100,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (result != JOptionPane.YES_OPTION) return false;
 
+            // A ROUTE STILL RUNNING, OR STARTED WHILE THE QUESTION WAS UP: the stop below is autonomy's, and a route is not
+            // stopped by it, so the load or unload would go ahead under it (an s88 route can fire from an autonomy train)
+            if (aRouteIsExecuting(this.model))
+            {
+                JOptionPane.showMessageDialog(this, I18n.t("ui.main.tooltip.placeAtHomesWhileRunning"));
+
+                return false;
+            }
+
             this.gracefulStopRequested = true;
 
             // THE RAILWAY'S OWN STOP (RSA-C1): a stop counted first, which every journey dispatched before it obeys -
@@ -28438,24 +28447,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static boolean somethingIsRunning(ViewListener model, boolean returnHomePlanning)
     {
-        boolean running = returnHomePlanning || (model != null && model.isAutonomyRunning());
+        return returnHomePlanning || (model != null && model.isAutonomyRunning()) || aRouteIsExecuting(model);
+    }
 
-        if (!running && model != null)
+    /**
+     * Whether any route is executing, autonomy and the rest aside.
+     *
+     * @param model the railway, or null
+     * @return true while a route runs
+     */
+    static boolean aRouteIsExecuting(ViewListener model)
+    {
+        if (model == null) return false;
+
+        for (String name : model.getRouteList())
         {
-            for (String name : model.getRouteList())
-            {
-                Route route = model.getRoute(name);
+            Route route = model.getRoute(name);
 
-                if (route != null && route.isExecuting())
-                {
-                    running = true;
-
-                    break;
-                }
-            }
+            if (route != null && route.isExecuting()) return true;
         }
 
-        return running;
+        return false;
     }
 
     /**

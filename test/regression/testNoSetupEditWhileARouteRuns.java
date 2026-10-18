@@ -1377,6 +1377,39 @@ public class testNoSetupEditWhileARouteRuns
                         + " was declined");
                 }
 
+                // YES, with a route running (or begun while the question was up): the stop is autonomy's and the load would
+                // go ahead under the route, so it is refused after the answer, with the railway as it was
+                answering.pickFirstOption(true);
+
+                aRouteRuns(ui, true);
+
+                try
+                {
+                    for (String door : new String[] {"Autonomy: the enable button", "Autonomy: the list", "Unload"})
+                    {
+                        int asked = answering.count();
+
+                        SwingUtilities.invokeAndWait(door.equals("Unload") ? (Runnable) () -> window.unloadAutonomy()
+                            : doors.get(door));
+
+                        settle();
+
+                        assertEquals(answering.since(asked), java.util.Arrays.asList(offer, anyRun), door + " went ahead"
+                            + " under a route that was running when the offer to stop the trains was answered Yes");
+
+                        assertTrue(ui.isAutonomyLoaded() && model.getAutoLayoutIfLoaded() == railway, door + " replaced the"
+                            + " railway under a running route");
+
+                        assertTrue(model.getRoute(PROBE).isExecuting(), door + " stopped the route");
+                    }
+                }
+                finally
+                {
+                    aRouteRuns(ui, false);
+
+                    answering.pickFirstOption(false);
+                }
+
                 int from = answering.count();
 
                 SwingUtilities.invokeAndWait(doors.get("Autonomy: Export"));
