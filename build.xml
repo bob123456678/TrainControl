@@ -576,6 +576,7 @@
         <test-one-class class="testTheUpdateQuestion"/>
         <test-one-class class="testTheUpdateIsWiredEndToEnd"/>
         <test-one-class class="testTheArrowsTellTheWholeStory"/>
+        <test-one-class class="testADeadEndSaysWhyItIsATerminus"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
