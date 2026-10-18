@@ -378,6 +378,24 @@ Adam, 2026-10-18: "Before I do MT's, let's further lighten the surround of the t
 
 Adam, 2026-10-18: "Propose pretiffications for the link icon, such as to make the arrow sharper / different / more proportional to the chosen size, or other ideas."  Of the options drawn for him: "I like the F idea, but make it with an all black arrow without the gray dash"; then "G is good, but make sure you match the edges of the signal tile.  does that mean we should sharpen the signal tile, if it hasn't been sharpened yet?" - the signal had not been redrawn: at the Large size its band's top edge was #999 where every other track tile's is #666, a lighter stripe against the straights, with a stray green pixel on its bar; at the Small its lamps had a dark fringe and its bar's ends were shaded unevenly.  Then: "Build G and the sharpened signals now".
 
+### OB-355 - 2026-10-17 - return home incorrect greying reason
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 23:41  
+**Build:** commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+"every locomotive is already at its home" is shown, and return home is greyed out, even if the reason is that locomotives are inactive but not on their stations.
+
+### OB-356 - 2026-10-17 - station icons
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 23:42  
+**Build:** commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in tc3 kreds 261016 0810.zip, 3,9 (ST60rear is shown as a square (terminus) even though it is configured as a normal stations with trains not turning around there.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

@@ -27,16 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-749](#mt-749) | 2026-10-18 | FR-135: the sharper link and signal icons, meeting the track with no seam | fixed unvalidated | FR-135 |
-| [MT-750](#mt-750) | 2026-10-18 | OB-352: every finding you click is outlined, not only some | fixed unvalidated | OB-352 |
-| [MT-751](#mt-751) | 2026-10-18 | OB-353: track no station can be reached along has no arrows and is greyed | fixed unvalidated | OB-353 |
-| [MT-752](#mt-752) | 2026-10-18 | OB-354: clicking a train in Test a Path or Why not Moving? picks its station | fixed unvalidated | OB-354 |
-| [MT-753](#mt-753) | 2026-10-18 | FR-129: Run Trains to Their Homes on Return Home's right-click | fixed unvalidated | FR-129 (Adam's note on MT-742) |
-| [MT-754](#mt-754) | 2026-10-18 | FR-133: the Station Labels dropdown in the Track Directions font | fixed unvalidated | FR-133 (Adam's note on MT-743) |
-| [MT-755](#mt-755) | 2026-10-18 | OB-349: the locomotives left out are shown in a popup on a load too | fixed unvalidated | OB-349 (Adam's note on MT-744) |
 
-Everything else - 748 of 755 - needs nothing from you unless the area changes again:
-595 **fixed validated** and 153 **superseded**.
+
+Everything else - 755 of 755 - needs nothing from you unless the area changes again:
+602 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -35273,7 +35267,7 @@ Large (the Medium size is the Large art scaled down).  Claim `ui.testDiagramLook
 <a id="mt-749"></a>
 ### MT-749 - 2026-10-18 - FR-135: the sharper link and signal icons, meeting the track with no seam
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-135
 
 **Written:** 2026-10-18
@@ -35296,12 +35290,16 @@ Large (the Medium size is the Large art scaled down).  Claim `ui.testDiagramLook
 `testTheLinkAndTheSignalsMeetTheStraightWithNoSeam`, `testTheLinkAndTheSignalsBarAreSymmetric`,
 `testTheSignalsLampsAreInTheirOwnEnds`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-750"></a>
 ### MT-750 - 2026-10-18 - OB-352: every finding you click is outlined, not only some
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-352
 
 **Written:** 2026-10-18
@@ -35321,12 +35319,16 @@ Large (the Medium size is the Large art scaled down).  Claim `ui.testDiagramLook
 *What this is:* OB-352 (`54301fca`): every finding that names a square is outlined and flashed, through one path, in the editor's list and
 from the Auto tab.  Claims in `core.testAutonomyDiagramSession` and `regression.testTheImportDoorReadsAnOldFile`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-751"></a>
 ### MT-751 - 2026-10-18 - OB-353: track no station can be reached along has no arrows and is greyed
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-353
 
 **Written:** 2026-10-18
@@ -35347,12 +35349,16 @@ from the Auto tab.  Claims in `core.testAutonomyDiagramSession` and `regression.
 are greyed; a click there sets nothing, other edits still work (Adam: "yes, it can accept edits").  Claims in
 `core.testTheArrowsTellTheWholeStory`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-752"></a>
 ### MT-752 - 2026-10-18 - OB-354: clicking a train in Test a Path or Why not Moving? picks its station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-354
 
 **Written:** 2026-10-18
@@ -35372,12 +35378,16 @@ are greyed; a click there sets nothing, other edits still work (Adam: "yes, it c
 it) is a click on the train's station.  Other tools are unchanged.  Claim in
 `regression.testTheImportDoorReadsAnOldFile`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-753"></a>
 ### MT-753 - 2026-10-18 - FR-129: Run Trains to Their Homes on Return Home's right-click
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-129 (Adam's note on MT-742)
 
 **Written:** 2026-10-18
@@ -35397,12 +35407,16 @@ it) is a click on the train's station.  Other tools are unchanged.  Claim in
 *What this is:* Adam on MT-742: "add an option above that that says "Run Trains to their Home", which is equivalent to just clicking
 the button itself" (`2cfb4d57`).  Claims in `regression.testReturnHomeRightClickPlacesTheTrainsAtHome`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-754"></a>
 ### MT-754 - 2026-10-18 - FR-133: the Station Labels dropdown in the Track Directions font
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-133 (Adam's note on MT-743)
 
 **Written:** 2026-10-18
@@ -35421,12 +35435,16 @@ the button itself" (`2cfb4d57`).  Claims in `regression.testReturnHomeRightClick
 *What this is:* Adam on MT-743: "make sure Station Names is default.  Also, the font size needs to be reduced, it should be the same
 smaller font as under Track Directions" (`0fffea9a`).  Claims in `regression.testARememberedNoneOpensWithTheCaptionsOff`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-755"></a>
 ### MT-755 - 2026-10-18 - OB-349: the locomotives left out are shown in a popup on a load too
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-349 (Adam's note on MT-744)
 
 **Written:** 2026-10-18
@@ -35446,5 +35464,9 @@ smaller font as under Track Directions" (`0fffea9a`).  Claims in `regression.tes
 *What this is:* Adam on MT-744: "log works, but show the locomotive info in a popup" (`7ec855a2`): a load that leaves locomotives out shows
 the import's popup too, after the connecting notice at start-up.  Claims in
 `regression.testALocomotiveNotInTheDatabaseLeavesTheSetup`.
+
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
