@@ -14896,6 +14896,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return moved;
     }
     /**
+     * A route has begun running: the route list turns a mark beside it (FR-137), whoever started it.
+     *
+     * @param r the route that began
+     */
+    @Override
+    public void routeStarted(Route r)
+    {
+        this.routeMarks.started(r.getName());
+    }
+
+    /**
      * A route has finished: follows, through `followTheTurn` and its own guards, every turn it held off.  Each is asked
      * again, so one that a second route or autonomy still holds is declined again (and kept only where a route alone does),
      * and a train the setup no longer has is left alone.
@@ -14905,6 +14916,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     public void routeFinished(Route r)
     {
+        this.routeMarks.finished(r.getName());
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             for (String name : new java.util.ArrayList<>(turnsHeldByARoute))
@@ -27665,7 +27678,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** A three-quarter circle that turns a step each frame (FR-077). */
-    private static final class TurningArc implements javax.swing.Icon
+    static final class TurningArc implements javax.swing.Icon
     {
         private final int size;
         private int angle;
@@ -33384,6 +33397,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
+     * The turning mark beside each route that is running (FR-137).
+     */
+    private final RouteRunningMarks routeMarks = new RouteRunningMarks(() -> this.RouteList,
+        name -> this.model == null ? null : this.model.getRoute(name));
+
+    /**
+     * @return whether the route list's mark is turning, which it does only while a route runs (FR-137)
+     */
+    public boolean isRouteMarkTurning()
+    {
+        return this.routeMarks.isTurning();
+    }
+
+    /**
      * When each running route was marked, so the debug line can say how long it lasted.
      *
      * The number that settles whether a state nobody saw was never set or merely brief.
@@ -33857,6 +33884,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
          */
         private String paintingRoute;
 
+        /** Whether that route is running, as it was when this was set up to draw it (FR-137). */
+        private boolean paintingExecuting;
+
         /**
          * Draws the cell, then the play button on the right of it (FR-043).
          *
@@ -33891,8 +33921,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The renderer is stamped at the cell's origin, so the button's box is worked out
                 // against a rectangle of this component's own size - the same arithmetic the click
                 // uses, through the same method, so the two cannot drift.
-                java.awt.Rectangle box = routePlayGlyphBox(routePlayButtonBox(
-                    new java.awt.Rectangle(0, 0, getWidth(), getHeight())));
+                java.awt.Rectangle strip = routePlayButtonBox(new java.awt.Rectangle(0, 0, getWidth(), getHeight()));
+
+                java.awt.Rectangle box = routePlayGlyphBox(strip);
 
                 // GREY WHILE IT RUNS, GREEN WHEN IT DOES NOT (MT-217).
                 //
@@ -33914,6 +33945,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 play.addPoint(box.x, box.y + box.height);
 
                 g2.fillPolygon(play);
+
+                if (paintingExecuting) routeMarks.paint(g2, strip);
             }
             finally
             {
@@ -34002,6 +34035,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Remembered for paintComponent, which is called immediately after this and has no other
             // way to know which cell it is drawing: one renderer serves every cell in the table.
             this.paintingRoute = value == null ? null : ((Route) value).getName();
+
+            // The mark's room is taken from the text only while it is drawn (FR-137)
+            this.paintingExecuting = value != null && ((Route) value).isExecuting();
+
+            if (this.paintingExecuting)
+            {
+                j.setBorder(BorderFactory.createCompoundBorder(j.getBorder(),
+                    BorderFactory.createEmptyBorder(0, 0, 0, RouteRunningMarks.SLOT)));
+            }
 
             if (value != null)
             {

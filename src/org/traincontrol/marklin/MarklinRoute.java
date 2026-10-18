@@ -749,6 +749,9 @@ public class MarklinRoute extends Route
                 // This will highlight icons in the UI
                 this.updateTiles();
 
+                // And the route list's mark, whoever started this (FR-137)
+                if (this.network.getGUI() != null) this.network.getGUI().routeStarted(this);
+
                 // try/finally so that stopExecuting always runs.  setExecuting is the re-entrancy
                 // guard: if a command threw, the flag stayed set and every later attempt to run this
                 // route silently returned false for the rest of the session.

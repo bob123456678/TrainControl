@@ -88,6 +88,14 @@ public interface View
     public void emergencyStopTriggered(Route r);
 
     /**
+     * Tells the window that a route has begun running, so that it can show it (FR-137).  May be called from the route's
+     * own thread.
+     *
+     * @param r the route that has begun
+     */
+    public void routeStarted(Route r);
+
+    /**
      * Tells the window that a route has finished running, so that what it held off while the route ran can be done: a
      * locomotive's direction change the setup did not follow (`TrainControlUI.followTheTurn`).  May be called from the
      * route's own thread.

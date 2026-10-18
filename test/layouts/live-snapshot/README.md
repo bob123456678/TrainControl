@@ -147,6 +147,7 @@ not fix it. Name the square.
 - `regression.testTheTailCanBeGivenInTheEditor`
 - `regression.testPathTypeRedrawsTheTestInTheEditor`
 - `ui.testYourOwnRoutesToggleWithoutASync`
+- `ui.testTheRouteListShowsWhatRuns`
 - `ui.testTheLengthPromptHasTheKeyboard`
 - `core.testATailPastASwitchIsAskedAbout`
 - `core.testATrainIsPutOnlyWhereItCanStart`
