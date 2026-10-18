@@ -2298,19 +2298,20 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A run whose squares say different things is drawn once, at its first square, as a train finds it - on the track
-     * diagram as in the editor (OB-361; Adam: *"in the viewer, there are excessive red arrows shown to the east of feedback
-     * 4, even though these aren't visible in the editor."*).  A train passes every square of a run, so one square closed
-     * in a run open one way closes the run, and its first square says so; the square itself draws nothing, as in the
-     * editor.  This was OB-321's square that keeps its own arrows.
+     * A run whose squares say different things is brought to one, its narrowest - what a train finds - and every square
+     * of it stores that, as its first square draws it (OB-361; Adam, on OB-321: *"Any disagreement should be corrected so
+     * that the viewer displays the source of truth, and the editor flags issues, rather than surprising the user."*).  A
+     * train passes every square of a run, so one square closed in a run open one way closes the run: every square is
+     * stored closed, the first draws it closed and the rest draw nothing, on the track diagram as in the editor, and the
+     * log says it once.
      *
-     * MUTATION: draw a square that follows its run, or draw the first square's own direction rather than the run's, and
-     * this fails.
+     * MUTATION: leave a run's squares as they were stored, draw a square that follows its run, or draw the first square's
+     * own direction, and this fails.
      *
      * @throws Exception from the session or the panel
      */
     @Test
-    public void testARunThatSaysTwoThingsIsDrawnOnceAsATrainFindsIt() throws Exception
+    public void testARunThatSaysTwoThingsIsBroughtToWhatATrainFinds() throws Exception
     {
         List<TileKey> run = aRunOfFourBetweenTwoStations("OB-361 odd");
 
@@ -2323,12 +2324,29 @@ public class testAutonomyDiagramSession
 
         assertFalse(odd.equals(leader), "precondition: the square closed is the run's first");
 
+        session.takeSquaresBroughtToTheirArrows();
+
+        // ONE SQUARE CLOSED ALONE, as no door of the editor does now but a file or an older version can
         session.setDirection(odd, new RouteId(0, 0), Direction.NONE);
+
+        // STORED: every square of the run closed, as a train finds it
+        for (TileKey square : run)
+        {
+            assertEquals(session.getStore().getTileDirection(square, new RouteId(0, 0)), Direction.NONE, square + " is"
+                + " stored otherwise than closed, in a run a closed square closes (OB-361)");
+        }
+
+        // SAID ONCE, under the run's first square
+        assertEquals(session.getSquaresBroughtToTheirArrows().keySet(), java.util.Collections.singleton(leader), "the run"
+            + " brought to one direction is not said once, under its first square: "
+            + session.getSquaresBroughtToTheirArrows());
+
+        session.takeSquaresBroughtToTheirArrows();
         session.rebuild();
 
-        assertNotEquals(session.getGraph().getDirection(leader, new RouteId(0, 0)), Direction.NONE, "precondition:"
-            + " the run's first square is closed itself, so nothing below is about a run that says two things");
+        assertTrue(session.takeSquaresBroughtToTheirArrows().isEmpty(), "the run was said again by the next rebuild");
 
+        // DRAWN: the first square closed, the rest nothing, as in the editor
         java.util.Map<TileKey, TileAnnotation> drawn = session.staticAnnotations(run, true, false);
 
         assertTrue(drawn.get(leader) != null && drawn.get(leader).getMarks().size() == 1
@@ -3356,10 +3374,13 @@ public class testAutonomyDiagramSession
         TileKey middle = new TileKey("main", 2, 1);
         RouteId route = session.getRoutes(middle).keySet().iterator().next();
 
-        session.setDirection(middle, route, Direction.TOWARD_A);
+        // THE SQUARE'S RUN, as a click sets it: a square of a run takes its run's direction (OB-361)
+        TileKey leader = session.runLeaders().get(middle);
+
+        session.setRunDirection(leader, route, Direction.TOWARD_A);
         assertNotNull(session.getStore().getTileDirection(middle, route));
 
-        session.setDirection(middle, route, Direction.BOTH);
+        session.setRunDirection(leader, route, Direction.BOTH);
         assertNull(session.getStore().getTileDirection(middle, route),
             "back at the default, so nothing should be stored");
     }

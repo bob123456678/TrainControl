@@ -25,6 +25,7 @@ import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -52,7 +53,8 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
     private static AutonomySession session;
 
-    private static File unpacked;
+    /** Every copy of the sample unpacked here, deleted afterwards. */
+    private static final List<File> unpacked = new ArrayList<>();
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -82,7 +84,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     {
         if (sandbox != null) sandbox.close();
 
-        deleteQuietly(unpacked);
+        for (File folder : unpacked) deleteQuietly(folder);
     }
 
     /**
@@ -230,6 +232,161 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
             + " PostDeparture, which trains run one way, is not drawn one way: " + marks);
     }
 
+    /**
+     * The run east of MainLine, stored one way on five squares and both ways on 10,3, is stored one way on all six as the
+     * sample is opened - its narrowest, what a train finds - and the log says so once (OB-361; Adam, on OB-321: *"Any
+     * disagreement should be corrected so that the viewer displays the source of truth"*).
+     *
+     * MUTATION: leave the run as it was stored, or say it again on the next open, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheRunEastOfMainLineIsStoredOneWayAndSaidOnce() throws Exception
+    {
+        File folder = unpackTheSample();
+
+        AutonomySession first = openOn(folder);
+
+        assertEquals(first.getStore().getTileDirection(square(10, 3), new RouteId(0, 0)), Direction.TOWARD_A, "10,3 is"
+            + " not stored one way, toward the north, as the rest of its run is");
+
+        for (TileKey square : first.runs().get(square(10, 3)).getTiles())
+        {
+            assertNotNull(first.getStore().getTileDirection(square, new RouteId(0, 0)), square + " of the run is not"
+                + " stored one way");
+        }
+
+        assertEquals(first.getSquaresBroughtToTheirArrows().keySet(), Collections.singleton(square(10, 3)), "opening the"
+            + " sample does not say once, under the run's first square, that the run was brought to one direction: "
+            + first.getSquaresBroughtToTheirArrows());
+
+        AutonomySession again = openOn(folder);
+
+        assertTrue(again.getSquaresBroughtToTheirArrows().isEmpty(), "opening the saved sample again said it again: "
+            + again.getSquaresBroughtToTheirArrows());
+
+        assertEquals(again.getStore().getTileDirection(square(10, 3), new RouteId(0, 0)), Direction.TOWARD_A, "10,3 was"
+            + " not saved one way");
+    }
+
+    /**
+     * A click on one arrow changes that arrow alone: every other square's stored directions, and what it draws on the
+     * track diagram and in the editor, are as they were (Adam, on OB-361's correction: *"if I click on an arrow, it should
+     * only affect itself, not other tiles with arrows."*).  Every square that draws an arrow is clicked in turn; a run's
+     * arrow is the whole run, whose squares are its arrow's.
+     *
+     * MUTATION: let a click, or the correction that follows it, touch another run, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testAClickOnOneArrowChangesThatArrowAlone() throws Exception
+    {
+        AutonomySession fresh = openOn(unpackTheSample());
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(fresh, null, () -> { }));
+
+        int clicked = 0;
+
+        for (TileKey arrow : new ArrayList<>(fresh.getGraph().getTiles().keySet()))
+        {
+            if (fresh.directionMarks(arrow).isEmpty() || fresh.followsItsRun(arrow)) continue;
+
+            TileKey leader = fresh.runLeaders().get(arrow);
+
+            java.util.Set<TileKey> itself = leader == null ? Collections.singleton(arrow)
+                : new java.util.HashSet<>(fresh.runs().get(leader).getTiles());
+
+            java.util.Map<TileKey, String> before = everyArrow(fresh, panel[0]);
+
+            click(panel[0], arrow);
+
+            java.util.Map<TileKey, String> after = everyArrow(fresh, panel[0]);
+
+            boolean changed = false;
+
+            for (TileKey square : before.keySet())
+            {
+                if (itself.contains(square))
+                {
+                    changed |= !before.get(square).equals(after.get(square));
+
+                    continue;
+                }
+
+                assertEquals(after.get(square), before.get(square), "a click on the arrow at " + arrow + " changed "
+                    + square + ", another arrow's square");
+            }
+
+            assertTrue(changed, "precondition: a click on the arrow at " + arrow + " changed nothing of its own");
+
+            clicked++;
+        }
+
+        assertTrue(clicked >= 5, "precondition: only " + clicked + " arrows were clicked on the sample");
+    }
+
+    /** Each square's stored directions and the marks it draws on the track diagram and in the editor, in one line. */
+    private static java.util.Map<TileKey, String> everyArrow(AutonomySession on,
+        org.traincontrol.gui.AutonomyEditorPanel panel)
+    {
+        java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
+
+        java.util.Map<TileKey, TileAnnotation> diagram = on.staticAnnotations(on.getGraph().getTiles().keySet(), true, true);
+
+        for (TileKey square : on.getGraph().getTiles().keySet())
+        {
+            StringBuilder line = new StringBuilder();
+
+            for (RouteId road : on.getGraph().getRoutes(square).keySet())
+            {
+                line.append(road).append('=').append(on.getStore().getTileDirection(square, road)).append(' ');
+            }
+
+            line.append("| diagram ").append(diagram.get(square) == null ? "[]" : diagram.get(square).getMarks())
+                .append(" | editor ").append(panel.annotationFor(square).getMarks());
+
+            out.put(square, line.toString());
+        }
+
+        return out;
+    }
+
+    /** A click on a square in the editor, as the mouse gives it. */
+    private static void click(final org.traincontrol.gui.AutonomyEditorPanel panel, final TileKey square) throws Exception
+    {
+        final java.lang.reflect.Method cycle =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+
+        cycle.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                cycle.invoke(panel, square);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
+    /** A session on a folder of the sample, opened on the model's pages. */
+    private static AutonomySession openOn(File folder) throws Exception
+    {
+        AutonomySession opened = new AutonomySession(folder);
+
+        opened.open(support.LayoutSandbox.wiredPages(model));
+
+        return opened;
+    }
+
     /** A square of the sample's only page. */
     private static TileKey square(int x, int y)
     {
@@ -258,7 +415,9 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
      */
     private static File unpackTheSample() throws IOException
     {
-        unpacked = Files.createTempDirectory("tc-ob361-sample").toFile();
+        File into = Files.createTempDirectory("tc-ob361-sample").toFile();
+
+        unpacked.add(into);
 
         String zip = TrainControlUI.RESOURCE_PATH + TrainControlUI.DEMO_LAYOUT_ZIP;
 
@@ -270,9 +429,9 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
             {
                 for (ZipEntry entry = entries.getNextEntry(); entry != null; entry = entries.getNextEntry())
                 {
-                    Path to = unpacked.toPath().resolve(entry.getName()).normalize();
+                    Path to = into.toPath().resolve(entry.getName()).normalize();
 
-                    assertTrue(to.startsWith(unpacked.toPath()), "the sample's zip names a file outside it: " + entry);
+                    assertTrue(to.startsWith(into.toPath()), "the sample's zip names a file outside it: " + entry);
 
                     if (entry.isDirectory())
                     {
@@ -288,9 +447,9 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
             }
         }
 
-        assertTrue(new File(unpacked, "config/autonomy/setup.json").isFile(), "the sample has no autonomy setup");
+        assertTrue(new File(into, "config/autonomy/setup.json").isFile(), "the sample has no autonomy setup");
 
-        return unpacked;
+        return into;
     }
 
     /** Deletes a folder and everything in it, quietly. */

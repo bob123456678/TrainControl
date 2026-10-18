@@ -17,6 +17,7 @@ import java.util.Set;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.Landing;
 import org.traincontrol.automationui.TileGraph.RouteId;
+import org.traincontrol.automationui.TileGraph.Run;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
@@ -339,8 +340,9 @@ public class AutonomySession
 
         rebuild();
 
-        // EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351), and the setup is saved that way at once, so each is said once
-        broughtToTheirArrows = sentencesFor(graph.getNormalizedToArms().keySet());
+        // EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351), and every run one way (OB-361), and the setup is saved that way at
+        // once, so each is said once
+        broughtToTheirArrows = sentencesForWhatWasBrought();
         arrowsSaveFailure = null;
         arrowsSaveFailureToSay = false;
 
@@ -436,6 +438,53 @@ public class AutonomySession
         }
 
         broughtToTheirArrows = new LinkedHashMap<>();
+
+        return out;
+    }
+
+    /**
+     * The sentences for what the graph last brought to its arrows: a square for each switch (OB-351), and one for each run
+     * brought to one direction, under its first square (OB-361).
+     *
+     * @return square to sentence
+     */
+    private Map<TileKey, String> sentencesForWhatWasBrought()
+    {
+        Map<TileKey, String> out = sentencesFor(graph.getNormalizedToArms().keySet());
+
+        for (TileKey leader : graph.getNormalizedRuns().keySet())
+        {
+            Run run = graph.runs().get(leader);
+
+            Direction now = graph.runsAs(leader);
+
+            if (run == null || now == null) continue;
+
+            List<TileKey> tiles = run.getTiles();
+
+            TileKey last = tiles.get(tiles.size() - 1);
+
+            // ONE WAY, toward the end its first square's direction leads to; or closed
+            String way;
+
+            if (now == Direction.NONE)
+            {
+                way = I18n.t("autosetup.log.runClosed");
+            }
+            else
+            {
+                Route road = graph.getRoutes(leader).values().iterator().next();
+
+                Side toward = now == Direction.TOWARD_A ? road.getA() : road.getB();
+
+                TileKey end = toward == graph.sideTowardNeighbour(leader, tiles.get(1)) ? last : leader;
+
+                way = I18n.f("autosetup.log.runOneWay", end.getX() + "," + end.getY());
+            }
+
+            out.put(leader, I18n.f("autosetup.log.runBroughtIntoLine", leader.getX() + "," + leader.getY(),
+                last.getX() + "," + last.getY(), leader.getPage(), way));
+        }
 
         return out;
     }
@@ -735,8 +784,13 @@ public class AutonomySession
 
         store.applyTo(graph);
 
-        // AND THE SETUP SAYS WHAT THE GRAPH RUNS (OB-351): a square brought to its arrows is written back
-        for (Map.Entry<TileKey, Map<RouteId, Direction>> square : graph.getNormalizedToArms().entrySet())
+        // AND THE SETUP SAYS WHAT THE GRAPH RUNS (OB-351): a square brought to its arrows is written back - and each square
+        // of a run brought to one direction (OB-361)
+        Map<TileKey, Map<RouteId, Direction>> brought = graph.getNormalizedToArms();
+
+        for (Map<TileKey, Map<RouteId, Direction>> run : graph.getNormalizedRuns().values()) brought.putAll(run);
+
+        for (Map.Entry<TileKey, Map<RouteId, Direction>> square : brought.entrySet())
         {
             for (Map.Entry<RouteId, Direction> road : square.getValue().entrySet())
             {
@@ -748,9 +802,9 @@ public class AutonomySession
         // AND SAID, AND THE SETUP UNSAVED, WHICHEVER DOOR BROUGHT THEM IN (OB-351): `open` saves what it brings and says it
         // when it returns; a bundle import or any other write into the store reaches here, so the squares wait to be
         // handed over (`takeSquaresBroughtToTheirArrows`) and the setup is marked changed
-        if (!graph.getNormalizedToArms().isEmpty())
+        if (!brought.isEmpty())
         {
-            broughtToTheirArrows.putAll(sentencesFor(graph.getNormalizedToArms().keySet()));
+            broughtToTheirArrows.putAll(sentencesForWhatWasBrought());
 
             dirty = true;
         }
@@ -776,25 +830,12 @@ public class AutonomySession
         // AND THE TRACK NO STATION IS ON (OB-353), once a build rather than once a square painted
         stationless = squaresNoStationReaches(graph);
 
-        // AND THE RUNS, which are the diagram's alone, once a build too (OB-361)
-        Map<TileKey, Run> built = runs();
-
-        Map<TileKey, TileKey> led = new LinkedHashMap<>();
-
-        for (Map.Entry<TileKey, Run> run : built.entrySet())
-        {
-            for (TileKey tile : run.getValue().getTiles()) led.put(tile, run.getKey());
-        }
-
-        runsNow = built;
-        leadersNow = led;
+        // AND EACH SQUARE'S RUN, once a build (OB-361)
+        leadersNow = runLeaders();
     }
 
     /** The squares of track no station can be reached along, as the latest build found them (OB-353). */
     private volatile Set<TileKey> stationless = Collections.emptySet();
-
-    /** Every run of plain track, by the square that speaks for it, as the latest build found them (OB-361). */
-    private volatile Map<TileKey, Run> runsNow = Collections.emptyMap();
 
     /** Every square of a run, to the square that speaks for it, as the latest build found them (OB-361). */
     private volatile Map<TileKey, TileKey> leadersNow = Collections.emptyMap();
@@ -12696,161 +12737,13 @@ public class AutonomySession
     }
 
     /**
-     * One run of plain track: the tiles between two points, in order, and the points at either end.
-     */
-    public static class Run
-    {
-        private final TileKey start;
-        private final TileKey end;
-        private final List<TileKey> tiles;
-
-        Run(TileKey start, TileKey end, List<TileKey> tiles)
-        {
-            this.start = start;
-            this.end = end;
-            this.tiles = tiles;
-        }
-
-        public TileKey getStart()
-        {
-            return start;
-        }
-
-        public TileKey getEnd()
-        {
-            return end;
-        }
-
-        /**
-         * @return the tiles between the two points, in order from start to end
-         */
-        public List<TileKey> getTiles()
-        {
-            return Collections.unmodifiableList(tiles);
-        }
-
-        /**
-         * The tile that speaks for this run - the first of them, as the author asked.
-         */
-        public TileKey getLeader()
-        {
-            return tiles.isEmpty() ? null : tiles.get(0);
-        }
-    }
-
-    /**
-     * Every run of plain track, keyed by the tile that speaks for it.
-     *
-     * A run of straight track has one direction, not eleven: setting it tile by tile is busywork, and
-     * a run that disagrees with itself is a silent trap - the arrows look set and no train can pass.
-     * So one tile in each run is the one to set, and the rest follow it.
-     *
-     * Computed from the DIAGRAM ALONE - tile types and which sides face which - and never from the
-     * reduction.  That is the whole point: edges come and go as directions are set, so a run derived
-     * from them would regroup itself every time somebody closed a route, and the greying would move
-     * around under the user.  What is grey is a property of the track, not of the settings on it.
-     *
-     * A run tile is a piece of plain track: exactly one route through it, not a sensor, and not
-     * something autonomy ignores.  Anything else - a switch, a crossing, a sensor - ends the run,
-     * because each of those is a decision in its own right.
+     * Every run of plain track, keyed by the tile that speaks for it - the graph's, which finds them (`TileGraph.runs`).
      *
      * @return leader tile to the run it leads
      */
     public Map<TileKey, Run> runs()
     {
-        Map<TileKey, Run> out = new LinkedHashMap<>();
-
-        if (graph == null) return out;
-
-        Set<TileKey> seen = new LinkedHashSet<>();
-
-        for (TileKey tile : graph.getTiles().keySet())
-        {
-            if (seen.contains(tile) || !isRunTile(tile)) continue;
-
-            Route route = firstRoute(tile);
-
-            if (route == null) continue;
-
-            java.util.LinkedList<TileKey> chain = new java.util.LinkedList<>();
-            chain.add(tile);
-            seen.add(tile);
-
-            // walk out of both ends until the plain track stops
-            TileKey endA = walk(chain, tile, route.getA(), seen, false);
-            TileKey endB = walk(chain, tile, route.getB(), seen, true);
-
-            out.put(chain.getFirst(), new Run(endA, endB, new ArrayList<>(chain)));
-        }
-
-        return out;
-    }
-
-    /**
-     * Whether a square is a piece of plain track that can belong to a run.
-     */
-    private boolean isRunTile(TileKey tile)
-    {
-        LayoutDiagramComponent component = graph.getTiles().get(tile);
-
-        if (component == null || component.isFeedback()) return false;
-
-        if (TilePorts.isDisqualified(component.getType())
-            || TilePorts.isTransparent(component.getType())) return false;
-
-        if (graph.getRoutes(tile).size() != 1) return false;
-
-        // A stub - an END, a tunnel mouth, a link - has one route whose two sides are the same, so
-        // walking "through" it comes straight back out the way it went in.  That made the walk report a
-        // tile INSIDE the run as its boundary, leaving the tail of the run unset while the rest went
-        // one-way: a run silently disagreeing with itself, which is the trap runs exist to prevent.
-        Route route = firstRoute(tile);
-
-        return route != null && route.getA() != route.getB();
-    }
-
-    /**
-     * Extends a chain out of one side of a tile for as long as the track stays plain.
-     *
-     * @param chain collected so far
-     * @param from where to start
-     * @param side which way to go
-     * @param seen tiles already claimed by a run
-     * @param append true to add to the end of the chain, false to add to the front
-     * @return the square the run stops at - a switch, a sensor, or null at the end of the track
-     */
-    private TileKey walk(java.util.LinkedList<TileKey> chain, TileKey from, Side side,
-        Set<TileKey> seen, boolean append)
-    {
-        TileKey here = from;
-        Side out = side;
-
-        // bounded because a loop of plain track has no end to reach
-        for (int guard = 0; guard < 1000; guard++)
-        {
-            Landing landing = graph.landing(here, out);
-
-            if (landing == null) return null;
-
-            TileKey next = landing.getTile();
-
-            if (!isRunTile(next) || seen.contains(next)) return next;
-
-            Route route = firstRoute(next);
-
-            if (route == null) return next;
-
-            if (append) chain.addLast(next); else chain.addFirst(next);
-
-            seen.add(next);
-
-            here = next;
-            out = route.other(landing.getEntrySide());
-
-            if (out == null) return null;
-        }
-
-        return null;
+        return graph == null ? Collections.<TileKey, Run>emptyMap() : graph.runs();
     }
 
     /**
@@ -12978,47 +12871,14 @@ public class AutonomySession
     }
 
     /**
-     * Which way trains run along a run of plain track, as a direction of its first square's road - or null for a square
-     * that leads no run of two or more, or a run that cannot be read (OB-361).
-     *
-     * A train on a run passes every square of it, so it goes a way only where every square lets it: a run whose squares
-     * disagree runs as the narrowest of them, and that is what its first square draws.
+     * Which way trains run along a run, as its first square's direction - the graph's answer (`TileGraph.runsAs`).
      *
      * @param leader a square
      * @return the run's direction, or null
      */
     private Direction runsAs(TileKey leader)
     {
-        Run run = leader == null || graph == null ? null : runsNow.get(leader);
-
-        if (run == null || run.getTiles().size() < 2) return null;
-
-        List<TileKey> tiles = run.getTiles();
-
-        boolean forward = true;
-        boolean back = true;
-
-        for (int at = 0; at < tiles.size(); at++)
-        {
-            String ways = waysThrough(tiles, at);
-
-            if (ways == null) return null;
-
-            forward &= ways.startsWith("forward");
-            back &= ways.endsWith("back");
-        }
-
-        Route route = firstRoute(leader);
-
-        Side ahead = graph.sideTowardNeighbour(leader, tiles.get(1));
-
-        if (route == null || ahead == null) return null;
-
-        if (forward == back) return forward ? Direction.BOTH : Direction.NONE;
-
-        Side toward = forward ? ahead : route.other(ahead);
-
-        return toward == route.getA() ? Direction.TOWARD_A : Direction.TOWARD_B;
+        return graph == null ? null : graph.runsAs(leader);
     }
 
     /**
@@ -13034,43 +12894,6 @@ public class AutonomySession
         Direction run = runsAs(tile);
 
         return run != null ? run : graph.getDirection(tile, routeId);
-    }
-
-    /**
-     * Which ways a train may pass a square of a run, along the run: forward, back, both or neither - or null when the
-     * square's way along the run cannot be read.  The hardware's restriction and the user's direction both count, as they
-     * do for a train (`TileGraph.exits`).
-     */
-    private String waysThrough(List<TileKey> run, int at)
-    {
-        TileKey tile = run.get(at);
-
-        Route route = firstRoute(tile);
-
-        if (route == null) return null;
-
-        Side back = at > 0 ? graph.sideTowardNeighbour(tile, run.get(at - 1)) : null;
-        Side ahead = at + 1 < run.size() ? graph.sideTowardNeighbour(tile, run.get(at + 1)) : null;
-
-        if (back == null && ahead == null) return null;
-
-        if (back == null) back = route.other(ahead);
-        if (ahead == null) ahead = route.other(back);
-
-        if (back == null || ahead == null) return null;
-
-        return (leavesBy(tile, back, ahead) ? "forward" : "") + (leavesBy(tile, ahead, back) ? "back" : "");
-    }
-
-    /** Whether a train that entered a square by one side may leave it by another. */
-    private boolean leavesBy(TileKey tile, Side entry, Side exit)
-    {
-        for (TileGraph.Exit leaving : graph.exits(tile, entry))
-        {
-            if (leaving.getSide() == exit) return true;
-        }
-
-        return false;
     }
 
     /**

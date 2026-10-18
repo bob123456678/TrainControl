@@ -4467,6 +4467,10 @@ public class AutonomyCompanionStore
         // AND EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351): a road shut a way its square's arrow draws open is opened,
         // whatever door or file put it there.  The session writes what changed back into this store.
         graph.normalizeToArms();
+
+        // AND EVERY RUN RUNS ONE WAY ALONG ITS LENGTH (OB-361): a square that says more than the run it is part of is given
+        // the run's direction, its narrowest, so what each square says is what a train finds.  Written back the same way.
+        graph.normalizeRuns();
     }
 
     // --- internals --------------------------------------------------------------------------------

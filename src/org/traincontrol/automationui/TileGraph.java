@@ -2100,6 +2100,418 @@ public class TileGraph
         return out;
     }
 
+    // --- runs (OB-321, OB-361) --------------------------------------------------------------------
+
+    /**
+     * One run of plain track: the tiles between two points, in order, and the points at either end.
+     */
+    public static class Run
+    {
+        private final TileKey start;
+        private final TileKey end;
+        private final List<TileKey> tiles;
+
+        Run(TileKey start, TileKey end, List<TileKey> tiles)
+        {
+            this.start = start;
+            this.end = end;
+            this.tiles = tiles;
+        }
+
+        public TileKey getStart()
+        {
+            return start;
+        }
+
+        public TileKey getEnd()
+        {
+            return end;
+        }
+
+        /**
+         * @return the tiles between the two points, in order from start to end
+         */
+        public List<TileKey> getTiles()
+        {
+            return Collections.unmodifiableList(tiles);
+        }
+
+        /**
+         * The tile that speaks for this run - the first of them, as the author asked.
+         */
+        public TileKey getLeader()
+        {
+            return tiles.isEmpty() ? null : tiles.get(0);
+        }
+    }
+
+    /** This diagram's runs, found once: they are the diagram's alone, and a graph is one diagram. */
+    private Map<TileKey, Run> runs;
+
+    /**
+     * Every run of plain track, keyed by the tile that speaks for it.
+     *
+     * A run of straight track has one direction, not eleven: setting it tile by tile is busywork, and
+     * a run that disagrees with itself is a silent trap - the arrows look set and no train can pass.
+     * So one tile in each run is the one to set, and the rest follow it.
+     *
+     * Computed from the DIAGRAM ALONE - tile types and which sides face which - and never from the
+     * reduction.  That is the whole point: edges come and go as directions are set, so a run derived
+     * from them would regroup itself every time somebody closed a route, and the greying would move
+     * around under the user.  What is grey is a property of the track, not of the settings on it.
+     *
+     * A run tile is a piece of plain track: exactly one route through it, not a sensor, and not
+     * something autonomy ignores.  Anything else - a switch, a crossing, a sensor - ends the run,
+     * because each of those is a decision in its own right.
+     *
+     * @return leader tile to the run it leads
+     */
+    public Map<TileKey, Run> runs()
+    {
+        if (runs != null) return runs;
+
+        Map<TileKey, Run> out = new LinkedHashMap<>();
+
+        Set<TileKey> seen = new LinkedHashSet<>();
+
+        for (TileKey tile : tiles.keySet())
+        {
+            if (seen.contains(tile) || !isRunTile(tile)) continue;
+
+            Route route = firstRoad(tile);
+
+            java.util.LinkedList<TileKey> chain = new java.util.LinkedList<>();
+            chain.add(tile);
+            seen.add(tile);
+
+            // walk out of both ends until the plain track stops
+            TileKey endA = walk(chain, tile, route.getA(), seen, false);
+            TileKey endB = walk(chain, tile, route.getB(), seen, true);
+
+            out.put(chain.getFirst(), new Run(endA, endB, new ArrayList<>(chain)));
+        }
+
+        runs = Collections.unmodifiableMap(out);
+
+        return runs;
+    }
+
+    /**
+     * The run a square belongs to, or null for a square that is no plain track.
+     *
+     * @param tile a square
+     * @return its run, or null
+     */
+    public Run runOf(TileKey tile)
+    {
+        for (Run run : runs().values())
+        {
+            if (run.getTiles().contains(tile)) return run;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether a square is a piece of plain track that can belong to a run.
+     */
+    private boolean isRunTile(TileKey tile)
+    {
+        LayoutDiagramComponent component = tiles.get(tile);
+
+        if (component == null || component.isFeedback()) return false;
+
+        if (TilePorts.isDisqualified(component.getType())
+            || TilePorts.isTransparent(component.getType())) return false;
+
+        if (getRoutes(tile).size() != 1) return false;
+
+        // A stub - an END, a tunnel mouth, a link - has one route whose two sides are the same, so
+        // walking "through" it comes straight back out the way it went in.  That made the walk report a
+        // tile INSIDE the run as its boundary, leaving the tail of the run unset while the rest went
+        // one-way: a run silently disagreeing with itself, which is the trap runs exist to prevent.
+        Route route = firstRoad(tile);
+
+        return route != null && route.getA() != route.getB();
+    }
+
+    /** A square's first road, or null. */
+    private Route firstRoad(TileKey tile)
+    {
+        Map<RouteId, Route> routes = getRoutes(tile);
+
+        return routes.isEmpty() ? null : routes.values().iterator().next();
+    }
+
+    /**
+     * Extends a chain out of one side of a tile for as long as the track stays plain.
+     *
+     * @param chain collected so far
+     * @param from where to start
+     * @param side which way to go
+     * @param seen tiles already claimed by a run
+     * @param append true to add to the end of the chain, false to add to the front
+     * @return the square the run stops at - a switch, a sensor, or null at the end of the track
+     */
+    private TileKey walk(java.util.LinkedList<TileKey> chain, TileKey from, Side side,
+        Set<TileKey> seen, boolean append)
+    {
+        TileKey here = from;
+        Side out = side;
+
+        // bounded because a loop of plain track has no end to reach
+        for (int guard = 0; guard < 1000; guard++)
+        {
+            Landing landing = landing(here, out);
+
+            if (landing == null) return null;
+
+            TileKey next = landing.getTile();
+
+            if (!isRunTile(next) || seen.contains(next)) return next;
+
+            Route route = firstRoad(next);
+
+            if (append) chain.addLast(next); else chain.addFirst(next);
+
+            seen.add(next);
+
+            here = next;
+            out = route.other(landing.getEntrySide());
+
+            if (out == null) return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Which ways a train may pass a square of a run, along the run: forward, back, both or neither - or null when the
+     * square's way along the run cannot be read.  The hardware's restriction and the user's direction both count, as they
+     * do for a train (`exits`).
+     */
+    private String waysThrough(List<TileKey> run, int at)
+    {
+        Side[] sides = sidesAlong(run, at);
+
+        if (sides == null) return null;
+
+        return (leavesBy(run.get(at), sides[0], sides[1]) ? "forward" : "")
+            + (leavesBy(run.get(at), sides[1], sides[0]) ? "back" : "");
+    }
+
+    /**
+     * The side a square of a run is entered by going forward along it, and the side it is left by - or null when they
+     * cannot be read.
+     */
+    private Side[] sidesAlong(List<TileKey> run, int at)
+    {
+        TileKey tile = run.get(at);
+
+        Route route = firstRoad(tile);
+
+        if (route == null) return null;
+
+        Side back = at > 0 ? sideTowardNeighbour(tile, run.get(at - 1)) : null;
+        Side ahead = at + 1 < run.size() ? sideTowardNeighbour(tile, run.get(at + 1)) : null;
+
+        if (back == null && ahead == null) return null;
+
+        if (back == null) back = route.other(ahead);
+        if (ahead == null) ahead = route.other(back);
+
+        if (back == null || ahead == null) return null;
+
+        return new Side[] {back, ahead};
+    }
+
+    /** Whether a train that entered a square by one side may leave it by another. */
+    private boolean leavesBy(TileKey tile, Side entry, Side exit)
+    {
+        for (Exit leaving : exits(tile, entry))
+        {
+            if (leaving.getSide() == exit) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Which ways trains may run along a run as a whole - {forward, back} along its tiles - or null where a square of it
+     * cannot be read.  A train on a run passes every square of it, so it goes a way only where every square lets it: the
+     * narrowest of them.
+     */
+    private boolean[] narrowest(List<TileKey> tiles)
+    {
+        boolean forward = true;
+        boolean back = true;
+
+        for (int at = 0; at < tiles.size(); at++)
+        {
+            String ways = waysThrough(tiles, at);
+
+            if (ways == null) return null;
+
+            forward &= ways.startsWith("forward");
+            back &= ways.endsWith("back");
+        }
+
+        return new boolean[] {forward, back};
+    }
+
+    /**
+     * Which way trains run along a run of plain track, as a direction of its first square's road - or null for a square
+     * that leads no run of two or more, or a run that cannot be read (OB-361).  The narrowest of its squares, which is
+     * what a train finds and what its first square draws.
+     *
+     * @param leader a square
+     * @return the run's direction, or null
+     */
+    public Direction runsAs(TileKey leader)
+    {
+        Run run = leader == null ? null : runs().get(leader);
+
+        if (run == null || run.getTiles().size() < 2) return null;
+
+        boolean[] ways = narrowest(run.getTiles());
+
+        return ways == null ? null : directionAlong(run.getTiles(), 0, ways[0], ways[1]);
+    }
+
+    /** A square of a run's own direction for the run's ways, {forward, back} along it, or null where it cannot be read. */
+    private Direction directionAlong(List<TileKey> run, int at, boolean forward, boolean back)
+    {
+        if (forward == back) return forward ? Direction.BOTH : Direction.NONE;
+
+        Side[] sides = sidesAlong(run, at);
+
+        Route route = firstRoad(run.get(at));
+
+        if (sides == null || route == null) return null;
+
+        Side toward = forward ? sides[1] : sides[0];
+
+        return toward == route.getA() ? Direction.TOWARD_A : Direction.TOWARD_B;
+    }
+
+    /**
+     * The runs whose squares point opposite ways - one lets trains along it only forward, another only back - so no train
+     * can pass (OB-361).  `normalizeRuns` leaves them as they are: closing them would hide which way was meant behind a
+     * setting that looks chosen, so the setup check says so instead.
+     *
+     * @return each such run, by its leader
+     */
+    public Map<TileKey, Run> runsPointingOppositeWays()
+    {
+        Map<TileKey, Run> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, Run> entry : runs().entrySet())
+        {
+            if (pointsOppositeWays(entry.getValue().getTiles())) out.put(entry.getKey(), entry.getValue());
+        }
+
+        return out;
+    }
+
+    /** Whether one square of a run lets trains along it only forward and another only back. */
+    private boolean pointsOppositeWays(List<TileKey> tiles)
+    {
+        boolean onlyForward = false;
+        boolean onlyBack = false;
+
+        for (int at = 0; at < tiles.size(); at++)
+        {
+            String ways = waysThrough(tiles, at);
+
+            onlyForward |= "forward".equals(ways);
+            onlyBack |= "back".equals(ways);
+        }
+
+        return onlyForward && onlyBack;
+    }
+
+    /**
+     * The runs `normalizeRuns` brought to one direction when the setup was last applied, each leader to the squares it
+     * changed, their roads and their new directions.
+     */
+    private final Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> normalizedRuns = new LinkedHashMap<>();
+
+    /**
+     * Brings every run of two or more squares to one direction, its narrowest (OB-361; Adam, on OB-321: *"Any
+     * disagreement should be corrected so that the viewer displays the source of truth, and the editor flags issues,
+     * rather than surprising the user."*): a square that lets trains along it more ways than the run as a whole does is
+     * given the run's way.  A train passes every square of a run, so nothing any train does changes; what changes is that
+     * every square says it.  A run whose squares point opposite ways is left as it is (`runsPointingOppositeWays`).
+     *
+     * @return each run changed, by its leader, to the squares changed; also kept for `getNormalizedRuns`
+     */
+    public Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> normalizeRuns()
+    {
+        normalizedRuns.clear();
+
+        for (Map.Entry<TileKey, Run> entry : runs().entrySet())
+        {
+            List<TileKey> run = entry.getValue().getTiles();
+
+            if (run.size() < 2 || pointsOppositeWays(run)) continue;
+
+            boolean[] ways = narrowest(run);
+
+            if (ways == null) continue;
+
+            String wanted = (ways[0] ? "forward" : "") + (ways[1] ? "back" : "");
+
+            Map<TileKey, Map<RouteId, Direction>> changed = new LinkedHashMap<>();
+
+            for (int at = 0; at < run.size(); at++)
+            {
+                if (wanted.equals(waysThrough(run, at))) continue;
+
+                Direction direction = directionAlong(run, at, ways[0], ways[1]);
+
+                if (direction == null) continue;
+
+                RouteId road = getRoutes(run.get(at)).keySet().iterator().next();
+
+                setDirection(run.get(at), road, direction);
+
+                Map<RouteId, Direction> roads = new LinkedHashMap<>();
+
+                roads.put(road, direction);
+
+                changed.put(run.get(at), roads);
+            }
+
+            if (!changed.isEmpty()) normalizedRuns.put(entry.getKey(), changed);
+        }
+
+        return getNormalizedRuns();
+    }
+
+    /**
+     * What the last `normalizeRuns` changed.
+     *
+     * @return each run changed, by its leader, to the squares changed, their roads and their new directions
+     */
+    public Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> getNormalizedRuns()
+    {
+        Map<TileKey, Map<TileKey, Map<RouteId, Direction>>> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, Map<TileKey, Map<RouteId, Direction>>> run : normalizedRuns.entrySet())
+        {
+            Map<TileKey, Map<RouteId, Direction>> squares = new LinkedHashMap<>();
+
+            for (Map.Entry<TileKey, Map<RouteId, Direction>> square : run.getValue().entrySet())
+            {
+                squares.put(square.getKey(), new LinkedHashMap<>(square.getValue()));
+            }
+
+            out.put(run.getKey(), squares);
+        }
+
+        return out;
+    }
+
     private static boolean hasPortOn(LayoutDiagramComponent component, Side side)
     {
         componentType type = component.getType();
