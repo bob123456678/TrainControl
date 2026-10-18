@@ -11836,11 +11836,17 @@ public class AutonomySession
      * (`placedLocomotives`).  What Place All Trains at Their Homes is counted and offered by, and what it walks, so the two
      * cannot answer differently.
      *
+     * **A locomotive is offered once.**  An older or hand-edited setup can home one on two squares (the editor's own door
+     * sweeps the first), and standing it on both would refuse the whole configuration.  The square kept is the one the
+     * loader keeps, so the placement and the layout built from it agree (`squareTheLoaderKeeps`).
+     *
      * @return the homes, square to locomotive, in no particular order
      */
     public Map<TileKey, String> homesToPlace()
     {
         Map<TileKey, String> out = new LinkedHashMap<>();
+
+        Map<String, List<TileKey>> squaresOf = new LinkedHashMap<>();
 
         for (TileKey tile : tilesWithAHome())
         {
@@ -11851,9 +11857,67 @@ public class AutonomySession
             if (home == null || home.toString().trim().isEmpty()) continue;
 
             out.put(tile, home.toString());
+
+            squaresOf.computeIfAbsent(home.toString(), name -> new ArrayList<>()).add(tile);
+        }
+
+        for (Map.Entry<String, List<TileKey>> homed : squaresOf.entrySet())
+        {
+            if (homed.getValue().size() < 2) continue;
+
+            TileKey kept = squareTheLoaderKeeps(homed.getValue());
+
+            for (TileKey tile : homed.getValue())
+            {
+                if (!tile.equals(kept)) out.remove(tile);
+            }
         }
 
         return out;
+    }
+
+    /**
+     * Which of the squares one locomotive is homed on `Layout.rebuildHomeStations` keeps its home on.
+     *
+     * The loader walks its Points in the iteration order of a `HashMap` keyed by Point name, keeps the first home it meets for
+     * a locomotive and drops the rest with a warning.  That order is a function of the names and of the order they were put
+     * in, so it is reproduced here the same way: the names the build emits, in its order, put into a `HashMap` of their own,
+     * and the first of the squares' home-carrying Points it yields.  Only a locomotive homed twice asks, because it builds
+     * the configuration.
+     *
+     * @param squares the squares one locomotive is homed on, two or more
+     * @return the one square the loader keeps; the first given where the build does not say
+     */
+    private TileKey squareTheLoaderKeeps(List<TileKey> squares)
+    {
+        try
+        {
+            org.json.JSONArray emitted = new org.json.JSONObject(buildConfiguration()).getJSONArray("points");
+
+            Map<String, org.json.JSONObject> byName = new java.util.HashMap<>();
+
+            for (int at = 0; at < emitted.length(); at++)
+            {
+                org.json.JSONObject point = emitted.getJSONObject(at);
+
+                byName.put(point.getString("name"), point);
+            }
+
+            for (org.json.JSONObject point : byName.values())
+            {
+                if (!point.has("home") || point.optString("home", "").trim().isEmpty()) continue;
+
+                TileKey tile = AutonomyCompanionStore.parseTileKey(point.optString("square", ""));
+
+                if (tile != null && squares.contains(tile)) return tile;
+            }
+        }
+        catch (org.json.JSONException notBuilt)
+        {
+            // no build to read, so the first one given
+        }
+
+        return squares.get(0);
     }
 
     /**

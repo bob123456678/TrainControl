@@ -37,6 +37,7 @@ public class testPlaceAllAtTheirHomes
     private static final String HOMED = "FR-115 homed west";
     private static final String HOMED_TOO = "FR-115 homed, no facing";
     private static final String HOMELESS = "FR-115 no home";
+    private static final String TWICE = "FR-115 homed twice";
 
     /**
      * Every train with a home is put on it, facing the way it was homed, and every other train is taken off - in the
@@ -156,6 +157,131 @@ public class testPlaceAllAtTheirHomes
                     catch (Exception alreadyGone)
                     {
                     }
+                }
+
+                model.stop();
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A locomotive homed on two squares - an older or hand-edited setup, since the editor's own door refuses it - is put
+     * on ONE of them, the one the loader keeps, and counted once (FR-115).  The loader (`Layout.rebuildHomeStations`)
+     * drops the second with a warning, and a locomotive placed on both squares invalidates the whole configuration.
+     *
+     * Every pair of four stations, because which of two the loader keeps is the order its points iterate in, and one pair
+     * agreeing with a guess proves nothing.
+     *
+     * MUTATION: offer the locomotive on every square it is homed on, or offer the one the loader drops, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testALocomotiveHomedTwiceIsPlacedOnceWhereTheLoaderKeepsItsHome() throws Exception
+    {
+        File frozen = new File("test/operator_layout");
+
+        if (!frozen.isDirectory()) throw new SkipException("test/operator_layout is not here");
+
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(frozen);
+
+            model = init(null, true, false, false, true);
+            model.stop();
+
+            model.newMM2Locomotive(TWICE, 2404);
+
+            List<LayoutDiagram> pages = new ArrayList<>();
+
+            for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
+
+            AutonomySession session = new AutonomySession(sandbox.getFolder());
+
+            session.open(pages);
+
+            String[] names = {"BottomMainA", "BottomMainB", "BottomMainC", "BottomInner"};
+
+            List<TileKey> squares = new ArrayList<>();
+
+            for (String name : names) squares.add(square(session, name));
+
+            int pairs = 0;
+
+            for (int first = 0; first < squares.size(); first++)
+            {
+                for (int second = first + 1; second < squares.size(); second++)
+                {
+                    TileKey one = squares.get(first);
+                    TileKey other = squares.get(second);
+
+                    session.clearEveryPlacement();
+                    session.clearEveryHome();
+
+                    // Written straight to the setup, as an older build left it: the editor's door would sweep the first
+                    session.setPointProperty(one, "home", TWICE);
+                    session.setPointProperty(other, "home", TWICE);
+
+                    String where = names[first] + " and " + names[second];
+
+                    assertEquals(session.homesToPlace().size(), 1, "a locomotive homed on " + where + " is offered "
+                        + session.homesToPlace() + ", where Place All should count it once");
+
+                    // WHICH ONE THE LOADER KEEPS, by loading the setup with both homes still on it
+                    model.parseAuto(session.buildConfiguration());
+
+                    Layout loaded = model.getAutoLayout();
+
+                    assertNotNull(loaded, "the setup homing a locomotive on " + where + " did not build: "
+                        + Layout.getLastError());
+
+                    Point kept = loaded.getHomeStation(model.getLocByName(TWICE));
+
+                    assertNotNull(kept, "the loader kept no home for a locomotive homed on " + where);
+
+                    TileKey keptSquare = session.getStationIndex().squareOf(kept);
+
+                    assertEquals(session.homesToPlace().keySet().iterator().next(), keptSquare, "Place All would home a"
+                        + " locomotive homed on " + where + " on a different square than the loader keeps (" + kept.getName()
+                        + ")");
+
+                    session.placeEveryTrainAtHome(Collections.<TileKey, Side>emptyMap());
+
+                    Map<TileKey, String> placed = session.placementsAutonomyWillWrite();
+
+                    assertEquals(placed.size(), 1, "after Place All the setup places " + placed + " for a locomotive homed on "
+                        + where + ", where it should be on one square");
+
+                    assertEquals(placed.keySet().iterator().next(), keptSquare, "Place All stood the locomotive on a square"
+                        + " other than the one the loader keeps its home on");
+
+                    // AND THE CONFIGURATION STILL LOADS VALID
+                    model.parseAuto(session.buildConfiguration());
+
+                    assertNotNull(model.getAutoLayout(), "after Place All the setup with a locomotive homed on " + where
+                        + " no longer loads: " + Layout.getLastError());
+
+                    pairs++;
+                }
+            }
+
+            assertEquals(pairs, 6);
+        }
+        finally
+        {
+            if (model != null)
+            {
+                try
+                {
+                    model.deleteLoc(TWICE);
+                }
+                catch (Exception alreadyGone)
+                {
                 }
 
                 model.stop();
