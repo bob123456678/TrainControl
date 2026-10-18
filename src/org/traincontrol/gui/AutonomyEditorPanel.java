@@ -3310,6 +3310,21 @@ public class AutonomyEditorPanel extends JPanel
     private static final int TOOLTIP_WIDTH = 320;
 
     /**
+     * TOOLTIP_WIDTH in the pixels the text is measured in.  Swing draws a CSS width at the screen's resolution, so
+     * on a 120-dpi screen the 320px body is 400 pixels; testing one line against 320 wrapped a tooltip that then
+     * sat in a box 400 wide (OB-358).
+     *
+     * @return the wrapping width, in pixels
+     */
+    private static int wrappingWidth()
+    {
+        int dpi = java.awt.GraphicsEnvironment.isHeadless() ? 96
+            : java.awt.Toolkit.getDefaultToolkit().getScreenResolution();
+
+        return dpi > 0 ? (int) Math.round(TOOLTIP_WIDTH * dpi / 96.0) : TOOLTIP_WIDTH;
+    }
+
+    /**
      * Whether a tooltip's text is one line no wider than the wrapping width, in the font tooltips are drawn in.
      *
      * @param text the text
@@ -3328,7 +3343,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            return scratch.getFontMetrics(font).stringWidth(text) <= TOOLTIP_WIDTH;
+            return scratch.getFontMetrics(font).stringWidth(text) <= wrappingWidth();
         }
         finally
         {
