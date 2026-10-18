@@ -2,6 +2,7 @@ package regression;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -14,6 +15,8 @@ import org.traincontrol.gui.LayoutEditor;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.automationui.TilePorts;
+import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -24,6 +27,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * tracks, they are automatically oriented to connect rather than not."*  A straight came off the palette the way the
  * palette held it, so dropping one into a gap in a north-south line left it lying east-west, joining neither side,
  * until it was turned by hand.
+ *
+ * OB-360: the same for the other tiles that run straight through a square - the s88 feedback tile, the signal and the
+ * uncoupler.  Adam: *"when placing straight segments, the layout editor will turn a new straight tile to match the path
+ * around it.  however, this doesn't apply to straight s88 tiles.  check that it does, and also ake the same check for
+ * tunnels, uncouplers, links, signals, and bumpers."*
  *
  * Asked of the editor itself - the palette pick-up and the drop - because the rule is only worth anything where the tile
  * lands.  On a page of its own, in memory: nothing is saved.
@@ -96,6 +104,171 @@ public class testANewStraightJoinsTheTrackBesideIt
 
         assertEquals(placeBetween(EAST_WEST, 2, 5), EAST_WEST, "a straight dropped where nothing is beside it was"
             + " turned all the same");
+    }
+
+    /**
+     * An s88 tile, a signal or an uncoupler dropped into a gap lies along the line, whichever way the palette held it,
+     * and one already lying along it keeps its way round (a signal's four ways differ in which end it faces).
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testAThroughTileDroppedIntoAGapJoinsTheLine() throws Exception
+    {
+        for (componentType type : new componentType[] { componentType.FEEDBACK, componentType.SIGNAL,
+            componentType.UNCOUPLER })
+        {
+            int ways = LayoutDiagramComponent.getNumOrientations(type);
+            int[] helds = new int[ways];
+
+            for (int way = 0; way < ways; way++) helds[way] = way;
+
+            int[] eastWest = landings(type, helds, 2, 2);
+            int[] northSouth = landings(type, helds, 5, 2);
+
+            for (int way = 0; way < ways; way++)
+            {
+                assertTrue(runsBetween(type, eastWest[way], Side.E, Side.W), type + " held as " + way + " dropped"
+                    + " between two east-west straights landed as " + eastWest[way] + ", joining neither.  Adam, OB-360:"
+                    + " \"the layout editor will turn a new straight tile to match the path around it\"");
+
+                assertTrue(runsBetween(type, northSouth[way], Side.N, Side.S), type + " held as " + way + " dropped"
+                    + " between two north-south straights landed as " + northSouth[way] + ", joining neither");
+
+                if (runsBetween(type, way, Side.E, Side.W))
+                {
+                    assertEquals(eastWest[way], way, type + " already lying along the line was turned all the same");
+                }
+
+                if (runsBetween(type, way, Side.N, Side.S))
+                {
+                    assertEquals(northSouth[way], way, type + " already lying along the line was turned all the same");
+                }
+            }
+        }
+    }
+
+    /**
+     * With nothing to join, every one of them lies the way it was held - the control, so a rule that turns every tile
+     * fails.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testATileWithNothingToJoinLiesAsItWasHeld() throws Exception
+    {
+        for (componentType type : new componentType[] { componentType.FEEDBACK, componentType.SIGNAL,
+            componentType.UNCOUPLER })
+        {
+            int ways = LayoutDiagramComponent.getNumOrientations(type);
+            int[] helds = new int[ways];
+
+            for (int way = 0; way < ways; way++) helds[way] = way;
+
+            int[] landed = landings(type, helds, 10, 7);
+
+            for (int way = 0; way < ways; way++)
+            {
+                assertEquals(landed[way], way, type + " held as " + way + " dropped where nothing is beside it was"
+                    + " turned all the same");
+            }
+        }
+    }
+
+    /** Whether a tile of this type, this way round, has a road between the two sides. */
+    private static boolean runsBetween(componentType type, int orientation, Side one, Side other)
+    {
+        for (TilePorts.Route road : TilePorts.ports(type, orientation, 0))
+        {
+            if (road.touches(one) && road.touches(other)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * One page, one editor: drops a tile of the type on the square once for each way round it may be held, and says how
+     * each landed.  The page: an east-west line broken at 2,2, a north-south line broken at 5,2, and four lone pieces of
+     * track for a one-ended tile to face - east of 8,5, south of 2,7, north of 5,6 and west of 8,2.  Nothing is beside
+     * 10,7.
+     */
+    private static int[] landings(componentType type, int[] helds, int x, int y) throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("OB-360", 12, 10, null, null);
+
+        page.addComponent(componentType.STRAIGHT, 1, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 3, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 9, 5, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 8, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 5, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 7, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        final LayoutEditor[] editor = new LayoutEditor[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            editor[0] = new LayoutEditor(page, 30, ui, 0);
+            editor[0].render();
+        });
+
+        final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
+
+        ui.whenTilesSettled(() -> settled.countDown());
+
+        settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
+
+        for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        try
+        {
+            java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
+
+            field.setAccessible(true);
+
+            int[] landed = new int[helds.length];
+
+            for (int i = 0; i < helds.length; i++)
+            {
+                LayoutDiagram palette = new LayoutDiagram("palette", 2, 2, null, null);
+
+                palette.addComponent(type, 0, 0, helds[i], 0, 0, 0, accessoryDecoderType.MM2, null);
+
+                final LayoutDiagramComponent held = palette.getComponent(0, 0);
+
+                assertNotNull(held, "precondition: the palette tile was not made");
+
+                page.addComponent((LayoutDiagramComponent) null, x, y);
+
+                // Every drop redraws the grid into a new one, so the square is asked of the editor's grid as it is now.
+                final LayoutLabel target = ((LayoutGrid) field.get(editor[0])).getValueAt(x, y);
+
+                assertNotNull(target, "precondition: the editor drew no square at " + x + "," + y);
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    editor[0].initCopy(null, held, false);
+                    editor[0].executeTool(target);
+                });
+
+                LayoutDiagramComponent dropped = page.getComponent(x, y);
+
+                assertNotNull(dropped, "the " + type + " was not placed at " + x + "," + y);
+
+                assertEquals(dropped.getType(), type, "something other than a " + type + " landed");
+
+                landed[i] = dropped.getOrientation();
+
+                for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+            }
+
+            return landed;
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
+        }
     }
 
     /**

@@ -2530,13 +2530,24 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Which way round a straight put down on a square should lie so that it joins the track beside it (OB-292).
+     * The tiles that are one plain road through the square, and so are turned to lie along the track beside them
+     * (OB-292, OB-360): the straight, and the s88 tile, signal and uncoupler, which are drawn on one.  A switch is turned
+     * on purpose, and turning one for the operator would be a decision about the railway rather than about a piece of
+     * track.
+     */
+    private static final java.util.Set<LayoutDiagramComponent.componentType> TURNS_TO_JOIN = java.util.EnumSet.of(
+        LayoutDiagramComponent.componentType.STRAIGHT, LayoutDiagramComponent.componentType.FEEDBACK,
+        LayoutDiagramComponent.componentType.SIGNAL, LayoutDiagramComponent.componentType.UNCOUPLER);
+
+    /**
+     * Which way round a straight-shaped tile put down on a square should lie so that it joins the track beside it
+     * (OB-292, OB-360).
      *
-     * The way it is held, if that joins track at both ends or if no way round does; otherwise the way round that does.
+     * The way it is held, if that joins track at both ends or if no way round does; otherwise the way round that does,
+     * the nearest turn from the way it is held (a signal has four ways round, and which end it faces is the operator's).
      * A neighbour joins where any of its roads, in any position of its points, reaches the edge the two squares share -
-     * the same port table the autonomy graph is built from, so a straight laid this way is one the graph runs over.
-     * Only a plain STRAIGHT: a switch or a sensor is turned on purpose, and turning one for the operator would be a
-     * decision about the railway rather than about a piece of track.
+     * the same port table the autonomy graph is built from, so a tile laid this way is one the graph runs over.
+     * Only the types in TURNS_TO_JOIN.
      *
      * @param layout the page
      * @param placing the tile about to be put down
@@ -2549,12 +2560,17 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         int held = placing.getOrientation();
 
-        if (layout == null || placing.getType() != LayoutDiagramComponent.componentType.STRAIGHT) return held;
+        if (layout == null || !TURNS_TO_JOIN.contains(placing.getType())) return held;
 
         if (joinsAtBothEnds(layout, placing.getType(), held, x, y)) return held;
 
-        for (int way = 0; way < LayoutDiagramComponent.getNumOrientations(placing.getType()); way++)
+        int ways = LayoutDiagramComponent.getNumOrientations(placing.getType());
+
+        // A quarter turn either way before the half turn.
+        for (int turn : new int[] { 1, ways - 1, 2 })
         {
+            int way = (held + turn) % ways;
+
             if (way != held && joinsAtBothEnds(layout, placing.getType(), way, x, y)) return way;
         }
 
