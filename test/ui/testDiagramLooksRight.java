@@ -5615,4 +5615,156 @@ public class testDiagramLooksRight
             assertEquals(between, arch, "the tunnel's arch at " + size + " pixels is no longer the track's width: " + said);
         }
     }
+
+    /**
+     * The link and the two signal tiles meet the straight beside them with no seam: the band's rows where the track
+     * comes in are the straight's own, at both sizes (FR-135).
+     *
+     * Adam, 2026-10-18, on the link drawn for him: *"G is good, but make sure you match the edges of the signal tile"*,
+     * and *"Build G and the sharpened signals now"*.  The track's band has a one-pixel edge in a dark grey - #333 at 30,
+     * #666 at 60, not one drawing scaled - and the old Large signal's top edge was #999 across the whole square, a lighter
+     * stripe between two straights; the new link's shaft is the straight's band, edges and all.
+     *
+     * The link is asked at its open side, the column the track comes in by; a signal along both its edge rows, end to end.
+     *
+     * MUTATION: put the old Large signal back, or draw the link's shaft pure black to its edge, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testTheLinkAndTheSignalsMeetTheStraightWithNoSeam() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            BufferedImage straight = icon(size, "straight");
+
+            java.util.List<Integer> band = new java.util.ArrayList<>();
+
+            for (int y = 0; y < size; y++) if ((straight.getRGB(0, y) & 0xFFFFFF) != 0xFFFFFF) band.add(y);
+
+            assertFalse(band.isEmpty(), "precondition: the straight at " + size + " has no band at its west edge");
+
+            BufferedImage link = icon(size, "link");
+
+            for (int y : band)
+            {
+                assertEquals(String.format("%06X", link.getRGB(0, y) & 0xFFFFFF), String.format("%06X",
+                    straight.getRGB(0, y) & 0xFFFFFF), "the link at " + size + " meets the track with a seam at row " + y
+                    + ": its shaft is not the straight's band there (FR-135)");
+            }
+
+            int top = band.get(0), bottom = band.get(band.size() - 1);
+
+            for (String name : new String[] {"signal", "signal_active"})
+            {
+                BufferedImage signal = icon(size, name);
+
+                for (int edge : new int[] {top, bottom})
+                {
+                    for (int x = 0; x < size; x++)
+                    {
+                        assertEquals(String.format("%06X", signal.getRGB(x, edge) & 0xFFFFFF), String.format("%06X",
+                            straight.getRGB(0, edge) & 0xFFFFFF), "the " + name + " tile at " + size + " has its band's"
+                            + " edge row " + edge + " in another shade at column " + x + " - a stripe against the"
+                            + " straights either side (FR-135)");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * The link's arrow is the same drawing above and below the track, and a signal's bar is centred with both its ends
+     * alike - the drawn art is symmetric where the old was not (FR-135; the Small signal's bar was shaded differently at
+     * its two ends).
+     *
+     * MUTATION: put the old Small link or signal art back, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testTheLinkAndTheSignalsBarAreSymmetric() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            BufferedImage link = icon(size, "link");
+
+            for (int x = 0; x < size; x++)
+            {
+                for (int y = 0; y < size / 2; y++)
+                {
+                    assertEquals(link.getRGB(x, y) & 0xFFFFFF, link.getRGB(x, size - 1 - y) & 0xFFFFFF, "the link at "
+                        + size + " is not the same above the track as below it, at column " + x + ", rows " + y + " and "
+                        + (size - 1 - y) + " (FR-135)");
+                }
+            }
+
+            BufferedImage straight = icon(size, "straight");
+
+            for (String name : new String[] {"signal", "signal_active"})
+            {
+                BufferedImage signal = icon(size, name);
+
+                for (int y = 0; y < size; y++)
+                {
+                    if ((straight.getRGB(0, y) & 0xFFFFFF) == 0xFFFFFF) continue;
+
+                    for (int x = 0; x < size / 2; x++)
+                    {
+                        assertEquals(signal.getRGB(x, y) & 0xFFFFFF, signal.getRGB(size - 1 - x, y) & 0xFFFFFF, "the "
+                            + name + " tile's bar at " + size + " is not centred, or its two ends differ, at row " + y
+                            + ", columns " + x + " and " + (size - 1 - x) + " (FR-135)");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Green is the head's right-hand lamp and red its left, as the two lamps of a signal head - the redrawing kept them
+     * where the shipped art had them (FR-135).
+     *
+     * MUTATION: draw both lamps in the same end, and this fails.
+     *
+     * @throws Exception from reading the art
+     */
+    @Test
+    public void testTheSignalsLampsAreInTheirOwnEnds() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            for (String[] lamp : new String[][] {{"signal", "G", "right"}, {"signal_active", "R", "left"}})
+            {
+                BufferedImage signal = icon(size, lamp[0]);
+
+                long sum = 0, count = 0;
+
+                // the head, above the band
+                for (int y = 0; y < size / 3; y++)
+                {
+                    for (int x = 0; x < size; x++)
+                    {
+                        int rgb = signal.getRGB(x, y);
+                        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF;
+
+                        boolean lit = "G".equals(lamp[1]) ? g > 200 && r < 60 : r > 200 && g < 60;
+
+                        if (lit)
+                        {
+                            sum += x;
+                            count++;
+                        }
+                    }
+                }
+
+                assertTrue(count > 0, "precondition: no lamp in the " + lamp[0] + " head at " + size);
+
+                double centre = sum / (double) count;
+
+                assertTrue("right".equals(lamp[2]) ? centre > size * 0.5 : centre < size * 0.5, "the " + lamp[0]
+                    + " lamp at " + size + " is not in the head's " + lamp[2] + " end: its middle is at " + centre
+                    + " (FR-135)");
+            }
+        }
+    }
 }
