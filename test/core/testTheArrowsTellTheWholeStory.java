@@ -173,6 +173,11 @@ public class testTheArrowsTellTheWholeStory
             assertTrue(said.contains("5,3") && said.contains(scenario.getPages().get(0).getName()), "what is logged does"
                 + " not say where the switch is: " + said);
 
+            // WHAT IT SAYS IS TRUE OF EVERY SQUARE brought to its arrows: a road closed OR one-way and now both ways
+            // (OB-351), so the sentence says fewer ways and never that a road was closed
+            assertTrue(said.contains("fewer ways") && !said.contains("closed"), "what is logged says more than is true of"
+                + " every square brought to its arrows: " + said);
+
             // SAVED THAT WAY
             org.json.JSONObject saved = new org.json.JSONObject(new String(Files.readAllBytes(setup.toPath()),
                 StandardCharsets.UTF_8)).getJSONObject("tileDirections");
