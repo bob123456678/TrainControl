@@ -344,33 +344,6 @@ Nothing of a run is lost: no train may be sent while an editor is open.  One way
 
 Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 
-### OB-349 - 2026-10-16 - nonexistent "is facing" in right-click autonomy
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-16 18:49  
-**Build:** commit 0e5ee1cc
-
-suppose we import an autonomy layout with a locomotive that is not currently in the locomotive database placed on a station.  when loaded, the station correctly shows empty on its label in the track diagram viewer, but right-clicking that square still shows the "<locomotive> is facing" option, greyed out, with the name of the nonexistent locomotive.  this locomotive should not be in the layout state, and so the greyed out option should be shown at all.  example: BR39 at St00A in tc3 kreds 261016 0810.zip.
-
-### OB-350 - 2026-10-16 - can't place train on station that can't be reached
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-16 19:06  
-**Build:** commit 0e5ee1cc
-
-the track viewer doesn't allow autonomy locomotive placements on stations that have no way in (option greyed out), but the autonomy editor does.  they should be consistent, and allowed.  example: St00A in tc3 kreds 261016 0810.zip .
-
-### OB-351 - 2026-10-16 - path connection issue
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-16 19:14  
-**Build:** commit 0e5ee1cc
-
-in tc3 kreds 261016 0810.zip, there is no manual path from st01pre to st00A (tested via is it running in autonomy editor), even though they are connected.  it should be possible to go in to st00A but not out in the current setup. if I cycle the direction arrows of switch 118, it works again in the same setup, some something must be inconsistent somewhere.
-
 ### FR-131 - 2026-10-17 - locomotive icons on the track diagram
 
 **Kind:** feature request  
@@ -405,6 +378,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-16 | OB-351 | bug | A switch's, three-way's or double slip's arrows are the whole of which way trains may run through it; a setup with a road closed under a green arrow is read as its arrows show, logged and saved (`5e65b5e6`). | - | MT-747 |
+| 2026-10-16 | OB-350 | bug | The track diagram's Place and the paste stand a train on a station no train can leave, as the editor's Place does (`ad25cfb4`). | - | MT-745 |
+| 2026-10-16 | OB-349 | bug | A locomotive not in the database leaves the setup on load - placement, home, lists - logged and saved, and an import lists them in one dialog (`1cebf59d`). | - | MT-744 |
 | 2026-10-17 | FR-133 | feature request | The autonomy editor's caption dropdown is headed `Station Labels` and offers Station Names, Standing Locs, Home Locs and Hide; Labels Only is a `Text Labels` box under Show Trains, remembered (`1dabc78e`). | - | MT-743 |
 | 2026-10-13 | FR-129 | feature request | Right-click `Return Home` for `Place All Trains at Their Homes`, which asks first and says to move the real trains by hand; greyed with the reason while anything runs or an editor is open (`591c7acf`). | - | MT-742 |
 | 2026-10-14 | OB-348 | bug | A train on a square no track leads out of faces the setup's facing where its track runs that way, or else along its track - never east across north-south track; a train standing with no road is drawn in orange over the switch arms every rail into its platform takes (9,7 and 7,8 behind TunnelLeftPark), the switch where those rails part still drawn along no road (`c282c77d`). | - | MT-741 |

@@ -29,8 +29,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-742](#mt-742) | 2026-10-17 | FR-129: right-click Return Home to place the trains at their homes | fixed unvalidated | FR-129 |
 | [MT-743](#mt-743) | 2026-10-17 | FR-133: the autonomy editor's Station Labels dropdown and Text Labels box | fixed unvalidated | FR-133 |
+| [MT-744](#mt-744) | 2026-10-17 | OB-349: a locomotive not in the database leaves the setup, and an import says so | fixed unvalidated | OB-349 |
+| [MT-745](#mt-745) | 2026-10-17 | OB-350: Place on a station with no way out, from the track diagram as from the editor | fixed unvalidated | OB-350 |
+| [MT-746](#mt-746) | 2026-10-17 | No setup edit while a route runs | fixed unvalidated | FR-129 (setup doors and running routes) |
+| [MT-747](#mt-747) | 2026-10-17 | OB-351: a switch's arrows are the whole of which way trains may run through it | fixed unvalidated | OB-351 |
 
-Everything else - 741 of 743 - needs nothing from you unless the area changes again:
+Everything else - 741 of 747 - needs nothing from you unless the area changes again:
 588 **fixed validated** and 153 **superseded**.
 
 ---
@@ -35072,5 +35076,119 @@ The track diagram's own right-click Bulk Tools > Place All Trains at Their Homes
 
 *What this is:* FR-133 (`1dabc78e`): Labels Only leaves the dropdown for its own box, remembered beside the caption mode; a remembered
 Labels Only opens as Hide with the box ticked.  Claims `regression.testARememberedNoneOpensWithTheCaptionsOff`.
+
+---
+
+<a id="mt-744"></a>
+### MT-744 - 2026-10-17 - OB-349: a locomotive not in the database leaves the setup, and an import says so
+
+**Disposition:** fixed unvalidated
+**From:** OB-349
+
+**Written:** 2026-10-17
+
+**Steps**
+
+1. Open the layout in `tc3 kreds 261016 0810.zip` (BR 39 stands on St00A and is its home; BR 39 is not in your locomotive database), with
+   autonomy loading at start.  Look at the log, then right-click St00A on the track diagram, and open the autonomy
+   editor with `Standing Locs`, then `Home Locs`, in the Station Labels dropdown.
+2. Close the editor.  Use `Configuration` > `Import...` to bring in one of the `configuration-*.json` files from the zip
+   that names BR 39 (for example `configuration-E, N, SJ.json`).
+
+**Expected**
+
+- Step 1: the log says BR 39 is not in the locomotive database and was left out of the configuration, standing at and
+  home at St00A.  No `BR 39 Is Facing...` item, and no caption names BR 39.  A restart says nothing more about it.
+- Step 2: one dialog, titled "Locomotives not in the database", lists each such locomotive with what it lost, in a short
+  scrolling list however many there are.  The imported configuration does not name them afterwards.
+
+*What this is:* OB-349 (`1cebf59d`): a load takes a locomotive the database does not hold out of the setup too - placement, facing,
+arrival, home, lists - logged, and saved; an import also shows the list.  Opening a layout folder or starting up logs
+only.  Nothing is taken out against an empty database.  Claims
+`regression.testALocomotiveNotInTheDatabaseLeavesTheSetup`.
+
+---
+
+<a id="mt-745"></a>
+### MT-745 - 2026-10-17 - OB-350: Place on a station with no way out, from the track diagram as from the editor
+
+**Disposition:** fixed unvalidated
+**From:** OB-350
+
+**Written:** 2026-10-17
+
+**Steps**
+
+1. In `tc3 kreds 261016 0810.zip`, select a locomotive, right-click St00A on the track diagram (no train can be driven out of it), and look at
+   `Place <locomotive>`.  Choose it.
+2. Take it off again, then do the same from the autonomy editor's right-click on St00A, and Save.
+3. Cut a train elsewhere on the track diagram (Control+X) and paste it on St00A (Control+V).
+
+**Expected**
+
+- Step 1: `Place` is offered, not greyed.  The train stands on St00A, drawn along its track.
+- Step 2: the editor puts it on the same square, facing the same way.
+- Step 3: the paste stands it on St00A the same way.  The setup check still warns that nothing can leave St00A.
+
+*What this is:* OB-350 (`ad25cfb4`): the track diagram's Place and the paste stand a train on a station no train can leave, on its own
+square with no facing recorded, as the editor's Place does.  Claims in `ui.testATrainWithNoWayOutFacesAlongItsTrack`.
+
+---
+
+<a id="mt-746"></a>
+### MT-746 - 2026-10-17 - No setup edit while a route runs
+
+**Disposition:** fixed unvalidated
+**From:** FR-129 (setup doors and running routes)
+
+**Written:** 2026-10-17
+
+**Steps**
+
+1. With autonomy stopped, start a route that takes a while (one with delays between its steps).
+2. While it runs: right-click a station with a train on the track diagram; open the Autonomy menu and hover over its
+   greyed items; try to open the autonomy editor; press Control+X over a train on the diagram.
+3. When the route has finished, do step 2 again.
+
+**Expected**
+
+- Step 2: no Place, Remove, Is Active or Facing items on the right-click; the Autonomy menu's setup items are greyed,
+  their tooltip naming a route among what is running; the editor does not open and says why; Control+X does nothing and
+  the log says why.
+- Step 3: everything is offered again.
+
+*What this is:* Adam, on whether setup doors should refuse while a route runs with autonomy idle: "yes, refuse" (`e41fd0e0`).  One
+question, `TrainControlUI.aRunHoldsTheSetup`, the one Return Home's place-at-home item asks.  Claims
+`regression.testNoSetupEditWhileARouteRuns`.
+
+---
+
+<a id="mt-747"></a>
+### MT-747 - 2026-10-17 - OB-351: a switch's arrows are the whole of which way trains may run through it
+
+**Disposition:** fixed unvalidated
+**From:** OB-351
+
+**Written:** 2026-10-17
+
+**Steps**
+
+1. Open the layout in `tc3 kreds 261016 0810.zip` and look at the log.
+2. In the autonomy editor, `Is it running?` (Manual) from St00A to St01pre, and from St01pre to St00A.
+3. Right-click switch 118 (6,16) and open `Trains May Depart...`.
+4. Open your own layout and look at the log.
+
+**Expected**
+
+- Step 1: six lines, one per square (switch 118 among them), saying it had a road closed that its arrows showed open
+  and now runs as its arrows show.  A restart does not say them again.
+- Step 2: St00A to St01pre runs.  St01pre to St00A does not, because the spur track (5,17 to 9,17) is one way out; open
+  that track and it runs.
+- Step 3: the sides to tick and `Every Branch of This Switch`; no `Branch ... to ...` items.
+- Step 4: no such lines - nothing on your layout held a setting its arrows did not show.
+
+*What this is:* OB-351 (`5e65b5e6`): on a switch, three-way switch or double slip a move is allowed exactly when the side it leaves by
+is green (Adam: "Align it so that the arrows tell the full story").  Older setups are read as their arrows show, logged
+once and saved; the per-road items are gone there.  Claims `core.testTheArrowsTellTheWholeStory`.
 
 ---
