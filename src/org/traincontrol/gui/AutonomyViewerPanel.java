@@ -361,7 +361,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             Object selected = configurations.getSelectedItem();
 
-            if (selected != null) load(String.valueOf(selected), true);
+            if (selected != null) loadByRequest(String.valueOf(selected));
         });
 
         JPanel enableRow = row();
@@ -676,6 +676,36 @@ public class AutonomyViewerPanel extends JPanel
         // anything that something they have never heard of cannot be used.  A failed resume goes to the
         // log and leaves its reasons in the list, where somebody looking for them will find them.
         if (active != null) load(active, false);
+    }
+
+    /**
+     * Says why a run holds the setup, and answers true, where one does (`TrainControlUI.aRunHoldsTheSetup`): the question
+     * every door a user loads a configuration through asks first, before anything is asked or replaced (Adam, 2026-09-28:
+     * *"There should be no setup edit possible during a run"*).  A load rebuilds the railway, saves the choice and switches
+     * the routes the configuration activates, so a route running is as much in its way as autonomy.
+     *
+     * @return true when the load is refused
+     */
+    public boolean refusedWhileRunning()
+    {
+        if (!ui.aRunHoldsTheSetup()) return false;
+
+        JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autosetup.ui.tooltipNotWhileRunning"));
+
+        return true;
+    }
+
+    /**
+     * A load the user asked for: the enable button, the Autonomy menu's list and the diagram's banner come here, and are
+     * refused while a run holds the setup.  The reloads the application makes itself at rest call `load` directly.
+     *
+     * @param name the configuration to load
+     */
+    public void loadByRequest(String name)
+    {
+        if (refusedWhileRunning()) return;
+
+        load(name, true);
     }
 
     /**
@@ -1805,11 +1835,11 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void exportConfiguration()
     {
-        // NOT WHILE AUTONOMY RUNS, as Import is not (Adam, 2026-09-30, MT-601: "Export should also only be allowed once
-        // we are stopped"), and before anything is asked
-        if (ui.isAutonomyBusy())
+        // NOT WHILE A RUN HOLDS THE SETUP, as Import is not (Adam, 2026-09-30, MT-601: "Export should also only be allowed
+        // once we are stopped"), and before anything is asked: the export folds the running railway into the setup first
+        if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorExportWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autosetup.ui.errorExportWhileRunning"));
 
             return;
         }

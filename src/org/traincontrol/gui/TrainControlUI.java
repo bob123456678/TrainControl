@@ -10652,7 +10652,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     AutonomyViewerPanel actions = getAutonomyViewerPanel();
 
-                    if (actions == null) return;
+                    if (actions == null || actions.refusedWhileRunning()) return;
 
                     actions.setSelectedConfiguration(chosen);
                     actions.load(chosen, true);

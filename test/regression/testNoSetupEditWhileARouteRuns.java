@@ -1265,6 +1265,162 @@ public class testNoSetupEditWhileARouteRuns
         }
     }
 
+    /**
+     * Every door a user loads a configuration through, and Export, refuse while a route runs with autonomy idle, saying why
+     * before anything is asked: the enable button, the Autonomy menu's list, and the diagram's Load this configuration.  The
+     * railway is the same object afterwards, the route is still running, and nothing was exported; at rest each one goes
+     * ahead (Adam, 2026-09-28: *"There should be no setup edit possible during a run"*).  A load rebuilds the railway and
+     * switches the routes the configuration activates, and Export first folds the running railway into the setup.
+     *
+     * MUTATION: send the enable button, `loadByRequest` or the banner to `load` directly, or have Export ask
+     * `isAutonomyBusy` alone, and this fails naming the door.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheLoadAndExportDoorsWaitForARoute() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final Answering answering = new Answering();
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final MarklinControlStation model = (MarklinControlStation) ui.getModel();
+            final org.traincontrol.gui.AutonomyViewerPanel panel = ui.getAutonomyViewerPanel();
+            final String anyRun = I18n.t(ANY_RUN);
+            final String active = ui.getAutonomySession().getStore().getActiveConfiguration();
+
+            assertNotNull(active, "precondition: the live snapshot has no configuration to load");
+
+            final javax.swing.JButton enable = (javax.swing.JButton) fieldOf("enable", panel);
+
+            answering.start();
+
+            // LOADED: the viewer's doors
+            Map<String, Runnable> doors = new java.util.LinkedHashMap<>();
+
+            doors.put("Autonomy: the enable button", enable::doClick);
+            doors.put("Autonomy: the list", () -> panel.loadByRequest(active));
+            doors.put("Autonomy: Export", () -> call(panel, "exportConfiguration"));
+
+            Object railway = model.getAutoLayoutIfLoaded();
+
+            assertNotNull(railway, "precondition: no railway is loaded");
+
+            aRouteRuns(ui, true);
+
+            try
+            {
+                for (Map.Entry<String, Runnable> door : doors.entrySet())
+                {
+                    int from = answering.count();
+
+                    SwingUtilities.invokeAndWait(door.getValue());
+
+                    settle();
+
+                    assertEquals(answering.since(from), Collections.singletonList(anyRun), door.getKey()
+                        + " did not refuse, before asking anything, while a route runs - Adam: \"There should be no setup"
+                        + " edit possible during a run\"");
+
+                    assertTrue(model.getAutoLayoutIfLoaded() == railway, door.getKey() + " replaced the railway while a"
+                        + " route runs");
+
+                    assertTrue(model.getRoute(PROBE).isExecuting(), door.getKey() + " stopped the route");
+                }
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+
+            // AT REST each one goes ahead: the load rebuilds the railway, Export asks where to write
+            for (Map.Entry<String, Runnable> door : doors.entrySet())
+            {
+                int from = answering.count();
+
+                SwingUtilities.invokeAndWait(door.getValue());
+
+                settle();
+
+                List<String> said = answering.since(from);
+
+                assertFalse(said.contains(anyRun), door.getKey() + " refused at rest: " + said);
+
+                if (door.getKey().endsWith("Export"))
+                {
+                    assertTrue(said.toString().contains("chooser: "), "Export did not ask where to write at rest: " + said);
+                }
+            }
+
+            assertNotNull(model.getAutoLayoutIfLoaded(), "a load at rest left no railway");
+
+            // UNLOADED: the diagram's banner offers Load this configuration
+            SwingUtilities.invokeAndWait(() ->
+            {
+                assertTrue(window.unloadAutonomy(), "precondition: autonomy would not unload at rest");
+
+                window.refreshAutonomyPrompt();
+            });
+
+            settle();
+
+            final javax.swing.JButton banner = ((org.traincontrol.gui.AutonomyBanner) fieldOf("autonomyDiagramBanner", ui))
+                .getActionButton();
+
+            assertTrue(banner.isShowing() || banner.getParent() != null, "precondition: the banner has no button");
+            assertFalse(ui.isAutonomyLoaded(), "precondition: autonomy is still loaded");
+
+            aRouteRuns(ui, true);
+
+            try
+            {
+                int from = answering.count();
+
+                SwingUtilities.invokeAndWait(banner::doClick);
+
+                settle();
+
+                assertEquals(answering.since(from), Collections.singletonList(anyRun), "the banner's Load this"
+                    + " configuration did not refuse, before asking anything, while a route runs");
+
+                assertFalse(ui.isAutonomyLoaded(), "the banner loaded a configuration while a route runs");
+                assertTrue(model.getRoute(PROBE).isExecuting(), "the banner stopped the route");
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+
+            int from = answering.count();
+
+            SwingUtilities.invokeAndWait(banner::doClick);
+
+            settle();
+
+            assertFalse(answering.since(from).contains(anyRun), "the banner refused at rest");
+            assertTrue(ui.isAutonomyLoaded(), "the banner did not load the configuration at rest");
+        }
+        finally
+        {
+            answering.stop();
+
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
     private static Object fieldOf(String name, Object on)
     {
         try

@@ -390,6 +390,8 @@ public class AutonomyMenu extends JMenu
 
                 choice.addActionListener(e ->
                 {
+                    if (actions.refusedWhileRunning()) return;
+
                     actions.setSelectedConfiguration(name);
                     actions.load(name, true);
 
