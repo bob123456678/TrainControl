@@ -1394,7 +1394,8 @@ public class testNoSetupEditWhileARouteRuns
 
                         settle();
 
-                        assertEquals(answering.since(asked), java.util.Arrays.asList(offer, anyRun), door + " went ahead"
+                        assertEquals(answering.since(asked), java.util.Arrays.asList(offer,
+                            I18n.t("autolayout.ui.errorWaitForARouteToFinish")), door + " went ahead"
                             + " under a route that was running when the offer to stop the trains was answered Yes");
 
                         assertTrue(ui.isAutonomyLoaded() && model.getAutoLayoutIfLoaded() == railway, door + " replaced the"

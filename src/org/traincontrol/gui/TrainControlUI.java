@@ -5104,7 +5104,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // stopped by it, so the load or unload would go ahead under it (an s88 route can fire from an autonomy train)
             if (aRouteIsExecuting(this.model))
             {
-                JOptionPane.showMessageDialog(this, I18n.t("ui.main.tooltip.placeAtHomesWhileRunning"));
+                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForARouteToFinish"));
 
                 return false;
             }
