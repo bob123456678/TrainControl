@@ -28,8 +28,14 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-749](#mt-749) | 2026-10-18 | FR-135: the sharper link and signal icons, meeting the track with no seam | fixed unvalidated | FR-135 |
+| [MT-750](#mt-750) | 2026-10-18 | OB-352: every finding you click is outlined, not only some | fixed unvalidated | OB-352 |
+| [MT-751](#mt-751) | 2026-10-18 | OB-353: track no station can be reached along has no arrows and is greyed | fixed unvalidated | OB-353 |
+| [MT-752](#mt-752) | 2026-10-18 | OB-354: clicking a train in Test a Path or Why not Moving? picks its station | fixed unvalidated | OB-354 |
+| [MT-753](#mt-753) | 2026-10-18 | FR-129: Run Trains to Their Homes on Return Home's right-click | fixed unvalidated | FR-129 (Adam's note on MT-742) |
+| [MT-754](#mt-754) | 2026-10-18 | FR-133: the Station Labels dropdown in the Track Directions font | fixed unvalidated | FR-133 (Adam's note on MT-743) |
+| [MT-755](#mt-755) | 2026-10-18 | OB-349: the locomotives left out are shown in a popup on a load too | fixed unvalidated | OB-349 (Adam's note on MT-744) |
 
-Everything else - 748 of 749 - needs nothing from you unless the area changes again:
+Everything else - 748 of 755 - needs nothing from you unless the area changes again:
 595 **fixed validated** and 153 **superseded**.
 
 ---
@@ -35289,5 +35295,156 @@ Large (the Medium size is the Large art scaled down).  Claim `ui.testDiagramLook
 `docs/tools/link-signal-icons.py`, the band under them the straight's own.  Claims in `ui.testDiagramLooksRight`:
 `testTheLinkAndTheSignalsMeetTheStraightWithNoSeam`, `testTheLinkAndTheSignalsBarAreSymmetric`,
 `testTheSignalsLampsAreInTheirOwnEnds`.
+
+---
+
+<a id="mt-750"></a>
+### MT-750 - 2026-10-18 - OB-352: every finding you click is outlined, not only some
+
+**Disposition:** fixed unvalidated
+**From:** OB-352
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open the autonomy editor on a setup with a station at the end of a line (a finding saying it "is at the end of the
+   line") and one shown more than once, if you have one.
+2. Click each finding in `Things to look at`.
+3. On the Auto tab, click a finding there that opens the editor.
+
+**Expected**
+
+- Steps 2 and 3: every finding with a square takes you there with the yellow flash AND the strong outline, as "is shown
+  more than once" always did - "is at the end of the line" included.
+
+*What this is:* OB-352 (`54301fca`): every finding that names a square is outlined and flashed, through one path, in the editor's list and
+from the Auto tab.  Claims in `core.testAutonomyDiagramSession` and `regression.testTheImportDoorReadsAnOldFile`.
+
+---
+
+<a id="mt-751"></a>
+### MT-751 - 2026-10-18 - OB-353: track no station can be reached along has no arrows and is greyed
+
+**Disposition:** fixed unvalidated
+**From:** OB-353
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open the layout in `Oles kreds - TC3 sandbox2` and its autonomy editor on page "0 komplet".
+2. Look at 3,4 and at 16,4 to 18,4, then at 4,14.
+3. Click on 3,4 where an arrow would be.  Then shift-click it and give it a length.
+
+**Expected**
+
+- Step 2: 3,4 and 16,4 to 18,4 draw no arrows and are greyed like squares autonomy ignores.  4,14 keeps its arrows.
+- Step 3: the click changes nothing, and the message strip says no station can be reached along this track.  The length
+  is kept: everything else still works there.
+
+*What this is:* OB-353 (`f6c29656`): squares joined by track to no station draw no arrows (in the editor and on the track diagram) and
+are greyed; a click there sets nothing, other edits still work (Adam: "yes, it can accept edits").  Claims in
+`core.testTheArrowsTellTheWholeStory`.
+
+---
+
+<a id="mt-752"></a>
+### MT-752 - 2026-10-18 - OB-354: clicking a train in Test a Path or Why not Moving? picks its station
+
+**Disposition:** fixed unvalidated
+**From:** OB-354
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. In the autonomy editor with `Show Trains` ticked, choose `Test a path`.
+2. Click a train drawn on a station, then click another train's station the same way.
+3. Do the same with `Why not Moving?`.
+
+**Expected**
+
+- Steps 2 and 3: a click on a train counts as a click on the station it stands on - the tool takes that station, just as
+  a click on the square beside the train would.
+
+*What this is:* OB-354 (`298661c4`): while either tool is waiting for a square, a click on a train's icon (or its station's caption under
+it) is a click on the train's station.  Other tools are unchanged.  Claim in
+`regression.testTheImportDoorReadsAnOldFile`.
+
+---
+
+<a id="mt-753"></a>
+### MT-753 - 2026-10-18 - FR-129: Run Trains to Their Homes on Return Home's right-click
+
+**Disposition:** fixed unvalidated
+**From:** FR-129 (Adam's note on MT-742)
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. With autonomy stopped and trains away from home, right-click `Return Home`.
+2. Choose `Run Trains to Their Homes`.
+3. Start autonomy and right-click `Return Home` again.
+
+**Expected**
+
+- Step 1: two items, `Run Trains to Their Homes` first, then `Place All Trains at Their Homes (n)`.
+- Step 2: the same as clicking the button: Return Home plans and runs the trains home.
+- Step 3: `Run Trains to Their Homes` is greyed whenever the button is, with the button's tooltip.
+
+*What this is:* Adam on MT-742: "add an option above that that says "Run Trains to their Home", which is equivalent to just clicking
+the button itself" (`2cfb4d57`).  Claims in `regression.testReturnHomeRightClickPlacesTheTrainsAtHome`.
+
+---
+
+<a id="mt-754"></a>
+### MT-754 - 2026-10-18 - FR-133: the Station Labels dropdown in the Track Directions font
+
+**Disposition:** fixed unvalidated
+**From:** FR-133 (Adam's note on MT-743)
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open the autonomy editor.  If the Station Labels dropdown shows `Hide` from the earlier version, set it to
+   `Station Names` once.
+2. Compare the dropdown's text with the Track Directions dropdown below it.
+
+**Expected**
+
+- Step 2: the two dropdowns use the same, smaller font.
+- Station Names is what a new setup, or one that had `Labels Only` before 3.0.2, opens with.
+
+*What this is:* Adam on MT-743: "make sure Station Names is default.  Also, the font size needs to be reduced, it should be the same
+smaller font as under Track Directions" (`0fffea9a`).  Claims in `regression.testARememberedNoneOpensWithTheCaptionsOff`.
+
+---
+
+<a id="mt-755"></a>
+### MT-755 - 2026-10-18 - OB-349: the locomotives left out are shown in a popup on a load too
+
+**Disposition:** fixed unvalidated
+**From:** OB-349 (Adam's note on MT-744)
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Unzip `tc3 kreds 261016 0810.zip` again into a new folder (the copy from MT-744 no longer names BR 39, which is not
+   in your database), point TrainControl at that layout, and restart it with autonomy loading at start.
+2. Load the configuration again from the Autonomy menu.
+
+**Expected**
+
+- Step 1: once the window is showing, one popup, "Locomotives not in the database", lists BR 39 and what it lost.  The
+  log says the same.
+- Step 2: no popup - it was taken out at step 1 and saved.
+
+*What this is:* Adam on MT-744: "log works, but show the locomotive info in a popup" (`7ec855a2`): a load that leaves locomotives out shows
+the import's popup too, after the connecting notice at start-up.  Claims in
+`regression.testALocomotiveNotInTheDatabaseLeavesTheSetup`.
 
 ---

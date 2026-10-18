@@ -370,33 +370,6 @@ the app currently has a fixed size and is therefore suboptimal for larger screen
 
 Adam, 2026-10-18: "Before I do MT's, let's further lighten the surround of the tunnel icons in the track diagram.  show me some options, an also experiment with widening it slightly."  Of the options drawn for him (four shades of the wall, three widths, on his two tunnels on 1 - Main): "Go for C at +1" - the wall #EEEEEE, where it was #BBBBBB, and a pixel wider each side at the Small size, two at the Large.
 
-### OB-352 - 2026-10-17 - autonomy editor highlighting
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-17 22:11  
-**Build:** commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-autonomy must be fixed: "is at the end of the line", when clicked, does a regular highlight, whereas "is shown more than ones" gives the yellow highlight plus a strong outline.  make them consistent, using the latter, which is easier to use.
-
-### OB-353 - 2026-10-17 - no arrows on a segment
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-17 22:14  
-**Build:** commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in Oles kreds - TC3 sandbox2, 3,4 shows arrows in the autonomy editor even though there is no station on this segment.  make it so that arrows are hidden from track segments not connected (naively) to any station.  in this case, it's just cosmetic route tiles, so 3,4 should also be greyed out.  make sure 4,14 keeps arrows.
-
-### OB-354 - 2026-10-17 - test a path click on locomotive
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-17 22:22  
-**Build:** commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-if clicking on a locomotive in test a path / why not moving, make it register a click on the station.
-
 ### FR-135 - 2026-10-18 - sharper link and signal icons on the track diagram, meeting the track with no seam
 
 **Kind:** feature request  
@@ -421,6 +394,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-17 | OB-354 | bug | A click on a train in Test a Path or Why not Moving? picks the station it stands on (`298661c4`). | - | MT-752 |
+| 2026-10-17 | OB-353 | bug | Track joined to no station draws no arrows and is greyed in the editor; other edits still work there (`f6c29656`). | - | MT-751 |
+| 2026-10-17 | OB-352 | bug | Every finding with a square is outlined and flashed when clicked, as "shown more than once" was (`54301fca`). | - | MT-750 |
 | 2026-10-18 | FR-135 | feature request | The link tile a sharp black arrow in a light grey frame (option G) and both signal tiles redrawn crisp, drawn from geometry by `docs/tools/link-signal-icons.py` so Small and Large are one drawing, the band under them the straight's own - no seam with the track (`2328db0b`). | - | MT-749 |
 | 2026-10-18 | FR-134 | feature request | The tunnel icons' wall near white (#EEEEEE, from #BBBBBB) and a pixel wider each side at Small, two at Large: option C at +1 of those drawn on Adam's tunnels (`7f10f8cd`). | - | MT-748 |
 | 2026-10-16 | OB-351 | bug | A switch's, three-way's or double slip's arrows are the whole of which way trains may run through it; a setup with a road closed under a green arrow is read as its arrows show, logged and saved (`5e65b5e6`). | - | MT-747 |
