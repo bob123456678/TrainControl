@@ -662,6 +662,61 @@ public class testTheArrowsTellTheWholeStory
         }
     }
 
+    /**
+     * A setup that cannot be saved as it opens does not say it was: the squares are said without "saved that way", and the
+     * failure is said as its own line with its reason, every time it is opened that way (C2).
+     *
+     * MUTATION: put the saved sentence back on every line, or leave the failure unsaid, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testASetupThatCannotBeSavedAsItOpensSaysSo() throws Exception
+    {
+        File setup = new File(scenario.getFolder(), "config" + File.separator + "autonomy" + File.separator + "setup.json");
+
+        byte[] was = Files.readAllBytes(setup.toPath());
+
+        try
+        {
+            org.json.JSONObject json = new org.json.JSONObject(new String(was, StandardCharsets.UTF_8));
+
+            json.getJSONObject("tileDirections").put(key(main), "BOTH");
+            json.getJSONObject("tileDirections").put(key(spur), "NONE");
+
+            Files.write(setup.toPath(), json.toString(2).getBytes(StandardCharsets.UTF_8));
+
+            // A FILE THAT CANNOT BE WRITTEN
+            assertTrue(setup.setReadOnly(), "precondition: the setup file would not be made read-only");
+
+            AutonomySession read = new AutonomySession(scenario.getFolder());
+
+            read.open(scenario.getPages());
+
+            String said = read.getSquaresBroughtToTheirArrows().get(turnout);
+
+            assertNotNull(said, "precondition: opening the setup brought no square to its arrows");
+
+            assertFalse(said.contains(I18n.t("autosetup.log.followsItsArrowsSaved")), "a setup that could not be saved was"
+                + " said to have been saved: " + said);
+
+            List<String> lines = read.takeSquaresBroughtToTheirArrows();
+
+            assertEquals(lines.size(), 2, "the failed save is not said as a line of its own: " + lines);
+
+            assertTrue(lines.get(1).equals(I18n.f("autosetup.log.followsItsArrowsNotSaved", read.getArrowsSaveFailure())),
+                "the failed save is said without its reason: " + lines);
+
+            assertNotNull(read.getArrowsSaveFailure(), "the session keeps no reason the save failed");
+        }
+        finally
+        {
+            setup.setWritable(true);
+
+            Files.write(setup.toPath(), was);
+        }
+    }
+
     /** The setup's key for one of the switch's roads: the page by its id, as the file writes it. */
     private static String key(RouteId road)
     {

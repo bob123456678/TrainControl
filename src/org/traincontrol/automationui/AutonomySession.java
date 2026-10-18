@@ -341,16 +341,27 @@ public class AutonomySession
 
         // EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351), and the setup is saved that way at once, so each is said once
         broughtToTheirArrows = sentencesFor(graph.getNormalizedToArms().keySet());
+        arrowsSaveFailure = null;
+        arrowsSaveFailureToSay = false;
 
         if (!broughtToTheirArrows.isEmpty())
         {
             try
             {
                 store.save();
+
+                // Said only of a save that happened
+                for (Map.Entry<TileKey, String> said : broughtToTheirArrows.entrySet())
+                {
+                    said.setValue(said.getValue() + "  " + I18n.t("autosetup.log.followsItsArrowsSaved"));
+                }
             }
             catch (IOException e)
             {
-                // Not saved: the railway still runs as the arrows show, and the next open brings them to it and says so again
+                // Not saved: the railway still runs as the arrows show, the next open brings them to it and says so again,
+                // and the log says the setup was not saved, and why
+                arrowsSaveFailure = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                arrowsSaveFailureToSay = true;
             }
         }
 
@@ -391,6 +402,22 @@ public class AutonomySession
     }
 
     /**
+     * Why the setup could not be saved as it opened with squares brought to their arrows, or null.
+     *
+     * @return the reason, or null when it was saved or nothing needed saving
+     */
+    public String getArrowsSaveFailure()
+    {
+        return arrowsSaveFailure;
+    }
+
+    /** Why the setup could not be saved as it opened with squares brought to their arrows, or null (C2). */
+    private String arrowsSaveFailure;
+
+    /** Whether that failure is still to be said. */
+    private boolean arrowsSaveFailureToSay;
+
+    /**
      * The sentences for the squares brought to their arrows, handed over once: the window logs them and they are not said
      * again by the next door that asks.
      *
@@ -399,6 +426,14 @@ public class AutonomySession
     public List<String> takeSquaresBroughtToTheirArrows()
     {
         List<String> out = new ArrayList<>(broughtToTheirArrows.values());
+
+        // AND THAT THE SETUP COULD NOT BE SAVED THAT WAY, with the reason, in place of saying it was
+        if (arrowsSaveFailureToSay)
+        {
+            out.add(I18n.f("autosetup.log.followsItsArrowsNotSaved", arrowsSaveFailure));
+
+            arrowsSaveFailureToSay = false;
+        }
 
         broughtToTheirArrows = new LinkedHashMap<>();
 
