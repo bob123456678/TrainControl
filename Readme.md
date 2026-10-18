@@ -417,6 +417,7 @@ Tab icons provided by Freepik.
         - Setup edits (in the editors, on the Auto tab, in the timetable, when loading or exporting a configuration, with `Stop Using Autonomy`, and routes on or off) are now refused with a message while a route is running, not only while autonomy is.
         - Every finding you click in the setup check is now outlined in the autonomy editor's diagram.
         - A locomotive turned round while a route is running, by the route or by hand, is now turned round in the autonomy setup when the route finishes.
+        - Start, Execute Timetable, Return Home and sending a train from the Track Diagram or the Auto tab now ask you to wait while a route is running.
         - Track that no station can be reached along no longer shows direction arrows and is greyed out in the editor.
         - Clicking a train in Test a Path or Why not Moving? now picks the station it stands on.
         - When the only trains away from home are paused, Return Home now names them and says how to set them going, instead of saying every locomotive is already at its home.
