@@ -371,6 +371,8 @@ the app currently has a fixed size and is therefore suboptimal for larger screen
 
 refactor code to make agents work faster- split large files, consolidate documentation, use subclassing as needed, clear dead code.  validate behavior is unchanged.  v3.0.3 change.
 
+**Claude, 2026-10-18.** Adam approved the plan with his rulings and answers (*"I approve the plan and the change to the comment rule"*): `docs/refactor-3.0.3.md`.  Steps already taken: OB-359.  Filed from it: FR-138.
+
 ### FR-137 - 2026-10-18 - route spinner
 
 **Kind:** feature request  
@@ -397,6 +399,14 @@ From MT-759 (Adam, 2026-10-18: "partially works"): changing a locomotive's direc
 
 many tooltips in the layout jmenu have extra whitespace padding at the end, such as "Create New Layout"
 
+### FR-138 - 2026-10-18 - for 3.0.3: more example code for the Java API, beyond what the Readme has
+
+**Kind:** feature request  
+**Raised from:** the triage API  
+**Filed:** 2026-10-18  
+
+From Adam's rulings on FR-136's plan (2026-10-18): the public methods on the API classes (Layout, Edge, Locomotive, MarklinControlStation) stay even where nothing in the program calls them, because *"these seem useful to an API user, and we should add examples later"*.  Write example code that shows them in use, beyond the examples the Readme and AutomationAPI.md have now.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -413,6 +423,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-18 | OB-359 | bug | The legacy track diagram editor and Edit Current Page items are gone from the form and the code, Combine Linked Pages is in the form, and the keys only they used are gone (`a4dac3dd`, `2884d4d7`): `regression.testTheMenusComeBackAtOneMoment`.  Nothing a user sees changed.  The external application pattern it held lives in git history before 3.0.2. | fixed validated | - |
 | 2026-10-17 | OB-356 | bug | Not a fault: ST60rear's track runs out to the west, so it is drawn as a terminus (FR-118); a menu note saying so was tried and taken out again on Adam's word (`0bf2ae89`). | - | MT-757 |
 | 2026-10-17 | OB-355 | bug | Return Home names the paused trains away from home instead of saying every locomotive is home (`18d48af7`). | - | MT-756 |
 | 2026-10-17 | OB-354 | bug | A click on a train in Test a Path or Why not Moving? picks the station it stands on (`298661c4`). | - | MT-752 |

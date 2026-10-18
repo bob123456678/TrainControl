@@ -307,6 +307,18 @@ This also settles a question the consolidation plan left open. Self-contained co
 retiring `docs/reviews/` cheap: the citations become a trail somebody may follow rather than a
 dependency they must.
 
+**Amended 2026-10-18: the current rule, not its history.**  Adam approved FR-136's comment rule
+(*"I approve the plan and the change to the comment rule"*; the plan is `docs/refactor-3.0.3.md`):
+
+- A comment states the **current** rule and why the code meets it.  It must make sense on its own,
+  ideally in 8 lines or fewer.
+- History belongs in the finding row its id resolves to, or in git: what the code used to do, which
+  round found it, who chose which option on which date.
+- One id per claim; quote Adam only where his wording is the rule.
+- A block over 15 lines is either a javadoc contract or moves to `behaviour.md`.
+- New code follows the rule at once.  Existing comments are trimmed in comment-only commits, proven to
+  change no code by comparing the compiled classes.
+
 ## Testing
 
 **Simulate the code, not your model of the code.** *A simulation "proved" two BFS implementations
