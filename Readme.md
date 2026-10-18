@@ -399,6 +399,22 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.2 [10/18/2026]
+    - Autonomy Features
+        - Right-clicking Return Home now offers `Run Trains to Their Homes`, which does the same as the button, and `Place All Trains at Their Homes`, which puts each homed train on its home in the setup without moving anything, so you can then move the real trains by hand.
+        - Both of those items are greyed out while anything is running, and the Track Diagram's Bulk Tools item for placing all trains at their homes behaves the same way.
+        - The autonomy editor has a new `Text Labels` box under `Show Trains` for showing or hiding the diagram's own text.
+        - The editor's captions dropdown is now headed `Station Labels`, offers Station Names (the default), Standing Locs, Home Locs and Hide, and uses the same font as Track Directions.
+    - Track Diagram
+        - The tunnel icons are easier to see, and the link and signal icons are sharper and meet the track cleanly.
+    - Autonomy Bug Fixes
+        - A locomotive that is not in your locomotive database is now taken out of the autonomy setup when it loads, and a popup tells you which ones.
+        - You can now place a train from the Track Diagram on a station no train can leave, as you can in the editor.
+        - On switches, three-way switches and double slips, the direction arrows now decide fully which way trains may run, and older setups with a hidden closed road are brought in line with their arrows, with the log listing the switches.
+        - Setup edits (in the editors, on the Auto tab, in the timetable, and routes on or off) now wait while a route is running, not only while autonomy is, and say what is running.
+        - Every finding you click in the setup check is now outlined on the Track Diagram.
+        - Track that no station can be reached along no longer shows direction arrows and is greyed out in the editor.
+        - Clicking a train in Test a Path or Why not Moving? now picks the station it stands on.
 * v3.0.1 [10/13/2026]
     - Updates
         - Download Update can now also install the new version for you: it backs up your data, keeps your old version next to the new one, and restarts TrainControl
