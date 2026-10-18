@@ -4807,6 +4807,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void trainsPausedChanged()
     {
+        // AND RETURN HOME, which says a paused train away from its home is why it has nothing to do (OB-355)
+        refreshReturnHomeButton();
+
         if (diagramMonitorDriver == null) return;
 
         diagramMonitorDriver.trainsPausedChanged();
@@ -26962,8 +26965,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Trusting the boolean means trusting a chain: every move completed or was abandoned,
                 // and executePath completes only on arrival.  That holds today.  Asking outright costs
                 // one occupancy read and does not decay when a link in the chain changes.
-                final boolean everyoneHome =
-                    layout.triageReturnToHome() == HomeStaging.Outcome.ALREADY_HOME;
+                // A paused train is left where it stands, so it does not make the run short (FR-117)
+                HomeStaging.Outcome after = layout.triageReturnToHome();
+
+                final boolean everyoneHome = after == HomeStaging.Outcome.ALREADY_HOME
+                    || after == HomeStaging.Outcome.PAUSED_AWAY;
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
@@ -27233,10 +27239,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (asked == null) continue;
 
                 HomeStaging.Outcome answer;
+                List<Locomotive> pausedAway = new ArrayList<>();
 
                 try
                 {
-                    answer = asked.triageReturnToHome();
+                    answer = asked.triageReturnToHome(pausedAway);
                 }
                 catch (RuntimeException replaced)
                 {
@@ -27251,6 +27258,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // the one that replaced it.
                 if (asked != returnHomeTriageSubject) continue;
 
+                returnHomeTriagePausedAway = pausedAway;
                 returnHomeTriage = answer;
 
                 javax.swing.SwingUtilities.invokeLater(() -> paintReturnHomeFromTheAnswer(asked));
@@ -27300,7 +27308,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Says why it is unavailable, rather than leaving a dead button with no explanation
         this.returnHomeButton.setToolTipText(nothingToDo == null
             ? I18n.t("ui.main.tooltip.returnHome")
-            : describeStagingOutcome(nothingToDo, null));
+            : describeStagingOutcome(nothingToDo, returnHomeTriagePausedAway));
     }
 
     /**
@@ -27533,6 +27541,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** What the railway last said about sending trains home; null means there is work to do. */
     private volatile HomeStaging.Outcome returnHomeTriage = null;
+
+    /** The paused trains standing away from their homes when the railway last answered, for the sentence that names them (OB-355). */
+    private volatile List<Locomotive> returnHomeTriagePausedAway = new ArrayList<>();
 
     /** Which layout the next ask is about, replaced by every ask. */
     private volatile Layout returnHomeTriageSubject = null;
@@ -27784,6 +27795,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             case ALREADY_HOME:
                 return I18n.t("autolayout.ui.infoAllLocomotivesAlreadyHome");
+
+            // The trains that are away and paused, named, and how to set them going (OB-355): not "already home"
+            case PAUSED_AWAY:
+                return I18n.f("autolayout.ui.infoAwayLocomotivesPaused", namesOf(blocked));
 
             case NO_LOCOMOTIVES:
                 return I18n.t("autolayout.ui.errorNoLocomotivesOnGraph");

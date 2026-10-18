@@ -255,8 +255,10 @@ public class testAPausedTrainStaysPaused
 
         assertEquals(layout.getLocomotiveLocation(alpha).getName(), "PT C", "the paused train did not stay where it stood");
 
-        assertEquals(layout.triageReturnToHome(), HomeStaging.Outcome.ALREADY_HOME, "with every train but the paused"
-            + " one home, Return Home's check after a run says not everyone is, and the window reports the run stopped");
+        // PAUSED_AWAY, and not ALREADY_HOME, since the paused one stands away (OB-355); the window counts it as done
+        assertEquals(layout.triageReturnToHome(), HomeStaging.Outcome.PAUSED_AWAY, "with every train but the paused"
+            + " one home, Return Home's check after a run does not say only the paused one is away, and the window"
+            + " reports the run stopped");
     }
 
     /**

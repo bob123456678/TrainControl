@@ -737,6 +737,146 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         }
     }
 
+    /** Waits until the window's Return Home triage has answered every ask, then lets the event thread paint it. */
+    private static void awaitTheButton(TrainControlUI ui) throws Exception
+    {
+        java.lang.reflect.Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
+
+        triage.setAccessible(true);
+
+        assertTrue((Boolean) triage.invoke(ui, 30000L), "precondition: the Return Home triage did not settle");
+
+        for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+        triage.invoke(ui, 30000L);
+
+        for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
+     * Return Home does not say "already on its home" over a train that is paused away from its home (OB-355; Adam: "'every
+     * locomotive is already at its home' is shown, and return home is greyed out, even if the reason is that locomotives are
+     * inactive but not on their stations.").  With every other train home and one homed train paused away, the button is
+     * greyed and says the train is paused and how to set it going - the menu's Run Trains to Their Homes the same;
+     * set going, the button is offered; with every train home, it says they are.
+     *
+     * MUTATION: let the triage count a paused train as home without saying so (answer ALREADY_HOME for it), and the first
+     * reason fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPausedTrainAwayFromHomeIsNotSaidToBeHome() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final AutonomySession session = ui.getAutonomySession();
+
+            // EVERY HOMED TRAIN ON ITS HOME, by the menu's own item
+            Map<TileKey, String> homes = new LinkedHashMap<>(session.homesToPlace());
+
+            final JMenuItem place = theItem(ui);
+
+            answering(message -> 0, () -> place.doClick());
+
+            for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            final Layout layout = ui.getModel().getAutoLayout();
+
+            org.traincontrol.base.Locomotive train = ui.getModel().getLocByName(homes.values().iterator().next());
+
+            org.traincontrol.automation.Point home = layout.getHomeStation(train);
+
+            assertNotNull(home, "precondition: " + train.getName() + " has no home");
+
+            awaitTheButton(ui);
+
+            final javax.swing.JButton button = returnHomeButton(ui);
+            final String atHome = I18n.t("autolayout.ui.infoAllLocomotivesAlreadyHome");
+
+            // EVERY TRAIN HOME: the at-home sentence
+            assertFalse(button.isEnabled(), "precondition: Return Home is offered with every homed train on its home: "
+                + button.getToolTipText());
+
+            assertEquals(button.getToolTipText(), atHome, "with every train home, the button does not say so");
+
+            // ONE AWAY, ACTIVE: offered.  Any other station it will go to.
+            boolean away = false;
+
+            for (org.traincontrol.automation.Point there : layout.getPoints())
+            {
+                if (away) break;
+
+                if (there.getName().equals(home.getName())) continue;
+
+                if (!layout.moveLocomotive(train.getName(), there.getName(), false)) continue;
+
+                org.traincontrol.automation.Point now = layout.getLocomotiveLocation(train);
+
+                if (now != null && !now.isSamePlaceAs(home) && layout.triageReturnToHome() == null) away = true;
+                else layout.moveLocomotive(train.getName(), home.getName(), false);
+            }
+
+            assertTrue(away, "precondition: " + train.getName() + " could not be stood away from its home");
+
+            SwingUtilities.invokeAndWait(() -> window.trainsPausedChanged());
+
+            awaitTheButton(ui);
+
+            assertTrue(button.isEnabled(), "Return Home is not offered with " + train.getName() + " active and away from"
+                + " its home: " + button.getToolTipText());
+
+            // PAUSED, through the door the Is Active tick and the bulk tools use
+            final List<org.traincontrol.base.Locomotive> paused = Collections.singletonList(train);
+
+            SwingUtilities.invokeAndWait(() -> window.setLocomotivesActive(session, paused, false));
+
+            awaitTheButton(ui);
+
+            assertFalse(button.isEnabled(), "Return Home is offered with the only train away from home paused");
+
+            assertFalse(atHome.equals(button.getToolTipText()), "the button says every locomotive is home over the paused "
+                + train.getName() + ", which stands away from its home");
+
+            String why = I18n.f("autolayout.ui.infoAwayLocomotivesPaused", train.getName());
+
+            assertEquals(button.getToolTipText(), why, "the paused train away from its home is not the reason given");
+
+            assertTrue(why.contains(train.getName()), "the reason does not name the paused train: " + why);
+
+            JMenuItem run = theRunItem(ui);
+
+            assertFalse(run.isEnabled(), "Run Trains to Their Homes is offered while the button is greyed");
+
+            assertEquals(run.getToolTipText(), why, "Run Trains to Their Homes does not give the button's reason");
+
+            // SET GOING AGAIN: offered
+            SwingUtilities.invokeAndWait(() -> window.setLocomotivesActive(session, paused, true));
+
+            awaitTheButton(ui);
+
+            assertTrue(button.isEnabled(), "Return Home is not offered once " + train.getName() + " is set going: "
+                + button.getToolTipText());
+        }
+        finally
+        {
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
     /** What the log says of this many trains put on their homes, up to the number taken off. */
     private static String saidPlaced(int homes)
     {

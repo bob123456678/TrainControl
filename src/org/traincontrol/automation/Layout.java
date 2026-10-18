@@ -13731,7 +13731,23 @@ public class Layout
      */
     public HomeStaging.Outcome triageReturnToHome()
     {
-        return HomeStaging.snapshot(this).triage();
+        return triageReturnToHome(null);
+    }
+
+    /**
+     * The same, and the paused trains standing away from their homes, taken from the one snapshot so the outcome and the
+     * trains it names cannot differ (OB-355).
+     *
+     * @param pausedAway receives those trains, or null to ask for none
+     * @return the outcome, or null when only a plan can say more
+     */
+    public HomeStaging.Outcome triageReturnToHome(List<Locomotive> pausedAway)
+    {
+        HomeStaging staging = HomeStaging.snapshot(this);
+
+        if (pausedAway != null) pausedAway.addAll(staging.getPausedAwayFromHome());
+
+        return staging.triage();
     }
 
     /**
