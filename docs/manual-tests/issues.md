@@ -370,6 +370,33 @@ the app currently has a fixed size and is therefore suboptimal for larger screen
 
 Adam, 2026-10-18: "Before I do MT's, let's further lighten the surround of the tunnel icons in the track diagram.  show me some options, an also experiment with widening it slightly."  Of the options drawn for him (four shades of the wall, three widths, on his two tunnels on 1 - Main): "Go for C at +1" - the wall #EEEEEE, where it was #BBBBBB, and a pixel wider each side at the Small size, two at the Large.
 
+### OB-352 - 2026-10-17 - autonomy editor highlighting
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 22:11  
+**Build:** commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+autonomy must be fixed: "is at the end of the line", when clicked, does a regular highlight, whereas "is shown more than ones" gives the yellow highlight plus a strong outline.  make them consistent, using the latter, which is easier to use.
+
+### OB-353 - 2026-10-17 - no arrows on a segment
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 22:14  
+**Build:** commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in Oles kreds - TC3 sandbox2, 3,4 shows arrows in the autonomy editor even though there is no station on this segment.  make it so that arrows are hidden from track segments not connected (naively) to any station.  in this case, it's just cosmetic route tiles, so 3,4 should also be greyed out.  make sure 4,14 keeps arrows.
+
+### OB-354 - 2026-10-17 - test a path click on locomotive
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-17 22:22  
+**Build:** commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+if clicking on a locomotive in test a path / why not moving, make it register a click on the station.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

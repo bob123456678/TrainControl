@@ -27,16 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-742](#mt-742) | 2026-10-17 | FR-129: right-click Return Home to place the trains at their homes | fixed unvalidated | FR-129 |
-| [MT-743](#mt-743) | 2026-10-17 | FR-133: the autonomy editor's Station Labels dropdown and Text Labels box | fixed unvalidated | FR-133 |
-| [MT-744](#mt-744) | 2026-10-17 | OB-349: a locomotive not in the database leaves the setup, and an import says so | fixed unvalidated | OB-349 |
-| [MT-745](#mt-745) | 2026-10-17 | OB-350: Place on a station with no way out, from the track diagram as from the editor | fixed unvalidated | OB-350 |
-| [MT-746](#mt-746) | 2026-10-17 | No setup edit while a route runs | fixed unvalidated | FR-129 (setup doors and running routes) |
-| [MT-747](#mt-747) | 2026-10-17 | OB-351: a switch's arrows are the whole of which way trains may run through it | fixed unvalidated | OB-351 |
-| [MT-748](#mt-748) | 2026-10-18 | FR-134: the tunnel icons' wall near white and a little wider | fixed unvalidated | FR-134 |
 
-Everything else - 741 of 748 - needs nothing from you unless the area changes again:
-588 **fixed validated** and 153 **superseded**.
+
+Everything else - 748 of 748 - needs nothing from you unless the area changes again:
+595 **fixed validated** and 153 **superseded**.
 
 ---
 
@@ -35016,7 +35010,7 @@ A fourth validation round's finding is fixed (`5cd6eebd`, V348D): a train the ra
 <a id="mt-742"></a>
 ### MT-742 - 2026-10-17 - FR-129: right-click Return Home to place the trains at their homes
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-129
 
 **Written:** 2026-10-17
@@ -35049,12 +35043,22 @@ Claims `regression.testReturnHomeRightClickPlacesTheTrainsAtHome`.
 
 The track diagram's own right-click Bulk Tools > Place All Trains at Their Homes now behaves the same way (`7c3e5a4f`): greyed with the reason while anything runs, the same question, and the result in the log.
 
+**Adam, 2026-10-17 (triage).** Works, with notes.
+
+Works, but add an option above that that says "Run Trains to their Home", which is equivalent to just clicking the button itself.
+
+*Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-17.**
+
+Taken up: a `Run Trains to Their Homes` item above it, the same as clicking the button.  It gets its own test.
+
 ---
 
 <a id="mt-743"></a>
 ### MT-743 - 2026-10-17 - FR-133: the autonomy editor's Station Labels dropdown and Text Labels box
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-133
 
 **Written:** 2026-10-17
@@ -35078,12 +35082,22 @@ The track diagram's own right-click Bulk Tools > Place All Trains at Their Homes
 *What this is:* FR-133 (`1dabc78e`): Labels Only leaves the dropdown for its own box, remembered beside the caption mode; a remembered
 Labels Only opens as Hide with the box ticked.  Claims `regression.testARememberedNoneOpensWithTheCaptionsOff`.
 
+**Adam, 2026-10-17 (triage).** Works, with notes.
+
+works, make sure Station Names is default.  Also, the font size needs to be reduced, it should be the same smaller font as under Track Directions, e.g. "Show All"
+
+*Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-17.**
+
+Taken up: Station Names as the default, and the dropdown in the same smaller font as Track Directions'.  It gets its own test.
+
 ---
 
 <a id="mt-744"></a>
 ### MT-744 - 2026-10-17 - OB-349: a locomotive not in the database leaves the setup, and an import says so
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-349
 
 **Written:** 2026-10-17
@@ -35108,12 +35122,22 @@ arrival, home, lists - logged, and saved; an import also shows the list.  Openin
 only.  Nothing is taken out against an empty database.  Claims
 `regression.testALocomotiveNotInTheDatabaseLeavesTheSetup`.
 
+**Adam, 2026-10-17 (triage).** Works, with notes.
+
+log works, but show the locomotive info in a popup
+
+*Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-17.**
+
+Taken up: the locomotives left out are shown in the same popup on a load too, not only on an import.  It gets its own test.
+
 ---
 
 <a id="mt-745"></a>
 ### MT-745 - 2026-10-17 - OB-350: Place on a station with no way out, from the track diagram as from the editor
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-350
 
 **Written:** 2026-10-17
@@ -35134,12 +35158,16 @@ only.  Nothing is taken out against an empty database.  Claims
 *What this is:* OB-350 (`ad25cfb4`): the track diagram's Place and the paste stand a train on a station no train can leave, on its own
 square with no facing recorded, as the editor's Place does.  Claims in `ui.testATrainWithNoWayOutFacesAlongItsTrack`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-746"></a>
 ### MT-746 - 2026-10-17 - No setup edit while a route runs
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-129 (setup doors and running routes)
 
 **Written:** 2026-10-17
@@ -35162,12 +35190,22 @@ square with no facing recorded, as the editor's Place does.  Claims in `ui.testA
 question, `TrainControlUI.aRunHoldsTheSetup`, the one Return Home's place-at-home item asks.  Claims
 `regression.testNoSetupEditWhileARouteRuns`.
 
+**Adam, 2026-10-17 (triage).** Works, with notes.
+
+Works as described, but what if an editor is open and the user tries to save?
+
+*Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-17.**
+
+With an editor open while a route runs, Save is refused with a message and the editor stays open with your edits in it; once the route has finished, Save works as usual.  The message is being reworded to say it is a route that is running.
+
 ---
 
 <a id="mt-747"></a>
 ### MT-747 - 2026-10-17 - OB-351: a switch's arrows are the whole of which way trains may run through it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-351
 
 **Written:** 2026-10-17
@@ -35192,12 +35230,16 @@ question, `TrainControlUI.aRunHoldsTheSetup`, the one Return Home's place-at-hom
 is green (Adam: "Align it so that the arrows tell the full story").  Older setups are read as their arrows show, logged
 once and saved; the per-road items are gone there.  Claims `core.testTheArrowsTellTheWholeStory`.
 
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-748"></a>
 ### MT-748 - 2026-10-18 - FR-134: the tunnel icons' wall near white and a little wider
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-134
 
 **Written:** 2026-10-18
@@ -35215,5 +35257,9 @@ once and saved; the per-road items are gone there.  Claims `core.testTheArrowsTe
 
 *What this is:* FR-134 (`7f10f8cd`): the wall #EEEEEE where it was #BBBBBB, and a pixel wider each side at Small, two at
 Large (the Medium size is the Large art scaled down).  Claim `ui.testDiagramLooksRight.testTheTunnelsWallIsWider`.
+
+**Adam, 2026-10-17 (triage).** Works.
+
+*Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
