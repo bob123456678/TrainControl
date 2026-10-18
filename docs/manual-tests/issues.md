@@ -320,7 +320,7 @@ Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 
 **Claude, 2026-10-13:** RSA70 (C3) found the corner reaches further: the chain need not be in one edit (a name another station had in an earlier, saved edit of the session is read as that station's at Cancel), and one rename that gives a station a name another station has can point the railway's timetable leg at the wrong station at the in-editor fold itself, with no Cancel, so Save keeps it too (the fold order of 3.0.0).  The leg is kept as written and refused when its entry is run, not dropped.  One way to settle all three: carry the railway's timetable to the latest build's names before a gesture's derive moves the carry's memory, and key the kept legs by square rather than by name.
 
-### FR-130 - 2026-10-13 - locomotive icon transparency
+### FR-130 - 2026-10-13 - for 3.1.0: locomotive icon transparency
 
 **Kind:** feature request  
 **Raised from:** noticed while testing - not from a particular test  
@@ -344,7 +344,7 @@ Nothing of a run is lost: no train may be sent while an editor is open.  One way
 
 Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 
-### FR-131 - 2026-10-17 - locomotive icons on the track diagram
+### FR-131 - 2026-10-17 - for 3.2.0: locomotive icons on the track diagram
 
 **Kind:** feature request  
 **Raised from:** noticed while testing - not from a particular test  
@@ -353,7 +353,7 @@ Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 
 
 instead of a generic icon, show the actual locomotive image on the track diagram.  3.2.0+ feature
 
-### FR-132 - 2026-10-17 - updated app layout
+### FR-132 - 2026-10-17 - for 3.5.0: updated app layout
 
 **Kind:** feature request  
 **Raised from:** noticed while testing - not from a particular test  
@@ -362,21 +362,14 @@ instead of a generic icon, show the actual locomotive image on the track diagram
 
 the app currently has a fixed size and is therefore suboptimal for larger screens.  reimagine the UI to be maximizable and support modular UI components (3.5.0+)
 
-### FR-134 - 2026-10-18 - lighter, slightly wider tunnel wall on the track diagram's tunnel icons
+### FR-136 - 2026-10-18 - for 3.0.3: refactor code for efficiency
 
 **Kind:** feature request  
-**Raised from:** Adam, 2026-10-18  
-**Filed:** 2026-10-18  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-18 01:52  
+**Build:** commit f9e6524b
 
-Adam, 2026-10-18: "Before I do MT's, let's further lighten the surround of the tunnel icons in the track diagram.  show me some options, an also experiment with widening it slightly."  Of the options drawn for him (four shades of the wall, three widths, on his two tunnels on 1 - Main): "Go for C at +1" - the wall #EEEEEE, where it was #BBBBBB, and a pixel wider each side at the Small size, two at the Large.
-
-### FR-135 - 2026-10-18 - sharper link and signal icons on the track diagram, meeting the track with no seam
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-10-18  
-**Filed:** 2026-10-18  
-
-Adam, 2026-10-18: "Propose pretiffications for the link icon, such as to make the arrow sharper / different / more proportional to the chosen size, or other ideas."  Of the options drawn for him: "I like the F idea, but make it with an all black arrow without the gray dash"; then "G is good, but make sure you match the edges of the signal tile.  does that mean we should sharpen the signal tile, if it hasn't been sharpened yet?" - the signal had not been redrawn: at the Large size its band's top edge was #999 where every other track tile's is #666, a lighter stripe against the straights, with a stray green pixel on its bar; at the Small its lamps had a dark fringe and its bar's ends were shaded unevenly.  Then: "Build G and the sharpened signals now".
+refactor code to make agents work faster- split large files, consolidate documentation, use subclassing as needed, clear dead code.  validate behavior is unchanged.  v3.0.3 change.
 
 ## What has been picked up
 
@@ -408,7 +401,7 @@ not, never both.
 | 2026-10-13 | FR-129 | feature request | Right-click `Return Home` for `Place All Trains at Their Homes`, which asks first and says to move the real trains by hand; greyed with the reason while anything runs or an editor is open (`591c7acf`). | - | MT-742 |
 | 2026-10-14 | OB-348 | bug | A train on a square no track leads out of faces the setup's facing where its track runs that way, or else along its track - never east across north-south track; a train standing with no road is drawn in orange over the switch arms every rail into its platform takes (9,7 and 7,8 behind TunnelLeftPark), the switch where those rails part still drawn along no road (`c282c77d`). | - | MT-741 |
 | 2026-10-13 | OB-347 | bug | The `Is Facing` menu is greyed, with the reason in its tooltip, on a square no track leads out of, rather than hidden (`b1ed882d`). | - | MT-740 |
-| 2026-10-13 | FR-128 | feature request | The active locomotive's line: the key in a keycap, the page's name in the line's own blue label font, the decoder in a navy pill "MFX | 54" at the right; only the name gives way.  `Preferences` > `Locomotive Control` > `Show Page Numbers` (off by default) puts "5. " before a named page's name on the line, the page tabs and the label between the arrows; a page with no name reads "Page 5" in all three.  Seven rounds of Adam's design (`9cc8e332`, `8f1ae0e6`, `3166d3e7`, `d77fd3d2`, `a4c43d34`, `2ed0758b`, `a05d51b0`). | - | MT-736 |
+| 2026-10-13 | FR-128 | feature request | The active locomotive's line: the key in a keycap, the page's name in the line's own blue label font, the decoder in a navy pill "MFX \| 54" at the right; only the name gives way.  `Preferences` > `Locomotive Control` > `Show Page Numbers` (off by default) puts "5. " before a named page's name on the line, the page tabs and the label between the arrows; a page with no name reads "Page 5" in all three.  Seven rounds of Adam's design (`9cc8e332`, `8f1ae0e6`, `3166d3e7`, `d77fd3d2`, `a4c43d34`, `2ed0758b`, `a05d51b0`). | - | MT-736 |
 | 2026-10-12 | OB-344 | bug | An old `Point:name` label on a layout served by the Central Station is drawn as written (`4e26c157`): `ui.testDiagramLooksRight.testAnOldPointLabelIsDrawnAsWritten`, red before.  **Claude, 2026-10-13:** closed on its claim - a layout served by the Central Station with old labels is not to hand for a manual test. | fixed validated | - |
 | 2026-10-12 | OB-343 | bug | A train paused or set going from its Auto tab card keeps that whatever is done to another train, and through the editor opening, a declined load, a reset, an import's rollback and the editor's Cancel: the window's record of how the railway was built notes only what a door changed, is brought up to date by every fold, and is put back by every rollback; every fold takes the paused trains one by one, and the editor's Cancel keeps what the railway changed alone, a locomotive renamed meanwhile included (`7ceed5fd`, `ef310c09`, `f80f76a1`, `237c88aa`, `6074e4de`, `7ee98fc9`).  In 3.0.0 since RSA60-B1.  One rarer corner of Cancel is OB-345, for 3.1.0. | - | MT-734 |
 | 2026-10-12 | OB-342 | bug | The editor's smallest size shows every control: 80 more pixels of height, a status line that no longer forces the width, and a floor that follows the display scale (`193ad05c`, `d013a2a8`, `bc1e1c5a`). | - | MT-736 |
