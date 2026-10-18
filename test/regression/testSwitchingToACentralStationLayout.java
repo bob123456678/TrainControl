@@ -220,9 +220,11 @@ public class testSwitchingToACentralStationLayout
             "something selects the track diagram tab by index again, so it reaches straight past "
             + "the greying - and assumes the diagram is tab 1 while it is at it");
 
-        assertTrue(count(ui, "showLayoutTab()") >= 9,
-            "fewer doors go through showLayoutTab than the nine that were converted, so one has "
-            + "found another way to open the tab");
+        // Seven since OB-359 took the legacy editor and Edit Current Page off the menu: two of the nine
+        // converted doors went with them.
+        assertTrue(count(ui, "showLayoutTab()") >= 7,
+            "fewer doors go through showLayoutTab than the seven left of the nine that were converted, "
+            + "so one has found another way to open the tab");
 
         // And the panel is emptied, not merely greyed.
         assertTrue(ui.contains("clearLayoutPanel();"),
