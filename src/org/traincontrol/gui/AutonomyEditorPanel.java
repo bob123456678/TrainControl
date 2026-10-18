@@ -1733,21 +1733,6 @@ public class AutonomyEditorPanel extends JPanel
 
             title(turning, I18n.t("autosetup.ui.menuTurningHeading"));
 
-            // WHY IT IS DRAWN AS A TERMINUS (OB-356): a station whose track runs out is one whatever is ticked below
-            // (FR-118), so where the setting says otherwise the menu says which way the track runs out
-            org.traincontrol.automationui.TilePorts.Side runsOut = isStation && !must ? session.deadEndSide(target) : null;
-
-            if (runsOut != null)
-            {
-                javax.swing.JMenuItem why = new javax.swing.JMenuItem(I18n.f("autosetup.ui.menuTurnDeadEnd",
-                    I18n.t("autosetup.ui.side" + runsOut.name())));
-
-                why.setEnabled(false);
-
-                turning.add(why);
-                turning.addSeparator();
-            }
-
             turning.add(radio(turns, I18n.t("autosetup.ui.menuTurnNever"),
                 "autosetup.ui.hintTurnNever", !may && !must,
                 () -> setTurning(target, false, false)));
