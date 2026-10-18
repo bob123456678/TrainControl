@@ -7393,7 +7393,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * stayed open for the run it sent (RLV12-B1).
      *
      * In this order: an open editor holds the diagram the trains would run on, and no setup edit is made during a run
-     * (OB-047, MT-135); a setup with errors sends nothing (MT-263); the power comes before any question about the journey
+     * (OB-047, MT-135); no route running, which a run waits for; a setup with errors sends nothing (MT-263); the power comes before any question about the journey
      * (SPEC-C4).  What a door asks besides is its own action's - a hand send's path (`whyThisPathCannotBeTaken`), the
      * trains already running for the three that start a run.
      *
@@ -7407,6 +7407,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // NOR WHILE THE DIAGRAM RELOADS AFTER A PAGE DOOR (RSA23-B1): the reset at its end forgot a run started meanwhile
         if (refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
+
+        // NOR WHILE A ROUTE RUNS: a run must not begin under one, or a turn held for the route (`turnsHeldByARoute`) would
+        // meet a run that began before it ended.  Adam: *"prevent starting autonomy etc if a route is still running"*
+        if (aRouteIsExecuting(this.model)) return I18n.t("autolayout.ui.errorWaitForARouteToFinish");
 
         String broken = startingAutonomy ? whyAutonomyStartIsRefused() : whyAHandSendIsRefused();
 
@@ -14970,6 +14974,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // A ROUTE ALONE ONLY: the window has recorded this direction (`followDirectionChanges`), so a turn declined for
             // good would leave the setup facing the wrong way when the route is over.  Autonomy's own run is the ruled
             // outcome and keeps it, and Return Home and a hand send are autonomy's trains.
+            //
+            // A HELD TURN NEVER MEETS A RUN THAT BEGAN UNDER IT: no door starts one while a route runs
+            // (`whyNoTrainMayBeSent`).  A route that begins during a run (an s88 trigger) and outlives it holds only the
+            // reversals made after the run; those made during it are ignored and never enter the set.
             if (!this.stagingFlowActive && !theAutoTabWaits() && !turnsHeldByARoute.remove(name))
             {
                 turnsHeldByARoute.add(name);

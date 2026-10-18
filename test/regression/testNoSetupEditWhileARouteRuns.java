@@ -1546,6 +1546,102 @@ public class testNoSetupEditWhileARouteRuns
         }
     }
 
+    /**
+     * No run starts while a route runs: Start, Execute Timetable, Return Home's run and a train sent by hand each refuse
+     * through the one gate (`whyNoTrainMayBeSent`), saying a route is running, before anything is greyed or sent - so a turn
+     * held for the route (`turnsHeldByARoute`) never meets a run that began under it (Adam, on a turn lost to a run that
+     * started before its route ended: *"prevent starting autonomy etc if a route is still running"*).  At rest the gate
+     * does not say it.
+     *
+     * MUTATION: take the route question out of `whyNoTrainMayBeSent`, and this fails naming the door.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testNoRunStartsWhileARouteRuns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final Answering answering = new Answering();
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final String wait = I18n.t("autolayout.ui.errorWaitForARouteToFinish");
+            final java.lang.reflect.Method why = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent", boolean.class);
+
+            why.setAccessible(true);
+
+            final Class<?>[] pressed = {java.awt.event.ActionEvent.class};
+
+            Map<String, Runnable> doors = new java.util.LinkedHashMap<>();
+
+            doors.put("Start Autonomy", () -> callUi(window, "startAutonomyActionPerformed", pressed, (Object) null));
+            doors.put("Execute Timetable", () -> callUi(window, "executeTimetableActionPerformed", pressed, (Object) null));
+            doors.put("Return Home's run", () -> window.requestReturnToHome());
+            doors.put("a train sent by hand", () ->
+            {
+                List<org.traincontrol.automation.Edge> path = new ArrayList<>();
+
+                path.add(null);
+
+                callUi(window, "sendATrainByHand", new Class<?>[] {org.traincontrol.automation.Layout.class, List.class,
+                    org.traincontrol.base.Locomotive.class}, window.getModel().getAutoLayout(), path,
+                    aStandingTrain(window).getCurrentLocomotive());
+            });
+
+            // AT REST the gate does not say it
+            assertNotEquals(why.invoke(window, true), wait, "precondition: the gate names a route at rest (Start)");
+            assertNotEquals(why.invoke(window, false), wait, "precondition: the gate names a route at rest");
+
+            answering.start();
+
+            aRouteRuns(ui, true);
+
+            try
+            {
+                for (Map.Entry<String, Runnable> door : doors.entrySet())
+                {
+                    int from = answering.count();
+
+                    SwingUtilities.invokeAndWait(door.getValue());
+
+                    settle();
+
+                    assertEquals(answering.since(from), Collections.singletonList(wait), door.getKey() + " did not refuse"
+                        + " while a route runs, saying so");
+
+                    assertFalse(window.getModel().isAutonomyRunning(), door.getKey() + " started autonomy under a route");
+                    assertEquals(((java.util.concurrent.atomic.AtomicInteger) fieldOf("handSendsUnderWay", window)).get(), 0,
+                        door.getKey() + " counted a hand send under a route");
+
+                    assertTrue(((javax.swing.JButton) fieldOf("executeTimetable", window)).isEnabled(), door.getKey()
+                        + " left Execute Timetable greyed though it sent nothing");
+                }
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+        }
+        finally
+        {
+            answering.stop();
+
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
     private static Object fieldOf(String name, Object on)
     {
         try
