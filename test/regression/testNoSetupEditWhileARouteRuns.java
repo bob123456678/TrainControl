@@ -1394,9 +1394,12 @@ public class testNoSetupEditWhileARouteRuns
 
                         settle();
 
-                        assertEquals(answering.since(asked), java.util.Arrays.asList(offer,
-                            I18n.t("autolayout.ui.errorWaitForARouteToFinish")), door + " went ahead"
-                            + " under a route that was running when the offer to stop the trains was answered Yes");
+                        List<String> said = answering.since(asked);
+
+                        assertEquals(said.size(), 2, door + " went ahead"
+                            + " under a route that was running when the offer to stop the trains was answered Yes: " + said);
+                        assertEquals(said.get(0), offer, door + " did not ask first");
+                        assertNamesTheRoute(said.subList(1, 2), door);
 
                         assertTrue(ui.isAutonomyLoaded() && model.getAutoLayoutIfLoaded() == railway, door + " replaced the"
                             + " railway under a running route");
@@ -1578,7 +1581,6 @@ public class testNoSetupEditWhileARouteRuns
             ui = openTheWindow();
 
             final TrainControlUI window = ui;
-            final String wait = I18n.t("autolayout.ui.errorWaitForARouteToFinish");
             final java.lang.reflect.Method why = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent", boolean.class);
 
             why.setAccessible(true);
@@ -1602,8 +1604,9 @@ public class testNoSetupEditWhileARouteRuns
             });
 
             // AT REST the gate does not say it
-            assertNotEquals(why.invoke(window, true), wait, "precondition: the gate names a route at rest (Start)");
-            assertNotEquals(why.invoke(window, false), wait, "precondition: the gate names a route at rest");
+            assertFalse(String.valueOf(why.invoke(window, true)).contains(PROBE),
+                "precondition: the gate names a route at rest (Start)");
+            assertFalse(String.valueOf(why.invoke(window, false)).contains(PROBE), "precondition: the gate names a route at rest");
 
             answering.start();
 
@@ -1619,8 +1622,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     settle();
 
-                    assertEquals(answering.since(from), Collections.singletonList(wait), door.getKey() + " did not refuse"
-                        + " while a route runs, saying so");
+                    assertNamesTheRoute(answering.since(from), door.getKey());
 
                     assertFalse(window.getModel().isAutonomyRunning(), door.getKey() + " started autonomy under a route");
                     assertEquals(((java.util.concurrent.atomic.AtomicInteger) fieldOf("handSendsUnderWay", window)).get(), 0,
@@ -1674,7 +1676,6 @@ public class testNoSetupEditWhileARouteRuns
             ui = openTheWindow();
 
             final TrainControlUI window = ui;
-            final String wait = I18n.t("autolayout.ui.errorWaitForARouteToFinish");
             final java.lang.reflect.Method lastMoment = TrainControlUI.class.getDeclaredMethod("refusedForAnEditorOnItsWay");
 
             lastMoment.setAccessible(true);
@@ -1712,7 +1713,7 @@ public class testNoSetupEditWhileARouteRuns
                 settle();
 
                 assertTrue(refused[0], "the last-moment question let a run through under a route");
-                assertEquals(answering.since(from), Collections.singletonList(wait), "it did not say a route is running");
+                assertNamesTheRoute(answering.since(from), "the last-moment question");
             }
             finally
             {
@@ -1736,10 +1737,7 @@ public class testNoSetupEditWhileARouteRuns
             {
                 settle();
 
-                List<String> said = answering.since(from);
-
-                assertEquals(said, Collections.singletonList(wait), "Execute Timetable did not refuse the route begun after"
-                    + " its press, saying so: " + said);
+                assertNamesTheRoute(answering.since(from), "Execute Timetable, the route begun after its press,");
 
                 assertTrue(execute.isEnabled(), "Execute Timetable was not given back after the refusal");
                 assertFalse(window.getModel().isAutonomyRunning(), "a run began under the route");
@@ -1755,6 +1753,65 @@ public class testNoSetupEditWhileARouteRuns
 
             closeDown(ui, sandbox, folderWas);
         }
+    }
+
+    /**
+     * What a door says while the probe route runs: one dialog, naming the route and wrapped to a width (MT-760).
+     *
+     * @param said what the doors asked, in order
+     * @param door which door, for the message
+     */
+    private static void assertNamesTheRoute(List<String> said, String door)
+    {
+        assertEquals(said.size(), 1, door + " did not refuse while a route runs, saying so once: " + said);
+
+        assertTrue(said.get(0).contains(PROBE), door + " refused under a running route without naming it.  Adam, MT-760:"
+            + " \"name the route(s) in the popup window.\"  It said: " + said.get(0));
+
+        assertTrue(said.get(0).startsWith("<html") && said.get(0).contains("width"), door + " did not wrap its sentence"
+            + " to a width: " + said.get(0));
+    }
+
+    /**
+     * The refusal names the first few routes and says how many more, shortens a long name, and wraps at a fixed width, so
+     * that a railway of running routes does not make a dialog as big as the screen (Adam, MT-760: *"Be sure to manage its
+     * width/height."*).
+     *
+     * MUTATION: name every route, or leave a name whole, or take the width out, and this fails.
+     */
+    @Test
+    public void testTheRefusalNamesFewRoutesAndStaysSmall()
+    {
+        String one = TrainControlUI.routeRunningRefusal(Collections.singletonList("Yard Bypass"));
+
+        assertTrue(one.contains("Yard Bypass"), "one running route is not named: " + one);
+        assertFalse(one.contains(I18n.f("autolayout.ui.routeNamesAndMore", "", 1).trim()), "one route is said to have more: " + one);
+
+        List<String> many = new ArrayList<>();
+
+        for (int i = 1; i <= 10; i++) many.add("Route number " + i);
+
+        String ten = TrainControlUI.routeRunningRefusal(many);
+
+        assertTrue(ten.contains("Route number 1") && ten.contains("Route number 3"), "the first routes are not named: " + ten);
+        assertFalse(ten.contains("Route number 4"), "more than the first few are named, so the dialog grows with the routes: "
+            + ten);
+        assertTrue(ten.contains(I18n.f("autolayout.ui.routeNamesAndMore", "Route number 1, Route number 2, Route number 3", 7)),
+            "the rest are not counted: " + ten);
+
+        StringBuilder long200 = new StringBuilder();
+
+        while (long200.length() < 200) long200.append("a very long route name ");
+
+        String longName = TrainControlUI.routeRunningRefusal(Collections.singletonList(long200.toString()));
+
+        assertFalse(longName.contains(long200.toString()), "a long name is shown whole, so it can make the dialog wide");
+        assertTrue(longName.length() < 400, "a long name makes a long message: " + longName.length());
+
+        assertTrue(one.contains("width: 420px"), "the sentence is not wrapped at a fixed width: " + one);
+
+        assertTrue(TrainControlUI.routeRunningRefusal(Collections.singletonList("A<B")).contains("A&lt;B"),
+            "a name with markup in it is not escaped");
     }
 
     private static Object fieldOf(String name, Object on)

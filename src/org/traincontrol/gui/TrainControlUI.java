@@ -4983,7 +4983,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // stopped by it, so the load or unload would go ahead under it (an s88 route can fire from an autonomy train)
             if (aRouteIsExecuting(this.model))
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForARouteToFinish"));
+                JOptionPane.showMessageDialog(this, routeRunningRefusal(executingRouteNames(this.model)));
 
                 return false;
             }
@@ -7289,7 +7289,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // NOR WHILE A ROUTE RUNS: a run must not begin under one, or a turn held for the route (`turnsHeldByARoute`) would
         // meet a run that began before it ended.  Adam: *"prevent starting autonomy etc if a route is still running"*
-        if (aRouteIsExecuting(this.model)) return I18n.t("autolayout.ui.errorWaitForARouteToFinish");
+        if (aRouteIsExecuting(this.model)) return routeRunningRefusal(executingRouteNames(this.model));
 
         String broken = startingAutonomy ? whyAutonomyStartIsRefused() : whyAHandSendIsRefused();
 
@@ -7395,7 +7395,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // room for one (an s88 trigger fires whatever dialog is open)
         if (aRouteIsExecuting(this.model))
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForARouteToFinish"));
+            JOptionPane.showMessageDialog(this, routeRunningRefusal(executingRouteNames(this.model)));
 
             return true;
         }
@@ -28356,16 +28356,65 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     static boolean aRouteIsExecuting(ViewListener model)
     {
-        if (model == null) return false;
+        return !executingRouteNames(model).isEmpty();
+    }
+
+    /**
+     * The routes that are executing, by name, in the model's order - the one place that asks (MT-760).
+     *
+     * @param model the railway, or null
+     * @return the names; empty when none runs
+     */
+    static List<String> executingRouteNames(ViewListener model)
+    {
+        List<String> running = new ArrayList<>();
+
+        if (model == null) return running;
 
         for (String name : model.getRouteList())
         {
             Route route = model.getRoute(name);
 
-            if (route != null && route.isExecuting()) return true;
+            if (route != null && route.isExecuting()) running.add(name);
         }
 
-        return false;
+        return running;
+    }
+
+    /** How many routes the refusal names before it says how many more there are (MT-760). */
+    private static final int ROUTES_NAMED = 3;
+
+    /** The longest a route's name is shown in the refusal, in characters (MT-760). */
+    private static final int ROUTE_NAME_SHOWN = 40;
+
+    /**
+     * What a door says when it refuses because a route is running, naming the route - the first three, then how many more -
+     * and wrapped to a width, so that many routes or long names do not make a dialog as wide or as tall as the screen
+     * (Adam, MT-760: *"name the route(s) in the popup window.  Be sure to manage its width/height."*).
+     *
+     * @param running the names of the routes that run, from `executingRouteNames`
+     * @return the sentence, as the HTML a dialog wraps; the bare sentence of the old wording when none is named
+     */
+    public static String routeRunningRefusal(List<String> running)
+    {
+        if (running == null || running.isEmpty()) return I18n.t("autolayout.ui.errorWaitForARouteToFinish");
+
+        List<String> named = new ArrayList<>();
+
+        for (String name : running.subList(0, Math.min(running.size(), ROUTES_NAMED)))
+        {
+            named.add(name.length() > ROUTE_NAME_SHOWN ? name.substring(0, ROUTE_NAME_SHOWN - 1) + "\u2026" : name);
+        }
+
+        String names = String.join(", ", named);
+
+        if (running.size() > ROUTES_NAMED)
+        {
+            names = I18n.f("autolayout.ui.routeNamesAndMore", names, running.size() - ROUTES_NAMED);
+        }
+
+        return AutonomyEditorPanel.wrappedAt(I18n.f(running.size() == 1
+            ? "autolayout.ui.errorWaitForTheRouteToFinish" : "autolayout.ui.errorWaitForTheRoutesToFinish", names), 420);
     }
 
     /**
