@@ -1271,7 +1271,8 @@ public class testNoSetupEditWhileARouteRuns
      * railway is the same object afterwards, the route is still running, and nothing was exported; at rest each one goes
      * ahead (Adam, 2026-09-28: *"There should be no setup edit possible during a run"*).  A load rebuilds the railway and
      * switches the routes the configuration activates, and Export first folds the running railway into the setup.  While
-     * autonomy itself is busy the loads keep their offer to stop the trains, and Export its own sentence.
+     * autonomy itself is busy the loads keep their offer to stop the trains, and Export its own sentence.  Unload, which
+     * also replaces the railway, is refused the same way.
      *
      * MUTATION: send the enable button, `loadByRequest` or the banner to `load` directly, or have Export ask
      * `isAutonomyBusy` alone, and this fails naming the door.
@@ -1384,6 +1385,53 @@ public class testNoSetupEditWhileARouteRuns
 
                 assertEquals(answering.since(from), Collections.singletonList(I18n.t("autosetup.ui.errorExportWhileRunning")),
                     "Export did not keep its own refusal while autonomy is busy");
+            }
+            finally
+            {
+                staging.setBoolean(ui, false);
+            }
+
+            // UNLOAD, the Autonomy menu's other way of replacing the railway: refused while a route runs, offered the same
+            // stop while autonomy is busy, and the railway stays either way (done at rest below, before the banner's)
+            final Runnable unload = () -> window.unloadAutonomy();
+
+            aRouteRuns(ui, true);
+
+            try
+            {
+                int from = answering.count();
+
+                SwingUtilities.invokeAndWait(unload);
+
+                settle();
+
+                assertEquals(answering.since(from), Collections.singletonList(anyRun), "Unload did not refuse, before"
+                    + " asking anything, while a route runs");
+
+                assertTrue(ui.isAutonomyLoaded() && model.getAutoLayoutIfLoaded() == railway, "Unload cleared the railway"
+                    + " while a route runs");
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+
+            staging.setBoolean(ui, true);
+
+            try
+            {
+                int from = answering.count();
+
+                SwingUtilities.invokeAndWait(unload);
+
+                settle();
+
+                assertEquals(answering.since(from), Collections.singletonList(
+                    I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "Unload did not make its offer to"
+                    + " stop the trains while autonomy is busy");
+
+                assertTrue(ui.isAutonomyLoaded() && model.getAutoLayoutIfLoaded() == railway, "Unload cleared the railway"
+                    + " though the offer was declined");
             }
             finally
             {

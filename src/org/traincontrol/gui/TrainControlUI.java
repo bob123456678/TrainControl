@@ -10690,6 +10690,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.model == null) return false;
 
+        // NOT WHILE A ROUTE OR ANOTHER RUN HOLDS THE SETUP; autonomy's own run is asked about below
+        if (refusedWhileSomethingElseRuns()) return false;
+
         // Asks first if anything is moving, and stops it
         if (!prepareAutonomyReload()) return false;
 
