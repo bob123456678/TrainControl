@@ -393,6 +393,14 @@ Found by Adam on the new sample layout (`sample_layout.zip`, 2026-10-18), three 
 2. In the viewer, red arrows are drawn to the east of feedback 4 where the editor shows none (Adam's screenshot: the track around PostDeparture and the switch below it).
 3. A notice says trains reaching MainLine from the west could not go on.  MainLine is not a station, and no train can arrive there from the west anyway; either condition should keep the notice from being given.
 
+### FR-139 - 2026-10-18 - an autonomy warning for sensors with the same address in different locations
+
+**Kind:** feature request  
+**Raised from:** the triage API  
+**Filed:** 2026-10-18  
+
+Adam, 2026-10-18: "We need an autonomy warning for sensors with the same address in different locations".  Found on the new sample layout, where Station A (7,5) and PostDeparture (10,4) are both s88 contact 1.  Not on pages autonomy leaves out, and not for the copies one square builds into.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
