@@ -562,6 +562,106 @@ public class testTheArrowsTellTheWholeStory
         return out;
     }
 
+    /**
+     * A door other than opening that brings roads shut a way their arrows show open into the setup says so, once per
+     * square, and leaves the setup marked unsaved: a write straight into the store followed by the rebuild, as the
+     * panel's doors make, and a bundle import (OB-351; C1).
+     *
+     * MUTATION: leave the squares brought to their arrows out of `AutonomySession.rebuild`, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testADoorOtherThanOpeningSaysWhichSquaresItBroughtToTheirArrows() throws Exception
+    {
+        org.json.JSONObject was = session.snapshotSetup();
+
+        try
+        {
+            // OPENED AND SAID, then drained as the window does after it says them
+            session.takeSquaresBroughtToTheirArrows();
+
+            assertFalse(session.isDirty(), "precondition: the setup is already unsaved");
+
+            // A WRITE STRAIGHT INTO THE STORE, then the rebuild every such door ends in
+            session.getStore().setTileDirection(turnout, main, Direction.BOTH);
+            session.getStore().setTileDirection(turnout, spur, Direction.NONE);
+
+            session.rebuild();
+
+            List<String> said = session.takeSquaresBroughtToTheirArrows();
+
+            assertEquals(said.size(), 1, "the roads opened by a rebuild were said " + said.size() + " times, not once: " + said);
+
+            assertTrue(said.get(0).contains("5,3"), "what is said does not name the switch: " + said);
+
+            assertTrue(session.isDirty(), "the setup is not marked unsaved though a rebuild opened a road in it");
+
+            // ONCE: the squares are written back, so another rebuild has nothing more to say
+            session.rebuild();
+
+            assertTrue(session.takeSquaresBroughtToTheirArrows().isEmpty(), "the same square was said again by the next rebuild");
+        }
+        finally
+        {
+            session.restoreSetup(was);
+
+            session.takeSquaresBroughtToTheirArrows();
+        }
+    }
+
+    /**
+     * A bundle import whose track decisions shut a road its arrows show open says so as well (C1).
+     *
+     * MUTATION: as the claim above.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testABundleImportSaysWhichSquaresItBroughtToTheirArrows() throws Exception
+    {
+        org.json.JSONObject was = session.snapshotSetup();
+
+        try
+        {
+            String name = session.getStore().getActiveConfiguration();
+
+            // THE BUNDLE, carrying the switch with its spur shut and its main line both ways
+            session.getStore().setTileDirection(turnout, main, Direction.BOTH);
+            session.getStore().setTileDirection(turnout, spur, Direction.NONE);
+
+            org.json.JSONObject bundle = session.getStore().exportBundle(name);
+
+            assertNotNull(bundle, "precondition: no bundle of " + name);
+
+            assertTrue(bundle.toString().contains(key(spur)), "precondition: the bundle does not carry the switch's spur: "
+                + bundle.getJSONObject("shared").keySet());
+
+            // A SETUP THAT HAS NOTHING TO SAY ABOUT THE SWITCH, for the import to fill in
+            session.getStore().setTileDirection(turnout, main, null);
+            session.getStore().setTileDirection(turnout, spur, null);
+
+            session.rebuild();
+            session.takeSquaresBroughtToTheirArrows();
+
+            session.importBundle("imported for the arrows", bundle);
+
+            List<String> said = session.takeSquaresBroughtToTheirArrows();
+
+            assertEquals(said.size(), 1, "importing a bundle that opens a road said " + said.size() + " lines: " + said);
+
+            assertTrue(said.get(0).contains("5,3"), "what is said does not name the switch: " + said);
+
+            assertTrue(session.isDirty(), "the setup is not marked unsaved though the import opened a road in it");
+        }
+        finally
+        {
+            session.restoreSetup(was);
+
+            session.takeSquaresBroughtToTheirArrows();
+        }
+    }
+
     /** The setup's key for one of the switch's roads: the page by its id, as the file writes it. */
     private static String key(RouteId road)
     {

@@ -1219,6 +1219,9 @@ public class AutonomyViewerPanel extends JPanel
 
             int filled = session().importBundle(name.trim(), file);
 
+            // AND THE SQUARES IT BROUGHT TO THEIR ARROWS, said as opening a setup says them (OB-351)
+            sayWhatWasBroughtToItsArrows();
+
             // AND WHICH PAGES WERE LEFT OUT, said before the save (Adam, 2026-09-13: "keep only the
             // pages, and alert the user").  An export describes the railway it came from; pages this
             // layout does not have are not brought in, because a page the setup knows about and cannot
@@ -1260,6 +1263,17 @@ public class AutonomyViewerPanel extends JPanel
         }
 
         refresh();
+    }
+
+    /**
+     * Logs the squares a door brought to their arrows since they were last said, once each (OB-351).
+     */
+    private void sayWhatWasBroughtToItsArrows()
+    {
+        for (String line : session().takeSquaresBroughtToTheirArrows())
+        {
+            if (ui.getModel() != null) ui.getModel().log(line);
+        }
     }
 
     /**

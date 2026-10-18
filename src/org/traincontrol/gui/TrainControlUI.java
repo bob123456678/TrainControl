@@ -3152,7 +3152,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             // AND EACH SQUARE NOW RUNNING AS ITS ARROWS SHOW (OB-351), once: the setup was saved that way as it opened
-            for (String line : session.getSquaresBroughtToTheirArrows().values())
+            for (String line : session.takeSquaresBroughtToTheirArrows())
             {
                 this.model.log(line);
             }

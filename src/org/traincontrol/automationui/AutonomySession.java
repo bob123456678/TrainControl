@@ -391,6 +391,21 @@ public class AutonomySession
     }
 
     /**
+     * The sentences for the squares brought to their arrows, handed over once: the window logs them and they are not said
+     * again by the next door that asks.
+     *
+     * @return one sentence per square, empty when there is nothing new to say
+     */
+    public List<String> takeSquaresBroughtToTheirArrows()
+    {
+        List<String> out = new ArrayList<>(broughtToTheirArrows.values());
+
+        broughtToTheirArrows = new LinkedHashMap<>();
+
+        return out;
+    }
+
+    /**
      * A sentence for each square brought to its arrows: what it is, where, and the arms trains may now leave it by.
      *
      * @param squares the squares
@@ -693,6 +708,16 @@ public class AutonomySession
                 store.setTileDirection(square.getKey(), road.getKey(),
                     road.getValue() == graph.defaultDirection(square.getKey(), road.getKey()) ? null : road.getValue());
             }
+        }
+
+        // AND SAID, AND THE SETUP UNSAVED, WHICHEVER DOOR BROUGHT THEM IN (OB-351): `open` saves what it brings and says it
+        // when it returns; a bundle import or any other write into the store reaches here, so the squares wait to be
+        // handed over (`takeSquaresBroughtToTheirArrows`) and the setup is marked changed
+        if (!graph.getNormalizedToArms().isEmpty())
+        {
+            broughtToTheirArrows.putAll(sentencesFor(graph.getNormalizedToArms().keySet()));
+
+            dirty = true;
         }
 
         graph.validatePortals();
