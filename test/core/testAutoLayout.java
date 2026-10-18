@@ -28,9 +28,6 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
-import static org.traincontrol.gui.TrainControlUI.AUTONOMY_BLANK;
-import static org.traincontrol.gui.TrainControlUI.AUTONOMY_SAMPLE;
-import static org.traincontrol.gui.TrainControlUI.RESOURCE_PATH;
 import org.traincontrol.marklin.MarklinRoute;
 
 /**
@@ -502,11 +499,7 @@ public class testAutoLayout
         testAutoLayout.model = init(null, true, false, false, true); 
         model.stop();
         
-        String s = 
-            new BufferedReader(
-                    new InputStreamReader(
-                            TrainControlUI.class.getResource(RESOURCE_PATH + AUTONOMY_SAMPLE).openStream())
-                    ).lines().collect(Collectors.joining("\n"));
+        String s = readTheSample();
         
         model.parseAuto(s);
         
@@ -2121,10 +2114,23 @@ public class testAutoLayout
      */
     private static void reloadSampleLayout() throws Exception
     {
-        model.parseAuto(new BufferedReader(new InputStreamReader(
-            TrainControlUI.class.getResource(RESOURCE_PATH + AUTONOMY_SAMPLE).openStream()))
-            .lines().collect(Collectors.joining("\n")));
+        model.parseAuto(readTheSample());
     }
+
+    /**
+     * The sample autonomy layout this class runs on.  A test fixture, not part of the program: the application never
+     * read it, so it moved out of the jar's resources (it was `TrainControlUI.AUTONOMY_SAMPLE`).
+     *
+     * @return the file's text
+     */
+    private static String readTheSample() throws Exception
+    {
+        return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(SAMPLE_AUTONOMY)),
+            java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /** Where the sample autonomy layout is, from the project root the tests run in. */
+    private static final String SAMPLE_AUTONOMY = "test/sample_autonomy.json";
 
     /**
      * Every key parseAuto reads off a Point, toJSON writes back - checked by asking the reader.
