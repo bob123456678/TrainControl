@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONObject;
 import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
@@ -55,11 +56,29 @@ public class testRouteInventory
 
     private static final File OUT = new File(System.getProperty("java.io.tmpdir"), "route-inventory");
 
+    private static support.LayoutSandbox sandbox;
+
+    /** The tracked fixture's autonomy files as they were found, to prove none is written (C6). */
+    private static final java.util.Map<String, byte[]> TRACKED_AT_REST = new java.util.LinkedHashMap<>();
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
         try
         {
+            // A COPY OF THE FIXTURE, not the tracked folder: opening a setup can save one that was brought to its arrows
+            // (OB-351), and this class opens it many times
+            sandbox = null;
+
+            File[] tracked = new File("test/test_layout/config/autonomy").listFiles();
+
+            if (tracked != null)
+            {
+                for (File file : tracked) TRACKED_AT_REST.put(file.getName(), Files.readAllBytes(file.toPath()));
+            }
+
+            sandbox = support.LayoutSandbox.open(new File("test/test_layout"));
+
             model = init(null, true, false, false, true);
         }
         catch (Throwable t)
@@ -70,6 +89,24 @@ public class testRouteInventory
         }
 
         OUT.mkdirs();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public static void tearDownClass() throws Exception
+    {
+        try
+        {
+            // NOTHING TRACKED WAS WRITTEN
+            for (java.util.Map.Entry<String, byte[]> found : TRACKED_AT_REST.entrySet())
+            {
+                assertEquals(Files.readAllBytes(new File("test/test_layout/config/autonomy", found.getKey()).toPath()),
+                    found.getValue(), "test/test_layout/config/autonomy/" + found.getKey() + " was written by this class");
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
     }
 
     @Test
@@ -159,7 +196,7 @@ public class testRouteInventory
      */
     private String build(File bundle) throws Exception
     {
-        File folder = new File("test/test_layout");
+        File folder = sandbox.getFolder();
 
         // A bundle is imported into an EMPTY store, in a scratch copy of the layout folder.
         //
@@ -554,7 +591,7 @@ public class testRouteInventory
     private org.traincontrol.automationui.AutonomySession liveSession() throws Exception
     {
         org.traincontrol.automationui.AutonomySession session =
-            new org.traincontrol.automationui.AutonomySession(new File("test/test_layout"));
+            new org.traincontrol.automationui.AutonomySession(sandbox.getFolder());
 
         List<org.traincontrol.base.LayoutDiagram> pages = new ArrayList<>();
 
