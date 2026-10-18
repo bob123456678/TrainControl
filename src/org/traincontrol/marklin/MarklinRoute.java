@@ -1227,6 +1227,8 @@ public class MarklinRoute extends Route
                     this.stopExecuting();
 
                     this.updateTiles();
+
+                    if (this.network.getGUI() != null) this.network.getGUI().routeFinished(this);
                 }
             }
             else

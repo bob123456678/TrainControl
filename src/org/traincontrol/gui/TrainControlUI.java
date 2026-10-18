@@ -5316,6 +5316,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Boolean was = lastSeenDirection.remove(from);
 
         if (was != null && to != null) lastSeenDirection.put(to, was);
+
+        if (turnsHeldByARoute.remove(from) && to != null) turnsHeldByARoute.add(to);
     }
 
     /**
@@ -5332,6 +5334,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // stale entry makes its FIRST direction message read as a change rather than a first sighting
         // - which flips a facing nobody asked to flip.
         lastSeenDirection.remove(name);
+
+        turnsHeldByARoute.remove(name);
     }
 
     private void repairAutonomyLocomotive(String from, String to)
@@ -14827,6 +14831,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
+     * The locomotives whose direction changed while a route alone held the setup, so that `followTheTurn` declined: each
+     * is followed once the route has finished (`routeFinished`).  A set that a second change takes the name out of, because
+     * `flipFacing` flips: two reversals leave the facing where it was, and the last direction is the one the setup ends
+     * saying.  By name, as `lastSeenDirection` is.  Written on the event thread.
+     */
+    private final java.util.Set<String> turnsHeldByARoute = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
      * Turns a placed locomotive round on the graph when the railway has turned it (Adam, 2026-09-06).
      *
      * Adam: **"a locomotive direction command WILL update the direction on the graph if it does not
@@ -14880,6 +14892,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // The ordering this comment defends is still exactly right, and for the same reason: the
             // window must not RECORD having acted on something it declined to act on.  What changed is
             // that declining is now the intended answer rather than the fault.
+            //
+            // A ROUTE ALONE IS NOT AUTONOMY'S RUN: its turn is recorded here and held by `followTheTurn`, then followed when
+            // the route finishes (`routeFinished`), so it is declined for now and not for good.
             // THE FIELD, NEVER THE GETTER (FTN-B2).  This runs inside the window's monitor, on whatever thread
             // the Central Station's message arrived on, and `getAutonomySession()` is the lazy builder - every
             // page parsed, files possibly rewritten.  `repaintTimetable` states the rule (SV-B2).  No session
@@ -14938,7 +14953,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private org.traincontrol.automationui.TileGraph.TileKey followTheTurn(String name)
     {
-        if (aRunHoldsTheSetup()) return null;
+        if (aRunHoldsTheSetup())
+        {
+            // A ROUTE ALONE ONLY: the window has recorded this direction (`followDirectionChanges`), so a turn declined for
+            // good would leave the setup facing the wrong way when the route is over.  Autonomy's own run is the ruled
+            // outcome and keeps it, and Return Home and a hand send are autonomy's trains.
+            if (!this.stagingFlowActive && !theAutoTabWaits() && !turnsHeldByARoute.remove(name))
+            {
+                turnsHeldByARoute.add(name);
+            }
+
+            return null;
+        }
 
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
@@ -14962,6 +14988,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         return moved;
     }
+    /**
+     * A route has finished: follows, through `followTheTurn` and its own guards, every turn it held off.  Each is asked
+     * again, so one that a second route or autonomy still holds is declined again (and kept only where a route alone does),
+     * and a train the setup no longer has is left alone.
+     *
+     * @param r the route that finished
+     */
+    @Override
+    public void routeFinished(Route r)
+    {
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            for (String name : new java.util.ArrayList<>(turnsHeldByARoute))
+            {
+                if (turnsHeldByARoute.remove(name)) followTheTurn(name);
+            }
+        });
+    }
+
     /**
      * Gets the locomotive name to display in pop-up window titles
      * @return 

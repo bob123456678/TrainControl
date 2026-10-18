@@ -10,6 +10,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.Route;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -29,7 +30,13 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * On the frozen `live-snapshot`, at BottomMainA, with this class's own train standing there facing east.
  *
- * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.
+ * A reversal made while a route runs with autonomy idle is not written then (no setup edit during a run), and is followed
+ * once the route has finished, through the same `followTheTurn`; two reversals during the route leave the facing as it was,
+ * which is what the last direction says (Adam, on finding C8: *"it should reverse, but be careful to avoid duplication in
+ * code mechanisms on how this is done"*).
+ *
+ * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.  Take the `routeFinished`
+ * call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.
  *
  * @author Adam
  */
@@ -147,6 +154,223 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         assertEquals(facing, Side.W, "reversed on the throttle at BottomMainA, with its command echoed as a Central"
             + " Station echoes it, the train is still recorded facing east - Adam, 2026-09-24: \"reversing it on the"
             + " throttle has no effect on autonomy\"");
+    }
+
+    /**
+     * Reversed while a route runs, the train is not turned in the setup then, and is once the route has finished.  The route
+     * is marked running as `execRoute` marks it, and ended as its `finally` ends it.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAReversalDuringARouteIsFollowedWhenItEnds() throws Exception
+    {
+        standEast();
+
+        Route hold = aHeldRoute();
+
+        try
+        {
+            reverse();
+
+            waitFor(() -> held().contains(PROBE), "the reversal was not seen by the window while a route runs");
+
+            settle();
+
+            assertEquals(session.getFacing(MAIN_A), Side.E, "the setup was turned while a route runs - Adam: \"There"
+                + " should be no setup edit possible during a run\"");
+
+            endTheRoute(hold);
+
+            waitFor(() -> session.getFacing(MAIN_A) == Side.W, "the reversal made during a route was never followed: the"
+                + " setup still has the train facing " + session.getFacing(MAIN_A) + " after the route ended");
+
+            assertFalse(held().contains(PROBE), "the turn is still held after it was followed");
+        }
+        finally
+        {
+            endTheRoute(hold);
+
+            standEast();
+        }
+    }
+
+    /**
+     * Two reversals while the route runs leave the setup as it was: it ends facing the way the last direction says, not
+     * turned twice and not once.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTwoReversalsDuringARouteLeaveTheFacingAsTheLastOneSays() throws Exception
+    {
+        standEast();
+
+        Route hold = aHeldRoute();
+
+        try
+        {
+            reverse();
+
+            waitFor(() -> held().contains(PROBE), "the first reversal was not seen by the window while a route runs");
+
+            reverse();
+
+            waitFor(() -> !held().contains(PROBE), "the second reversal did not cancel the first");
+
+            endTheRoute(hold);
+
+            settle();
+
+            Thread.sleep(500);
+
+            settle();
+
+            assertEquals(session.getFacing(MAIN_A), Side.E, "reversed twice during a route, the train runs the way it did,"
+                + " and the setup turned it");
+        }
+        finally
+        {
+            endTheRoute(hold);
+
+            standEast();
+        }
+    }
+
+    /**
+     * A route's own locomotive direction command is followed, with the route running on for a second after it: the whole
+     * path, from `MarklinRoute` to the setup.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testARoutesOwnDirectionCommandIsFollowedWhenItEnds() throws Exception
+    {
+        standEast();
+
+        final String name = "reversing route";
+
+        java.util.List<org.traincontrol.base.RouteCommand> commands = new java.util.ArrayList<>();
+
+        commands.add(org.traincontrol.base.RouteCommand.RouteCommandLocomotiveDirection(PROBE,
+            model.getLocByName(PROBE).goingForward() ? Locomotive.locDirection.DIR_BACKWARD
+            : Locomotive.locDirection.DIR_FORWARD));
+
+        for (int i = 0; i < 8; i++)
+        {
+            commands.add(org.traincontrol.base.RouteCommand.RouteCommandAccessory(39,
+                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, i % 2 == 0));
+        }
+
+        try
+        {
+            assertTrue(model.newRoute(name, commands, 0, Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+                "could not make the route");
+
+            model.execRoute(name);
+
+            waitFor(() -> model.getRoute(name).isExecuting(), "the route did not start");
+
+            waitFor(() -> !model.getRoute(name).isExecuting(), "the route did not finish");
+
+            waitFor(() -> session.getFacing(MAIN_A) == Side.W, "the route turned the train and the setup still has it"
+                + " facing " + session.getFacing(MAIN_A) + " after the route ended");
+        }
+        finally
+        {
+            if (model.getRoute(name) != null)
+            {
+                model.getRoute(name).stopExecuting();
+
+                model.deleteRoute(name);
+            }
+
+            standEast();
+        }
+    }
+
+    private static final String HOLD = "held route";
+
+    /** A route marked running as `execRoute` marks it, with nothing sent. */
+    private static Route aHeldRoute()
+    {
+        java.util.List<org.traincontrol.base.RouteCommand> commands = new java.util.ArrayList<>();
+
+        commands.add(org.traincontrol.base.RouteCommand.RouteCommandAccessory(39,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+
+        assertTrue(model.newRoute(HOLD, commands, 0, Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+            "could not make the route");
+
+        assertTrue(model.getRoute(HOLD).setExecuting(), "the route would not run");
+
+        assertFalse(model.isAutonomyRunning(), "precondition: autonomy is running, so this is not a route alone");
+
+        return model.getRoute(HOLD);
+    }
+
+    /** The route's `finally`: no longer executing, and the window told; then the route is deleted. */
+    private static void endTheRoute(Route route)
+    {
+        if (route.stopExecuting()) ui.routeFinished(route);
+
+        if (model.getRoute(HOLD) != null) model.deleteRoute(HOLD);
+    }
+
+    /** The train, standing at BottomMainA facing east on the running layout, with what the window has seen levelled. */
+    private static void standEast() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            session.setFacing(MAIN_A, Side.E);
+
+            model.parseAuto(session.buildConfiguration());
+        });
+
+        settle();
+
+        SwingUtilities.invokeAndWait(() -> ui.reconcileFacingWhenIdle());
+    }
+
+    /** The throttle's own call. */
+    private static void reverse()
+    {
+        Locomotive train = model.getLocByName(PROBE);
+
+        train.stop().setDirection(train.goingForward()
+            ? Locomotive.locDirection.DIR_BACKWARD : Locomotive.locDirection.DIR_FORWARD);
+    }
+
+    /** The turns the window is holding for a route to end. */
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> held()
+    {
+        try
+        {
+            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("turnsHeldByARoute");
+
+            field.setAccessible(true);
+
+            return (java.util.Set<String>) field.get(ui);
+        }
+        catch (ReflectiveOperationException failed)
+        {
+            throw new IllegalStateException(failed);
+        }
+    }
+
+    private static void waitFor(java.util.function.BooleanSupplier condition, String otherwise) throws Exception
+    {
+        for (long until = System.currentTimeMillis() + 10000; System.currentTimeMillis() < until; )
+        {
+            settle();
+
+            if (condition.getAsBoolean()) return;
+
+            Thread.sleep(100);
+        }
+
+        assertTrue(condition.getAsBoolean(), otherwise);
     }
 
     private static void settle() throws Exception
