@@ -27,9 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-758](#mt-758) | 2026-10-18 | Loading, stopping and exporting a configuration wait for a running route | fixed unvalidated | RSA71-C2, RSA71-C3, RSA72-C2, RSA73-C2 |
+| [MT-759](#mt-759) | 2026-10-18 | A train turned round while a route runs is turned in the autonomy setup when the route ends | fixed unvalidated | RSA71-C8 |
+| [MT-760](#mt-760) | 2026-10-18 | Start, Execute Timetable, Return Home and a hand send wait for a running route | fixed unvalidated | RSA72-C1, RSA73-C1, RSA73-C3 |
 
-
-Everything else - 757 of 757 - needs nothing from you unless the area changes again:
+Everything else - 757 of 760 - needs nothing from you unless the area changes again:
 603 **fixed validated** and 154 **superseded**.
 
 ---
@@ -35552,5 +35554,97 @@ the right click note is unnecessary, hide it again
 **Claude, 2026-10-18.**
 
 The note is gone again (`0bf2ae89`): the menu is as it was, and ST60rear is still drawn as a terminus because its track runs out to the west.  Nothing left to test.
+
+---
+
+<a id="mt-758"></a>
+### MT-758 - 2026-10-18 - Loading, stopping and exporting a configuration wait for a running route
+
+**Disposition:** fixed unvalidated
+**From:** RSA71-C2, RSA71-C3, RSA72-C2, RSA73-C2
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Make a test route that takes several seconds: for example two switch commands with a delay of 5000 in the first row's Delay (ms) column.  Choose `Autonomy` > `Stop Using Autonomy`, so the Track Diagram offers `Load this configuration`.
+2. Run the test route, and while it runs press `Load this configuration` on the Track Diagram; then open
+   `Autonomy` > `Autonomy Setup` and press `Check and enable`, then `Export...`.
+3. Let the route finish and press `Load this configuration` again.
+4. Run the test route again, and while it runs choose `Autonomy` > `Stop Using Autonomy`.
+5. Start autonomy.  While it runs, run the test route and, before it finishes, press `Check and enable` in the
+   Autonomy Setup window and answer Yes to stopping the trains.
+
+**Expected**
+
+- Step 2: each one is refused with a message saying a route is running (or is greyed out); nothing is loaded or
+  written, and the route carries on.
+- Step 3: the configuration loads as before.
+- Step 4: refused the same way; autonomy stays loaded.  (A menu opened while the route runs may already show the item
+  greyed out.)
+- Step 5: first the usual question offering to stop the trains; after Yes, "A route is running.  Wait for it to finish,
+  then try again." and nothing is reloaded.  (Without a route, Yes stops the trains and reloads, as before.)
+
+*What this is:* Rounds 1 to 3 of the 3.0.2 validation: the doors that load or unload a configuration reached a load while a route
+ran, though the Autonomy menu greys them; Export asked a different question from Import; and a Yes to stop autonomy's
+trains went ahead under a route still running (`6919ec4c`, `82897755`, `09bfe71a`, `9c1487ff`, `2ce0052e`).  Claims in
+`regression.testNoSetupEditWhileARouteRuns`.
+
+---
+
+<a id="mt-759"></a>
+### MT-759 - 2026-10-18 - A train turned round while a route runs is turned in the autonomy setup when the route ends
+
+**Disposition:** fixed unvalidated
+**From:** RSA71-C8
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. With autonomy loaded and stopped, note which way a placed train faces on the Track Diagram.
+2. Make a test route that takes several seconds: for example two switch commands with a delay of 5000 in the first row's Delay (ms) column.  Run it, and while it runs reverse that train from its throttle (or with a direction command in the route
+   itself).
+3. Watch the train's arrow on the diagram until the route has finished.
+4. Repeat, reversing the train twice while the route runs.
+
+**Expected**
+
+- Step 3: the train's facing does not change while the route is running, and turns round once the route finishes.
+- Step 4: two reversals cancel out: the facing is as it was.
+- With autonomy running instead, a reversal made by hand is ignored, as before.
+
+*What this is:* Round 1 of the 3.0.2 validation: a direction change made while a route held the setup was recorded and never
+followed, so the setup faced the wrong way after the route (`a6f895fa`).  Claims in
+`regression.testAThrottleReversalIsFollowedFromItsEcho`.
+
+---
+
+<a id="mt-760"></a>
+### MT-760 - 2026-10-18 - Start, Execute Timetable, Return Home and a hand send wait for a running route
+
+**Disposition:** fixed unvalidated
+**From:** RSA72-C1, RSA73-C1, RSA73-C3
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Make a test route that takes several seconds: for example two switch commands with a delay of 5000 in the first row's Delay (ms) column.  With autonomy loaded and stopped and the power on, run the test route.
+2. While it runs, press Start; then Execute Timetable (with a timetable); then Return Home (with a train away from home);
+   then send a train by hand from the Track Diagram or the Auto tab.
+3. Let the route finish and try each again.
+
+**Expected**
+
+- Step 2: each one says "A route is running.  Wait for it to finish, then try again." and nothing moves; every button
+  comes back as it was (Execute Timetable is not left greyed).
+- Step 3: each one works as before.
+- A route a sensor fires while autonomy is already running does not stop autonomy.
+
+*What this is:* Rounds 2 and 3 of the 3.0.2 validation, on Adam's "prevent starting autonomy etc if a route is still running": the
+one gate every run door asks, and the last check before the dispatch, refuse while a route runs, so a turn held for a
+route never meets a run (`cc5fe6cb`, `7ca0eb29`).  Claims in `regression.testNoSetupEditWhileARouteRuns`; the guide's
+"Nothing is sent at all" section says it.
 
 ---
