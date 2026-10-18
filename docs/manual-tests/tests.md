@@ -27,9 +27,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-749](#mt-749) | 2026-10-18 | FR-135: the sharper link and signal icons, meeting the track with no seam | fixed unvalidated | FR-135 |
 
-
-Everything else - 748 of 748 - needs nothing from you unless the area changes again:
+Everything else - 748 of 749 - needs nothing from you unless the area changes again:
 595 **fixed validated** and 153 **superseded**.
 
 ---
@@ -35261,5 +35261,33 @@ Large (the Medium size is the Large art scaled down).  Claim `ui.testDiagramLook
 **Adam, 2026-10-17 (triage).** Works.
 
 *Run against commit 9147c58d, in English - build\classes, compiled 17 Oct 22:06 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-749"></a>
+### MT-749 - 2026-10-18 - FR-135: the sharper link and signal icons, meeting the track with no seam
+
+**Disposition:** fixed unvalidated
+**From:** FR-135
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open the track diagram on `1 - Main` and look at the link at 15,5 and the signal beside it, at the Small, Medium and
+   Large sizes.
+2. Throw that signal to red and look again.
+
+**Expected**
+
+- Step 1: the link is a black arrow, sharp at every size, in a thin grey frame, open where the track comes in; the
+  track runs into the arrow with no step or change of edge.  The signal's lamp and capsule are crisp, and the track
+  under it has the same edges as the straights either side - no lighter stripe along its top at Large.
+- Step 2: the red lamp is in the head's left end, as before, and the bar under it is red, both ends alike.
+
+*What this is:* FR-135 (`2328db0b`): the link (option G) and both signal tiles drawn from geometry by
+`docs/tools/link-signal-icons.py`, the band under them the straight's own.  Claims in `ui.testDiagramLooksRight`:
+`testTheLinkAndTheSignalsMeetTheStraightWithNoSeam`, `testTheLinkAndTheSignalsBarAreSymmetric`,
+`testTheSignalsLampsAreInTheirOwnEnds`.
 
 ---

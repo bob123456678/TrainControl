@@ -397,6 +397,14 @@ in Oles kreds - TC3 sandbox2, 3,4 shows arrows in the autonomy editor even thoug
 
 if clicking on a locomotive in test a path / why not moving, make it register a click on the station.
 
+### FR-135 - 2026-10-18 - sharper link and signal icons on the track diagram, meeting the track with no seam
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-18  
+**Filed:** 2026-10-18  
+
+Adam, 2026-10-18: "Propose pretiffications for the link icon, such as to make the arrow sharper / different / more proportional to the chosen size, or other ideas."  Of the options drawn for him: "I like the F idea, but make it with an all black arrow without the gray dash"; then "G is good, but make sure you match the edges of the signal tile.  does that mean we should sharpen the signal tile, if it hasn't been sharpened yet?" - the signal had not been redrawn: at the Large size its band's top edge was #999 where every other track tile's is #666, a lighter stripe against the straights, with a stray green pixel on its bar; at the Small its lamps had a dark fringe and its bar's ends were shaded unevenly.  Then: "Build G and the sharpened signals now".
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -413,6 +421,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-18 | FR-135 | feature request | The link tile a sharp black arrow in a light grey frame (option G) and both signal tiles redrawn crisp, drawn from geometry by `docs/tools/link-signal-icons.py` so Small and Large are one drawing, the band under them the straight's own - no seam with the track (`2328db0b`). | - | MT-749 |
 | 2026-10-18 | FR-134 | feature request | The tunnel icons' wall near white (#EEEEEE, from #BBBBBB) and a pixel wider each side at Small, two at Large: option C at +1 of those drawn on Adam's tunnels (`7f10f8cd`). | - | MT-748 |
 | 2026-10-16 | OB-351 | bug | A switch's, three-way's or double slip's arrows are the whole of which way trains may run through it; a setup with a road closed under a green arrow is read as its arrows show, logged and saved (`5e65b5e6`). | - | MT-747 |
 | 2026-10-16 | OB-350 | bug | The track diagram's Place and the paste stand a train on a station no train can leave, as the editor's Place does (`ad25cfb4`). | - | MT-745 |
