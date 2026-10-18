@@ -41,7 +41,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * **The dropdown is four options and the Text Labels box is the fifth state's home (FR-133).** Adam:
  * *"move the "labels only" setting currently in the dropdown to a Text Labels checkbox below Show Trains."*
  * The box shows the writing on the diagram, the dropdown only decides the station captions, and a remembered
- * 4 (the old Labels Only) opens as Hide with the box ticked.
+ * 4 (the old Labels Only) opens as Station Names with the box ticked.
  *
  * @author Adam
  */
@@ -90,6 +90,8 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         boolean box;
         boolean boxBelowTrains;
         boolean boxIsShown;
+        java.awt.Font captionFont;
+        java.awt.Font directionsFont;
     }
 
     private static Opening lastOpening;
@@ -293,21 +295,21 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     }
 
     /**
-     * A remembered 4, which was Labels Only, opens as Hide with the Text Labels box ticked (FR-133).
+     * A remembered 4, which was Labels Only, opens as Station Names with the Text Labels box ticked (FR-133).
      *
-     * The dropdown lost its fifth option and the box took its job, so somebody who had Labels Only keeps what they saw:
-     * the writing on the diagram and no caption.  The page carries writing of his own - "Inner Loop" and the rest - so
+     * The dropdown lost its fifth option and the box took its job; Station Names is the default the dropdown opens on
+     * (Adam: *"make sure Station Names is default"*).  The page carries writing of his own - "Inner Loop" and the rest - so
      * this is not satisfied by a page with nothing to show; None, beside it, draws none of it.
      */
     @Test
-    public void testARememberedFourOpensAsHideWithTheBoxTicked()
+    public void testARememberedFourOpensAsStationNamesWithTheBoxTicked()
     {
-        assertEquals(oldLabelsOnly.mode, AutonomyEditorPanel.CAPTIONS_NONE,
-            "a remembered 4 did not open as Hide, the dropdown's last option");
+        assertEquals(oldLabelsOnly.mode, AutonomyEditorPanel.CAPTIONS_STATIONS,
+            "a remembered 4 did not open as Station Names, the default");
 
         assertTrue(oldLabelsOnly.box, "a remembered 4 did not tick the Text Labels box");
 
-        assertEquals(withOldLabelsOnly.size(), 0, "a remembered 4 drew captions: " + withOldLabelsOnly);
+        assertEquals(withOldLabelsOnly, namedWithBoxOn, "a remembered 4 did not draw the captions Station Names draws");
 
         assertTrue(ownUnderOldLabelsOnly.size() > 0,
             "a remembered 4 drew none of the writing on the diagram, which is the one thing it was for");
@@ -315,6 +317,17 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         assertFalse(hiddenAfterOldLabelsOnly, "the diagram's text switch is off after a remembered 4");
 
         assertEquals(ownUnderNone.size(), 0, "Hide drew writing that is not a caption: " + ownUnderNone);
+    }
+
+    /**
+     * The caption dropdown is in the same font as the Track Directions one (FR-133: *"the same smaller font as under
+     * Track Directions, e.g. "Show All""*).
+     */
+    @Test
+    public void testTheCaptionDropdownHasTheTrackDirectionsFont()
+    {
+        assertEquals(boxOff.captionFont, boxOff.directionsFont,
+            "the caption dropdown is not in the font of the Track Directions dropdown");
     }
 
     /**
@@ -592,6 +605,8 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             opening.items = panel.getCaptionChoice().getItemCount();
             opening.lastItem = panel.getCaptionChoice().getItemAt(opening.items - 1);
             opening.box = panel.getShowTextLabels().isSelected();
+            opening.captionFont = panel.getCaptionChoice().getFont();
+            opening.directionsFont = panel.getShowDirections().getFont();
 
             java.awt.Container column = panel.getShowTrains().getParent();
             java.awt.Component[] kids = column == null ? new java.awt.Component[0] : column.getComponents();

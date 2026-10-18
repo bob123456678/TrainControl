@@ -306,8 +306,8 @@ public class AutonomyEditorPanel extends JPanel
     public static final int CAPTIONS_NONE = 3;
 
     /**
-     * What an earlier version remembered for its fifth option, Labels Only (OB-272).  It opens as Hide with the Text
-     * Labels box ticked (FR-133); the dropdown has no such option any more.
+     * What an earlier version remembered for its fifth option, Labels Only (OB-272).  It opens as Station Names with the
+     * Text Labels box ticked (FR-133); the dropdown has no such option any more.
      */
     private static final int LEGACY_LABELS_ONLY = 4;
 
@@ -868,11 +868,11 @@ public class AutonomyEditorPanel extends JPanel
         int rememberedMode = VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS);
         boolean rememberedText = VIEW_PREFS.getBoolean(PREF_TEXT_LABELS, false);
 
-        // A remembered Labels Only opens as Hide with the Text Labels box ticked, and is stored that way so the box
-        // is not ticked again at every open (FR-133).
+        // A remembered Labels Only opens as Station Names, the default, with the Text Labels box ticked, and is stored
+        // that way so the box is not ticked again at every open (FR-133).
         if (rememberedMode == LEGACY_LABELS_ONLY)
         {
-            rememberedMode = CAPTIONS_NONE;
+            rememberedMode = CAPTIONS_STATIONS;
             rememberedText = true;
 
             VIEW_PREFS.putInt(PREF_CAPTION_MODE, rememberedMode);
@@ -12333,7 +12333,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     public javax.swing.JComboBox<String> getCaptionChoice()
     {
-        return captions;
+        // The Track Directions box's font, from the same place (FR-133)
+        return control(captions);
     }
 
     /**

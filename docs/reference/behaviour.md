@@ -2055,7 +2055,8 @@ Only, and in the track editor Control+L is still the text switch.
 Rename the current "Text Labels" heading above the dropdown to be "Station Labels".  And change "None" in the dropdown
 to "Hide""*). The paragraph above is superseded: the dropdown, headed Station Labels, is Station Names, Standing Locs,
 Home Locs and Hide; the `Text Labels` box under Show Trains draws the writing on the diagram, and the two are
-independent. Both are remembered between opens; a remembered Labels Only opens as Hide with the box ticked.
+independent. Both are remembered between opens; a remembered Labels Only opens as Station Names, the default, with the box ticked.
+The dropdown is in the same font as the Track Directions one.
 `regression.testARememberedNoneOpensWithTheCaptionsOff`.
 
 **Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is
