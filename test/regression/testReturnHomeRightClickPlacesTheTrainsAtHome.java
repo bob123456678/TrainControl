@@ -104,6 +104,13 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         return (JMenuItem) theMenu(ui).getComponent(0);
     }
 
+    /** A tooltip's words, without the markup that wraps it. */
+    private static String plain(String tip)
+    {
+        return tip == null ? null : tip.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
+            .replace("&amp;", "&");
+    }
+
     private static void closeDown(TrainControlUI ui, support.LayoutSandbox sandbox, String folderWas) throws Exception
     {
         putTheFolderBack(folderWas);
@@ -811,7 +818,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             assertFalse(button.isEnabled(), "precondition: Return Home is offered with every homed train on its home: "
                 + button.getToolTipText());
 
-            assertEquals(button.getToolTipText(), atHome, "with every train home, the button does not say so");
+            assertEquals(plain(button.getToolTipText()), atHome, "with every train home, the button does not say so");
 
             // ONE AWAY, ACTIVE: offered.  Any other station it will go to.
             boolean away = false;
@@ -848,12 +855,16 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             assertFalse(button.isEnabled(), "Return Home is offered with the only train away from home paused");
 
-            assertFalse(atHome.equals(button.getToolTipText()), "the button says every locomotive is home over the paused "
+            assertFalse(atHome.equals(plain(button.getToolTipText())), "the button says every locomotive is home over the paused "
                 + train.getName() + ", which stands away from its home");
 
             String why = I18n.f("autolayout.ui.infoAwayLocomotivesPaused", train.getName());
 
-            assertEquals(button.getToolTipText(), why, "the paused train away from its home is not the reason given");
+            // WRAPPED, not one line across the screen (Adam on MT-756: "The tooltip is much too wide")
+            assertTrue(button.getToolTipText().contains("width"), "the paused reason is not wrapped: "
+                + button.getToolTipText());
+
+            assertEquals(plain(button.getToolTipText()), why, "the paused train away from its home is not the reason given");
 
             assertTrue(why.contains(train.getName()), "the reason does not name the paused train: " + why);
 
@@ -861,7 +872,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             assertFalse(run.isEnabled(), "Run Trains to Their Homes is offered while the button is greyed");
 
-            assertEquals(run.getToolTipText(), why, "Run Trains to Their Homes does not give the button's reason");
+            assertEquals(plain(run.getToolTipText()), why, "Run Trains to Their Homes does not give the button's reason");
 
             // SET GOING AGAIN: offered
             SwingUtilities.invokeAndWait(() -> window.setLocomotivesActive(session, paused, true));
