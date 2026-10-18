@@ -641,6 +641,8 @@ The log is verbose about all of this too, and worth reading: it names the train,
 
 **The autonomy editor is open.** No train is sent while it is open. Save or Cancel first.
 
+**A route is running.** Start, Execute Timetable, Return Home and every train you send by hand wait until it has finished, and say so: "A route is running.  Wait for it to finish, then try again." Routes that a sensor fires while autonomy is already running do not stop it.
+
 **Autonomy stopped by itself.** When a train fails part way along its route, it is stopped, its track is released, and autonomy stops, naming the train. Check where that train is really standing, and if TrainControl has it somewhere else, put it right before you start again. A train that has not reached its next sensor after five minutes is named in the log.
 
 **Maximum Active Trains is reached.** Autonomy starts no more trains until one arrives. Trains you send by hand do not count.
