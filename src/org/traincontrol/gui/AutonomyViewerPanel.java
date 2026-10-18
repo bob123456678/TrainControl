@@ -860,6 +860,12 @@ public class AutonomyViewerPanel extends JPanel
         String previous = session().getStore().getActiveConfiguration();
 
         session().getStore().setActiveConfiguration(name);
+
+        // AND NO LOCOMOTIVE THE DATABASE DOES NOT HOLD (OB-349), before it is built: the loader would drop each from the
+        // railway and leave it in the setup, where the menus and the captions went on showing it.  Said in the log, as the
+        // loader said it; an import says it in a dialog as well.
+        forgetLocomotivesNotInTheDatabase(name);
+
         session().rebuild();
 
         if (session().hasBlockingProblems())
@@ -1226,12 +1232,18 @@ public class AutonomyViewerPanel extends JPanel
                     I18n.t("autosetup.ui.titleImportPagesNotHere"), JOptionPane.WARNING_MESSAGE);
             }
 
+            // AND THE LOCOMOTIVES THIS DATABASE DOES NOT HOLD, out of it before the save (OB-349): the configuration
+            // imported is loaded only where nothing else runs, so the load cannot be left to do it
+            java.util.List<AutonomySession.LocomotiveLeftOut> leftOut = forgetLocomotivesNotInTheDatabase(name.trim());
+
             save();
 
             // Said out loud, because the alternative is somebody wondering whether their station names
             // came across.  A file written before exporting carried the track decisions fills nothing,
             // and that is worth knowing too.
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoImported", filled));
+
+            showLocomotivesLeftOut(name.trim(), leftOut);
 
             loadAfterImport(name.trim());
         }
@@ -1325,6 +1337,115 @@ public class AutonomyViewerPanel extends JPanel
         for (String line : lines) entry.append("\n  ").append(line);
 
         return entry.toString();
+    }
+
+    /**
+     * Takes the locomotives the database does not hold out of a configuration, and says so in the log (OB-349).
+     *
+     * @param configuration the configuration's name
+     * @return what was let go of, for an import to show as well
+     */
+    private java.util.List<AutonomySession.LocomotiveLeftOut> forgetLocomotivesNotInTheDatabase(String configuration)
+    {
+        if (ui.getModel() == null) return java.util.Collections.emptyList();
+
+        java.util.List<AutonomySession.LocomotiveLeftOut> leftOut = session().forgetLocomotivesNotIn(configuration,
+            new java.util.HashSet<>(ui.getModel().getLocList()));
+
+        logLocomotivesLeftOut(configuration, leftOut);
+
+        return leftOut;
+    }
+
+    /**
+     * The locomotives a configuration was left without, as one entry in the log: one line for each, saying what it lost
+     * where (OB-349).
+     *
+     * @param configuration the configuration's name
+     * @param leftOut what was let go of
+     */
+    private void logLocomotivesLeftOut(String configuration, java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    {
+        if (leftOut.isEmpty() || ui.getModel() == null) return;
+
+        ui.getModel().log(listForTheLog(I18n.f("autosetup.ui.locomotivesLeftOut", configuration), linesFor(leftOut)));
+    }
+
+    /**
+     * The same list in a dialog, for an import (Adam, 2026-10-17: *"make sure the removed locomotives are logged and that
+     * the user is advised in a popup on import (manage its height if there a many locs)."*).  The list scrolls past ten
+     * lines, as `TailCrossedPrompt`'s does, so the dialog stays the same height however many there are.
+     *
+     * @param configuration the configuration's name
+     * @param leftOut what was let go of; nothing is shown when it is empty
+     */
+    private void showLocomotivesLeftOut(String configuration, java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    {
+        if (leftOut.isEmpty()) return;
+
+        JOptionPane.showMessageDialog(ui, locomotivesLeftOutMessage(configuration, linesFor(leftOut)),
+            I18n.t("autosetup.ui.titleLocomotivesLeftOut"), JOptionPane.WARNING_MESSAGE);
+    }
+
+    /**
+     * What the dialog shows: the sentence, and the list under it, at most ten lines high.
+     *
+     * @param configuration the configuration's name
+     * @param lines one line for each locomotive
+     * @return the dialog's message
+     */
+    static javax.swing.JComponent locomotivesLeftOutMessage(String configuration, java.util.List<String> lines)
+    {
+        javax.swing.JList<String> list = new javax.swing.JList<>(lines.toArray(new String[0]));
+
+        list.setVisibleRowCount(Math.min(10, Math.max(3, lines.size())));
+
+        javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
+
+        panel.add(new javax.swing.JLabel(AutonomyEditorPanel.wrappedAt(
+            I18n.f("autosetup.ui.locomotivesLeftOut", configuration), 420)), java.awt.BorderLayout.NORTH);
+        panel.add(new JScrollPane(list), java.awt.BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /**
+     * One line for each locomotive, in name order: its name, and what it lost where.
+     *
+     * @param leftOut what was let go of
+     * @return the lines
+     */
+    private java.util.List<String> linesFor(java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    {
+        java.util.Map<String, java.util.List<String>> lost = new java.util.TreeMap<>();
+
+        for (AutonomySession.LocomotiveLeftOut one : leftOut)
+        {
+            String where = session().describeTile(one.square);
+
+            String what;
+
+            switch (one.what)
+            {
+                case STANDING: what = I18n.f("autosetup.ui.leftOutStanding", where); break;
+                case HOME: what = I18n.f("autosetup.ui.leftOutHome", where); break;
+                case ALLOWED: what = I18n.f("autosetup.ui.leftOutAllowed", where); break;
+                default: what = I18n.f("autosetup.ui.leftOutExcluded", where); break;
+            }
+
+            java.util.List<String> its = lost.computeIfAbsent(one.locomotive, name -> new java.util.ArrayList<>());
+
+            if (!its.contains(what)) its.add(what);
+        }
+
+        java.util.List<String> lines = new java.util.ArrayList<>();
+
+        for (java.util.Map.Entry<String, java.util.List<String>> one : lost.entrySet())
+        {
+            lines.add(I18n.f("autosetup.ui.leftOutLine", one.getKey(), String.join(", ", one.getValue())));
+        }
+
+        return lines;
     }
 
     /**
@@ -1470,6 +1591,12 @@ public class AutonomyViewerPanel extends JPanel
             // came after the save, and it reads the timetable and the edges strictly.
             java.util.List<String> left = session().whatALegacyImportLeaves(file);
 
+            // THE LOCOMOTIVES THIS DATABASE DOES NOT HOLD (OB-349): the trains the file stands that were not placed, and
+            // whatever else the configuration now names of them - a home, a name on a list - taken out of it, in one list
+            java.util.List<AutonomySession.LocomotiveLeftOut> leftOut = new java.util.ArrayList<>(result.unknownPlacements);
+
+            if (known != null) leftOut.addAll(session().forgetLocomotivesNotIn(into, known));
+
             // AND THE CONFIGURATION RUNNING CHOSEN AGAIN, BEFORE THE SAVE (RLD-C3).  The save wrote the imported one as
             // the configuration the next start resumes, and only a reload that finished put the running one back - so
             // "No" to stopping the trains, or a reload refused, left the next start loading the imported configuration.
@@ -1488,13 +1615,7 @@ public class AutonomyViewerPanel extends JPanel
             String unmatched = result.unmatched.isEmpty()
                 ? "" : "\n\n" + String.join(", ", result.unmatched);
 
-            // Named, because these are the ones that would otherwise have stopped the setup loading
-            if (!result.unknownLocomotives.isEmpty())
-            {
-                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyUnknownLocs",
-                    String.join(", ", result.unknownLocomotives));
-            }
-
+            // The ones this database does not hold are not named here: they have a list of their own, below (OB-349)
             if (!result.duplicateLocomotives.isEmpty())
             {
                 unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyDuplicateLocs",
@@ -1612,6 +1733,9 @@ public class AutonomyViewerPanel extends JPanel
                 + (result.namesNotKept.isEmpty() ? "" : NEWLINES + sharedSquaresSentence(result.namesNotKept.size()))
                 + (left.isEmpty() ? "" : NEWLINES + leftBehindSentence(left.size()))
                 + NEWLINES + where);
+
+            logLocomotivesLeftOut(into, leftOut);
+            showLocomotivesLeftOut(into, leftOut);
 
             // The one just created when nothing was running - so the import is loaded rather than left sitting on disk -
             // and otherwise the one running, loaded again over the shared half the import merged.

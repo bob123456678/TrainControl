@@ -1262,6 +1262,11 @@ public class AutonomySession
         public final List<String> unknownLocomotives = new ArrayList<>();
 
         /**
+         * The same, with the square each would have stood on, for the list the import door shows (OB-349).
+         */
+        public final List<LocomotiveLeftOut> unknownPlacements = new ArrayList<>();
+
+        /**
          * Locomotives the file places at more than one point.  Only the first is placed.
          *
          * The running model invalidates on this too - one locomotive cannot stand in two places - and
@@ -1881,6 +1886,9 @@ public class AutonomySession
                         else if (knownLocomotives != null && !knownLocomotives.contains(locName))
                         {
                             result.unknownLocomotives.add(locName);
+
+                            result.unknownPlacements.add(
+                                new LocomotiveLeftOut(locName, LocomotiveLeftOut.What.STANDING, tile));
                         }
                         else if (standingAlready.contains(locName))
                         {
@@ -9528,6 +9536,156 @@ public class AutonomySession
         deriveStationIndex();
 
         return placed.size();
+    }
+
+    /**
+     * One thing a configuration held of a locomotive the database does not have, and let go of (OB-349).
+     */
+    public static final class LocomotiveLeftOut
+    {
+        /** What it held: the train standing on the square, its home there, or its name on the square's list. */
+        public enum What { STANDING, HOME, EXCLUDED, ALLOWED }
+
+        /** The locomotive's name. */
+        public final String locomotive;
+
+        /** What was let go of. */
+        public final What what;
+
+        /** The square it was on. */
+        public final TileKey square;
+
+        /**
+         * @param locomotive the locomotive's name
+         * @param what what was let go of
+         * @param square the square it was on
+         */
+        public LocomotiveLeftOut(String locomotive, What what, TileKey square)
+        {
+            this.locomotive = locomotive;
+            this.what = what;
+            this.square = square;
+        }
+
+        @Override
+        public String toString()
+        {
+            return locomotive + " " + what + " " + square;
+        }
+    }
+
+    /**
+     * Takes every locomotive the database does not hold out of a configuration (OB-349): a train standing on a square,
+     * with the facing and the arrival recorded for it; a home, with the way it was set facing; and a name on a square's
+     * list.  Everything else about each square is kept as it is.
+     *
+     * The loader drops each of these from the railway it builds, and the setup kept them - so every reader of the setup
+     * showed a train the railway did not have, the facing menu and the captions among them, and every save wrote it back.
+     * Taken out here, the setup and the railway agree.
+     *
+     * A run list is not held apart from the placements, so a train taken off its square is off it too.  The timetable and
+     * the paused trains are left to the loader, which drops a name it cannot find from each.
+     *
+     * @param configuration the configuration's name
+     * @param known the names the locomotive database holds
+     * @return what was let go of, by locomotive and then square; empty when the configuration names none it lacks
+     */
+    public java.util.List<LocomotiveLeftOut> forgetLocomotivesNotIn(String configuration,
+        java.util.Collection<String> known)
+    {
+        java.util.List<LocomotiveLeftOut> out = new java.util.ArrayList<>();
+
+        // NOTHING AGAINST AN EMPTY DATABASE: a missing or unread one would otherwise take every train out of the setup and
+        // save it.  The build still leaves such trains off the railway.
+        if (known == null || known.isEmpty()) return out;
+
+        org.json.JSONObject held = configuration == null ? null : store.getConfiguration(configuration);
+
+        org.json.JSONObject points = held == null ? null : held.optJSONObject("points");
+
+        if (points == null) return out;
+
+        boolean changed = false;
+
+        for (String key : points.keySet())
+        {
+            org.json.JSONObject point = points.optJSONObject(key);
+
+            TileKey square = AutonomyCompanionStore.parseTileKey(key);
+
+            if (point == null || square == null) continue;
+
+            // THE TRAIN STANDING HERE, with the keys `placeLocomotive` clears when a train is taken off: the two must agree
+            String standing = nameOfPlacedLocomotive(point.opt(AutonomyBuilder.LOCOMOTIVE));
+
+            if (standing != null && !known.contains(standing))
+            {
+                point.remove(AutonomyBuilder.LOCOMOTIVE);
+                point.remove(AutonomyBuilder.FACING);
+                point.remove("arrivedFrom");
+                point.remove("arrivedAlong");
+
+                out.add(new LocomotiveLeftOut(standing, LocomotiveLeftOut.What.STANDING, square));
+            }
+
+            // THE HOME, with the keys `clearEveryHome` clears
+            String home = point.optString("home", "").trim();
+
+            if (!home.isEmpty() && !known.contains(home))
+            {
+                point.remove("home");
+                point.remove(AutonomyBuilder.HOME_FACING);
+
+                out.add(new LocomotiveLeftOut(home, LocomotiveLeftOut.What.HOME, square));
+            }
+
+            // AND THE SQUARE'S LIST, whichever way it reads (FR-121).  Emptied, it goes as the editor writes an empty one,
+            // and the mode stays: the railway built reads the same list the same way.
+            org.json.JSONArray listed = point.optJSONArray("excludedLocs");
+
+            if (listed != null)
+            {
+                boolean allowOnly = org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
+                    point.optString(org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE, null));
+
+                org.json.JSONArray kept = new org.json.JSONArray();
+
+                for (int at = 0; at < listed.length(); at++)
+                {
+                    Object name = listed.opt(at);
+
+                    if (!(name instanceof String) || known.contains(name))
+                    {
+                        kept.put(name);
+                    }
+                    else if (!((String) name).trim().isEmpty())
+                    {
+                        out.add(new LocomotiveLeftOut((String) name,
+                            allowOnly ? LocomotiveLeftOut.What.ALLOWED : LocomotiveLeftOut.What.EXCLUDED, square));
+                    }
+                }
+
+                if (kept.length() != listed.length())
+                {
+                    if (kept.length() == 0) point.remove("excludedLocs");
+                    else point.put("excludedLocs", kept);
+
+                    changed = true;
+                }
+            }
+        }
+
+        if (out.isEmpty() && !changed) return out;
+
+        dirty = true;
+
+        // The split names are computed from these properties, as `setPointProperty` says
+        if (configuration.equals(store.getActiveConfiguration())) deriveStationIndex();
+
+        out.sort(java.util.Comparator.<LocomotiveLeftOut, String>comparing(left -> left.locomotive)
+            .thenComparing(left -> left.what).thenComparing(left -> left.square.toString()));
+
+        return out;
     }
 
     /**

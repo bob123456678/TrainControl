@@ -14670,8 +14670,8 @@ public class Layout
                             // An exclusion that vanishes is a safety restriction the operator believes
                             // is in force: a locomotive sent to a platform it was barred from. The
                             // drop is right - one bad entry must not take the layout out of service -
-                            // but it was silent, and the next save writes the configuration back
-                            // without it, so the loss is permanent as well as invisible.
+                            // but it was silent.  The load door takes the name out of the setup as well,
+                            // and logs it there (OB-349).
                             Locomotive excluded = control.getLocByName(locName);
 
                             if (excluded != null) excludedLocs.add(excluded);
@@ -15075,7 +15075,9 @@ public class Layout
                             //
                             // The placement is simply not made: everything else about the point - its
                             // name, its home, its exclusions, its maximum, the track - is loaded as
-                            // written, and the next save writes the file back without the phantom.
+                            // written.  A save does not take the name out of the setup: the load door
+                            // does, before it builds (`AutonomyViewerPanel.loadPrepared`, OB-349), so this
+                            // arm is reached by a configuration handed to parseAuto some other way.
                             control.logf("autolayout.warnPlacedLocomotiveNotInDatabase", loc,
                                 point.getString("name"));
                         }

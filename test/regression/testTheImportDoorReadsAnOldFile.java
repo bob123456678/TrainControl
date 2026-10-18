@@ -4742,7 +4742,24 @@ public class testTheImportDoorReadsAnOldFile
     private static List<String> importFromTheMenu(TrainControlUI ui, File file, String name, Set<String> no)
         throws Exception
     {
+        return importFromTheMenu(ui, file, name, no, null);
+    }
+
+    /**
+     * The same, with the height of each message's window put in `heights`, in the order of what it said (OB-349).
+     */
+    static List<String> importFromTheMenu(TrainControlUI ui, File file, String name, List<Integer> heights)
+        throws Exception
+    {
+        return importFromTheMenu(ui, file, name, Collections.<String>emptySet(), heights);
+    }
+
+    private static List<String> importFromTheMenu(TrainControlUI ui, File file, String name, Set<String> no,
+        List<Integer> heights) throws Exception
+    {
         Answerer answerer = pressImport(ui, file, name, no);
+
+        if (heights != null) heights.addAll(answerer.heights);
 
         assertTrue(answerer.chose, "precondition: the import never showed the file chooser");
         assertTrue(answerer.named, "precondition: the import never asked for the configuration's name");
@@ -4802,6 +4819,7 @@ public class testTheImportDoorReadsAnOldFile
         private final String name;
         private final Set<String> no;
         private final List<String> said = Collections.synchronizedList(new ArrayList<>());
+        private final List<Integer> heights = Collections.synchronizedList(new ArrayList<>());
         private final Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
         private volatile boolean running = true;
         private volatile boolean chose = false;
@@ -4859,7 +4877,7 @@ public class testTheImportDoorReadsAnOldFile
 
                     if (pane == null || !handled.add(pane)) continue;
 
-                    final String text = String.valueOf(pane.getMessage());
+                    final String text = textOf(pane.getMessage());
 
                     if (I18n.t("autosetup.ui.promptImportName").equals(text))
                     {
@@ -4875,6 +4893,7 @@ public class testTheImportDoorReadsAnOldFile
                     }
 
                     said.add(text);
+                    heights.add(window.getHeight());
 
                     final Object[] options = pane.getOptions();
 
@@ -4884,6 +4903,42 @@ public class testTheImportDoorReadsAnOldFile
                         ? options[answer] : Integer.valueOf(JOptionPane.OK_OPTION)));
                 }
             }
+        }
+    }
+
+    /**
+     * What a message says: its text, or - for a message that is a panel, as the list of locomotives an import left out is
+     * (OB-349) - the text of each label and each line of each list in it, one to a line.
+     */
+    static String textOf(Object message)
+    {
+        if (!(message instanceof Component)) return String.valueOf(message);
+
+        StringBuilder text = new StringBuilder();
+
+        textOf((Component) message, text);
+
+        return text.toString();
+    }
+
+    private static void textOf(Component component, StringBuilder text)
+    {
+        if (component instanceof javax.swing.JLabel)
+        {
+            text.append(String.valueOf(((javax.swing.JLabel) component).getText()).replaceAll("<[^>]*>", "")
+                .replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")).append('\n');
+        }
+
+        if (component instanceof javax.swing.JList)
+        {
+            javax.swing.ListModel<?> lines = ((javax.swing.JList<?>) component).getModel();
+
+            for (int at = 0; at < lines.getSize(); at++) text.append(lines.getElementAt(at)).append('\n');
+        }
+
+        if (component instanceof Container)
+        {
+            for (Component child : ((Container) component).getComponents()) textOf(child, text);
         }
     }
 

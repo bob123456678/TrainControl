@@ -546,6 +546,7 @@
         <test-one-class class="testAHandSendIsRefusedWhileTheSetupIsBroken"/>
         <test-one-class class="testTheImportDoorReadsAnOldFile"/>
         <test-one-class class="testNoSetupEditDuringARun"/>
+        <test-one-class class="testALocomotiveNotInTheDatabaseLeavesTheSetup"/>
         <test-one-class class="testReturnHomeRightClickPlacesTheTrainsAtHome"/>
         <test-one-class class="testTheAutoTabWaitsForTheTrains"/>
         <test-one-class class="testTheWordingSaysWhatIsThere"/>
