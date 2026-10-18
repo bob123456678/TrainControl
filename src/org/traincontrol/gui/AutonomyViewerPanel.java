@@ -863,8 +863,10 @@ public class AutonomyViewerPanel extends JPanel
 
         // AND NO LOCOMOTIVE THE DATABASE DOES NOT HOLD (OB-349), before it is built: the loader would drop each from the
         // railway and leave it in the setup, where the menus and the captions went on showing it.  Said in the log, as the
-        // loader said it; an import says it in a dialog as well.
-        forgetLocomotivesNotInTheDatabase(name);
+        // loader said it, and in a dialog as an import's is, once the window is up when this is the start-up.  What it
+        // removed is gone from the setup, so a later load finds nothing to say again, and neither does the load an import
+        // ends with.
+        adviseOfLocomotivesLeftOut(name, forgetLocomotivesNotInTheDatabase(name));
 
         session().rebuild();
 
@@ -1397,8 +1399,30 @@ public class AutonomyViewerPanel extends JPanel
     {
         if (leftOut.isEmpty()) return;
 
-        JOptionPane.showMessageDialog(ui, locomotivesLeftOutMessage(configuration, linesFor(leftOut)),
+        showLocomotivesLeftOutLines(configuration, linesFor(leftOut));
+    }
+
+    private void showLocomotivesLeftOutLines(String configuration, java.util.List<String> lines)
+    {
+        JOptionPane.showMessageDialog(ui, locomotivesLeftOutMessage(configuration, lines),
             I18n.t("autosetup.ui.titleLocomotivesLeftOut"), JOptionPane.WARNING_MESSAGE);
+    }
+
+    /**
+     * The same dialog for a load that took something out (OB-349; Adam: *"log works, but show the locomotive info in a
+     * popup"*).  The lines are made now, from the setup as it is, and the dialog waits for the window if it is still
+     * connecting.
+     *
+     * @param configuration the configuration's name
+     * @param leftOut what was let go of; nothing is shown when it is empty
+     */
+    private void adviseOfLocomotivesLeftOut(String configuration, java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    {
+        if (leftOut.isEmpty()) return;
+
+        final java.util.List<String> lines = linesFor(leftOut);
+
+        ui.whenTheConnectingNoticeIsGone(() -> showLocomotivesLeftOutLines(configuration, lines));
     }
 
     /**

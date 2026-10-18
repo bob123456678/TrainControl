@@ -60,9 +60,10 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
      * Loaded at start, the configuration lets go of a train standing on a station, its home and its name on another's list
      * - and holds nothing else less: the station keeps its name and its settings, and a train the database does hold is
      * where it was.  The facing menu and the captions are gone with it, the file no longer names it, and the log says so
-     * once, with no dialog.  Then an ordinary reload does the same for a home given to another such name.
+     * once and one dialog does, naming it.  Then an ordinary reload does the same for a home given to another such name,
+     * and says nothing more of the first.
      *
-     * MUTATION: take the call out of `AutonomyViewerPanel.loadPrepared`, and this fails.
+     * MUTATION: take the call out of `AutonomyViewerPanel.loadPrepared`, or the dialog out of it, and this fails.
      *
      * @throws Exception from the window
      */
@@ -175,8 +176,14 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
             assertTrue(naming.get(0).startsWith(I18n.f("autosetup.ui.locomotivesLeftOut", "Main"))
                 && naming.get(0).contains(line), "the log does not say what Main lost of " + GONE + ": " + naming);
 
-            assertTrue(dialogs.naming(GONE).isEmpty(), "the start showed a dialog about " + GONE + ", which only an"
-                + " import does: " + dialogs.naming(GONE));
+            // AND IN ONE DIALOG, as an import's is (Adam: "log works, but show the locomotive info in a popup")
+            List<String> startUp = dialogsNaming(dialogs, GONE, 1);
+
+            assertEquals(startUp.size(), 1, "the start did not show exactly one dialog naming " + GONE + ": " + startUp);
+
+            assertTrue(startUp.get(0).contains(I18n.f("autosetup.ui.locomotivesLeftOut", "Main"))
+                && startUp.get(0).contains(line), "the start's dialog does not say what Main lost of " + GONE + ": "
+                + startUp);
 
             // AN ORDINARY RELOAD, of a configuration given a home the database does not hold since
             final String later = "OB-349 Later";
@@ -196,8 +203,13 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
 
             assertEquals(reloadNaming.size(), 1, "the reload's log does not name " + later + " once: " + reloadNaming);
 
-            assertTrue(dialogs.naming(later).isEmpty(), "the reload showed a dialog about " + later + ": "
-                + dialogs.naming(later));
+            List<String> reloadShown = dialogsNaming(dialogs, later, 1);
+
+            assertEquals(reloadShown.size(), 1, "the reload did not show exactly one dialog naming " + later + ": "
+                + reloadShown);
+
+            // AND NOT THE FIRST AGAIN: what the start removed is gone from the setup, so nothing is removed twice
+            assertEquals(dialogs.naming(GONE).size(), 1, "the reload showed " + GONE + " again: " + dialogs.naming(GONE));
 
             // AND NOTHING AGAINST AN EMPTY DATABASE, which a missing or unread one would look like
             java.util.Map<TileKey, String> standing = new java.util.LinkedHashMap<>(session.placementsAutonomyWillWrite());
@@ -225,6 +237,16 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /** The dialogs naming this, waiting up to ten seconds for this many and then a moment for any more. */
+    private static List<String> dialogsNaming(Dismisser dialogs, String name, int expected) throws InterruptedException
+    {
+        for (int wait = 0; wait < 100 && dialogs.naming(name).size() < expected; wait++) Thread.sleep(100);
+
+        Thread.sleep(800);
+
+        return dialogs.naming(name);
     }
 
     /**

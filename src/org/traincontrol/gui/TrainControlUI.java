@@ -12225,12 +12225,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         setContentPane(contentBehindTheNotice);
 
-        contentBehindTheNotice = null;
+        final java.util.List<Runnable> waiting;
+
+        synchronized (afterTheNotice)
+        {
+            contentBehindTheNotice = null;
+
+            waiting = new java.util.ArrayList<>(afterTheNotice);
+
+            afterTheNotice.clear();
+        }
 
         ungreyTheMenus();
 
         revalidate();
         repaint();
+
+        // Posted, so the window has painted its own content before the first of them speaks
+        for (Runnable one : waiting) javax.swing.SwingUtilities.invokeLater(one);
+    }
+
+    /** What was asked to run once the connecting notice is gone. */
+    private final java.util.List<Runnable> afterTheNotice = new java.util.ArrayList<>();
+
+    /**
+     * Runs this on the event thread, once the window is showing its own content rather than the connecting notice: a
+     * dialog put up while the notice is on screen opens over a window that is not yet the application (OB-349).  At once,
+     * on a later turn, where there is no notice.
+     *
+     * @param action what to run
+     */
+    void whenTheConnectingNoticeIsGone(Runnable action)
+    {
+        synchronized (afterTheNotice)
+        {
+            if (contentBehindTheNotice != null)
+            {
+                afterTheNotice.add(action);
+
+                return;
+            }
+        }
+
+        javax.swing.SwingUtilities.invokeLater(action);
     }
 
     /**
