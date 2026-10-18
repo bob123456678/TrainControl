@@ -3130,6 +3130,25 @@ public class AutonomyEditorPanel extends JPanel
         return true;
     }
 
+    /**
+     * The same refusal for a gesture on the diagram or a key, which has no menu item to ask first: said on the message
+     * strip rather than in a dialog the next click would raise again (Adam, 2026-09-28: *"There should be no setup edit
+     * possible during a run"*).  An editor opened at rest stays open when a route begins, so every write the diagram's
+     * clicks and the shortcuts make asks this first.
+     *
+     * @return true where the gesture is refused
+     */
+    private boolean heldByARun()
+    {
+        TrainControlUI window = parentWindow();
+
+        if (window == null || !window.aRunHoldsTheSetup()) return false;
+
+        say(hint, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+        return true;
+    }
+
     private javax.swing.JMenuItem item(String text, final Runnable action)
     {
         javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);
@@ -3690,6 +3709,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public boolean moveCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return false;
+
         String refused = refuseCaptionDrop(from, to, onTarget);
 
         if (refused != null)
@@ -5859,6 +5881,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null || session == null || session.getGraph() == null) return;
 
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu does (MFW-C1).
         cancelPendingGesture();
 
@@ -6687,6 +6712,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptNameFor(TileKey tile)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
         cancelPendingGesture();
 
@@ -6738,6 +6766,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null || menuOnly || session == null || session.getGraph() == null) return;
 
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         cancelPendingGesture();
 
         if (!offersAStationName(tile))
@@ -6781,6 +6812,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptLengthFor(TileKey tile)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
         cancelPendingGesture();
 
@@ -6878,6 +6912,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptMaxTrainLengthFor(TileKey tile)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu does (MFW-C1).
         cancelPendingGesture();
 
@@ -8128,6 +8165,8 @@ public class AutonomyEditorPanel extends JPanel
         // square is not the question.
         if (tailFor != null)
         {
+            if (heldByARun()) return;
+
             java.util.List<TailCrossedPrompt.Choice> here = tailPicks.get(tile);
 
             if (here == null)
@@ -8159,6 +8198,8 @@ public class AutonomyEditorPanel extends JPanel
         // The one-way tool: the first click names one end.
         if (tool == Tool.ONE_WAY && oneWayFrom == null)
         {
+            if (heldByARun()) return;
+
             if (needsTheGrid(tile)) return;
 
             // NOT ON A SQUARE AUTONOMY TAKES NO NOTICE OF (OB-235): the tool's clicks came before that question.
@@ -8180,6 +8221,8 @@ public class AutonomyEditorPanel extends JPanel
         // ... and the second names the other, after which it asks which way round it goes.
         if (oneWayFrom != null)
         {
+            if (heldByARun()) return;
+
             TileKey from = oneWayFrom;
 
             // Cleared before the dialog, not after: a modal dialog runs its own event loop, and a
@@ -8260,6 +8303,8 @@ public class AutonomyEditorPanel extends JPanel
         // on one.  Here it is the only thing worth clicking.
         if (signalFor != null)
         {
+            if (heldByARun()) return;
+
             TileKey station = signalFor;
 
             // IN A POPUP as well as on the line (MT-505) - see `refuseGuard` - AND BACK TO THE GUARD WINDOW (Adam,
@@ -8299,6 +8344,8 @@ public class AutonomyEditorPanel extends JPanel
         // what an ORDINARY click does. It refuses on its own terms a line later, naming what it wanted.
         if (blockingFor != null)
         {
+            if (heldByARun()) return;
+
             TileKey station = blockingFor;
 
             String refusal = whyNotABlocker(station, tile);
@@ -8354,7 +8401,7 @@ public class AutonomyEditorPanel extends JPanel
             {
                 case TEST: applyTest(tile, component); break;
                 case WHY: applyWhy(tile, component); break;
-                default: cycle(tile); break;
+                default: if (!heldByARun()) cycle(tile); break;
             }
         }
         catch (RuntimeException e)
@@ -11045,6 +11092,14 @@ public class AutonomyEditorPanel extends JPanel
     private void setPageExcluded(boolean excluded)
     {
         if (page == null) return;
+
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`; the box goes back to what the setup says
+        if (heldByARun())
+        {
+            excludePage.setSelected(!excluded);
+
+            return;
+        }
 
         if (excluded)
         {

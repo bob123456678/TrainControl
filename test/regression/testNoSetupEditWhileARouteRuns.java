@@ -712,6 +712,360 @@ public class testNoSetupEditWhileARouteRuns
         }
     }
 
+    /**
+     * The autonomy editor's gestures write nothing once a route runs, and say why on the message strip: the left-click that
+     * steps a square's arrows, the One-Way tool's two clicks, the keyboard shortcuts over a square (Control+H, S, E, N and
+     * B), dragging a station's label, and the page's Leave Out box.  The editor was opened at rest, as the Edit door allows,
+     * and the route begins after.
+     *
+     * MUTATION: take `heldByARun` out of `tileClicked`, of one of the five shortcuts, of `moveCaption` or of
+     * `setPageExcluded`, and this fails naming the gesture.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorsGesturesWaitForARoute() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final Answering answering = new Answering();
+
+        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final AutonomySession session = ui.getAutonomySession();
+            final org.traincontrol.base.LayoutDiagram page = ui.getModel().getLayout("1 - Main");
+            final String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+
+            assertNotNull(page, "precondition: no page 1 - Main");
+
+            // OPENED AT REST
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0] = new org.traincontrol.gui.LayoutEditor(page, 30, window, 0);
+
+                editor[0].render();
+
+                editor[0].setAutonomyMode(session);
+            });
+
+            settle();
+
+            final org.traincontrol.gui.AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
+
+            assertNotNull(panel, "precondition: the editor did not open in autonomy mode");
+
+            // A PLAIN TRACK SQUARE WITH ONE ROAD, and the two squares a run through it is drawn between
+            final TileKey[] run = aRunThroughOneSquare(session, page.getName());
+            final TileKey square = run[1];
+
+            // A STATION, and a label of its that may be dragged to another square
+            final TileKey station = aStationOn(session, page.getName());
+            final TileKey[] drag = aLabelThatMoves(session, panel, page);
+
+            final org.json.JSONObject before = session.snapshotSetup();
+
+            final java.lang.reflect.Field button = org.traincontrol.gui.AutonomyEditorPanel.class
+                .getDeclaredField("oneWayButton");
+
+            button.setAccessible(true);
+
+            final java.lang.reflect.Field excludeBox = org.traincontrol.gui.AutonomyEditorPanel.class
+                .getDeclaredField("excludePage");
+
+            excludeBox.setAccessible(true);
+
+            answering.start();
+
+            aRouteRuns(ui, true);
+
+            try
+            {
+                // THE ARROW CLICK, with no tool armed
+                String said = saidBy(panel, () -> panel.tileClicked(square, page.getComponent(square.getX(), square.getY()),
+                    false));
+
+                assertTrue(session.snapshotSetup().similar(before), "a left click on " + square + " in the autonomy editor"
+                    + " changed the setup while a route runs");
+
+                assertTrue(said.contains(refusal), "the arrow click, while a route runs, did not say why on the message"
+                    + " strip: " + said);
+
+                // THE ONE-WAY TOOL'S TWO CLICKS, its question answered with the first way round
+                SwingUtilities.invokeAndWait(() -> ((javax.swing.AbstractButton) fieldOf(button, panel)).doClick());
+
+                answering.pickFirstOption(true);
+
+                for (final TileKey end : new TileKey[] {run[0], run[2]})
+                {
+                    said = saidBy(panel, () -> panel.tileClicked(end, page.getComponent(end.getX(), end.getY()), false));
+                }
+
+                answering.pickFirstOption(false);
+
+                assertTrue(session.snapshotSetup().similar(before), "the One-Way tool, used in the autonomy editor while a"
+                    + " route runs, changed the setup");
+
+                assertTrue(said.contains(refusal), "the One-Way tool, while a route runs, did not say why on the message"
+                    + " strip: " + said);
+
+                // THE KEYS over a station
+                Map<String, Runnable> keys = new java.util.LinkedHashMap<>();
+
+                keys.put("Control+H", () -> panel.promptHomeFor(station));
+                keys.put("Control+S", () -> panel.promptNameFor(station));
+                keys.put("Control+E", () -> panel.promptLengthFor(station));
+                keys.put("Control+N", () -> panel.showStationNameFor(station));
+                keys.put("Control+B", () -> panel.promptMaxTrainLengthFor(station));
+
+                for (Map.Entry<String, Runnable> key : keys.entrySet())
+                {
+                    said = saidBy(panel, key.getValue());
+
+                    assertTrue(said.contains(refusal), key.getKey() + " over " + station + ", while a route runs, did not"
+                        + " say why on the message strip: " + said);
+
+                    assertTrue(session.snapshotSetup().similar(before), key.getKey() + " over " + station + " changed the"
+                        + " setup while a route runs");
+                }
+
+                // A STATION'S LABEL DRAGGED to another square
+                final boolean[] moved = new boolean[1];
+
+                said = saidBy(panel, () -> moved[0] = panel.moveCaption(drag[0], drag[1],
+                    page.getComponent(drag[1].getX(), drag[1].getY())));
+
+                assertFalse(moved[0], "a station's label was dragged to another square while a route runs");
+
+                assertTrue(said.contains(refusal), "dragging a label, while a route runs, did not say why on the message"
+                    + " strip: " + said);
+
+                assertTrue(session.snapshotSetup().similar(before), "dragging a label changed the setup while a route runs");
+
+                // THE PAGE'S LEAVE OUT BOX
+                said = saidBy(panel, () -> ((javax.swing.AbstractButton) fieldOf(excludeBox, panel)).doClick());
+
+                assertTrue(said.contains(refusal), "the Leave This Page Out box, while a route runs, did not say why on the"
+                    + " message strip: " + said);
+
+                assertFalse(((javax.swing.AbstractButton) fieldOf(excludeBox, panel)).isSelected(), "the Leave This Page"
+                    + " Out box stays ticked though the setup was not changed");
+
+                assertTrue(session.snapshotSetup().similar(before), "the Leave This Page Out box changed the setup while a"
+                    + " route runs");
+            }
+            finally
+            {
+                answering.pickFirstOption(false);
+
+                aRouteRuns(ui, false);
+            }
+
+            // AT REST the arrow click writes, so its refusal above hides something
+            SwingUtilities.invokeAndWait(() -> ((javax.swing.AbstractButton) fieldOf(button, panel)).doClick());
+
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(square, page.getComponent(square.getX(), square.getY()),
+                false));
+
+            settle();
+
+            assertFalse(session.snapshotSetup().similar(before), "precondition: the arrow click wrote nothing at rest, so"
+                + " its refusal while a route runs shows nothing");
+
+            // AND THE DRAG moves the label at rest
+            final boolean[] movedAtRest = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> movedAtRest[0] = panel.moveCaption(drag[0], drag[1],
+                page.getComponent(drag[1].getX(), drag[1].getY())));
+
+            assertTrue(movedAtRest[0], "precondition: the label would not move at rest, so its refusal while a route runs"
+                + " shows nothing");
+        }
+        finally
+        {
+            answering.stop();
+
+            if (editor[0] != null)
+            {
+                final org.traincontrol.gui.LayoutEditor closing = editor[0];
+
+                SwingUtilities.invokeAndWait(closing::dispose);
+            }
+
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
+    /**
+     * What the editor's message strip says after a gesture: it is cleared to a dash first, so only the gesture's own
+     * words are read.
+     */
+    private static String saidBy(final org.traincontrol.gui.AutonomyEditorPanel panel, final Runnable gesture)
+        throws Exception
+    {
+        final java.lang.reflect.Method say = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("say",
+            javax.swing.JLabel.class, String.class);
+
+        say.setAccessible(true);
+
+        final java.lang.reflect.Field hint = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("hint");
+
+        hint.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                say.invoke(panel, hint.get(panel), "-");
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new IllegalStateException(failed);
+            }
+
+            gesture.run();
+        });
+
+        settle();
+
+        StringBuilder out = new StringBuilder(String.valueOf(((javax.swing.JLabel) hint.get(panel)).getText()));
+
+        java.lang.reflect.Field banner = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("messageBanner");
+
+        banner.setAccessible(true);
+
+        Object strip = banner.get(panel);
+
+        if (strip != null)
+        {
+            java.lang.reflect.Field saying = strip.getClass().getDeclaredField("saying");
+
+            saying.setAccessible(true);
+
+            out.append(" | ").append(saying.get(strip));
+        }
+
+        return out.toString();
+    }
+
+    private static Object fieldOf(java.lang.reflect.Field field, Object on)
+    {
+        try
+        {
+            return field.get(on);
+        }
+        catch (IllegalAccessException failed)
+        {
+            throw new IllegalStateException(failed);
+        }
+    }
+
+    /** A station of the setup on a page. */
+    private static TileKey aStationOn(AutonomySession session, String page)
+    {
+        List<TileKey> stations = new ArrayList<>();
+
+        for (TileKey key : session.getStore().getNamedTiles())
+        {
+            if (page.equals(key.getPage()) && session.getStore().isStation(key)) stations.add(key);
+        }
+
+        stations.sort(java.util.Comparator.comparing(TileKey::toString));
+
+        if (stations.isEmpty()) throw new SkipException("no station on " + page);
+
+        return stations.get(0);
+    }
+
+    /**
+     * A station's label and a square it may be dragged to, by the editor's own rule.
+     *
+     * @return the square the label is on, and the square it may go to
+     */
+    private static TileKey[] aLabelThatMoves(AutonomySession session, org.traincontrol.gui.AutonomyEditorPanel panel,
+        org.traincontrol.base.LayoutDiagram page)
+    {
+        List<TileKey> tiles = new ArrayList<>(session.getGraph().getTiles().keySet());
+
+        tiles.sort(java.util.Comparator.comparing(TileKey::toString));
+
+        for (TileKey from : tiles)
+        {
+            if (!page.getName().equals(from.getPage()) || session.getCaptionTarget(from) == null) continue;
+
+            for (TileKey to : tiles)
+            {
+                if (page.getName().equals(to.getPage()) && !to.equals(from)
+                    && panel.canDropCaption(from, to, page.getComponent(to.getX(), to.getY())))
+                {
+                    return new TileKey[] {from, to};
+                }
+            }
+        }
+
+        throw new SkipException("no station label on " + page.getName() + " that may be dragged anywhere");
+    }
+
+    /**
+     * Three squares in a row of plain track on a page, the middle with one road, drawn so that a one-way run between the
+     * outer two changes the middle - found by drawing it and putting the setup back.
+     *
+     * @param session the setup
+     * @param page the page
+     * @return the squares, outer, middle, outer
+     */
+    private static TileKey[] aRunThroughOneSquare(AutonomySession session, String page)
+    {
+        List<TileKey> squares = new ArrayList<>();
+
+        for (TileKey tile : session.getGraph().getTiles().keySet())
+        {
+            if (page.equals(tile.getPage())) squares.add(tile);
+        }
+
+        squares.sort(java.util.Comparator.comparing(TileKey::toString));
+
+        for (TileKey a : squares)
+        {
+            for (TileKey b : squares)
+            {
+                if (Math.abs(a.getX() - b.getX()) + Math.abs(a.getY() - b.getY()) != 2) continue;
+
+                List<TileKey> path = session.getGraph().findUndirectedPath(a, b);
+
+                if (path == null || path.size() != 3) continue;
+
+                TileKey middle = path.get(1);
+
+                if (session.getRoutes(middle).size() != 1 || !session.canCarryDirection(middle)) continue;
+
+                org.json.JSONObject was = session.snapshotSetup();
+
+                int changed = session.setOneWayRun(a, b);
+
+                boolean wrote = !session.snapshotSetup().similar(was);
+
+                session.restoreSetup(was);
+
+                if (changed > 0 && wrote) return new TileKey[] {a, middle, b};
+            }
+        }
+
+        throw new SkipException("no run of three plain squares on " + page);
+    }
+
     // ---------------------------------------------------------------- the route
 
     /**
@@ -1081,7 +1435,15 @@ public class testNoSetupEditWhileARouteRuns
 
         private final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean();
 
+        private volatile boolean first;
+
         private Thread thread;
+
+        /** Whether a question with answers to choose from is answered with the first, rather than closed. */
+        void pickFirstOption(boolean on)
+        {
+            first = on;
+        }
 
         void start()
         {
@@ -1112,7 +1474,12 @@ public class testNoSetupEditWhileARouteRuns
                         {
                             said.add(String.valueOf(pane.getMessage()));
 
-                            SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.CLOSED_OPTION)));
+                            final Object[] options = pane.getOptions();
+
+                            final Object answer = first && options != null && options.length > 0 ? options[0]
+                                : Integer.valueOf(JOptionPane.CLOSED_OPTION);
+
+                            SwingUtilities.invokeLater(() -> pane.setValue(answer));
                         }
 
                         final javax.swing.JFileChooser chooser = find(((JDialog) window).getContentPane(),
