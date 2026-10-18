@@ -2656,8 +2656,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // A STRAIGHT PUT DOWN BETWEEN TWO PIECES OF TRACK LIES ALONG THEM (OB-292; Adam, 2026-09-24: *"when new
             // straight tracks are placed ... and they would connect two other tracks, they are automatically oriented
-            // to connect rather than not."*).  A move keeps the way the tile was: it is the same piece of track.
-            if (!move)
+            // to connect rather than not."*).  Only a tile newly placed from the palette: a move is the same piece of
+            // track, and a pasted copy carries the way round the user gave it (Adam, OB-360: *"only turn the first time
+            // the user places it, if it's already placed, don't change it."*).
+            if (placingFromPalette())
             {
                 newComponent.setOrientation(orientationThatJoins(layout, newComponent,
                     getX(destLabel), getY(destLabel)));

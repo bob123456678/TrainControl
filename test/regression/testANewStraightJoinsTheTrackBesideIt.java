@@ -49,6 +49,11 @@ public class testANewStraightJoinsTheTrackBesideIt
     private static final int EAST_WEST = 0;
     private static final int NORTH_SOUTH = 1;
 
+    /** Where a tile dropped by landings() came from. */
+    private static final int PALETTE = 0;
+    private static final int COPY = 1;
+    private static final int MOVE = 2;
+
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static TrainControlUI ui;
@@ -201,6 +206,43 @@ public class testANewStraightJoinsTheTrackBesideIt
     }
 
     /**
+     * Only a tile newly placed from the palette is turned (Adam, OB-360: *"only turn the first time the user places it,
+     * if it's already placed, don't change it."*): a tile that was copied and pasted, or dragged, keeps the way round it
+     * had, wherever it lands.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testACopiedOrMovedTileIsNotTurned() throws Exception
+    {
+        for (componentType type : new componentType[] { componentType.STRAIGHT, componentType.FEEDBACK,
+            componentType.SIGNAL, componentType.END })
+        {
+            int ways = LayoutDiagramComponent.getNumOrientations(type);
+            int[] helds = new int[ways];
+
+            for (int way = 0; way < ways; way++) helds[way] = way;
+
+            for (int how : new int[] { COPY, MOVE })
+            {
+                // Into the east-west gap, and beside the single east-west piece of track.
+                int[] gap = landings(type, helds, 2, 2, how);
+                int[] beside = landings(type, helds, 8, 5, how);
+
+                for (int way = 0; way < ways; way++)
+                {
+                    assertEquals(gap[way], way, "a " + (how == COPY ? "copied" : "moved") + " " + type + " lying as "
+                        + way + " was turned to " + gap[way] + " on being put down.  Adam, OB-360: \"if it's already"
+                        + " placed, don't change it\"");
+
+                    assertEquals(beside[way], way, "a " + (how == COPY ? "copied" : "moved") + " " + type + " lying as "
+                        + way + " was turned to " + beside[way] + " on being put down");
+                }
+            }
+        }
+    }
+
+    /**
      * A bumper, a tunnel or a link ends the track at one side: dropped beside a piece of track it is turned so that its
      * end is on that side, from whichever way the palette held it.
      *
@@ -299,6 +341,15 @@ public class testANewStraightJoinsTheTrackBesideIt
      */
     private static int[] landings(componentType type, int[] helds, int x, int y) throws Exception
     {
+        return landings(type, helds, x, y, PALETTE);
+    }
+
+    /**
+     * The same, for a tile that came from somewhere else: PALETTE picks it up off the palette, COPY copies one lying on
+     * the page at 0,0 and pastes it, MOVE drags that one.
+     */
+    private static int[] landings(componentType type, int[] helds, int x, int y, int how) throws Exception
+    {
         LayoutDiagram page = new LayoutDiagram("OB-360", 14, 12, null, null);
 
         page.addComponent(componentType.STRAIGHT, 1, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
@@ -351,14 +402,19 @@ public class testANewStraightJoinsTheTrackBesideIt
 
                 page.addComponent((LayoutDiagramComponent) null, x, y);
 
+                if (how != PALETTE) page.addComponent(type, 0, 0, helds[i], 0, 0, 0, accessoryDecoderType.MM2, null);
+
                 // Every drop redraws the grid into a new one, so the square is asked of the editor's grid as it is now.
                 final LayoutLabel target = ((LayoutGrid) field.get(editor[0])).getValueAt(x, y);
+                final LayoutLabel source = ((LayoutGrid) field.get(editor[0])).getValueAt(0, 0);
 
                 assertNotNull(target, "precondition: the editor drew no square at " + x + "," + y);
 
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
-                    editor[0].initCopy(null, held, false);
+                    if (how == PALETTE) editor[0].initCopy(null, held, false);
+                    else editor[0].initCopy(source, null, how == MOVE);
+
                     editor[0].executeTool(target);
                 });
 
