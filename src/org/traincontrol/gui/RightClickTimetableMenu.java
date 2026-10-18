@@ -68,9 +68,9 @@ public class RightClickTimetableMenu extends MouseAdapter
             // offered four items and refused all four with the same dialog. Greyed here on the same
             // question the handler asks, with the same sentence as the tooltip, rather than found out
             // by pressing.
-            boolean busy = ui.isAutonomyBusy();
+            boolean busy = ui.aRunHoldsTheSetup();
             String busyTooltip = busy
-                ? I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop") : null;
+                ? ui.whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop") : null;
 
             menuItem = new JMenuItem(
                 I18n.t("timetable.ui.menuChangeDelay")

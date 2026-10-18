@@ -1066,6 +1066,269 @@ public class testNoSetupEditWhileARouteRuns
         throw new SkipException("no run of three plain squares on " + page);
     }
 
+    /**
+     * The Auto tab's settings, the route activations, the timetable's doors and a train's direction change leave the
+     * setup alone while a route runs with autonomy idle, and say why with the sentence that names a route (C3; Adam,
+     * 2026-09-28: *"There should be no setup edit possible during a run"*; of a route: *"yes, refuse"*).  The timetable's
+     * right-click menu greys its items with that sentence.
+     *
+     * MUTATION: ask `isAutonomyBusy` alone again in any of them, and this fails naming it.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheAutoTabAndTheTimetableWaitForARoute() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final Answering answering = new Answering();
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final AutonomySession session = ui.getAutonomySession();
+            final Layout railway = ui.getModel().getAutoLayout();
+            final String anyRun = I18n.t(ANY_RUN);
+
+            final java.lang.reflect.Field sliderField = TrainControlUI.class.getDeclaredField("maxActiveTrains");
+
+            sliderField.setAccessible(true);
+
+            final javax.swing.JSlider trains = (javax.swing.JSlider) sliderField.get(ui);
+
+            final int trainsWas = railway.getMaxActiveTrains();
+            final boolean routesWas = railway.isActivateRoutes();
+            final boolean captureWas = railway.isTimetableCapture();
+            final List<Integer> activationsWas = new ArrayList<>(railway.getActivateRouteIDs());
+            final org.traincontrol.automation.Layout.PathPreference ruleWas = railway.getPathPreference();
+
+            // THE DOORS, each with what it must leave alone
+            Map<String, Runnable> doors = new java.util.LinkedHashMap<>();
+
+            doors.put("the trains-at-once slider", () ->
+            {
+                trains.setValue(trainsWas == trains.getMaximum() ? trainsWas - 1 : trainsWas + 1);
+
+                callUi(window, "maxActiveTrainsMouseReleased", new Class<?>[] {java.awt.event.MouseEvent.class}, (Object) null);
+            });
+
+            doors.put("the routing rule", () ->
+            {
+                javax.swing.JComboBox<?> rules = (javax.swing.JComboBox<?>) fieldOf("algorithmType", window);
+
+                rules.setSelectedIndex((rules.getSelectedIndex() + 1) % rules.getItemCount());
+            });
+
+            doors.put("the specified routes box", () -> callUi(window, "toggleSpecifiedRoutesMouseReleased",
+                new Class<?>[] {java.awt.event.MouseEvent.class}, (Object) null));
+
+            doors.put("the route list", () ->
+            {
+                javax.swing.JList<?> list = (javax.swing.JList<?>) fieldOf("autoRouteList", window);
+
+                if (list.getModel().getSize() > 0) list.setSelectedIndex(0);
+
+                callUi(window, "autoRouteListMouseReleased", new Class<?>[] {java.awt.event.MouseEvent.class}, (Object) null);
+            });
+
+            doors.put("the timetable capture box", () -> callUi(window, "timetableCaptureActionPerformed",
+                new Class<?>[] {java.awt.event.ActionEvent.class}, (Object) null));
+
+            doors.put("Clear Timetable", window::clearTimetable);
+            doors.put("Restart Timetable", window::restartTimetable);
+            doors.put("Delete Entry", () -> window.deleteTimetableEntry(null));
+            doors.put("Change Delay", () -> window.updateTimetableDelay(null));
+
+            answering.start();
+
+            aRouteRuns(ui, true);
+
+            try
+            {
+                for (Map.Entry<String, Runnable> door : doors.entrySet())
+                {
+                    int from = answering.count();
+
+                    SwingUtilities.invokeAndWait(door.getValue());
+
+                    settle();
+
+                    List<String> said = answering.since(from);
+
+                    assertEquals(said, Collections.singletonList(anyRun), door.getKey() + " did not refuse, before asking"
+                        + " anything, with the sentence that names a route, while a route runs");
+                }
+
+                assertEquals(railway.getMaxActiveTrains(), trainsWas, "the trains-at-once slider wrote the setup while a"
+                    + " route runs");
+
+                assertEquals(railway.getPathPreference(), ruleWas, "the routing rule changed while a route runs");
+
+                assertEquals(railway.isActivateRoutes(), routesWas, "the specified routes box wrote the setup while a route"
+                    + " runs");
+
+                assertEquals(railway.getActivateRouteIDs(), activationsWas, "the route list wrote the setup while a route"
+                    + " runs");
+
+                assertEquals(railway.isTimetableCapture(), captureWas, "the capture box wrote the setup while a route runs");
+
+                // THE TIMETABLE'S RIGHT-CLICK MENU: every item greyed, with that sentence
+                for (javax.swing.JMenuItem item : timetableMenuItems(window))
+                {
+                    assertFalse(item.isEnabled(), item.getText() + " is live in the timetable's menu while a route runs");
+
+                    assertEquals(item.getToolTipText(), anyRun, item.getText() + " is greyed in the timetable's menu"
+                        + " without saying a route is why");
+                }
+
+                // A TRAIN TURNED ROUND BY HAND is not followed into the setup
+                Point standing = aTrainOnASquareWithTwoFacings(window, session);
+
+                final org.json.JSONObject before = session.snapshotSetup();
+                final java.lang.reflect.Method follow = TrainControlUI.class.getDeclaredMethod("followTheTurn", String.class);
+
+                follow.setAccessible(true);
+
+                final Object[] followed = new Object[1];
+
+                final String train = standing.getCurrentLocomotive().getName();
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        followed[0] = follow.invoke(window, train);
+                    }
+                    catch (ReflectiveOperationException failed)
+                    {
+                        throw new IllegalStateException(failed);
+                    }
+                });
+
+                assertNull(followed[0], "a train turned round by hand was followed into the setup while a route runs");
+
+                assertTrue(session.snapshotSetup().similar(before), "a train turned round by hand changed the setup while a"
+                    + " route runs");
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+
+            // AT REST the menu is live
+            for (javax.swing.JMenuItem item : timetableMenuItems(window))
+            {
+                assertTrue(item.isEnabled(), item.getText() + " is greyed in the timetable's menu at rest");
+            }
+
+            // AND THE TURN IS FOLLOWED at rest, so its refusal above hides something
+            final org.json.JSONObject unturned = session.snapshotSetup();
+            final String trainTurned = aTrainOnASquareWithTwoFacings(window, session).getCurrentLocomotive().getName();
+            final java.lang.reflect.Method turn = TrainControlUI.class.getDeclaredMethod("followTheTurn", String.class);
+
+            turn.setAccessible(true);
+
+            final Object[] turned = new Object[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    turned[0] = turn.invoke(window, trainTurned);
+                }
+                catch (ReflectiveOperationException failed)
+                {
+                    throw new IllegalStateException(failed);
+                }
+            });
+
+            assertNotNull(turned[0], "precondition: a turn was not followed at rest, so its refusal while a route runs shows"
+                + " nothing");
+
+            assertFalse(session.snapshotSetup().similar(unturned), "precondition: following a turn wrote nothing at rest");
+        }
+        finally
+        {
+            answering.stop();
+
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
+    private static Object fieldOf(String name, Object on)
+    {
+        try
+        {
+            java.lang.reflect.Field field = on.getClass().getDeclaredField(name);
+
+            field.setAccessible(true);
+
+            return field.get(on);
+        }
+        catch (ReflectiveOperationException failed)
+        {
+            throw new IllegalStateException(failed);
+        }
+    }
+
+    /** A train standing on a square with two facings it may take, as a hand-turned train is followed on. */
+    private static Point aTrainOnASquareWithTwoFacings(TrainControlUI ui, AutonomySession session)
+    {
+        for (Point point : ui.getModel().getAutoLayout().getPoints())
+        {
+            if (point.getCurrentLocomotive() == null) continue;
+
+            TileKey square = session.getStationIndex().squareOf(point.getName());
+
+            if (square != null && session.facingChoices(square).size() == 2) return point;
+        }
+
+        throw new SkipException("no train stands on a square with two facings");
+    }
+
+    /** The items of the timetable's right-click menu, built now. */
+    private static List<javax.swing.JMenuItem> timetableMenuItems(final TrainControlUI ui) throws Exception
+    {
+        final List<javax.swing.JMenuItem> out = new ArrayList<>();
+
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.RightClickTimetableMenu$RightClickMenu");
+
+        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(
+            org.traincontrol.gui.RightClickTimetableMenu.class, TrainControlUI.class, java.awt.event.MouseEvent.class);
+
+        make.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                javax.swing.JPopupMenu menu = (javax.swing.JPopupMenu) make.newInstance(
+                    new org.traincontrol.gui.RightClickTimetableMenu(ui), ui, null);
+
+                for (Component child : menu.getComponents())
+                {
+                    if (child instanceof javax.swing.JMenuItem) out.add((javax.swing.JMenuItem) child);
+                }
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new IllegalStateException(failed);
+            }
+        });
+
+        return out;
+    }
+
     // ---------------------------------------------------------------- the route
 
     /**

@@ -14025,7 +14025,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (this.model.hasAutoLayout())
                 {
-                    if (this.isAutonomyBusy())
+                    if (this.aRunHoldsTheSetup())
                     {
                         this.applyAutoRouteListSelections();
 
@@ -14042,7 +14042,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         restoreRoutingLogicSelection();
 
                         JOptionPane.showMessageDialog(this,
-                            I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                            whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                     }
                     else
                     {
@@ -14896,7 +14896,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private org.traincontrol.automationui.TileGraph.TileKey followTheTurn(String name)
     {
-        if (isAutonomyBusy()) return null;
+        if (aRunHoldsTheSetup()) return null;
 
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
@@ -24576,11 +24576,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            if (this.isAutonomyBusy())
+            if (this.aRunHoldsTheSetup())
             {
                 JOptionPane.showMessageDialog(
                     this,
-                    I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop")
+                    whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop")
                 );
                 return;
             }
@@ -24603,9 +24603,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // ASKED AGAIN AFTER THE QUESTION, as Delete Entry asks (OB-260, RSA48-C1): it can stay open as long as the
             // operator likes, and a run may have started meanwhile
-            if (this.isAutonomyBusy())
+            if (this.aRunHoldsTheSetup())
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;
             }
 
@@ -29993,10 +29993,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 if (this.model.hasAutoLayout())
                 {
-                    if (this.isAutonomyBusy())
+                    if (this.aRunHoldsTheSetup())
                     {
                         this.applyAutoRouteListSelections();
-                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                        JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                     }
                     else
                     {
@@ -30022,9 +30022,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() ->
             {
-                if (this.isAutonomyBusy())
+                if (this.aRunHoldsTheSetup())
                 {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 }
                 else
                 {
@@ -30293,9 +30293,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() ->
             {
-                if (this.isAutonomyBusy())
+                if (this.aRunHoldsTheSetup())
                 {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 }
                 else
                 {
@@ -30844,9 +30844,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            if (this.isAutonomyBusy())
+            if (this.aRunHoldsTheSetup())
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;
             }
             
@@ -30880,9 +30880,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // ASKED AGAIN AFTER THE QUESTION (OB-260): it can stay open as long as the operator likes, and a run may
                 // have started meanwhile
-                if (this.isAutonomyBusy())
+                if (this.aRunHoldsTheSetup())
                 {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                     return;
                 }
 
@@ -30913,9 +30913,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            if (this.isAutonomyBusy())
+            if (this.aRunHoldsTheSetup())
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;
             }
             
@@ -30933,9 +30933,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     // ASKED AGAIN AFTER THE QUESTION, as the other timetable doors ask (RSA49-C2): it can stay open as
                     // long as the operator likes, and a run started meanwhile may be waiting on this entry's delay
-                    if (this.isAutonomyBusy())
+                    if (this.aRunHoldsTheSetup())
                     {
-                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                        JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                         return;
                     }
 
@@ -30959,9 +30959,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
-            if (this.isAutonomyBusy())
+            if (this.aRunHoldsTheSetup())
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;
             }
             
@@ -30994,9 +30994,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // ASKED AGAIN AFTER THE QUESTION (RSA48-C1): a reset under a timetable started meanwhile would set back the
             // execution times its loop waits on
-            if (this.isAutonomyBusy())
+            if (this.aRunHoldsTheSetup())
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
                 return;
             }
 
@@ -32651,11 +32651,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // WHILE AUTONOMY IS BUSY, not only while the railway runs (RSA12-C1): Return Home plans before any train moves, and
         // a setting written then ran under the plan - the same question every other setup refusal asks (RLV13-C3)
-        if (this.isAutonomyBusy())
+        if (this.aRunHoldsTheSetup())
         {
             JOptionPane.showMessageDialog(
                 this,
-                I18n.t("autolayout.ui.errorUnableToChangeSettingsWhileTrainsRunning")
+                whyTheSetupIsHeld("autolayout.ui.errorUnableToChangeSettingsWhileTrainsRunning")
             );
             loadAutoLayoutSettings();
             return true;
