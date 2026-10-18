@@ -2309,6 +2309,45 @@ public class LayoutEditor extends PositionAwareJFrame
         return autonomyPanel;
     }
 
+    /**
+     * The square of the train drawn under a click, where the autonomy tool armed takes a train for its station - Test a
+     * Path and Why Not Moving? (OB-354).  A train is drawn over the captions and reaches past its tile on a curve, so the
+     * click lands on a caption or on the next square, neither of which is the station it stands on.
+     *
+     * @param e the click, in its own component's coordinates
+     * @return the square the train stands on, or null where none is drawn there or the tool does not ask
+     */
+    LayoutLabel trainClicked(MouseEvent e)
+    {
+        if (e == null || e.getComponent() == null || grid == null || autonomyPanel == null
+            || !autonomyPanel.takesATrainForItsStation())
+        {
+            return null;
+        }
+
+        // The square clicked first, where its own train is drawn there too
+        if (e.getComponent() instanceof LayoutLabel && ((LayoutLabel) e.getComponent()).trainDrawnAt(e.getPoint()))
+        {
+            return (LayoutLabel) e.getComponent();
+        }
+
+        for (int x = 0; grid.getValueAt(x, 0) != null; x++)
+        {
+            for (int y = 0; grid.getValueAt(x, y) != null; y++)
+            {
+                LayoutLabel square = grid.getValueAt(x, y);
+
+                if (square.getParent() != null && square.trainDrawnAt(
+                    javax.swing.SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), square)))
+                {
+                    return square;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
     {
         // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2) - kept only by a release on its square with the pointer
@@ -2326,8 +2365,12 @@ public class LayoutEditor extends PositionAwareJFrame
         // and less surprising than intercepting events before they get here.
         if (isAutonomyMode())
         {
-            int x = getX(label);
-            int y = getY(label);
+            // A TRAIN CLICKED IS ITS STATION, to the tools that ask for a station (OB-354; Adam: "if clicking on a
+            // locomotive in test a path / why not moving, make it register a click on the station.")
+            LayoutLabel train = javax.swing.SwingUtilities.isRightMouseButton(e) ? null : trainClicked(e);
+
+            int x = getX(train != null ? train : label);
+            int y = getY(train != null ? train : label);
 
             if (x >= 0 && y >= 0)
             {

@@ -1179,6 +1179,18 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Whether a click on a train drawn on the diagram is a click on the station it stands on: while Test a Path or Why Not
+     * Moving? waits for a station and no gesture has the click first (OB-354).
+     *
+     * @return true where the train's square is the answer
+     */
+    public boolean takesATrainForItsStation()
+    {
+        return (tool == Tool.TEST || tool == Tool.WHY) && tailFor == null && oneWayFrom == null && signalFor == null
+            && blockingFor == null;
+    }
+
+    /**
      * Whether a tool is armed or a two-click gesture is half made.
      *
      * ONE DEFINITION, asked by `putToolsDown` and by `cancelPendingGesture`.  It was written out twice

@@ -2285,6 +2285,27 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
+     * Whether the train `paintTrainOverCaptions` draws for this square covers a point (OB-354): it is drawn over the
+     * captions and reaches past the tile on a curve, so a click on it can land on a caption or on the next square.
+     *
+     * @param at the point, in this square's coordinates
+     * @return true where a train is drawn there
+     */
+    public boolean trainDrawnAt(java.awt.Point at)
+    {
+        TileOverlay overlay = autonomyOverlay;
+
+        if (at == null || overlay == null || overlay.isBlank() || !overlay.hasTrain() || !trainsShown.getAsBoolean())
+        {
+            return false;
+        }
+
+        java.awt.Shape area = overlay.trainArea(getWidth(), getHeight(), theTrainsRoadCentre(overlay, autonomyAnnotation));
+
+        return area != null && area.contains(at);
+    }
+
+    /**
      * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square is
      * drawn (Adam, 2026-10-10: *"make the stations spill over onto adjacent tiles"*) - `TileAnnotation.paintSpill`.
      *

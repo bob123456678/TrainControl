@@ -205,10 +205,13 @@ public class LayoutGrid
             // The event is CONVERTED first: the menu opens at the coordinates it is given, and the
             // caption's coordinates are not the square's - the popup would appear offset by however
             // far the label sits from the corner of its tile.
+            // AND A LEFT CLICK ON A TRAIN drawn over the name, to a tool that takes it for its station (OB-354): the editor
+            // finds the train's square
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                if (handle != square && javax.swing.SwingUtilities.isRightMouseButton(e))
+                if (handle != square && (javax.swing.SwingUtilities.isRightMouseButton(e)
+                    || editor.trainClicked(e) != null))
                 {
                     editor.receiveClickEvent(
                         javax.swing.SwingUtilities.convertMouseEvent(handle, e, square), square);

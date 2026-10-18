@@ -980,8 +980,7 @@ public class TileOverlay
             // waiting is the thing a glance at the diagram could not answer.
             // And where one stands still (Adam, 2026-10-01), with a path or without (OB-317): the run marks nothing with
             // the dot any more.
-            java.awt.image.BufferedImage picture =
-                moving || parked || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
+            java.awt.image.BufferedImage picture = drawsTheIcon() ? trainIcon() : null;
 
             // GREY FOR A PAUSED TRAIN (FR-117; Adam, 2026-10-09: "Inactive locomotive icons go from black to gray")
             if (picture != null && paused) picture = pausedIconOf(picture);
@@ -992,12 +991,7 @@ public class TileOverlay
                 // partial alpha on the Graphics, and an icon drawn through that is a grey smudge.
                 g.setComposite(java.awt.AlphaComposite.SrcOver);
 
-                int side = (int) Math.round(Math.min(width, height) * ICON_SCALE);
-
-                // Never smaller than the dot it replaces: at the smallest tile size a shape scaled
-                // by a fraction becomes a few grey pixels, which is less legible than the dot and
-                // would make this a regression for anybody running a compact diagram.
-                side = Math.max(side, Math.max(6, Math.min(width, height) / 3));
+                int side = iconSide(width, height);
 
                 java.awt.geom.AffineTransform wasAt = g.getTransform();
 
@@ -1032,7 +1026,7 @@ public class TileOverlay
             {
                 // An outline says which track is claimed; it cannot say which part of it holds the
                 // train.  The dot is the diagram's equivalent of the graph labelling its node.
-                int diameter = Math.max(6, Math.min(width, height) / 3);
+                int diameter = dotDiameter(width, height);
 
                 g.setComposite(java.awt.AlphaComposite.getInstance(
                     java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
@@ -1050,6 +1044,50 @@ public class TileOverlay
 
             if (oldHint != null) g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldHint);
         }
+    }
+
+    /** Whether the train is drawn as the locomotive icon rather than the dot. */
+    private boolean drawsTheIcon()
+    {
+        return moving || parked || !ICON_ONLY_WHILE_MOVING;
+    }
+
+    /**
+     * How wide the locomotive icon is drawn on a tile of this size.
+     *
+     * Never smaller than the dot it replaces: at the smallest tile size a shape scaled by a fraction becomes a few grey
+     * pixels, which is less legible than the dot and would make this a regression for anybody running a compact diagram.
+     */
+    private static int iconSide(int width, int height)
+    {
+        return Math.max((int) Math.round(Math.min(width, height) * ICON_SCALE), dotDiameter(width, height));
+    }
+
+    /** How wide the dot is drawn on a tile of this size. */
+    private static int dotDiameter(int width, int height)
+    {
+        return Math.max(6, Math.min(width, height) / 3);
+    }
+
+    /**
+     * Where the train `paintTrain` draws lies, in the tile's coordinates, so a click on it can be taken as a click on its
+     * square (OB-354) - a disc as wide as the icon, or the dot, round the middle of the train's road; the icon reaches
+     * past the tile on a curve, and so may this.
+     *
+     * @param width the tile width
+     * @param height the tile height
+     * @param trackCentre the middle of the train's own road on this tile, or null if it is not known
+     * @return the area, or null when no train is drawn here
+     */
+    public java.awt.Shape trainArea(int width, int height, int[] trackCentre)
+    {
+        if (!train) return null;
+
+        int[] on = middle(trackCentre, width, height);
+
+        int side = drawsTheIcon() ? iconSide(width, height) : dotDiameter(width, height);
+
+        return new java.awt.geom.Ellipse2D.Double(on[0] - side / 2.0, on[1] - side / 2.0, side, side);
     }
 
     /**
