@@ -27416,7 +27416,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Return Home's right-click menu: Place All Trains at Their Homes, which puts each homed train on its home in the setup
+     * Return Home's right-click menu: Run Trains to Their Homes, which is the button itself and is greyed with the button's
+     * own reason while the button is, then Place All Trains at Their Homes, which puts each homed train on its home in the setup
      * and takes the others off the layout without sending anything to the railway (FR-129).  The item is greyed with its
      * reason while `whyTheTrainsCannotBePlacedAtTheirHomes` says no.
      *
@@ -27425,6 +27426,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     javax.swing.JPopupMenu buildReturnHomeMenu()
     {
         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        // The button's own state and tooltip, so the item can never offer what the button refuses (FR-129)
+        javax.swing.JMenuItem run = new javax.swing.JMenuItem(I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"));
+
+        run.setEnabled(isReturnHomeOffered());
+        run.setToolTipText(whyReturnHomeIsNotOffered());
+        run.addActionListener(e -> requestReturnToHome());
+
+        menu.add(run);
 
         String why = whyTheTrainsCannotBePlacedAtTheirHomes();
 

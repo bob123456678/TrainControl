@@ -73,8 +73,8 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         return (javax.swing.JButton) field.get(ui);
     }
 
-    /** The one item of the popup the last right-click opened. */
-    private static JMenuItem theItem(TrainControlUI ui) throws Exception
+    /** The menu a right-click on the button opens, which holds Run Trains to Their Homes and, below it, Place All. */
+    private static JPopupMenu theMenu(TrainControlUI ui) throws Exception
     {
         JPopupMenu last = ui.returnHomePopupForTest();
 
@@ -87,9 +87,21 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         assertNotSame(popup, last, "a right-click on Return Home, with the button "
             + (returnHomeButton(ui).isEnabled() ? "enabled" : "greyed") + ", opened no new menu");
 
-        assertEquals(popup.getComponentCount(), 1, "the menu holds more or less than the one item");
+        assertEquals(popup.getComponentCount(), 2, "the menu holds more or less than the two items");
 
-        return (JMenuItem) popup.getComponent(0);
+        return popup;
+    }
+
+    /** Place All Trains at Their Homes, the second item of the popup the last right-click opened. */
+    private static JMenuItem theItem(TrainControlUI ui) throws Exception
+    {
+        return (JMenuItem) theMenu(ui).getComponent(1);
+    }
+
+    /** Run Trains to Their Homes, the first item of the popup the last right-click opened. */
+    private static JMenuItem theRunItem(TrainControlUI ui) throws Exception
+    {
+        return (JMenuItem) theMenu(ui).getComponent(0);
     }
 
     private static void closeDown(TrainControlUI ui, support.LayoutSandbox sandbox, String folderWas) throws Exception
@@ -145,6 +157,21 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
                 assertTrue(item.isEnabled(), "the item is greyed at rest, with homes to place and the button "
                     + (enabled ? "enabled" : "greyed") + ": " + item.getToolTipText());
+
+                // ABOVE it, and the button's own state and reason (FR-129)
+                JMenuItem run = (JMenuItem) ui.returnHomePopupForTest().getComponent(0);
+
+                assertEquals(run.getText(), I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"),
+                    "the first item of the menu is not Run Trains to Their Homes, above Place All Trains at Their Homes");
+
+                assertEquals(run.isEnabled(), enabled, "Run Trains to Their Homes is not enabled exactly when the button is,"
+                    + " with the button " + (enabled ? "enabled" : "greyed"));
+
+                if (!enabled)
+                {
+                    assertEquals(run.getToolTipText(), button.getToolTipText(),
+                        "the greyed Run Trains to Their Homes does not say what the button says");
+                }
             }
         }
         finally
@@ -294,6 +321,73 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         {
             if (ui != null && ui.getModel().getRoute(probe) != null) ui.getModel().deleteRoute(probe);
 
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
+    /**
+     * Run Trains to Their Homes is the button: pressed in the same state it gets the same answer through the same door.
+     * An open editor refuses both with the one sentence, and the item does not start a run the button would not.
+     *
+     * MUTATION: have the item do anything but call the button's `requestReturnToHome`, and the two answers differ.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testRunTrainsToTheirHomesIsTheButtonItself() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final javax.swing.JButton button = returnHomeButton(ui);
+
+            SwingUtilities.invokeAndWait(() -> button.setEnabled(true));
+
+            TileKey square = null;
+
+            for (TileKey tile : ui.getAutonomySession().getGraph().getTiles().keySet())
+            {
+                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
+            }
+
+            assertNotNull(square, "precondition: no square on the main page");
+
+            openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
+
+            try
+            {
+                assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+
+                final JMenuItem run = theRunItem(ui);
+
+                assertTrue(run.isEnabled(), "precondition: the item is greyed with the button enabled");
+
+                List<String> byButton = answering(message -> 0, () -> button.doClick());
+                List<String> byItem = answering(message -> 0, () -> run.doClick());
+
+                assertEquals(byButton.size(), 1, "precondition: the button, with an editor open, did not refuse once: "
+                    + byButton);
+
+                assertEquals(byItem, byButton, "Run Trains to Their Homes did not meet the same refusal as the button");
+            }
+            finally
+            {
+                closeTheEditor(ui);
+            }
+        }
+        finally
+        {
             closeDown(ui, sandbox, folderWas);
         }
     }
