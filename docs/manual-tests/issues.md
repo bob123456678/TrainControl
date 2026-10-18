@@ -378,24 +378,6 @@ Adam, 2026-10-18: "Before I do MT's, let's further lighten the surround of the t
 
 Adam, 2026-10-18: "Propose pretiffications for the link icon, such as to make the arrow sharper / different / more proportional to the chosen size, or other ideas."  Of the options drawn for him: "I like the F idea, but make it with an all black arrow without the gray dash"; then "G is good, but make sure you match the edges of the signal tile.  does that mean we should sharpen the signal tile, if it hasn't been sharpened yet?" - the signal had not been redrawn: at the Large size its band's top edge was #999 where every other track tile's is #666, a lighter stripe against the straights, with a stray green pixel on its bar; at the Small its lamps had a dark fringe and its bar's ends were shaded unevenly.  Then: "Build G and the sharpened signals now".
 
-### OB-355 - 2026-10-17 - return home incorrect greying reason
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-17 23:41  
-**Build:** commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-"every locomotive is already at its home" is shown, and return home is greyed out, even if the reason is that locomotives are inactive but not on their stations.
-
-### OB-356 - 2026-10-17 - station icons
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-17 23:42  
-**Build:** commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in tc3 kreds 261016 0810.zip, 3,9 (ST60rear is shown as a square (terminus) even though it is configured as a normal stations with trains not turning around there.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -412,6 +394,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-17 | OB-356 | bug | A station whose track runs out on one side says in its Changing Direction menu why it is drawn as a terminus; the drawing itself was right (`2b9e3d61`). | - | MT-757 |
+| 2026-10-17 | OB-355 | bug | Return Home names the paused trains away from home instead of saying every locomotive is home (`18d48af7`). | - | MT-756 |
 | 2026-10-17 | OB-354 | bug | A click on a train in Test a Path or Why not Moving? picks the station it stands on (`298661c4`). | - | MT-752 |
 | 2026-10-17 | OB-353 | bug | Track joined to no station draws no arrows and is greyed in the editor; other edits still work there (`f6c29656`). | - | MT-751 |
 | 2026-10-17 | OB-352 | bug | Every finding with a square is outlined and flashed when clicked, as "shown more than once" was (`54301fca`). | - | MT-750 |

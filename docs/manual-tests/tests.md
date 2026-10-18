@@ -27,9 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-756](#mt-756) | 2026-10-18 | OB-355: Return Home names the paused trains away from home | fixed unvalidated | OB-355 |
+| [MT-757](#mt-757) | 2026-10-18 | OB-356: a dead-end station says why it is drawn as a terminus | fixed unvalidated | OB-356 |
 
-
-Everything else - 755 of 755 - needs nothing from you unless the area changes again:
+Everything else - 755 of 757 - needs nothing from you unless the area changes again:
 602 **fixed validated** and 153 **superseded**.
 
 ---
@@ -35468,5 +35469,61 @@ the import's popup too, after the connecting notice at start-up.  Claims in
 **Adam, 2026-10-17 (triage).** Works.
 
 *Run against commit 414b0ce3, in English - build\classes, compiled 17 Oct 23:37 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-756"></a>
+### MT-756 - 2026-10-18 - OB-355: Return Home names the paused trains away from home
+
+**Disposition:** fixed unvalidated
+**From:** OB-355
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. With autonomy loaded and stopped, put every homed train on its home (right-click Return Home > Place All Trains at
+   Their Homes), then place one homed train on another station.
+2. Hover over Return Home.  Then pause that train (untick Is Active, or its card's pause button on the Auto tab) and
+   hover again; right-click Return Home and hover over Run Trains to Their Homes.
+3. Set it going again and hover once more.
+
+**Expected**
+
+- Step 2: before the pause, Return Home is offered.  Once paused, it is greyed and its tooltip names the train as away
+  from its home but paused, and says how to set it going - not that every locomotive is already at its home.  Run Trains
+  to Their Homes says the same.  The button changes as soon as you pause the train.
+- Step 3: Return Home is offered again.  With every train home and none paused away, it says every locomotive is home.
+
+*What this is:* OB-355 (`18d48af7`): the planner counted a paused train as home wherever it stood; a new outcome tells "the only trains
+away are paused" from "everyone is home", and the button refreshes when a train is paused or set going.  Claim
+`regression.testReturnHomeRightClickPlacesTheTrainsAtHome.testAPausedTrainAwayFromHomeIsNotSaidToBeHome`.
+
+---
+
+<a id="mt-757"></a>
+### MT-757 - 2026-10-18 - OB-356: a dead-end station says why it is drawn as a terminus
+
+**Disposition:** fixed unvalidated
+**From:** OB-356
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open the layout in `tc3 kreds 261016 0810.zip` and right-click ST60rear (3,9) on the track diagram, then in the
+   autonomy editor.
+2. Open its `Changing Direction` submenu.
+
+**Expected**
+
+- Step 2: under the heading, a greyed line: "Drawn as a terminus: the track runs out to the west, so no train can go
+  through."  An ordinary through station shows no such line.
+- ST60rear is still drawn as a terminus: its track does end on the west side (columns 0 to 2 are separate lines), so it
+  is one in fact (FR-118).  To clear its setup-check error, set it to Trains Must Change Direction Here, or make it no
+  station.  Note that with switches 105 and 39 arrowed as they are, no train can arrive at ST60rear, St60a or St59.
+
+*What this is:* OB-356 (`2b9e3d61`): the square is right - the shape follows the track, whatever the turning setting - so nothing about
+the drawing or the running changed; the menu now says why.  Claims `core.testADeadEndSaysWhyItIsATerminus`.
 
 ---
