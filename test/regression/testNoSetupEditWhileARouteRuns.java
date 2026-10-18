@@ -225,7 +225,7 @@ public class testNoSetupEditWhileARouteRuns
             final org.traincontrol.base.Locomotive placing = ui.getModel().getLocByName(active);
             final Point wasAt = railway.getLocomotiveLocation(placing);
             final String setupBefore = session.isAutoDestination(chosen) + " " + setupOf(session, chosen);
-            final String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+            final String refusal = I18n.t(ANY_RUN);
 
             answering.start();
 
@@ -383,7 +383,7 @@ public class testNoSetupEditWhileARouteRuns
             ui = openTheWindow();
 
             final TrainControlUI window = ui;
-            final String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+            final String refusal = I18n.t(ANY_RUN);
             final org.traincontrol.base.LayoutDiagram page = ui.getModel().getLayout("1 - Main");
 
             assertNotNull(page, "precondition: no page 1 - Main");
@@ -401,7 +401,7 @@ public class testNoSetupEditWhileARouteRuns
 
             try
             {
-                assertEquals(ui.whyAutonomyEditorCannotOpen(), "autolayout.errorCannotEditWhileRunning", "the autonomy"
+                assertEquals(ui.whyAutonomyEditorCannotOpen(), ANY_RUN, "the autonomy"
                     + " editor may open while a route runs, and Open Full Editor is live");
 
                 for (final Boolean autonomy : new Boolean[] {Boolean.TRUE, Boolean.FALSE})
@@ -600,7 +600,7 @@ public class testNoSetupEditWhileARouteRuns
             final TrainControlUI window = ui;
             final AutonomySession session = ui.getAutonomySession();
             final Object panel = ui.getAutonomyViewerPanel();
-            final String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+            final String refusal = I18n.t(ANY_RUN);
             final String anyRun = I18n.t(ANY_RUN);
 
             // A PAGE'S TICK, from the menu opened at rest
@@ -747,7 +747,7 @@ public class testNoSetupEditWhileARouteRuns
             final TrainControlUI window = ui;
             final AutonomySession session = ui.getAutonomySession();
             final org.traincontrol.base.LayoutDiagram page = ui.getModel().getLayout("1 - Main");
-            final String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+            final String refusal = I18n.t(ANY_RUN);
 
             assertNotNull(page, "precondition: no page 1 - Main");
 

@@ -958,7 +958,7 @@ public class AutonomyViewerPanel extends JPanel
         // NOT WHILE AUTONOMY RUNS (RSA10-A1): it writes a configuration, and may tick pages out, under the railway
         if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
             return;
         }
@@ -1825,7 +1825,7 @@ public class AutonomyViewerPanel extends JPanel
         // NOT WHILE AUTONOMY RUNS, as Import, Export and Delete are not (RSA10-A1) - before anything is asked
         if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
             return;
         }
@@ -1914,7 +1914,7 @@ public class AutonomyViewerPanel extends JPanel
         // NOT WHILE AUTONOMY RUNS (RSA10-A1): it renames the running configuration's file under the railway
         if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
             return;
         }
@@ -1958,7 +1958,7 @@ public class AutonomyViewerPanel extends JPanel
         // tidying up a list of configurations.
         if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
             return;
         }
 

@@ -1275,14 +1275,17 @@ public class testEditorSurfaceRules
 
         java.util.List<String> refusals = new java.util.ArrayList<>();
 
-        String opening = "I18n.t(" + QUOTE;
-
-        for (int at = opening.length(); (at = opener.indexOf(opening, at)) >= 0; at++)
+        // A refusal is said either as its own sentence or, where a run holds the setup, as the one that names what runs
+        // (`whyTheSetupIsHeld`, which takes the autonomy sentence's key)
+        for (String opening : new String[] {"I18n.t(" + QUOTE, "whyTheSetupIsHeld(" + QUOTE})
         {
-            int from = at + opening.length();
-            int to = opener.indexOf(QUOTE, from);
+            for (int at = opening.length(); (at = opener.indexOf(opening, at)) >= 0; at++)
+            {
+                int from = at + opening.length();
+                int to = opener.indexOf(QUOTE, from);
 
-            if (to > from) refusals.add(opener.substring(from, to));
+                if (to > from) refusals.add(opener.substring(from, to));
+            }
         }
 
         // THREE LITERALS AND ONE INDIRECTION since OB-126.

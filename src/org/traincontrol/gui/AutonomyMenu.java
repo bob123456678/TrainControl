@@ -760,7 +760,7 @@ public class AutonomyMenu extends JMenu
     {
         if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
             return;
         }
 
@@ -826,7 +826,7 @@ public class AutonomyMenu extends JMenu
                     box.setSelected(!box.isSelected());
 
                     JOptionPane.showMessageDialog(ui,
-                        I18n.t("autolayout.errorCannotEditWhileRunning"));
+                        ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
                     return;
                 }

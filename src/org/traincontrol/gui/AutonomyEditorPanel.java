@@ -3125,7 +3125,7 @@ public class AutonomyEditorPanel extends JPanel
         // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
         if (window == null || !window.aRunHoldsTheSetup()) return false;
 
-        JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.errorCannotEditWhileRunning"));
+        JOptionPane.showMessageDialog(owner(), window.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
         return true;
     }
@@ -3144,7 +3144,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (window == null || !window.aRunHoldsTheSetup()) return false;
 
-        say(hint, I18n.t("autolayout.errorCannotEditWhileRunning"));
+        say(hint, window.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
         return true;
     }

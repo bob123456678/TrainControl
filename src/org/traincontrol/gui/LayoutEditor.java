@@ -6712,8 +6712,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             if (autonomy && (session == null || parent.aRunHoldsTheSetup()))
             {
                 javax.swing.JOptionPane.showMessageDialog(this,
-                    I18n.t(session == null ? "autosetup.ui.errorNoSetupToEdit"
-                        : "autolayout.errorCannotEditWhileRunning"));
+                    session == null ? I18n.t("autosetup.ui.errorNoSetupToEdit")
+                        : parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
                 autonomy = false;
                 session = null;
@@ -6900,7 +6900,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             if ((parent.getModel() != null && parent.getModel().isAutonomyRunning()) || parent.aRunHoldsTheSetup())
             {
                 JOptionPane.showMessageDialog(this,
-                    I18n.t("autolayout.errorCannotEditWhileRunning"));
+                    parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
                 return false;
             }
@@ -7256,7 +7256,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         {
             autonomyModeButton.setEnabled(false);
             autonomyModeButton.setToolTipText(
-                AutonomyEditorPanel.wrapped(I18n.t("autolayout.errorCannotEditWhileRunning")));
+                AutonomyEditorPanel.wrapped(parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning")));
         }
 
         return column;
@@ -8001,7 +8001,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
             if (parent.getModel().isAutonomyRunning() || parent.aRunHoldsTheSetup())
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+                JOptionPane.showMessageDialog(this, parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
                 return;
             }
 

@@ -5951,7 +5951,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         // AND NOT WHILE A ROUTE RUNS, as no setup edit is made (`aRunHoldsTheSetup`)
-        if (this.aRunHoldsTheSetup()) return "autolayout.errorCannotEditWhileRunning";
+        // naming what runs where it is not autonomy (`whyTheSetupIsHeld`)
+        if (this.aRunHoldsTheSetup()) return isAutonomyBusy() ? "autolayout.errorCannotEditWhileRunning"
+            : "ui.main.tooltip.placeAtHomesWhileRunning";
 
         if (!this.editLayoutButton.isEnabled() && !isLayoutEditorOpen())
         {
@@ -6064,7 +6066,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the answer while trains are running is nothing at all - a route included (`aRunHoldsTheSetup`).
         if (this.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
             return;
         }
 
@@ -6167,7 +6169,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     setEditLayoutEnabled(true);
 
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+                    JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
                     return;
                 }
