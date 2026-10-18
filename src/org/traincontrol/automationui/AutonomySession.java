@@ -5807,13 +5807,11 @@ public class AutonomySession
      * with no outgoing edge is a train that arrived and cannot leave.  That is the same sentence the
      * walk this replaced was trying to write, and the builder had already written it.
      *
-     * Every point, not only the stations: `badCopies` asks about destinations because being sent
-     * somewhere and stranded is the serious case, while a plain point trains only pass through gets the
-     * same finding at INFO.  `checkTrappedArrivals` makes that distinction; this only finds them.
+     * STATIONS ONLY, and only an arrival a train can make (OB-361; Adam: *"MainLine isn't a station, and it is impossible
+     * for trains to arrive from the west anyway, so both these conditions should disqualify the notice."*): no train is
+     * sent to a plain point, and a copy no train reaches is a move no train makes.
      *
-     * Each with the sides its trapped arrivals come in by (OB-201) - the builder's own copy says, so a trapped copy no
-     * train can reach is named by its side too: closing arrivals from that side is one of the three ways out, and the
-     * finding names it.
+     * Each with the sides its trapped arrivals come in by (OB-201) - the builder's own copy says.
      *
      * Empty when the setup will not build, deliberately - see `builtForInspection`.
      *
@@ -5844,6 +5842,8 @@ public class AutonomySession
 
         org.json.JSONArray points = built.getJSONArray("points");
 
+        java.util.Set<String> reached = copiesATrainReaches(built);
+
         for (int i = 0; i < points.length(); i++)
         {
             String name = points.getJSONObject(i).getString("name");
@@ -5853,6 +5853,9 @@ public class AutonomySession
             TileKey tile = byName.get(name);
 
             if (tile == null) continue;
+
+            // NOT A PLAIN POINT, NOR AN ARRIVAL NO TRAIN MAKES (OB-361)
+            if (!store.isStation(tile) || !reached.contains(name)) continue;
 
             // A square the operator has said trains may turn round at is not trapped: turning IS the
             // way out, and the builder expresses that by emitting the turning copy.
@@ -5891,6 +5894,63 @@ public class AutonomySession
         }
 
         return out;
+    }
+
+    /**
+     * The copies a train can arrive at on the built railway: walked on along its edges from every station and every copy a
+     * train stands on, and the copies trains stand on (OB-361).
+     *
+     * @param built the built configuration
+     * @return the names of those copies
+     */
+    private static java.util.Set<String> copiesATrainReaches(org.json.JSONObject built)
+    {
+        Map<String, List<String>> onward = new java.util.HashMap<>();
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONObject edge = edges.getJSONObject(i);
+
+            onward.computeIfAbsent(edge.getString("start"), k -> new ArrayList<String>()).add(edge.getString("end"));
+        }
+
+        java.util.Set<String> reached = new java.util.HashSet<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        java.util.Deque<String> toVisit = new java.util.ArrayDeque<>();
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.getJSONObject(i);
+
+            boolean standing = point.has(AutonomyBuilder.LOCOMOTIVE);
+
+            if (standing) reached.add(point.getString("name"));
+
+            if ((standing || point.optBoolean("station", false)) && seen.add(point.getString("name")))
+            {
+                toVisit.add(point.getString("name"));
+            }
+        }
+
+        while (!toVisit.isEmpty())
+        {
+            List<String> next = onward.get(toVisit.poll());
+
+            if (next == null) continue;
+
+            for (String copy : next)
+            {
+                reached.add(copy);
+
+                if (seen.add(copy)) toVisit.add(copy);
+            }
+        }
+
+        return reached;
     }
 
     /**

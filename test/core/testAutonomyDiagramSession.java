@@ -888,6 +888,9 @@ public class testAutonomyDiagramSession
     {
         threeStationsInARow("OB-201");
 
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
+
         TileKey beta = new TileKey("main", 3, 1);
 
         // EAST OF BETA, ONE WAY TOWARDS IT: a train arriving from the west cannot go on, one from the east can
@@ -932,6 +935,9 @@ public class testAutonomyDiagramSession
     {
         threeStationsInARow("RSA37-B1");
 
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
+
         TileKey beta = new TileKey("main", 3, 1);
 
         // EAST OF BETA, ONE WAY TOWARDS IT: a train arriving from the west cannot go on
@@ -956,10 +962,10 @@ public class testAutonomyDiagramSession
 
     /**
      * The trapped-arrival warning offers to close arrivals only where the arrivals menu can do it (RSA37-B1): not at a
-     * station trapped from every way in, whose last open side the menu will not shut, nor at a plain point, which has no
-     * arrivals menu.  There it offers the other two ways out, and names the side once.
+     * station trapped from every way in, whose last open side the menu will not shut.  There it offers the other two ways
+     * out, and names the side once.  A plain point is not told at all: no train is sent there (OB-361).
      *
-     * MUTATION: offer closing arrivals everywhere, or nowhere, and this fails.
+     * MUTATION: offer closing arrivals everywhere, or nowhere, or tell a plain point, and this fails.
      *
      * @throws Exception from the build
      */
@@ -967,6 +973,9 @@ public class testAutonomyDiagramSession
     public void testClosingArrivalsIsOfferedOnlyWhereTheMenuCanDoIt() throws Exception
     {
         threeStationsInARow("RSA37-B1 offered");
+
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
 
         TileKey beta = new TileKey("main", 3, 1);
 
@@ -1006,29 +1015,84 @@ public class testAutonomyDiagramSession
         assertEquals(last.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING, "a"
             + " station is told to close arrivals from its last open way in, which the arrivals menu refuses (RSA37-B1)");
 
-        // A PLAIN POINT, trapped from the west: no arrivals menu at all
+        // AND THE WORDS: the side named once, as where the train comes from, and no more
+        String side = org.traincontrol.util.I18n.t("autosetup.ui.sideE");
+
+        String said = org.traincontrol.util.I18n.f(last.getMessageKey(), "3,1", last.getSubject());
+
+        assertEquals(said.split(java.util.regex.Pattern.quote(side), -1).length - 1, 1, "the advice without closing"
+            + " arrivals names the side other than as where the train comes from: " + said);
+
+        // A PLAIN POINT, trapped from the west, where trains from 1,1 arrive: nothing is sent there, so nothing is said
         session.setBarredArrivals(beta, new LinkedHashSet<Side>());
         session.setDirection(west, new RouteId(0, 0), Direction.BOTH);
         session.setStation(beta, false);
         session.rebuild();
 
-        org.traincontrol.automationui.AutonomyChecks.Finding point = trappedAt(beta);
+        assertTrue(hasACopyWithNoWayOut(beta), "precondition: the plain point 3,1 has no copy a train cannot leave");
 
-        assertNotNull(point, "precondition: the plain point 3,1 is not reported trapped from the west: " + session.check());
+        assertNull(trappedAt(beta), "a plain point is said to trap a train, and no train is sent there (OB-361): "
+            + session.check());
+    }
 
-        assertEquals(point.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.INFO, "precondition: 3,1"
-            + " is not a plain point");
+    /**
+     * An arrival no train can make is not said to be trapped (OB-361; Adam: *"it is impossible for trains to arrive from
+     * the west anyway, so both these conditions should disqualify the notice."*).  3,1 is a station with track east of it
+     * running only towards it, so a train arriving from the west could not go on; then trains stop turning round at 1,1,
+     * the end of the line west of it, and no train arrives at 3,1 from the west at all.
+     *
+     * MUTATION: say it for a copy no train reaches, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAnArrivalNoTrainMakesIsNotTrapped() throws Exception
+    {
+        threeStationsInARow("OB-361 unreached");
 
-        assertEquals(point.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING, "a"
-            + " plain point is told to close arrivals, and has no arrivals menu (RSA37-B1)");
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
 
-        // AND THE WORDS: the side named once, as where the train comes from, and no more
-        String side = org.traincontrol.util.I18n.t("autosetup.ui.sideW");
+        TileKey beta = new TileKey("main", 3, 1);
 
-        String said = org.traincontrol.util.I18n.f(point.getMessageKey(), "3,1", point.getSubject());
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.rebuild();
 
-        assertEquals(said.split(java.util.regex.Pattern.quote(side), -1).length - 1, 1, "the advice without closing"
-            + " arrivals names the side other than as where the train comes from: " + said);
+        assertNotNull(trappedAt(beta), "precondition: a train arriving at 3,1 from the west is not reported trapped: "
+            + session.check());
+
+        // AND NOW NO TRAIN ARRIVES FROM THE WEST: trains reaching 1,1, the end of the line, no longer turn round there
+        session.setPointProperty(new TileKey("main", 1, 1), "mustReverse", null);
+        session.rebuild();
+
+        assertTrue(hasACopyWithNoWayOut(beta), "precondition: 3,1 no longer has a copy a train cannot leave, so nothing"
+            + " below is about one no train reaches");
+
+        assertNull(trappedAt(beta), "an arrival at 3,1 from the west, which no train can make, is said to be trapped"
+            + " (OB-361): " + session.check());
+    }
+
+    /** Whether the built railway has a copy of this square that no edge leaves. */
+    private boolean hasACopyWithNoWayOut(TileKey square) throws Exception
+    {
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        Set<String> leaving = new LinkedHashSet<>();
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++) leaving.add(edges.getJSONObject(i).getString("start"));
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.getJSONObject(i);
+
+            if (square.toString().equals(point.optString("square")) && !leaving.contains(point.getString("name"))) return true;
+        }
+
+        return false;
     }
 
     /** The setup check's trapped-arrival finding at this square, whichever advice it gives, or null. */
@@ -2916,6 +2980,14 @@ public class testAutonomyDiagramSession
         for (int x : new int[] {1, 3, 5}) session.setStation(new TileKey("main", x, 1), true);
 
         return page;
+    }
+
+    /** Trains must change direction at both ends of `threeStationsInARow`, so each sets off back along the line. */
+    private void turnTrainsRoundAtBothEnds()
+    {
+        session.setPointProperty(new TileKey("main", 1, 1), "mustReverse", Boolean.TRUE);
+        session.setPointProperty(new TileKey("main", 5, 1), "mustReverse", Boolean.TRUE);
+        session.rebuild();
     }
 
     /** One of the editor panel's own controls, by its field. */

@@ -145,6 +145,35 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         assertTrue(said.isEmpty(), "Signal 3 is said to guard a way in, and trains pass it only going out: " + said);
     }
 
+    /**
+     * No arrival is said to be trapped: MainLine is no station, and no train reaches it from the west.
+     *
+     * MUTATION: give the notice at a square that is no station, or for a side no train arrives by, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testNoArrivalIsSaidToBeTrapped() throws Exception
+    {
+        // THE CASE IS THERE: MainLine's copy for trains from the west has no way out
+        Point fromTheWest = built().getPoint("MainLine (eastbound)");
+
+        assertNotNull(fromTheWest, "precondition: MainLine has no copy for trains arriving from the west");
+
+        assertTrue(built().getNeighbors(fromTheWest).isEmpty(), "precondition: a train arriving at MainLine from the west"
+            + " can go on, so nothing below is about one that cannot");
+
+        List<String> said = new ArrayList<>();
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (AutonomyChecks.isArrivalTrapped(finding.getMessageKey())) said.add(finding.toString());
+        }
+
+        assertTrue(said.isEmpty(), "an arrival no train can make, at a square that is no station, is said to be trapped: "
+            + said);
+    }
+
     /** The setup, built and parsed by the railway. */
     private static Layout built() throws Exception
     {

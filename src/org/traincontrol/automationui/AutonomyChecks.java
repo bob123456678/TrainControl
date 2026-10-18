@@ -269,8 +269,8 @@ public class AutonomyChecks
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
 
     /**
-     * A trapped arrival whose advice leaves out closing arrivals, because the editor cannot close them there: a plain
-     * point has no arrivals menu, and a station's last open way in cannot be shut (RSA37-B1).  The same finding as
+     * A trapped arrival whose advice leaves out closing arrivals, because the editor cannot close them there: a
+     * station's last open way in cannot be shut (RSA37-B1).  The same finding as
      * `ARRIVAL_TRAPPED` in every other respect - `isArrivalTrapped` answers for either.
      */
     public static final String ARRIVAL_TRAPPED_NO_CLOSING = "autosetup.ui.checkArrivalTrappedNoClosing";
@@ -1261,21 +1261,17 @@ public class AutonomyChecks
         {
             TileKey tile = square.getKey();
 
-            ReducedPoint point = reducer.getPoints().get(tile);
-
-            // A NOTICE on a square trains only pass through.  "Could not go on" warns about a place a
-            // train can be SENT and then be stuck; nothing is ever sent to a plain point, so there the
-            // same sentence is a remark about the shape of the track rather than something to fix.
+            // A STATION'S, as `AutonomySession` gathers them: "could not go on" warns about a place a train can be SENT
+            // and then be stuck, and nothing is sent to a plain point (OB-361).
             //
             // ITS SUBJECT IS THE SIDE THE TRAIN COMES IN BY, in words (OB-201; Adam, 2026-09-12: *"This error message
             // should say either close arrivals from <direction>, open the way ahead, or let trains change
             // direction."*) - the square is {0} wherever a finding is shown, and the side is {1}.
             //
             // CLOSING ARRIVALS IS OFFERED ONLY WHERE THE EDITOR CAN DO IT (RSA37-B1): on a station, for sides that are not
-            // its last open way in.  A plain point has no arrivals menu, and a station trapped from every open side would
-            // be left with no way in, which the menu refuses; there the advice is the other two.
-            findings.add(new Finding(
-                point != null && point.isStation() ? Severity.WARNING : Severity.INFO,
+            // its last open way in.  A station trapped from every open side would be left with no way in, which the menu
+            // refuses; there the advice is the other two.
+            findings.add(new Finding(Severity.WARNING,
                 closable != null && closable.contains(tile) ? ARRIVAL_TRAPPED : ARRIVAL_TRAPPED_NO_CLOSING,
                 sidesInWords(square.getValue()), tile));
         }
