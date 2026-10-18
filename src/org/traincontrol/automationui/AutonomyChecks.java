@@ -306,6 +306,14 @@ public class AutonomyChecks
      */
     public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
 
+    /**
+     * One WARNING per sensor address that sensor squares on two or more places share (FR-139).
+     *
+     * The places are the squares, each once, and the message names them by page and square.  A square that builds into
+     * copies is still one place, and a page left out of autonomy has no places.  Address zero or less is no address.
+     */
+    public static final String SENSOR_ADDRESS_SHARED = "autosetup.ui.checkSensorAddressShared";
+
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
 
     /**
@@ -771,6 +779,36 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.ERROR, STATION_NAMED_TWICE, andJoined(squares), station.getValue().get(0),
                 station.getValue().size(), 0, 0, station.getValue()).about(station.getKey()));
+        }
+
+        return findings;
+    }
+
+    /**
+     * One WARNING per sensor address that sensor squares on two or more places share (FR-139).
+     *
+     * A train reported by one of them cannot be told which square it is on, so the setup may take it for the other.  It
+     * changes nothing about how trains run: the graph is built as before.  The places are the squares, each once, and the
+     * sentence names them by page and square.  Nothing is offered to fix it beyond the click, which outlines the squares.
+     *
+     * @param shared each shared address, to the squares that carry it, in reading order
+     * @return the findings
+     */
+    static List<Finding> checkSensorAddressesShared(Map<Integer, List<TileKey>> shared)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (Map.Entry<Integer, List<TileKey>> address : shared.entrySet())
+        {
+            List<String> places = new ArrayList<>();
+
+            for (TileKey square : address.getValue())
+            {
+                places.add("\"" + square.getPage() + "\" (" + square.getX() + "," + square.getY() + ")");
+            }
+
+            findings.add(new Finding(Severity.WARNING, SENSOR_ADDRESS_SHARED, andJoined(places),
+                address.getValue().get(0), address.getValue().size(), address.getKey(), 0, address.getValue()));
         }
 
         return findings;

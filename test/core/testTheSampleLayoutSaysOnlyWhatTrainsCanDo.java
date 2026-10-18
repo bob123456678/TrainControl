@@ -462,6 +462,42 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         return opened;
     }
 
+    /**
+     * The sample's sensor address 1 is on Station A and on PostDeparture, both on Page 1, and the setup check says so
+     * once: a WARNING naming those two squares and no others (FR-139).  The squares that build into copies are counted
+     * in `testASquareThatBuildsIntoCopiesIsNotSharedWithItself`.
+     *
+     * MUTATION: leave either square out of the places, or count one that is listed twice, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testASharedSensorAddressIsSaidOnceNamingBothSquares() throws Exception
+    {
+        List<AutonomyChecks.Finding> shared = new ArrayList<>();
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (AutonomyChecks.SENSOR_ADDRESS_SHARED.equals(finding.getMessageKey())) shared.add(finding);
+        }
+
+        assertEquals(shared.size(), 1, "the sample's sensor address 1 is on two squares, and is not said once: " + shared);
+
+        AutonomyChecks.Finding finding = shared.get(0);
+
+        assertEquals(finding.getSeverity(), AutonomyChecks.Severity.WARNING, "a shared sensor address is not a WARNING: "
+            + finding);
+
+        assertEquals(finding.getDetail(), 1, "the finding does not name address 1: " + finding);
+
+        assertEquals(finding.getRelated().size(), 2, "the places are not the two squares, each counted once: "
+            + finding.getRelated());
+
+        assertEquals(new java.util.HashSet<>(finding.getRelated()),
+            new java.util.HashSet<>(java.util.Arrays.asList(square(7, 5), square(10, 4))),
+            "the finding does not name Station A and PostDeparture: " + finding.getRelated());
+    }
+
     /** A square of the sample's only page. */
     private static TileKey square(int x, int y)
     {

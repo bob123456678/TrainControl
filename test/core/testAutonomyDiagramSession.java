@@ -263,6 +263,138 @@ public class testAutonomyDiagramSession
             "the square the train was moved off still records the road it came in along (AMS-C1, WK7-B1)");
     }
 
+    /**
+     * A sensor address on a square in two places is said once, naming both squares, as a WARNING (FR-139).
+     *
+     * MUTATION: leave the check out of the setup check, or leave one of the two squares out of its places, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASensorAddressOnTwoSquaresIsSaidOnce() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), sensorPage("second", "2", 11)));
+        session.initialize("FR139 shared");
+
+        org.traincontrol.automationui.AutonomyChecks.Finding shared = sharedAddressFinding();
+
+        assertNotNull(shared, "address 11 is on a square of each of two pages, and the setup check does not say so");
+
+        assertEquals(shared.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.WARNING,
+            "a shared sensor address is not a WARNING: " + shared);
+
+        assertEquals(new LinkedHashSet<>(shared.getRelated()),
+            new LinkedHashSet<>(Arrays.asList(new TileKey("main", 1, 1), new TileKey("second", 1, 1))),
+            "the places are not the two squares that carry address 11: " + shared.getRelated());
+    }
+
+    /**
+     * A page autonomy does not use is not one of the places a sensor address is shared between (FR-139).
+     *
+     * The control is the same two squares with both pages in, so the absence below is about the exclusion and not about
+     * a check that has stopped finding anything.
+     *
+     * MUTATION: read the excluded pages out of the sensor check, or leave the excluded page in its places, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAnExcludedPageDoesNotShareItsSensorAddress() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), sensorPage("second", "2", 11)));
+        session.initialize("FR139 excluded");
+
+        assertNotNull(sharedAddressFinding(), "precondition: the two pages are not reported before one is left out");
+
+        session.setPageExcluded("second", true);
+
+        assertNull(sharedAddressFinding(), "a sensor on a page left out of autonomy is still said to share its address");
+    }
+
+    /**
+     * A sensor with no address is not a shared address, however many squares have none (FR-139).
+     *
+     * An address of zero or less is no address: the reduction makes no point of one and the duplicate-sensor check passes
+     * over one.
+     *
+     * MUTATION: count a sensor whose address is 0 or -1 as an address, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASensorWithNoAddressIsNotShared() throws Exception
+    {
+        LayoutDiagram unaddressed = new LayoutDiagram("second", 6, 4, null, null);
+
+        unaddressed.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        unaddressed.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, -1, -1, accessoryDecoderType.MM2, null);
+        unaddressed.setPageId("2");
+
+        session.open(Arrays.asList(runOfTrack(), unaddressed));
+        session.initialize("FR139 none");
+
+        assertNull(sharedAddressFinding(), "two sensors with no address are said to share one");
+    }
+
+    /**
+     * A square that builds into two copies, one per way a train comes in, is one place and is not said to share its
+     * address with itself (FR-139).
+     *
+     * The precondition is the copies: the middle square builds into more than one Point, or the claim says nothing.
+     *
+     * MUTATION: count each copy of a square as a place, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASquareThatBuildsIntoCopiesIsNotSharedWithItself() throws Exception
+    {
+        threeStationsInARow("FR139 copies");
+
+        TileKey middle = new TileKey("main", 3, 1);
+
+        int copies = 0;
+
+        org.json.JSONArray points = new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            if (middle.toString().equals(points.getJSONObject(i).optString("square"))) copies++;
+        }
+
+        assertTrue(copies > 1, "precondition: the middle square builds into " + copies + " Point, so the claim below is"
+            + " about nothing");
+
+        assertNull(sharedAddressFinding(), "a square that builds into " + copies + " copies is said to share its address"
+            + " with itself");
+    }
+
+    /** The setup check's shared-sensor-address finding, or null (FR-139). */
+    private org.traincontrol.automationui.AutonomyChecks.Finding sharedAddressFinding()
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.SENSOR_ADDRESS_SHARED.equals(finding.getMessageKey()))
+            {
+                return finding;
+            }
+        }
+
+        return null;
+    }
+
+    /** A page of its own with one sensor at (1,1) carrying `address`, and a straight beside it (FR-139). */
+    private LayoutDiagram sensorPage(String name, String id, int address) throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram(name, 6, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.setPageId(id);
+
+        return page;
+    }
+
     @BeforeMethod
     public void setUp() throws IOException
     {

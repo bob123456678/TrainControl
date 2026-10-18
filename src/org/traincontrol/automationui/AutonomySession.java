@@ -8794,6 +8794,9 @@ public class AutonomySession
         // AND A RUN WHOSE SQUARES POINT OPPOSITE WAYS, which no train can pass and the correction leaves as it is (OB-361)
         found.addAll(AutonomyChecks.checkRunsPointingOppositeWays(runsPointingOppositeWays()));
 
+        // AND A SENSOR ADDRESS THAT TWO PLACES SHARE, which the build cannot tell apart (FR-139)
+        found.addAll(AutonomyChecks.checkSensorAddressesShared(sensorAddressesSharedByPlaces()));
+
         // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
         // turn there said "may" where the error says "must", and "may" then drew a notice saying "must"
         found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
@@ -14552,6 +14555,57 @@ public class AutonomySession
         }
 
         return out;
+    }
+
+    /**
+     * The sensor addresses that sensor squares on two or more places share, each to its squares in reading order (FR-139).
+     *
+     * A place is a square, counted once: the squares are read off the diagram's pages and not the copies they build into,
+     * so a square that builds into two Points is one place.  A page left out of autonomy has no places, and an address of
+     * zero or less is no address, as `repeatedSensorPages` and the reduction both read it.
+     *
+     * @return each shared address, to its squares
+     */
+    private Map<Integer, List<TileKey>> sensorAddressesSharedByPlaces()
+    {
+        Map<Integer, Set<TileKey>> squaresByAddress = new LinkedHashMap<>();
+
+        if (pages == null) return new LinkedHashMap<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            if (store.getExcludedPages().contains(page.getName())) continue;
+
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                if (component == null || !component.isFeedback()) continue;
+
+                int address = component.getRawAddress();
+
+                if (address <= 0) continue;
+
+                squaresByAddress.computeIfAbsent(address, k -> new LinkedHashSet<>())
+                    .add(new TileKey(page.getName(), component.getX(), component.getY()));
+            }
+        }
+
+        java.util.Comparator<TileKey> readingOrder = java.util.Comparator.comparing(TileKey::getPage)
+            .thenComparingInt(TileKey::getY).thenComparingInt(TileKey::getX);
+
+        Map<Integer, List<TileKey>> shared = new LinkedHashMap<>();
+
+        for (Map.Entry<Integer, Set<TileKey>> entry : squaresByAddress.entrySet())
+        {
+            if (entry.getValue().size() < 2) continue;
+
+            List<TileKey> squares = new ArrayList<>(entry.getValue());
+
+            squares.sort(readingOrder);
+
+            shared.put(entry.getKey(), squares);
+        }
+
+        return shared;
     }
 
     /**
