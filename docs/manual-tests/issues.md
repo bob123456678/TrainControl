@@ -388,6 +388,15 @@ in the route tab, show a spinner next to any route that is currently running, si
 
 From MT-759 (Adam, 2026-10-18: "partially works"): changing a locomotive's direction by a route, by the direction arrow buttons or by the left and right keys turns the arrow on its label, but not its icon on the Track Diagram; the icon turns only when the facing is set from the right-click menu.  The icon should match the label.  Also to check: while autonomy is running, a direction command by hand or from the Central Station changes nothing in the setup.
 
+### OB-358 - 2026-10-18 - tooltips in layout jmenu
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-18 14:19  
+**Build:** commit a945eb25, in English - build\classes, compiled 18 Oct 13:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+many tooltips in the layout jmenu have extra whitespace padding at the end, such as "Create New Layout"
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

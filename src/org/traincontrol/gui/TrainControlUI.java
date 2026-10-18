@@ -3510,62 +3510,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Puts "Combine linked pages" on the Layouts menu, where the other page operations are.
-     *
-     * Added in code rather than in the form, which is generated - the same way everything else added
-     * to this window since the diagram work has been mounted.
-     *
-     * **IMMEDIATELY AFTER DUPLICATE CURRENT PAGE, not at the end** (Adam, 2026-09-10).  `add()` appends,
-     * so "where the other page operations are" put it below the divider and below Delete - in the group
-     * the menu's own gaps say is about destroying a page, not making one.  Combining pages is the same
-     * kind of act as duplicating one.
-     *
-     * Placed by SEARCHING for that item, for the reason `mountEditPageMenu` gives about this same menu:
-     * an index is a fact about the generated form and moves the next time somebody adds an item in the
-     * designer.  This also has to survive `removeSupersededPageItems` and the separator sweep, which
-     * shift every index below them at runtime.
-     */
-    private void addCombinePagesItem()
-    {
-        if (modifyLocalLayoutMenu == null) return;
-
-        // Once, however many times this runs.
-        //
-        // mountAutonomyControls is called on startup, on every layout reload, whenever a configuration
-        // is loaded or dropped, and at the end of every visit to the editor - and each call added
-        // another copy, so a session of ordinary work ended with a menu that was mostly this item.
-        // Kept in a field rather than searched for by label: the label is translated.
-        if (combinePagesItem != null) modifyLocalLayoutMenu.remove(combinePagesItem);
-
-        combinePagesItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuCombineLinkedPages"));
-
-        // Wrapped, or the explanation lays itself out on one line and runs off the screen
-        combinePagesItem.setToolTipText(
-            AutonomyEditorPanel.wrapped(I18n.t("layout.ui.tooltipCombineLinkedPages")));
-
-        combinePagesItem.addActionListener(event -> combineLinkedPages());
-
-        int after = -1;
-
-        for (int i = 0; i < modifyLocalLayoutMenu.getMenuComponentCount(); i++)
-        {
-            if (modifyLocalLayoutMenu.getMenuComponent(i) == duplicateLayoutMenuItem)
-            {
-                after = i;
-                break;
-            }
-        }
-
-        // Appended only if that item has gone, which would mean the form has changed under this method
-        // - and the bottom of the menu is a worse place for it than a missing one.
-        if (after >= 0) modifyLocalLayoutMenu.add(combinePagesItem, after + 1);
-        else modifyLocalLayoutMenu.add(combinePagesItem);
-    }
-
-    /** The one Combine item, so that mounting the controls again replaces it rather than adding another */
-    private javax.swing.JMenuItem combinePagesItem;
-
-    /**
      * Greys the Layout menu while an editor has the diagram, and offers the way back (OB-033).
      *
      * The same rule the Autonomy menu already followed, and for the same reasons its comment gives:
@@ -4121,69 +4065,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Takes the two superseded items off the Layouts menu: the legacy track diagram editor, and
-     * "Edit Current Page".
-     *
-     * Removed here rather than in the form, which is generated and cannot be hand-edited - so the
-     * items are still built and still added by initComponents, and are taken off again immediately
-     * afterwards.  Say the word and they come out of the .form properly.
-     *
-     * **BOTH IN ONE PLACE (Adam, 2026-09-10)**, which is also what makes the separator sweep below
-     * necessary rather than merely prudent: two items taken out of the middle of a generated menu leave
-     * two dividers adjacent.
-     *
-     * "Edit Current Page" did `showLayoutTab()` and then pressed Edit Layout, so it edited whatever
-     * page was on screen.  Edit Layout Page lists every page BY NAME, which is a different question -
-     * the list cannot say "the one I am looking at" - and the editor's own guard against a second
-     * window names this item as a caller.  Adam took the removal out on 2026-09-10, read that, and put
-     * it back here.
-     *
-     * **CALLED ONCE, FROM THE WINDOW'S OWN SET-UP (RG3-C3).**  It used to be called from
-     * `mountAutonomyControls`, after the early return taken when there is no local layout folder - so
-     * on that path the item stayed on the menu, and pressing it reached a handler whose entire body is
-     * `if (true) return;`.  A menu item that does nothing, silently, is worse than one that is gone.
-     *
-     * Nothing about this removal depends on autonomy or on which layout is loaded.  The executable is
-     * not shipped on any path, so the item should not be on the menu on any path either - which is
-     * what the javadoc always claimed and what is now true.
-     *
-     * What it did: unpacked a bundled Windows executable into the layout folder and ran it, so that
-     * a diagram could be drawn in the tool the Central Station's own files came from.  The diagram
-     * editor in this window does that now, on every platform, without shipping a hundred and fifty
-     * kilobytes of somebody else's binary - and the executable has been removed from the resources
-     * along with it.
-     */
-    private void removeSupersededPageItems()
-    {
-        if (modifyLocalLayoutMenu == null) return;
-
-        // EACH ITEM GUARDED ON ITSELF (2026-09-10).  The two removals were consolidated into one
-        // method and the second was put inside the first item's null check, so a null legacy item -
-        // which is what a form the designer has edited could hand over - would have left the other one
-        // on the menu with nothing to say so.
-        if (openLegacyTrackDiagramEditor != null)
-        {
-            modifyLocalLayoutMenu.remove(openLegacyTrackDiagramEditor);
-        }
-
-        if (editCurrentPageActionPerformed != null)
-        {
-            modifyLocalLayoutMenu.remove(editCurrentPageActionPerformed);
-        }
-
-        // AND THE DIVIDERS THAT FRAMED THEM (OB-021).
-        //
-        // Taking an item off a menu the FORM generates leaves the dividers the designer put around it,
-        // and with both of these gone two of them end up adjacent - a gap twice the size, in a menu
-        // whose groups no longer mean what the gaps say they mean.  That is the defect OB-021 was, and
-        // it is live again now that both items come off here.
-        //
-        // The sweep asks the menu what it is holding rather than counting, so it does not care which
-        // of the two was actually present.
-        tidySeparators(modifyLocalLayoutMenu);
-    }
-
-    /**
      * The autonomy menu, beside Layouts.
      *
      * Built in code because its items are: they are rebuilt from the configurations on disk every time
@@ -4612,8 +4493,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Built but not shown.  Everything it does is on the Autonomy menu, mounted above; the object stays
         // as the place those actions live, because they are a few hundred lines of dialogs and file handling
         // that gain nothing from being copied into a menu class.
-
-        addCombinePagesItem();
 
         mountEditPageMenu();
     }
@@ -12047,12 +11926,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             stop();
         }
         
-        // TrackDiagramEditor Layout editing only supported on windows
-        if (!this.isWindows())// || !model.isDebug())
-        {
-            this.openLegacyTrackDiagramEditor.setVisible(false);
-        }
-        
         // WHICH BUILD THIS IS, before the debug marker (Adam, 2026-09-05).
         //
         // The generated block sets the title from RAW_VERSION, and that block is the GUI builder's -
@@ -12077,9 +11950,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
                 
         restoreLayoutTitles();
-
-        // On every path, not only the one with a local layout folder (RG3-C3).
-        removeSupersededPageItems();
 
         takeTheKeyboard();
 
@@ -16131,9 +16001,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         addBlankPageMenuItem = new javax.swing.JMenuItem();
         renameLayoutMenuItem = new javax.swing.JMenuItem();
         duplicateLayoutMenuItem = new javax.swing.JMenuItem();
-        jSeparator22 = new javax.swing.JPopupMenu.Separator();
-        editCurrentPageActionPerformed = new javax.swing.JMenuItem();
-        openLegacyTrackDiagramEditor = new javax.swing.JMenuItem();
+        combineLinkedPagesMenuItem = new javax.swing.JMenuItem();
         jSeparator21 = new javax.swing.JPopupMenu.Separator();
         deleteLayoutMenuItem = new javax.swing.JMenuItem();
         initializeLocalLayoutMenuItem = new javax.swing.JMenuItem();
@@ -21180,23 +21048,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         modifyLocalLayoutMenu.add(duplicateLayoutMenuItem);
-        modifyLocalLayoutMenu.add(jSeparator22);
 
-        editCurrentPageActionPerformed.setText(bundle.getString("ui.main.toolbar.editCurrentPage")); // NOI18N
-        editCurrentPageActionPerformed.addActionListener(new java.awt.event.ActionListener() {
+        combineLinkedPagesMenuItem.setText(bundle.getString("layout.ui.menuCombineLinkedPages")); // NOI18N
+        combineLinkedPagesMenuItem.setToolTipText(bundle.getString("layout.ui.tooltipCombineLinkedPages")); // NOI18N
+        combineLinkedPagesMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                editCurrentPageActionPerformedActionPerformed(evt);
+                combineMenuPressed(evt);
             }
         });
-        modifyLocalLayoutMenu.add(editCurrentPageActionPerformed);
-
-        openLegacyTrackDiagramEditor.setText(bundle.getString("ui.main.toolbar.editWithLegacy")); // NOI18N
-        openLegacyTrackDiagramEditor.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                openLegacyTrackDiagramEditorActionPerformed(evt);
-            }
-        });
-        modifyLocalLayoutMenu.add(openLegacyTrackDiagramEditor);
+        modifyLocalLayoutMenu.add(combineLinkedPagesMenuItem);
         modifyLocalLayoutMenu.add(jSeparator21);
 
         deleteLayoutMenuItem.setText(bundle.getString("ui.main.toolbar.deleteCurrentPage")); // NOI18N
@@ -29670,124 +29530,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_addBlankPageMenuItemActionPerformed
 
-    /**
-     * Old way to edit track diagrams
-     */
-    private void openLegacyTrackDiagramEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLegacyTrackDiagramEditorActionPerformed
-
-        // WITHDRAWN.  The menu item is taken off the menu in the constructor and the executable it
-        // unpacked is no longer shipped, so nothing can reach this - see removeSupersededPageItems.
-        //
-        // The code below is left standing on purpose.  It is the only worked example of unpacking a
-        // bundled tool and running it against the layout folder, and if a native editor is ever
-        // wanted again this is the half of it that was hard.  It will not compile away: the resource
-        // it looks for is gone, so it now fails at the unpack with a message in the log rather than
-        // doing anything, which is the correct behaviour for a path nothing calls.
-        if (true) return;
-
-        if (!this.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles")
-            );
-            return;
-        }
-
-        if (!this.isWindows())
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.t("layout.ui.errorLegacyLayoutEditorOnlySupportedOnWindows")
-            );
-            return;
-        }
-
-        showLayoutTab();
-        
-        this.openLegacyTrackDiagramEditor.setEnabled(false);
-
-        // Force window to not be on top
-        this.setAlwaysOnTop(false);
-        
-
-        new Thread(() ->
-            {
-                try
-                {
-                    String layoutUrl = this.model
-                        .getLayout(this.LayoutList.getSelectedItem().toString())
-                        .getUrl()
-                        .replaceAll(" ", "%20");
-
-                    Path p = Paths.get(new URL(layoutUrl).toURI());
-
-                    File app = new File(DIAGRAM_EDITOR_EXECUTABLE);
-
-                    // Extract the binary
-                    if (!app.exists())
-                    {
-                        File zippedApp = new File(DIAGRAM_EDITOR_EXECUTABLE_ZIP);
-
-                        this.model.log(I18n.t("layout.ui.infoUnpackingTrackDiagramEditorExecutable"));
-
-                        copyResource(RESOURCE_PATH + DIAGRAM_EDITOR_EXECUTABLE_ZIP, zippedApp);
-
-                        this.model.logf(
-                            "layout.ui.infoAttemptingToExtractFile",
-                            zippedApp.getAbsolutePath()
-                        );
-
-                        this.unzipFile(
-                            Paths.get(zippedApp.getPath()),
-                            (new File("")).getAbsolutePath()
-                        );
-                        zippedApp.delete();
-                    }
-
-                    // Delete the binary on exit
-                    app.deleteOnExit();
-
-                    // Execute the app
-                    String cmd = app.getPath() + " edit \"" + p.toString() + "\"";
-
-                    this.model.logf("layout.ui.infoRunningLayoutEditorCommand", cmd);
-
-                    Runtime rt = Runtime.getRuntime();
-                    Process pr = rt.exec(cmd);
-
-                    pr.waitFor();
-
-                    this.model.log(I18n.t("layout.ui.infoEditingSessionComplete"));
-
-                    this.layoutEditingComplete();
-                }
-                catch (Exception ex)
-                {
-                    this.model.logf(
-                        "layout.errorEditingFailedWithMessage",
-                        ex.getMessage()
-                    );
-
-                    this.model.log(ex);
-                }
-
-                this.openLegacyTrackDiagramEditor.setEnabled(true);
-
-                // Revert preference
-                windowAlwaysOnTopMenuItemActionPerformed(null);
-                
-        
-            }).start();
-    }//GEN-LAST:event_openLegacyTrackDiagramEditorActionPerformed
-
-    private void editCurrentPageActionPerformedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editCurrentPageActionPerformedActionPerformed
-        
-        showLayoutTab();
-
-        this.editLayoutButtonActionPerformed(null);
-    }//GEN-LAST:event_editCurrentPageActionPerformedActionPerformed
-
     private void MM2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MM2ActionPerformed
         repaintSwitches();
         prefs.putBoolean(PREFERRED_KEYBOARD_MM2, ((JRadioButton) evt.getSource()).isSelected());
@@ -30990,6 +30732,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.medium")));
     }//GEN-LAST:event_mediumButtonActionPerformed
+
+    private void combineMenuPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_combineMenuPressed
+        combineLinkedPages();
+    }//GEN-LAST:event_combineMenuPressed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -34669,6 +34415,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem checkForRenameMenuItem;
     private javax.swing.JCheckBoxMenuItem checkForUpdates;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
+    private javax.swing.JMenuItem combineLinkedPagesMenuItem;
     private javax.swing.JPanel controlsPanel;
     private javax.swing.JTextArea debugArea;
     private javax.swing.JSlider defaultLocSpeed;
@@ -34677,7 +34424,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenuItem downloadUpdateMenuItem;
     private javax.swing.JMenuItem duplicateLayoutMenuItem;
     private javax.swing.JButton editAutonomyFromSettings;
-    private javax.swing.JMenuItem editCurrentPageActionPerformed;
     private javax.swing.JButton editLayoutButton;
     private javax.swing.JCheckBoxMenuItem enhancedPathValidationMenuItemCheckbox;
     private javax.swing.JButton executeTimetable;
@@ -34760,7 +34506,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator20;
     private javax.swing.JPopupMenu.Separator jSeparator21;
-    private javax.swing.JPopupMenu.Separator jSeparator22;
     private javax.swing.JPopupMenu.Separator jSeparator23;
     private javax.swing.JPopupMenu.Separator jSeparator24;
     private javax.swing.JPopupMenu.Separator jSeparator3;
@@ -34797,7 +34542,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JSlider minDelay;
     private javax.swing.JMenu modifyLocalLayoutMenu;
     private javax.swing.JMenuItem openCS3AppMenuItem;
-    private javax.swing.JMenuItem openLegacyTrackDiagramEditor;
     private javax.swing.JMenuItem popUpAllMenuItem;
     private javax.swing.JRadioButtonMenuItem powerNoChangeStartup;
     private javax.swing.JRadioButtonMenuItem powerOffStartup;
