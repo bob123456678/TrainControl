@@ -36,7 +36,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * code mechanisms on how this is done"*).
  *
  * A followed turn turns the train's icon on the diagram too, to the facing the caption's arrow shows (MT-759; Adam: "make
- * sure the icon matches the label").
+ * sure the icon matches the label").  While autonomy or Return Home runs, a direction command from the throttle or the
+ * Central Station changes neither, then or after.
  *
  * MUTATION: take `followDirectionChanges` out of `TrainControlUI.repaintLoc`, and this fails.  Take the `routeFinished`
  * call out of `MarklinRoute`, or `turnsHeldByARoute` out of `followTheTurn`, and the route tests fail.  Take the
@@ -303,6 +304,142 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             }
 
             standEast();
+        }
+    }
+
+    /**
+     * While autonomy runs, a direction command from the throttle or from the Central Station changes nothing: not the setup,
+     * not the copy the train stands on (which the caption reads) and not the icon, then or after the run (Adam, on MT-759:
+     * "while autonomy is running, make sure manual/central station direction commands don't alter the config, since at
+     * that point it would be the user correcting an invalid facing").  A hand send runs the railway as autonomy does
+     * (`Layout.isRunning`), so this is its guard too.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testADirectionCommandWhileAutonomyRunsChangesNothing() throws Exception
+    {
+        final java.lang.reflect.Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
+
+        running.setAccessible(true);
+
+        ignoredWhile(() -> set(running, model.getAutoLayout(), true), () -> set(running, model.getAutoLayout(), false),
+            "autonomy runs");
+    }
+
+    /**
+     * And while Return Home stages the trains, the same.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testADirectionCommandWhileReturnHomeRunsChangesNothing() throws Exception
+    {
+        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        ignoredWhile(() -> set(staging, ui, true), () -> set(staging, ui, false), "Return Home runs");
+    }
+
+    /**
+     * Reverses the train from the throttle and then from the Central Station while `begin` holds the railway, and asks the
+     * setup, the railway and the diagram, then and once `end` has let it go and another message has come in.
+     */
+    private static void ignoredWhile(Runnable begin, Runnable end, String what) throws Exception
+    {
+        standEast();
+
+        Locomotive train = model.getLocByName(PROBE);
+
+        final boolean forwardWas = train.goingForward();
+
+        SwingUtilities.invokeAndWait(begin);
+
+        try
+        {
+            // THE THROTTLE, echoed; THE CENTRAL STATION'S OWN COMMAND, turning it back; and the throttle again, so that it
+            // ends turned round and a turn left over would show after the run
+            reverse();
+
+            settle();
+
+            Thread.sleep(500);
+
+            fromTheCentralStation(train, forwardWas);
+
+            settle();
+
+            Thread.sleep(500);
+
+            assertEquals(train.goingForward(), forwardWas, "precondition: the Central Station's command was not read");
+
+            reverse();
+
+            settle();
+
+            Thread.sleep(500);
+
+            settle();
+
+            assertNothingTurned("a direction command while " + what);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(end);
+        }
+
+        // AND NOTHING LEFT TO FOLLOW AFTERWARDS: the idle refresh, then another message about the train
+        SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
+
+        train.setSpeed(0);
+
+        settle();
+
+        Thread.sleep(500);
+
+        settle();
+
+        assertNothingTurned("a direction command made while " + what + ", once it was over,");
+
+        assertFalse(held().contains(PROBE), "a direction command while " + what + " is held for later");
+
+        standEast();
+    }
+
+    /** The setup, the copy the train stands on and the icon, all still facing east. */
+    private static void assertNothingTurned(String what) throws Exception
+    {
+        assertEquals(session.getFacing(MAIN_A), Side.E, what + " turned the train in the setup");
+
+        assertEquals(session.facingOnTheRailway(MAIN_A, model.getAutoLayout()), Side.E, what + " turned the train on the"
+            + " railway, which the caption's arrow reads");
+
+        assertEquals(iconFacing(), Side.E, what + " turned the train's icon on the diagram");
+    }
+
+    /** A direction command as a Central Station sends one, read as every message from it is. */
+    private static void fromTheCentralStation(Locomotive train, boolean forward)
+    {
+        int uid = ((org.traincontrol.marklin.MarklinLocomotive) train).getIntUID();
+
+        org.traincontrol.marklin.udp.CS2Message command = new org.traincontrol.marklin.udp.CS2Message(
+            org.traincontrol.marklin.udp.CS2Message.CMD_LOCO_DIRECTION,
+            new byte[] {(byte) (uid >> 24), (byte) (uid >> 16), (byte) (uid >> 8), (byte) uid, (byte) (forward ? 1 : 2)});
+
+        model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(command.getCommand(), command.getHash(), true,
+            command.getData()));
+    }
+
+    private static void set(java.lang.reflect.Field field, Object on, boolean value)
+    {
+        try
+        {
+            field.setBoolean(on, value);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 
