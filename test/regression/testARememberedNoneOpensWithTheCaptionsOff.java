@@ -596,9 +596,16 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             java.awt.Container column = panel.getShowTrains().getParent();
             java.awt.Component[] kids = column == null ? new java.awt.Component[0] : column.getComponents();
 
+            // THE NEXT CONTROL BELOW, past the gap every checkbox there has above it (OB-312)
             for (int i = 0; i + 1 < kids.length; i++)
             {
-                if (kids[i] == panel.getShowTrains()) opening.boxBelowTrains = kids[i + 1] == panel.getShowTextLabels();
+                if (kids[i] != panel.getShowTrains()) continue;
+
+                int next = i + 1;
+
+                while (next < kids.length && kids[next] instanceof javax.swing.Box.Filler) next++;
+
+                opening.boxBelowTrains = next < kids.length && kids[next] == panel.getShowTextLabels();
             }
 
             opening.boxIsShown = panel.getShowTextLabels().getParent() != null;

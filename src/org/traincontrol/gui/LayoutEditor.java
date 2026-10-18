@@ -2009,7 +2009,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowTrains().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTrains());
 
-                // AND THE DIAGRAM'S TEXT directly under it, the same kind of switch (FR-133)
+                // AND THE DIAGRAM'S TEXT under it, a subject of its own, so the same gap (FR-133, OB-312)
+                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+
                 autonomyPanel.getShowTextLabels().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTextLabels());
 
