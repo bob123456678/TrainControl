@@ -181,7 +181,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 * Primary controls
     * Selecting and speed
-        * A-Z letter keys (select a locomotive; Alt+letter does the same)
+        * A-Z letter keys (select a locomotive; Alt with a letter that has no Alt shortcut of its own does the same)
         * Up/down arrow (speed up/slow down by 4%) (hold Alt to double the increment or Control to reduce it to 1%)
         * 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
     * Direction
@@ -405,7 +405,7 @@ Tab icons provided by Freepik.
 * v3.0.2 [10/18/2026]
     - Autonomy Features
         - Right-clicking Return Home now offers `Run Trains to Their Homes`, which does the same as the button, and `Place All Trains at Their Homes`, which puts each homed train on its home in the setup without moving anything, so you can then move the real trains by hand.
-        - Both of those items are greyed out while anything is running, and the Track Diagram's Bulk Tools item for placing all trains at their homes behaves the same way.
+        - `Run Trains to Their Homes` is available whenever the Return Home button is, and `Place All Trains at Their Homes` is greyed out while anything is running, as is the Track Diagram's Bulk Tools item for placing all trains at their homes.
         - The autonomy editor has a new `Text Labels` box under `Show Trains` for showing or hiding the diagram's own text.
         - The editor's captions dropdown is now headed `Station Labels`, offers Station Names (the default), Standing Locs, Home Locs and Hide, and uses the same font as Track Directions.
     - Track Diagram
@@ -414,8 +414,8 @@ Tab icons provided by Freepik.
         - A locomotive that is not in your locomotive database is now taken out of the autonomy setup when it loads, and a popup tells you which ones.
         - You can now place a train from the Track Diagram on a station no train can leave, as you can in the editor.
         - On switches, three-way switches and double slips, the direction arrows now decide fully which way trains may run, and older setups with a hidden closed road are brought in line with their arrows, with the log listing the switches.
-        - Setup edits (in the editors, on the Auto tab, in the timetable, and routes on or off) now wait while a route is running, not only while autonomy is, and say what is running.
-        - Every finding you click in the setup check is now outlined on the Track Diagram.
+        - Setup edits (in the editors, on the Auto tab, in the timetable, when loading or exporting a configuration, and routes on or off) are now refused with a message while a route is running, not only while autonomy is.
+        - Every finding you click in the setup check is now outlined in the autonomy editor's diagram.
         - Track that no station can be reached along no longer shows direction arrows and is greyed out in the editor.
         - Clicking a train in Test a Path or Why not Moving? now picks the station it stands on.
         - When the only trains away from home are paused, Return Home now names them and says how to set them going, instead of saying every locomotive is already at its home.
