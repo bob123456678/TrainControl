@@ -7495,9 +7495,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses to dispatch where an editor has come since the door's click, or a refresh of the diagram (RSA23-B1), and says
-     * so - asked by the run doors at their last event-thread moment before the dispatch, which runs after anything the
-     * event thread took in between (RLV13-C2).  On the event thread.
+     * Refuses to dispatch where an editor has come since the door's click, or a refresh of the diagram (RSA23-B1), or a
+     * route has begun (the gate's own question, `whyNoTrainMayBeSent`, asked again), and says so - asked by the run doors at
+     * their last event-thread moment before the dispatch, which runs after anything the event thread took in between
+     * (RLV13-C2): Start, Execute Timetable and Return Home before they dispatch, and a hand send after its questions.  On
+     * the event thread.
      *
      * @return true when the door must not dispatch
      */
@@ -7506,6 +7508,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (refreshesUnderWay.get() > 0)
         {
             JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorDiagramRefreshing"));
+
+            return true;
+        }
+
+        // A ROUTE BEGUN SINCE THE PRESS: the planning, the reversal question and the conditional-routes question all leave
+        // room for one (an s88 trigger fires whatever dialog is open)
+        if (aRouteIsExecuting(this.model))
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForARouteToFinish"));
 
             return true;
         }
@@ -7572,6 +7583,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final Layout.ReversalPolicy answered =
             ManualReversalPrompt.forJourney(getAutonomySession(), this, path, train, railway);
+
+        // AND NOTHING CAME WHILE THE QUESTION WAS UP: an editor, a refresh or a route, as the other run doors ask at the end
+        if (refusedForAnEditorOnItsWay()) return;
 
         keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
@@ -14975,8 +14989,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // good would leave the setup facing the wrong way when the route is over.  Autonomy's own run is the ruled
             // outcome and keeps it, and Return Home and a hand send are autonomy's trains.
             //
-            // A HELD TURN NEVER MEETS A RUN THAT BEGAN UNDER IT: no door starts one while a route runs
-            // (`whyNoTrainMayBeSent`).  A route that begins during a run (an s88 trigger) and outlives it holds only the
+            // A HELD TURN NEVER MEETS A RUN THAT BEGAN UNDER IT: no door starts one while a route runs, asked at the press
+            // (`whyNoTrainMayBeSent`) and again at the last moment before the dispatch (`refusedForAnEditorOnItsWay`).  A route that begins during a run (an s88 trigger) and outlives it holds only the
             // reversals made after the run; those made during it are ignored and never enter the set.
             if (!this.stagingFlowActive && !theAutoTabWaits() && !turnsHeldByARoute.remove(name))
             {

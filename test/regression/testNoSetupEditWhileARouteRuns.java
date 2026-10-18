@@ -1642,6 +1642,120 @@ public class testNoSetupEditWhileARouteRuns
         }
     }
 
+    /**
+     * A route that begins after the press and before the dispatch still stops the run: the last-moment question every run
+     * door asks (`refusedForAnEditorOnItsWay`, which Start, Execute Timetable, Return Home and a hand send ask) says a route
+     * is running and refuses, and answers no at rest.  Execute Timetable end to end: pressed with no route running, so the
+     * gate passes, with the route begun in the same event before its posted body asks again - which refuses, says so, gives
+     * the button back and runs nothing.
+     *
+     * MUTATION: take the route question out of `refusedForAnEditorOnItsWay`, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARouteBegunAfterThePressStopsTheRun() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final Answering answering = new Answering();
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final TrainControlUI window = ui;
+            final String wait = I18n.t("autolayout.ui.errorWaitForARouteToFinish");
+            final java.lang.reflect.Method lastMoment = TrainControlUI.class.getDeclaredMethod("refusedForAnEditorOnItsWay");
+
+            lastMoment.setAccessible(true);
+
+            final boolean[] refused = new boolean[1];
+
+            final Runnable ask = () ->
+            {
+                try
+                {
+                    refused[0] = (Boolean) lastMoment.invoke(window);
+                }
+                catch (ReflectiveOperationException failed)
+                {
+                    throw new IllegalStateException(failed);
+                }
+            };
+
+            answering.start();
+
+            // AT REST: no
+            SwingUtilities.invokeAndWait(ask);
+
+            assertFalse(refused[0], "precondition: the last-moment question refuses at rest");
+
+            // THE QUESTION ITSELF, with a route running
+            aRouteRuns(ui, true);
+
+            try
+            {
+                int from = answering.count();
+
+                SwingUtilities.invokeAndWait(ask);
+
+                settle();
+
+                assertTrue(refused[0], "the last-moment question let a run through under a route");
+                assertEquals(answering.since(from), Collections.singletonList(wait), "it did not say a route is running");
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+
+            // EXECUTE TIMETABLE, the route begun between the press and its posted body
+            final javax.swing.JButton execute = (javax.swing.JButton) fieldOf("executeTimetable", ui);
+
+            int from = answering.count();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                callUi(window, "executeTimetableActionPerformed", new Class<?>[] {java.awt.event.ActionEvent.class},
+                    (Object) null);
+
+                aRouteRuns(window, true);
+            });
+
+            try
+            {
+                settle();
+
+                List<String> said = answering.since(from);
+
+                assertEquals(said, Collections.singletonList(wait), "Execute Timetable did not refuse the route begun after"
+                    + " its press, saying so: " + said);
+
+                assertTrue(execute.isEnabled(), "Execute Timetable was not given back after the refusal");
+                assertFalse(window.getModel().isAutonomyRunning(), "a run began under the route");
+            }
+            finally
+            {
+                aRouteRuns(ui, false);
+            }
+        }
+        finally
+        {
+            answering.stop();
+
+            closeDown(ui, sandbox, folderWas);
+        }
+    }
+
     private static Object fieldOf(String name, Object on)
     {
         try
