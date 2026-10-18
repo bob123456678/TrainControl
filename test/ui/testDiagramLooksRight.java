@@ -5559,10 +5559,14 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The tunnel portal's light grey wall is a pixel wider each side at 30 and two at 60 - two pixels and five - and the
-     * arch between the walls is still the track's width, 8 and 16 (Adam, 2026-10-10: *"make the light gray tunnel wall on
-     * tunnel icons about 1px wider on each side in the 30px version, and correspondingly"* at 60).  The wall grew
-     * outward: the track through the arch is where it was.
+     * The tunnel portal's wall is near white, #EEEEEE, and a pixel wider each side again at 30 and two at 60 - three
+     * pixels and seven - and the arch between the walls is still the track's width, 8 and 16.
+     *
+     * Adam, 2026-10-10: *"make the light gray tunnel wall on tunnel icons about 1px wider on each side in the 30px
+     * version, and correspondingly"* at 60; then 2026-10-18, *"further lighten the surround of the tunnel icons in the
+     * track diagram ... experiment with widening it slightly"* (FR-134), and of the options drawn for him, *"Go for C at +1"* -
+     * C the #EEEEEE wall, +1 a pixel more each side at 30 (two at 60).  The wall grew outward both times: the track
+     * through the arch is where it was.
      *
      * Read across the portal below the arch's curve - row 12 at 30, row 25 at 60.
      *
@@ -5577,13 +5581,13 @@ public class testDiagramLooksRight
         {
             BufferedImage art = icon(size, "tunnel");
 
-            int row = size >= 60 ? 25 : 12, wall = size >= 60 ? 5 : 2, arch = size >= 60 ? 16 : 8;
+            int row = size >= 60 ? 25 : 12, wall = size >= 60 ? 7 : 3, arch = size >= 60 ? 16 : 8;
 
             java.util.List<int[]> runs = new java.util.ArrayList<>();
 
             for (int x = 0; x < size; x++)
             {
-                int kind = (art.getRGB(x, row) & 0xFFFFFF) == 0xBBBBBB ? 1 : (art.getRGB(x, row) & 0xFFFFFF) == 0 ? 2 : 0;
+                int kind = (art.getRGB(x, row) & 0xFFFFFF) == 0xEEEEEE ? 1 : (art.getRGB(x, row) & 0xFFFFFF) == 0 ? 2 : 0;
 
                 if (!runs.isEmpty() && runs.get(runs.size() - 1)[0] == kind) runs.get(runs.size() - 1)[1]++;
                 else runs.add(new int[] {kind, 1});
@@ -5598,7 +5602,8 @@ public class testDiagramLooksRight
             for (int[] run : runs) if (run[0] == 1) walls.add(run[1]);
 
             assertEquals(walls, java.util.Arrays.asList(wall, wall), "the tunnel's wall at " + size + " pixels, across row "
-                + row + ": " + said + "- Adam asked for it a pixel wider each side at 30, correspondingly at 60");
+                + row + ": " + said + "- Adam asked for it #EEEEEE, and a pixel wider each side again at 30, two at 60 (\"Go for"
+                + " C at +1\")");
 
             int between = 0;
 
