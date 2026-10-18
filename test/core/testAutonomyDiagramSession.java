@@ -2373,6 +2373,61 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A run whose squares point opposite ways - no train can pass it - is left as it is and is a warning, about the run,
+     * naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.  Closing it in
+     * the correction would hide which way was meant behind a setting that looks chosen.
+     *
+     * MUTATION: say nothing, or close the run, or name another square, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testARunPointingOppositeWaysIsAWarning() throws Exception
+    {
+        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-361 opposite");
+
+        TileKey leader = session.runLeaders().get(run.get(0));
+
+        TileKey west = new TileKey("main", 2, 1);
+        TileKey east = new TileKey("main", 5, 1);
+
+        // ONE END ONE WAY, THE OTHER THE OTHER, as no door of the editor does but a file or an older version can
+        session.setDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
+        session.setDirection(east, new RouteId(0, 0), Direction.TOWARD_B);
+
+        assertEquals(session.getStore().getTileDirection(east, new RouteId(0, 0)), Direction.TOWARD_B, "the run pointing"
+            + " opposite ways was not left as it is");
+        assertNotEquals(session.getStore().getTileDirection(west, new RouteId(0, 0)), Direction.NONE, "the run pointing"
+            + " opposite ways was closed");
+
+        org.traincontrol.automationui.AutonomyChecks.Finding said = null;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkRunPointsOppositeWays".equals(finding.getMessageKey())) said = finding;
+        }
+
+        assertNotNull(said, "a run no train can pass, its squares pointing opposite ways, is not a warning: "
+            + session.check());
+
+        assertEquals(said.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.WARNING, "graded");
+
+        assertEquals(said.getTile(), leader, "the warning is not about the run's first square, where its arrow is");
+
+        assertEquals(new LinkedHashSet<>(said.getRelated()), new LinkedHashSet<>(run), "the warning does not name the"
+            + " run's squares, so a click on it cannot outline the run");
+
+        // THE ARROW CLICKED: one way for all of it
+        session.setRunDirection(leader, new RouteId(0, 0), Direction.TOWARD_A);
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            assertNotEquals(finding.getMessageKey(), "autosetup.ui.checkRunPointsOppositeWays", "the warning stayed after"
+                + " the run was set one way");
+        }
+    }
+
+    /**
      * The track diagram draws the restrictions, the directions trains may run, or both - each its own choice (FR-110; Adam,
      * 2026-10-04: *"we also need to add an option to view the green arrows in the viewer, not just the red, similar to
      * the editor."*, and on MT-675: *"allow the user to choose: restrictions, allowances, or both.  don't make them

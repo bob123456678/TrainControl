@@ -259,6 +259,14 @@ public class AutonomyChecks
     public static final String TERMINUS_STRANDED = "autosetup.ui.checkTerminusStranded";
     public static final String POINT_ISOLATED = "autosetup.ui.checkPointIsolated";
     public static final String RUN_CLOSED_BOTH_WAYS = "autosetup.ui.checkRunClosedBothWays";
+
+    /**
+     * A run of plain track whose squares point opposite ways, so no train can pass it (OB-361).  The correction that
+     * brings every run to one direction leaves it as it is - closing it would hide which way was meant behind a setting
+     * that looks chosen - so this says so.  A WARNING about the run's first square, with its squares as the related ones,
+     * so a click on it outlines the run; a click on the run's arrow sets one way for all of it.
+     */
+    public static final String RUN_POINTS_OPPOSITE_WAYS = "autosetup.ui.checkRunPointsOppositeWays";
     public static final String NO_STATIONS = "autosetup.ui.checkNoStations";
     public static final String ONE_STATION = "autosetup.ui.checkOneStation";
     public static final String UNNAMED_POINT = "autosetup.ui.checkUnnamedPoint";
@@ -685,6 +693,28 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.WARNING, TRAIN_FACES_TRACK_TOWARDS_IT,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * A WARNING per run of plain track whose squares point opposite ways (OB-361): `{0}` is its first square, `{1}` its
+     * last, and its squares are the related ones.
+     *
+     * @param runs each run's first square to its squares, in order
+     * @return the findings
+     */
+    static List<Finding> checkRunsPointingOppositeWays(Map<TileKey, List<TileKey>> runs)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (Map.Entry<TileKey, List<TileKey>> run : runs.entrySet())
+        {
+            TileKey last = run.getValue().get(run.getValue().size() - 1);
+
+            findings.add(new Finding(Severity.WARNING, RUN_POINTS_OPPOSITE_WAYS, last.getX() + "," + last.getY(),
+                run.getKey(), run.getValue()));
         }
 
         return findings;

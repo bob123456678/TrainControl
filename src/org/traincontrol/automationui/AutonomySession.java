@@ -8772,6 +8772,9 @@ public class AutonomySession
         // AND A STATION WHOSE NAME IS DRAWN IN MORE THAN ONE PLACE, which no door of the editor makes (OB-341)
         found.addAll(AutonomyChecks.checkStationsNamedTwice(stationsShownMoreThanOnce()));
 
+        // AND A RUN WHOSE SQUARES POINT OPPOSITE WAYS, which no train can pass and the correction leaves as it is (OB-361)
+        found.addAll(AutonomyChecks.checkRunsPointingOppositeWays(runsPointingOppositeWays()));
+
         // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
         // turn there said "may" where the error says "must", and "may" then drew a notice saying "must"
         found.removeIf(finding -> AutonomyChecks.isArrivalTrapped(finding.getMessageKey())
@@ -8780,6 +8783,26 @@ public class AutonomySession
         AutonomyChecks.bySeverity(found);
 
         return found;
+    }
+
+    /**
+     * The runs of plain track whose squares point opposite ways (`TileGraph.runsPointingOppositeWays`), each first square
+     * to its squares - not on track no station is on, where no train is sent (OB-353, OB-361).
+     *
+     * @return the runs
+     */
+    private Map<TileKey, List<TileKey>> runsPointingOppositeWays()
+    {
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        if (graph == null) return out;
+
+        for (Map.Entry<TileKey, Run> run : graph.runsPointingOppositeWays().entrySet())
+        {
+            if (!reachesNoStation(run.getKey())) out.put(run.getKey(), run.getValue().getTiles());
+        }
+
+        return out;
     }
 
     /**
