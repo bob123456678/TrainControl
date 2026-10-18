@@ -1945,9 +1945,9 @@ public class AutonomyEditorPanel extends JPanel
             boolean many = routes.size() > 1;
 
             // Every arm, tickable, all visible together.  A click steps through four common answers,
-            // which is right for the common case and cannot reach the rest; the per-branch submenus
-            // below can reach the rest but only by working out which branch owns which arm.  These are
-            // the arrows themselves, one box each, so any combination is one look and one tick.
+            // which is right for the common case and cannot reach the rest.  These are the arrows
+            // themselves, one box each, so any combination is one look and one tick - and on a switch
+            // they are the whole of its settings (OB-351).
             if (many)
             {
                 final java.util.List<org.traincontrol.automationui.TilePorts.Side> arms =
@@ -1969,9 +1969,19 @@ public class AutonomyEditorPanel extends JPanel
                 connections.addSeparator();
             }
 
+            // NO ROAD OF ITS OWN WHERE ROADS SHARE AN ARM (OB-351; Adam: *"into spur should simply require S to be green,
+            // and out of spur should require W to be green.  Align it so that the arrows tell the full story."*).  On a
+            // switch a road's own submenu could shut its spur's way out at the toe while the main line's arrow there stayed
+            // green - a closure the diagram does not show.  The arm boxes above are the whole of what such a square can
+            // be told.  A crossing's or a double curve's roads end at arms of their own, so each road's submenu is two of
+            // the boxes, and it stays.
+            boolean byArmsOnly = many && session.getGraph().sharesAnArm(target);
+
             for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry : routes.entrySet())
             {
                 org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
+
+                if (byArmsOnly) break;
 
                 // A switch's branches each get their own submenu; a plain target puts its four answers
                 // straight on the menu rather than burying them one level down.
@@ -8765,11 +8775,8 @@ public class AutonomyEditorPanel extends JPanel
     private static Direction answerFor(org.traincontrol.automationui.TilePorts.Route route,
         java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
     {
-        boolean openA = (mask & (1 << sides.indexOf(route.getA()))) != 0;
-        boolean openB = (mask & (1 << sides.indexOf(route.getB()))) != 0;
-
-        return openA && openB ? Direction.BOTH : openA ? Direction.TOWARD_A
-            : openB ? Direction.TOWARD_B : Direction.NONE;
+        // ONE TRANSLATION, the session's too (OB-351): every door that sets a direction stores its arms' answers
+        return TileGraph.answerFor(route, sides, mask);
     }
 
     /**
@@ -8850,21 +8857,7 @@ public class AutonomyEditorPanel extends JPanel
     private static java.util.List<org.traincontrol.automationui.TilePorts.Side> armsOf(
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes)
     {
-        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = new java.util.ArrayList<>();
-
-        for (org.traincontrol.automationui.TilePorts.Side side
-            : org.traincontrol.automationui.TilePorts.Side.values())
-        {
-            for (org.traincontrol.automationui.TilePorts.Route route : routes.values())
-            {
-                if ((route.getA() == side || route.getB() == side) && !sides.contains(side))
-                {
-                    sides.add(side);
-                }
-            }
-        }
-
-        return sides;
+        return TileGraph.armsOf(routes.values());
     }
 
     /**
@@ -10344,11 +10337,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private static Direction inForce(Direction stored, org.traincontrol.automationui.TilePorts.Route route)
     {
-        if (TileGraph.directionIsPossible(stored, route)) return stored;
-
-        return !TileGraph.isPassable(stored, route) ? Direction.NONE
-            : TileGraph.directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
-            : Direction.TOWARD_B;
+        return TileGraph.inForce(stored, route);
     }
 
     private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,

@@ -234,12 +234,11 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
             TileKey westSwitch = new TileKey("main", 4, 2);
             TileKey eastSwitch = new TileKey("main", 7, 2);
 
-            // THE UPPER ROAD EAST ONLY AND THE LOWER WEST ONLY, set at the two switches: out of the west switch's
-            // branch and into the east switch's toe; and westward through both straights.
-            runs(loop, westSwitch, true, Side.N);
-            runs(loop, westSwitch, false, Side.W);
-            runs(loop, eastSwitch, true, Side.E);
-            runs(loop, eastSwitch, false, Side.W);
+            // THE UPPER ROAD EAST ONLY AND THE LOWER WEST ONLY, set by the two switches' arms (OB-351): the west switch
+            // lets trains out north and west, not east, so nothing runs east along the lower road; the east switch
+            // lets them out east and west, not north, so nothing runs west along the upper one.
+            arms(loop, westSwitch, Side.N, Side.W);
+            arms(loop, eastSwitch, Side.E, Side.W);
 
             // ONE UNIT A SQUARE, so a four-unit train lies on its own square and three behind it
             for (TileKey square : new ArrayList<>(loop.getGraph().getTiles().keySet())) loop.setTileLength(square, 1);
@@ -391,22 +390,29 @@ public class testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch
     }
 
     /**
-     * Sets one road of a switch running one way only: its branch, or its straight road.
+     * Sets the arms of a switch trains may leave it by, and shuts the others (OB-351): each road runs out of whichever of
+     * its ends is open.
      *
      * @param on the setup
      * @param square the switch
-     * @param branch true for the road that leaves by the north, false for the other
-     * @param toward the side trains run toward on it
+     * @param open the sides trains may leave it by
      */
-    private static void runs(AutonomySession on, TileKey square, boolean branch, Side toward)
+    private static void arms(AutonomySession on, TileKey square, Side... open)
     {
+        java.util.List<Side> green = java.util.Arrays.asList(open);
+
+        Map<RouteId, Direction> answers = new java.util.LinkedHashMap<>();
+
         for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> road : on.getRoutes(square).entrySet())
         {
-            if (road.getValue().touches(Side.N) != branch) continue;
+            boolean a = green.contains(road.getValue().getA());
+            boolean b = green.contains(road.getValue().getB());
 
-            on.setDirection(square, road.getKey(), road.getValue().getA() == toward ? Direction.TOWARD_A
-                : Direction.TOWARD_B);
+            answers.put(road.getKey(), a && b ? Direction.BOTH : a ? Direction.TOWARD_A : b ? Direction.TOWARD_B
+                : Direction.NONE);
         }
+
+        on.setDirections(square, answers);
     }
 
     /**

@@ -1843,6 +1843,263 @@ public class TileGraph
         return route.other(entrySide) == allowedToward;
     }
 
+    // --- arms (OB-351) ------------------------------------------------------------------------------
+
+    /**
+     * The answer in force on a road: what is stored, narrowed by the hardware (VD18-B1, VD18-C2).
+     *
+     * A stored answer the editor does not offer on this road (`directionIsPossible`) is either the default `BOTH` on a
+     * permanent turnout - whose roads are all directed at the toe, so the blades narrow it to the one way there is - or an
+     * answer that permits only an entry the blades refuse, which is a closure.  Every answer an ordinary switch or plain
+     * track stores is possible there, so this changes nothing on them.
+     *
+     * @param stored what `getDirection` answers
+     * @param route the road
+     * @return the direction trains actually have on it
+     */
+    public static Direction inForce(Direction stored, Route route)
+    {
+        if (directionIsPossible(stored, route)) return stored;
+
+        return !isPassable(stored, route) ? Direction.NONE
+            : directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
+            : Direction.TOWARD_B;
+    }
+
+    /**
+     * The arms of a square - every side any of its roads ends at - in a fixed order, so a mask over them means the same
+     * every time it is asked.
+     *
+     * @param routes the square's roads
+     * @return its arms
+     */
+    public static List<Side> armsOf(java.util.Collection<Route> routes)
+    {
+        List<Side> sides = new ArrayList<>();
+
+        for (Side side : Side.values())
+        {
+            for (Route route : routes)
+            {
+                if ((route.getA() == side || route.getB() == side) && !sides.contains(side)) sides.add(side);
+            }
+        }
+
+        return sides;
+    }
+
+    /**
+     * The direction a road stores for a set of open arms: both its arms open is both ways, one open is one way toward it,
+     * neither is closed - a train leaves the square by an arm exactly when that arm is open.
+     *
+     * @param route the road
+     * @param sides the square's arms, as `armsOf` orders them
+     * @param mask the open arms
+     * @return the direction
+     */
+    public static Direction answerFor(Route route, List<Side> sides, int mask)
+    {
+        boolean openA = (mask & (1 << sides.indexOf(route.getA()))) != 0;
+        boolean openB = (mask & (1 << sides.indexOf(route.getB()))) != 0;
+
+        return openA && openB ? Direction.BOTH : openA ? Direction.TOWARD_A
+            : openB ? Direction.TOWARD_B : Direction.NONE;
+    }
+
+    /**
+     * Whether a square's arrows can hide a road's direction from the reader (OB-351): two of its roads end at one side, so
+     * that side's arrow is the answer of both.  Switches, three-ways, double slips and permanent turnouts.
+     *
+     * Not half of a two-square crossing: its two tracks meet at the side the squares share, which draws no arrow, and each
+     * track's direction is drawn by its two outer ends, one on each square (OB-320, OB-322).
+     *
+     * @param tile the square
+     * @return true where the square's directions are its arms'
+     */
+    public boolean sharesAnArm(TileKey tile)
+    {
+        if (tile == null || crossingPartners.containsKey(tile)) return false;
+
+        Set<Side> seen = java.util.EnumSet.noneOf(Side.class);
+
+        for (Route route : roads(tile).values())
+        {
+            if (!seen.add(route.getA()) | !seen.add(route.getB())) return true;
+        }
+
+        return false;
+    }
+
+    /** A square's roads with a way through - not a link's stub, which has one side and no direction of its own. */
+    private Map<RouteId, Route> roads(TileKey tile)
+    {
+        Map<RouteId, Route> out = new LinkedHashMap<>();
+
+        for (Map.Entry<RouteId, Route> entry : getRoutes(tile).entrySet())
+        {
+            if (entry.getValue().getA() != entry.getValue().getB()) out.put(entry.getKey(), entry.getValue());
+        }
+
+        return out;
+    }
+
+    /**
+     * The arms a square lets trains leave by, as a mask over `armsOf` its roads: an arm is open where any road through it
+     * lets a train out, in force - which is what its arrows draw (`TileAnnotation.paintArrows`).
+     *
+     * @param tile the square
+     * @return the mask
+     */
+    public int armMask(TileKey tile)
+    {
+        Map<RouteId, Route> routes = roads(tile);
+
+        List<Side> sides = armsOf(routes.values());
+
+        int mask = 0;
+
+        for (Map.Entry<RouteId, Route> entry : routes.entrySet())
+        {
+            mask |= leavesBy(inForce(getDirection(tile, entry.getKey()), entry.getValue()), entry.getValue(), sides);
+        }
+
+        return mask;
+    }
+
+    /**
+     * The arms of a square with a way through, in the order `armMask` counts them.
+     *
+     * @param tile the square
+     * @return its arms
+     */
+    public List<Side> armsOf(TileKey tile)
+    {
+        return armsOf(roads(tile).values());
+    }
+
+    /** The arms a road in this direction lets a train leave by, as a mask over `sides`. */
+    private static int leavesBy(Direction direction, Route route, List<Side> sides)
+    {
+        int mask = 0;
+
+        if (direction == Direction.BOTH || direction == Direction.TOWARD_A) mask |= 1 << sides.indexOf(route.getA());
+        if (direction == Direction.BOTH || direction == Direction.TOWARD_B) mask |= 1 << sides.indexOf(route.getB());
+
+        return mask;
+    }
+
+    /**
+     * Every road of a square given the directions wanted on some of them, as its arms can hold them (OB-351; Adam: *"into
+     * spur should simply require S to be green, and out of spur should require W to be green.  Align it so that the arrows
+     * tell the full story."*).
+     *
+     * Each road wanted opens the arms it lets a train leave by and shuts the others it ends at; an arm one road opens and
+     * another shuts stays open, and the arms no wanted road ends at are left as they are.  So making a road one way
+     * shuts the arm it may no longer leave by for every road through that arm, and opening a road opens its arms for all
+     * of them.  Each road then takes the answer of its two arms, in force - an answer the hardware leaves no meaning is
+     * stored as the one it means.  A square whose arms are not shared (`sharesAnArm`) takes what was wanted as it is.
+     *
+     * @param tile the square
+     * @param wanted road to the direction wanted on it
+     * @return every road wanted, and every other road of the square, to the direction it is to store
+     */
+    public Map<RouteId, Direction> armAnswersFor(TileKey tile, Map<RouteId, Direction> wanted)
+    {
+        if (!sharesAnArm(tile)) return new LinkedHashMap<>(wanted);
+
+        Map<RouteId, Route> routes = roads(tile);
+
+        List<Side> sides = armsOf(routes.values());
+
+        int opened = 0;
+        int shut = 0;
+
+        for (Map.Entry<RouteId, Direction> each : wanted.entrySet())
+        {
+            Route route = routes.get(each.getKey());
+
+            if (route == null || each.getValue() == null) continue;
+
+            int leaves = leavesBy(inForce(each.getValue(), route), route, sides);
+
+            int ends = (1 << sides.indexOf(route.getA())) | (1 << sides.indexOf(route.getB()));
+
+            opened |= leaves;
+            shut |= ends & ~leaves;
+        }
+
+        int mask = (armMask(tile) | opened) & ~(shut & ~opened);
+
+        Map<RouteId, Direction> out = new LinkedHashMap<>();
+
+        for (Map.Entry<RouteId, Route> entry : routes.entrySet())
+        {
+            out.put(entry.getKey(), inForce(answerFor(entry.getValue(), sides, mask), entry.getValue()));
+        }
+
+        return out;
+    }
+
+    /**
+     * The squares `normalizeToArms` brought to their arrows when the setup was last applied, each to the roads it changed
+     * and their new directions.
+     */
+    private final Map<TileKey, Map<RouteId, Direction>> normalizedToArms = new LinkedHashMap<>();
+
+    /**
+     * Brings every square whose arms are shared to what its arrows show (OB-351): each road the answer of its two arms,
+     * the arms open where a road lets a train out.  A road closed a way its arrow showed open - a switch's spur shut while
+     * its main line ran both ways - is opened that way, which is what the diagram drew; nothing is shut.  A square left
+     * at its defaults is never touched: each kind's default is an answer of its arms.
+     *
+     * @return each square changed, to the roads changed and their new directions; also kept for `getNormalizedToArms`
+     */
+    public Map<TileKey, Map<RouteId, Direction>> normalizeToArms()
+    {
+        normalizedToArms.clear();
+
+        for (TileKey tile : new ArrayList<>(directions.keySet()))
+        {
+            if (directions.get(tile).isEmpty() || !sharesAnArm(tile)) continue;
+
+            Map<RouteId, Route> routes = roads(tile);
+
+            Map<RouteId, Direction> answers = armAnswersFor(tile, Collections.<RouteId, Direction>emptyMap());
+
+            Map<RouteId, Direction> changed = new LinkedHashMap<>();
+
+            for (Map.Entry<RouteId, Direction> answer : answers.entrySet())
+            {
+                if (inForce(getDirection(tile, answer.getKey()), routes.get(answer.getKey())) == answer.getValue()) continue;
+
+                changed.put(answer.getKey(), answer.getValue());
+            }
+
+            for (Map.Entry<RouteId, Direction> each : changed.entrySet()) setDirection(tile, each.getKey(), each.getValue());
+
+            if (!changed.isEmpty()) normalizedToArms.put(tile, changed);
+        }
+
+        return getNormalizedToArms();
+    }
+
+    /**
+     * What the last `normalizeToArms` changed.
+     *
+     * @return each square changed, to the roads changed and their new directions
+     */
+    public Map<TileKey, Map<RouteId, Direction>> getNormalizedToArms()
+    {
+        Map<TileKey, Map<RouteId, Direction>> out = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, Map<RouteId, Direction>> each : normalizedToArms.entrySet())
+        {
+            out.put(each.getKey(), new LinkedHashMap<>(each.getValue()));
+        }
+
+        return out;
+    }
+
     private static boolean hasPortOn(LayoutDiagramComponent component, Side side)
     {
         componentType type = component.getType();

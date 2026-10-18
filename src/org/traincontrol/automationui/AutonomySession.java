@@ -339,6 +339,21 @@ public class AutonomySession
 
         rebuild();
 
+        // EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351), and the setup is saved that way at once, so each is said once
+        broughtToTheirArrows = sentencesFor(graph.getNormalizedToArms().keySet());
+
+        if (!broughtToTheirArrows.isEmpty())
+        {
+            try
+            {
+                store.save();
+            }
+            catch (IOException e)
+            {
+                // Not saved: the railway still runs as the arrows show, and the next open brings them to it and says so again
+            }
+        }
+
         // A ROUTE TILE'S LENGTH GOES TO THE TRACK BESIDE IT, once, as the setup is read (Adam, 2026-09-23).
         foldedRouteTiles = foldRouteTileLengths();
 
@@ -358,6 +373,59 @@ public class AutonomySession
         // while not a station), and `getCaptionTarget` leaves it undrawn until the square is a station again.
 
         dirty = false;
+    }
+
+    /** The squares brought to their arrows as this setup was opened (OB-351), each to a sentence for the log. */
+    private Map<TileKey, String> broughtToTheirArrows = new LinkedHashMap<>();
+
+    /**
+     * The squares whose directions this setup was opened with ran differently from their arrows, and now run as the
+     * arrows show (OB-351; Adam: *"Align it so that the arrows tell the full story."*), each to a sentence for the log.
+     * The setup is saved that way as it is opened, so a square is here once.
+     *
+     * @return square to sentence, empty when every square already ran as its arrows show
+     */
+    public Map<TileKey, String> getSquaresBroughtToTheirArrows()
+    {
+        return Collections.unmodifiableMap(broughtToTheirArrows);
+    }
+
+    /**
+     * A sentence for each square brought to its arrows: what it is, where, and the arms trains may now leave it by.
+     *
+     * @param squares the squares
+     * @return square to sentence
+     */
+    private Map<TileKey, String> sentencesFor(java.util.Collection<TileKey> squares)
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+
+        for (TileKey square : squares)
+        {
+            LayoutDiagramComponent component = graph.getTiles().get(square);
+
+            String named = store.getPointName(square);
+
+            String what = named != null && !named.trim().isEmpty() ? named.trim()
+                : component != null && !component.toSimpleString().isEmpty() ? component.toSimpleString()
+                : I18n.t("autosetup.log.followsItsArrowsSquare");
+
+            List<Side> arms = graph.armsOf(square);
+
+            int mask = graph.armMask(square);
+
+            List<String> open = new ArrayList<>();
+
+            for (int i = 0; i < arms.size(); i++)
+            {
+                if ((mask & (1 << i)) != 0) open.add(String.valueOf(arms.get(i)));
+            }
+
+            out.put(square, I18n.f("autosetup.log.followsItsArrows", what, square.getX() + "," + square.getY(),
+                square.getPage(), String.join(", ", open)));
+        }
+
+        return out;
     }
 
     /** The route tiles whose length was folded as this setup was opened, each to the square that took it. */
@@ -616,6 +684,16 @@ public class AutonomySession
         graph = new TileGraph(pages, store.getExcludedPages());
 
         store.applyTo(graph);
+
+        // AND THE SETUP SAYS WHAT THE GRAPH RUNS (OB-351): a square brought to its arrows is written back
+        for (Map.Entry<TileKey, Map<RouteId, Direction>> square : graph.getNormalizedToArms().entrySet())
+        {
+            for (Map.Entry<RouteId, Direction> road : square.getValue().entrySet())
+            {
+                store.setTileDirection(square.getKey(), road.getKey(),
+                    road.getValue() == graph.defaultDirection(square.getKey(), road.getKey()) ? null : road.getValue());
+            }
+        }
 
         graph.validatePortals();
 
@@ -1601,6 +1679,8 @@ public class AutonomySession
         // A DIAGRAM WHOSE DIRECTIONS HAVE BEEN SET is left as it is, and what the file ran differently is counted.
         boolean tuned = store.hasTileDirections();
 
+        Map<TileKey, Map<RouteId, Direction>> bySquare = new LinkedHashMap<>();
+
         for (Map.Entry<TileGraph.DirectionKey, Direction> each : wanted.entrySet())
         {
             TileKey tile = each.getKey().square();
@@ -1618,9 +1698,29 @@ public class AutonomySession
                 continue;
             }
 
-            record(tile, id, each.getValue());
+            bySquare.computeIfAbsent(tile, k -> new LinkedHashMap<RouteId, Direction>()).put(id, each.getValue());
+        }
 
-            result.directionsCarried.put(each.getKey(), each.getValue());
+        // A SQUARE AT A TIME, BY ITS ARMS (OB-351): a switch's roads run as its arrows will show them
+        for (Map.Entry<TileKey, Map<RouteId, Direction>> square : bySquare.entrySet())
+        {
+            TileKey tile = square.getKey();
+
+            Map<RouteId, Route> routes = graph.getRoutes(tile);
+
+            for (Map.Entry<RouteId, Direction> answer : graph.armAnswersFor(tile, square.getValue()).entrySet())
+            {
+                Route route = routes.get(answer.getKey());
+
+                if (route == null || TileGraph.inForce(graph.getDirection(tile, answer.getKey()), route) == answer.getValue())
+                {
+                    continue;
+                }
+
+                record(tile, answer.getKey(), answer.getValue());
+
+                result.directionsCarried.put(new TileGraph.DirectionKey(tile, answer.getKey()), answer.getValue());
+            }
         }
 
         if (!result.directionsCarried.isEmpty()) touched();
@@ -8852,8 +8952,34 @@ public class AutonomySession
 
     public void setDirection(TileKey tile, RouteId routeId, Direction direction)
     {
-        record(tile, routeId, direction);
+        recordSquare(tile, Collections.singletonMap(routeId, direction));
         directionsTouched();
+    }
+
+    /**
+     * Records directions wanted on some of one square's roads as its arms can hold them, without re-deriving (OB-351).
+     *
+     * Every door that sets a direction comes through here, so none can store a road closed a way its square's arrow shows
+     * open: on a square whose roads share an arm the arms decide (`TileGraph.armAnswersFor`), and elsewhere each road
+     * takes what was wanted.
+     *
+     * @param tile the square
+     * @param wanted road to the direction wanted on it
+     */
+    private void recordSquare(TileKey tile, Map<RouteId, Direction> wanted)
+    {
+        Map<RouteId, Route> routes = graph.getRoutes(tile);
+
+        for (Map.Entry<RouteId, Direction> answer : graph.armAnswersFor(tile, wanted).entrySet())
+        {
+            Route route = routes.get(answer.getKey());
+
+            // the other roads only where their arms changed them
+            if (!wanted.containsKey(answer.getKey()) && route != null
+                && TileGraph.inForce(graph.getDirection(tile, answer.getKey()), route) == answer.getValue()) continue;
+
+            record(tile, answer.getKey(), answer.getValue());
+        }
     }
 
     /**
@@ -9248,7 +9374,11 @@ public class AutonomySession
 
         for (Map.Entry<TileKey, List<RouteId>> square : shut.entrySet())
         {
-            for (RouteId routeId : square.getValue()) record(square.getKey(), routeId, Direction.BOTH);
+            Map<RouteId, Direction> open = new LinkedHashMap<>();
+
+            for (RouteId routeId : square.getValue()) open.put(routeId, Direction.BOTH);
+
+            recordSquare(square.getKey(), open);
         }
 
         directionsTouched();
@@ -9273,10 +9403,11 @@ public class AutonomySession
         // thread, for the gesture that exists precisely because it is the common one.
         for (TileKey tile : tiles)
         {
-            for (RouteId routeId : graph.getRoutes(tile).keySet())
-            {
-                record(tile, routeId, direction);
-            }
+            Map<RouteId, Direction> every = new LinkedHashMap<>();
+
+            for (RouteId routeId : graph.getRoutes(tile).keySet()) every.put(routeId, direction);
+
+            recordSquare(tile, every);
         }
 
         directionsTouched();
@@ -9296,10 +9427,7 @@ public class AutonomySession
      */
     public void setDirections(TileKey tile, Map<RouteId, Direction> directions)
     {
-        for (Map.Entry<RouteId, Direction> entry : directions.entrySet())
-        {
-            record(tile, entry.getKey(), entry.getValue());
-        }
+        recordSquare(tile, directions);
 
         directionsTouched();
     }
@@ -12041,17 +12169,21 @@ public class AutonomySession
 
             if (cameFrom == null || goingTo == null) continue;
 
+            Map<RouteId, Direction> ways = new LinkedHashMap<>();
+
             for (Map.Entry<RouteId, Route> entry : graph.getRoutes(tile).entrySet())
             {
                 Route route = entry.getValue();
 
                 if (!route.touches(cameFrom) || !route.touches(goingTo)) continue;
 
-                record(tile, entry.getKey(),
-                    route.getA() == goingTo ? Direction.TOWARD_A : Direction.TOWARD_B);
-
-                changed++;
+                ways.put(entry.getKey(), route.getA() == goingTo ? Direction.TOWARD_A : Direction.TOWARD_B);
             }
+
+            // ON A SWITCH, BY ITS ARMS (OB-351): the arm the run may not leave by is shut for every road through it
+            recordSquare(tile, ways);
+
+            changed += ways.size();
         }
 
         return directionsTouched() ? changed : 0;

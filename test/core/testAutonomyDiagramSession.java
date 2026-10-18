@@ -2841,8 +2841,10 @@ public class testAutonomyDiagramSession
         session.setDirection(turnout, road, Direction.NONE);
         session.rebuild();
 
-        assertEquals(session.routesNotOpenBothWays().get(turnout), java.util.Collections.singletonList(road), "a turnout"
-            + " with no address, closed, is not counted as shut");
+        // CLOSED AT ITS TOE, so both its roads (OB-351): a road shut shuts the arm it leaves by, and every road leaves by
+        // the toe - whose arrow is the whole of what the square says
+        assertEquals(session.routesNotOpenBothWays().get(turnout), new ArrayList<>(session.getGraph().getRoutes(turnout)
+            .keySet()), "a turnout with no address, closed, is not counted as shut on both its roads");
 
         assertEquals(session.allowEveryPath(), 1, "Allow Every Path does not say it opened the closed turnout");
 

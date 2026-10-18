@@ -3151,6 +3151,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     session.getMigratedCaptions());
             }
 
+            // AND EACH SQUARE NOW RUNNING AS ITS ARROWS SHOW (OB-351), once: the setup was saved that way as it opened
+            for (String line : session.getSquaresBroughtToTheirArrows().values())
+            {
+                this.model.log(line);
+            }
+
             // Captions written into the layout file by an earlier version are brought into the setup
             // when it opens.  A page that could not be rewritten leaves its old labels behind, and the
             // migration simply runs again next time - but the user is told, because until it succeeds
