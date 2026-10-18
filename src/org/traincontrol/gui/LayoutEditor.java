@@ -2530,28 +2530,19 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The tiles that are one plain road, and so are turned to lie along the track beside them (OB-292, OB-360): the
-     * straight, and the s88 tile, signal and uncoupler, which are drawn on one, join track at both ends; the bumper, the
-     * tunnel and the link end the track at one side, and join where that side meets track.  A switch is turned on
-     * purpose, and turning one for the operator would be a decision about the railway rather than about a piece of
-     * track.
-     */
-    private static final java.util.Set<LayoutDiagramComponent.componentType> TURNS_TO_JOIN = java.util.EnumSet.of(
-        LayoutDiagramComponent.componentType.STRAIGHT, LayoutDiagramComponent.componentType.FEEDBACK,
-        LayoutDiagramComponent.componentType.SIGNAL, LayoutDiagramComponent.componentType.UNCOUPLER,
-        LayoutDiagramComponent.componentType.END, LayoutDiagramComponent.componentType.TUNNEL,
-        LayoutDiagramComponent.componentType.LINK);
-
-    /**
-     * Which way round a straight-shaped tile put down on a square should lie so that it joins the track beside it
-     * (OB-292, OB-360).
+     * Which way round a track tile put down on a square should lie so that it joins the track beside it (OB-292,
+     * OB-360).
      *
-     * The way round that meets the most track: a road with both its ends on track beats one end, and one end beats none
-     * (Adam, OB-360: *"meet the single neighbor"*).  The way it is held wins whenever it meets as much as any other, and
-     * otherwise the nearest turn from it does (a signal has four ways round, and which end it faces is the operator's).
+     * Every tile with roads in the port table is turned, however many; a lamp, a text label, a route button, a
+     * turntable and the scissors drawings are not.  The way round that meets the most track wins: a switch first by its
+     * base - the end every position of its points shares, where a straight's end would be (Adam, OB-360: *"the base of a
+     * switch behaves like a straight track would, so that at least something is aligned (for switches, there's always
+     * some guessing involved, which is ok)"*) - then by roads with every end on track (a curve with track on both sides
+     * joins both: *"a curve connects if it can"*), then by ends on track, so one end beats none (*"meet the single
+     * neighbor"*).  The way it is held wins whenever it meets as much as any other, and otherwise the nearest turn from
+     * it does (a signal has four ways round, and which end it faces is the operator's).
      * A neighbour joins where any of its roads, in any position of its points, reaches the edge the two squares share -
      * the same port table the autonomy graph is built from, so a tile laid this way is one the graph runs over.
-     * Only the types in TURNS_TO_JOIN.
      *
      * @param layout the page
      * @param placing the tile about to be put down
@@ -2564,7 +2555,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         int held = placing.getOrientation();
 
-        if (layout == null || !TURNS_TO_JOIN.contains(placing.getType())) return held;
+        if (layout == null || !org.traincontrol.automationui.TilePorts.isRoutable(placing.getType())
+            || org.traincontrol.automationui.TilePorts.isTransparent(placing.getType())) return held;
 
         int ways = LayoutDiagramComponent.getNumOrientations(placing.getType());
         int best = held;
@@ -2590,27 +2582,37 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * How much track a tile of this type, this way round, on this square, meets: ten for every road with both its ends on
-     * track (or its one end, for a tile whose road ends in the square), and one for every end that is.
+     * How much track a tile of this type, this way round, on this square, meets: a thousand if the base of its switch is
+     * on track, ten for every road, in any position of its points, with both its ends on track (or its one end, for a
+     * tile whose road ends in the square), and one for every side with an end that is.
      */
     private static int joinScore(org.traincontrol.base.LayoutDiagram layout,
         LayoutDiagramComponent.componentType type, int orientation, int x, int y)
     {
-        int score = 0;
+        org.traincontrol.automationui.TilePorts.Side toe =
+            org.traincontrol.automationui.TilePorts.deriveToe(type, orientation);
 
-        for (org.traincontrol.automationui.TilePorts.Route road
-            : org.traincontrol.automationui.TilePorts.ports(type, orientation, 0))
+        int score = toe != null && meetsTrack(layout, x, y, toe) ? 1000 : 0;
+
+        java.util.Set<org.traincontrol.automationui.TilePorts.Side> met =
+            java.util.EnumSet.noneOf(org.traincontrol.automationui.TilePorts.Side.class);
+
+        for (int state = 0; state < org.traincontrol.automationui.TilePorts.getStateCount(type); state++)
         {
-            boolean a = meetsTrack(layout, x, y, road.getA());
-            boolean b = meetsTrack(layout, x, y, road.getB());
+            for (org.traincontrol.automationui.TilePorts.Route road
+                : org.traincontrol.automationui.TilePorts.ports(type, orientation, state))
+            {
+                boolean a = meetsTrack(layout, x, y, road.getA());
+                boolean b = meetsTrack(layout, x, y, road.getB());
 
-            if (a && b) score += 10;
+                if (a && b) score += 10;
 
-            if (road.getA() == road.getB()) score += a ? 1 : 0;
-            else score += (a ? 1 : 0) + (b ? 1 : 0);
+                if (a) met.add(road.getA());
+                if (b) met.add(road.getB());
+            }
         }
 
-        return score;
+        return score + met.size();
     }
 
     /** Whether the square beside this one, on this side, has a road that reaches the edge between them. */
