@@ -3406,8 +3406,17 @@ public class testTheImportDoorReadsAnOldFile
 
         String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 
+        // SHOW TRAINS ON, SET AND NOT TOGGLED: the editor's box is remembered in the preferences, and a run's copy of them
+        // starts as Adam's own, so a claim about the trains drawn was green only while his box was ticked
+        final java.util.prefs.Preferences viewPrefs =
+            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
+
+        final String trainsWas = viewPrefs.get("autonomyEditorTrains", null);
+
         try
         {
+            viewPrefs.putBoolean("autonomyEditorTrains", true);
+
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             ui[0] = openTheWindow();
@@ -3519,6 +3528,9 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
+            if (trainsWas == null) viewPrefs.remove("autonomyEditorTrains");
+            else viewPrefs.put("autonomyEditorTrains", trainsWas);
+
             putTheFolderBack(folderWas);
 
             if (ui[0] != null)
