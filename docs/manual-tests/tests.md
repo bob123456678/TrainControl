@@ -27,9 +27,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-761](#mt-761) | 2026-10-18 | OB-357: a train's icon on the Track Diagram turns with its label | fixed unvalidated | OB-357 |
+| [MT-762](#mt-762) | 2026-10-18 | FR-137: a spinner beside every running route on the Routes tab | fixed unvalidated | FR-137 |
+| [MT-763](#mt-763) | 2026-10-18 | MT-760's note: the wait-for-a-route message names the route | fixed unvalidated | MT-760 |
+| [MT-764](#mt-764) | 2026-10-18 | OB-358: the Layouts menu's tooltips have no padding at the end | fixed unvalidated | OB-358 |
+| [MT-765](#mt-765) | 2026-10-18 | OB-360: a new tile from the palette turns to join the track beside it | fixed unvalidated | OB-360 |
 
-
-Everything else - 760 of 760 - needs nothing from you unless the area changes again:
+Everything else - 760 of 765 - needs nothing from you unless the area changes again:
 605 **fixed validated** and 155 **superseded**.
 
 ---
@@ -35668,5 +35672,141 @@ Works, but name the route(s) in the popup window.  Be sure to manage its width/h
 **Claude, 2026-10-18.**
 
 Taken up: the message names the route or routes that are running, with a long list cut short so the window stays a sensible size.  It gets its own test.
+
+---
+
+<a id="mt-761"></a>
+### MT-761 - 2026-10-18 - OB-357: a train's icon on the Track Diagram turns with its label
+
+**Disposition:** fixed unvalidated
+**From:** OB-357
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. With Echo Sent Commands on, autonomy loaded and stopped, and nothing running, note which way a placed train faces:
+   the arrow on its label and its icon on the Track Diagram (and in a pop-up, if one is open).
+2. Reverse it with the direction arrow buttons; then with the left or right key; then with a route whose command
+   reverses it.
+3. Make a test route that takes several seconds (for example two switch commands with a delay of 5000 in the first row's Delay (ms) column), run it, and while it runs reverse the train from its throttle.  Watch until the route finishes.
+4. Start autonomy and, while it runs, reverse a train by hand and from the Central Station.
+
+**Expected**
+
+- Step 2: each time, the icon turns round together with the label's arrow, on the Track Diagram and in the pop-up.
+- Step 3: neither changes while the route runs; both turn once it finishes.
+- Step 4: nothing changes in the setup: the label and the icon keep the facing autonomy has.
+
+*What this is:* OB-357 (`1fbd1305`): the turn was followed, and the label read it at once, but the train was moved onto its other copy
+without the diagram being told, so the icon kept its old way until something else redrew it.  Claims in
+`regression.testAThrottleReversalIsFollowedFromItsEcho`.
+
+---
+
+<a id="mt-762"></a>
+### MT-762 - 2026-10-18 - FR-137: a spinner beside every running route on the Routes tab
+
+**Disposition:** fixed unvalidated
+**From:** FR-137
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Make a test route that takes several seconds (for example two switch commands with a delay of 5000 in the first row's Delay (ms) column).  Open the Routes tab.
+2. Run it from its play button; then from the Track Diagram's route tile; then let a sensor (S88 trigger) or another
+   route start it, if you have one set up that way.
+3. Watch the row until the route finishes.  Run two routes at once.
+
+**Expected**
+
+- Step 2: each time, a turning mark appears beside the route's play button for as long as it runs, whoever started it.
+- Step 3: the mark stops and goes once the route finishes; two running routes each have their own.  Routes that are
+  not running show no mark, and long names still read as before.
+
+*What this is:* FR-137 (`1f12c525`): the route list draws the autonomy spinner beside each route that is running; a route announces its
+start and its end.  Claims in `ui.testTheRouteListShowsWhatRuns`.
+
+---
+
+<a id="mt-763"></a>
+### MT-763 - 2026-10-18 - MT-760's note: the wait-for-a-route message names the route
+
+**Disposition:** fixed unvalidated
+**From:** MT-760
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Make a test route that takes several seconds (for example two switch commands with a delay of 5000 in the first row's Delay (ms) column), run it, and while it runs press Start (autonomy loaded, power on).
+2. Run two or more routes at once and press Start again; if you can, give one route a very long name.
+
+**Expected**
+
+- Step 1: the message names the route: "The route ... is running.  Wait for it to finish, then try again."
+- Step 2: it names the routes that are running, at most three, then "and N more"; a very long name is cut short, and
+  the window stays a sensible width and height.
+
+*What this is:* Adam's note on MT-760 ("name the route(s) in the popup window.  Be sure to manage its width/height") (`573683d1`):
+one helper lists the running routes for every door that refuses.  Claims in
+`regression.testNoSetupEditWhileARouteRuns`.
+
+---
+
+<a id="mt-764"></a>
+### MT-764 - 2026-10-18 - OB-358: the Layouts menu's tooltips have no padding at the end
+
+**Disposition:** fixed unvalidated
+**From:** OB-358
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open the Layouts menu and hover over each item, starting with Create New Layout.
+2. Hover over a few long tooltips elsewhere (a Bulk Tools item in the autonomy editor's right-click menu).
+
+**Expected**
+
+- Step 1: each tooltip box is as wide as its text, with no empty space at the end.
+- Step 2: long tooltips still wrap onto several lines, as before.
+
+*What this is:* OB-358 (`13b5c6df`): on a display above 100% scaling, a tooltip of middling length was sent down the wrapping path and sat
+in a box wider than its one line.  Claim in `regression.testTheToolbarButtonsHonourTheirTooltips`.
+
+---
+
+<a id="mt-765"></a>
+### MT-765 - 2026-10-18 - OB-360: a new tile from the palette turns to join the track beside it
+
+**Disposition:** fixed unvalidated
+**From:** OB-360
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. In the layout editor, lay a short straight line with a gap in it.  Drop from the palette into the gap, one at a
+   time: an s88 tile, a signal, an uncoupler.  Then try each at the end of a line, with track on one side only.
+2. At the end of a line, drop a bumper, a tunnel and a link.
+3. Drop a curve next to the end of a line, and a left switch, a right switch and a three-way switch.
+4. Copy a tile already on the page that lies the other way, and paste it into a gap; move a tile into a gap; rotate a
+   tile that was turned.
+5. Drop a lamp and a text tile next to track.
+
+**Expected**
+
+- Steps 1 to 3: each new tile turns to join the track beside it: along the line, or meeting the one neighbour it has; a
+  bumper, tunnel or link faces the track; a curve connects if it can; a switch lies with its base on the track (which
+  way its branch goes may still need a turn by hand).
+- Step 4: a pasted copy, a moved tile and a rotated tile keep the way they lie; only a new tile from the palette is
+  turned, and only as it is put down.
+- Step 5: lamps and text are not turned.
+
+*What this is:* OB-360 (`3cb3970a`): one rule in the layout editor (`orientationThatJoins`) turns a tile placed from the palette, of
+any track type, so that most of its ends meet track, a switch's base first.  Claims in
+`regression.testANewStraightJoinsTheTrackBesideIt`.
 
 ---

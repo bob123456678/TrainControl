@@ -373,32 +373,6 @@ refactor code to make agents work faster- split large files, consolidate documen
 
 **Claude, 2026-10-18.** Adam approved the plan with his rulings and answers (*"I approve the plan and the change to the comment rule"*): `docs/refactor-3.0.3.md`.  Steps already taken: OB-359.  Filed from it: FR-138.
 
-### FR-137 - 2026-10-18 - route spinner
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-18 13:51  
-**Build:** commit f4f28b52, in English - build\classes, compiled 18 Oct 13:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-in the route tab, show a spinner next to any route that is currently running, similar to the autonomy spinner. 3.0.2 feature
-
-### OB-357 - 2026-10-18 - a train's icon on the Track Diagram does not turn when its direction is changed, though its label's arrow does
-
-**Kind:** bug  
-**Raised from:** MT-759  
-**Filed:** 2026-10-18  
-
-From MT-759 (Adam, 2026-10-18: "partially works"): changing a locomotive's direction by a route, by the direction arrow buttons or by the left and right keys turns the arrow on its label, but not its icon on the Track Diagram; the icon turns only when the facing is set from the right-click menu.  The icon should match the label.  Also to check: while autonomy is running, a direction command by hand or from the Central Station changes nothing in the setup.
-
-### OB-358 - 2026-10-18 - tooltips in layout jmenu
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-18 14:19  
-**Build:** commit a945eb25, in English - build\classes, compiled 18 Oct 13:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-many tooltips in the layout jmenu have extra whitespace padding at the end, such as "Create New Layout"
-
 ### FR-138 - 2026-10-18 - for 3.0.3: more example code for the Java API, beyond what the Readme has
 
 **Kind:** feature request  
@@ -406,15 +380,6 @@ many tooltips in the layout jmenu have extra whitespace padding at the end, such
 **Filed:** 2026-10-18  
 
 From Adam's rulings on FR-136's plan (2026-10-18): the public methods on the API classes (Layout, Edge, Locomotive, MarklinControlStation) stay even where nothing in the program calls them, because *"these seem useful to an API user, and we should add examples later"*.  Write example code that shows them in use, beyond the examples the Readme and AutomationAPI.md have now.
-
-### OB-360 - 2026-10-18 - layout editor straight segment alignement
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-18 15:03  
-**Build:** commit 573683d1, in English - build\classes, compiled 18 Oct 14:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when placing straight segments, the layout editor will turn a new straight tile to match the path around it.  however, this doesn't apply to straight s88 tiles.  check that it does, and also ake the same check for tunnels, uncouplers, links, signals, and bumpers.
 
 ### OB-361 - 2026-10-18 - the new sample layout: two setup check notices about moves no train can make, and stray red arrows east of feedback 4
 
@@ -444,6 +409,10 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-18 | OB-360 | bug | A tile placed from the palette, of any track type, turns to join the track beside it; a switch lies with its base on the track; pasted, moved and rotated tiles keep their way (`3cb3970a`). | - | MT-765 |
+| 2026-10-18 | OB-358 | bug | Tooltips of middling length are as wide as their text on a scaled display (`13b5c6df`). | - | MT-764 |
+| 2026-10-18 | FR-137 | feature request | A turning mark beside each running route on the Routes tab (`1f12c525`). | - | MT-762 |
+| 2026-10-18 | OB-357 | bug | A train's icon on the Track Diagram turns with its label when its direction is followed (`1fbd1305`). | - | MT-761 |
 | 2026-10-18 | OB-359 | bug | The legacy track diagram editor and Edit Current Page items are gone from the form and the code, Combine Linked Pages is in the form, and the keys only they used are gone (`a4dac3dd`, `2884d4d7`): `regression.testTheMenusComeBackAtOneMoment`.  Nothing a user sees changed.  The external application pattern it held lives in git history before 3.0.2. | fixed validated | - |
 | 2026-10-17 | OB-356 | bug | Not a fault: ST60rear's track runs out to the west, so it is drawn as a terminus (FR-118); a menu note saying so was tried and taken out again on Adam's word (`0bf2ae89`). | - | MT-757 |
 | 2026-10-17 | OB-355 | bug | Return Home names the paused trains away from home instead of saying every locomotive is home (`18d48af7`). | - | MT-756 |
