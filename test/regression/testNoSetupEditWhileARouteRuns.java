@@ -1270,7 +1270,8 @@ public class testNoSetupEditWhileARouteRuns
      * before anything is asked: the enable button, the Autonomy menu's list, and the diagram's Load this configuration.  The
      * railway is the same object afterwards, the route is still running, and nothing was exported; at rest each one goes
      * ahead (Adam, 2026-09-28: *"There should be no setup edit possible during a run"*).  A load rebuilds the railway and
-     * switches the routes the configuration activates, and Export first folds the running railway into the setup.
+     * switches the routes the configuration activates, and Export first folds the running railway into the setup.  While
+     * autonomy itself is busy the loads keep their offer to stop the trains, and Export its own sentence.
      *
      * MUTATION: send the enable button, `loadByRequest` or the banner to `load` directly, or have Export ask
      * `isAutonomyBusy` alone, and this fails naming the door.
@@ -1344,6 +1345,49 @@ public class testNoSetupEditWhileARouteRuns
             finally
             {
                 aRouteRuns(ui, false);
+            }
+
+            // WHILE AUTONOMY ITSELF IS BUSY the loads keep their offer to stop the trains (declined here, so nothing is
+            // replaced), and Export keeps its own refusal: only what is not autonomy is refused with the any-run sentence
+            final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+            staging.setAccessible(true);
+
+            staging.setBoolean(ui, true);
+
+            try
+            {
+                assertTrue(ui.isAutonomyLoaded(), "precondition: autonomy is not loaded");
+
+                String offer = I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives");
+
+                for (String door : new String[] {"Autonomy: the enable button", "Autonomy: the list"})
+                {
+                    int from = answering.count();
+
+                    SwingUtilities.invokeAndWait(doors.get(door));
+
+                    settle();
+
+                    assertEquals(answering.since(from), Collections.singletonList(offer), door + " did not make its offer"
+                        + " to stop the trains while autonomy is busy, as it did before routes were refused");
+
+                    assertTrue(model.getAutoLayoutIfLoaded() == railway, door + " replaced the railway though the offer"
+                        + " was declined");
+                }
+
+                int from = answering.count();
+
+                SwingUtilities.invokeAndWait(doors.get("Autonomy: Export"));
+
+                settle();
+
+                assertEquals(answering.since(from), Collections.singletonList(I18n.t("autosetup.ui.errorExportWhileRunning")),
+                    "Export did not keep its own refusal while autonomy is busy");
+            }
+            finally
+            {
+                staging.setBoolean(ui, false);
             }
 
             // AT REST each one goes ahead: the load rebuilds the railway, Export asks where to write

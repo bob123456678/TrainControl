@@ -27140,6 +27140,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Says why, and answers true, where something other than autonomy holds the setup: a route, a hand send, a graceful stop
+     * or Return Home staging (`aRunHoldsTheSetup` and not `isAutonomyBusy`).  The user doors that load or unload a
+     * configuration ask it first (Adam, 2026-09-28: *"There should be no setup edit possible during a run"*; of a route,
+     * *"yes, refuse"*).  While autonomy is busy they keep their own offer to stop the trains (`prepareAutonomyReload`).
+     *
+     * @return true when the door is refused
+     */
+    boolean refusedWhileSomethingElseRuns()
+    {
+        if (!aRunHoldsTheSetup() || isAutonomyBusy()) return false;
+
+        JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autosetup.ui.tooltipNotWhileRunning"));
+
+        return true;
+    }
+
+    /**
      * What a door refusing a setup edit says: its own sentence where autonomy is busy, as before, and one naming a route
      * too where something else holds the setup (`aRunHoldsTheSetup`).
      *
