@@ -234,6 +234,8 @@ public class testSwitchingToACentralStationLayout
     /**
      * How many test classes build a model without a sandbox today - see the ratchet above.
      *
+     * **54 since 2026-10-17, down from 55: `testRouteInventory` opens a sandbox before it builds its model (C6).**
+     *
      * **55 since 2026-09-08, down from 56, and the drop is the point of a ratchet.** The first full
      * battery in a while found this at 59: four classes had joined the population since it was pinned
      * - `testATrainCoversTheTrackBehindIt`, `testATrainTooLongIsRefusedTheBerth`,
@@ -244,7 +246,7 @@ public class testSwitchingToACentralStationLayout
      * opened a sandbox inside ONE test method, which reads as careful and is not the same thing - `init`
      * runs in `@BeforeClass` and had already loaded his railway by then.
      */
-    private static final int MODELS_WITHOUT_A_SANDBOX = 55;
+    private static final int MODELS_WITHOUT_A_SANDBOX = 54;
 
     /**
      * WHICH classes, not just how many (VAL-C8).
@@ -294,7 +296,6 @@ public class testSwitchingToACentralStationLayout
         "testParseCS3Routes.java",
         "testRenameRoundTripThroughTheUIPath.java",
         "testReturnHomeOnRealLayout.java",
-        "testRouteInventory.java",
         "testRoutePicking.java",
         "testRouteReachesTheRails.java",
         "testRouteRoundTrip.java",
