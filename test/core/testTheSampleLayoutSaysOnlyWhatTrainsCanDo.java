@@ -174,6 +174,68 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
             + said);
     }
 
+    /**
+     * The track diagram draws on every square the arrows the autonomy editor draws there: east of MainLine, one arrow for
+     * the run up to PostDeparture, saying it runs one way.
+     *
+     * MUTATION: draw a run's squares that say otherwise than its first on the track diagram, or draw a run's first square
+     * with its own direction rather than the run's, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTheDiagramDrawsTheEditorsArrows() throws Exception
+    {
+        org.traincontrol.gui.AutonomyEditorPanel panel = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+
+        panel.refresh();
+
+        java.util.Map<TileKey, TileAnnotation> diagram =
+            session.staticAnnotations(session.getGraph().getTiles().keySet(), true, false);
+
+        List<String> differ = new ArrayList<>();
+
+        for (TileKey tile : session.getGraph().getTiles().keySet())
+        {
+            List<TileAnnotation.Mark> drawn = diagram.get(tile) == null
+                ? Collections.<TileAnnotation.Mark>emptyList() : diagram.get(tile).getMarks();
+
+            List<TileAnnotation.Mark> edited = panel.annotationFor(tile).getMarks();
+
+            if (!drawn.equals(edited)) differ.add(tile + ": diagram " + drawn + ", editor " + edited);
+        }
+
+        assertTrue(differ.isEmpty(), "the track diagram draws other arrows than the editor: " + differ);
+
+        // EAST OF MAINLINE: one square of the run draws, and says one way
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        int drawing = 0;
+
+        for (TileKey tile : new TileKey[] {square(7, 1), square(8, 1), square(9, 1), square(10, 1), square(10, 2),
+            square(10, 3)})
+        {
+            TileAnnotation annotation = diagram.get(tile);
+
+            if (annotation == null || annotation.getMarks().isEmpty()) continue;
+
+            drawing++;
+
+            marks.addAll(annotation.getMarks());
+        }
+
+        assertEquals(drawing, 1, "the run from MainLine to PostDeparture is not drawn once: " + marks);
+
+        assertTrue(marks.size() == 1 && marks.get(0).getDirection() != Direction.BOTH, "the run from MainLine to"
+            + " PostDeparture, which trains run one way, is not drawn one way: " + marks);
+    }
+
+    /** A square of the sample's only page. */
+    private static TileKey square(int x, int y)
+    {
+        return new TileKey("Page 1", x, y);
+    }
+
     /** The setup, built and parsed by the railway. */
     private static Layout built() throws Exception
     {

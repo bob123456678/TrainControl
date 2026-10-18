@@ -8497,7 +8497,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // One track: the click's next state, which goes on whole unless it is one way - and one way lands only on a run
         // with track between its ends (`cycle`, which says there is no path where it does not)
-        Direction next = after(session.getGraph().getDirection(target, routes.keySet().iterator().next()));
+        Direction next = after(session.directionAsDrawn(target, routes.keySet().iterator().next()));
 
         return next == Direction.BOTH || next == Direction.NONE || session.canRunOneWay(target);
     }
@@ -8577,7 +8577,7 @@ public class AutonomyEditorPanel extends JPanel
 
         org.traincontrol.automationui.TilePorts.Route route = only.getValue();
 
-        Direction next = after(session.getGraph().getDirection(target, only.getKey()));
+        Direction next = after(session.directionAsDrawn(target, only.getKey()));
 
         int changed = session.setRunDirection(target, only.getKey(), next);
 
@@ -10370,7 +10370,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // WHAT IS IN FORCE, not what is stored (VD18-B1) - `inForce`, which the arm boxes beside these submenus ask
         // too (VD18-C2), so the two cannot tick different ways.
-        Direction current = inForce(session.getGraph().getDirection(tile, routeId), route);
+        Direction current = inForce(session.directionAsDrawn(tile, routeId), route);
 
         if (TileGraph.directionIsPossible(Direction.BOTH, route))
         {
@@ -10585,9 +10585,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     private boolean isFollower(TileKey tile)
     {
-        TileKey leader = runLeaders.get(tile);
-
-        return leader != null && !leader.equals(tile);
+        // THE SESSION'S ANSWER, which the track diagram asks too (OB-361)
+        return session.followsItsRun(tile);
     }
 
     /**

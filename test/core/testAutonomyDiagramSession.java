@@ -2298,17 +2298,21 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A square of a run that lets trains through otherwise than the run's first square keeps its own arrows (OB-321).  A
-     * run disagreeing with itself is the one thing a single arrow per run would hide, and the running diagram must not.
+     * A run whose squares say different things is drawn once, at its first square, as a train finds it - on the track
+     * diagram as in the editor (OB-361; Adam: *"in the viewer, there are excessive red arrows shown to the east of feedback
+     * 4, even though these aren't visible in the editor."*).  A train passes every square of a run, so one square closed
+     * in a run open one way closes the run, and its first square says so; the square itself draws nothing, as in the
+     * editor.  This was OB-321's square that keeps its own arrows.
      *
-     * MUTATION: leave out every square but the run's first, whatever it says, and this fails.
+     * MUTATION: draw a square that follows its run, or draw the first square's own direction rather than the run's, and
+     * this fails.
      *
-     * @throws Exception from the session
+     * @throws Exception from the session or the panel
      */
     @Test
-    public void testARunSquareThatSaysOtherwiseKeepsItsArrows() throws Exception
+    public void testARunThatSaysTwoThingsIsDrawnOnceAsATrainFindsIt() throws Exception
     {
-        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-321 odd");
+        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-361 odd");
 
         TileKey leader = session.runLeaders().get(run.get(0));
 
@@ -2322,17 +2326,31 @@ public class testAutonomyDiagramSession
         session.setDirection(odd, new RouteId(0, 0), Direction.NONE);
         session.rebuild();
 
+        assertNotEquals(session.getGraph().getDirection(leader, new RouteId(0, 0)), Direction.NONE, "precondition:"
+            + " the run's first square is closed itself, so nothing below is about a run that says two things");
+
         java.util.Map<TileKey, TileAnnotation> drawn = session.staticAnnotations(run, true, false);
 
-        assertTrue(drawn.get(odd) != null && !drawn.get(odd).isBlank(), odd + ", closed in a run open one way, draws"
-            + " nothing, so the diagram hides that the run disagrees with itself (OB-321)");
+        assertTrue(drawn.get(leader) != null && drawn.get(leader).getMarks().size() == 1
+            && drawn.get(leader).getMarks().get(0).getDirection() == Direction.NONE, "the run's first square does not draw"
+            + " the run closed, and a train can pass no square of it: " + (drawn.get(leader) == null ? null
+                : drawn.get(leader).getMarks()));
+
+        org.traincontrol.gui.AutonomyEditorPanel panel = aPanel();
 
         for (TileKey square : run)
         {
-            if (square.equals(leader) || square.equals(odd)) continue;
+            if (!square.equals(leader))
+            {
+                assertTrue(drawn.get(square) == null || drawn.get(square).isBlank(), square + " draws its own arrows though"
+                    + " it follows its run (OB-361)");
+            }
 
-            assertTrue(drawn.get(square) == null || drawn.get(square).isBlank(), square + " draws its own arrows though it"
-                + " says only what the run's first square says (OB-321)");
+            List<TileAnnotation.Mark> diagram = drawn.get(square) == null
+                ? new ArrayList<TileAnnotation.Mark>() : drawn.get(square).getMarks();
+
+            assertEquals(diagram, panel.annotationFor(square).getMarks(), square + " is drawn otherwise on the track diagram"
+                + " than in the editor (OB-361)");
         }
     }
 

@@ -775,10 +775,29 @@ public class AutonomySession
 
         // AND THE TRACK NO STATION IS ON (OB-353), once a build rather than once a square painted
         stationless = squaresNoStationReaches(graph);
+
+        // AND THE RUNS, which are the diagram's alone, once a build too (OB-361)
+        Map<TileKey, Run> built = runs();
+
+        Map<TileKey, TileKey> led = new LinkedHashMap<>();
+
+        for (Map.Entry<TileKey, Run> run : built.entrySet())
+        {
+            for (TileKey tile : run.getValue().getTiles()) led.put(tile, run.getKey());
+        }
+
+        runsNow = built;
+        leadersNow = led;
     }
 
     /** The squares of track no station can be reached along, as the latest build found them (OB-353). */
     private volatile Set<TileKey> stationless = Collections.emptySet();
+
+    /** Every run of plain track, by the square that speaks for it, as the latest build found them (OB-361). */
+    private volatile Map<TileKey, Run> runsNow = Collections.emptyMap();
+
+    /** Every square of a run, to the square that speaks for it, as the latest build found them (OB-361). */
+    private volatile Map<TileKey, TileKey> leadersNow = Collections.emptyMap();
 
     /**
      * Whether a square is track that reaches no station, however its switches lie and whichever way it runs (OB-353):
@@ -12939,39 +12958,82 @@ public class AutonomySession
     }
 
     /**
-     * The squares of a run whose arrows say only what the run's first square says (OB-321).
+     * Whether a square follows its run: a square of a run of plain track other than the first, which speaks for it.  It
+     * draws no arrows of its own, in the editor and on the track diagram alike (OB-321, OB-361).
      *
-     * A run of plain track is one decision - the editor sets it and draws it at its first square - but its direction is
-     * stored on every square of it, so the ordinary track diagram drew an arrow on each one: after an import, a red arrow
-     * on every square of every one-way straight.  A square that lets trains through exactly as the run's first square
-     * does says nothing new, and is left out.  One that differs keeps its arrows: a run that disagrees with itself is the
-     * one thing the editor's single arrow would hide, and on the running diagram it must not be hidden.
+     * A run's direction is stored on every square of it, and the track diagram drew every square that said otherwise
+     * than the first: on the sample layout, five red arrows east of MainLine that the editor did not draw (Adam, OB-361:
+     * *"in the viewer, there are excessive red arrows shown to the east of feedback 4, even though these aren't visible
+     * in the editor."*).  What a run that disagrees with itself does to a train is drawn at its first square instead
+     * (`runsAs`), so nothing is hidden.
      *
-     * @return the squares whose arrows are redundant
+     * @param tile a square
+     * @return true for a square of a run that is not its first
      */
-    public Set<TileKey> squaresSayingNothingTheirRunDoesNot()
+    public boolean followsItsRun(TileKey tile)
     {
-        Set<TileKey> out = new LinkedHashSet<>();
+        TileKey leader = tile == null ? null : leadersNow.get(tile);
 
-        if (graph == null) return out;
+        return leader != null && !leader.equals(tile);
+    }
 
-        for (Run run : runs().values())
+    /**
+     * Which way trains run along a run of plain track, as a direction of its first square's road - or null for a square
+     * that leads no run of two or more, or a run that cannot be read (OB-361).
+     *
+     * A train on a run passes every square of it, so it goes a way only where every square lets it: a run whose squares
+     * disagree runs as the narrowest of them, and that is what its first square draws.
+     *
+     * @param leader a square
+     * @return the run's direction, or null
+     */
+    private Direction runsAs(TileKey leader)
+    {
+        Run run = leader == null || graph == null ? null : runsNow.get(leader);
+
+        if (run == null || run.getTiles().size() < 2) return null;
+
+        List<TileKey> tiles = run.getTiles();
+
+        boolean forward = true;
+        boolean back = true;
+
+        for (int at = 0; at < tiles.size(); at++)
         {
-            List<TileKey> tiles = run.getTiles();
+            String ways = waysThrough(tiles, at);
 
-            if (tiles.size() < 2) continue;
+            if (ways == null) return null;
 
-            String first = waysThrough(tiles, 0);
-
-            if (first == null) continue;
-
-            for (int at = 1; at < tiles.size(); at++)
-            {
-                if (first.equals(waysThrough(tiles, at))) out.add(tiles.get(at));
-            }
+            forward &= ways.startsWith("forward");
+            back &= ways.endsWith("back");
         }
 
-        return out;
+        Route route = firstRoute(leader);
+
+        Side ahead = graph.sideTowardNeighbour(leader, tiles.get(1));
+
+        if (route == null || ahead == null) return null;
+
+        if (forward == back) return forward ? Direction.BOTH : Direction.NONE;
+
+        Side toward = forward ? ahead : route.other(ahead);
+
+        return toward == route.getA() ? Direction.TOWARD_A : Direction.TOWARD_B;
+    }
+
+    /**
+     * The direction a square's road is drawn with, which a click steps on from and a menu ticks: a run's first square's
+     * is the run's (`runsAs`), any other square's what is stored (OB-361).
+     *
+     * @param tile the square
+     * @param routeId its road
+     * @return the direction
+     */
+    public Direction directionAsDrawn(TileKey tile, RouteId routeId)
+    {
+        Direction run = runsAs(tile);
+
+        return run != null ? run : graph.getDirection(tile, routeId);
     }
 
     /**
@@ -13064,6 +13126,11 @@ public class AutonomySession
                     ? TileGraph.Direction.TOWARD_A : TileGraph.Direction.TOWARD_B;
             }
 
+            // A RUN'S FIRST SQUARE DRAWS THE RUN, as a train finds it (OB-361) - see `runsAs`
+            TileGraph.Direction run = runsAs(tile);
+
+            if (run != null) direction = run;
+
             marks.add(new TileAnnotation.Mark(route.getA(), route.getB(), direction));
         }
 
@@ -13076,8 +13143,8 @@ public class AutonomySession
      * A run of plain track is one decision, stored on every square of it, so drawing each square's arrows put a red
      * arrow on every square of a one-way straight (OB-321; Adam, 2026-10-04: *"after import, redundant arrows can shown
      * in the viewer, on a single straight segment with multiple straight tracks that only allows travel in one direction.
-     * The editor correctly collapses then"*).  A square that lets trains through just as its run's first square does is
-     * drawn without arrows (`squaresSayingNothingTheirRunDoesNot`); one that differs keeps its own.  With `allowedToo`
+     * The editor correctly collapses then"*).  A square that follows its run draws no arrows, as in the editor, and the
+     * run's first square draws the run (`followsItsRun`, `runsAs`; OB-361).  With `allowedToo`
      * the directions trains may run are drawn in green as well (FR-110) - or on their own, since the two are chosen apart (MT-675; Adam,
      * 2026-10-04: *"allow the user to choose: restrictions, allowances, or both.  don't make them mutually exclusive."*).
      *
@@ -13095,13 +13162,14 @@ public class AutonomySession
 
         boolean either = arrows || allowedToo;
 
-        Set<TileKey> redundant = either ? squaresSayingNothingTheirRunDoesNot() : Collections.<TileKey>emptySet();
-
         for (TileKey tile : squares)
         {
-            boolean drawn = either && !redundant.contains(tile);
+            // NOT A SQUARE THAT FOLLOWS ITS RUN, as the editor draws none there (OB-361)
+            boolean follows = either && followsItsRun(tile);
 
-            TileAnnotation annotation = staticAnnotationFor(tile, drawn, arrows && !redundant.contains(tile));
+            boolean drawn = either && !follows;
+
+            TileAnnotation annotation = staticAnnotationFor(tile, drawn, arrows && !follows);
 
             if (annotation != null && drawn)
             {
