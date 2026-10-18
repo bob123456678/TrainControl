@@ -8915,10 +8915,22 @@ public class AutonomySession
                         && !station.equals(named.get(to[i]))) elsewhere.add(i);
                 }
 
+                // ON THE WAY IN, a train coming in passes it (OB-361): not where the way in starts, leaving a station this
+                // signal is the exit guard of - there a train passes it going out, as that station's own exit
+                java.util.Set<Integer> comingIn = new java.util.HashSet<>();
+
+                for (Integer i : in)
+                {
+                    TileKey leaving = named.get(from[i]);
+
+                    if (leaving == null || !store.isStation(leaving)
+                        || !nonNull(store.getProtectingSignals().get(leaving)).contains(signal)) comingIn.add(i);
+                }
+
                 // NO ROUTE AT ALL is noticed only away from the station's own track: a signal there - past a terminus's
                 // sensor, at its buffers (Adam's Signal 94 at BottomMainC) - shows whether the station is occupied, and that
                 // is what it is for
-                Map<TileKey, Map<TileKey, String>> notice = commandedBy(accessory, in, commands) ? out.exitOnTheWayIn
+                Map<TileKey, Map<TileKey, String>> notice = commandedBy(accessory, comingIn, commands) ? out.exitOnTheWayIn
                     : commandedBy(accessory, elsewhere, commands) ? out.exitCrossed
                     : !commandedBy(accessory, outOf, commands) && !onItsOwnTrack(station, signal) ? out.exitOnNoRoute
                     : null;
