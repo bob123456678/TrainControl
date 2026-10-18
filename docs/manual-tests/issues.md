@@ -407,6 +407,27 @@ many tooltips in the layout jmenu have extra whitespace padding at the end, such
 
 From Adam's rulings on FR-136's plan (2026-10-18): the public methods on the API classes (Layout, Edge, Locomotive, MarklinControlStation) stay even where nothing in the program calls them, because *"these seem useful to an API user, and we should add examples later"*.  Write example code that shows them in use, beyond the examples the Readme and AutomationAPI.md have now.
 
+### OB-360 - 2026-10-18 - layout editor straight segment alignement
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-18 15:03  
+**Build:** commit 573683d1, in English - build\classes, compiled 18 Oct 14:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when placing straight segments, the layout editor will turn a new straight tile to match the path around it.  however, this doesn't apply to straight s88 tiles.  check that it does, and also ake the same check for tunnels, uncouplers, links, signals, and bumpers.
+
+### OB-361 - 2026-10-18 - the new sample layout: two setup check notices about moves no train can make, and stray red arrows east of feedback 4
+
+**Kind:** bug  
+**Raised from:** noticed while testing - the new sample layout  
+**Filed:** 2026-10-18  
+
+Found by Adam on the new sample layout (`sample_layout.zip`, 2026-10-18), three things:
+
+1. The setup check says Signal 3 guards Station A (and Station B) on the way in, though no train can arrive that way: switch 1's arrows allow one direction only.  Signal 3 is set as the stations' exit guard.
+2. In the viewer, red arrows are drawn to the east of feedback 4 where the editor shows none (Adam's screenshot: the track around PostDeparture and the switch below it).
+3. A notice says trains reaching MainLine from the west could not go on.  MainLine is not a station, and no train can arrive there from the west anyway; either condition should keep the notice from being given.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
