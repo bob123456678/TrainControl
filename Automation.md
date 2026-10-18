@@ -189,7 +189,7 @@ Right-click any square for everything else. The menu opens with the square's nam
 
 ### On track, switches and signals
 
-- **`Trains May Depart...`** on plain track and signals: `Both Ways`, `One Way, Toward` *a compass point*, or `Closed - No Trains`. On a switch or crossing: tick each side trains may leave by (`The N Side` and so on), set each branch on its own (`Branch E to W`...), or open or close `Every Branch of This Switch` at once.
+- **`Trains May Depart...`** on plain track and signals: `Both Ways`, `One Way, Toward` *a compass point*, or `Closed - No Trains`. On a switch or crossing: tick each side trains may leave by (`The N Side` and so on), or open or close `Every Branch of This Switch` at once. On a switch, three-way switch or double slip the arrows are the whole story: a train may run through it exactly where the side it leaves by is green, so to keep trains out of a branch altogether, close the track beyond it. A crossing still sets each road on its own (`Branch E to W`...).
 - **`Segment Length...`**, and on plain track and crossings the caption items, `Show a Station Name Here...`.
 
 Names cannot sit on switches or signals.

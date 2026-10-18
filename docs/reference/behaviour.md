@@ -1962,6 +1962,16 @@ which is always offerable and never passable, and whether a train MOVES is `isPa
 that is the one ticked, because the stored answer for these tiles is `BOTH` by default and `BOTH` is
 not on offer.  Shutting a route is always offered: that is a real answer whichever way it could run.
 
+**Since OB-351 the arrows are the whole story on every square whose roads share an end** (Adam, 2026-10-17: *"into
+spur should simply require S to be green, and out of spur should require W to be green.  Align it so that the arrows
+tell the full story.   If we need more granular control, we can just prevent movement on the track attached to s"*,
+and *"3-way switches work similarly but have 4 settings"*).  A move through a switch, three-way switch or double slip is
+allowed exactly when the side it leaves by is open; each road stores the answer of its two sides, narrowed by the
+hardware, so closing one road of a permanent turnout closes its toe and with it the other road.  The per-road items are
+not offered there; crossings, double curves and two-square crossings keep them, since each of their roads has ends of
+its own.  A setup holding a road setting its arrows cannot show is read as its arrows show, logged once and saved.
+`core.testTheArrowsTellTheWholeStory`.
+
 *(`IND9X-A2` / `OB-233`, and Adam's instruction of 2026-09-22 that *"green arrows in the direction that
 can't be chosen shouldn't be offered"*.  Held by
 `core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing` and
