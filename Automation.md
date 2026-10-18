@@ -84,7 +84,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
 
-Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy is running, so stop the trains first. While it is open, the Autonomy menu is greyed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
+Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Autonomy menu is greyed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
 
 ---
 
@@ -600,7 +600,7 @@ A configuration is one way of running your railway. They are all under the Auton
 - Also under `Manage Configurations…`: `Stop Using Autonomy` unloads the configuration without deleting anything; `Delete This Layout’s Whole Autonomy Setup...` removes every configuration, with every station name, direction and caption; the track diagram itself is not touched. After `Stop Using Autonomy`, the strip above the diagram offers `Load this configuration`.
 - `Pages with Autonomy Enabled…` says which pages autonomy uses.
 
-None of these can be done while autonomy is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked under Preferences → Startup.
+None of these can be done while autonomy or a route is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked under Preferences → Startup.
 
 **Every configuration shares the railway itself:**
 
