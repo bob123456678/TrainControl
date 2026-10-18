@@ -27,10 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-756](#mt-756) | 2026-10-18 | OB-355: Return Home names the paused trains away from home | fixed unvalidated | OB-355 |
 
-Everything else - 756 of 757 - needs nothing from you unless the area changes again:
-602 **fixed validated** and 154 **superseded**.
+
+Everything else - 757 of 757 - needs nothing from you unless the area changes again:
+603 **fixed validated** and 154 **superseded**.
 
 ---
 
@@ -35474,7 +35474,7 @@ the import's popup too, after the connecting notice at start-up.  Claims in
 <a id="mt-756"></a>
 ### MT-756 - 2026-10-18 - OB-355: Return Home names the paused trains away from home
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-355
 
 **Written:** 2026-10-18
@@ -35507,6 +35507,14 @@ The tooltip is much too wide, but otherwise correct.
 **Claude, 2026-10-18.**
 
 The tooltip now wraps at the width the editor's tooltips use (`981a71d9`).  Back to fixed unvalidated: the steps above still hold.
+
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 3ee312fe.*
+
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 3ee312fe.*
 
 ---
 
