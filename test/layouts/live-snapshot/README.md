@@ -138,6 +138,7 @@ not fix it. Name the square.
 - `core.testALockReachesTheRailBeingRunOver`
 - `ui.testBulkToolsHoldsTheWholeLayoutTools`
 - `ui.testOnlyAStationHoldsAnotherBack`
+- `core.testTheArrowsTellTheWholeStory`
 - `ui.testReturnHomeShowsItIsWorking`
 - `ui.testTheEditorNamesItsShortcuts`
 - `regression.testAPassingTrainMayStandAcrossThePoints`

@@ -8458,7 +8458,8 @@ public class AutonomyEditorPanel extends JPanel
         TileKey target = leaderOf(tile);
 
         // NOR A SQUARE OUT OF SERVICE (RSA63-C5): nothing can pass it, it draws no arrows, and `cycle` declines it
-        if (isALink(target) || isOutOfService(target)) return false;
+        // - NOR TRACK NO STATION IS ON, which draws none either (OB-353)
+        if (isALink(target) || isOutOfService(target) || session.reachesNoStation(target)) return false;
 
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
@@ -8517,6 +8518,13 @@ public class AutonomyEditorPanel extends JPanel
         if (isOutOfService(target))
         {
             say(hint, I18n.t("autosetup.ui.infoOutOfServiceHasNoDirection"));
+            return;
+        }
+
+        // NOR TRACK NO STATION IS ON (OB-353): it draws no arrows, so a click there has none to change
+        if (session.reachesNoStation(target))
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoStationHasNoDirection"));
             return;
         }
 
@@ -10133,6 +10141,11 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean ignored = isIgnored(tile);
 
+        // TRACK NO STATION IS ON is greyed and draws no arrows (OB-353) - drawn so only: `isIgnored` does not ask it, so
+        // every other edit still works there, and its lengths and outlines are still drawn (Adam: "yes, it can accept
+        // edits")
+        boolean stationless = !ignored && session.reachesNoStation(tile);
+
         // Everything that is not a signal gets out of the way - greyed, and below, no arrows and no
         // lengths (OB-040).  Asked once and used three times, because a de-clutter that is on for one
         // of the three and off for the others is worse than not having it: the diagram then looks
@@ -10145,8 +10158,8 @@ public class AutonomyEditorPanel extends JPanel
         // sentence rather than an instruction until the squares it could possibly mean are the only
         // ones left in colour.  It inverts the usual meaning of grey here - a signal is normally the
         // greyed thing, because autonomy runs no trains through one - which is exactly why the two
-        // states cannot be on screen at once.
-        if (focused) ignored = !isPairableSignal(componentAt(tile));
+        // states cannot be on screen at once.  Nor is anything greyed for its track meanwhile (OB-353).
+        if (focused) { ignored = !isPairableSignal(componentAt(tile)); stationless = false; }
 
         // A link autonomy has been told to ignore carries no trains, so it carries no arrows either.
         // Its route is still a stub the port map knows about, and drawn from that it kept an arrow
@@ -10165,7 +10178,7 @@ public class AutonomyEditorPanel extends JPanel
         // this diagram means autonomy cannot use a square, and a follower is perfectly usable.
         boolean follower = isFollower(tile);
 
-        if (isShowingDirections() && !focused && session.getGraph() != null && !ignored && !follower)
+        if (isShowingDirections() && !focused && session.getGraph() != null && !ignored && !follower && !stationless)
         {
             // Asked of the SESSION since FR-037, so this window and the ordinary track diagram cannot
             // disagree about which way a piece of track runs.  What stayed here is every reason this
@@ -10238,6 +10251,9 @@ public class AutonomyEditorPanel extends JPanel
 
         // NONE WHERE A CROSSING'S SQUARES MEET, as on the track diagram (OB-322)
         session.withoutTheCrossingsMiddle(tile, annotation);
+
+        // GREYED as a square autonomy takes no notice of is, where no station is on its track (OB-353)
+        if (stationless && !ignored && componentAt(tile) != null) annotation.withNoStation();
 
         // ALLOWED ONLY: the green arrows, and none of the red
         if (directionsView() == VIEW_ALLOWED) annotation.withoutRestrictions();

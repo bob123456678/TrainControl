@@ -772,6 +772,110 @@ public class AutonomySession
 
         // Now, on this thread, rather than on whichever thread happens to ask first
         deriveStationIndex();
+
+        // AND THE TRACK NO STATION IS ON (OB-353), once a build rather than once a square painted
+        stationless = squaresNoStationReaches(graph);
+    }
+
+    /** The squares of track no station can be reached along, as the latest build found them (OB-353). */
+    private volatile Set<TileKey> stationless = Collections.emptySet();
+
+    /**
+     * Whether a square is track that reaches no station, however its switches lie and whichever way it runs (OB-353):
+     * no train is ever sent there, so its directions are not drawn and it is greyed in the editor.  Adam, on OB-353:
+     * *"make it so that arrows are hidden from track segments not connected (naively) to any station."*  Every other edit
+     * still works there.
+     *
+     * @param tile a square
+     * @return true where no station is on its track; false for one that has, and for every square while the setup has
+     *         no station at all
+     */
+    public boolean reachesNoStation(TileKey tile)
+    {
+        return tile != null && stationless.contains(tile);
+    }
+
+    /**
+     * The squares of each piece of track with no station on it: the squares joined to one another by their roads - every
+     * road of a switch, both ways, and a link to its partner - where none of them is a station.  None while no square is
+     * a station, as a setup just begun has none and its whole railway would grey.
+     *
+     * @param built the graph of this build
+     * @return the squares, never null
+     */
+    private Set<TileKey> squaresNoStationReaches(TileGraph built)
+    {
+        Map<TileKey, Set<TileKey>> joined = new LinkedHashMap<>();
+
+        boolean anyStation = false;
+
+        for (TileKey tile : built.getTiles().keySet())
+        {
+            Map<RouteId, Route> roads = built.getRoutes(tile);
+
+            if (roads.isEmpty()) continue;
+
+            anyStation |= store.isStation(tile);
+
+            Set<Side> sides = new LinkedHashSet<>();
+
+            for (Route road : roads.values())
+            {
+                sides.add(road.getA());
+                sides.add(road.getB());
+            }
+
+            // A link's own way through, to its partner, is the side no grid square has
+            sides.add(null);
+
+            for (Side side : sides)
+            {
+                Landing landing = built.landing(tile, side);
+
+                if (landing == null || landing.getTile().equals(tile)) continue;
+
+                // Both ways, so the pieces do not depend on which end the walk starts from
+                joined.computeIfAbsent(tile, k -> new LinkedHashSet<>()).add(landing.getTile());
+                joined.computeIfAbsent(landing.getTile(), k -> new LinkedHashSet<>()).add(tile);
+            }
+
+            joined.computeIfAbsent(tile, k -> new LinkedHashSet<>());
+        }
+
+        if (!anyStation) return Collections.emptySet();
+
+        Set<TileKey> out = new java.util.HashSet<>();
+        Set<TileKey> seen = new java.util.HashSet<>();
+
+        for (TileKey start : joined.keySet())
+        {
+            if (!seen.add(start)) continue;
+
+            List<TileKey> piece = new ArrayList<>();
+            java.util.ArrayDeque<TileKey> next = new java.util.ArrayDeque<>();
+
+            next.add(start);
+
+            boolean station = false;
+
+            while (!next.isEmpty())
+            {
+                TileKey at = next.poll();
+
+                piece.add(at);
+
+                station |= store.isStation(at);
+
+                for (TileKey beside : joined.getOrDefault(at, Collections.<TileKey>emptySet()))
+                {
+                    if (seen.add(beside)) next.add(beside);
+                }
+            }
+
+            if (!station) out.addAll(piece);
+        }
+
+        return Collections.unmodifiableSet(out);
     }
 
     /**
@@ -12854,7 +12958,8 @@ public class AutonomySession
     {
         List<TileAnnotation.Mark> marks = new ArrayList<>();
 
-        if (graph == null || tile == null) return marks;
+        // NONE ON TRACK NO STATION IS ON (OB-353): no train is sent there, so which way it runs says nothing
+        if (graph == null || tile == null || reachesNoStation(tile)) return marks;
 
         for (Map.Entry<TileGraph.RouteId, TilePorts.Route> entry : getRoutes(tile).entrySet())
         {

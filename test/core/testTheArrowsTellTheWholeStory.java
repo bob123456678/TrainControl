@@ -723,6 +723,201 @@ public class testTheArrowsTellTheWholeStory
         return "1:" + turnout.getX() + "," + turnout.getY() + "#" + road.getState() + "," + road.getIndex();
     }
 
+    /**
+     * Track no station is on draws no arrows and is greyed in the editor, and a click there changes nothing; track joined
+     * to a station keeps its arrows (OB-353).  Adam: *"make it so that arrows are hidden from track segments not connected
+     * (naively) to any station.  in this case, it's just cosmetic route tiles, so 3,4 should also be greyed out.  make
+     * sure 4,14 keeps arrows."*  On the frozen railway: the route button at 1 - Main 9,4, which carries the line between
+     * the two buttons beside it and so reaches nothing, as 3,4 does on his; a route button on a line that reaches stations,
+     * as 4,14 is on his; and a straight, a sensor and a straight added on blank squares, joined to nothing.
+     *
+     * MUTATION: draw the arrows of every square again, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTrackNoStationIsOnDrawsNoArrows() throws Exception
+    {
+        support.Scenario snapshot = null;
+
+        try
+        {
+            snapshot = support.Scenario.open("live-snapshot");
+
+            snapshot.getModel().stop();
+
+            AutonomySession frozen = snapshot.getSession();
+
+            TileKey[] stray = aPieceOfTrackOnItsOwn(snapshot);
+
+            TileKey button = snapshot.tile("1 - Main", 9, 4);
+
+            assertFalse(frozen.getRoutes(button).isEmpty(), "precondition: the route button at " + button + " carries no"
+                + " track");
+
+            final org.traincontrol.gui.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
+
+            // A route button on a line that reaches stations, as 4,14 is on his, drawing its arrows
+            TileKey track = null;
+
+            for (Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> square
+                : frozen.getGraph().getTiles().entrySet())
+            {
+                if (track == null && square.getValue().getType() == componentType.ROUTE
+                    && !panel.annotationFor(square.getKey()).getMarks().isEmpty())
+                {
+                    track = square.getKey();
+                }
+            }
+
+            assertNotNull(track, "precondition: no route button of the frozen railway draws arrows");
+
+            for (TileKey square : new TileKey[] {button, stray[0], stray[1], stray[2]})
+            {
+                TileAnnotation drawn = panel.annotationFor(square);
+
+                assertTrue(drawn.getMarks().isEmpty(), square + ", on track no station is on, still draws arrows in the"
+                    + " editor (OB-353): " + drawn);
+
+                assertTrue(frozen.directionMarks(square).isEmpty(), square + ", on track no station is on, still has"
+                    + " arrows to draw on the track diagram (OB-353)");
+
+                // Read by reflection, as the claim came first
+                java.lang.reflect.Method greyed = TileAnnotation.class.getMethod("isStationless");
+
+                assertTrue((Boolean) greyed.invoke(drawn), square + ", on track no station is on, is not greyed in the"
+                    + " editor (OB-353): " + drawn);
+
+                assertFalse(panel.clickChangesDirections(square), "a click on " + square + ", where no arrows are drawn,"
+                    + " still offers to change a direction (OB-353)");
+            }
+
+            TileAnnotation kept = panel.annotationFor(track);
+
+            assertFalse(kept.getMarks().isEmpty(), track + ", on track that reaches stations, lost its arrows (OB-353)");
+
+            assertFalse((Boolean) TileAnnotation.class.getMethod("isStationless").invoke(kept), track + ", on track that reaches stations, is greyed (OB-353)");
+
+            // A CLICK THERE CHANGES NOTHING
+            Map<RouteId, Direction> before = directionsOf(frozen, stray[0]);
+
+            cycle(panel, stray[0]);
+
+            assertEquals(directionsOf(frozen, stray[0]), before, "a click on " + stray[0] + ", on track no station is on,"
+                + " changed which way it runs (OB-353)");
+        }
+        finally
+        {
+            if (snapshot != null) snapshot.close();
+        }
+    }
+
+    /**
+     * Track no station is on still takes every other edit (OB-353; Adam, asked: "yes, it can accept edits"): a length set
+     * on a square of it from the editor is kept.
+     *
+     * MUTATION: grey it by `isIgnored`, which refuses every edit, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testTrackNoStationIsOnStillTakesALength() throws Exception
+    {
+        support.Scenario snapshot = null;
+
+        try
+        {
+            snapshot = support.Scenario.open("live-snapshot");
+
+            snapshot.getModel().stop();
+
+            AutonomySession frozen = snapshot.getSession();
+
+            TileKey[] stray = aPieceOfTrackOnItsOwn(snapshot);
+
+            final org.traincontrol.gui.AutonomyEditorPanel panel = panelOn(frozen, "1 - Main");
+
+            final TileKey square = stray[0];
+
+            // Picked out with a shift-click, as a length for several squares is, and the length typed
+            javax.swing.SwingUtilities.invokeAndWait(() -> panel.tileClicked(square, null, true));
+
+            assertTrue(panel.getSelection().contains(square), "a shift-click on " + square + ", on track no station is"
+                + " on, did not pick it out for a length (OB-353)");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> panel.applyLengthAnswer(square, 7));
+
+            assertEquals(frozen.getStore().getTileLength(square), 7, "a length set from the editor on " + square + ", on"
+                + " track no station is on, was not kept (OB-353)");
+        }
+        finally
+        {
+            if (snapshot != null) snapshot.close();
+        }
+    }
+
+    /**
+     * A straight, a sensor and a straight added east to west on blank squares of a page of the frozen railway, with a blank
+     * square at each end - all three join nothing above or below - and the session rebuilt: a piece of track no station
+     * is on.
+     */
+    private static TileKey[] aPieceOfTrackOnItsOwn(support.Scenario snapshot) throws Exception
+    {
+        StringBuilder looked = new StringBuilder();
+
+        for (LayoutDiagram page : snapshot.getPages())
+        {
+            // Not on a page autonomy leaves out, whose squares it takes no notice of anyway
+            if (snapshot.getSession().getStore().getExcludedPages().contains(page.getName())) continue;
+
+            looked.append(' ').append(page.getName()).append(' ').append(page.getMinx()).append(',').append(page.getMiny())
+                .append('-').append(page.getMaxx()).append(',').append(page.getMaxy());
+
+            for (int y = page.getMiny(); y <= page.getMaxy(); y++)
+            {
+                for (int x = page.getMinx(); x + 4 <= page.getMaxx(); x++)
+                {
+                    boolean blank = true;
+
+                    for (int dx = 0; dx <= 4 && blank; dx++) blank = page.getComponent(x + dx, y) == null;
+
+                    if (!blank) continue;
+
+                    page.addComponent(componentType.STRAIGHT, x + 1, y, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+                    page.addComponent(componentType.FEEDBACK, x + 2, y, 0, 0, 1999, 1999, accessoryDecoderType.MM2, null);
+                    page.addComponent(componentType.STRAIGHT, x + 3, y, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+                    snapshot.getSession().rebuild();
+
+                    return new TileKey[] {snapshot.tile(page.getName(), x + 1, y), snapshot.tile(page.getName(), x + 2, y),
+                        snapshot.tile(page.getName(), x + 3, y)};
+                }
+            }
+        }
+
+        throw new AssertionError("precondition: no page of the frozen railway has blank room for a piece of track, of those autonomy uses:"
+            + looked);
+    }
+
+    private static Map<RouteId, Direction> directionsOf(AutonomySession on, TileKey square)
+    {
+        Map<RouteId, Direction> out = new LinkedHashMap<>();
+
+        for (RouteId road : on.getRoutes(square).keySet()) out.put(road, on.getGraph().getDirection(square, road));
+
+        return out;
+    }
+
+    private static org.traincontrol.gui.AutonomyEditorPanel panelOn(AutonomySession on, String page) throws Exception
+    {
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(on, page,
+            () -> { }));
+
+        return panel[0];
+    }
+
     private static org.traincontrol.gui.AutonomyEditorPanel panel() throws Exception
     {
         final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];

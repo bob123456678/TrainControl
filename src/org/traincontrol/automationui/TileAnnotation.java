@@ -690,6 +690,30 @@ public class TileAnnotation
     private boolean allowedToo = false;
 
     /**
+     * Greys the square as one autonomy takes no notice of is greyed, and goes on to draw the rest - its length, its
+     * outline - since every edit still works there: it is track no station is on (OB-353).  It carries no arrows.
+     *
+     * @return this
+     */
+    public TileAnnotation withNoStation()
+    {
+        this.stationless = true;
+        return this;
+    }
+
+    private boolean stationless = false;
+
+    /**
+     * Whether this square is greyed for having no station on its track (OB-353).
+     *
+     * @return true where `withNoStation` was asked
+     */
+    public boolean isStationless()
+    {
+        return stationless;
+    }
+
+    /**
      * Draws only the directions trains may run - the green arrows - and none of the shut ones: the autonomy editor's
      * Allowed only (Adam, 2026-10-04: *"In addition to "restrictions only", add "allowed only" to the autonomy
      * editor."*).  The wash stays, as under Show All: the open arrows are most of the ink it lifts off the tile art.
@@ -788,6 +812,31 @@ public class TileAnnotation
         return ignored;
     }
 
+    /**
+     * The look of a square autonomy takes no notice of: washed out and hatched.
+     *
+     * @param g the brush, whose composite and stroke this leaves changed
+     * @param width the tile's width
+     * @param height its height
+     */
+    private static void paintGreyedOut(Graphics2D g, int width, int height)
+    {
+        g.setComposite(java.awt.AlphaComposite.getInstance(
+            java.awt.AlphaComposite.SRC_OVER, IGNORED_ALPHA));
+        g.setColor(IGNORED);
+        g.fillRect(0, 0, width, height);
+
+        g.setComposite(java.awt.AlphaComposite.getInstance(
+            java.awt.AlphaComposite.SRC_OVER, 0.55f));
+        g.setColor(HATCH);
+        g.setStroke(new BasicStroke(1f));
+
+        for (int at = -height; at < width; at += 5)
+        {
+            g.drawLine(at, 0, at + height, height);
+        }
+    }
+
 
     public Badge getBadge()
     {
@@ -837,7 +886,7 @@ public class TileAnnotation
         // so an annotation carrying it and nothing else is still blank.  Said out loud because the comment
         // above is about a field being left out of this method, and the next reader should not have to
         // work out whether this is the same mistake again.
-        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
+        return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !stationless
             && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured;
     }
 
@@ -929,20 +978,7 @@ public class TileAnnotation
             // tile that changed is what points at where the answer lives.
             if (ignored)
             {
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, IGNORED_ALPHA));
-                g.setColor(IGNORED);
-                g.fillRect(0, 0, width, height);
-
-                g.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, 0.55f));
-                g.setColor(HATCH);
-                g.setStroke(new BasicStroke(1f));
-
-                for (int at = -height; at < width; at += 5)
-                {
-                    g.drawLine(at, 0, at + height, height);
-                }
+                paintGreyedOut(g, width, height);
 
                 // Except the route being tested, which is drawn on top of the greying.
                 //
@@ -966,6 +1002,14 @@ public class TileAnnotation
                 }
 
                 return;
+            }
+
+            // TRACK NO STATION IS ON, greyed the same way (OB-353) - and the rest drawn over it, as it can still be edited
+            if (stationless)
+            {
+                paintGreyedOut(g, width, height);
+
+                g.setComposite(oldComposite);
             }
 
             // Knock the tile art back before drawing on it.  Thin lines over a busy icon are the same
@@ -3179,7 +3223,8 @@ public class TileAnnotation
         // made once before.
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
-            && ignored == other.ignored && curved == other.curved && portal == other.portal
+            && ignored == other.ignored && stationless == other.stationless && curved == other.curved
+            && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
             && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
             && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
@@ -3194,7 +3239,7 @@ public class TileAnnotation
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
             + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
-            + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768)
+            + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768) + (stationless ? 131072 : 0)
             + arrivals.hashCode() * 7;
     }
 
@@ -3204,6 +3249,6 @@ public class TileAnnotation
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
             + (badge == null ? "" : " " + badge)
             + (arrivals.isEmpty() ? "" : " " + arrivals)
-            + (ignored ? " ignored" : "");
+            + (ignored ? " ignored" : "") + (stationless ? " no station" : "");
     }
 }
