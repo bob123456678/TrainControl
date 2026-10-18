@@ -12739,6 +12739,104 @@ public class testAutonomyDiagramSession
             + " it (RLV9-C5): " + handed);
     }
 
+    /**
+     * Every finding with a square is shown the strong way when clicked - flashed AND outlined - not only one that names
+     * squares beside its own (OB-352).  Adam: *"autonomy must be fixed: "is at the end of the line", when clicked, does a
+     * regular highlight, whereas "is shown more than ones" gives the yellow highlight plus a strong outline.  make them
+     * consistent, using the latter, which is easier to use."*
+     *
+     * MUTATION: outline only a finding that names other squares, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAFindingAtTheEndOfALineIsOutlinedWhenClicked() throws Exception
+    {
+        threeStationsInARow("OB-352");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.rebuild();
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+        final List<TileKey> revealed = new ArrayList<>();
+
+        panel.setOnReveal(revealed::add);
+
+        clickTheFinding(panel, "is at the end of a line", alpha);
+
+        assertTrue(panel.isOutlined(alpha), "a click on \"is at the end of a line\" did not outline its square, as a click"
+            + " on \"is shown more than once\" outlines its squares (OB-352)");
+
+        assertEquals(revealed, Arrays.asList(alpha), "a click on \"is at the end of a line\" no longer flashes its square");
+
+        assertTrue(panel.getSelection().isEmpty(), "a click on a finding made its square the bulk selection (RLV9-C3): "
+            + panel.getSelection());
+    }
+
+    /**
+     * A finding about another page that names nothing beside its own square goes there by the same door as one that does,
+     * so the editor opened there outlines it too (OB-352).
+     *
+     * MUTATION: send it through the plain page jump, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAFindingOnAnotherPageIsOutlinedThere() throws Exception
+    {
+        threeStationsInARow("OB-352 far");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.rebuild();
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "far", () -> { });
+
+        final List<Object> outlined = new ArrayList<>();
+        final List<Object> plain = new ArrayList<>();
+
+        panel.setOnJumpToNotice((at, related) -> outlined.add(at));
+        panel.setOnJumpToPage(plain::add);
+
+        clickTheFinding(panel, "is at the end of a line", alpha);
+
+        assertEquals(outlined, Arrays.asList(alpha), "a click on \"is at the end of a line\" about another page did not go"
+            + " there to be outlined (OB-352); the plain page jump had " + plain);
+    }
+
+    /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */
+    private static void clickTheFinding(org.traincontrol.gui.AutonomyEditorPanel panel, String says, TileKey at)
+        throws Exception
+    {
+        final javax.swing.JList<?> list = (javax.swing.JList<?>) panelPart(panel, "findings");
+
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingTiles");
+
+        field.setAccessible(true);
+
+        final List<?> tiles = (List<?>) field.get(panel);
+
+        final int[] row = {-1};
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (int i = 0; i < list.getModel().getSize() && row[0] < 0; i++)
+            {
+                if (String.valueOf(list.getModel().getElementAt(i)).contains(says) && at.equals(tiles.get(i))) row[0] = i;
+            }
+
+            if (row[0] >= 0) list.setSelectedIndex(row[0]);
+        });
+
+        assertTrue(row[0] >= 0, "precondition: the editor's list has no \"" + says + "\" about " + at);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
     /** Selects the guard notice in the editor's list, as a click on it does. */
     private static void clickTheGuardNotice(org.traincontrol.gui.AutonomyEditorPanel panel) throws Exception
     {

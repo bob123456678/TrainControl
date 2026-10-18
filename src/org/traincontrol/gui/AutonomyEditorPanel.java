@@ -1259,7 +1259,9 @@ public class AutonomyEditorPanel extends JPanel
                 // AND THE SQUARES IT IS ABOUT BESIDE ITS OWN (Adam, on MT-505: "also highlight the affected signals when
                 // the notice is clicked").  A guard notice's own square is the station; the signal it names is what is
                 // wrong, so both are outlined, and the station is shown.
-                List<TileKey> related = row < findingRelated.size() ? findingRelated.get(row) : null;
+                // EVERY FINDING THE SAME STRONG WAY, outlined and flashed, whether or not it names other squares (OB-352)
+                List<TileKey> related = row < findingRelated.size() && findingRelated.get(row) != null
+                    ? findingRelated.get(row) : java.util.Collections.<TileKey>emptyList();
 
                 // A finding on another page is reached by opening that page, which this window cannot
                 // do in place - it is built around one diagram.  So it hands the square to the main
@@ -1267,7 +1269,7 @@ public class AutonomyEditorPanel extends JPanel
                 // names beside its own, for the editor opened there to outline (RLV9-C5).
                 if (!onThisPage(at))
                 {
-                    if (related != null && !related.isEmpty() && onJumpToNotice != null)
+                    if (onJumpToNotice != null)
                     {
                         onJumpToNotice.accept(at, related);
                     }
@@ -1279,22 +1281,7 @@ public class AutonomyEditorPanel extends JPanel
                     return;
                 }
 
-                if (related != null && !related.isEmpty())
-                {
-                    outlineTheNotice(at, related);
-
-                    return;
-                }
-
-                // Another finding: the last one's outline goes
-                if (!noticeOutline.isEmpty())
-                {
-                    noticeOutline.clear();
-
-                    refresh();
-                }
-
-                if (onReveal != null) onReveal.accept(at);
+                outlineTheNotice(at, related);
             }
         });
 

@@ -3312,10 +3312,10 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The editor opened for a finding outlines what the finding names - its own square and those beside it - and a
-     * finding that names nothing beside its own is shown, not outlined (RLV10-C3, RLV10-C5): the editor's own list does
-     * the same.  The Auto tab's list opens the editor this way, with each row's squares, an empty list for most.
+     * finding that names nothing beside its own is outlined as well (OB-352, RLV10-C5): the editor's own list does the
+     * same.  The Auto tab's list opens the editor this way, with each row's squares, an empty list for most.
      *
-     * MUTATION: open without the outline, or outline a finding that names nothing, and this fails.
+     * MUTATION: open without the outline, or outline only a finding that names other squares, and this fails.
      *
      * @throws Exception from the window
      */
@@ -3356,9 +3356,9 @@ public class testTheImportDoorReadsAnOldFile
 
             org.traincontrol.gui.AutonomyEditorPanel shown = openTheEditorFor(ui[0], first, Collections.emptyList());
 
-            assertFalse(shown.isOutlined(first), "the editor opened for a finding that names nothing beside its own"
-                + " outlines its square, as it outlines the bulk selection - the editor's own list only shows it"
-                + " (RLV10-C3)");
+            // OUTLINED TOO, as the editor's own list now outlines every finding it goes to (OB-352)
+            assertTrue(shown.isOutlined(first), "the editor opened for a finding that names nothing beside its own does"
+                + " not outline its square, as the editor's own list does (OB-352, RLV10-C3)");
 
             closeTheEditor(ui[0]);
 

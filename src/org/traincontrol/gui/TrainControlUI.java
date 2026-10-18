@@ -6205,9 +6205,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             editor.reveal(reveal);
 
                             // AND WHAT A FINDING NAMES BESIDE IT, outlined as the editor's own list outlines it (RLV9-C5)
-                            // Only one that names squares beside its own: the editor's own list shows the rest,
-                            // and an outline reads as a selection (RLV10-C3)
-                            if (outline != null && !outline.isEmpty() && editor.getAutonomyPanel() != null)
+                            // Every finding, as that list now outlines every one it goes to (OB-352); a door that is
+                            // not a finding's hands no list
+                            if (outline != null && editor.getAutonomyPanel() != null)
                             {
                                 editor.getAutonomyPanel().outlineTheNotice(reveal, outline);
                             }
