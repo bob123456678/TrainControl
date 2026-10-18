@@ -22482,7 +22482,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * It DOES put the button back here, on the last line of the finally - the sentence that used to
      * stand here said the opposite (`V34-C4`).  What it no longer does is clear it directly: the
-     * clearing goes through `routeFinished`, which holds the grey for a minimum time first.
+     * clearing goes through `releaseTheRoutePlayButton`, which holds the grey for a minimum time first.
      *
      * @param route the route's name
      * @param work what to run
@@ -22510,7 +22510,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     + (System.currentTimeMillis() - began) + "ms");
             }
 
-            routeFinished(route);
+            releaseTheRoutePlayButton(route);
         }
     }
         
@@ -33662,11 +33662,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The route has finished, so its button comes back.
+     * The route's button comes back, once the grey has been on screen long enough.  Reached milliseconds after the press,
+     * not when the route ends on the railway: that is `View.routeFinished`, which is what a thing waiting for the route
+     * to be over asks.
      *
      * @param route the route's name
      */
-    private void routeFinished(String route)
+    private void releaseTheRoutePlayButton(String route)
     {
         if (route == null) return;
 
@@ -33681,7 +33683,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the sentence that used to stand here claimed otherwise (`V34-C4`).
         //
         // The argument for the floor was that a fixed hold would put the button back while the route
-        // was still running.  It cannot: `execRoute` starts a thread and returns, so `routeFinished`
+        // was still running.  It cannot: `execRoute` starts a thread and returns, so `releaseTheRoutePlayButton`
         // is reached milliseconds after `routeStarted` and `showFor` is always about the whole minimum.
         // The floor is what makes the grey VISIBLE, which is the fault Adam reported; it is not what
         // keeps it honest about a slow route, and nothing here is.
@@ -34160,7 +34162,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // triangle greying is a thirteen-pixel shape changing hue at the end of a cell nobody
                 // is looking at; a cell that washes grey is seen without being looked for. If this is
                 // still not visible then the mark is not being set at all, which is what the debug
-                // lines in routeStarted and routeFinished are there to say.
+                // lines in routeStarted and releaseTheRoutePlayButton are there to say.
                 j.setBackground(RUNNING_BACKGROUND);
             }
             else if (value != null && ((Route) value).getName().equals(foundRoute))

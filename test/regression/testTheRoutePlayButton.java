@@ -264,7 +264,7 @@ public class testTheRoutePlayButton
             + "own ending puts the button back before anything was noticed - which is what Adam "
             + "reported three times");
 
-        assertTrue(code.contains("routeFinished(route);"),
+        assertTrue(code.contains("releaseTheRoutePlayButton(route);"),
             "the route's own ending no longer puts the button back, so the grey is on a fixed timer "
             + "again - which lies the other way, telling the operator a slow route has finished when "
             + "pressing it again would still be refused");
