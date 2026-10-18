@@ -28,8 +28,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * palette held it, so dropping one into a gap in a north-south line left it lying east-west, joining neither side,
  * until it was turned by hand.
  *
- * OB-360: the same for the other tiles that run straight through a square - the s88 feedback tile, the signal and the
- * uncoupler.  Adam: *"when placing straight segments, the layout editor will turn a new straight tile to match the path
+ * OB-360: the same for every other straight-shaped tile - the s88 feedback tile, the signal and the uncoupler, which
+ * run through the square like a straight, and the bumper, the tunnel and the link, which end the track at one side.  The
+ * through tiles are turned to lie along the track on both sides; the one-ended tiles are turned to face the track beside
+ * them.  Adam: *"when placing straight segments, the layout editor will turn a new straight tile to match the path
  * around it.  however, this doesn't apply to straight s88 tiles.  check that it does, and also ake the same check for
  * tunnels, uncouplers, links, signals, and bumpers."*
  *
@@ -149,6 +151,27 @@ public class testANewStraightJoinsTheTrackBesideIt
     }
 
     /**
+     * A bumper, a tunnel or a link ends the track at one side: dropped beside a piece of track it is turned so that its
+     * end is on that side, from whichever way the palette held it.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testAOneEndedTileFacesTheTrackBesideIt() throws Exception
+    {
+        for (componentType type : new componentType[] { componentType.END, componentType.TUNNEL, componentType.LINK })
+        {
+            int[] helds = { 0, 1, 2, 3 };
+
+            // The track is east of (8,5), south of (2,7), north of (5,6) and west of (8,2).
+            assertAll(type, landings(type, helds, 8, 5), Side.E, "east");
+            assertAll(type, landings(type, helds, 2, 7), Side.S, "south");
+            assertAll(type, landings(type, helds, 5, 6), Side.N, "north");
+            assertAll(type, landings(type, helds, 8, 2), Side.W, "west");
+        }
+    }
+
+    /**
      * With nothing to join, every one of them lies the way it was held - the control, so a rule that turns every tile
      * fails.
      *
@@ -158,7 +181,7 @@ public class testANewStraightJoinsTheTrackBesideIt
     public void testATileWithNothingToJoinLiesAsItWasHeld() throws Exception
     {
         for (componentType type : new componentType[] { componentType.FEEDBACK, componentType.SIGNAL,
-            componentType.UNCOUPLER })
+            componentType.UNCOUPLER, componentType.END, componentType.TUNNEL, componentType.LINK })
         {
             int ways = LayoutDiagramComponent.getNumOrientations(type);
             int[] helds = new int[ways];
@@ -184,6 +207,37 @@ public class testANewStraightJoinsTheTrackBesideIt
         }
 
         return false;
+    }
+
+    /** Whether a one-ended tile's end is on this side, for every way it was held. */
+    private static void assertAll(componentType type, int[] landed, Side side, String where)
+    {
+        for (int held = 0; held < landed.length; held++)
+        {
+            boolean faces = false;
+
+            for (TilePorts.Route road : TilePorts.ports(type, landed[held], 0))
+            {
+                if (road.touches(side)) faces = true;
+            }
+
+            assertTrue(faces, type + " held as " + held + " dropped with track to the " + where + " landed as "
+                + landed[held] + ", with its end on the wrong side.  Adam, OB-360: \"also ake the same check for"
+                + " tunnels, uncouplers, links, signals, and bumpers\"");
+
+            boolean heldFaces = false;
+
+            for (TilePorts.Route road : TilePorts.ports(type, held, 0))
+            {
+                if (road.touches(side)) heldFaces = true;
+            }
+
+            if (heldFaces)
+            {
+                assertEquals(landed[held], held, type + " already facing the track to the " + where + " was turned all"
+                    + " the same");
+            }
+        }
     }
 
     /**
