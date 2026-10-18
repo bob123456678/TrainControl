@@ -181,11 +181,11 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 * Primary controls
     * Selecting and speed
-        * A-Z letter keys (select a locomotive)
-        * Up/down arrow (speed up/slow down) (hold Alt to double the increment or Control to reduce)
+        * A-Z letter keys (select a locomotive; Alt+letter does the same)
+        * Up/down arrow (speed up/slow down by 4%) (hold Alt to double the increment or Control to reduce it to 1%)
         * 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
     * Direction
-        * Left/right arrow (change direction)
+        * Left/right arrow (switch direction)
         * Control+Left/right arrow (set direction as reverse / set direction as forward)
     * Functions
         * Numpad 0/backquote/Alt+0 (toggle lights/F0)
@@ -226,7 +226,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * UI shortcuts
     * Control+M (show menu bar)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
-    * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages, Control+plus/minus jumps 4 keyboards)
+    * Minus/plus, \[/\], '/( (previous/next accessory keyboard, or previous/next layout page on the Track Diagram tab; Control with these jumps 4 accessory keyboards)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
 * Track diagram editor
     * Editing tiles
@@ -244,6 +244,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+Y (redo)
     * Picking squares
         * Shift+click (pick several squares at once)
+        * Shift+drag (pick a box of squares)
         * Control+M (select by dragging a box)
         * Escape (let go of whatever is held; with nothing held, close the editor)
     * What is shown
@@ -251,7 +252,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+D (show address labels)
         * Control+K (show the grid)
     * Pages and size
-        * Plus/minus (next / previous page)
+        * Plus/minus, also on the number pad (next / previous page)
         * Control+I (increase diagram by 1 row and 1 column)
 * Autonomy editor
     * A square's settings
@@ -266,7 +267,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+D (show address labels)
         * Control+K (show the grid)
     * Moving around
-        * Plus/minus (next / previous page)
+        * Plus/minus, also on the number pad (next / previous page)
         * Shift+click (pick several squares at once)
         * Escape (put down an armed tool; with nothing armed, close the editor)
 * Track diagram (with autonomy loaded and stopped, pointer over a station)

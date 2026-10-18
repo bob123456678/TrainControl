@@ -263,7 +263,7 @@ These act on the square under the pointer.
 | Control+L | Step through the Station Labels choices |
 | Control+D | Show or hide Addresses |
 | Control+K | Show or hide the Grid |
-| + and - | Next and previous page |
+| + and - | Next and previous page (the number pad ones too) |
 | Shift+click | Pick a square, or let it go |
 | Escape | Put down an armed tool; with nothing armed, the same as Cancel |
 
