@@ -33,8 +33,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-745](#mt-745) | 2026-10-17 | OB-350: Place on a station with no way out, from the track diagram as from the editor | fixed unvalidated | OB-350 |
 | [MT-746](#mt-746) | 2026-10-17 | No setup edit while a route runs | fixed unvalidated | FR-129 (setup doors and running routes) |
 | [MT-747](#mt-747) | 2026-10-17 | OB-351: a switch's arrows are the whole of which way trains may run through it | fixed unvalidated | OB-351 |
+| [MT-748](#mt-748) | 2026-10-18 | FR-134: the tunnel icons' wall near white and a little wider | fixed unvalidated | FR-134 |
 
-Everything else - 741 of 747 - needs nothing from you unless the area changes again:
+Everything else - 741 of 748 - needs nothing from you unless the area changes again:
 588 **fixed validated** and 153 **superseded**.
 
 ---
@@ -35190,5 +35191,29 @@ question, `TrainControlUI.aRunHoldsTheSetup`, the one Return Home's place-at-hom
 *What this is:* OB-351 (`5e65b5e6`): on a switch, three-way switch or double slip a move is allowed exactly when the side it leaves by
 is green (Adam: "Align it so that the arrows tell the full story").  Older setups are read as their arrows show, logged
 once and saved; the per-road items are gone there.  Claims `core.testTheArrowsTellTheWholeStory`.
+
+---
+
+<a id="mt-748"></a>
+### MT-748 - 2026-10-18 - FR-134: the tunnel icons' wall near white and a little wider
+
+**Disposition:** fixed unvalidated
+**From:** FR-134
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open the track diagram on `1 - Main` and look at the two tunnels (12,1 and 16,1) at the Small size, then the Medium,
+   then the Large.
+
+**Expected**
+
+- Step 1: each tunnel's wall, between its black frame and the dark arch, is near white rather than grey, and a little
+  wider than before - option C at +1 from the options you were shown.  The track still runs straight into the middle of
+  the arch at every size.
+
+*What this is:* FR-134 (`7f10f8cd`): the wall #EEEEEE where it was #BBBBBB, and a pixel wider each side at Small, two at
+Large (the Medium size is the Large art scaled down).  Claim `ui.testDiagramLooksRight.testTheTunnelsWallIsWider`.
 
 ---

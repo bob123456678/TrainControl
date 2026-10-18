@@ -362,6 +362,14 @@ instead of a generic icon, show the actual locomotive image on the track diagram
 
 the app currently has a fixed size and is therefore suboptimal for larger screens.  reimagine the UI to be maximizable and support modular UI components (3.5.0+)
 
+### FR-134 - 2026-10-18 - lighter, slightly wider tunnel wall on the track diagram's tunnel icons
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-18  
+**Filed:** 2026-10-18  
+
+Adam, 2026-10-18: "Before I do MT's, let's further lighten the surround of the tunnel icons in the track diagram.  show me some options, an also experiment with widening it slightly."  Of the options drawn for him (four shades of the wall, three widths, on his two tunnels on 1 - Main): "Go for C at +1" - the wall #EEEEEE, where it was #BBBBBB, and a pixel wider each side at the Small size, two at the Large.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -378,6 +386,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-18 | FR-134 | feature request | The tunnel icons' wall near white (#EEEEEE, from #BBBBBB) and a pixel wider each side at Small, two at Large: option C at +1 of those drawn on Adam's tunnels (`7f10f8cd`). | - | MT-748 |
 | 2026-10-16 | OB-351 | bug | A switch's, three-way's or double slip's arrows are the whole of which way trains may run through it; a setup with a road closed under a green arrow is read as its arrows show, logged and saved (`5e65b5e6`). | - | MT-747 |
 | 2026-10-16 | OB-350 | bug | The track diagram's Place and the paste stand a train on a station no train can leave, as the editor's Place does (`ad25cfb4`). | - | MT-745 |
 | 2026-10-16 | OB-349 | bug | A locomotive not in the database leaves the setup on load - placement, home, lists - logged and saved, and an import lists them in one dialog (`1cebf59d`). | - | MT-744 |
