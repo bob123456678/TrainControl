@@ -371,6 +371,23 @@ the app currently has a fixed size and is therefore suboptimal for larger screen
 
 refactor code to make agents work faster- split large files, consolidate documentation, use subclassing as needed, clear dead code.  validate behavior is unchanged.  v3.0.3 change.
 
+### FR-137 - 2026-10-18 - route spinner
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-18 13:51  
+**Build:** commit f4f28b52, in English - build\classes, compiled 18 Oct 13:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the route tab, show a spinner next to any route that is currently running, similar to the autonomy spinner. 3.0.2 feature
+
+### OB-357 - 2026-10-18 - a train's icon on the Track Diagram does not turn when its direction is changed, though its label's arrow does
+
+**Kind:** bug  
+**Raised from:** MT-759  
+**Filed:** 2026-10-18  
+
+From MT-759 (Adam, 2026-10-18: "partially works"): changing a locomotive's direction by a route, by the direction arrow buttons or by the left and right keys turns the arrow on its label, but not its icon on the Track Diagram; the icon turns only when the facing is set from the right-click menu.  The icon should match the label.  Also to check: while autonomy is running, a direction command by hand or from the Central Station changes nothing in the setup.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

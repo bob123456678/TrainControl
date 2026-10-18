@@ -27,12 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-758](#mt-758) | 2026-10-18 | Loading, stopping and exporting a configuration wait for a running route | fixed unvalidated | RSA71-C2, RSA71-C3, RSA72-C2, RSA73-C2 |
-| [MT-759](#mt-759) | 2026-10-18 | A train turned round while a route runs is turned in the autonomy setup when the route ends | fixed unvalidated | RSA71-C8 |
-| [MT-760](#mt-760) | 2026-10-18 | Start, Execute Timetable, Return Home and a hand send wait for a running route | fixed unvalidated | RSA72-C1, RSA73-C1, RSA73-C3 |
 
-Everything else - 757 of 760 - needs nothing from you unless the area changes again:
-603 **fixed validated** and 154 **superseded**.
+
+Everything else - 760 of 760 - needs nothing from you unless the area changes again:
+605 **fixed validated** and 155 **superseded**.
 
 ---
 
@@ -35560,7 +35558,7 @@ The note is gone again (`0bf2ae89`): the menu is as it was, and ST60rear is stil
 <a id="mt-758"></a>
 ### MT-758 - 2026-10-18 - Loading, stopping and exporting a configuration wait for a running route
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA71-C2, RSA71-C3, RSA72-C2, RSA73-C2
 
 **Written:** 2026-10-18
@@ -35590,12 +35588,16 @@ ran, though the Autonomy menu greys them; Export asked a different question from
 trains went ahead under a route still running (`6919ec4c`, `82897755`, `09bfe71a`, `9c1487ff`, `2ce0052e`).  Claims in
 `regression.testNoSetupEditWhileARouteRuns`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit f4f28b52, in English - build\classes, compiled 18 Oct 13:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-759"></a>
 ### MT-759 - 2026-10-18 - A train turned round while a route runs is turned in the autonomy setup when the route ends
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA71-C8
 
 **Written:** 2026-10-18
@@ -35618,12 +35620,22 @@ trains went ahead under a route still running (`6919ec4c`, `82897755`, `09bfe71a
 followed, so the setup faced the wrong way after the route (`a6f895fa`).  Claims in
 `regression.testAThrottleReversalIsFollowedFromItsEcho`.
 
+**Adam, 2026-10-18 (triage).** Does not work.
+
+partially works. when changing direction via the route, direction arrow buttons, (or left and right buttons), the label's arrow direction changes, but it does not match the locomotive icon direction on the track diagram; the icon only changes if you edit the locomotive's facing via right click.  make sure the icon matches the label.  also, while autonomy is running, make sure manual/central station direction commands don't alter the config, since at that point it would be the user correcting an invalid facing (this may already be the current behavior, check it).
+
+*Run against commit f4f28b52, in English - build\classes, compiled 18 Oct 13:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-18.**
+
+Filed as OB-357; it gets its own test once fixed.
+
 ---
 
 <a id="mt-760"></a>
 ### MT-760 - 2026-10-18 - Start, Execute Timetable, Return Home and a hand send wait for a running route
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA72-C1, RSA73-C1, RSA73-C3
 
 **Written:** 2026-10-18
@@ -35646,5 +35658,15 @@ followed, so the setup faced the wrong way after the route (`a6f895fa`).  Claims
 one gate every run door asks, and the last check before the dispatch, refuse while a route runs, so a turn held for a
 route never meets a run (`cc5fe6cb`, `7ca0eb29`).  Claims in `regression.testNoSetupEditWhileARouteRuns`; the guide's
 "Nothing is sent at all" section says it.
+
+**Adam, 2026-10-18 (triage).** Works, with notes.
+
+Works, but name the route(s) in the popup window.  Be sure to manage its width/height.
+
+*Run against commit f4f28b52, in English - build\classes, compiled 18 Oct 13:46 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-18.**
+
+Taken up: the message names the route or routes that are running, with a long list cut short so the window stays a sensible size.  It gets its own test.
 
 ---
