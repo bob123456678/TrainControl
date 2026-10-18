@@ -151,6 +151,56 @@ public class testANewStraightJoinsTheTrackBesideIt
     }
 
     /**
+     * A through tile with track on one side only is turned to meet it (Adam, OB-360: *"meet the single neighbor"*); one
+     * already meeting it is left as it was; and where one way round meets track at both ends, that wins over one end.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testAThroughTileMeetsASingleNeighbour() throws Exception
+    {
+        for (componentType type : new componentType[] { componentType.STRAIGHT, componentType.FEEDBACK,
+            componentType.SIGNAL, componentType.UNCOUPLER })
+        {
+            int ways = LayoutDiagramComponent.getNumOrientations(type);
+            int[] helds = new int[ways];
+
+            for (int way = 0; way < ways; way++) helds[way] = way;
+
+            int[] east = landings(type, helds, 11, 9);
+            int[] north = landings(type, helds, 6, 10);
+            int[] both = landings(type, helds, 12, 5);
+
+            for (int way = 0; way < ways; way++)
+            {
+                assertTrue(runsBetween(type, east[way], Side.E, Side.W), type + " held as " + way + " dropped with"
+                    + " track to its east only landed as " + east[way] + ", not meeting it.  Adam, OB-360: \"meet the"
+                    + " single neighbor\"");
+
+                assertTrue(runsBetween(type, north[way], Side.N, Side.S), type + " held as " + way + " dropped with"
+                    + " track to its north only landed as " + north[way] + ", not meeting it");
+
+                // East, north and south: north-south meets two, east-west one.
+                assertTrue(runsBetween(type, both[way], Side.N, Side.S), type + " held as " + way + " dropped with"
+                    + " track east, north and south landed as " + both[way] + ": one end met where two could be");
+
+                if (runsBetween(type, way, Side.E, Side.W))
+                {
+                    assertEquals(east[way], way, type + " already meeting its single neighbour was turned all the same");
+                }
+
+                if (runsBetween(type, way, Side.N, Side.S))
+                {
+                    assertEquals(north[way], way, type + " already meeting its single neighbour was turned all the"
+                        + " same");
+
+                    assertEquals(both[way], way, type + " already meeting both ends was turned all the same");
+                }
+            }
+        }
+    }
+
+    /**
      * A bumper, a tunnel or a link ends the track at one side: dropped beside a piece of track it is turned so that its
      * end is on that side, from whichever way the palette held it.
      *
@@ -244,11 +294,12 @@ public class testANewStraightJoinsTheTrackBesideIt
      * One page, one editor: drops a tile of the type on the square once for each way round it may be held, and says how
      * each landed.  The page: an east-west line broken at 2,2, a north-south line broken at 5,2, and four lone pieces of
      * track for a one-ended tile to face - east of 8,5, south of 2,7, north of 5,6 and west of 8,2.  Nothing is beside
-     * 10,7.
+     * 10,7.  And for a tile that runs through: track east of 11,9 only, north of 6,10 only, and east, north and south of
+     * 12,5 (two ends can be met, or one).
      */
     private static int[] landings(componentType type, int[] helds, int x, int y) throws Exception
     {
-        LayoutDiagram page = new LayoutDiagram("OB-360", 12, 10, null, null);
+        LayoutDiagram page = new LayoutDiagram("OB-360", 14, 12, null, null);
 
         page.addComponent(componentType.STRAIGHT, 1, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 3, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
@@ -258,6 +309,11 @@ public class testANewStraightJoinsTheTrackBesideIt
         page.addComponent(componentType.STRAIGHT, 2, 8, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 5, 5, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 7, 2, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 12, 9, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 9, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 13, 5, EAST_WEST, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 12, 4, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 12, 6, NORTH_SOUTH, 0, 0, 0, accessoryDecoderType.MM2, null);
 
         final LayoutEditor[] editor = new LayoutEditor[1];
 

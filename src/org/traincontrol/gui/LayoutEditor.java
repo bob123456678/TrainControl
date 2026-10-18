@@ -2546,9 +2546,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * Which way round a straight-shaped tile put down on a square should lie so that it joins the track beside it
      * (OB-292, OB-360).
      *
-     * The way it is held, if that joins track (at both ends, for a tile with two) or if no way round does; otherwise the
-     * way round that does, the nearest turn from the way it is held (a signal has four ways round, and which end it faces
-     * is the operator's).
+     * The way round that meets the most track: a road with both its ends on track beats one end, and one end beats none
+     * (Adam, OB-360: *"meet the single neighbor"*).  The way it is held wins whenever it meets as much as any other, and
+     * otherwise the nearest turn from it does (a signal has four ways round, and which end it faces is the operator's).
      * A neighbour joins where any of its roads, in any position of its points, reaches the edge the two squares share -
      * the same port table the autonomy graph is built from, so a tile laid this way is one the graph runs over.
      * Only the types in TURNS_TO_JOIN.
@@ -2566,35 +2566,51 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (layout == null || !TURNS_TO_JOIN.contains(placing.getType())) return held;
 
-        if (joinsTrack(layout, placing.getType(), held, x, y)) return held;
-
         int ways = LayoutDiagramComponent.getNumOrientations(placing.getType());
+        int best = held;
+        int bestScore = joinScore(layout, placing.getType(), held, x, y);
 
-        // A quarter turn either way before the half turn.
+        // The held way first, then a quarter turn either way before the half turn: the first of equals stays.
         for (int turn : new int[] { 1, ways - 1, 2 })
         {
             int way = (held + turn) % ways;
 
-            if (way != held && joinsTrack(layout, placing.getType(), way, x, y)) return way;
+            if (way == held) continue;
+
+            int score = joinScore(layout, placing.getType(), way, x, y);
+
+            if (score > bestScore)
+            {
+                best = way;
+                bestScore = score;
+            }
         }
 
-        return held;
+        return best;
     }
 
     /**
-     * Whether a tile of this type, this way round, on this square, meets track at both ends of one of its roads - or,
-     * for a tile whose road ends in the square, at the one end it has.
+     * How much track a tile of this type, this way round, on this square, meets: ten for every road with both its ends on
+     * track (or its one end, for a tile whose road ends in the square), and one for every end that is.
      */
-    private static boolean joinsTrack(org.traincontrol.base.LayoutDiagram layout,
+    private static int joinScore(org.traincontrol.base.LayoutDiagram layout,
         LayoutDiagramComponent.componentType type, int orientation, int x, int y)
     {
+        int score = 0;
+
         for (org.traincontrol.automationui.TilePorts.Route road
             : org.traincontrol.automationui.TilePorts.ports(type, orientation, 0))
         {
-            if (meetsTrack(layout, x, y, road.getA()) && meetsTrack(layout, x, y, road.getB())) return true;
+            boolean a = meetsTrack(layout, x, y, road.getA());
+            boolean b = meetsTrack(layout, x, y, road.getB());
+
+            if (a && b) score += 10;
+
+            if (road.getA() == road.getB()) score += a ? 1 : 0;
+            else score += (a ? 1 : 0) + (b ? 1 : 0);
         }
 
-        return false;
+        return score;
     }
 
     /** Whether the square beside this one, on this side, has a road that reaches the edge between them. */
