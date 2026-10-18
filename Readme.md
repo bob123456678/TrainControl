@@ -419,7 +419,6 @@ Tab icons provided by Freepik.
         - Track that no station can be reached along no longer shows direction arrows and is greyed out in the editor.
         - Clicking a train in Test a Path or Why not Moving? now picks the station it stands on.
         - When the only trains away from home are paused, Return Home now names them and says how to set them going, instead of saying every locomotive is already at its home.
-        - A station whose track runs out on one side now says in its Changing Direction menu why it is drawn as a terminus.
 * v3.0.1 [10/13/2026]
     - Updates
         - Download Update can now also install the new version for you: it backs up your data, keeps your old version next to the new one, and restarts TrainControl

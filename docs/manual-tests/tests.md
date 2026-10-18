@@ -28,10 +28,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-756](#mt-756) | 2026-10-18 | OB-355: Return Home names the paused trains away from home | fixed unvalidated | OB-355 |
-| [MT-757](#mt-757) | 2026-10-18 | OB-356: a dead-end station says why it is drawn as a terminus | fixed unvalidated | OB-356 |
 
-Everything else - 755 of 757 - needs nothing from you unless the area changes again:
-602 **fixed validated** and 153 **superseded**.
+Everything else - 756 of 757 - needs nothing from you unless the area changes again:
+602 **fixed validated** and 154 **superseded**.
 
 ---
 
@@ -35499,12 +35498,22 @@ the import's popup too, after the connecting notice at start-up.  Claims in
 away are paused" from "everyone is home", and the button refreshes when a train is paused or set going.  Claim
 `regression.testReturnHomeRightClickPlacesTheTrainsAtHome.testAPausedTrainAwayFromHomeIsNotSaidToBeHome`.
 
+**Adam, 2026-10-18 (triage).** Does not work.
+
+The tooltip is much too wide, but otherwise correct.
+
+*Run against commit b2037955, in English - build\classes, compiled 18 Oct 01:23 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-18.**
+
+The tooltip now wraps at the width the editor's tooltips use (`981a71d9`).  Back to fixed unvalidated: the steps above still hold.
+
 ---
 
 <a id="mt-757"></a>
 ### MT-757 - 2026-10-18 - OB-356: a dead-end station says why it is drawn as a terminus
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-356
 
 **Written:** 2026-10-18
@@ -35525,5 +35534,15 @@ away are paused" from "everyone is home", and the button refreshes when a train 
 
 *What this is:* OB-356 (`2b9e3d61`): the square is right - the shape follows the track, whatever the turning setting - so nothing about
 the drawing or the running changed; the menu now says why.  Claims `core.testADeadEndSaysWhyItIsATerminus`.
+
+**Adam, 2026-10-18 (triage).** Does not work.
+
+the right click note is unnecessary, hide it again
+
+*Run against commit b2037955, in English - build\classes, compiled 18 Oct 01:23 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-18.**
+
+The note is gone again (`0bf2ae89`): the menu is as it was, and ST60rear is still drawn as a terminus because its track runs out to the west.  Nothing left to test.
 
 ---

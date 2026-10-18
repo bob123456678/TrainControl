@@ -394,7 +394,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
-| 2026-10-17 | OB-356 | bug | A station whose track runs out on one side says in its Changing Direction menu why it is drawn as a terminus; the drawing itself was right (`2b9e3d61`). | - | MT-757 |
+| 2026-10-17 | OB-356 | bug | Not a fault: ST60rear's track runs out to the west, so it is drawn as a terminus (FR-118); a menu note saying so was tried and taken out again on Adam's word (`0bf2ae89`). | - | MT-757 |
 | 2026-10-17 | OB-355 | bug | Return Home names the paused trains away from home instead of saying every locomotive is home (`18d48af7`). | - | MT-756 |
 | 2026-10-17 | OB-354 | bug | A click on a train in Test a Path or Why not Moving? picks the station it stands on (`298661c4`). | - | MT-752 |
 | 2026-10-17 | OB-353 | bug | Track joined to no station draws no arrows and is greyed in the editor; other edits still work there (`f6c29656`). | - | MT-751 |
