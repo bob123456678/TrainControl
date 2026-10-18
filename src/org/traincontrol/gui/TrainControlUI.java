@@ -3681,15 +3681,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // layout: grey the relevant options, but we need to keep open CS3 web app available").  Each already refuses on
         // the click (MT-141); greyed, the menu says so before it.  Opening the folder, the pop-outs, the picture and the
         // CS3 web app stay: they change nothing.
-        boolean running = isAutonomyBusy() || (this.model != null && this.model.isAutonomyRunning());
+        // And while a route runs (`aRunHoldsTheSetup`), saying so.
+        boolean running = isAutonomyBusy() || (this.model != null && this.model.isAutonomyRunning())
+            || aRunHoldsTheSetup();
 
-        greyForTheRun(chooseLocalDataFolderMenuItem, running, false);
-        greyForTheRun(modifyLocalLayoutMenu, running, false);
-        greyForTheRun(editPageMenu, running, false);
-        greyForTheRun(initializeLocalLayoutMenuItem, running, true);
+        String why = running ? whyTheSetupIsHeld("autosetup.ui.tooltipNotWhileRunning") : null;
+
+        greyForTheRun(chooseLocalDataFolderMenuItem, running, false, why);
+        greyForTheRun(modifyLocalLayoutMenu, running, false, why);
+        greyForTheRun(editPageMenu, running, false, why);
+        greyForTheRun(initializeLocalLayoutMenuItem, running, true, why);
 
         // The two Central Station items' owner works them out again once they are given back
-        if (greyForTheRun(switchCSLayoutMenuItem, running, true) | greyForTheRun(downloadCSLayoutMenuItem, running, true))
+        if (greyForTheRun(switchCSLayoutMenuItem, running, true, why)
+            | greyForTheRun(downloadCSLayoutMenuItem, running, true, why))
         {
             repaintPathLabel();
         }
@@ -3719,9 +3724,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param item the item
      * @param running whether autonomy is running
      * @param owned whether something else decides when the item is live, so the state it had is given back too
+     * @param why the sentence saying why, while it runs
      * @return true when the item was given back just now
      */
-    private static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned)
+    private static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned, String why)
     {
         if (item == null) return false;
 
@@ -3736,7 +3742,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             item.setEnabled(false);
 
-            item.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNotWhileRunning")));
+            item.setToolTipText(AutonomyEditorPanel.wrapped(why));
 
             return false;
         }
@@ -5938,7 +5944,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit";
         }
 
-        if (this.isAutonomyBusy()) return "autolayout.errorCannotEditWhileRunning";
+        // AND NOT WHILE A ROUTE RUNS, as no setup edit is made (`aRunHoldsTheSetup`)
+        if (this.aRunHoldsTheSetup()) return "autolayout.errorCannotEditWhileRunning";
 
         if (!this.editLayoutButton.isEnabled() && !isLayoutEditorOpen())
         {
@@ -6048,8 +6055,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // allowed - just pop up an error."
         //
         // No silent fallback here, unlike the cases above: falling back means opening SOMETHING, and
-        // the answer while trains are running is nothing at all.
-        if (this.isAutonomyBusy())
+        // the answer while trains are running is nothing at all - a route included (`aRunHoldsTheSetup`).
+        if (this.aRunHoldsTheSetup())
         {
             JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
             return;
@@ -6148,7 +6155,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // is posted: a door that had already passed its own question - Start's worker, a staging flow's planning -
                 // can have begun a run in between, and the editor would open over it.  Refused and said, and the Edit
                 // button given back, as the question above does.
-                if (this.isAutonomyBusy())
+                if (this.aRunHoldsTheSetup())
                 {
                     this.editorOnItsWay = false;
 
@@ -7271,6 +7278,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private boolean refuseWhileAutonomyRunning(Component source)
     {
+        return refuseWhile(source, false);
+    }
+
+    /**
+     * The same for a door that edits the setup or the diagram, which a route running also holds (`aRunHoldsTheSetup`):
+     * the same sentence while autonomy runs, and one naming a route otherwise.  The locomotive database's doors keep
+     * `refuseWhileAutonomyRunning`, and a running route's own rule for the train it drives (OB-287).
+     *
+     * @param source what to hang the dialog off, usually the menu item pressed
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseWhileARunHoldsTheSetup(Component source)
+    {
+        return refuseWhile(source, true);
+    }
+
+    /**
+     * `refuseWhileAutonomyRunning`, and with `aRoute` `refuseWhileARunHoldsTheSetup`.
+     *
+     * @param source what to hang the dialog off
+     * @param aRoute whether a route running refuses too
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseWhile(Component source, boolean aRoute)
+    {
+        if (aRoute && (this.model == null || !this.model.isAutonomyRunning()) && aRunHoldsTheSetup())
+        {
+            JOptionPane.showMessageDialog(source == null || !source.isShowing() ? this : source,
+                I18n.t("ui.main.tooltip.placeAtHomesWhileRunning"));
+
+            return true;
+        }
+
         if (this.model == null || !this.model.isAutonomyRunning()) return false;
 
         // OVER THE MAIN WINDOW where the source is not showing (the popups sweep, on Adam's MT-703 note): a menu's item
@@ -8885,9 +8925,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // pointing at a station and pressing Control+X watched a BUTTON change, with nothing said
         // about why.  That is the one outcome they cannot have meant, and it made every reason this
         // could decline look identical from the outside.
-        if (this.isAutonomyBusy())
+        // A ROUTE TOO (`aRunHoldsTheSetup`): these keys write a placement into the setup.
+        if (this.aRunHoldsTheSetup())
         {
-            this.model.logf("layout.warnDiagramKeyWhileBusy");
+            this.model.log(whyTheSetupIsHeld("layout.warnDiagramKeyWhileBusy"));
 
             return true;
         }
@@ -25113,7 +25154,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // BECAUSE trains are running - losing every placement since the last save - and the Start and
         // graceful-stop controls are removed from the window while Layout.runLocomotives carries on
         // driving. Adam, MT-141: not while the layout is running.
-        if (refuseWhileAutonomyRunning(this)) return;
+        if (refuseWhileARunHoldsTheSetup(this)) return;
 
         if (refuseWhileEditorOpen()) return;
 
@@ -25167,7 +25208,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // NOT WHILE AUTONOMY RUNS, before its folder window (RSA13-B2), as every other Layout menu door that changes the
         // diagram is not (MT-141): a folder chosen switched the layout, synced with the Central Station and reset the
         // autonomy session under the moving trains
-        if (refuseWhileAutonomyRunning(this)) return;
+        if (refuseWhileARunHoldsTheSetup(this)) return;
 
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
@@ -25200,7 +25241,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void chooseLocalDataFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseLocalDataFolderMenuItemActionPerformed
         // Swapping the layout FOLDER is swapping the whole railway - the diagram, the setup and the
         // configurations at once. The same rule as switching to the CS layout, above.
-        if (refuseWhileAutonomyRunning(this)) return;
+        if (refuseWhileARunHoldsTheSetup(this)) return;
 
         if (refuseWhileEditorOpen()) return;
 
@@ -26989,6 +27030,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether a setup edit must wait for a run: autonomy busy, a timetable, Return Home running or planning, a hand send
+     * under way, or a route executing with autonomy idle - `somethingIsRunning`, as Return Home's place-at-home item asks
+     * it (FR-129).  Adam, 2026-09-28: *"There should be no setup edit possible during a run"*; and of a route running
+     * with autonomy idle: *"yes, refuse"*.  The one question every door that refuses or hides a setup edit asks; doors
+     * that send or drive trains, or start autonomy, keep their own.
+     *
+     * @return true while a setup edit is refused
+     */
+    boolean aRunHoldsTheSetup()
+    {
+        return somethingIsRunning(this.model, this.stagingFlowActive || theAutoTabWaits());
+    }
+
+    /**
+     * What a door refusing a setup edit says: its own sentence where autonomy is busy, as before, and one naming a route
+     * too where something else holds the setup (`aRunHoldsTheSetup`).
+     *
+     * @param autonomyKey the key of the door's own sentence, which names autonomy alone
+     * @return the sentence
+     */
+    String whyTheSetupIsHeld(String autonomyKey)
+    {
+        return I18n.t(isAutonomyBusy() ? autonomyKey : "ui.main.tooltip.placeAtHomesWhileRunning");
+    }
+
+    /**
      * Whether a graceful stop has been asked for and the trains are still finishing (OB-143).
      *
      * The window between pressing Graceful Stop and Start coming back. `stopLocomotives()` clears the
@@ -27298,7 +27365,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
 
-        if (somethingIsRunning(this.model, this.stagingFlowActive || theAutoTabWaits()))
+        if (aRunHoldsTheSetup())
         {
             return I18n.t("ui.main.tooltip.placeAtHomesWhileRunning");
         }
@@ -28819,7 +28886,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void combineLinkedPages()
     {
         // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
-        if (refuseWhileAutonomyRunning(this)) return;
+        if (refuseWhileARunHoldsTheSetup(this)) return;
 
         if (refuseWhileEditorOpen()) return;
 
@@ -29166,7 +29233,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // reads as though the question had been asked - but an editor being closed does not mean the
         // railway is standing still, and renaming a page renumbers nothing now yet still rebuilds the
         // session underneath whatever is moving.
-        if (refuseWhileAutonomyRunning(this)) return;
+        if (refuseWhileARunHoldsTheSetup(this)) return;
 
         if (!this.isLocalLayout())
         {
@@ -29271,7 +29338,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // database, the track diagram, the autonomy config, or the locomotive placements." A page IS
         // the track diagram. The locomotive doors were locked and the placement door was locked; the
         // page doors are the same rule, and were missed - found by review.
-        if (refuseWhileAutonomyRunning(this)) return;
+        if (refuseWhileARunHoldsTheSetup(this)) return;
 
         if (refuseWhileEditorOpen()) return;
 

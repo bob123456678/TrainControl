@@ -6707,7 +6707,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             org.traincontrol.automationui.AutonomySession session =
                 autonomy ? parent.editableAutonomySession() : null;
 
-            if (autonomy && (session == null || parent.isAutonomyBusy()))
+            if (autonomy && (session == null || parent.aRunHoldsTheSetup()))
             {
                 javax.swing.JOptionPane.showMessageDialog(this,
                     I18n.t(session == null ? "autosetup.ui.errorNoSetupToEdit"
@@ -6894,7 +6894,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     {
         try
         {
-            if (parent.getModel() != null && parent.getModel().isAutonomyRunning())
+            // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+            if ((parent.getModel() != null && parent.getModel().isAutonomyRunning()) || parent.aRunHoldsTheSetup())
             {
                 JOptionPane.showMessageDialog(this,
                     I18n.t("autolayout.errorCannotEditWhileRunning"));
@@ -7249,7 +7250,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             autonomyModeButton.setToolTipText(
                 AutonomyEditorPanel.wrapped(I18n.t("layout.ui.hintNoAutonomyToEdit")));
         }
-        else if (parent.isAutonomyBusy())
+        else if (parent.aRunHoldsTheSetup())
         {
             autonomyModeButton.setEnabled(false);
             autonomyModeButton.setToolTipText(
@@ -7995,7 +7996,8 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         try
         {
-            if (parent.getModel().isAutonomyRunning())
+            // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+            if (parent.getModel().isAutonomyRunning() || parent.aRunHoldsTheSetup())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
                 return;

@@ -548,6 +548,7 @@
         <test-one-class class="testNoSetupEditDuringARun"/>
         <test-one-class class="testALocomotiveNotInTheDatabaseLeavesTheSetup"/>
         <test-one-class class="testReturnHomeRightClickPlacesTheTrainsAtHome"/>
+        <test-one-class class="testNoSetupEditWhileARouteRuns"/>
         <test-one-class class="testTheAutoTabWaitsForTheTrains"/>
         <test-one-class class="testTheWordingSaysWhatIsThere"/>
         <test-one-class class="testTheRoutesImportDoorAsksByName"/>

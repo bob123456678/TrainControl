@@ -232,7 +232,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private boolean refusedWhileRunning()
     {
-        if (!ui.isAutonomyBusy()) return false;
+        // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+        if (!ui.aRunHoldsTheSetup()) return false;
 
         JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
 
@@ -742,7 +743,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // included (OB-284), where Why not Moving? says so.
                     if (ui.getActiveLoc() != null
                         && current.isDestination()
-                        && !ui.isAutonomyBusy()
+                        && !ui.aRunHoldsTheSetup()
                         && !ui.getActiveLoc().equals(locomotive))
                     {
                         // Chosen for them, from the ways a train could actually leave.
@@ -797,7 +798,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // Only the copies it could actually leave from, for the same reason placing is:
                     // turning a train to face a wall is not an orientation, it is a train that cannot
                     // move.
-                    if (current.getCurrentLocomotive() != null && !ui.isAutonomyBusy())
+                    // Every setup item here is left out while a route runs as well (`aRunHoldsTheSetup`).
+                    if (current.getCurrentLocomotive() != null && !ui.aRunHoldsTheSetup())
                     {
                         // A second "Facing" menu used to be built here (MT-086).
                         //
@@ -825,7 +827,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         add(menuItem); 
                     }
                     
-                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.isAutonomyBusy())
+                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.aRunHoldsTheSetup())
                     {
                         // Edit locomotive
                         menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(current));
@@ -884,7 +886,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // (also accessible via track diagram).  Show it if there is a locomotive at that station").  Only at
                     // rest, as he answered when asked; while trains run the Auto tab's pause button says the same.  Read off
                     // the train, which is what autonomy and Return Home read.
-                    if (locomotive != null && !ui.isAutonomyBusy())
+                    if (locomotive != null && !ui.aRunHoldsTheSetup())
                     {
                         final Locomotive standing = locomotive;
 
@@ -913,7 +915,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 // Which way round the train is standing, beside the other things about the train
                 // rather than a level down inside the setup submenu
-                javax.swing.JMenu facing = ui.buildAutonomyFacingMenu(here);
+                javax.swing.JMenu facing = ui.aRunHoldsTheSetup() ? null : ui.buildAutonomyFacingMenu(here);
 
                 if (facing != null)
                 {
@@ -992,7 +994,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private void addSetupMenu()
     {
-        if (here == null || ui.isAutonomyBusy()) return;
+        if (here == null || ui.aRunHoldsTheSetup()) return;
 
         JPopupMenu built = ui.buildAutonomyTileMenu(here);
 
@@ -1180,6 +1182,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private void placeSomewhereLegal(java.util.List<String> usable)
     {
+        // ASKED AGAIN AT THE CLICK, as Edit Locomotive is: a route may have begun since the menu opened
+        if (refusedWhileRunning()) return;
+
         String loc = ui.getActiveLoc() == null ? null : ui.getActiveLoc().getName();
 
         org.traincontrol.automation.Layout running = org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel());
@@ -1524,6 +1529,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private void removeLocomotiveHere(Point current)
     {
+        // ASKED AGAIN AT THE CLICK, as Edit Locomotive is: a route may have begun since the menu opened
+        if (refusedWhileRunning()) return;
+
         // PURGE, as the editor's own Remove does (C15).
         //
         // The two doors that take a train off a square passed different answers to the same question.

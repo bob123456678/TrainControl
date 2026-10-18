@@ -956,7 +956,7 @@ public class AutonomyViewerPanel extends JPanel
     public void initialize()
     {
         // NOT WHILE AUTONOMY RUNS (RSA10-A1): it writes a configuration, and may tick pages out, under the railway
-        if (ui.isAutonomyBusy())
+        if (ui.aRunHoldsTheSetup())
         {
             JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
 
@@ -1100,9 +1100,9 @@ public class AutonomyViewerPanel extends JPanel
         // shared half - a station's name among it - and the fold after a declined reload read the running railway through
         // names it had changed: a train on a square it renamed was written nowhere.  It was refused into the configuration
         // in use alone (RLU4-C1); what it says says what to do instead (RLU5-C2, RLA5-C1).
-        if (ui.isAutonomyBusy())
+        if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorImportWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autosetup.ui.errorImportWhileRunning"));
 
             return;
         }
@@ -1809,7 +1809,7 @@ public class AutonomyViewerPanel extends JPanel
     public void duplicate()
     {
         // NOT WHILE AUTONOMY RUNS, as Import, Export and Delete are not (RSA10-A1) - before anything is asked
-        if (ui.isAutonomyBusy())
+        if (ui.aRunHoldsTheSetup())
         {
             JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
 
@@ -1898,7 +1898,7 @@ public class AutonomyViewerPanel extends JPanel
     public void rename()
     {
         // NOT WHILE AUTONOMY RUNS (RSA10-A1): it renames the running configuration's file under the railway
-        if (ui.isAutonomyBusy())
+        if (ui.aRunHoldsTheSetup())
         {
             JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
 
@@ -1942,7 +1942,7 @@ public class AutonomyViewerPanel extends JPanel
         // this mid-run went through to clearAutoLayout and stopped every locomotive - which is a
         // reasonable thing to ask for and not a reasonable thing to have happen as a side effect of
         // tidying up a list of configurations.
-        if (ui.isAutonomyBusy())
+        if (ui.aRunHoldsTheSetup())
         {
             JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
             return;

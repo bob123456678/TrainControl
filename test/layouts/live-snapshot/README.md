@@ -156,6 +156,7 @@ not fix it. Name the square.
 - `regression.testNoSetupEditDuringARun`
 - `regression.testALocomotiveNotInTheDatabaseLeavesTheSetup`
 - `regression.testReturnHomeRightClickPlacesTheTrainsAtHome`
+- `regression.testNoSetupEditWhileARouteRuns`
 - `regression.testTheAutoTabWaitsForTheTrains`
 - `regression.testDeleteAsksWhichConfiguration`
 - `core.testAStopRouteStandsAlone`

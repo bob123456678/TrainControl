@@ -1526,7 +1526,7 @@ public class AutonomyEditorPanel extends JPanel
             // accessible via track diagram).  Show it if there is a locomotive at that station").  Read off the setup,
             // which is what this menu is about, and written to the train and the setup together.  Not in the deep menu,
             // whose train items are on the track diagram's own menu one level up; and only at rest, as he answered.
-            if (standing != null && !menuOnly && (parentWindow() == null || !parentWindow().isAutonomyBusy()))
+            if (standing != null && !menuOnly && (parentWindow() == null || !parentWindow().aRunHoldsTheSetup()))
             {
                 menu.add(toggle(I18n.f("autolayout.ui.menuLocomotiveActive", standing),
                     "autolayout.ui.hintLocomotiveActive", !session.getPausedLocomotives().contains(standing),
@@ -3112,7 +3112,8 @@ public class AutonomyEditorPanel extends JPanel
     {
         TrainControlUI window = parentWindow();
 
-        if (window == null || !window.isAutonomyBusy()) return false;
+        // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+        if (window == null || !window.aRunHoldsTheSetup()) return false;
 
         JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.errorCannotEditWhileRunning"));
 
