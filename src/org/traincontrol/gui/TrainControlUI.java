@@ -27306,9 +27306,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.returnHomeButton.setEnabled(nothingToDo == null);
 
         // Says why it is unavailable, rather than leaving a dead button with no explanation
-        this.returnHomeButton.setToolTipText(nothingToDo == null
+        // WRAPPED (Adam on MT-756: "The tooltip is much too wide"): a reason can name many trains
+        this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(nothingToDo == null
             ? I18n.t("ui.main.tooltip.returnHome")
-            : describeStagingOutcome(nothingToDo, returnHomeTriagePausedAway));
+            : describeStagingOutcome(nothingToDo, returnHomeTriagePausedAway)));
     }
 
     /**
@@ -27778,7 +27779,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void disableReturnHome(String reason)
     {
         this.returnHomeButton.setEnabled(false);
-        this.returnHomeButton.setToolTipText(reason);
+        this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason));
     }
 
     /**
