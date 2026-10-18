@@ -274,7 +274,9 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+V (put it, or the locomotive selected in the main window, down)
     * Delete (take the train off)
 
-![Diagram of TrainControl's keyboard mappings for locomotive and function control](assets/keyboard.png?raw=true)
+![Diagram of TrainControl's main window keyboard mappings, showing the plain, Control and Alt keys for locomotive and function control](assets/keyboard.png?raw=true)
+
+![Diagram of the keyboard shortcuts in the track and autonomy editors](assets/keyboard_editor.png?raw=true)
 
 ## Requirements
 
