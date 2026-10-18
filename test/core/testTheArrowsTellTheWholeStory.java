@@ -426,11 +426,11 @@ public class testTheArrowsTellTheWholeStory
      * leave by the other exactly where that end's arrow is green and the blades run that way.
      *
      * Not half of a two-square crossing: the side its squares meet at draws no arrow, and each track is told by its two
-     * outer ends, one on each square (OB-320, OB-322).
+     * outer ends, one on each square (OB-320, OB-322).  Nor track no station is on, which draws no arrows at all (OB-353).
      */
     static String hidden(AutonomySession on, TileKey square)
     {
-        if (on.getGraph().crossingPartner(square) != null) return null;
+        if (on.getGraph().crossingPartner(square) != null || on.reachesNoStation(square)) return null;
 
         Set<Side> green = arrows(on, square);
 
