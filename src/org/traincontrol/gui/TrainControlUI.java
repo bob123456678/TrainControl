@@ -7557,8 +7557,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * In this order, on the event thread: whether a train may be sent at all (`refusedToSendATrain`); whether this path can
      * take this train (`whyThisPathCannotBeTaken`); the reversal question, on departure itself so that nothing is dispatched
-     * before the answer (Adam, 2026-09-06); the atomic-routes gate (GS-B1).  Then the dispatch on its own thread, since it
-     * holds the railway's monitor for the whole path (OB-192); a dispatch the railway turns down says so.  The graph hears
+     * before the answer (Adam, 2026-09-06); the last-moment question again (`refusedForAnEditorOnItsWay`), since the
+     * questions leave room for an editor, a refresh or a route to begin (RSA73-C1); the atomic-routes gate (GS-B1).  Then
+     * the dispatch on its own thread, since it holds the railway's monitor for the whole path (OB-192); a dispatch the
+     * railway turns down says so.  The graph hears
      * where the run ends from `executePath` itself, which announces it when its thread count falls to zero (W7-A2).
      *
      * @param railway the railway the path was offered on
@@ -14990,8 +14992,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // outcome and keeps it, and Return Home and a hand send are autonomy's trains.
             //
             // A HELD TURN NEVER MEETS A RUN THAT BEGAN UNDER IT: no door starts one while a route runs, asked at the press
-            // (`whyNoTrainMayBeSent`) and again at the last moment before the dispatch (`refusedForAnEditorOnItsWay`).  A route that begins during a run (an s88 trigger) and outlives it holds only the
-            // reversals made after the run; those made during it are ignored and never enter the set.
+            // (`whyNoTrainMayBeSent`) and again at the last moment before the dispatch (`refusedForAnEditorOnItsWay`).  A
+            // route that begins during a run (an s88 trigger) and outlives it holds only the reversals made after the run;
+            // those made during it are ignored and never enter the set.
             if (!this.stagingFlowActive && !theAutoTabWaits() && !turnsHeldByARoute.remove(name))
             {
                 turnsHeldByARoute.add(name);

@@ -1494,7 +1494,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through a single
         // door?"): whether a train may be sent at all - the editor, which this copy did not ask at the click (RLV12-B1), the
-        // setup, the power - this path's standing rules, the reversal question, the atomic-routes gate and the dispatch.
+        // setup, the power - this path's standing rules, the reversal question, the last-moment question again, the
+        // atomic-routes gate and the dispatch.
         // Every message there belongs to the main window, not to this menu, which has left its window by the time an item's
         // action runs (RLU-B2).
         item.addActionListener(event -> ui.sendATrainByHand(railway, path, locomotive));
