@@ -30474,3 +30474,223 @@ body:
 |
 tail:
 | ---
+
+[test MT-773]
+ordinal: 772
+anchor: mt-773
+date: 2026-10-19
+title: FR-136: Backup TrainControl Data still makes a whole backup
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-773"></a>
+| ### MT-773 - 2026-10-19 - FR-136: Backup TrainControl Data still makes a whole backup
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. File > Backup TrainControl Data.  Answer the question that follows.
+| 2. In the "Backup complete" message, press Show Files.
+| 3. Open the newest archive in the folder that opens.
+|
+| **Expected**
+|
+| - Step 1: the message names the archive it wrote.
+| - Step 2: the backup folder opens, with the new archive in it.
+| - Step 3: the archive holds your locomotive database, your window settings, your routes and your layout folder, as before.
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `TrainControlUI` into `BackupAction` without changing what it does (710c1d45).  Battery 106 and the user-level claims in `ui.testABackupHoldsTheWholeRailway` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-774]
+ordinal: 773
+anchor: mt-774
+date: 2026-10-19
+title: FR-136: Help > Download Update still downloads and still asks first
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-774"></a>
+| ### MT-774 - 2026-10-19 - FR-136: Help > Download Update still downloads and still asks first
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. When a newer version is offered (or Help > Download Update), read the question, then press Cancel.
+| 2. Open it again and choose Download (not Download & Update).
+|
+| **Expected**
+|
+| - Step 1: the question names the new version; Cancel downloads nothing and changes nothing.
+| - Step 2: the jar downloads, the notice says where it went, and the folder opens there; the menu item is usable again afterwards.
+| - Download & Update need not be tried; if you do, it behaves as it did in 3.0.2.
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `TrainControlUI` into `UpdateFlow` without changing what it does (fdefa638).  Battery 106 and the user-level claims in `ui.testDownloadUpdateFetchesTheNewVersion` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-775]
+ordinal: 774
+anchor: mt-775
+date: 2026-10-19
+title: FR-136: the locomotive icon - set, crop, re-crop and clear - works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-775"></a>
+| ### MT-775 - 2026-10-19 - FR-136: the locomotive icon - set, crop, re-crop and clear - works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. On a locomotive, set a local picture as its icon with Crop ticked, then again with Crop unticked.
+| 2. Re-crop it from the crop mark on the icon.
+| 3. On a locomotive with a Central Station picture, crop that picture.
+| 4. Clear the icon.
+|
+| **Expected**
+|
+| - Steps 1-3: each icon is set as chosen, the crop dialog opens over the window as before, and the icon survives a restart.
+| - Step 4: the icon goes back to the default, and the cropped file is no longer used.
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `TrainControlUI` into `LocIconActions` without changing what it does (0f69ef34).  Battery 106 and the user-level claims in `ui.testLocIconCrop` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-776]
+ordinal: 775
+anchor: mt-776
+date: 2026-10-19
+title: FR-136: Manage Pages - duplicate, rename, add blank and combine - works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-776"></a>
+| ### MT-776 - 2026-10-19 - FR-136: Manage Pages - duplicate, rename, add blank and combine - works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps** (on a copy of a layout you can spare, or undo afterwards)
+|
+| 1. Duplicate the current page.
+| 2. Rename a page, then try to rename one to a name another page already has.
+| 3. Add a blank page.
+| 4. Combine Linked Pages on a page with links, then on a page without any.
+|
+| **Expected**
+|
+| - Step 1: a copy of the page appears and is selected.
+| - Step 2: the rename keeps the page's autonomy setup; the taken name is refused and nothing changes.
+| - Step 3: an empty page appears.
+| - Step 4: one combined page appears, left out of autonomy; with no links you are told so and nothing changes.
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `TrainControlUI` into `LayoutFileActions` without changing what it does (9ec942f6).  Battery 106 and the user-level claims in `ui.testThePageMenuEditsTheLayoutFolder` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-777]
+ordinal: 776
+anchor: mt-777
+date: 2026-10-19
+title: FR-136: Create New Layout and Download Central Station Layout work as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-777"></a>
+| ### MT-777 - 2026-10-19 - FR-136: Create New Layout and Download Central Station Layout work as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Layouts > Create New Layout, into a new folder.
+| 2. With the Central Station connected, Download Central Station Layout.
+|
+| **Expected**
+|
+| - Step 1: an empty layout is created there and opened, as before.
+| - Step 2: the station's layout is downloaded and opened, as before.
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `TrainControlUI` into `LayoutFileActions` without changing what it does (9ec942f6).  Battery 106 and the user-level claims in `ui.testThePageMenuEditsTheLayoutFolder` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
+
+[test MT-778]
+ordinal: 777
+anchor: mt-778
+date: 2026-10-19
+title: FR-136: the route list - play, run, edit, duplicate, bulk and find - works as before
+disposition: needs test
+from: FR-136
+written: 2026-10-19
+reopened: no
+body:
+| <a id="mt-778"></a>
+| ### MT-778 - 2026-10-19 - FR-136: the route list - play, run, edit, duplicate, bulk and find - works as before
+|
+| **Disposition:** needs test
+| **From:** FR-136
+|
+| **Written:** 2026-10-19
+|
+| **Steps**
+|
+| 1. Press a route's play button.
+| 2. Click a route row and answer No, then click it again and answer Yes.
+| 3. Right-click a route: Execute, then Edit, then Duplicate.
+| 4. Bulk Enable and Bulk Disable routes matching a name.
+| 5. Find Route by a name that matches one route, then several, then none.
+| 6. With the power off, click a route row.
+|
+| **Expected**
+|
+| - Steps 1-2: play runs it at once; a row click asks first, No sends nothing and Yes runs it; the spinner shows while it runs.
+| - Step 3: each does what it did in 3.0.2; a second Edit while one editor is open says one at a time.
+| - Step 4: only the matching routes change.
+| - Step 5: the route is shown and highlighted; several matches ask which; none says so.
+| - Step 6: the route's editor opens instead (FR-140).
+|
+| *What this is:* FR-136 Phase 3 moved this feature's code out of `TrainControlUI` into `RouteListPanel` without changing what it does (742d56f8).  Battery 106 and the user-level claims in `ui.testTheRouteListShowsWhatRuns` pass on the new code; this checks it on your own railway.  Any difference from before is a defect of the move.
+|
+tail:
+| ---
+|
