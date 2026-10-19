@@ -2,6 +2,7 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * A keystroke right after start-up lands on the keyboard and changes the active key (OB-168, OB-170).
@@ -833,27 +834,15 @@ public class testTheWindowTakesTheKeyboard
     @Test
     public void testDisplayDoesNotUndoTheTopmostTrickItDependsOn() throws Exception
     {
-        java.io.File source = new java.io.File("src/org/traincontrol/gui/TrainControlUI.java");
+        // The method, comments blanked: the paragraph above explains at length why the restore must not be in
+        // `display()`, and a search of the raw text would find `setAlwaysOnTop` in that explanation.
+        String display = SourceOf.withoutComments(SourceOf.declaration("public void display()"));
 
-        assertTrue(source.exists(), "cannot find " + source.getAbsolutePath()
-            + " - this test reads the window's source, so it has to run from the project root");
+        int shows = display.indexOf("setVisible(true);");
 
-        String body = withoutComments(new String(java.nio.file.Files.readAllBytes(source.toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        assertTrue(shows > 0, "display() no longer shows the window");
 
-        int opens = body.indexOf("public void display()");
-
-        assertTrue(opens > 0, "display() has been renamed or removed");
-
-        int shows = body.indexOf("setVisible(true);", opens);
-
-        assertTrue(shows > opens, "display() no longer shows the window");
-
-        int closes = body.indexOf("\n    }", shows);
-
-        assertTrue(closes > shows, "cannot find the end of display()");
-
-        String afterTheShow = body.substring(shows, closes);
+        String afterTheShow = display.substring(shows);
 
         assertFalse(afterTheShow.contains("setAlwaysOnTop"),
             "display() takes the always-on-top flag off after showing the window.  That flag is how "
@@ -862,39 +851,6 @@ public class testTheWindowTakesTheKeyboard
             + "dead on start-up through six attempts at fixing something else.  The restore belongs to "
             + "takeTheKeyboard's raise, which holds it long enough to be used.  What display() says "
             + "after the show:\n" + afterTheShow);
-    }
-
-    /**
-     * Java source with its comments removed, so a check reads the code and not the prose about it.
-     *
-     * The paragraph above this test explains at length why the restore must not be in `display()`, and
-     * a search of the raw text would find `setAlwaysOnTop` in that explanation.
-     */
-    private static String withoutComments(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
     }
 
     /**
