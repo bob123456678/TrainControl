@@ -82,3 +82,5 @@ pushed: `git checkout <tag>` to look, `git reset --hard <tag>` on a branch to go
 | `fr136-phase2` | `1928cead` | Phase 2 (the four giants) and Phase 1b (battery 104) |
 | `fr136-phase6-tier1-net` | `f46174ee` | Phase 6: the safety net under TrainControlUI's Tier 1 |
 | `fr136-phase1a-sweep` | `496f4f99` | Phase 1a's follow-up (every test init skips the station timeout) with the Tier 1 net (battery 105) |
+| `fr136-phase3-tcui-tier1` | `742d56f8` | Phase 3: TrainControlUI's Tier 1 in BackupAction, UpdateFlow, LocIconActions, LayoutFileActions, RouteListPanel (battery 106) |
+| `fr136-phase3-session` | `e2dadb68` | Phase 3: SessionImport and SessionRuns out of AutonomySession, the Tier 1 review fixes, the harness speed-ups (battery 107) |
