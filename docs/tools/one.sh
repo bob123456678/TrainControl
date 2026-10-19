@@ -111,6 +111,11 @@ else
     take_one_slot
 fi
 
+# NO RUN STARVES (2026-10-19).  A run that needs every slot and is refused leaves a "waiting for every slot" marker
+# (slots.sh), and take_one_slot above refuses, saying "nothing was run", while a fresh one stands - so the single-slot
+# runs that kept the slots taken at every 30 s retry stop starting, and the waiting run gets in once those going finish.
+# The marker comes down when this run gets the slots (take_every_slot) and in the exit trap below.
+
 # AND ONE RUN PER SCRATCH DIRECTORY.  one-run.txt, oneout and the compile's argfile are named by the directory, so
 # two runs from one directory - possible since the slots - would write over each other's results.
 SCRATCH_LOCK="$S/one.lock"
@@ -192,6 +197,9 @@ reap()
 release_the_lock()
 {
     release_all_slots
+
+    # A run that waited for every slot and got them has taken its marker down already; this is the second chance.
+    clear_waiting_marker
 
     release_lock_file "${SCRATCH_LOCK:-}"
 }

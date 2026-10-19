@@ -173,6 +173,9 @@ refuse_if_test_jvms all
 # BATTERY IS ALREADY RUNNING" did not.
 take_every_slot
 
+# A battery refused above (the probe, or a held slot) has left a "waiting for every slot" marker (slots.sh), which holds
+# off new single-slot runs so the slots drain and this run gets in on a retry (2026-10-19).  It came down in
+# take_every_slot, and comes down again in the exit trap below.
 BUILD="$S/build/battery-$$"
 
 # The lock and this run's classes go whichever way the script leaves - including the live-layout
@@ -207,6 +210,9 @@ BUILD="$S/build/battery-$$"
 release_the_lock()
 {
     release_all_slots
+
+    # A run that waited for every slot and got them has taken its marker down already; this is the second chance.
+    clear_waiting_marker
 }
 
 REPORTED=""

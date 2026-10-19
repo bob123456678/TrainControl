@@ -442,6 +442,17 @@ data folder, preference node and temp folder, so runs no longer share anything b
 - The classes in `docs/tools/serial-lane.txt` need the machine to themselves (the keyboard focus, the
   clipboard): a battery runs them first, alone, and `one.sh` takes every slot to run one.
 - Every refusal says "nothing was run", which is what a worker's retry loop looks for.
+- **A run that needs every slot does not starve.**  A battery and a `one.sh` of a serial-lane class can start only
+  when no other run holds a slot, and with single-slot runs starting all day that moment did not come (a serial-lane
+  class waited over 40 minutes, a laned battery over an hour).  So when such a run is refused it leaves a "waiting for
+  every slot" marker (`$TEMP/traincontrol-battery.lock.waiting.<key>`, holding its pid and the time, rewritten at
+  every retry).  While a fresh marker stands, a `one.sh` that needs one slot refuses with "A RUN IS WAITING FOR EVERY
+  TEST SLOT ... nothing was run", even if a slot is free, and its retry loop waits as it does for a full house.  Runs
+  already going are never stopped; as they finish the slots drain and the waiting run takes them all on a retry, which
+  removes its marker (the exit traps remove it too).  A marker older than 10 minutes (`TC_WAITING_TTL`, in seconds)
+  with no live pid is ignored and deleted, and one older than an hour is ignored whatever its pid; so a caller that
+  gave up costs the others at most ten minutes.  A run that itself needs every slot ignores the markers.
+  `docs/tools/test-slot-waiting.sh` proves it with simulated holders and a lock of its own.
 
 `docs/tools/compare-batteries.py` compares two batteries' `tng-run` folders claim by claim.
 

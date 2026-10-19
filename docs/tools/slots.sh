@@ -14,6 +14,15 @@
 # one.sh and battery.sh separately, and drifted every time (see one.sh's header).  Sourced, so it is read whole
 # when the runner starts and an edit during a run cannot shift it.
 #
+# A RUN THAT NEEDS EVERY SLOT MUST NOT STARVE (2026-10-19).  It can start only at an instant when no other run holds
+# one, and with workers starting single-slot one.sh runs all day that instant did not come: a serial-lane class waited
+# over forty minutes and a laned battery over an hour, each finding a slot taken at every 30 s retry.  So a refused
+# every-slot run leaves a short-lived "waiting for every slot" marker beside the slots (leave_waiting_marker), and while
+# a fresh one stands a single-slot run refuses, saying "nothing was run", even with a slot free (take_one_slot).  Runs
+# already going are never stopped, so the slots drain as they finish; the waiting run takes them all on a retry and
+# removes its marker (take_every_slot, and the runners' exit traps).  A run that itself needs every slot ignores the
+# markers: it competes as it always did.
+#
 # Every refusal prints a line with "nothing was run" in it: workers' retry loops look for exactly that, and a
 # refusal worded any other way was once read as an empty result.
 
@@ -196,6 +205,92 @@ release_all_slots()
     HELD_SLOTS=""
 }
 
+# THE "WAITING FOR EVERY SLOT" MARKER.  One file per waiting runner and scratch directory, beside the slots:
+# "$SLOT_BASE.waiting.<key>", holding the waiter's pid and the time (seconds since 1970) it last asked.  The key is
+# the scratch directory and the runner's name, so the retries of one caller write one file over and over - the run
+# that refused has exited by the time its caller tries again - and a battery and a one.sh of the same session do
+# not share one.  Written whole through a temp file and a move, so a reader never sees half of it.
+waiting_marker_file()
+{
+    echo "$SLOT_BASE.waiting.$(printf '%s %s' "${TC_SCRATCH:-$$}" "$(basename "$0")" | md5sum | cut -c1-16)"
+}
+
+# How long a marker counts, in seconds (TC_WAITING_TTL).  A waiting run asks again every 30 s, so a marker this old
+# belongs to a caller that gave up or was stopped.
+WAITING_TTL="${TC_WAITING_TTL:-600}"
+
+# Leaves the marker.  Called by an every-slot run just before it exits 2 on a refusal.
+leave_waiting_marker()
+{
+    m=$(waiting_marker_file)
+
+    if printf "%s %s\n" "$SLOT_PID" "$(date +%s)" > "$m.tmp.$$" 2>/dev/null
+    then
+        mv -f "$m.tmp.$$" "$m" 2>/dev/null || rm -f "$m.tmp.$$"
+    fi
+
+    echo ""
+    echo "This run is now marked as waiting for every slot: runs that need only one hold off (and say so) until it"
+    echo "has run, or the mark is $WAITING_TTL s old.  Runs already going are not stopped."
+}
+
+# Removes this runner's own marker: when the waiting run gets its slots, and again from the exit traps.
+clear_waiting_marker()
+{
+    rm -f "$(waiting_marker_file)"
+}
+
+# Whether any marker is fresh; returns 0 with WAITING_PID and WAITING_AGE set to the freshest, or 1.
+#
+# STALE, and so ignored: older than WAITING_TTL with no live pid behind it - or older than six times that whatever the
+# pid says, because a recycled pid must never hold every single-slot run off for good (a guard needs a way past).  An
+# unreadable marker is stale.  A stale marker is deleted on the way, which touches no slot or lock file.
+waiting_marker_fresh()
+{
+    WAITING_PID=""
+    WAITING_AGE=""
+
+    now=$(date +%s)
+
+    for m in "$SLOT_BASE".waiting.*
+    do
+        [ -f "$m" ] || continue
+
+        case "$m" in *.tmp.*) continue;; esac
+
+        w_pid=""
+        w_time=""
+
+        read -r w_pid w_time < "$m" 2>/dev/null
+
+        case "${w_time:-}" in
+            ''|*[!0-9]*) rm -f "$m"; continue;;
+        esac
+
+        age=$((now - w_time))
+
+        [ "$age" -lt 0 ] && age=0
+
+        if [ "$age" -gt "$WAITING_TTL" ]
+        then
+            if [ "$age" -gt $((WAITING_TTL * 6)) ] || [ "$(lock_holder_state "$w_pid")" != "yes" ]
+            then
+                rm -f "$m"
+
+                continue
+            fi
+        fi
+
+        if [ -z "$WAITING_AGE" ] || [ "$age" -lt "$WAITING_AGE" ]
+        then
+            WAITING_PID="$w_pid"
+            WAITING_AGE="$age"
+        fi
+    done
+
+    [ -n "$WAITING_AGE" ]
+}
+
 # The test JVMs running now.  "all" counts every one, as the probe always did: the runner, our compiles by their
 # argfile (TV2-C1), and the receive-port flag.  "unisolated" counts only test JVMs without a preference node of
 # their own - an IDE or ant run, or a runner from before 2026-09-23 - which share the real node that LayoutSandbox
@@ -238,6 +333,8 @@ refuse_if_test_jvms()
                     echo "This run needs the machine to itself, and a battery, an ant run, or another one.sh is"
                     echo "going.  Wait for it, or stop it.  Nothing needs deleting: this check clears itself"
                     echo "when those processes exit."
+
+                    leave_waiting_marker
                 else
                     echo "*** TEST JVMS WITHOUT A STATE OF THEIR OWN ARE RUNNING ($running of them) - nothing was run ***"
                     echo ""
@@ -253,9 +350,20 @@ refuse_if_test_jvms()
 }
 
 # Takes one free slot, the lowest first (so a runner from before the slots sees this run in slot 1 whenever it can).
-# Refuses, and exits 2, when every slot is held.
+# Refuses, and exits 2, when every slot is held - or when a run that needs every slot is waiting for them (see the
+# header), whether or not one is free: the free ones are what it is waiting to see all at once.
 take_one_slot()
 {
+    if waiting_marker_fresh
+    then
+        echo "*** A RUN IS WAITING FOR EVERY TEST SLOT (asked $WAITING_AGE s ago, pid $WAITING_PID) - nothing was run ***"
+        echo ""
+        echo "A battery, or a class that needs the machine to itself, has been finding a slot taken at every try, so"
+        echo "new single-slot runs hold off until it has run.  Try again shortly; the runs already going are not stopped."
+
+        exit 2
+    fi
+
     holders=""
 
     k=1
@@ -286,7 +394,8 @@ take_one_slot()
 }
 
 # Takes every slot, for a run that needs the machine to itself.  Refuses, and exits 2, when any is held - having
-# given back the ones it took, so two runs racing for all of them cannot each end up holding half.
+# given back the ones it took, so two runs racing for all of them cannot each end up holding half - and leaves the
+# waiting marker.  It looks at no one else's marker: two runs that both need every slot compete as they always did.
 take_every_slot()
 {
     k=1
@@ -298,6 +407,8 @@ take_every_slot()
             echo "*** A BATTERY OR ANOTHER RUN IS ALREADY GOING (pid $LOCK_HELD_BY) - nothing was run ***"
             echo ""
             echo "This run needs every test slot to itself.  Wait for that one and try again."
+
+            leave_waiting_marker
 
             exit 2
         fi
@@ -317,6 +428,8 @@ take_every_slot()
             echo ""
             echo "Two started within a few milliseconds of each other.  Wait for the other one and try again."
 
+            leave_waiting_marker
+
             exit 2
         fi
 
@@ -326,6 +439,9 @@ take_every_slot()
     done
 
     HELD_SLOTS=$(echo $HELD_SLOTS)
+
+    # It has them all: it is no longer waiting.
+    clear_waiting_marker
 }
 
 # The classes that need the machine to themselves, from serial-lane.txt in $TOOLS (the runner's own folder): the
