@@ -1,9 +1,6 @@
 package regression;
 
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -17,6 +14,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * Preferences > Debug switches the echo of sent commands, in debug and simulation only (Adam, 2026-09-24).
@@ -123,14 +121,7 @@ public class testTheDebugMenuSwitchesTheEcho
     @Test
     public void testItIsOfferedOnlyInDebugAndSimulation() throws Exception
     {
-        String code = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8).replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
-
-        int at = code.indexOf("private void mountDebugMenu()");
-
-        assertTrue(at >= 0, "there is no mountDebugMenu");
-
-        String body = code.substring(at, code.indexOf("\n    }", at));
+        String body = SourceOf.withoutComments(SourceOf.declaration("private void mountDebugMenu()"));
 
         assertTrue(body.contains("isDebug()") && body.contains("isSimulation()"), "the Debug submenu is not held to"
             + " debug and simulation - \"visible only in this mode\": " + body);
