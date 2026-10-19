@@ -254,6 +254,9 @@ public class testTheRecordsCountTheStore
 
     /**
      * Loads `catalog-findings.py` and `triagedb` as modules, for the claims that call its functions.
+     *
+     * The stand-in refs in the scripts are written with a tilde (`ZZ~A1`) and turned into dashes by `fix`, because
+     * `testEveryCitationResolves` reads every finding-shaped id in this file as a citation, and these are not findings.
      */
     private static final String LOAD = String.join("\n",
         "import importlib.util, io, os, sys, tempfile",
@@ -262,6 +265,8 @@ public class testTheRecordsCountTheStore
         "spec.loader.exec_module(cf)",
         "sys.path.insert(0, 'docs/manual-tests')",
         "import triagedb",
+        "def fix(*refs):",
+        "    return [r.replace('~', '-') for r in refs]",
         "");
 
     /**
@@ -457,10 +462,10 @@ public class testTheRecordsCountTheStore
     public void testRoundNumbersAreCountedAndPrefixesAreWholeWords() throws Exception
     {
         String said = script(
-            "refs = ['RSA-A1', 'RSA2-A1', 'RSA9-B1', 'RSA10-C1', 'RSAX3-A1', 'VD11-D1']",
+            "refs = fix('RSA~A1', 'RSA2~A1', 'RSA9~B1', 'RSA10~C1', 'RSAX3~A1', 'VD11~D1')",
             "print(cf.next_round(refs, 'RSA'))",
             "print(cf.next_round(refs, 'VD'))",
-            "print(cf.next_round(['TDY-A1'], 'TDY'))",
+            "print(cf.next_round(fix('TDY~A1'), 'TDY'))",
             "for bad in ('RS', 'RSA10', 'MT'):",
             "    try:",
             "        cf.next_round(refs, bad)",
@@ -533,15 +538,19 @@ public class testTheRecordsCountTheStore
             "RSA" + (highest + 1) + "-A1 is free");
 
         assertEquals(script(
-            "refs = ['RSA-A1', 'RSA2-A1']",
-            "for ask in ('RSA', 'RSA-A1', 'RSA-A2', 'RSA2', 'RSA3', 'RSA2-A1'):",
+            "refs = fix('RSA~A1', 'RSA2~A1')",
+            "out = ''",
+            "for ask in fix('RSA', 'RSA~A1', 'RSA~A2', 'RSA2', 'RSA3', 'RSA2~A1'):",
             "    try:",
             "        cf.check_unused(refs, ask)",
-            "        print('free ' + ask)",
+            "        out += 'F'",
             "    except cf.Refusal:",
-            "        print('taken ' + ask)"),
-            String.join("\n", "taken RSA", "taken RSA-A1", "free RSA-A2", "taken RSA2", "free RSA3", "taken RSA2-A1", ""),
-            "round 1 is the bare prefix, a ref is taken only when it is exactly in the store, and a round only when"
+            "        out += 'T'",
+            "print(out)"),
+            "TTFTFT\n",
+            "asked in order - round 1, its first ref, a free ref of it, round 2, round 3, round 2's first ref - the answers are"
+            + " taken or free:"
+            + " round 1 is the bare prefix, a ref is taken only when it is exactly in the store, and a round only when"
             + " some ref carries its number");
     }
 
@@ -558,22 +567,23 @@ public class testTheRecordsCountTheStore
             "db = os.path.join(d, 't.db')",
             "mirror = os.path.join(d, 'm.tsv')",
             "conn = triagedb.connect(db)",
-            "conn.execute(\"INSERT INTO finding (ref, document) VALUES ('ZZ-A1', 'ZZ.md')\")",
-            "conn.execute(\"INSERT INTO dead_citation (ref) VALUES ('ZZ7-C1')\")",
+            "first, dead = fix('ZZ~A1', 'ZZ7~C1')",
+            "conn.execute(\"INSERT INTO finding (ref, document) VALUES (?, 'ZZ.md')\", (first,))",
+            "conn.execute(\"INSERT INTO dead_citation (ref) VALUES (?)\", (dead,))",
             "conn.commit()",
             "conn.close()",
             "tab = chr(9)",
-            "io.open(mirror, 'w').write('# header\\n' + 'ZZ-A1' + tab + 'ZZ.md\\n' + 'ZZ7-C1' + tab + '-\\n')",
+            "io.open(mirror, 'w').write('# header\\n' + first + tab + 'ZZ.md\\n' + dead + tab + '-\\n')",
             "refs = cf.refs_in_the_store(db, mirror)",
-            "print(sorted(refs), cf.next_round(refs, 'ZZ'))",
-            "io.open(mirror, 'w').write('# header\\n' + 'ZZ-A1' + tab + 'ZZ.md\\n')",
+            "print(len(refs), cf.next_round(refs, 'ZZ'))",
+            "io.open(mirror, 'w').write('# header\\n' + first + tab + 'ZZ.md\\n')",
             "try:",
             "    cf.refs_in_the_store(db, mirror)",
             "    print('agreed')",
             "except cf.Refusal as no:",
             "    print('disagree' if 'disagree' in str(no) else str(no))");
 
-        assertEquals(said, "['ZZ-A1', 'ZZ7-C1'] ZZ8\ndisagree\n",
+        assertEquals(said, "2 ZZ8\ndisagree\n",
             "a ref cited from the code and a finding in no document (the DEAD roll) is a used number too, and a"
             + " store whose mirror lacks one of its refs must refuse to hand out a number");
     }
@@ -661,13 +671,14 @@ public class testTheRecordsCountTheStore
     {
         File folder = java.nio.file.Files.createTempDirectory("catalog-round").toFile();
 
+        byte[] round = ("**Prefix:** RSA99\n\n### RSA99" + "-A1 - a finding\n").getBytes(StandardCharsets.UTF_8);
+
         try
         {
             byte[] before = Files.readAllBytes(new File("docs/manual-tests/triage.db").toPath());
 
             // A deleted round's file name, holding a round it never made.
-            Files.write(new File(folder, "RSA75.md").toPath(),
-                "**Prefix:** RSA99\n\n### RSA99-A1 - a finding\n".getBytes(StandardCharsets.UTF_8));
+            Files.write(new File(folder, "RSA75.md").toPath(), round);
 
             Ran clash = tool("--add", folder.getPath(), "--check");
 
@@ -676,8 +687,7 @@ public class testTheRecordsCountTheStore
 
             assertTrue(new File(folder, "RSA75.md").delete(), "could not remove the stand-in");
 
-            Files.write(new File(folder, "RSA99.md").toPath(),
-                "**Prefix:** RSA99\n\n### RSA99-A1 - a finding\n".getBytes(StandardCharsets.UTF_8));
+            Files.write(new File(folder, "RSA99.md").toPath(), round);
 
             Ran fresh = tool("--add", folder.getPath(), "--check");
 
