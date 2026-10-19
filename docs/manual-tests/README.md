@@ -1,7 +1,13 @@
 # Manual test discipline
 
 How hands-on testing is recorded. [tests.md](tests.md) is the single source of truth: every test that
-needs the real railway or a display lives there and nowhere else.
+needs the real railway or a display lives there and nowhere else - or, once it is closed and released,
+in that release's archive beside it (see "The archives" below).
+
+**Agents: never Read `tests.md`, its `tests-archive-*.md` files or `issues.md`.  Ask the CLI.**
+`py -3 docs\manual-tests\triage.py test MT-089` prints one entry with its Comments, `tests --open` the
+open ones, `stats` the counts, and `triagedb.py show MT-089` its history; see "The query API" below.  The
+archives alone are 1.9 MB, and the CLI answers from all of them for the price of the entry you asked about.
 
 Set 2026-08-22, at Adam's request, after the tests had spread across three documents and their results
 had to be pieced together from comments interleaved with the instructions.
@@ -16,7 +22,9 @@ HANDS-ON half is written down.
 
 ## The file
 
-One file, [tests.md](tests.md), holding every manual test ever written, in one format.
+One file, [tests.md](tests.md), holding every manual test ever written, in one format - the closed
+and released ones in its archives, one file per release beside it, which the store and every tool read
+as part of it.
 
 ### Six rules
 
@@ -111,6 +119,54 @@ what needs your attention that had stopped being one.
 
 A note you want kept against an entry goes in that entry's **Comments**, which is where
 `verify-ledger` reads the truth from in any case.
+
+### The archives
+
+**A closed entry leaves tests.md once the release it was closed in has shipped** (FR-136, 2026-10-19).
+By then the file was 1.86 MB and 770 of its 772 entries were closed, and every reader paid for all of
+them.  Each release has its own file beside it - `tests-archive-pre-3.0.0.md`, `tests-archive-3.0.0.md`,
+`tests-archive-3.0.1.md`, `tests-archive-3.0.2.md` - and an entry moves into one whole: anchor, text,
+Disposition and Comments, byte for byte, under the tag it always had.  Nothing about rule 5 changes; an
+archive is where an entry is kept, not something done to it.
+
+**The rule** is `triagedb.home_for`, and it is a function of the store, so nobody moves an entry by hand:
+
+- an entry that is not **fixed validated** or **superseded** is in tests.md;
+- a closed one goes to the first release in `triagedb.ARCHIVES` whose day is on or after the last day
+  anything was said on it - the latest of its heading date and its dated `**Adam, ...**` and
+  `**Claude, ...**` markers.  A release's own day counts in it, and "pre-3.0.0" ends on 2026-09-26, the
+  day 2.8.2 was released;
+- a closed one whose last word is newer than the last release stays in tests.md: it has not shipped.
+
+So **an entry that is reopened, or answered, comes back to tests.md by itself** - the newest comment is
+dated after the last release - the next time the store is written, and leaves again once the next release
+is in `ARCHIVES`.  An answer Adam writes in the triage app to an archived entry is never lost or left
+where nobody looks: it is written into the entry, and the entry comes back with it.
+
+**When a release ships**, add its row to `ARCHIVES` in triagedb.py - its name and the day - and run
+`py -3 docs\manual-tests\triagedb.py archive`.  That moves every entry to where the rule puts it,
+regenerates the ledger, and proves the record is the same afterwards: a second store is built from the files
+it has written and compared with the first, entry by entry and comment by comment, and then every file is
+compared byte for byte with what that store renders.  Run it again and it writes nothing.
+
+**Every entry keeps its address.**  `tests.md#mt-NNN` is how every link to an entry was written, and some of
+those are quotations nobody may edit - findings.tsv's, and links inside other entries.  So tests.md has a
+section, "The archives", with an anchor for every archived tag on a line linking to where it is now, and an
+archive's header carries one for each entry its own entries link to as `#mt-NNN` that is kept elsewhere.
+Both are written with the files, so a line never names a file the entry has left.  Links are therefore
+never rewritten, in issues.md or anywhere else: they would have to chase an entry each time it moved.
+
+**Every other write does the same as a side effect.**  `set_disposition`, `add_comment`,
+`regenerate_ledger` and the triage app's Submit render all five files, each entry where the rule says, and
+write only the ones whose bytes change.  A hand edit can leave an entry in the wrong file - a comment
+typed straight into an archive, say - and loses nothing: `triagedb.py sync` says what `archive` would
+move, and `verify` fails until it has.  The headers of the archives and the archives section of tests.md
+are generated: an edit to them is overwritten.  Edit an entry, never the text around it.
+
+**What the store refuses.**  A tag in two files with different text - which copy has the newer comment is
+not something a parser can know - is reported by `sync`, and every write refuses until the wrong copy is
+deleted by hand.  A file named like an archive that `ARCHIVES` does not list is still read, so nothing in
+it drops out of the record, and `verify` names it.
 
 ---
 
@@ -264,6 +320,11 @@ typed by hand would take. Anything else noticed, and everything from **New issue
 structured `OB-###` (bug) or `FR-###` (feature request) item in [issues.md](issues.md),
 cross-referenced back to the test it came from if it came from one.
 
+**Archived entries are in it too** (FR-136).  The list reads tests.md and every archive, so
+**Show > everything, validated included** has all of them, and the line under an archived entry's
+title says which archive it is kept in.  An answer to one is written into it like any other, and the
+entry comes back to tests.md with it (see "The archives" above).
+
 **What it deliberately never writes: the Disposition line, or the ledger.** The ledger is generated
 by `triagedb.py regenerate-ledger`; rule 4 above says the
 disposition is Claude's to set, and that stays true whether the comment arrived by hand or through the
@@ -294,7 +355,12 @@ py -3 docs\manual-tests\triage.py test MT-089           # one entry in full, inc
 py -3 docs\manual-tests\triage.py issues                # every Inbox item not yet picked up
 py -3 docs\manual-tests\triage.py issues --kind bug     # ... just the bugs (or --kind feature)
 py -3 docs\manual-tests\triage.py verify-ledger          # ledger table vs. actual open entries - a diff
+py -3 docs\manual-tests\triagedb.py verify               # every file is what the store writes, byte for byte
+py -3 docs\manual-tests\triagedb.py archive              # put every entry where the archive rule says
 ```
+
+Every one of them reads tests.md and all its archives: `tests --all` and `test MT-089` answer for an
+archived entry exactly as for one in tests.md.
 
 Structured entries parse in full - tag, dates, disposition, from, the instruction, the comments, and
 for an issue, its kind and what it was raised from. Anything hand-written that does not match the

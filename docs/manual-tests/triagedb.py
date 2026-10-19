@@ -20,6 +20,11 @@ They are still written, still committed, still readable and still greppable, bec
 and `OB-###` in this repository is cited from commit messages and review documents and has to keep
 resolving to something a person can open.
 
+Since FR-136 the tests are rendered into more than one file: tests.md keeps the open entries, and each
+closed one is kept in the archive of the release it shipped in, `tests-archive-<release>.md`.  Where an
+entry is kept is worked out from the store every time the files are written (`home_for`), and every
+file is read back into one table, so the record is the same whichever file an entry is in.
+
 
 HOW THE RENDER CAN BE TRUSTED
 -----------------------------
@@ -71,6 +76,27 @@ import triage  # noqa: E402  - the path has to be set first
 DB_FILE = os.path.join(HERE, "triage.db")
 TESTS_FILE = os.path.join(HERE, "tests.md")
 ISSUES_FILE = os.path.join(HERE, "issues.md")
+
+# THE ARCHIVES (FR-136).  tests.md had grown to 1.86 MB, 770 of its 772 entries closed, and every reader paid for all of
+# it.  A closed entry leaves it once the release it was closed in has shipped, into one file per release beside it, and
+# the store reads them all back: an entry in an archive is as much in the record as one in tests.md.
+#
+# One row per release, oldest first: the archive's name and the day the release shipped.  An entry belongs to the first
+# release on or after the last day anything was said on it, so a release's own day counts in it.  "pre-3.0.0" ends on
+# 2.8.2's day (tag v2_8_2), the last release before 3.0.0: everything closed by then shipped before 3.0.0.
+#
+# ADD A ROW WHEN A RELEASE SHIPS, then run `triagedb.py archive`.  Until then what was closed since the last row stays in
+# tests.md, which is where a comment on an archived entry brings it back to as well: unreleased work is still news.
+ARCHIVES = [
+    ("pre-3.0.0", "2026-09-26"),
+    ("3.0.0", "2026-10-11"),
+    ("3.0.1", "2026-10-14"),
+    ("3.0.2", "2026-10-18"),
+]
+
+TESTS_NAME = "tests.md"
+
+ARCHIVE_GLOB = "tests-archive-*.md"
 
 # The reference documents that quote the record's counts (see render_counts)
 REFERENCE_DIR = os.path.join(os.path.dirname(HERE), "reference")
@@ -840,15 +866,21 @@ def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
     Uses triage.py's parsers rather than its own, so there is exactly one definition of what an entry
     is. See the module docstring.
 
+    The tests are read from tests.md AND every archive beside it (FR-136), into one table: where an entry
+    is kept is not part of the record, and is worked out again by `homes` whenever the files are written.
+
     :param conn: an open connection
-    :param tests_path: tests.md
+    :param tests_path: tests.md; its archives are the `tests-archive-*.md` files beside it
     :param issues_path: issues.md
     :return: (number of tests, number of issues)
     """
 
-    tests_text, tests_crlf = triage.read_text(tests_path)
+    # tests.md and every archive beside it (FR-136): an entry in an archive is in the record like any other.
+    files = read_tests_files(tests_path)
 
-    head, entries = triage.parse_tests_text(tests_text)
+    tests_crlf = files[0][2]
+
+    head = triage.parse_tests_text(files[0][1])[0]
 
     issues_doc = triage.IssuesDoc(issues_path)
 
@@ -857,12 +889,49 @@ def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
     conn.execute("DELETE FROM issue")
     conn.execute("DELETE FROM doc")
 
+    # Which file each entry was read from, the head each file had, and any tag read twice.  TEMPORARY, so this
+    # connection's own: it is a fact about the files just read rather than about the record, and the store in git
+    # keeps the schema it has.
+    conn.executescript(
+        "CREATE TEMP TABLE IF NOT EXISTS placed (tag TEXT PRIMARY KEY, file TEXT NOT NULL);"
+        "CREATE TEMP TABLE IF NOT EXISTS read_head (file TEXT PRIMARY KEY, head TEXT NOT NULL);"
+        "CREATE TEMP TABLE IF NOT EXISTS duplicate (tag TEXT NOT NULL, file TEXT NOT NULL, same INTEGER NOT NULL);"
+        "DELETE FROM placed; DELETE FROM read_head; DELETE FROM duplicate;")
+
     # The head, and everything the entries do not cover.  Kept verbatim: it holds the index tables and
     # the conventions, and this module has no business reformatting either.
     conn.execute(
         "INSERT INTO doc (name, head, tail, crlf) VALUES (?, ?, ?, ?)",
         ("tests", head, "", 1 if tests_crlf else 0),
     )
+
+    # A TAG READ TWICE KEEPS THE FIRST COPY, tests.md's before an archive's, and says so.  `INSERT OR REPLACE` used to
+    # keep the second without a word.  Two copies that differ are refused at the next write (render_to_disk): which one
+    # holds the newer comment is not something a parser can know.
+    sequences = []
+    first = {}
+
+    for name, text, _ in files:
+        file_head, file_entries = triage.parse_tests_text(text)
+
+        conn.execute("INSERT INTO read_head (file, head) VALUES (?, ?)", (name, file_head))
+
+        kept = []
+
+        for e in file_entries:
+            if e.tag in first:
+                conn.execute("INSERT INTO duplicate (tag, file, same) VALUES (?, ?, ?)",
+                             (e.tag, name, 1 if first[e.tag].block == e.block else 0))
+                continue
+
+            first[e.tag] = e
+            kept.append(e)
+
+            conn.execute("INSERT INTO placed (tag, file) VALUES (?, ?)", (e.tag, name))
+
+        sequences.append(kept)
+
+    entries = _merge_by_tag(sequences)
 
     for i, e in enumerate(entries):
         conn.execute(
@@ -900,11 +969,292 @@ def build(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
     return len(entries), len(issues_doc.pending)
 
 
-def render_tests(conn):
-    """tests.md as the store says it should be.
+def archive_file(name):
+    """The file one archive is written to.
+
+    :param name: a name from ARCHIVES - "3.0.1", "pre-3.0.0"
+    :return: its basename, beside tests.md
+    """
+
+    return "tests-archive-%s.md" % name
+
+
+def read_tests_files(tests_path=TESTS_FILE):
+    """tests.md and every archive beside it, in the order the store reads them.
+
+    tests.md first, then the archives ARCHIVES names in release order, then any other `tests-archive-*.md` on disk, by
+    name.  A file ARCHIVES does not name is still READ, so that nothing in it can drop out of the record; `verify` says
+    it should not be there, and the next write puts its entries where the rule says.
+
+    :param tests_path: tests.md; the archives are the files beside it
+    :return: [(basename, text with \\n endings, crlf)]
+    """
+
+    import glob
+
+    text, crlf = triage.read_text(tests_path)
+
+    out = [(TESTS_NAME, text, crlf)]
+
+    folder = os.path.dirname(os.path.abspath(tests_path))
+
+    known = [archive_file(name) for name, _ in ARCHIVES]
+
+    on_disk = set(os.path.basename(p) for p in glob.glob(os.path.join(folder, ARCHIVE_GLOB)))
+
+    for name in known + sorted(on_disk - set(known)):
+        if name in on_disk:
+            text, crlf = triage.read_text(os.path.join(folder, name))
+
+            out.append((name, text, crlf))
+
+    return out
+
+
+def tests_paths(tests_path=TESTS_FILE):
+    """Every file the tests are kept in that is on disk now: tests.md, then its archives.
+
+    For a reader that wants the text rather than the store - the triage app's ref counter and its separator check.
+
+    :param tests_path: tests.md
+    :return: absolute paths
+    """
+
+    folder = os.path.dirname(os.path.abspath(tests_path))
+
+    return [tests_path if name == TESTS_NAME else os.path.join(folder, name)
+            for name, _, _ in read_tests_files(tests_path)]
+
+
+def _merge_by_tag(sequences):
+    """One order for the entries of several files, which keeps each file's own order.
+
+    Repeatedly takes, from the heads of the files, the entry with the lowest tag.  Within a file the order is untouched,
+    so each file renders back as it was read; across files it is roughly tag order, so an entry that moves into a file
+    lands among its neighbours by number rather than at the bottom.  Read from one file - tests.md before any archive
+    existed - it is that file's order exactly.
+
+    :param sequences: one list of entries per file, in file order
+    :return: every entry, once
+    """
+
+    at = [0] * len(sequences)
+    out = []
+
+    while True:
+        best = None
+
+        for i, seq in enumerate(sequences):
+            if at[i] < len(seq) and (best is None or
+                                     _tag_order(seq[at[i]].tag) < _tag_order(sequences[best][at[best]].tag)):
+                best = i
+
+        if best is None:
+            return out
+
+        out.append(sequences[best][at[best]])
+
+        at[best] += 1
+
+
+ISO_DAY_RE = re.compile(r"^\d{4}-\d\d-\d\d$")
+
+
+def home_for(disposition, last_said):
+    """The file an entry belongs in: THE MOVE RULE.
+
+    Open - anything but fixed validated or superseded - is tests.md.  Closed is the archive of the release it shipped in:
+    the first in ARCHIVES whose day is on or after the last day anything was said on it.  Closed after the last release
+    is still tests.md, because it has not shipped.
+
+    So a closed entry that is commented on, or reopened, comes back to tests.md the next time the store is written, and
+    goes out again, into the archive of the release after, once that release is in ARCHIVES.
+
+    :param disposition: the entry's Disposition line
+    :param last_said: the latest of its heading date and every dated Adam or Claude marker in it
+    :return: a basename
+    """
+
+    if (disposition or "").strip().lower() not in (triage.VALIDATED, triage.SUPERSEDED):
+        return TESTS_NAME
+
+    # An entry with no readable date cannot be placed in a release; tests.md is where it will be looked at.
+    if not ISO_DAY_RE.match(last_said or ""):
+        return TESTS_NAME
+
+    for name, day in ARCHIVES:
+        if last_said <= day:
+            return archive_file(name)
+
+    return TESTS_NAME
+
+
+def homes(conn):
+    """Where the rule puts every entry in the store.
+
+    The date is the store's own: the heading's and the verdict table's, which is every `**Adam, YYYY-MM-DD` and
+    `**Claude, YYYY-MM-DD` marker the one parser found.  A date mentioned in prose is not something said on the day.
 
     :param conn: an open connection
-    :return: the file's whole text
+    :return: {tag: basename}
+    """
+
+    out = {}
+
+    for r in conn.execute(
+            "SELECT t.tag, t.disposition, t.date,"
+            " (SELECT MAX(v.date) FROM verdict v WHERE v.tag = t.tag AND v.date != '') AS said"
+            " FROM test t"):
+        dates = [d for d in (r["date"], r["said"]) if d and ISO_DAY_RE.match(d)]
+
+        out[r["tag"]] = home_for(r["disposition"], max(dates) if dates else None)
+
+    return out
+
+
+ARCHIVES_HEADING = "## The archives"
+
+
+def _release_window(name):
+    """How an archive's header describes the releases it holds.
+
+    :param name: a name from ARCHIVES
+    :return: (the sentence's subject, the day it ends)
+    """
+
+    names = [n for n, _ in ARCHIVES]
+
+    at = names.index(name)
+
+    day = ARCHIVES[at][1]
+
+    if at == 0:
+        return "shipped before 3.0.0 - closed on or before %s, the day 2.8.2 was released" % day, day
+
+    return ("shipped in %s - closed after %s and on or before %s, the day %s was released"
+            % (name, ARCHIVES[at - 1][1], day, name)), day
+
+
+def render_archive_index(placement):
+    """The section of tests.md that says where the closed entries went, and keeps every one's address.
+
+    `tests.md#mt-NNN` is how every link to an entry was written - from issues.md's receipts, from other entries, from
+    findings.tsv - and some of those are quotations nobody may edit.  So every archived tag keeps an anchor here, on a
+    line linking to where it is now: the old link still lands, one click from the entry.  Generated on every write, so
+    a line never names a file the entry has left.
+
+    :param placement: {tag: basename}
+    :return: the section, beginning with a newline and ending with the closing rule
+    """
+
+    counts = {}
+
+    for name in placement.values():
+        counts[name] = counts.get(name, 0) + 1
+
+    lines = ["", ARCHIVES_HEADING, "",
+             "A closed entry - **fixed validated** or **superseded** - leaves this file once the release it was closed",
+             "in has shipped, and is kept whole, anchor and Comments and all, in that release's archive.  The archives",
+             "are written from the store with this file, so nobody moves an entry by hand: one that is reopened, or",
+             "commented on, comes back here by itself (README.md, \"The archives\").  The triage app shows them under",
+             "**Show > everything, validated included**, and an answer to one is written where it is.",
+             "",
+             "Agents: ask `triagedb.py` or `triage.py tests --all` - never read these files whole.",
+             ""]
+
+    for name, day in reversed(ARCHIVES):
+        lines.append("- [%s](%s) - %d entr%s, %s" % (
+            archive_file(name), archive_file(name), counts.get(archive_file(name), 0),
+            "y" if counts.get(archive_file(name), 0) == 1 else "ies", _release_window(name)[0]))
+
+    archived = sorted((tag for tag, name in placement.items() if name != TESTS_NAME), key=_tag_order)
+
+    lines += ["",
+              "Every archived entry keeps its address in this file: a link to `tests.md#mt-NNN` lands on its line",
+              "below, which links to where it is now.",
+              ""]
+
+    for tag in archived:
+        lines.append('- <a id="%s"></a>[%s](%s#%s)' % (tag.lower(), tag, placement[tag], tag.lower()))
+
+    return "\n".join(lines) + "\n\n---\n"
+
+
+def render_archive_head(name, placement, blocks):
+    """The header of one archive, all of it generated.
+
+    It carries an anchor for every entry its own entries link to as `#mt-NNN` that is kept in another file, so a link
+    written when both were in tests.md still lands - on a line linking to where the other one is now.
+
+    :param name: a name from ARCHIVES
+    :param placement: {tag: basename}
+    :param blocks: the blocks this archive holds, in order
+    :return: everything before the first entry
+    """
+
+    here = archive_file(name)
+
+    linked = set()
+
+    for block in blocks:
+        for m in re.finditer(r"\]\(#(mt-\d+)\)", block):
+            linked.add(m.group(1).upper())
+
+    elsewhere = sorted((tag for tag in linked if placement.get(tag) not in (None, here)), key=_tag_order)
+
+    window, _ = _release_window(name)
+
+    lines = ["# Manual tests - archive %s" % name, "",
+             "The entries of [tests.md](tests.md) that were closed - **fixed validated** or **superseded** - and",
+             "%s." % window, "",
+             "GENERATED from the store by `triagedb.py`, with tests.md - do not edit this file by hand.  Every entry is",
+             "exactly as it was written and keeps its tag for life.  One that is reopened, or commented on, moves back",
+             "to tests.md by itself (README.md, \"The archives\").",
+             "",
+             "Agents: ask `triagedb.py` or `triage.py tests --all` - never read this file whole.",
+             "",
+             "%d entr%s." % (len(blocks), "y" if len(blocks) == 1 else "ies")]
+
+    if elsewhere:
+        lines += ["", "Linked from the entries below and kept in another file:", ""]
+
+        for tag in elsewhere:
+            lines.append('- <a id="%s"></a>[%s](%s#%s)' % (tag.lower(), tag, placement[tag], tag.lower()))
+
+    return "\n".join(lines) + "\n\n---\n\n## The tests\n\n\n"
+
+
+def _with_archive_index(head, index):
+    """tests.md's head with the archives section put in, or put back.
+
+    It sits between the Ledger and "## The tests"; a head written before there were archives has none, and gets one.
+
+    :param head: the head as stored
+    :param index: render_archive_index's section
+    :return: the head to write
+    """
+
+    end = head.find("\n## The tests")
+
+    if end < 0:
+        raise IOError("cannot find '## The tests' in the head of tests.md, which is where the archives section goes")
+
+    start = head.find("\n" + ARCHIVES_HEADING)
+
+    if start < 0 or start > end:
+        start = end
+
+    return head[:start] + index + head[end:]
+
+
+def render_files(conn):
+    """tests.md and every archive, as the store says they should be.
+
+    Each entry goes where `homes` puts it, in store order, so every file is a function of the store: render it twice and
+    it is the same twice, and render it after any write and every entry is where the rule says.
+
+    :param conn: an open connection
+    :return: [(basename, text with \\n endings)], tests.md first; every archive ARCHIVES names, an empty one included
     """
 
     row = conn.execute("SELECT head FROM doc WHERE name = 'tests'").fetchone()
@@ -912,10 +1262,56 @@ def render_tests(conn):
     if row is None:
         raise IOError("the store has no tests document - run build first")
 
-    blocks = [r["block"] for r in
-              conn.execute("SELECT block FROM test ORDER BY ordinal")]
+    placement = homes(conn)
 
-    return row["head"] + "".join(blocks)
+    names = [TESTS_NAME] + [archive_file(name) for name, _ in ARCHIVES]
+
+    blocks = dict((name, []) for name in names)
+
+    for r in conn.execute("SELECT tag, block FROM test ORDER BY ordinal"):
+        blocks[placement[r["tag"]]].append(r["block"])
+
+    out = [(TESTS_NAME, _with_archive_index(row["head"], render_archive_index(placement))
+            + "".join(blocks[TESTS_NAME]))]
+
+    for name, _ in ARCHIVES:
+        mine = blocks[archive_file(name)]
+
+        out.append((archive_file(name), render_archive_head(name, placement, mine) + "".join(mine)))
+
+    return out
+
+
+def render_tests(conn):
+    """tests.md as the store says it should be.
+
+    :param conn: an open connection
+    :return: the file's whole text
+    """
+
+    return render_files(conn)[0][1]
+
+
+def render_as_read(conn):
+    """Every file as it was READ: its own head, and the entries read from it, in the store's order.
+
+    The proof that the store holds everything the files did.  `render_files` cannot be it, because it puts each entry
+    where the rule says, which after a hand edit is not where it was.
+
+    :param conn: a connection `build` filled
+    :return: [(basename, text with \\n endings)], in the order the files were read
+    """
+
+    out = []
+
+    for r in conn.execute("SELECT file, head FROM read_head ORDER BY rowid"):
+        blocks = [b["block"] for b in conn.execute(
+            "SELECT t.block FROM test t JOIN placed p ON p.tag = t.tag WHERE p.file = ? ORDER BY t.ordinal",
+            (r["file"],))]
+
+        out.append((r["file"], r["head"] + "".join(blocks)))
+
+    return out
 
 
 LEDGER_HEADING = "## Ledger - where your attention is needed"
@@ -1002,12 +1398,27 @@ def render_ledger(conn):
     # COUNTED, NOT COPIED. The sentence this replaces said "235 of 262" against a file holding 340
     # entries, and read as though the superseded ones were still on the list. Every number here is a
     # count of the rows the table above was built from.
+    #
+    # Counted over the ARCHIVES as well (FR-136): the store is built from them too, so these are every entry ever
+    # written, wherever it is kept now.
     summary = ("Everything else - %d of %d - needs nothing from you unless the area changes again:\n"
-               "%d **fixed validated** and %d **superseded**." % (
-                   validated + superseded, len(rows), validated, superseded))
+               "%d **fixed validated** and %d **superseded**.  Those that have shipped are in the archives,\n"
+               "below." % (validated + superseded, len(rows), validated, superseded))
 
     return "\n%s\n\n%s\n\n%s\n%s\n\n%s\n\n---\n" % (
         LEDGER_HEADING, LEDGER_INTRO, LEDGER_COLUMNS, "\n".join(lines), summary)
+
+
+def ledger_end(text):
+    """Where the Ledger section of tests.md ends: at the archives section, or at "## The tests" before there was one.
+
+    :param text: the head, or the whole file
+    :return: the offset of the newline before the next section's heading, or -1
+    """
+
+    ends = [at for at in (text.find("\n" + ARCHIVES_HEADING), text.find("\n## The tests")) if at >= 0]
+
+    return min(ends) if ends else -1
 
 
 def regenerate_ledger(conn, tests_path=TESTS_FILE, write=True):
@@ -1039,11 +1450,11 @@ def regenerate_ledger(conn, tests_path=TESTS_FILE, write=True):
     head = row["head"]
 
     start = head.find("\n## Ledger")
-    end = head.find("\n## The tests")
+    end = ledger_end(head)
 
     if start < 0 or end < 0 or end <= start:
         raise IOError("cannot find the Ledger section in the head of tests.md"
-                      " (looked for '## Ledger' followed later by '## The tests')")
+                      " (looked for '## Ledger' followed later by '## The archives' or '## The tests')")
 
     was = head[start:end]
     now = render_ledger(conn)
@@ -1080,21 +1491,128 @@ def verify(conn, tests_path=TESTS_FILE):
     :return: (ok, message)
     """
 
-    on_disk, _ = triage.read_text(tests_path)
+    # EVERY FILE (FR-136): tests.md and each archive, and no archive on disk that the store would not write.
+    on_disk = dict((name, text) for name, text, _ in read_tests_files(tests_path))
 
-    rendered = render_tests(conn)
+    rendered = render_files(conn)
 
-    if rendered == on_disk:
-        return True, "tests.md renders byte-identically from the store (%d chars)" % len(rendered)
+    total = 0
+
+    for name, text in rendered:
+        total += len(text)
+
+        why = _first_difference(name, on_disk.get(name), text)
+
+        if why:
+            return False, why + _moves_note(conn)
+
+    stray = sorted(set(on_disk) - set(name for name, _ in rendered))
+
+    if stray:
+        return False, ("%s %s on disk and ARCHIVES names no such archive, so nothing will write it again; its entries"
+                       " are now in the files the rule puts them in - delete it" % (", ".join(stray),
+                                                                                    "is" if len(stray) == 1 else "are"))
+
+    return True, ("tests.md and its %d archives render byte-identically from the store (%d chars)"
+                  % (len(rendered) - 1, total))
+
+
+def _first_difference(name, on_disk, rendered):
+    """Where one file and its render part, said so it can be acted on.
+
+    :param name: the file's basename
+    :param on_disk: its text, or None when it is not there
+    :param rendered: what the store renders for it
+    :return: None when they are the same, else a sentence
+    """
+
+    if on_disk == rendered:
+        return None
+
+    if on_disk is None:
+        return "%s is not on disk, and the store renders %d chars for it" % (name, len(rendered))
 
     # Say WHERE, because "they differ" on a 10,000-line file is not actionable.
     for i, (a, b) in enumerate(zip(on_disk, rendered)):
         if a != b:
-            return False, ("first difference at character %d: file has %r, store renders %r\n"
-                           "  around: %r" % (i, a, b, on_disk[max(0, i - 60):i + 60]))
+            return ("%s: first difference at character %d: file has %r, store renders %r\n"
+                    "  around: %r" % (name, i, a, b, on_disk[max(0, i - 60):i + 60]))
 
-    return False, ("same prefix, different length: file %d chars, store renders %d"
-                   % (len(on_disk), len(rendered)))
+    return ("%s: same prefix, different length: file %d chars, store renders %d"
+            % (name, len(on_disk), len(rendered)))
+
+
+def misplaced(conn):
+    """The entries that are not in the file the rule puts them in, as the files were read.
+
+    :param conn: a connection `build` filled
+    :return: [(tag, file it is in, file it belongs in)], in store order
+    """
+
+    placement = homes(conn)
+
+    return [(r["tag"], r["file"], placement[r["tag"]]) for r in conn.execute(
+        "SELECT p.tag, p.file FROM placed p JOIN test t ON t.tag = p.tag ORDER BY t.ordinal")
+        if placement[r["tag"]] != r["file"]]
+
+
+def _moves_note(conn):
+    """What `archive` would move, for a message saying the files are not as the store renders them.
+
+    :param conn: a connection `build` filled
+    :return: a line to append, or nothing
+    """
+
+    try:
+        moves = misplaced(conn)
+    except sqlite3.OperationalError:
+        # A connection that did not come through `build` has no record of where anything was read from.
+        return ""
+
+    if not moves:
+        return ""
+
+    return ("\n  %d entr%s not where the rule puts %s (%s%s): `triagedb.py archive` moves %s"
+            % (len(moves), "y is" if len(moves) == 1 else "ies are", "it" if len(moves) == 1 else "them",
+               ", ".join("%s %s -> %s" % m for m in moves[:5]), ", ..." if len(moves) > 5 else "",
+               "it" if len(moves) == 1 else "them"))
+
+
+def verify_as_read(conn, tests_path=TESTS_FILE):
+    """Proves the store holds every entry of every file it was built from, byte for byte, wherever each was read.
+
+    `verify` asks whether the files are what the store would WRITE; after a hand edit - a comment typed into an
+    archived entry, a row added to ARCHIVES - they are not, and nothing has been lost.  This asks the other question:
+    whether writing the store out could lose a word.  Each file is rendered from the entries read from it, under the
+    head it had, and compared.
+
+    :param conn: a connection `build` filled from these files
+    :param tests_path: tests.md; the archives are beside it
+    :return: (ok, message)
+    """
+
+    differing = [r["tag"] for r in conn.execute("SELECT DISTINCT tag FROM duplicate WHERE same = 0")]
+
+    if differing:
+        return False, ("%s %s in two files with different text, and the store keeps only the first copy: say which"
+                       " is right by deleting the other by hand" % (", ".join(differing),
+                                                                     "is" if len(differing) == 1 else "are"))
+
+    on_disk = dict((name, text) for name, text, _ in read_tests_files(tests_path))
+
+    for name, text in render_as_read(conn):
+        why = _first_difference(name, on_disk.get(name), text)
+
+        if why:
+            # A copy read twice is the one way a file can hold more than the store does, and it is harmless only when
+            # the two are the same - which the check above has already established.
+            if conn.execute("SELECT 1 FROM duplicate WHERE file = ?", (name,)).fetchone():
+                continue
+
+            return False, why
+
+    return True, "the store holds every entry of every file, byte for byte (%d files)" % len(on_disk)
+
 
 
 # WHERE A FINDING'S STATUS NOTE SAYS ITS WORK LIVES (GSB-C3).  "Now tracked as OB-253 in the Inbox", "In the Inbox as
@@ -1182,10 +1700,18 @@ def sync(conn=None):
     try:
         counts = build(conn)
 
-        ok, message = verify(conn)
+        ok, message = verify_as_read(conn)
 
         if not ok:
             raise IOError("the store does not render back to what it was built from: " + message)
+
+        # AND WHETHER EVERY ENTRY IS WHERE THE RULE PUTS IT (FR-136).  Said, not refused: an entry in the wrong file has
+        # lost nothing - a comment typed into an archived entry by hand, or a release just added to ARCHIVES, is how one
+        # gets there - and the next write of the store puts it right.  `verify` is the command that fails on it.
+        placed_ok, placed_message = verify(conn)
+
+        if not placed_ok:
+            print("the files are not yet as the store writes them - " + placed_message)
 
         # AND THE MIRROR JAVA READS IS THE STORE'S OWN ROWS (VD15-T3).  It is derived, so a
         # disagreement is repaired rather than refused - but never silently: a sync that rewrites
@@ -1490,15 +2016,176 @@ def replace_block(conn, tag, block):
 
 
 def render_to_disk(conn, tests_path=TESTS_FILE):
-    """Writes tests.md from the store.
+    """Writes tests.md and its archives from the store, each entry where the rule puts it.
+
+    Only a file whose bytes change is written, each through triage.py's backed-up atomic write.  The files that GAIN an
+    entry are written before the ones that lose one, so that an interruption between two writes leaves an entry in two
+    files - the same text twice, which the next build reads once - rather than in none.
+
+    REFUSES when two files held one tag with different text: the store kept the first, and writing would erase the
+    other, which may be the one with the newer comment.
 
     :param conn: an open connection
-    :param tests_path: the file to write
+    :param tests_path: tests.md; the archives are written beside it
+    :return: the basenames written
     """
+
+    try:
+        differing = [r["tag"] for r in conn.execute("SELECT DISTINCT tag FROM duplicate WHERE same = 0")]
+    except sqlite3.OperationalError:
+        differing = []      # a store not filled by `build` read no files, so it read none twice
+
+    if differing:
+        raise IOError("REFUSING to write: %s %s in two of the test files with different text, and writing would keep one"
+                      " and erase the other.  Delete the wrong copy by hand, then write again."
+                      % (", ".join(differing), "is" if len(differing) == 1 else "are"))
 
     row = conn.execute("SELECT crlf FROM doc WHERE name = 'tests'").fetchone()
 
-    triage.write_text(tests_path, render_tests(conn), bool(row["crlf"]) if row else True)
+    crlf = bool(row["crlf"]) if row else True
+
+    folder = os.path.dirname(os.path.abspath(tests_path))
+
+    def path_of(name):
+        return tests_path if name == TESTS_NAME else os.path.join(folder, name)
+
+    def tags_in(text):
+        return set(m.group(1) for m in triage.ANCHOR_RE.finditer(text))
+
+    pending = []
+
+    rendered = render_files(conn)
+
+    for name, text in rendered:
+        path = path_of(name)
+
+        out = text.replace("\n", "\r\n") if crlf else text
+
+        if os.path.exists(path):
+            with io.open(path, "rb") as fh:
+                held = fh.read()
+
+            if held == out.encode("utf-8"):
+                continue
+
+            gains = bool(tags_in(text) - tags_in(held.decode("utf-8")))
+        else:
+            gains = True
+
+        pending.append((not gains, name, path, text))
+
+    # False sorts first: the gaining files, then the rest, each group in the order rendered.
+    pending.sort(key=lambda p: p[0])
+
+    for _, name, path, text in pending:
+        triage.write_text(path, text, crlf)
+
+    # The files now hold what the store renders, so that is where each entry is, under the head each was given.  A
+    # file the store does not write - an archive ARCHIVES no longer names - is left for `verify` to name.
+    try:
+        conn.execute("DELETE FROM placed")
+        conn.execute("DELETE FROM read_head")
+
+        conn.executemany("INSERT INTO placed (tag, file) VALUES (?, ?)", sorted(homes(conn).items()))
+
+        conn.executemany("INSERT INTO read_head (file, head) VALUES (?, ?)",
+                         [(name, triage.parse_tests_text(text)[0]) for name, text in rendered])
+
+        # A second copy in a file just written is gone from it.
+        conn.executemany("DELETE FROM duplicate WHERE file = ?", [(name,) for name, _ in rendered])
+
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+
+    return [p[1] for p in pending]
+
+
+def snapshot(conn):
+    """Everything the store says about the tests, as one value two stores can be compared by.
+
+    Every entry's block and fields, and every comment marker the verdict table holds - not where any of them is kept,
+    and not the order, which `archive` is allowed to change across files.
+
+    :param conn: an open connection
+    :return: (entries, comments): {tag: row tuple}, {tag: [comment tuples]}
+    """
+
+    entries = dict((r[0], tuple(r)) for r in conn.execute(
+        "SELECT tag, anchor, date, title, disposition, origin, written, reopened, block FROM test"))
+
+    comments = {}
+
+    for r in conn.execute("SELECT tag, seq, who, date, kind, verdict, note FROM verdict ORDER BY tag, seq"):
+        comments.setdefault(r[0], []).append(tuple(r))
+
+    return entries, comments
+
+
+def archive(conn, tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
+    """Puts every entry in the file the rule puts it in, and proves the record is the same afterwards.
+
+    THE ARCHIVE IS A FUNCTION OF THE STORE.  Run it on any checkout, as often as you like: the second run writes
+    nothing.  It is what moves the closed entries out of tests.md when a release is added to ARCHIVES, and what puts an
+    entry right after a hand edit has left it in the wrong file.  Every other write does the same as a side effect.
+
+    The proof is a second store, built from the files just written, compared with the first entry by entry and comment
+    by comment; then that the files are byte for byte what it renders.  Either failing raises, and the files written are
+    in `.triage-backups/`.
+
+    :param conn: a connection `build` filled from these files
+    :param tests_path: tests.md; the archives are beside it
+    :param issues_path: issues.md, which the rebuild reads as well
+    :return: dict - "moved": [(tag, from, to)], "written": [basename], "entries", "comments"
+    """
+
+    ok, why = verify_as_read(conn, tests_path)
+
+    if not ok:
+        raise IOError("REFUSING to archive: " + why)
+
+    moves = misplaced(conn)
+
+    before = snapshot(conn)
+
+    # AND THE LEDGER, which is generated from the store as well, and whose closing sentence says where the closed
+    # entries went: one command at merge time rather than two that have to be remembered in order.
+    regenerate_ledger(conn, tests_path, write=False)
+
+    written = render_to_disk(conn, tests_path)
+
+    again = connect(":memory:")
+
+    try:
+        build(again, tests_path, issues_path)
+
+        after = snapshot(again)
+
+        if after != before:
+            lost = sorted(set(before[0]) - set(after[0]), key=_tag_order)
+            changed = sorted((t for t in before[0] if t in after[0] and before[0][t] != after[0][t]), key=_tag_order)
+            said = sorted((t for t in set(before[1]) | set(after[1])
+                           if before[1].get(t) != after[1].get(t)), key=_tag_order)
+
+            raise IOError("the files written do not hold the record they were written from: lost %s, changed %s,"
+                          " comments differ on %s - the previous files are in .triage-backups/"
+                          % (lost or "none", changed or "none", said or "none"))
+
+        ok, why = verify(again, tests_path)
+
+        if not ok:
+            raise IOError("the files written do not render back from the store built from them: " + why)
+
+        stray = misplaced(again)
+
+        if stray:
+            raise IOError("after writing, %d entries are still not where the rule puts them: %s"
+                          % (len(stray), stray[:5]))
+    finally:
+        again.close()
+
+    return {"moved": moves, "written": written, "entries": len(before[0]),
+            "comments": sum(len(v) for v in before[1].values())}
 
 
 # --------------------------------------------------------------------------------------------
@@ -1543,7 +2230,12 @@ def selftest(tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
         shutil.copyfile(tests_path, tests)
         shutil.copyfile(issues_path, issues_file)
 
-        original = io.open(tests, "rb").read()
+        # And the archives beside it (FR-136), which hold most of the record.
+        for path in tests_paths(tests_path)[1:]:
+            shutil.copyfile(path, os.path.join(work, os.path.basename(path)))
+
+        def every_file():
+            return [io.open(path, "rb").read() for path in tests_paths(tests)]
 
         conn = connect(":memory:")
 
@@ -1553,17 +2245,35 @@ def selftest(tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
                    count > 0 and issue_count >= 0)
 
         # THE property. Everything else is worth nothing without it: if the store cannot reproduce
-        # what it was built from, then writing it out destroys the record.
-        rendered_ok, message = verify(conn, tests)
+        # what it was built from, then writing it out destroys the record.  Asked of every file as it
+        # was read, wherever each entry is kept (FR-136).
+        rendered_ok, message = verify_as_read(conn, tests)
 
         check_that("it renders back byte for byte - " + message.split("\n")[0], rendered_ok)
+
+        # THE ARCHIVE KEEPS THE RECORD (FR-136).  On these copies as they came - before the archive was
+        # first run, that moves 770 entries; after, nothing - and the record is compared both ways.
+        record = snapshot(conn)
+
+        adam = sum(text.count("**Adam,") for _, text, _ in read_tests_files(tests))
+
+        done = archive(conn, tests, issues_file)
+
+        check_that("archiving keeps every entry and every comment (%d and %d, %d moved)"
+                   % (done["entries"], done["comments"], len(done["moved"])), snapshot(conn) == record)
+
+        check_that("and every '**Adam,' line, across tests.md and the archives (%d)" % adam,
+                   sum(text.count("**Adam,") for _, text, _ in read_tests_files(tests)) == adam)
+
+        check_that("and the files are now as the store writes them", verify(conn, tests)[0])
+
+        original = every_file()
 
         # Writing with nothing changed must not change the file either. A store that reformats on
         # every save turns every unrelated commit into a whole-file diff.
         render_to_disk(conn, tests)
 
-        check_that("rendering an unchanged store does not touch a byte",
-                   io.open(tests, "rb").read() == original)
+        check_that("rendering an unchanged store does not touch a byte", every_file() == original)
 
         # THE LEDGER IS GENERATED, and generating it must leave the store able to render.
         #
@@ -1602,14 +2312,17 @@ def selftest(tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
         check_that("a disposition change is in the store",
                    check(conn, tag=subject)[0]["disposition"] == "superseded")
 
+        # In whichever file it is kept in: tests.md, or an archive (FR-136).
         check_that("a disposition change is in the file",
-                   "**Disposition:** superseded" in io.open(tests, encoding="utf-8").read())
+                   any("**Disposition:** superseded" in e.block
+                       for _, text, _ in read_tests_files(tests)
+                       for e in triage.parse_tests_text(text)[1] if e.tag == subject))
 
         check_that("the store still renders after a write", verify(conn, tests)[0])
 
         set_disposition(conn, subject, was, tests)
 
-        check_that("and it goes back", io.open(tests, "rb").read() == original)
+        check_that("and it goes back", every_file() == original)
 
         # A verdict is readable as a verdict afterwards, which is the whole point of the exercise.
         before = len(history(conn, subject))
@@ -1656,6 +2369,117 @@ def selftest(tests_path=TESTS_FILE, issues_path=ISSUES_FILE):
         except KeyError:
             check_that("an unknown tag is refused", True)
 
+        # THE ARCHIVES (FR-136), on the copies as the writes above have left them.
+        conn = connect(":memory:")
+
+        build(conn, tests, issues_file)
+
+        record = snapshot(conn)
+
+        archive(conn, tests, issues_file)
+
+        placement = homes(conn)
+
+        check_that("tests.md keeps every open entry",
+                   all(placement[r["tag"]] == TESTS_NAME for r in check(conn)
+                       if r["disposition"] not in (triage.VALIDATED, triage.SUPERSEDED)))
+
+        again = archive(conn, tests, issues_file)
+
+        check_that("archiving twice writes nothing the second time", not again["written"] and not again["moved"])
+
+        archived = [tag for tag, name in sorted(placement.items(), key=lambda p: _tag_order(p[0]))
+                    if name != TESTS_NAME]
+
+        check_that("there is an archived entry to try the rest on", bool(archived))
+
+        if archived:
+            subject = archived[0]
+
+            kept_in = placement[subject]
+
+            # An answer to an archived entry is kept, and brings it back to tests.md: it is news again.
+            add_comment(conn, subject, "Adam", "A self test wrote this on an archived entry.", "Works", tests)
+
+            def kept_in_file(name):
+                return any(e.tag == subject for e in triage.parse_tests_text(
+                    triage.read_text(os.path.join(work, name))[0])[1])
+
+            check_that("a comment on an archived entry brings it back to tests.md", kept_in_file(TESTS_NAME))
+
+            check_that("and it is no longer in %s" % kept_in, not kept_in_file(kept_in))
+
+            check_that("and the files still render back from the store", verify(conn, tests)[0])
+
+            reread = connect(":memory:")
+
+            build(reread, tests, issues_file)
+
+            check_that("and a store read back from them holds the comment",
+                       history(reread, subject)[-1]["note"].startswith("A self test wrote this"))
+
+            reread.close()
+
+            # The rule is a function of the store: a release that shipped after it takes it out again.
+            ARCHIVES.append(("9.9.9", "9999-12-31"))
+
+            try:
+                moved = archive(conn, tests, issues_file)["moved"]
+
+                check_that("a release added to ARCHIVES takes it out again, into that release's archive",
+                           (subject, TESTS_NAME, archive_file("9.9.9")) in moved)
+            finally:
+                ARCHIVES.pop()
+
+            check_that("into that file", kept_in_file(archive_file("9.9.9")) and not kept_in_file(TESTS_NAME))
+
+            # A release taken out of ARCHIVES again leaves its file behind, holding the entry: still read, so nothing
+            # is lost, and named by `verify` as a file nothing will write again.
+            conn = connect(":memory:")
+
+            build(conn, tests, issues_file)
+
+            check_that("a file ARCHIVES no longer names is still read", verify_as_read(conn, tests)[0]
+                       and (subject, archive_file("9.9.9"), TESTS_NAME) in misplaced(conn))
+
+            check_that("and verify names it", archive_file("9.9.9") in verify(conn, tests)[1])
+
+            render_to_disk(conn, tests)
+
+            os.remove(os.path.join(work, archive_file("9.9.9")))
+
+            conn = connect(":memory:")
+
+            build(conn, tests, issues_file)
+
+            check_that("and once it is written out and the file deleted, the entry is in tests.md and nothing is lost",
+                       kept_in_file(TESTS_NAME) and verify(conn, tests)[0]
+                       and set(snapshot(conn)[0]) == set(record[0]))
+
+        # Two copies of one entry that disagree are refused, not resolved by guessing.
+        first_tag = check(conn)[0]["tag"]
+
+        block = conn.execute("SELECT block FROM test WHERE tag = ?", (first_tag,)).fetchone()[0]
+
+        stray = os.path.join(work, archive_file("0.0.0-selftest"))
+
+        io.open(stray, "w", encoding="utf-8", newline="\n").write(
+            "# a stray archive\n\n" + block.rstrip("\n") + "\n\nA different word.\n")
+
+        conn = connect(":memory:")
+
+        build(conn, tests, issues_file)
+
+        check_that("a tag kept twice with different text is reported", not verify_as_read(conn, tests)[0])
+
+        try:
+            render_to_disk(conn, tests)
+            check_that("and no write is made over it", False)
+        except IOError:
+            check_that("and no write is made over it", True)
+
+        os.remove(stray)
+
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -1696,6 +2520,9 @@ def main(argv=None):
     sub.add_parser("sync", help="rebuild the store from the markdown and verify it renders back")
     sub.add_parser("regenerate-ledger",
                    help="rewrite the Ledger table in tests.md from the store")
+    sub.add_parser("archive",
+                   help="put every entry in the file the rule puts it in - closed and released ones in"
+                        " tests-archive-<release>.md - and prove the record is the same afterwards")
     sub.add_parser("counts",
                    help="rewrite the counts behaviour.md and open-questions.md quote, from the store and"
                         " issues.md")
@@ -1776,6 +2603,20 @@ def main(argv=None):
         print(message)
 
         return 0 if ok else 1
+
+    if args.command == "archive":
+        # THE MERGE-TIME COMMAND (FR-136): re-runnable, and the second run writes nothing.
+        done = archive(conn)
+
+        for tag, was, now in done["moved"]:
+            print("  %s: %s -> %s" % (tag, was, now))
+
+        print("moved %d entries; wrote %s" % (len(done["moved"]), ", ".join(done["written"]) or "nothing"))
+
+        print("%d entries and %d comments, the same before and after; every file renders back byte for byte"
+              % (done["entries"], done["comments"]))
+
+        return 0
 
     if args.command == "counts":
         # The file store: `conn` was built from the markdown and holds no findings.

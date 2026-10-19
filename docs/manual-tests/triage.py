@@ -232,7 +232,9 @@ def prune_backups():
         by_file = {}
 
         for name in os.listdir(BACKUP_DIR):
-            base = name.split(".")[0]
+            # The file's whole name, less the stamp: "tests-archive-3.0.1.md.<stamp>.bak".  The first
+            # dot used to end it, which put every 3.0.x archive's backups in one pool of forty.
+            base = name[:-len(".bak")].rsplit(".", 1)[0] if name.endswith(".bak") else name
             by_file.setdefault(base, []).append(name)
 
         for base, names in by_file.items():
@@ -252,6 +254,10 @@ FIELD_RE = r'^\*\*%s:?\*\*[ \t]*(.*?)[ \t]*$'
 
 class Entry(object):
     """One MT-### test, as it stands in the file right now."""
+
+    # The file it is kept in: tests.md, or the archive of the release it shipped in (FR-136).  TestsDoc
+    # sets it from the store; an entry built anywhere else is in tests.md as far as it knows.
+    file = "tests.md"
 
     def __init__(self, anchor, block):
         self.anchor = anchor
@@ -436,6 +442,8 @@ class TestsDoc(object):
 
         conn = triagedb.connect(":memory:")
 
+        # tests.md AND ITS ARCHIVES (FR-136): a released entry is kept in tests-archive-<release>.md, and is
+        # in the store, in this list under "everything", and answerable, like any other.
         triagedb.build(conn, self.path, ISSUES_MD)
 
         self.store = conn
@@ -443,25 +451,44 @@ class TestsDoc(object):
         self.head = conn.execute(
             "SELECT head FROM doc WHERE name = 'tests'").fetchone()["head"]
 
-        self.entries = [Entry(r["anchor"], r["block"]) for r in
-                        conn.execute("SELECT anchor, block FROM test ORDER BY ordinal")]
+        placed = dict((r["tag"], r["file"]) for r in conn.execute("SELECT tag, file FROM placed"))
+
+        self.entries = []
+
+        for r in conn.execute("SELECT tag, anchor, block FROM test ORDER BY ordinal"):
+            entry = Entry(r["anchor"], r["block"])
+
+            # Which file it is kept in, for the line under its title.  Not part of the entry: the
+            # store works it out again whenever it writes.
+            entry.file = placed.get(r["tag"], "tests.md")
+
+            self.entries.append(entry)
 
         # A duplicate MT-### is a real defect in the file, not something to paper over - two
         # entries with the same iid used to crash the window at startup the moment both
         # populate calls ran (tree.insert raises TclError on an existing iid).  Surfaced here so
-        # the caller can warn instead, and the second entry keeps its place in self.entries even
-        # though by_tag can only ever point at one of them.
+        # the caller can warn instead.
         #
-        # Asked of the STORE now, which is a count rather than a scan - and which cannot disagree with
-        # what the window is about to display, because it is the same rows.
+        # Asked of the STORE, which records every tag read a second time - in tests.md or in an
+        # archive - and keeps the first copy.  It used to ask the test table, whose key is the tag,
+        # so the question could never be answered yes.
         self.duplicate_tags = [r["tag"] for r in conn.execute(
-            "SELECT tag FROM test GROUP BY tag HAVING COUNT(*) > 1")]
+            "SELECT DISTINCT tag FROM duplicate ORDER BY tag")]
 
         self.by_tag = dict((e.tag, e) for e in self.entries)
 
     def _stat(self):
-        st = os.stat(self.path)
-        return (st.st_mtime, st.st_size)
+        """The size and time of every file the tests are kept in, so a write to any of them is seen."""
+
+        import triagedb
+
+        out = []
+
+        for path in triagedb.tests_paths(self.path):
+            st = os.stat(path)
+            out.append((os.path.basename(path), st.st_mtime, st.st_size))
+
+        return tuple(out)
 
     def changed_on_disk(self):
         try:
@@ -473,7 +500,9 @@ class TestsDoc(object):
         """Adds one comment to one entry, through the store.  Raises if the file moved.
 
         The rewrite is the store's: it replaces that entry's block, re-parses every field out of the
-        result, and renders the file. So the row and its markdown cannot drift apart, and a comment
+        result, and renders the files - tests.md and its archives, each entry where the archive rule puts
+        it, so an answer to an archived entry is kept with it and brings it back to tests.md (FR-136).
+        So the row and its markdown cannot drift apart, and a comment
         written by this window is indistinguishable from one written by the API - which matters,
         because Adam's verdicts arrive through this window and everything that reads them arrives
         through the other door.
@@ -486,8 +515,8 @@ class TestsDoc(object):
 
         if self.changed_on_disk():
             raise IOError(
-                "tests.md changed on disk since it was loaded.  Reload (Ctrl+R) and try again - "
-                "your draft is kept."
+                "tests.md or one of its archives changed on disk since it was loaded.  Reload "
+                "(Ctrl+R) and try again - your draft is kept."
             )
 
         entry = self.by_tag[tag]
@@ -536,16 +565,19 @@ def normalize_kind(raw):
 
 
 def next_ref_number(kind):
-    """The next free number for this kind, across the issue inbox and tests.md - a plain int, so
-    a caller filing several of the same kind in one go can increment it locally without re-reading
-    the files after every one.
+    """The next free number for this kind, across the issue inbox, tests.md and its archives - a
+    plain int, so a caller filing several of the same kind in one go can increment it locally without
+    re-reading the files after every one.
     """
+
+    import triagedb
 
     prefix = ISSUE_PREFIXES.get(kind, "OB")
 
     highest = 0
 
-    for path in (ISSUES_MD, TESTS_MD):
+    # The archives too (FR-136): a ref named only in an entry that has since been archived is still taken.
+    for path in [ISSUES_MD] + (triagedb.tests_paths(TESTS_MD) if os.path.exists(TESTS_MD) else []):
         if not os.path.exists(path):
             continue
 
@@ -2466,7 +2498,9 @@ class Triage(tk.Tk):
 
         self.head_label.config(text="%s  \u2014  %s" % (entry.tag, entry.title))
 
-        self.meta_written.config(text="written %s" % entry.written)
+        # Where it is kept, when that is an archive (FR-136): an answer is written there, and brings it back.
+        self.meta_written.config(text="written %s%s" % (
+            entry.written, "  -  in %s" % entry.file if entry.file != "tests.md" else ""))
         self.meta_disposition.config(text="disposition: %s" % entry.disposition)
         self.meta_from.config(text="from: %s" % entry.origin)
 
@@ -3635,8 +3669,12 @@ def cli_verify_ledger(_args):
 
     doc = TestsDoc(TESTS_MD)
 
+    import triagedb
+
     ledger_start = text.find("\n## Ledger")
-    ledger_end = text.find("\n## The tests") if ledger_start >= 0 else -1
+
+    # Up to the archives section, which follows it since FR-136, or "## The tests" in a file without one.
+    ledger_end = triagedb.ledger_end(text) if ledger_start >= 0 else -1
 
     if ledger_start < 0 or ledger_end < 0:
         return {"error": "could not find the '## Ledger' section in tests.md"}, 2
@@ -3766,7 +3804,14 @@ def cli_verify_ledger(_args):
 
     undated = undated_followups(read_text(ISSUES_MD)[0])
     no_kind = entries_without_kind(read_text(ISSUES_MD)[0])
-    no_rule = entries_without_a_separator(read_text(TESTS_MD)[0])
+    # In every file an entry is kept in (FR-136): an archived entry missing its rule runs into the next
+    # one just the same.
+    no_rule = []
+
+    for path in triagedb.tests_paths(TESTS_MD):
+        for found in entries_without_a_separator(read_text(path)[0]):
+            found["file"] = os.path.basename(path)
+            no_rule.append(found)
 
     out = {
         "duplicate_tags": doc.duplicate_tags,

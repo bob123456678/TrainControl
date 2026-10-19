@@ -87,9 +87,7 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     {
         assertTrue(FILES.isDirectory(), "there is no " + FILES + ", so no manual test can supply one");
 
-        String tests = new String(Files.readAllBytes(
-            new File("docs" + File.separator + "manual-tests", "tests.md").toPath()),
-            StandardCharsets.UTF_8);
+        String tests = entries();
 
         String[] shipped = FILES.list();
 
@@ -291,6 +289,37 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
                 folder + " carries an autonomy setup inside its layout, and both entries that name it"
                 + " start from a layout with nothing set up");
         }
+    }
+
+    /**
+     * Every manual-test entry's text: tests.md and the archive of every release beside it.
+     *
+     * A released entry is kept in `tests-archive-<release>.md` (FR-136), and the files it names are
+     * still shipped - MT-298's, MT-452's and MT-470's entries are all archived - so tests.md alone
+     * would report them as named by nobody.
+     *
+     * @return the files' text, run together
+     * @throws Exception from reading them
+     */
+    private static String entries() throws Exception
+    {
+        File folder = new File("docs" + File.separator + "manual-tests");
+
+        StringBuilder all = new StringBuilder(new String(Files.readAllBytes(
+            new File(folder, "tests.md").toPath()), StandardCharsets.UTF_8));
+
+        File[] archives = folder.listFiles((dir, name) -> name.startsWith("tests-archive-")
+            && name.endsWith(".md"));
+
+        assertNotNull(archives, "could not list " + folder);
+
+        for (File archive : archives)
+        {
+            all.append('\n').append(new String(Files.readAllBytes(archive.toPath()),
+                StandardCharsets.UTF_8));
+        }
+
+        return all.toString();
     }
 
     /**
