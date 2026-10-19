@@ -1,9 +1,6 @@
 package regression;
 
-import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -20,6 +17,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * Renaming or deleting a locomotive reaches everything that was holding it.
@@ -337,18 +335,12 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testEveryLocomotiveHolderIsNamedInTheSweep() throws Exception
     {
-        File source = new File("src/org/traincontrol/automation/Layout.java");
-
-        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath()
-            + " - a test that reads the source cannot pass by not finding it");
-
-        String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+        // The file that declares the running layout is the point: its fields are the holders.
+        String text = SourceOf.fileDeclaring("public class Layout\n");
 
         // The CODE of the sweep, not its prose. A guard about what a method DOES must not be
         // satisfiable by a comment mentioning the field - which is TD-3, one file over.
-        String sweep = withoutComments(bodyOf(text, "locDeleted"));
-
-        assertNotNull(sweep, "locDeleted is not there any more, so nothing sweeps at all");
+        String sweep = SourceOf.withoutComments(SourceOf.body("synchronized public void locDeleted(Locomotive l)"));
 
         List<String> holders = holdersIn(text);
 
@@ -398,36 +390,24 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testNoHomeOrPlacementIsComparedWithAName() throws Exception
     {
-        File src = new File("src");
+        // Every line of the program's code, comments blanked, in every file.
+        String[] lines = SourceOf.allCode().split("\n");
 
-        assertTrue(src.isDirectory(), "cannot find " + src.getAbsolutePath()
-            + " - a test that reads the source cannot pass by not finding it");
-
-        List<File> sources = new ArrayList<>();
-
-        collect(src, sources);
-
-        // A wrong working directory, or `src` gutted, gives an empty sweep and an empty `suspect` list
-        // that looks identical to "nothing is wrong". Over a hundred files exist under src/ today; 50
-        // is a floor well under that, not a pin on the count.
-        assertTrue(sources.size() >= 50,
-            "only " + sources.size() + " files were found under src/ - this ran from the wrong working "
+        // A scan that reads little, or a `src` gutted, gives an empty `suspect` list that looks identical to
+        // "nothing is wrong". The program has well over 100,000 lines today; 20,000 is a floor well under that,
+        // not a pin on the count.
+        assertTrue(lines.length >= 20000,
+            "only " + lines.length + " lines of code were found under src/ - this ran from the wrong working "
             + "directory, or the tree has shrunk enough that this scan is not checking much of "
             + "anything");
 
         List<String> suspect = new ArrayList<>();
 
-        for (File file : sources)
+        for (int at = 0; at < lines.length; at++)
         {
-            String[] lines = withoutComments(new String(
-                Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)).split("\n");
-
-            for (int at = 0; at < lines.length; at++)
+            if (isSuspectLine(lines[at]))
             {
-                if (isSuspectLine(lines[at]))
-                {
-                    suspect.add(file.getName() + ":" + (at + 1) + "  " + lines[at].trim());
-                }
+                suspect.add("line " + (at + 1) + " of the program's code:  " + lines[at].trim());
             }
         }
 
@@ -518,19 +498,6 @@ public class testLocomotiveIdentityPropagates
         return (comparedWithAName || handedToNames) && !converted;
     }
 
-    private void collect(File from, List<File> into)
-    {
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File child : children)
-        {
-            if (child.isDirectory()) collect(child, into);
-            else if (child.getName().endsWith(".java")) into.add(child);
-        }
-    }
-
     /**
      * Fields declared as a collection OF locomotives, or keyed by one.
      */
@@ -558,58 +525,9 @@ public class testLocomotiveIdentityPropagates
         return out;
     }
 
-    private String bodyOf(String source, String name)
-    {
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
-            "^[ \t]*(?:synchronized )?public void " + name + "\\s*\\(", java.util.regex.Pattern.MULTILINE)
-            .matcher(source);
-
-        if (!m.find()) return null;
-
-        int open = source.indexOf('{', m.end());
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(open, i + 1);
-        }
-
-        return null;
-    }
-
-    /**
-     * Copied rather than shared with the other tests that do this: a test helper reaching into another
-     * test class is a dependency between things that are supposed to fail independently.
-     */
     private String withoutComments(String body)
     {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < body.length(); i++)
-        {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
+        return SourceOf.withoutComments(body);
     }
 
     // ------------------------------------------------------------------------------------------
@@ -687,26 +605,7 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testTheWindowRepairsTheSetupOnDiskWithNoSession() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(source.isFile(),
-            "cannot find " + source.getAbsolutePath() + " - a test that reads the source cannot pass "
-            + "by not finding it");
-
-        String body = withoutComments(new String(
-            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
-
-        int at = body.indexOf("private void repairAutonomyLocomotive");
-
-        assertTrue(at > 0, "repairAutonomyLocomotive is gone - this rule has nothing to watch");
-
-        // to the end of that method: the next member declaration at class level
-        int end = body.indexOf("\n    private ", at + 10);
-        int alt = body.indexOf("\n    public ", at + 10);
-
-        if (alt > 0 && (end < 0 || alt < end)) end = alt;
-
-        String method = end > 0 ? body.substring(at, end) : body.substring(at);
+        String method = withoutComments(SourceOf.declaration("private void repairAutonomyLocomotive("));
 
         assertTrue(method.contains("repairLocomotiveOnDisk"),
             "repairAutonomyLocomotive does not repair the setup on disk when no session is built, so "
@@ -741,33 +640,21 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testDeletingALocomotiveRewritesTheStationLabelsToo() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
+        // Asked of the whole program: one delete door, wherever it is.
+        assertEquals(SourceOf.occurrences("this.model.deleteLoc("), 1,
+            "the delete door is not found exactly once - there is more than one now, or none.  This rule reads the"
+            + " block after the first and would report the pair as covered after fixing one of them, which is this"
+            + " codebase's most frequent defect and not one a guard against it should commit");
 
-        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+        // The block that follows, bounded by the door's own method so the rule cannot read the rest of the file
+        // and pass whatever the code does - which is how the rename rule above was once green over nothing.
+        String door = withoutComments(SourceOf.declaration("public void deleteLoc(String value, MouseEvent evt)"));
 
-        String body = withoutComments(new String(
-            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
+        int at = door.indexOf("this.model.deleteLoc(");
 
-        int at = body.indexOf("this.model.deleteLoc(");
+        assertTrue(at >= 0, "the delete door no longer calls this.model.deleteLoc( itself");
 
-        assertTrue(at > 0,
-            "the delete door could not be found, so this rule is watching nothing - it looks for "
-            + "`this.model.deleteLoc(` in TrainControlUI");
-
-        assertEquals(body.indexOf("this.model.deleteLoc(", at + 1), -1,
-            "there is more than one delete door now.  This rule reads the block after the first and "
-            + "would report the pair as covered after fixing one of them, which is this codebase's "
-            + "most frequent defect and not one a guard against it should commit");
-
-        // The block that follows, bounded so the rule cannot read the rest of the file and pass
-        // whatever the code does - which is how the rename rule above was once green over nothing.
-        int end = body.indexOf("private void ActiveLocLabelMouseReleased", at);
-
-        assertTrue(end > at && end - at < 4000,
-            "the delete door's refresh block could not be bounded, so this rule would read the rest "
-            + "of the file and pass whatever the code did");
-
-        String block = body.substring(at, end);
+        String block = door.substring(at);
 
         assertTrue(block.contains("updateVisiblePoints"),
             "deleting a locomotive does not rewrite the station labels, so a station it was standing "
@@ -799,13 +686,6 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
     {
-        File source = new File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
-
-        String body = withoutComments(new String(
-            Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
-
         // EVERY renameLoc call site, not the first one.
         //
         // There are two: the edit dialog, and accepting a name the Central Station proposes. They are
@@ -813,21 +693,24 @@ public class testLocomotiveIdentityPropagates
         // and a rule that stops at the first match would have reported the pair as covered after
         // fixing one of them. That is this codebase's most frequent defect, and a guard against it
         // should not be able to commit it.
-        java.util.List<Integer> sites = new ArrayList<>();
+        // Asked of the whole program: two calls of the model's rename, and the doors that make them are named here.
+        int found = SourceOf.occurrences("model.renameLoc(");
 
-        for (int at = body.indexOf("renameLoc("); at >= 0; at = body.indexOf("renameLoc(", at + 1))
-        {
-            // the declaration in the model, not a call from the window
-            if (body.lastIndexOf("model.renameLoc(", at + 16) != at - 6
-                && body.lastIndexOf("model.renameLoc(", at + 16) != at - 11) continue;
-
-            sites.add(at);
-        }
-
-        assertEquals(sites.size(), 2,
+        assertEquals(found, 2,
             "expected two renameLoc call sites in the window - the edit dialog and the Central "
-            + "Station proposal. Found " + sites.size() + ", so either a door has been added without "
+            + "Station proposal. Found " + found + ", so either a door has been added without "
             + "this rule being told, or one has gone and the rule is watching less than it says");
+
+        List<String> doors = new ArrayList<>();
+
+        doors.add(withoutComments(SourceOf.declaration("public void changeLocAddress(Locomotive l, MouseEvent evt)")));
+        doors.add(withoutComments(SourceOf.declaration("private void checkForRenameMenuItemActionPerformed(")));
+
+        int counted = 0;
+
+        for (String door : doors) counted += door.split("model\\.renameLoc\\(", -1).length - 1;
+
+        assertEquals(counted, 2, "the two doors named here no longer hold both of the program's renameLoc calls");
 
         // The refresh block that follows it, bounded by the catch that closes the method.
         //
@@ -842,10 +725,11 @@ public class testLocomotiveIdentityPropagates
 
         List<String> quiet = new ArrayList<>();
 
-        for (int at : sites)
+        for (String body : doors)
         {
-            // The refresh block that follows, bounded by the next call site or by the catch that
-            // closes the method - whichever comes first.
+            int at = body.indexOf("model.renameLoc(");
+
+            // The refresh block that follows, bounded by the catch that closes the method.
             //
             // NOT bounded by the next javadoc, which is what the first version of this did:
             // withoutComments has already removed every javadoc, so that search never matched, the
@@ -853,10 +737,6 @@ public class testLocomotiveIdentityPropagates
             // that cannot fail is worse than no guard - it reports the thing it watches as covered.
             // Found by removing the call it protects and watching it stay green.
             int end = body.indexOf("catch (Exception", at);
-
-            int nextSite = sites.indexOf(at) + 1 < sites.size() ? sites.get(sites.indexOf(at) + 1) : -1;
-
-            if (nextSite > at && (end < 0 || nextSite < end)) end = nextSite;
 
             assertTrue(end > at && end - at < 6000,
                 "a refresh block could not be bounded, so this rule would read the rest of the file "
