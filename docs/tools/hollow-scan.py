@@ -1881,8 +1881,8 @@ class Scanner(object):
             if re.search(r'\bboolean\s+$', jf.st[max(0, m.name_at - 40):m.name_at]):
                 body = st[m.open:m.close]
 
-                if re.search(r'\bsleep\s*\(|\bawait\s*\(|\bwait\s*\(', body) or \
-                        re.match(r'(wait|await|poll|until|settle)', m.name, re.I):
+                if (re.search(r'\bsleep\s*\(|\bawait\s*\(|\bwait\s*\(', body) or
+                        re.match(r'(wait|await|poll|until|settle)', m.name, re.I)) and not FAILING.search(body):
                     waiters.add(m.name)
 
         for m in jf.methods:
@@ -1917,12 +1917,24 @@ class Scanner(object):
 
                 idents = {x for x in idents if not re.match(r'^[A-Z][A-Z0-9_]+$', x)}
 
+                clock = set()
+
+                for x in idents:
+                    span = self.assignment(jf, m, x, at + 1)
+
+                    if span is not None and re.search(r'currentTimeMillis|nanoTime', jf.st[span[0]:span[1]]):
+                        clock.add(x)
+
+                idents -= clock
+
                 after = asserts_in(jf, be, m.close)
 
                 ok = False
 
                 for a in after[:6]:
-                    seg = code[a:st.find(';', a) + 1]
+                    lead = max(st.rfind(';', be, a), st.rfind('{', be, a), st.rfind('}', be, a), be)
+
+                    seg = code[lead:st.find(';', a) + 1]
 
                     if any(re.search(r'\b' + re.escape(x) + r'\b', seg) for x in idents):
                         ok = True
@@ -3117,6 +3129,12 @@ class Scanner(object):
                     return 'negative' if zero else 'positive'
 
                 return 'other'
+
+        for fm in re.finditer(r'\bfor\s*\(', st[max(m.open, at - 300):at]):
+            fp = max(m.open, at - 300) + fm.end() - 1
+
+            if jf.pairs.get(fp, -1) > at:
+                return 'count'
 
         # `int x = hay.indexOf(..)` keeps an anchor; `if (..)` is a condition
         line_start = max(st.rfind(';', m.open, at), st.rfind('{', m.open, at), st.rfind('}', m.open, at)) + 1
