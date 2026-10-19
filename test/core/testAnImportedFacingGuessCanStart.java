@@ -19,6 +19,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.DirectionKey;
+import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -432,7 +433,14 @@ public class testAnImportedFacingGuessCanStart
      * hold the east the file ran its train; and the import names it.  With the old directions carried the fixture no
      * longer reaches that path by itself, so this is the claim that keeps it.
      *
-     * MUTATION: overwrite a direction the operator set, and this fails.
+     * Beside it, a baseline: the same file imported onto a diagram tuned by one direction on a square no old edge
+     * crosses, so none of its roads is the file's.  The log's count of "pieces the file ran one way that this diagram
+     * does not" leaves out the operator's own roads, so the backwards railway's count falls short of the baseline's by
+     * exactly those.  Nothing is written either way - a tuned diagram is left as it is - so this count is the only
+     * place the operator's-own rule shows.
+     *
+     * MUTATION: overwrite a direction the operator set, and this fails; so does dropping the operator's-own `continue`
+     * in `SessionImport.carryTheOldDirections`.
      *
      * @throws Exception from the fixture
      */
@@ -443,6 +451,7 @@ public class testAnImportedFacingGuessCanStart
 
         File first = freshUpgrade();
         File second = freshUpgrade();
+        File third = freshUpgrade();
 
         try
         {
@@ -458,7 +467,9 @@ public class testAnImportedFacingGuessCanStart
             // Every road the file ran one way, the other way round.
             Map<DirectionKey, Direction> theirs = new java.util.LinkedHashMap<>();
 
-            for (Map.Entry<DirectionKey, Direction> each : probe.importLegacy(legacy).directionsCarried.entrySet())
+            Map<DirectionKey, Direction> theFileRan = probe.importLegacy(legacy).directionsCarried;
+
+            for (Map.Entry<DirectionKey, Direction> each : theFileRan.entrySet())
             {
                 if (each.getValue() == Direction.BOTH) continue;
 
@@ -497,11 +508,52 @@ public class testAnImportedFacingGuessCanStart
                 + " say so: " + imported.facingsNotHeld + ".  Its copies: "
                 + session.facingsFor(inter) + ", standing " + session.getFacing(inter) + "; the next named squares by"
                 + " each side: " + nextByEachSide(session, inter));
+
+            // THE BASELINE: a diagram tuned by one direction, on a square the file's roads do not cross.
+            AutonomySession baseline = new AutonomySession(third);
+
+            baseline.open(support.LayoutSandbox.wiredPages(model));
+            baseline.getStore().createConfiguration("Directions carried", null);
+            baseline.getStore().setActiveConfiguration("Directions carried");
+            baseline.rebuild();
+
+            Set<TileKey> crossed = new java.util.LinkedHashSet<>();
+
+            for (DirectionKey each : theFileRan.keySet()) crossed.add(each.square());
+
+            tuning:
+            for (TileKey tile : baseline.getGraph().getTiles().keySet())
+            {
+                if (crossed.contains(tile)) continue;
+
+                for (RouteId id : baseline.getGraph().getRoutes(tile).keySet())
+                {
+                    Direction asDrawn = baseline.getGraph().getDirection(tile, id);
+
+                    baseline.setDirection(tile, id, asDrawn == Direction.TOWARD_A ? Direction.TOWARD_B : Direction.TOWARD_A);
+
+                    if (baseline.getStore().getTileDirection(tile, id) != null) break tuning;
+                }
+            }
+
+            assertTrue(baseline.getStore().hasTileDirections(), "precondition: no square the file does not cross could"
+                + " be tuned, so there is no baseline");
+
+            AutonomySession.LegacyImport onlyTheFile = baseline.importLegacy(legacy);
+
+            assertTrue(imported.directionsNotCarried < onlyTheFile.directionsNotCarried, "the operator's own roads are"
+                + " counted as pieces the file ran one way that this diagram does not: " + imported.directionsNotCarried
+                + " with " + theirs.size() + " of them set by the operator, against " + onlyTheFile.directionsNotCarried
+                + " with none - the log's count is not the gap it says");
+
+            assertEquals(onlyTheFile.directionsNotCarried - imported.directionsNotCarried, theirs.size(), "the count"
+                + " should fall by the operator's roads, no more and no fewer");
         }
         finally
         {
             deleteQuietly(first);
             deleteQuietly(second);
+            deleteQuietly(third);
         }
     }
 
