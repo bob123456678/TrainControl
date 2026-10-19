@@ -32,8 +32,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-763](#mt-763) | 2026-10-18 | MT-760's note: the wait-for-a-route message names the route | fixed unvalidated | MT-760 |
 | [MT-764](#mt-764) | 2026-10-18 | OB-358: the Layouts menu's tooltips have no padding at the end | fixed unvalidated | OB-358 |
 | [MT-765](#mt-765) | 2026-10-18 | OB-360: a new tile from the palette turns to join the track beside it | fixed unvalidated | OB-360 |
+| [MT-766](#mt-766) | 2026-10-18 | OB-361: the new sample layout says only what trains can do, and a run of track is stored as it is drawn | fixed unvalidated | OB-361 |
 
-Everything else - 760 of 765 - needs nothing from you unless the area changes again:
+Everything else - 760 of 766 - needs nothing from you unless the area changes again:
 605 **fixed validated** and 155 **superseded**.
 
 ---
@@ -35808,5 +35809,41 @@ in a box wider than its one line.  Claim in `regression.testTheToolbarButtonsHon
 *What this is:* OB-360 (`3cb3970a`): one rule in the layout editor (`orientationThatJoins`) turns a tile placed from the palette, of
 any track type, so that most of its ends meet track, a switch's base first.  Claims in
 `regression.testANewStraightJoinsTheTrackBesideIt`.
+
+---
+
+<a id="mt-766"></a>
+### MT-766 - 2026-10-18 - OB-361: the new sample layout says only what trains can do, and a run of track is stored as it is drawn
+
+**Disposition:** fixed unvalidated
+**From:** OB-361
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Choose Layouts > Create New Layout (the sample still has the run that disagrees: Adam updates new_sample later).
+   Open the log, then the autonomy editor, and run the setup check.
+2. Compare the Track Diagram and the autonomy editor on the line from MainLine round to PostDeparture (east of
+   feedback 4).
+3. In the editor, click one arrow to change it.  Look at every other arrow.
+4. With the One-Way tool, click two squares of plain track some way apart, then look at the arrows of the runs you
+   clicked.
+5. On a copy of any layout, make one run's squares point opposite ways (for example with the One-Way tool in two
+   directions over parts of it), run the setup check, then click that run's arrow.
+6. Close and reopen your own layout's autonomy editor.
+
+**Expected**
+
+- Step 1: the log says once that the run east of MainLine was brought into line; no notice says Signal 3 guards
+  Station A or B on the way in, and none says a train reaching MainLine from the west could not go on.
+- Step 2: both windows draw that run once, one way, the same; no stray red arrows.
+- Step 3: only the arrow you clicked changes; every other arrow stays as it was.
+- Step 4: the runs of the two squares you clicked are set one way, as well as the track between them.
+- Step 5: a warning names the run and says no train can pass it; it is drawn closed; one click on its arrow sets one way
+  for all of it and the warning goes.
+- Step 6: nothing on your layout is brought into line or warned about.
+
+*What this is:* OB-361 (`25fcf33f`): an exit guard passed only by trains leaving its station is no longer read as guarding a way in; a trapped arrival is told only at a station a train can reach that way; every run of plain track stores its narrowest direction, what a train finds, on open (as OB-351 does for switches), so the editor and the Track Diagram draw what is stored; a run pointing opposite ways is a warning; the One-Way tool and a re-placed tile no longer leave a run disagreeing.  Claims in `core.testTheSampleLayoutSaysOnlyWhatTrainsCanDo` and `core.testAutonomyDiagramSession`.
 
 ---
