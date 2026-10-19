@@ -11,6 +11,7 @@ import org.traincontrol.gui.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -2741,12 +2742,9 @@ public class testDiagramLooksRight
         // is the right one however the application builds its own.  Put a plain JPanel back at the
         // one place that calls the factory and every pixel above is unchanged - the defect moves to
         // the call, which is exactly what happened to testDiagramExport.
-        String gridSource = new String(java.nio.file.Files.readAllBytes(
-            new File("src/org/traincontrol/gui/LayoutGrid.java").toPath()), "UTF-8");
-
         // The FACTORY is what matters, not what the variable is called - this named the local and
-        // would have failed a rename that broke nothing.
-        assertTrue(gridSource.split("newDiagramContainer\\(").length > 2,
+        // would have failed a rename that broke nothing.  The definition and at least one call.
+        assertTrue(SourceOf.occurrences("newDiagramContainer(") >= 2,
             "the diagram is no longer built from newDiagramContainer(), so the third painting pass "
             + "that draws trains over captions is not in the container the application shows - and "
             + "every pixel this test compares came from a container it made itself");
@@ -5580,10 +5578,7 @@ public class testDiagramLooksRight
         assertTrue(ink > 20, "the house draws " + ink + " pixels of blue");
 
         // and no teal: the card's at-home branch no longer paints the badge in COLOR_AT_HOME
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutoLocomotiveStatus.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        assertFalse(source.contains("setBackground(TrainControlUI.COLOR_AT_HOME)"), "the Auto tab still paints a train at"
+        assertFalse(SourceOf.allCode().contains("setBackground(TrainControlUI.COLOR_AT_HOME)"), "the Auto tab still paints a train at"
             + " its home teal - Adam: \"instead of making home locations teal, put a little house icon\"");
     }
 
@@ -5599,10 +5594,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheGridGivesEveryLabelThatIsNotAPillAHalo() throws Exception
     {
-        String grid = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutGrid.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(grid.contains("text.setHalo(!text.isPill());"), "the grid builds its labels without a halo - Adam:"
+        assertTrue(SourceOf.allCode().contains("text.setHalo(!text.isPill());"), "the grid builds its labels without a halo - Adam:"
             + " \"Give regular text labels on the track diagram (.text) the same halo as address labels\"");
     }
 

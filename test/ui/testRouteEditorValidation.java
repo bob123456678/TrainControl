@@ -9,6 +9,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.ThreeWaySwitch;
+import support.SourceOf;
 
 /**
  * A row that looks right and means nothing.
@@ -180,17 +181,7 @@ public class testRouteEditorValidation
     @Test
     public void testTheAddressCheckAsksTheLogicalRule() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/RouteEditorFrame.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        int at = source.indexOf("private void addressProblem(");
-
-        assertTrue(at > 0, "addressProblem has been renamed or removed - this check now guards nothing "
-            + "and needs rewriting rather than deleting");
-
-        int end = source.indexOf("\n    private ", at + 20);
-
-        String body = end < 0 ? source.substring(at) : source.substring(at, end);
+        String body = SourceOf.declaration("private void addressProblem(");
 
         assertTrue(body.contains("Accessory.isValidLogicalAddress("),
             "the route editor no longer asks the logical-address rule. Accessory's maxima are RAW and "

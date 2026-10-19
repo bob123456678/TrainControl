@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.SourceOf;
 
 /**
  * A refresh arrives all at once rather than in installments.
@@ -148,16 +149,12 @@ public class testTheRebuildIsOnePass
     @Test
     public void testTheOldDiagramStaysUpUntilTheNewOneIsReady() throws Exception
     {
-        final File source = new File("src/org/traincontrol/gui/LayoutGrid.java");
+        // The statements are looked for in the whole program's code, comments blanked (their line breaks kept), so
+        // a statement in a comment is not one.
+        final String code = SourceOf.allCode();
 
-        assertTrue(source.exists(), "precondition: " + source + " has to be readable from the test's "
-            + "working directory, or this test asks nothing");
-
-        final String[] lines =
-            new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8).split("\r?\n");
-
-        int emptied = -1;
-        int added = -1;
+        int emptied = code.indexOf("parent.removeAll();");
+        int added = code.indexOf("parent.add(container);");
 
         // COUNTED, not just located (VLD-C1).
         //
@@ -165,8 +162,8 @@ public class testTheRebuildIsOnePass
         // top AND swaps at the bottom left `emptied` pointing at the bottom copy, with the defect
         // fully present and this test green.  That is the shape a partial revert or a merge produces,
         // and it is the shape a regression test exists for.
-        int emptiedCount = 0;
-        int addedCount = 0;
+        int emptiedCount = SourceOf.occurrences("parent.removeAll();");
+        int addedCount = SourceOf.occurrences("parent.add(container);");
 
         // AND THE PANEL'S OTHER NAME (RG5-C2).
         //
@@ -178,29 +175,11 @@ public class testTheRebuildIsOnePass
         //
         // Both are expected, and both are pinned: one at the swap, one in discard for a build that
         // threw before reaching it.  A third of either is what this now refuses.
-        int ownerEmptiedCount = 0;
+        int ownerEmptiedCount = SourceOf.occurrences("owner.removeAll();");
 
-        for (int i = 0; i < lines.length; i++)
-        {
-            final String line = lines[i].trim();
-
-            // The statement, not a mention of it in a comment.
-            if (line.equals("parent.removeAll();"))
-            {
-                if (emptied < 0) emptied = i;
-
-                emptiedCount++;
-            }
-
-            if (line.equals("parent.add(container);"))
-            {
-                if (added < 0) added = i;
-
-                addedCount++;
-            }
-
-            if (line.equals("owner.removeAll();")) ownerEmptiedCount++;
-        }
+        // How many lines the two statements are apart: the build lies between them
+        final int apart = added < emptied ? -1
+            : (int) code.substring(emptied, added).chars().filter(c -> c == '\n').count();
 
         assertTrue(emptied >= 0, "no `parent.removeAll();` statement in LayoutGrid - if the panel is "
             + "now emptied some other way, this test needs to be pointed at it rather than deleted");
@@ -221,9 +200,9 @@ public class testTheRebuildIsOnePass
             + " places.  Exactly one is expected - inside discard(), for a build that threw before it reached the swap.  A second would be an emptying this test's distance check cannot see, because "
             + "that check only knows the spelling `parent` (RG5-C2)");
 
-        assertTrue(added - emptied >= 0 && added - emptied <= 4,
-            "LayoutGrid empties the diagram panel at line " + (emptied + 1) + " and puts the "
-            + "replacement in at line " + (added + 1) + " - " + Math.abs(added - emptied) + " lines "
+        assertTrue(apart >= 0 && apart <= 4,
+            "LayoutGrid empties the diagram panel and puts the "
+            + "replacement in " + apart + " lines "
             + "apart, and the entire grid build is in between.  The panel therefore stands EMPTY for "
             + "the whole rebuild, and any paint landing in that window draws a blank page.  Image "
             + "decoding inside the build pumps the event queue, so paints do land there.  That is the "

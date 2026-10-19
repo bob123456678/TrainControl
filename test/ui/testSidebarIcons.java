@@ -6,6 +6,7 @@ import javax.imageio.ImageIO;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.SourceOf;
 
 /**
  * The sidebar icons are one flat colour, and that colour is the theme's.
@@ -141,9 +142,7 @@ public class testSidebarIcons
         // The file already holds a commented-out `setIconAt`, so a rule that matched the raw text could
         // be satisfied by code somebody had deliberately switched off - which is the shape `TCX-A3` is
         // named for.  Three sibling tests strip comments for exactly this reason; this one did not.
-        String source = withoutComments(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8));
+        String source = SourceOf.withoutComments(SourceOf.declaration("public void setViewListener("));
 
         // Where the routes panel is put back, and where the routes icon is put.
         java.util.regex.Matcher moved = java.util.regex.Pattern
@@ -242,36 +241,4 @@ public class testSidebarIcons
         }
     }
 
-    /**
-     * A source file with its comments taken out (TSX-C5).
-     *
-     * The same walk three sibling tests carry, and for the same reason: a rule matched against
-     * raw source can be satisfied by code somebody deliberately commented out.
-     */
-    private static String withoutComments(String body)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < body.length(); i++)
-        {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
-    }
 }

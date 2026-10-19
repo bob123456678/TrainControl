@@ -10,6 +10,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.AutonomyEditorPanel;
+import support.SourceOf;
 
 /**
  * FR-034: "Show station label here" opens on the station the square is next to.
@@ -122,9 +123,7 @@ public class testStationLabelPrefill
     @Test
     public void testTheLastClickedStationIsSpentAfterOneUse() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private void promptStationLabel(");
 
         int used = source.indexOf("showing = lastStationTouched;");
 
