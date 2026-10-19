@@ -4048,7 +4048,25 @@ public class testEditorSurfaceRules
         java.util.List<String> examined = new java.util.ArrayList<>();
 
         // ASKED OF THE SOURCE AS TEXT (GSE-C1), so that a fixture can be asked the same question - see silentWriters.
-        java.util.List<String> silent = silentWriters(source, writers(), examined);
+        //
+        // OF EVERY CLASS IN THE PANEL'S FAMILY (FR-136): a door moved into one of the panel's helpers is still one of
+        // its doors, and reading the panel's class alone would stop seeing it.
+        java.util.Map<String, String> family = editorFamily();
+
+        java.util.List<String> silent = new java.util.ArrayList<>();
+
+        for (String member : family.values()) silent.addAll(silentWriters(member, writers(), examined));
+
+        // And each helper the panel makes for itself is in the family, so none is left out by holding the panel some
+        // other way
+        java.util.regex.Matcher made = java.util.regex.Pattern.compile("final (\\w+) \\w+ = new \\1\\(this\\);")
+            .matcher(SourceOf.withoutComments(source));
+
+        while (made.find())
+        {
+            assertTrue(family.containsKey(made.group(1)), made.group(1) + " is made by the panel for itself but is not"
+                + " in the family this sweep reads, so the setup writes moved into it are not checked: " + family.keySet());
+        }
 
         int checked = examined.size();
 
@@ -4080,7 +4098,7 @@ public class testEditorSurfaceRules
             + "exempted through it announce nothing to the railway (MT-334)");
 
         assertTrue(checked >= 7,
-            "only " + checked + " writers of a point property were found in AutonomyEditorPanel, "
+            "only " + checked + " writers of a point property were found in AutonomyEditorPanel and its helpers, "
             + "which is fewer than it has - so this scan is reading the wrong thing and would pass "
             + "having examined almost nothing");
 
@@ -4090,6 +4108,39 @@ public class testEditorSurfaceRules
             + "The user sets a home and the Return Home item stays greyed, because "
             + "triageReturnToHome asks the running layout; and the edit dies with the process, "
             + "because that panel has no Save (MT-246).  They are: " + silent);
+    }
+
+    /**
+     * The autonomy editor's panel and its helpers, each as its class name and its source (FR-136).
+     *
+     * The panel's class, and every class under gui/ that holds the panel in a `final` field: the package-private
+     * helpers its tile menus, prompts and signal pairing moved into, which write the setup on the panel's behalf.  The
+     * windows that mount the panel hold it in a field they reassign, and announce their writes their own way.  Found in
+     * the source rather than listed, so a helper is swept the day it is written.
+     *
+     * @return each class's name and its source
+     * @throws Exception if a source file cannot be read
+     */
+    private static java.util.Map<String, String> editorFamily() throws Exception
+    {
+        java.util.Map<String, String> family = new java.util.LinkedHashMap<>();
+
+        family.put("AutonomyEditorPanel", SourceOf.declaration("public class AutonomyEditorPanel extends JPanel"));
+
+        java.util.regex.Pattern holds = java.util.regex.Pattern.compile("\\bfinal\\s+AutonomyEditorPanel\\s+\\w+\\s*;");
+
+        for (java.io.File f : javaFilesUnder(new java.io.File("src/org/traincontrol/gui")))
+        {
+            String text = new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            if (holds.matcher(SourceOf.withoutComments(text)).find())
+            {
+                family.put(f.getName().replace(".java", ""), text);
+            }
+        }
+
+        return family;
     }
 
     /**
@@ -4221,12 +4272,12 @@ public class testEditorSurfaceRules
 
             for (int i = 0; i < write; i++) if (code.charAt(i) == '\n') line++;
 
-            // The enclosing method: back to the nearest declaration at class indent.
+            // The enclosing method: back to the nearest declaration at class indent, whatever its access - the
+            // panel's helpers declare theirs package-private (FR-136).
             int start = line;
 
-            while (start > 0 && !(lines[start].startsWith("    private ")
-                || lines[start].startsWith("    public ")
-                || lines[start].startsWith("    protected "))) start--;
+            while (start > 0 && !(lines[start].startsWith("    ") && lines[start].length() > 4
+                && Character.isJavaIdentifierStart(lines[start].charAt(4)))) start--;
 
             String name = lines[start].trim();
 
