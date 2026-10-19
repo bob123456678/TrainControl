@@ -530,14 +530,16 @@ public class testTheRouteListShowsWhatRuns
 
             assertTrue(answering.awaitAsked(1, 10000), "Find Route asked nothing");
 
-            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.promptFindRoute"));
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.t("route.ui.promptFindRoute"), "asked: "
+                + answering.asked());
 
             assertTrue(waitFor(table::isShowing, 5000), "Find Route did not bring the route list forward");
 
             settle();
         }
 
-        assertNotEquals(backgroundOf(route), backgroundOf(other), "Find Route did not highlight the route it found");
+        assertTrue(waitFor(() -> !backgroundOf(route).equals(backgroundOf(other)), 5000), "Find Route did not highlight"
+            + " the route it found");
 
         // Until the next click in the table, which clears it
         clickTheRoute(other, false, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
@@ -565,7 +567,8 @@ public class testTheRouteListShowsWhatRuns
             assertTrue(answering.awaitAsked(2, 10000), "Find Route said nothing about a route that is not there: "
                 + answering.asked());
 
-            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.f("route.ui.errorNoSuchRoute", missing));
+            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.f("route.ui.errorNoSuchRoute", missing), "asked: "
+                + answering.asked());
         }
     }
 
@@ -608,6 +611,9 @@ public class testTheRouteListShowsWhatRuns
 
             assertTrue(answering.awaitAsked(1, 10000), "Bulk Enable asked for nothing");
 
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
+                "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateEnabled")));
+
             assertTrue(waitFor(() -> model.getRoute(match).isEnabled(), 30000), "Bulk Enable did not arm the route"
                 + " whose name matches");
 
@@ -615,6 +621,174 @@ public class testTheRouteListShowsWhatRuns
 
             assertFalse(model.getRoute(unmatched).isEnabled(), "Bulk Enable armed a route whose name does not match");
         }
+    }
+
+    /**
+     * Find Route, given part of a name several routes have, asks which, and shows the one picked (MT-218).  Adam:
+     * "let's support partial matching if there is no exact match as entered."
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testFindRouteAsksWhichWhenSeveralMatch() throws Exception
+    {
+        final String first = aQuickRoute(PREFIX + "twin mango one", 246);
+        final String second = aQuickRoute(PREFIX + "twin mango two", 247);
+
+        final JTable table = routeTable();
+
+        final javax.swing.AbstractButton find = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("route.ui.menuFindRoute"));
+
+        List<String> asked;
+
+        try (support.Answering answering = support.Answering.start(message ->
+            message.equals(org.traincontrol.util.I18n.t("route.ui.promptFindRoute"))
+                ? support.Answering.type("mango") : support.Answering.type(second)))
+        {
+            SwingUtilities.invokeLater(find::doClick);
+
+            assertTrue(answering.awaitAsked(2, 10000), "Find Route did not ask which of two matching routes: "
+                + answering.asked());
+
+            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.t("route.ui.promptWhichRoute"), "asked: "
+                + answering.asked());
+
+            assertTrue(waitFor(table::isShowing, 5000), "Find Route did not bring the route list forward");
+
+            asked = answering.asked();
+        }
+
+        assertTrue(waitFor(() -> !backgroundOf(second).equals(backgroundOf(first)), 5000), "Find Route did not highlight"
+            + " the route picked; asked " + asked);
+
+        clickTheRoute(first, false, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
+    }
+
+    /**
+     * Bulk Disable, given part of a name, disarms exactly the armed routes whose names contain it.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testBulkDisableDisarmsOnlyTheMatchingRoutes() throws Exception
+    {
+        final String match = PREFIX + "armed lime";
+        final String unmatched = PREFIX + "armed other";
+
+        for (String name : new String[] {match, unmatched})
+        {
+            List<RouteCommand> commands = new ArrayList<>();
+
+            commands.add(RouteCommand.RouteCommandAccessory(248, Accessory.accessoryDecoderType.MM2, true));
+
+            if (model.getRoute(name) != null) model.deleteRoute(name);
+
+            assertTrue(model.newRoute(name, commands, 78, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null),
+                "precondition: the route " + name + " was not made");
+        }
+
+        refresh();
+
+        assertTrue(model.getRoute(match).isEnabled() && model.getRoute(unmatched).isEnabled(),
+            "precondition: a route is not armed before Bulk Disable");
+
+        final javax.swing.AbstractButton bulk = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("ui.main.bulkDisable"));
+
+        assertNotNull(bulk, "the route list has no Bulk Disable");
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("lime")))
+        {
+            SwingUtilities.invokeLater(bulk::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Bulk Disable asked for nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
+                "route.ui.promptEnterSearchStringWithS88State", org.traincontrol.util.I18n.t("ui.stateDisabled")));
+
+            assertTrue(waitFor(() -> !model.getRoute(match).isEnabled(), 30000), "Bulk Disable did not disarm the route"
+                + " whose name matches");
+
+            settle();
+
+            assertTrue(model.getRoute(unmatched).isEnabled(), "Bulk Disable disarmed a route whose name does not match");
+        }
+    }
+
+    /**
+     * The right-click menu's Edit Route opens the route's editor, titled with its name and id; a second Edit while it
+     * is open says only one route can be edited at a time, and opens no second editor.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testEditRouteOpensOneEditorAtATime() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "edit me", 246);
+
+        final String title = org.traincontrol.util.I18n.f("route.ui.dialogEditRouteWithId", route,
+            model.getRouteId(route));
+
+        try
+        {
+            javax.swing.JPopupMenu menu = rightClickTheRoute(route);
+
+            final javax.swing.AbstractButton edit = support.Components.withText(menu,
+                org.traincontrol.util.I18n.t("route.ui.menuEditRoute"));
+
+            assertNotNull(edit, "the route's right-click menu has no Edit Route");
+
+            SwingUtilities.invokeLater(edit::doClick);
+
+            assertTrue(waitFor(() -> routeEditorsTitled(title) == 1, 10000), "Edit Route opened no editor titled \""
+                + title + "\"");
+
+            closeAnyMenu();
+
+            try (support.Answering answering = support.Answering.start(message -> null))
+            {
+                final javax.swing.AbstractButton again = support.Components.withText(rightClickTheRoute(route),
+                    org.traincontrol.util.I18n.t("route.ui.menuEditRoute"));
+
+                SwingUtilities.invokeLater(again::doClick);
+
+                assertTrue(answering.awaitAsked(1, 10000), "a second Edit Route said nothing");
+
+                assertEquals(answering.asked().get(0),
+                    org.traincontrol.util.I18n.t("route.ui.errorOnlyOneRouteEditorAllowed"));
+
+                settle();
+            }
+
+            assertEquals(routeEditorsTitled(title), 1, "a second Edit Route opened a second editor");
+        }
+        finally
+        {
+            closeAnyMenu();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if ("RouteEditorFrame".equals(window.getClass().getSimpleName())) window.dispose();
+                }
+            });
+        }
+    }
+
+    /** How many route editors are showing under this title. */
+    private static int routeEditorsTitled(String title)
+    {
+        int found = 0;
+
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
+                && title.equals(((java.awt.Frame) window).getTitle())) found++;
+        }
+
+        return found;
     }
 
     /** The route list's table: the one holding routes. */

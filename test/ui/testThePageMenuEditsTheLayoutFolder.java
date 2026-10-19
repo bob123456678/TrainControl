@@ -106,7 +106,7 @@ public class testThePageMenuEditsTheLayoutFolder
 
         try (Answering answering = Answering.start(message -> null))
         {
-            press("ui.main.toolbar.duplicateCurrentPage");
+            SwingUtilities.invokeLater(menuItem("ui.main.toolbar.duplicateCurrentPage")::doClick);
 
             assertTrue(Components.waitFor(() -> model.getLayoutList().contains(copy), 15000), "Duplicate Current Page"
                 + " made no page called " + copy + ": " + model.getLayoutList());
@@ -148,7 +148,7 @@ public class testThePageMenuEditsTheLayoutFolder
 
         try (Answering answering = Answering.start(message -> Answering.type(renamed)))
         {
-            press("ui.main.toolbar.renameCurrentPage");
+            SwingUtilities.invokeLater(menuItem("ui.main.toolbar.renameCurrentPage")::doClick);
 
             assertTrue(answering.awaitAsked(1, 10000), "Rename Current Page asked for no name");
 
@@ -185,7 +185,7 @@ public class testThePageMenuEditsTheLayoutFolder
 
         try (Answering answering = Answering.start(message -> Answering.type(blank)))
         {
-            press("ui.main.toolbar.addBlackPage");
+            SwingUtilities.invokeLater(menuItem("ui.main.toolbar.addBlackPage")::doClick);
 
             assertTrue(answering.awaitAsked(1, 10000), "Add Blank Page asked for no name");
 
@@ -214,7 +214,7 @@ public class testThePageMenuEditsTheLayoutFolder
 
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
         {
-            press("ui.main.toolbar.deleteCurrentPage");
+            SwingUtilities.invokeLater(menuItem("ui.main.toolbar.deleteCurrentPage")::doClick);
 
             assertTrue(answering.awaitAsked(1, 10000), "Delete Current Page asked nothing");
 
@@ -248,7 +248,7 @@ public class testThePageMenuEditsTheLayoutFolder
 
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
         {
-            press("ui.main.toolbar.deleteCurrentPage");
+            SwingUtilities.invokeLater(menuItem("ui.main.toolbar.deleteCurrentPage")::doClick);
 
             assertTrue(answering.awaitAsked(1, 10000), "Delete Current Page asked nothing");
 
@@ -277,7 +277,7 @@ public class testThePageMenuEditsTheLayoutFolder
         try (Answering answering = Answering.start(message -> message.contains("2 - Bottom")
             ? Answering.type(taken) : Answering.press(I18n.t("ui.ok"))))
         {
-            press("ui.main.toolbar.renameCurrentPage");
+            SwingUtilities.invokeLater(menuItem("ui.main.toolbar.renameCurrentPage")::doClick);
 
             assertTrue(answering.awaitAsked(2, 10000), "a rename to a taken name was not refused: " + answering.asked());
 
@@ -305,9 +305,12 @@ public class testThePageMenuEditsTheLayoutFolder
 
         try (Answering answering = Answering.start(message -> Answering.type(combined)))
         {
-            press("layout.ui.menuCombineLinkedPages");
+            SwingUtilities.invokeLater(menuItem("layout.ui.menuCombineLinkedPages")::doClick);
 
             assertTrue(answering.awaitAsked(1, 10000), "Combine Linked Pages asked for no name");
+
+            assertEquals(answering.asked().get(0).split("\n")[0], I18n.t("layout.ui.promptCombinedPageName"),
+                "Combine Linked Pages did not ask what to call the page");
 
             assertTrue(Components.waitFor(() -> model.getLayoutList().contains(combined), 15000), "Combine Linked"
                 + " Pages made no page called " + combined + ": " + model.getLayoutList());
@@ -337,7 +340,7 @@ public class testThePageMenuEditsTheLayoutFolder
 
         try (Answering answering = Answering.start(message -> null))
         {
-            press("layout.ui.menuCombineLinkedPages");
+            SwingUtilities.invokeLater(menuItem("layout.ui.menuCombineLinkedPages")::doClick);
 
             assertTrue(answering.awaitAsked(1, 10000), "Combine Linked Pages said nothing on a page with no links");
 
@@ -384,14 +387,14 @@ public class testThePageMenuEditsTheLayoutFolder
         Components.settle();
     }
 
-    /** Clicks the menu item whose text is this key's. */
-    private void press(String key)
+    /** The menu item whose text is this key's. */
+    private AbstractButton menuItem(String key)
     {
         final AbstractButton item = Components.withText(ui, I18n.t(key));
 
         assertNotNull(item, "the window has no " + I18n.t(key));
 
-        SwingUtilities.invokeLater(item::doClick);
+        return item;
     }
 
     private File pageFile(String page)
