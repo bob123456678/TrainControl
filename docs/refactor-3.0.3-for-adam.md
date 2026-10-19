@@ -36,3 +36,7 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | # | Found in | What | Filed |
 |---|---|---|---|
 | 1 | Phase 0 | `findings.tsv` reports "not what the store renders" after a checkout, but only its line endings differ. The mirror check is line-ending sensitive. | Not filed. Phase 1c touches the mirror. |
+| 2 | 1b (H0029) | On the frozen snapshot, 3 of your 11 "may run at once" pairs cannot run at once: every combination of copies shares rail.  BottomSecondary -> BottomMainC while BottomInner -> BottomInnerOtherside runs; the same while BottomInnerOtherside -> BottomInner runs; TopMainR2Pre -> TopMainR2 while BottomMainA -> TopMainR1 runs.  `testALockReachesTheRailBeingRunOver` now floors at 8 of 11 and prints the 3. | Not filed: either the list or the layout needs your decision. |
+| 3 | 1b (H0130) | `getAutoLayout()` creates a Layout when there is none, so test guards of the form `if (model.getAutoLayout() == null) skip` can never fire. | Not filed; Phase 1b's second scan pass can look for the rest. |
+| 4 | 1b (H0467) | `TailCrossedPrompt.isATurningCopyForTests` is a production hook that no test uses any more. | Not removed: refactor-only, and dead-code removal is listed rather than done mid-phase. |
+| 5 | 1b | Twelve core claims whose feature, when broken, turns them into a skip rather than a red were counted as not hollow (the brief's rule).  The battery lists any class with a skip as "tested nothing", so such a defect is visible, but not as a failure. | Not filed. |
