@@ -17,6 +17,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * What a run did is folded into the setup BEFORE the editor snapshots it, not after (OB-144).
@@ -121,24 +122,10 @@ public class testARunSurvivesADiagramEdit
     @Test
     public void testTheWindowCapturesBeforeItOpensTheEditor() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
-
-        // The four-argument overload is the one that does the work; the shorter ones delegate to it.
-        // Anchored on its LAST parameter rather than on the whole signature, because a signature that
-        // wraps is a signature whose exact text is a formatting decision - my first attempt at this
-        // pinned the line break and failed on the anchor rather than on the claim.
-        int methodStart = ui.indexOf("TileGraph.TileKey reveal, boolean remember)");
-
-        assertTrue(methodStart >= 0,
-            "openLayoutEditor's working overload has moved or changed shape - this test is reading the "
-            + "wrong method, or none at all");
-
-        int methodEnd = ui.indexOf("\n    public ", methodStart + 1);
-
-        assertTrue(methodEnd > methodStart, "could not find the end of the method to bound the scan");
-
-        String body = ui.substring(methodStart, methodEnd);
+        // The private overload with the outline parameter is the one that does the work; the shorter ones delegate to it.
+        // Anchored on its first line, because a signature that wraps is a signature whose exact text is a
+        // formatting decision.
+        String body = SourceOf.declaration("private void openLayoutEditor(String page, Boolean autonomy,");
 
         int captured = body.indexOf("captureRunningLayout();");
         int opened = body.indexOf("new LayoutEditor(");
