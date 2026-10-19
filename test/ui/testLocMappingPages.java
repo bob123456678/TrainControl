@@ -9,6 +9,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.RightClickPageMenu;
 import org.traincontrol.gui.TrainControlUI;
+import support.SourceOf;
 
 /**
  * A ceiling of fifty locomotive mapping pages.
@@ -130,13 +131,7 @@ public class testLocMappingPages
     @Test
     public void testAddingRefusesWithoutBeingAsked() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String add = withoutComments(bodyOf(source, "public void addLocMappingPage()"));
-
-        assertFalse(add.isEmpty(), "cannot find addLocMappingPage - has it been renamed?");
+        String add = SourceOf.withoutComments(SourceOf.declaration("public void addLocMappingPage()"));
 
         assertTrue(add.contains("canAddLocMappingPage()"),
             "addLocMappingPage no longer asks whether it may, so anything that calls it other than "
@@ -171,13 +166,7 @@ public class testLocMappingPages
     @Test
     public void testLoadingIsNotCapped() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String load = withoutComments(bodyOf(source, "public void setViewListener("));
-
-        assertFalse(load.isEmpty(), "cannot find setViewListener - has it been renamed?");
+        String load = SourceOf.withoutComments(SourceOf.declaration("public void setViewListener("));
 
         assertTrue(load.contains("saveStates.size() - 1 > this.numLocMappings"),
             "the loop that grows the page count to fit a saved state is gone, so a state holding more "
@@ -1060,12 +1049,13 @@ public class testLocMappingPages
                 assertNotNull(keycap, "no keycap " + said);
                 assertNotNull(decoder, "no decoder pill " + said);
 
-                assertEquals(page.x, keycap.x + keycap.width + 5, "the page pill is not a 5 px gap after the keycap " + said);
+                assertEquals(page.x, keycap.x + keycap.width + rowGap(), "the page pill is not a " + rowGap()
+                    + " px gap after the keycap " + said);
 
                 assertEquals(decoder.x + decoder.width, box.width, "the decoder pill is not at the slot's right edge " + said
                     + ": it is " + decoder + " in " + box + ".  Adam: \"float the address to the right\"");
 
-                assertTrue(decoder.x - (page.x + page.width) > 5, "the decoder pill is a least gap from a short page name's"
+                assertTrue(decoder.x - (page.x + page.width) > rowGap(), "the decoder pill is a least gap from a short page name's"
                     + " pill, so it follows the page pill and does not float " + said + ": " + page + " and " + decoder);
 
                 // THE PAGE IS PLAIN WORDS - the number and a full stop, then the name - with no pill, no fill and no line
@@ -1122,7 +1112,7 @@ public class testLocMappingPages
             assertEquals(pub(bare, "pageText"), p.page + ". Example",
                 "with no decoder pill the page's words are not the number, a full stop and the name");
 
-            assertEquals(rect(bare, "page").x, rect(bare, "keycap").x + rect(bare, "keycap").width + 5,
+            assertEquals(rect(bare, "page").x, rect(bare, "keycap").x + rect(bare, "keycap").width + rowGap(),
                 "with no decoder pill the page pill is not at the left, a gap after the keycap");
         });
     }
@@ -1246,10 +1236,10 @@ public class testLocMappingPages
                 // NOTHING OVERLAPS, and the decoder pill is still at the right edge
                 assertEquals(decoder.x + decoder.width, box.width, "the decoder pill is not at the slot's right edge " + said);
 
-                assertTrue(keycap.x + keycap.width + 5 <= page.x, "the page pill is closer than the least gap to the keycap "
+                assertTrue(keycap.x + keycap.width + rowGap() <= page.x, "the page pill is closer than the least gap to the keycap "
                     + said + ": " + keycap + " and " + page);
 
-                assertTrue(page.x + page.width + 5 <= decoder.x, "the page pill runs under the decoder pill, or is closer"
+                assertTrue(page.x + page.width + rowGap() <= decoder.x, "the page pill runs under the decoder pill, or is closer"
                     + " than the least gap to it " + said + ": " + page + " and " + decoder);
 
                 // THE WHOLE LINE IN ITS SLOT
@@ -2435,68 +2425,23 @@ public class testLocMappingPages
     }
 
     /**
-     * Java source with its comments stripped, so a check reads code and not the prose about it.
+     * The gap between a key row's pieces, asked of the row (`CurrentKeyRow.GAP`) rather than restated.
+     *
+     * @return the gap in pixels
      */
-    private String withoutComments(String body)
+    private static int rowGap()
     {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < body.length(); i++)
+        try
         {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
+            java.lang.reflect.Field gap = Class.forName("org.traincontrol.gui.CurrentKeyRow").getField("GAP");
 
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/')
-            {
-                inLine = true;
-            }
-            else if (c == '/' && next == '*')
-            {
-                inBlock = true;
-                i++;
-            }
-            else
-            {
-                out.append(c);
-            }
+            gap.setAccessible(true);
+
+            return gap.getInt(null);
         }
-
-        return out.toString();
-    }
-
-    /**
-     * A method, from its declaration to its closing brace.
-     */
-    private String bodyOf(String source, String declaration)
-    {
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
+        catch (ReflectiveOperationException e)
         {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
+            throw new IllegalStateException("CurrentKeyRow has no GAP to ask", e);
         }
-
-        return "";
     }
 }
