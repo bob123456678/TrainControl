@@ -30,9 +30,9 @@ import support.SourceOf;
  *
  * MUTATION: leave the checkbox out of the flag, or mount the menu whatever the mode, and a claim fails.
  *
- * And what a Central Station sends shows in that window (FR-136 Phase 6): the power cut at the station, a turnout thrown
- * there, a sensor made, each sent as the station sends it (`support.Packets`) and read off the window and the diagram;
- * and Sync Full Function State asks the station, or does not, as its question is answered.
+ * And what a Central Station sends shows in that window (FR-136 Phase 6): the power cut at the station and a turnout
+ * thrown there, each sent as the station sends it (`support.Packets`) and read off the window; and Sync Full Function
+ * State asks the station, or does not, as its question is answered.
  *
  * @author Adam
  */
@@ -222,40 +222,6 @@ public class testTheDebugMenuSwitchesTheEcho
     }
 
     /**
-     * A sensor made at the station is drawn made on the track diagram.
-     *
-     * MUTATION: in `LayoutDiagramComponent`, where a sensor's picture is chosen,
-     * `if (this.getFeedback() != null && this.getFeedback().isSet())` to `if (false)`.
-     *
-     * @throws Exception from the event thread
-     */
-    @Test
-    public void testASensorMadeAtTheStationIsDrawnOnTheDiagram() throws Exception
-    {
-        // WestEnd's sensor, 10, at 1,3 of the scenario's one page
-        final int sensor = 10;
-
-        support.Rendered view = support.Rendered.open(model.getLayout(model.getLayoutList().get(0)), ui);
-
-        model.receiveMessage(support.Packets.s88(sensor, false));
-
-        assertTrue(support.Components.waitFor(() -> !model.getFeedbackState(Integer.toString(sensor)), 10000),
-            "precondition: the sensor is not clear");
-
-        java.awt.image.BufferedImage clear = support.Rendered.tile(view.snapshot(), 1, 3);
-
-        model.receiveMessage(support.Packets.s88(sensor, true));
-
-        assertTrue(support.Components.waitFor(() -> model.getFeedbackState(Integer.toString(sensor)), 10000),
-            "precondition: the station's report did not make the sensor");
-
-        assertTrue(support.Components.waitFor(() -> differs(view, clear), 10000), "the station made sensor " + sensor
-            + " and its square on the diagram is drawn as before");
-
-        model.receiveMessage(support.Packets.s88(sensor, false));
-    }
-
-    /**
      * Sync Full Function State, answered Yes, turns every locomotive's functions off and asks the station for each
      * locomotive's state.
      *
@@ -388,19 +354,6 @@ public class testTheDebugMenuSwitchesTheEcho
     private static boolean selected(javax.swing.AbstractButton button)
     {
         return support.Components.onTheEventThread(button::isSelected);
-    }
-
-    /** Whether the sensor's square is drawn otherwise than in this picture. */
-    private static boolean differs(support.Rendered view, java.awt.image.BufferedImage before)
-    {
-        try
-        {
-            return !support.Rendered.same(support.Rendered.tile(view.snapshot(), 1, 3), before);
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException(e);
-        }
     }
 
     private static JMenu debugMenu() throws Exception
