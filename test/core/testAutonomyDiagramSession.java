@@ -27,6 +27,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.SourceOf;
 
 /**
  * The whole chain, from a decision somebody made to the graph a train could run on.
@@ -962,7 +963,10 @@ public class testAutonomyDiagramSession
 
         String longer = String.valueOf(wrapped.invoke(null, sentence + "  " + sentence + "  " + sentence));
 
-        assertTrue(longer.contains("width: 320px"), "a tooltip three sentences long no longer wraps: " + longer);
+        // The width the editor wraps at is its own, asked rather than restated
+        int width = (Integer) privateConstant(org.traincontrol.gui.AutonomyEditorPanel.class, "TOOLTIP_WIDTH");
+
+        assertTrue(longer.contains("width: " + width + "px"), "a tooltip three sentences long no longer wraps: " + longer);
     }
 
     /**
@@ -2744,8 +2748,12 @@ public class testAutonomyDiagramSession
      * MUTATION: drop the edge, or paint either surface another green, and this fails.
      */
     @Test
-    public void testTheGreenArrowsAreLightGreenWithADarkEdge()
+    public void testTheGreenArrowsAreLightGreenWithADarkEdge() throws Exception
     {
+        // The two greens are the annotation's own, asked rather than restated
+        Color lightGreen = (Color) privateConstant(TileAnnotation.class, "ONE_WAY");
+        Color darkGreen = (Color) privateConstant(TileAnnotation.class, "ONE_WAY_EDGE");
+
         List<TileAnnotation.Mark> marks = new ArrayList<>();
 
         marks.add(new TileAnnotation.Mark(Side.W, Side.E, Direction.BOTH));
@@ -2759,9 +2767,9 @@ public class testAutonomyDiagramSession
         {
             String which = annotation == diagram ? "the track diagram's" : "the autonomy editor's";
 
-            assertTrue(pixelsOf(annotation, new Color(70, 205, 90)) > 0, which + " green arrows are not the light green");
+            assertTrue(pixelsOf(annotation, lightGreen) > 0, which + " green arrows are not the light green");
 
-            assertTrue(pixelsOf(annotation, new Color(0, 95, 40)) > 0, which + " green arrows have no dark green edge");
+            assertTrue(pixelsOf(annotation, darkGreen) > 0, which + " green arrows have no dark green edge");
 
             assertEquals(pixelsOf(annotation, new Color(0, 255, 0)), 0, which + " green arrows are the signals' green");
         }
@@ -2807,6 +2815,23 @@ public class testAutonomyDiagramSession
 
         assertCentred(new TileAnnotation(east, -1, false, null, false, false, false, null, true, null), false,
             "a straight's red arrow");
+    }
+
+    /**
+     * A private constant of a class, read by reflection so a claim asks the program's rule instead of restating it.
+     *
+     * @param owner the class that declares it
+     * @param name the constant's name
+     * @return its value
+     * @throws Exception when the class has no such constant
+     */
+    private static Object privateConstant(Class<?> owner, String name) throws Exception
+    {
+        java.lang.reflect.Field field = owner.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.get(null);
     }
 
     /** Asserts an annotation's lit pixels on a 30-pixel tile run from 9 to 20 across its rail, about 15.0. */
@@ -3027,7 +3052,9 @@ public class testAutonomyDiagramSession
 
             assertTrue(panel.isShowingDirections(), "Allowed only is not counted as showing directions, so the editor draws no arrows under it");
 
-            assertEquals(prefs.getInt(key, -1), 4, "Allowed only is not remembered by its own value");
+            assertEquals(prefs.getInt(key, -1),
+                (int) (Integer) privateConstant(org.traincontrol.gui.AutonomyEditorPanel.class, "VIEW_ALLOWED"),
+                "Allowed only is not remembered by its own value");
 
             assertEquals(aPanel().getShowDirections().getSelectedItem(),
                 org.traincontrol.util.I18n.t("autosetup.ui.directionsAllowed"), "Allowed only does not open again");
@@ -4525,18 +4552,11 @@ public class testAutonomyDiagramSession
         // AND THE FIX ITSELF, which needs a railway that DOES know the train - a state this fixture
         // cannot build, because the candidate has to come back from the station index.  Asserted as
         // the rule instead: setup squares are gathered ONLY when the running layout offered none.
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automationui/AutonomySession.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String flip = SourceOf.declaration("public TileKey flipFacing");
 
-        int flip = source.indexOf("public TileKey flipFacing");
+        int gathers = flip.indexOf("for (Map.Entry<TileKey, String> placed : placedLocomotives()");
 
-        assertTrue(flip > 0, "flipFacing has been renamed and this check guards nothing");
-
-        int gathers = source.indexOf("for (Map.Entry<TileKey, String> placed : placedLocomotives()",
-            flip);
-
-        int guarded = source.indexOf("if (candidates.isEmpty())", flip);
+        int guarded = flip.indexOf("if (candidates.isEmpty())");
 
         assertTrue(guarded > 0 && guarded < gathers,
             "the setup's squares are appended to the running layout's answer again. The loop below"
@@ -6465,9 +6485,7 @@ public class testAutonomyDiagramSession
     @Test
     public void testBothFindingWalksAreGivenTheRedArrows() throws Exception
     {
-        String checks = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automationui/AutonomyChecks.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String checks = SourceOf.fileDeclaring("public class AutonomyChecks");
 
         int asked = 0;
         int withBars = 0;
@@ -14255,8 +14273,7 @@ public class testAutonomyDiagramSession
     @Test
     public void testTheImportMessageNamesEverySkip() throws Exception
     {
-        String door = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/AutonomyViewerPanel.java").toPath()), StandardCharsets.UTF_8);
+        String door = SourceOf.declaration("private void importLegacyGraph(");
 
         java.util.Properties english = new java.util.Properties();
 
@@ -14408,9 +14425,8 @@ public class testAutonomyDiagramSession
         //
         // Standing the whole window up to watch a Point change hands needs a model and a display; the
         // wiring is what was missing, and the wiring is what this checks.
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+        String source = SourceOf.declaration("private org.traincontrol.automationui.TileGraph.TileKey followTheTurn(")
+            .replaceAll("\\s+", " ");
 
         // Asked without building one since RLV11-C5: the follow is posted, and can land after Unload
         assertTrue(source.contains("session.flipFacing(name, this.model.getAutoLayoutIfLoaded())"),
@@ -14418,9 +14434,7 @@ public class testAutonomyDiagramSession
             + "layout does not - and captureFromLayout will write the layout's answer back over it "
             + "at the next editor open (DIR-B3)");
 
-        String session_ = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automationui/AutonomySession.java")),
-            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+        String session_ = SourceOf.declaration("public TileKey flipFacing(").replaceAll("\\s+", " ");
 
         assertTrue(session_.contains("moveOntoFacingCopy(running, locomotive, tile, now);"),
             "flipFacing no longer moves the locomotive on the running layout, so the two records of "
@@ -14778,8 +14792,9 @@ public class testAutonomyDiagramSession
     @Test
     public void testTheModelAndTheDoorsOffTheEventThreadAskForTheRailwayOnce() throws Exception
     {
-        String model = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/marklin/MarklinControlStation.java")), java.nio.charset.StandardCharsets.UTF_8);
+        // The model's own file, found by the constructor it is built with
+        String model = SourceOf.fileDeclaring("public MarklinControlStation(NetworkProxy network, View view,"
+            + " boolean autoPowerOn, boolean debug, boolean simulate)");
 
         java.util.List<String> pairs = new java.util.ArrayList<>();
 
@@ -14796,24 +14811,15 @@ public class testAutonomyDiagramSession
             + " two leaves it building an empty one (RLV12-C5): " + pairs);
 
         String[][] doors = {
-            {"src/org/traincontrol/gui/TrainControlUI.java", "boolean isAutonomyBusy()"},
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private static PathOptions gatherPathOptions("},
-            {"src/org/traincontrol/gui/LayoutLabel.java", "private static boolean aboutToClearProtection("},
+            {"TrainControlUI", "boolean isAutonomyBusy()"},
+            {"LayoutRightclickAutonomyMenu", "private static PathOptions gatherPathOptions("},
+            {"LayoutLabel", "private static boolean aboutToClearProtection("},
             // Graceful Stop's worker waits out the coast-down, while Unload is allowed (RLV13-C7)
-            {"src/org/traincontrol/gui/TrainControlUI.java", "private void gracefulStopActionPerformed("}};
+            {"TrainControlUI", "private void gracefulStopActionPerformed("}};
 
         for (String[] door : doors)
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(door[0])),
-                java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
-
-            int start = source.indexOf(door[1]);
-
-            assertTrue(start > 0, door[1] + " is not in " + door[0] + " any more; this check guards nothing there");
-
-            int end = source.indexOf("\n    }\n", start);
-
-            String body = source.substring(start, end < 0 ? source.length() : end);
+            String body = SourceOf.declaration(door[1]);
 
             assertFalse(body.contains("hasAutoLayout()") && body.contains("getAutoLayout()"), door[1] + " asks whether"
                 + " there is a railway and then asks for it, off the event thread (RLV12-C5)");
@@ -14832,15 +14838,7 @@ public class testAutonomyDiagramSession
     @Test
     public void testTheDiagramsGatherAsksForTheRailwayOnce() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java")), java.nio.charset.StandardCharsets.UTF_8)
-            .replace("\r\n", "\n");
-
-        int start = source.indexOf("private static PathOptions gatherPathOptions(");
-
-        assertTrue(start > 0, "cannot find gatherPathOptions");
-
-        String body = source.substring(start, source.indexOf("\n    }\n", start));
+        String body = SourceOf.declaration("private static PathOptions gatherPathOptions(");
 
         assertFalse(body.contains("getAutoLayout()"), "the diagram's path gather asks the model for the railway again on"
             + " its worker, where Unload can leave it building an empty one (RSA2-C5)");
