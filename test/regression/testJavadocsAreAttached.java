@@ -57,7 +57,9 @@ public class testJavadocsAreAttached
     // was inserted - moved onto placementCopy.
     // 87 -> 86 on 2026-09-25: RLU-C6, AutonomyViewerPanel's stray "Debug builds only" javadoc - left stacked on
     // activateTheConfigurationNamed's when that method was inserted - deleted (RLU2-C1, RLU3-C6).
-    private static final int ALLOWED = 86;
+    // 86 -> 68 on 2026-10-19: FR-136 Phase 2, AutonomyEditorPanel's 18 stacked javadocs - the first of each pair
+    // describing a member that had its own - deleted or moved onto the member they were written for, in the comment trim.
+    private static final int ALLOWED = 68;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -89,8 +91,6 @@ public class testJavadocsAreAttached
             + "base" + File.separator + "RouteCommand.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "AutoLocomotiveStatus.java (2)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "AutonomyEditorPanel.java (18)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "AutonomyViewerPanel.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
