@@ -1,10 +1,7 @@
 package regression;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
@@ -16,6 +13,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Cancel on the function editor undoes a Copy Customizations, as it already undoes the two slots.
@@ -35,11 +33,6 @@ import org.testng.annotations.Test;
  */
 public class testCancelUndoesACustomizationCopy
 {
-    /**
-     * Where the Cancel branch lives, for the call-site check below.
-     */
-    private static final String MENU = "src/org/traincontrol/gui/RightClickFunctionMenu.java";
-
     /**
      * A copy pressed and then cancelled leaves the locomotive exactly as it was.
      *
@@ -132,7 +125,7 @@ public class testCancelUndoesACustomizationCopy
     @Test
     public void testTheCancelBranchCallsIt() throws Exception
     {
-        String source = new String(Files.readAllBytes(new File(MENU).toPath()), StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private void openEditDialog(JToggleButton b)");
 
         int cancel = source.indexOf("activeLoc.setDepartureFunc(departureWas)");
 
