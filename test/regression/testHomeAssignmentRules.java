@@ -181,7 +181,7 @@ public class testHomeAssignmentRules
             "nothing calls the homeBrokenBy overload that takes a tile, so the exclusion warning is "
             + "unreachable from the assignment path (TA-B4)");
 
-        assertTrue(source.contains("() -> promptHome("),
+        assertTrue(source.contains("() -> editor.promptHome("),
             "nothing opens the home dialog, so all three of these rules are unreachable at once and "
             + "the checks above would still pass (TA-B4)");
     }

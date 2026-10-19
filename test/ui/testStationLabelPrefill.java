@@ -123,7 +123,7 @@ public class testStationLabelPrefill
     @Test
     public void testTheLastClickedStationIsSpentAfterOneUse() throws Exception
     {
-        String source = SourceOf.declaration("private void promptStationLabel(");
+        String source = SourceOf.declaration("    void promptStationLabel(");
 
         int used = source.indexOf("showing = lastStationTouched;");
 

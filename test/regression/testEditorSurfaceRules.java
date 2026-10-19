@@ -81,7 +81,7 @@ public class testEditorSurfaceRules
         // The vanishing is asked of the whole program, so a copy of the menu in another file cannot bring it back
         String code = SourceOf.allCode().replaceAll("\\s+", " ");
 
-        String source = SourceOf.declaration("public javax.swing.JMenu buildFacingMenu(final TileKey target)")
+        String source = SourceOf.declaration("    javax.swing.JMenu buildFacingMenu(final TileKey target)")
             .replaceAll("\\s+", " ");
 
         assertFalse(code.contains("if (facings.size() <= 1) return null;"),
@@ -194,7 +194,7 @@ public class testEditorSurfaceRules
         // `placementChanged(null)`, not `placementChanged()`: the door now says WHICH
         // placements it edited, and a radio edits none (D2-A1).  Matching the bare name
         // would be satisfied by the declaration itself, which is not a call.
-        boolean redrawn = codeOf("private javax.swing.JMenuItem radio(").contains("placementChanged(null)");
+        boolean redrawn = codeOf("    javax.swing.JMenuItem radio(").contains("placementChanged(null)");
 
         // The TOGGLE helper as well, which this used to leave out (TD-1).
         //
@@ -206,7 +206,7 @@ public class testEditorSurfaceRules
         //
         // Its whole declaration, not sixty lines after its signature: the window had to grow once already when
         // the method did (C11), and a declaration cannot borrow a placementChanged() from whatever comes next.
-        assertTrue(codeOf("private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey")
+        assertTrue(codeOf("    javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey")
                 .contains("placementChanged(null)"),
             "the menu's toggle helper writes the setup and only refreshes. Four settings go "
             + "through it, and one of them changes how a square splits - so the running layout "
@@ -254,8 +254,8 @@ public class testEditorSurfaceRules
         // while a second copy of the menu starts, and stays five; named place by place, either one is reported.
         final String[] facingWriters =
         {
-            "public javax.swing.JMenu buildFacingMenu(final TileKey target)",
-            "private void placeLocomotive(TileKey tile)",
+            "    javax.swing.JMenu buildFacingMenu(final TileKey target)",
+            "    void placeLocomotive(TileKey tile)",
             "public static void commitAndRecord(GraphLocAssign edit)",
             "private void placeFacing(String locName, String pointName,",
             "private void rememberPlacement(org.traincontrol.automation.Point point,",
@@ -296,7 +296,7 @@ public class testEditorSurfaceRules
             + " GraphLocAssign.commitAndRecord, which does both (REG8-B2)");
 
         for (String door : new String[] {
-            "private void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)",
+            "    void addLocomotiveSettings(javax.swing.JPopupMenu menu, TileKey target)",
             "private LayoutRightclickAutonomyMenu(TrainControlUI ui," })
         {
             assertTrue(codeOf(door).contains("GraphLocAssign.commitAndRecord("),
@@ -471,7 +471,7 @@ public class testEditorSurfaceRules
             + "decisions that have to agree are the shape that produced OB-037");
 
         assertEquals(outside("signalWindowOpen", "private boolean signalWindowOpen;",
-                "private void pairGuardSignals(Guard guard, TileKey station)",
+                "    void pairGuardSignals(Guard guard, TileKey station)",
                 "public boolean isFocusedOnSignals()"), 0,
             "the flag under the signal focus is read somewhere besides isFocusedOnSignals, so a de-clutter is decided"
             + " there without asking the one question annotationFor asks");
@@ -1551,7 +1551,7 @@ public class testEditorSurfaceRules
             + " the side the track comes in by, which is OB-182 as reported; and since OB-204 the sides"
             + " a train may actually have ARRIVED by, which leaves out the ones the operator has barred");
 
-        assertTrue(layout.contains("sidesOf(session.unbarredArrivalSides(target))"),
+        assertTrue(layout.contains("sidesOf(editor.session.unbarredArrivalSides(target))"),
             "the arrived-from menu offers the geometric sides again, so it and the paste prompt can"
             + " name different sides for the same square - and a side the operator barred is not one a"
             + " train arrived by at all (OB-204)");
@@ -1580,7 +1580,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheFacingMenuHoldsBothEndsOfTheTrain() throws Exception
     {
-        String facing = codeOf("public javax.swing.JMenu buildFacingMenu(final TileKey target)");
+        String facing = codeOf("    javax.swing.JMenu buildFacingMenu(final TileKey target)");
 
         assertTrue(facing.contains("buildArrivedFromMenu(target)"),
             "the facing menu does not carry the arrival side, so the track diagram viewer - which asks"
@@ -1661,7 +1661,7 @@ public class testEditorSurfaceRules
             + " which is the ordinary case rather than an edge one");
 
         // THE HOME DOOR SUPPLIES BOTH.
-        String home = codeOf("private void promptHome(TileKey tile)");
+        String home = codeOf("    void promptHome(TileKey tile)");
 
         assertTrue(home.contains("locomotiveAt(tile)"),
             "the home dialog does not ask what is parked at this square, so its new button can never"
@@ -1700,7 +1700,7 @@ public class testEditorSurfaceRules
         SourceOf.declaration("public Side facingOnTheRailway(TileKey square,");
 
         // The facing menu, and the program's code for the label, wherever each is (FR-136)
-        String panel = codeOf("public javax.swing.JMenu buildFacingMenu(final TileKey target)");
+        String panel = codeOf("    javax.swing.JMenu buildFacingMenu(final TileKey target)");
 
         assertTrue(panel.contains("session.facingOnTheRailway(target, showing)"),
             "the facing menu reads the stored value again rather than the railway, so it disagrees with"
@@ -2099,7 +2099,7 @@ public class testEditorSurfaceRules
     @Test
     public void testTheTailCanBeSetAndNotUnset() throws Exception
     {
-        String menu = codeOf("public javax.swing.JMenu buildArrivedFromMenu(final TileKey target)");
+        String menu = codeOf("    javax.swing.JMenu buildArrivedFromMenu(final TileKey target)");
 
         assertTrue(menu.contains("session.setArrivedFrom(target, side)"),
             "the menu no longer sets the arrival side at all, so the absence checked below is the"
@@ -2411,7 +2411,7 @@ public class testEditorSurfaceRules
     public void testBothAutonomyMenusNameTheSquareTheSameWay() throws Exception
     {
         // Gone, `SourceOf.declaration` fails: every heading and caption item in the editor is named by it
-        String describe = codeOf("private String describeTile(TileKey tile)");
+        String describe = codeOf("    String describeTile(TileKey tile)");
 
         assertTrue(describe.contains("session.describeTile(tile)"),
             "AutonomyEditorPanel names squares itself again instead of asking the session. The "
@@ -2812,7 +2812,7 @@ public class testEditorSurfaceRules
 
         // ONE DEFINITION OF ARMED, asked by both the methods that let go.  Written out twice they come
         // apart at the next tool, and a gesture missing from one list survives being cancelled.
-        assertTrue(codeOf("private void cancelPendingGesture()").contains(
+        assertTrue(codeOf("    void cancelPendingGesture()").contains(
             "anythingIsArmed()"),
             "cancelPendingGesture has its own copy of what 'armed' means again");
 
@@ -2967,7 +2967,7 @@ public class testEditorSurfaceRules
     @Test
     public void testExcludingALocomotiveStillWarnsAboutItsHome() throws Exception
     {
-        String prompt = codeOf("private void promptLocomotives(");
+        String prompt = codeOf("    void promptLocomotives(");
 
         assertTrue(prompt.contains("homeBrokenBy("),
             "the excluded-locomotives prompt no longer asks whether the exclusion breaks a home, so "
@@ -2978,7 +2978,7 @@ public class testEditorSurfaceRules
             + "as not asking");
 
         // And the other side of the same pair, which is where the rule is shared from.
-        String home = codeOf("private void promptHome(");
+        String home = codeOf("    void promptHome(");
 
         assertTrue(home.contains("homeChoices("),
             "the home prompt builds its list some other way than homeChoices, so the two sides of "
@@ -3506,7 +3506,7 @@ public class testEditorSurfaceRules
         // times each.  Gone, `SourceOf.declaration` fails: it is the only door onto blockedPoints, so if it
         // was renamed, rename it here; if it was removed, the restriction can no longer be edited at all and
         // this test should say so rather than be deleted
-        String body = codeOf("private void promptBlockingPoints(");
+        String body = codeOf("    void promptBlockingPoints(");
 
         // What is stored has to be read before the offer is built, because it is what decides the
         // offer.  Read after, it can only be used to tick boxes that are already on the list.
@@ -4076,14 +4076,14 @@ public class testEditorSurfaceRules
             + "exemption below is exempting doors that announce nothing (VD11-A1)");
 
         // Gone, `SourceOf.declaration` fails: the radio helper has gone, and the exemption with it should too
-        assertTrue(codeOf("private javax.swing.JMenuItem radio(").contains("placementChanged(null)"),
+        assertTrue(codeOf("    javax.swing.JMenuItem radio(").contains("placementChanged(null)"),
             "radio() no longer announces, so every radio door on this menu is silent and the "
             + "exemption is hiding them (VD11-A1)");
 
         // AND `toggle`, WHICH THE SCAN EXEMPTS THE SAME WAY (GSE-C1).  Each write is asked about its own lambda now,
         // and a checkbox's lambda says nothing: `toggle` announces after the action, for every checkbox on these
         // menus - so the exemption is only sound while the helper's own body still does.
-        assertTrue(codeOf("private javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey,")
+        assertTrue(codeOf("    javax.swing.JCheckBoxMenuItem toggle(String text, String tooltipKey,")
             .contains("placementChanged(null)"),
             "toggle() no longer announces, so every checkbox door on these menus is silent and the exemption is "
             + "hiding them (GSE-C1)");

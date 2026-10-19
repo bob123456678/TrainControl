@@ -584,6 +584,124 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
+     * The autonomy editor's helpers (FR-136): the field of AutonomyEditorPanel that holds each, the file it is declared
+     * in, and its class name - for a static delegator, which reaches it as `Class.method(`.
+     */
+    private static final String[][] EDITOR_HELPERS = {
+        { "tileMenus", "src/org/traincontrol/gui/EditorTileMenus.java", "EditorTileMenus" },
+    };
+
+    /**
+     * The autonomy editor's delegators and the helpers they hand to do not call each other for ever, and each delegator
+     * is one call to its helper (FR-136).
+     *
+     * AutonomyEditorPanel keeps each method that something outside a moved cluster calls as a one-line call to a
+     * package-private helper, which calls back into the panel through `editor.`, or `AutonomyEditorPanel.` for a static.
+     * Both loops are read: a delegator calling its own name instead of the helper's, and a helper's method calling back
+     * into the delegator that leads to it.  Either is a StackOverflowError the compiler accepts.  Every method of the
+     * panel named like one of a helper's is read, since a delegator rewritten that way names the helper nowhere; and each
+     * must be that one call, so a claim that reads the helper's body is reading what the panel runs.
+     *
+     * MUTATION: make EditorTileMenus.buildFacingMenu begin `if (target == null) return editor.buildFacingMenu(target);`,
+     * or make the panel's buildFacingMenu `return buildFacingMenu(target);`, and this fails.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testAnEditorDelegatorAndItsHelperDoNotCallEachOtherForEver() throws Exception
+    {
+        List<String> panel = Files.readAllLines(
+            new File("src/org/traincontrol/gui/AutonomyEditorPanel.java").toPath(), StandardCharsets.UTF_8);
+
+        for (String[] each : EDITOR_HELPERS)
+        {
+            File source = new File(each[1]);
+
+            assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+
+            List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
+
+            // What each side calls on the other: the panel through its field (or `Class.` for a static), the helper
+            // through `editor.` (or `AutonomyEditorPanel.` for a static)
+            java.util.Map<String, java.util.Set<String>> panelCalls = merged(
+                callsThrough(panel, each[0] + "."), callsThrough(panel, each[2] + "."));
+            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
+                callsThrough(helper, "editor."), callsThrough(helper, "AutonomyEditorPanel."));
+
+            int checked = 0;
+
+            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : panelCalls.entrySet())
+            {
+                for (String handedTo : delegator.getValue())
+                {
+                    checked++;
+
+                    java.util.Set<String> back = helperCalls.get(handedTo);
+
+                    assertFalse(back != null && back.contains(delegator.getKey()),
+                        "AutonomyEditorPanel." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
+                        + ", which calls back into AutonomyEditorPanel." + delegator.getKey()
+                        + " - a loop the compiler accepts");
+                }
+            }
+
+            assertTrue(checked > 0, "AutonomyEditorPanel hands nothing to " + each[0] + ", so this checks nothing");
+
+            java.util.Set<String> helperNames = new java.util.HashSet<>();
+
+            for (String line : helper)
+            {
+                String name = methodDeclaredAt(line);
+
+                if (name != null) helperNames.add(name);
+            }
+
+            int delegators = 0;
+
+            for (int i = 0; i < panel.size(); i++)
+            {
+                String name = methodDeclaredAt(panel.get(i));
+
+                if (name == null || !helperNames.contains(name)) continue;
+
+                delegators++;
+
+                String declaration = panel.get(i).trim();
+
+                // A declaration whose parameters run onto the next lines
+                for (int k = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < panel.size(); k++)
+                {
+                    declaration += " " + panel.get(k).trim();
+                }
+
+                int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1,
+                    declaration.lastIndexOf(')')));
+
+                List<String> statements = new ArrayList<>();
+
+                for (String line : bodyOf(panel, i))
+                {
+                    assertFalse(callsItself(line.replace("this." + name + "(", name + "("), name, arity),
+                        "AutonomyEditorPanel." + name + " calls itself instead of " + each[0] + "." + name
+                        + ".  Line: " + line.trim());
+
+                    String code = withoutComments(line).replace("{", "").replace("}", "").trim();
+
+                    if (!code.isEmpty()) statements.add(code);
+                }
+
+                assertTrue(statements.size() == 1 && (statements.get(0).contains(each[0] + "." + name + "(")
+                        || statements.get(0).contains(each[2] + "." + name + "(")),
+                    "AutonomyEditorPanel." + name + " is named like " + each[2] + "'s method but is not one call to it,"
+                    + " so the panel runs code the claims that read " + each[2] + " do not see: " + statements);
+            }
+
+            assertTrue(delegators > 0, "no method of AutonomyEditorPanel is named like one of " + each[2]
+                + "'s, so this checks nothing");
+        }
+    }
+
+    /**
      * Whether a line calls the wrapper's own name from inside its own body - qualified or not.
      *
      * The bug this file was written for was `this.syncWithCS2()`, and `this.` + name + `(` is what

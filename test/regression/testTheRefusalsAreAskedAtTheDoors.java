@@ -495,7 +495,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // is added somewhere else, so the places are named with the calls each makes - six, beside the declaration.
         final Object[][] places =
         {
-            {"private void placeLocomotive(TileKey tile)", 1},
+            {"    void placeLocomotive(TileKey tile)", 1},
             {"public static void commitAndRecord(GraphLocAssign edit)", 2},
             {"private LayoutRightclickAutonomyMenu(TrainControlUI ui,", 1},
             {"static String copyToPlaceOn(", 1},
