@@ -216,7 +216,8 @@ public class testTheGoldenLayoutHoldsTogether
      * `reversalsWithoutLength` is armed by `measuresAnyTrack()`: ONE measured square anywhere turns
      * the notice on for every square trains turn round at. When the finding was written his railway
      * had six measured squares, all six on one test page, against 71 points - so the notice was armed
-     * and had nothing to say about almost every reversal it covered. It measures zero today.
+     * and had nothing to say about almost every reversal it covered.  On his data the arming is consistent
+     * either way, so a made-up store with no measured square is what proves the rule (FR-136 1b).
      *
      * **This measures rather than demands.** How much of his railway he has measured is his business
      * and changes as he works; a floor here would fail on a Tuesday for no defect. What it refuses is
