@@ -1,8 +1,5 @@
 package regression;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.assertEquals;
@@ -10,6 +7,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Every door that changes the railway asks whether it may.
@@ -89,18 +87,10 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testEveryPageDoorAsksWhoseFileTheNameIs() throws Exception
     {
-        String window = new String(Files.readAllBytes(Paths.get(WINDOW)), StandardCharsets.UTF_8).replace("\r\n", "\n");
-
         for (String door : new String[] {"private void duplicateOrRenameCurrentLayout(", "private void combineLinkedPages(",
             "private void duplicateLayoutMenuItemActionPerformed("})
         {
-            int at = window.indexOf(door);
-
-            assertTrue(at >= 0, door + " has gone, so this checked nothing");
-
-            int next = window.indexOf("\n    private ", at + door.length());
-
-            String body = window.substring(at, next < 0 ? window.length() : next);
+            String body = SourceOf.declaration(door);
 
             assertTrue(body.contains("LayoutPageEdit.pageUsingTheFileOf("), door + " does not ask whose file the new page's"
                 + " name is, so a name differing only in case - or in a character a file name cannot hold - writes over"
@@ -119,23 +109,13 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheHandDoorSendsAsAHandSend() throws Exception
     {
-        String window = new String(Files.readAllBytes(Paths.get(WINDOW)), StandardCharsets.UTF_8).replace("\r\n", "\n");
-
-        int at = window.indexOf("void sendATrainByHand(");
-
-        assertTrue(at >= 0, "sendATrainByHand has gone, so this checked nothing");
-
-        int next = window.indexOf("\n    public ", at);
-
-        String body = window.substring(at, next < 0 ? window.length() : next);
+        String body = SourceOf.declaration("void sendATrainByHand(");
 
         assertTrue(body.contains(".executePathByHand("), "the hand door sends its train as an ordinary dispatch, which the"
             + " cap on trains out refuses and counts during a run (BCR-C1)");
 
         assertFalse(body.contains(".executePath("), "the hand door still sends a train as an ordinary dispatch somewhere");
     }
-
-    private static final String WINDOW = "src/org/traincontrol/gui/TrainControlUI.java";
 
     private static final String EDITOR = "refuseWhileEditorOpen()";
 
@@ -151,7 +131,8 @@ public class testTheRefusalsAreAskedAtTheDoors
     private static final String GATE = "refusedToSendATrain(";
 
     /**
-     * Every door, the refusal it must ask for, and why that door needs it.
+     * Every door, the refusal it must ask for, and why that door needs it.  A door is named by the start of its
+     * declaration, found wherever the program keeps it.
      *
      * A named list rather than a count, following this suite's convention: a count says something is
      * wrong and a list says what. Adding a door means adding a line here with its reason, which is the
@@ -160,51 +141,51 @@ public class testTheRefusalsAreAskedAtTheDoors
     private static final String[][] DOORS =
     {
         // THE FOUR 38ccbfc8 WAS FILED FOR.
-        {"executeTimetableActionPerformed", GATE,
+        {"private void executeTimetableActionPerformed(", GATE,
             "a timetable starts trains, and an editor holds the diagram they would run on"},
-        {"requestReturnToHome", GATE,
+        {"public void requestReturnToHome(", GATE,
             "Return Home is a timetable by another name and starts trains the same way"},
-        {"switchCSLayoutMenuItemActionPerformed", SETUP + "|" + EDITOR,
+        {"private void switchCSLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "it replaces the whole diagram - during a run the capture is skipped BECAUSE trains are "
             + "moving, the stop controls go, and runLocomotives keeps driving"},
-        {"chooseLocalDataFolderMenuItemActionPerformed", SETUP + "|" + EDITOR,
+        {"private void chooseLocalDataFolderMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "swapping the layout folder replaces the diagram, for the same reason"},
-        {"initializeLocalLayoutMenuItemActionPerformed", SETUP,
+        {"private void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
             "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
 
         // AND THE REST, which were longhand at four doors before the two methods collected them.
-        {"startAutonomyActionPerformed", GATE,
+        {"private void startAutonomyActionPerformed(", GATE,
             "starting autonomy against a diagram somebody is still editing"},
-        {"sendATrainByHand", GATE,
+        {"void sendATrainByHand(", GATE,
             "the one door both hand doors send through - the Auto tab's list and the diagram's destinations; the Auto"
             + " tab's own copy never asked about an editor (RLV12-B1)"},
-        {"addLocomotiveMenuItemActionPerformed", AUTONOMY,
+        {"private void addLocomotiveMenuItemActionPerformed(", AUTONOMY,
             "MT-141: no modification to the locomotive database while the layout is running"},
-        {"promptTrainLength", AUTONOMY,
+        {"public void promptTrainLength(", AUTONOMY,
             "RSA-A1, MT-141: a train's length is part of the locomotive database, and a run hands the track behind a"
             + " train back by it"},
-        {"applyTrainLength", AUTONOMY,
+        {"public void applyTrainLength(Locomotive l, int units)", AUTONOMY,
             "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
-        {"syncFullLocStateMenuItemActionPerformed", AUTONOMY,
+        {"private void syncFullLocStateMenuItemActionPerformed(", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
-        {"deleteLayoutMenuItemActionPerformed", SETUP + "|" + EDITOR,
+        {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
-        {"duplicateOrRenameCurrentLayout", SETUP + "|" + EDITOR,
+        {"private void duplicateOrRenameCurrentLayout(", SETUP + "|" + EDITOR,
             "renaming a page moves what the setup and the editor both point at"},
-        {"combineLinkedPages", SETUP + "|" + EDITOR,
+        {"private void combineLinkedPages(", SETUP + "|" + EDITOR,
             "combining rewrites several pages into one"},
-        {"AddRouteButtonActionPerformed", EDITOR,
+        {"private void AddRouteButtonActionPerformed(", EDITOR,
             "a route is part of the diagram the editor holds"},
-        {"editRoute", EDITOR,
+        {"public void editRoute(String routeName)", EDITOR,
             "the same, from the other door - and this one asks from a worker thread, which is why the "
             + "refusal posts its dialog rather than showing it"},
-        {"doSync", AUTONOMY,
+        {"public void doSync(", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
         // NOT the excluded-page label (`openAutonomyEditorIfItCan`), since GUI-C8: it opens the editor, and opening
         // with an editor already open is not refused anywhere - `openLayoutEditor` brings that window forward, which
         // is what the Edit item it stands for does (`whyAutonomyEditorCannotOpen` returns null for an open editor).
         // Asking the refusal first showed "Close the editor first" in exactly the state the Edit item handles.
-        {"refreshAutonomyPrompt", EDITOR,
+        {"public void refreshAutonomyPrompt(", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
             + "cannot grey itself the way the menu does - its Load button asks (loading saves the setup "
             + "under an open editor); its Fix Setup button opens the editor, which brings an open one "
@@ -217,18 +198,13 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testEveryDoorStillAsksBeforeItActs() throws Exception
     {
-        String source = withoutComments(read(WINDOW));
-
         List<String> silent = new ArrayList<>();
 
         for (String[] door : DOORS)
         {
-            String body = bodyOf(source, door[0]);
-
-            assertFalse(body.isEmpty(),
-                "cannot find " + door[0] + " in " + WINDOW + " - if it was renamed, rename it here "
-                + "too; if it was removed, remove its line. A door this list cannot find is a door "
-                + "this test stops checking, silently");
+            // A door this list cannot find fails by itself, naming it: renamed, rename it here too; removed, remove
+            // its line.
+            String body = code(door[0]);
 
             for (String needed : door[1].split("\\|"))
             {
@@ -260,9 +236,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheOneGateAsksTheEditorTheSetupAndThePower() throws Exception
     {
-        String gate = bodyOf(withoutComments(read(WINDOW)), "whyNoTrainMayBeSent");
-
-        assertFalse(gate.isEmpty(), "cannot find whyNoTrainMayBeSent in " + WINDOW);
+        String gate = code("String whyNoTrainMayBeSent(");
 
         for (String asked : new String[] {"anEditorIsOpenOrOnItsWay()", "whyAutonomyStartIsRefused()", "whyAHandSendIsRefused()",
             "getPowerState()"})
@@ -270,17 +244,18 @@ public class testTheRefusalsAreAskedAtTheDoors
             assertTrue(gate.contains(asked), "the one gate every sending door asks no longer asks " + asked);
         }
 
-        String editor = bodyOf(withoutComments(read(WINDOW)), "anEditorIsOpenOrOnItsWay");
+        String editor = code("boolean anEditorIsOpenOrOnItsWay(");
 
         for (String asked : new String[] {"isLayoutEditorOpen()", "this.editorOnItsWay"})
         {
             assertTrue(editor.contains(asked), "the gate's question about the editor no longer asks " + asked);
         }
 
-        for (String hand : new String[] {"src/org/traincontrol/gui/AutoLocomotiveStatus.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java"})
+        // The two hand doors are classes of their own, read whole.
+        for (String hand : new String[] {"public final class AutoLocomotiveStatus extends",
+            "final class LayoutRightclickAutonomyMenu extends"})
         {
-            String source = withoutComments(read(hand));
+            String source = SourceOf.withoutComments(SourceOf.fileDeclaring(hand));
 
             assertTrue(source.contains("sendATrainByHand("), hand + " no longer sends through the one door");
 
@@ -304,8 +279,6 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheRouteRefusalIsAskedAgainAfterTheDialog() throws Exception
     {
-        String source = withoutComments(read(WINDOW));
-
         // The door, what it is for, and what it writes
         String[][] doors =
         {
@@ -319,9 +292,7 @@ public class testTheRefusalsAreAskedAtTheDoors
 
         for (String[] door : doors)
         {
-            String body = bodyAt(source, door[0]);
-
-            assertFalse(body.isEmpty(), "cannot find " + door[0] + " in " + WINDOW + " - if it was renamed, rename it here too");
+            String body = code(door[0]);
 
             int firstWrite = body.length();
 
@@ -351,31 +322,15 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * A method's body by its whole declaration, brace-matched - for a method with an overload, where `bodyOf` finds the
-     * first declaration of the name.
+     * A declaration's code, found wherever the program keeps it, with its comments blanked: a comment mentioning a
+     * refusal is not a door asking for it.
      *
-     * @param source the source, comments out
-     * @param declaration the declaration as written, up to its closing bracket
-     * @return the body, or "" when the declaration is not there
+     * @param signature enough of the declaration to name it once
+     * @return the declaration, braces included
      */
-    private static String bodyAt(String source, String declaration)
+    private static String code(String signature)
     {
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at);
-
-        int depth = 0;
-
-        for (int i = open; i >= 0 && i < source.length(); i++)
-        {
-            if (source.charAt(i) == '{') depth++;
-
-            if (source.charAt(i) == '}' && --depth == 0) return source.substring(open, i + 1);
-        }
-
-        return "";
+        return SourceOf.withoutComments(SourceOf.declaration(signature));
     }
 
     /**
@@ -392,7 +347,8 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheListOfDoorsIsStillComplete() throws Exception
     {
-        String source = withoutComments(read(WINDOW));
+        // Over the whole program's code.
+        String source = SourceOf.allCode();
 
         // One of each occurrence is the declaration of the method itself.
         int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1 + occurrences(source, GATE) - 1;
@@ -409,13 +365,13 @@ public class testTheRefusalsAreAskedAtTheDoors
 
         for (String[] door : DOORS)
         {
-            String body = bodyOf(source, door[0]);
+            String body = code(door[0]);
 
             inDeclaredDoors += occurrences(body, EDITOR) + occurrences(body, AUTONOMY) + occurrences(body, GATE);
         }
 
         assertEquals(inDeclaredDoors, asked,
-            "there are " + asked + " places in " + WINDOW + " that ask one of the two refusals, and "
+            "there are " + asked + " places in the program that ask one of the three refusals, and "
             + inDeclaredDoors + " of them are inside the doors declared above. More asked than "
             + "declared means a door was added without a line here saying which it is and why it "
             + "needs one - and an undeclared door is one this class stops checking, silently");
@@ -446,39 +402,30 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
     {
-        String[][] doors =
-        {
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "guards",
-                "the diagram's Place and Remove items - W21-B3 and TWV-B5 are these two"},
-            {"src/org/traincontrol/gui/TrainControlUI.java", "guards",
-                "the diagram's paste door - TWV-B4, which discarded the refusal AND cleared the "
-                + "clipboard, so a train cut with Control+X was on no square and on no clipboard"},
-            {"src/org/traincontrol/gui/GraphLocAssign.java", "guards",
-                "the assign dialog - GST-B2, where a refused placement still wrote the train's length, "
-                + "speed and functions"},
-        };
-
+        // The doors, for the report: the diagram menu's Place and Remove items (W21-B3 and TWV-B5 are these two), the
+        // diagram's paste door (TWV-B4, which discarded the refusal AND cleared the clipboard, so a train cut with
+        // Control+X was on no square and on no clipboard), and the assign dialog (GST-B2, where a refused placement
+        // still wrote the train's length, speed and functions).  Asked of the whole program, so a door that moves to
+        // another file is still counted: outside the model's own calls, five answers are tested today - two in the
+        // menu, one in the dialog, and the paste and the rebuild's put-back in the window.
         List<String> wrong = new ArrayList<>();
 
-        for (String[] door : doors)
+        String source = SourceOf.allCode();
+
+        int calls = occurrences(source, "moveLocomotive(");
+
+        int guarded = countGuarded(source);
+
+        if (calls == 0)
         {
-            String source = withoutComments(read(door[0]));
+            wrong.add("no door places a train at all any more, so this rule has stopped being checked rather than"
+                + " being kept");
+        }
 
-            int calls = occurrences(source, "moveLocomotive(");
-
-            int guarded = occurrences(source, "if (!") > 0
-                ? countGuarded(source) : 0;
-
-            if ("guards".equals(door[1]) && guarded == 0)
-            {
-                wrong.add(door[0] + " no longer uses moveLocomotive's answer anywhere - " + door[2]);
-            }
-
-            if (calls == 0)
-            {
-                wrong.add(door[0] + " no longer places a train at all, so this rule has stopped being "
-                    + "checked there rather than being kept - " + door[2]);
-            }
+        if (guarded < 5)
+        {
+            wrong.add("only " + guarded + " calls of moveLocomotive use its answer, where the diagram menu's two, the assign"
+                + " dialog's one and the window's paste and put-back made five");
         }
 
         assertEquals(wrong.toString(), "[]",
@@ -502,17 +449,13 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testThePlacementDoorsKeepAHeadingATrainCanLeaveBy() throws Exception
     {
-        for (String door : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/GraphLocAssign.java", "src/org/traincontrol/gui/AutonomyEditorPanel.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java"})
-        {
-            String source = withoutComments(read(door));
-
-            assertFalse(source.contains("placeableFacingsFor("), door + " still chooses a placed train's heading among"
-                + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
-            assertTrue(source.contains("departableFacingsFor("), door + " no longer asks which headings a train can"
-                + " leave by (OB-284)");
-        }
+        // Asked of the whole program, so a door that moves is still counted: `placeableFacingsFor` is named by its
+        // declaration and by the one use inside the session, and by no door; `departableFacingsFor` is named by its
+        // declaration and by the six places the four doors ask it.
+        assertEquals(SourceOf.occurrences("placeableFacingsFor("), 2, "a door chooses a placed train's heading among"
+            + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
+        assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 7, "a door no longer asks which headings a train can"
+            + " leave by (OB-284)");
     }
 
     /**
@@ -534,16 +477,9 @@ public class testTheRefusalsAreAskedAtTheDoors
     {
         List<String> found = new ArrayList<>();
 
-        List<java.nio.file.Path> sources = new ArrayList<>();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(java.nio.file.Paths.get("src")))
+        // Every file of the program, comments blanked.
         {
-            walk.filter(p -> p.toString().endsWith(".java")).forEach(sources::add);
-        }
-
-        for (java.nio.file.Path path : sources)
-        {
-            String source = withoutComments(read(path.toString().replace('\\', '/')));
+            String source = SourceOf.allCode();
 
             for (int at = source.indexOf("moveLocomotive("); at >= 0; at = source.indexOf("moveLocomotive(", at + 1))
             {
@@ -576,15 +512,19 @@ public class testTheRefusalsAreAskedAtTheDoors
                 // The declaration's own parameter, and every call that passes false, refuse.
                 if (barred.startsWith("boolean ") || "false".equals(barred)) continue;
 
-                found.add(path.getFileName() + ": " + source.substring(at, end + 1));
+                found.add(source.substring(at, end + 1));
             }
         }
 
-        assertEquals(found.toString(), "[Layout.java: moveLocomotive(locomotive, targetPoint, purge, evenOntoABarredCopy, false), "
-            + "GraphLocAssign.java: moveLocomotive(getLoc(), p.getName(), false, true), "
-            + "LayoutRightclickAutonomyMenu.java: moveLocomotive(locName, pointName, false, true), "
-            + "TrainControlUI.java: moveLocomotive(was.getKey(), back.getName(), false, true, true), "
-            + "TrainControlUI.java: moveLocomotive(placing.getName(), point.getName(), false, true)]",
+        // The calls, whichever file holds them: the model's own, the assign dialog, the diagram menu's Place, the
+        // rebuild's put-back and the paste.
+        java.util.Collections.sort(found);
+
+        assertEquals(found.toString(), "[moveLocomotive(getLoc(), p.getName(), false, true), "
+            + "moveLocomotive(locName, pointName, false, true), "
+            + "moveLocomotive(locomotive, targetPoint, purge, evenOntoABarredCopy, false), "
+            + "moveLocomotive(placing.getName(), point.getName(), false, true), "
+            + "moveLocomotive(was.getKey(), back.getName(), false, true, true)]",
             "a door other than the rebuild's put-back may stand a train on a copy of a station trains may not arrive at"
             + " (REG4-C3): " + found);
     }
@@ -614,36 +554,6 @@ public class testTheRefusalsAreAskedAtTheDoors
         return found;
     }
 
-    /**
-     * A method's body, by name, brace-matched from its declaration.
-     */
-    private static String bodyOf(String source, String method) throws Exception
-    {
-        java.util.regex.Matcher at = java.util.regex.Pattern.compile(
-            "\\b" + java.util.regex.Pattern.quote(method) + "\\s*\\([^;{]*\\)[^;{]*\\{").matcher(source);
-
-        while (at.find())
-        {
-            int open = source.indexOf('{', at.start());
-
-            int depth = 0;
-
-            for (int i = open; i < source.length(); i++)
-            {
-                if (source.charAt(i) == '{') depth++;
-
-                if (source.charAt(i) == '}')
-                {
-                    depth--;
-
-                    if (depth == 0) return source.substring(open, i + 1);
-                }
-            }
-        }
-
-        return "";
-    }
-
     private static int occurrences(String source, String needle)
     {
         int count = 0;
@@ -651,20 +561,6 @@ public class testTheRefusalsAreAskedAtTheDoors
         for (int at = source.indexOf(needle); at >= 0; at = source.indexOf(needle, at + 1)) count++;
 
         return count;
-    }
-
-    private static String read(String path) throws Exception
-    {
-        return new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
-    }
-
-    /**
-     * Comments out, because every one of these calls is discussed in a comment beside another one, and
-     * a comment mentioning a refusal is not a door asking for it.
-     */
-    private static String withoutComments(String source)
-    {
-        return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)//[^\n]*", "");
     }
 
     /**
@@ -679,10 +575,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheDiagramsDestinationSendsOnTheRailwayItsPathsCameFrom() throws Exception
     {
-        String item = bodyOf(withoutComments(read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java")),
-            "destinationItem");
-
-        assertFalse(item.isEmpty(), "cannot find destinationItem");
+        String item = code("private JMenuItem destinationItem(");
 
         assertTrue(item.contains("sendATrainByHand("), "the diagram's destination no longer sends through the one door");
 
@@ -712,9 +605,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testTheDoorsCarryTheStopsCountedWhereTheyChose() throws Exception
     {
-        String window = withoutComments(read(WINDOW));
-
-        String home = bodyOf(window, "requestReturnToHome");
+        String home = code("public void requestReturnToHome(");
 
         assertTrue(home.contains(".executeTimetable(stopsAtPress)"), "Return Home runs its plan with the stops counted"
             + " when it starts running, not when it was pressed - a Yes while it plans does not end it (RSA2-C1)");
@@ -726,14 +617,12 @@ public class testTheRefusalsAreAskedAtTheDoors
             && home.indexOf("repaintAutoLocList(true)") < home.indexOf("loadReturnToHomeTimetable()"),
             "Return Home does not refresh the Auto tab before it plans, so its paths stay offered (RSA2-C3)");
 
-        String hand = bodyOf(window, "sendATrainByHand");
+        String hand = code("void sendATrainByHand(");
 
         assertTrue(hand.contains("stopsOrdered()") && hand.contains("answered, stopsAtClick)"), "a hand send does not"
             + " carry the stops counted at the click (RSA2-C2)");
 
-        String layout = withoutComments(read("src/org/traincontrol/automation/Layout.java"));
-
-        String loop = bodyOf(layout, "runLocomotive");
+        String loop = code("public void runLocomotive(");
 
         assertTrue(loop.indexOf("stopsOrdered.get()") >= 0 && loop.indexOf("stopsOrdered.get()") < loop.indexOf("pickPath(")
             && loop.contains("ALWAYS_REVERSE, stopsAtChoice)"), "autonomy does not count the stops before it chooses, and"
@@ -754,16 +643,9 @@ public class testTheRefusalsAreAskedAtTheDoors
     {
         List<String> found = new ArrayList<>();
 
-        List<java.nio.file.Path> sources = new ArrayList<>();
-
-        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(java.nio.file.Paths.get("src")))
+        // Every file of the program, comments blanked.
         {
-            walk.filter(p -> p.toString().endsWith(".java")).forEach(sources::add);
-        }
-
-        for (java.nio.file.Path path : sources)
-        {
-            String source = withoutComments(read(path.toString().replace('\\', '/')));
+            String source = SourceOf.allCode();
 
             for (int at = source.indexOf("moveLocomotive("); at >= 0; at = source.indexOf("moveLocomotive(", at + 1))
             {
@@ -791,11 +673,11 @@ public class testTheRefusalsAreAskedAtTheDoors
 
                 if (last.startsWith("boolean ") || "false".equals(last)) continue;
 
-                found.add(path.getFileName() + ": " + source.substring(at, end + 1));
+                found.add(source.substring(at, end + 1));
             }
         }
 
-        assertEquals(found.toString(), "[TrainControlUI.java: moveLocomotive(was.getKey(), back.getName(), false, true, true)]",
+        assertEquals(found.toString(), "[moveLocomotive(was.getKey(), back.getName(), false, true, true)]",
             "a door other than the rebuild's put-back may stand a train on a copy that is no station (RSA17-A1): " + found);
     }
 }
