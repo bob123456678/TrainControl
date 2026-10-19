@@ -16,6 +16,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * A setup edit that could not be applied says so, and is still there after the exit (MT-267, MT-326).
@@ -1559,14 +1560,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     @Test
     public void testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn() throws Exception
     {
-        final String window = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        final int start = window.indexOf("public void changeLocAddress(Locomotive l, MouseEvent evt)");
-
-        assertTrue(start >= 0, "precondition: changeLocAddress(Locomotive, MouseEvent) has gone");
-
-        final String body = window.substring(start, window.indexOf("\n    }", start)).replaceAll("//[^\n]*", "");
+        final String body = SourceOf.declaration("public void changeLocAddress(Locomotive l, MouseEvent evt)")
+            .replaceAll("//[^\n]*", "");
 
         final int refresh = body.indexOf("refreshLocSelectorList()");
 
