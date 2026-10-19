@@ -8,7 +8,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -94,7 +93,7 @@ public class testWhatCountsAsAParkingSquare
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
     }
 
     /**
@@ -254,6 +253,6 @@ public class testWhatCountsAsAParkingSquare
             if (station.equals(session.getStationIndex().nameOf(tile))) return square;
         }
 
-        throw new SkipException("this railway no longer has a station called " + station);
+        throw new AssertionError("this railway no longer has a station called " + station);
     }
 }

@@ -772,7 +772,7 @@ public class testConditionOutline
 
         if (!file.isFile())
         {
-            throw new org.testng.SkipException("no frozen copy of the operator's routes at " + file);
+            throw new AssertionError("no frozen copy of the operator's routes at " + file);
         }
 
         String text = new String(java.nio.file.Files.readAllBytes(file.toPath()),

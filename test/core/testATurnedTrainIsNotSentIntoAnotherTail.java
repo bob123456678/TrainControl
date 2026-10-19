@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -76,7 +75,7 @@ public class testATurnedTrainIsNotSentIntoAnotherTail
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         for (Point point : layout.getPoints())
         {
@@ -85,7 +84,7 @@ public class testATurnedTrainIsNotSentIntoAnotherTail
 
         List<String> names = model.getLocList();
 
-        if (names.size() < 2) throw new SkipException("this fixture needs two locomotives");
+        if (names.size() < 2) throw new AssertionError("this fixture needs two locomotives");
 
         turned = model.getLocByName(names.get(0));
         parked = model.getLocByName(names.get(1));

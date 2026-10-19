@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -98,7 +97,7 @@ public class testTheLoaderDoesNotCallAStationANonStation
     {
         List<String> names = model.getLocList();
 
-        if (names.size() < 2) throw new SkipException("this fixture needs two locomotives");
+        if (names.size() < 2) throw new AssertionError("this fixture needs two locomotives");
 
         String onTheBarredCopy = names.get(0);
         String onThePlainCopy = names.get(1);

@@ -3,7 +3,6 @@ package core;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -107,7 +106,7 @@ public class testStagingSkipsALegWithNoSpeed
         }
         catch (Exception e)
         {
-            throw new SkipException("simulation could not be enabled: " + e.getMessage());
+            throw new AssertionError("simulation could not be enabled: " + e.getMessage());
         }
 
         assertTrue(layout.isSimulate(), "simulation must be on before anything is asked to move");

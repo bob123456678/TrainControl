@@ -473,7 +473,7 @@ public class testLocomotiveExclusions
             if (candidate != null && !candidate.equals(notThisOne)) return candidate;
         }
 
-        throw new org.testng.SkipException(
+        throw new AssertionError(
             "the locomotive database holds only one locomotive, so there is no second one to ask about");
     }
 

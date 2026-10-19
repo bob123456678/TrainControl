@@ -294,7 +294,7 @@ public class testRouteTilePlacement
 
         if (!folder.isDirectory())
         {
-            throw new org.testng.SkipException("no test/test_layout_snapshot to check");
+            throw new AssertionError("no test/test_layout_snapshot to check");
         }
 
         String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";

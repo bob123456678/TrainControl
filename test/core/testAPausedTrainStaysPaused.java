@@ -16,7 +16,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -82,7 +81,7 @@ public class testAPausedTrainStaysPaused
     {
         File frozen = new File("test/operator_layout");
 
-        if (!frozen.isDirectory()) throw new SkipException("test/operator_layout is not here");
+        if (!frozen.isDirectory()) throw new AssertionError("test/operator_layout is not here");
 
         // HIS FROZEN RAILWAY, for the setup's claim; the ring's claims load their own configuration over it
         sandbox = support.LayoutSandbox.open(frozen);

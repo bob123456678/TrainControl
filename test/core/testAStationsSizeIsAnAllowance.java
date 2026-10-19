@@ -9,7 +9,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -121,7 +120,7 @@ public class testAStationsSizeIsAnAllowance
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         // Nothing of his standing about, so every claim is about this class's train alone.
         for (Point point : layout.getPoints())

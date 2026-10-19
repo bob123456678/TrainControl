@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -70,7 +69,7 @@ public class testTrainsComeHomeFromAPinnedArrangement
 
         if (!frozen.isDirectory())
         {
-            throw new SkipException("test/operator_layout is not here - this suite runs his stations");
+            throw new AssertionError("test/operator_layout is not here - this suite runs his stations");
         }
 
         sandbox = support.LayoutSandbox.open(frozen);
@@ -94,7 +93,7 @@ public class testTrainsComeHomeFromAPinnedArrangement
 
         if (layout == null || !layout.isValid())
         {
-            throw new SkipException("his setup did not parse here: " + Layout.getLastError());
+            throw new AssertionError("his setup did not parse here: " + Layout.getLastError());
         }
 
         layout.setSimulate(true);

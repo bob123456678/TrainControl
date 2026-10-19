@@ -8,7 +8,6 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -57,7 +56,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     {
         File frozen = new File("test/operator_layout");
 
-        if (!frozen.isDirectory()) throw new SkipException("test/operator_layout is not here");
+        if (!frozen.isDirectory()) throw new AssertionError("test/operator_layout is not here");
 
         sandbox = support.LayoutSandbox.open(frozen);
 
@@ -89,7 +88,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         layout = model.getAutoLayout();
 
-        if (layout == null || !layout.isValid()) throw new SkipException("his setup did not parse: " + Layout.getLastError());
+        if (layout == null || !layout.isValid()) throw new AssertionError("his setup did not parse: " + Layout.getLastError());
 
         layout.setSimulate(true);
         layout.setMinDelay(0);

@@ -13,7 +13,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -84,7 +83,7 @@ public class testAnImportedFacingGuessCanStart
     {
         File file = new File(new File(sandbox.getFolder(), "config" + File.separator + "autonomy_legacy"), "autonomy.json");
 
-        if (!file.exists()) throw new SkipException("this fixture carries no legacy autonomy.json at " + file);
+        if (!file.exists()) throw new AssertionError("this fixture carries no legacy autonomy.json at " + file);
 
         JSONObject legacy = new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
 
@@ -542,7 +541,7 @@ public class testAnImportedFacingGuessCanStart
     {
         File file = new File(new File(sandbox.getFolder(), "config" + File.separator + "autonomy_legacy"), "autonomy.json");
 
-        if (!file.exists()) throw new SkipException("this fixture carries no legacy autonomy.json at " + file);
+        if (!file.exists()) throw new AssertionError("this fixture carries no legacy autonomy.json at " + file);
 
         return new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
     }

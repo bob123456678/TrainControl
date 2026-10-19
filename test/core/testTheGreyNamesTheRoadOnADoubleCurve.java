@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -71,7 +70,7 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         for (Point point : layout.getPoints())
         {
@@ -80,7 +79,7 @@ public class testTheGreyNamesTheRoadOnADoubleCurve
 
         List<String> names = model.getLocList();
 
-        if (names.isEmpty()) throw new SkipException("this fixture has no locomotive");
+        if (names.isEmpty()) throw new AssertionError("this fixture has no locomotive");
 
         train = model.getLocByName(names.get(0));
 

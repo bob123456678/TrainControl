@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -56,7 +55,7 @@ public class testReturnHomeFindsAPlanOnAFullRailway
     {
         File frozen = new File("test/operator_layout");
 
-        if (!frozen.isDirectory()) throw new SkipException("test/operator_layout is not here - this suite runs his stations");
+        if (!frozen.isDirectory()) throw new AssertionError("test/operator_layout is not here - this suite runs his stations");
 
         sandbox = support.LayoutSandbox.open(frozen);
 
@@ -77,7 +76,7 @@ public class testReturnHomeFindsAPlanOnAFullRailway
 
         layout = model.getAutoLayout();
 
-        if (layout == null || !layout.isValid()) throw new SkipException("his setup did not parse here: " + Layout.getLastError());
+        if (layout == null || !layout.isValid()) throw new AssertionError("his setup did not parse here: " + Layout.getLastError());
 
         for (int i = 0; i < 6; i++) model.newMM2Locomotive(name(i), FIRST_ADDRESS + i);
     }
