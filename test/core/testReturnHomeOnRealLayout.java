@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Random;
 
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -41,8 +40,8 @@ import org.testng.annotations.Test;
  * plan is required to fail, and then the sensor is released and the plan is required to succeed again.
  * Without that second half the test would pass just as happily if planning were broken outright.
  *
- * Skipped, not failed, when the configuration is absent - it is the author's layout, not a fixture that
- * ships with the project.
+ * Failed, not skipped, when `test/autonomy.json` is missing or places no locomotive: it ships with the project, so
+ * the battery always has it, and an empty placement is a defect (FR-136).
  */
 public class testReturnHomeOnRealLayout
 {
@@ -94,7 +93,7 @@ public class testReturnHomeOnRealLayout
 
         if (!file.exists())
         {
-            throw new SkipException(
+            throw new AssertionError(
                 "No autonomy.json in test/ or the project root - this suite runs the operator's own layout"
             );
         }
@@ -135,7 +134,7 @@ public class testReturnHomeOnRealLayout
         }
         catch (Exception e)
         {
-            throw new SkipException("refusing to run - simulation could not be enabled: " + e.getMessage());
+            throw new AssertionError("refusing to run - simulation could not be enabled: " + e.getMessage());
         }
 
         assertTrue(layout.isSimulate(), "simulation must be on before anything is asked to move");
@@ -144,17 +143,10 @@ public class testReturnHomeOnRealLayout
         layout.setMinDelay(0);
         layout.setMaxDelay(0);
 
-        // Skipped, not failed.
-        //
-        // This suite runs the OPERATOR'S own autonomy.json - a file the repository does not contain and
-        // cannot control - and it already skips when that file is absent or when simulation cannot be
-        // switched on.  A file with no locomotives placed in it is the same kind of thing: nothing here
-        // can drive a train, so there is nothing to test, and saying so as a failure puts a permanent
-        // red mark against a suite that is working exactly as designed.  A red that never goes away is
-        // a red people learn to scroll past.
+        // FAILED, NOT SKIPPED: `test/autonomy.json` places locomotives, so none placed is a parse defect (FR-136).
         if (layout.getLocomotivesToRun().isEmpty())
         {
-            throw new SkipException(
+            throw new AssertionError(
                 "refusing to run - the autonomy configuration places no locomotives");
         }
 
@@ -365,7 +357,7 @@ public class testReturnHomeOnRealLayout
 
         if (displaced == null)
         {
-            throw new SkipException("could not displace any locomotive on this layout, so nothing to block");
+            throw new AssertionError("could not displace any locomotive on this layout, so nothing to block");
         }
 
         assertNotNull(home.getS88(), "precondition: the home station must have a sensor to hold occupied");
@@ -454,7 +446,7 @@ public class testReturnHomeOnRealLayout
 
         if (turning.isEmpty())
         {
-            throw new SkipException("this configuration has no terminus and no reversing point, so the"
+            throw new AssertionError("this configuration has no terminus and no reversing point, so the"
                 + " arrangement MT-463 is about cannot exist on it");
         }
 

@@ -5,7 +5,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -95,9 +94,9 @@ public class testALockReachesTheRailBeingRunOver
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
-        if (model.getLocList().isEmpty()) throw new SkipException("this fixture has no locomotives");
+        if (model.getLocList().isEmpty()) throw new AssertionError("this fixture has no locomotives");
 
         asking = model.getLocByName(model.getLocList().get(0));
 
@@ -297,7 +296,7 @@ public class testALockReachesTheRailBeingRunOver
 
         if (forward == null)
         {
-            throw new SkipException("this railway writes no rail in both directions outside the lock"
+            throw new AssertionError("this railway writes no rail in both directions outside the lock"
                 + " relation, so there is nothing for this rule to be about");
         }
 

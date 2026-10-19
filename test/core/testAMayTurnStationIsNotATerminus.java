@@ -6,7 +6,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -76,11 +75,11 @@ public class testAMayTurnStationIsNotATerminus
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         List<String> names = model.getLocList();
 
-        if (names.isEmpty()) throw new SkipException("this fixture has no locomotives");
+        if (names.isEmpty()) throw new AssertionError("this fixture has no locomotives");
 
         train = model.getLocByName(names.get(0));
 
@@ -461,7 +460,7 @@ public class testAMayTurnStationIsNotATerminus
             if (name.equals(p.getName())) return p;
         }
 
-        throw new SkipException("the snapshot has no Point called " + name
+        throw new AssertionError("the snapshot has no Point called " + name
             + ", so it is about a railway that has moved");
     }
 

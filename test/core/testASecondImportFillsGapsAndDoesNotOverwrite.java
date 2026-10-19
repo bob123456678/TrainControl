@@ -9,7 +9,6 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -56,7 +55,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
         if (!file.exists())
         {
-            throw new SkipException("the snapshot carries no 2.7.4c file at " + file);
+            throw new AssertionError("the snapshot carries no 2.7.4c file at " + file);
         }
 
         legacy = new org.json.JSONObject(new String(
@@ -359,7 +358,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
         if (named == null)
         {
-            throw new SkipException("the import gave no named station a maximum on this diagram, so there"
+            throw new AssertionError("the import gave no named station a maximum on this diagram, so there"
                 + " is nothing a second import could overwrite");
         }
 

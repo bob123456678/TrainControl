@@ -55,9 +55,8 @@ import org.traincontrol.marklin.file.CS2File;
  * pass.  Checking every leg needs the run to record what it traversed as it goes, which is a change to
  * the timetable machinery rather than to this test.
  *
- * Simulation is mandatory and the run is skipped rather than failed if it cannot be turned on - this
- * drives locomotives for minutes at a time, and doing that to real hardware because a precondition
- * quietly failed is not a test failure worth having.
+ * Simulation is mandatory, and a run that cannot turn it on fails before anything moves - this drives
+ * locomotives for minutes at a time, never on real hardware.
  */
 public class testTimetableOnDerivedGraph
 {
@@ -160,14 +159,14 @@ public class testTimetableOnDerivedGraph
 
         if (stations.size() < 2)
         {
-            throw new SkipException("the current layout has fewer than two ordinary stations to run between");
+            throw new AssertionError("the current layout has fewer than two ordinary stations to run between");
         }
 
         List<String> locomotives = placeRandomly(layout, stations);
 
         if (locomotives.size() < 2)
         {
-            throw new SkipException("fewer than two locomotives could be placed - nothing to capture");
+            throw new AssertionError("fewer than two locomotives could be placed - nothing to capture");
         }
 
         // Where EVERY train began, not just the ones this test placed.
@@ -266,7 +265,7 @@ public class testTimetableOnDerivedGraph
 
         if (captured.isEmpty())
         {
-            throw new SkipException(
+            throw new AssertionError(
                 "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + "s, so there is no timetable "
                 + "to replay - " + describe(layout) + ".  " + stations.size() + " ordinary station(s) "
                 + "found (" + stationNames(stations) + "); " + startedAt.size() + " locomotive(s) "
@@ -431,7 +430,7 @@ public class testTimetableOnDerivedGraph
 
         if (!folder.isDirectory())
         {
-            throw new SkipException("no test/test_layout_snapshot to derive a graph from");
+            throw new AssertionError("no test/test_layout_snapshot to derive a graph from");
         }
 
         String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
@@ -474,7 +473,7 @@ public class testTimetableOnDerivedGraph
 
         if (session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("the layout has no active autonomy configuration to derive");
+            throw new AssertionError("the layout has no active autonomy configuration to derive");
         }
 
         model.parseAuto(session.buildConfiguration());
@@ -490,7 +489,7 @@ public class testTimetableOnDerivedGraph
         }
         catch (Exception e)
         {
-            throw new SkipException("refusing to run - simulation could not be enabled: " + e.getMessage());
+            throw new AssertionError("refusing to run - simulation could not be enabled: " + e.getMessage());
         }
 
         assertTrue(layout.isSimulate(), "simulation must be on before anything is asked to move");
