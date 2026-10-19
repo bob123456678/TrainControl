@@ -19,6 +19,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -1999,17 +2000,28 @@ public class testATrainIsDispatchedOnce
     @Test
     public void testTheReloadsYesIsTheRailwaysOwnStop() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("public boolean prepareAutonomyReload()");
 
-        int at = source.indexOf("public boolean prepareAutonomyReload()");
-
-        assertTrue(at >= 0, "cannot find prepareAutonomyReload");
-
-        String door = source.substring(at, source.indexOf("resetLayoutStationLabels();", at));
+        String door = source.substring(0, source.indexOf("resetLayoutStationLabels();"));
 
         assertTrue(door.contains(".stopEveryTrainWhereItIs()"), "the reload's Yes does not stop the trains through the"
             + " railway's own stop, so a journey still claiming, choosing or reaching its next sensor goes on (RSA-C1)");
+    }
+
+    /**
+     * A private int constant of the railway, read by reflection so a claim asks the rule instead of restating it.
+     *
+     * @param name the constant's name in Layout
+     * @return its value
+     * @throws Exception when Layout has no such constant
+     */
+    private static int layoutConstant(String name) throws Exception
+    {
+        java.lang.reflect.Field field = Layout.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.getInt(null);
     }
 
     /** New sensors, all clear, at consecutive addresses from `first`. */
@@ -2944,17 +2956,22 @@ public class testATrainIsDispatchedOnce
         final java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
         final long[] lastSwitch = {0};
 
+        // The railway's own retry pause and attempt limit, asked rather than restated: a quiet gap three quarters of the
+        // pause is longer than the switches of one attempt and shorter than the pause between two.
+        final long quiet = layoutConstant("STAGING_RETRY_PAUSE") * 3 / 4;
+        final int maxAttempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+
         model.setSentMessageObserver(m ->
         {
             if (m == null || !m.isAccessoryCommand() || m.getResponse()) return;
 
             long now = System.currentTimeMillis();
 
-            boolean starts = now - lastSwitch[0] > 1500;
+            boolean starts = now - lastSwitch[0] > quiet;
 
             lastSwitch[0] = now;
 
-            if (starts && attempts.incrementAndGet() <= 3)
+            if (starts && attempts.incrementAndGet() <= maxAttempts)
             {
                 Thread cut = new Thread(() ->
                 {
@@ -3000,7 +3017,8 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            assertTrue(waitFor(() -> attempts.get() >= 3, 20000), "precondition: the leg was not tried three times - "
+            assertTrue(waitFor(() -> attempts.get() >= maxAttempts, 20000), "precondition: the leg was not tried "
+                + maxAttempts + " times - "
                 + attempts.get() + " attempts seen");
 
             // RUNNING - given its speed, or counted among the trains running - and not merely claiming its route, which
