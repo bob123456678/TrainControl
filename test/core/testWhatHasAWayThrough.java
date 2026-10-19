@@ -61,7 +61,8 @@ public class testWhatHasAWayThrough
         // railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
         model.stop();
     }
 

@@ -96,7 +96,8 @@ public class testAStationsSizeIsAnAllowance
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         standing = model.newMM2Locomotive(OUR_TRAIN, 2393);
 

@@ -54,7 +54,8 @@ public class testAFeedbackChangeIsAnnounced
 
         // NOT in debug, deliberately: the announcement used to sit inside the `isDebug` block, and a
         // test run with debug on could not tell that apart from an announcement that always happens.
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         View recorder = (View) Proxy.newProxyInstance(View.class.getClassLoader(),
             new Class<?>[] { View.class },

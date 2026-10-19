@@ -79,7 +79,8 @@ public class testRouteInventory
 
             sandbox = support.LayoutSandbox.open(new File("test/test_layout"));
 
-            model = init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> MarklinControlStation.init(null, true, false, false, true));
         }
         catch (Throwable t)
         {

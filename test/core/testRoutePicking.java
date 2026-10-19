@@ -117,7 +117,8 @@ public class testRoutePicking
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
     }
 
     // NO TEARDOWN ANY MORE, and the comment that was here is the reason it is gone: "Static and

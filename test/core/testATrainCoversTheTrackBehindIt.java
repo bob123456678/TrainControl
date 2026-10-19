@@ -65,7 +65,8 @@ public class testATrainCoversTheTrackBehindIt
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
     }
 
     /**

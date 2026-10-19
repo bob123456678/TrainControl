@@ -63,7 +63,8 @@ public class testReturnHomeSequencesAReversal
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         for (int i = 0; i < 5; i++)
         {

@@ -84,7 +84,8 @@ public class testTimetableCaptureThroughARealRun
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         // Not connected, and simulating packets, so accessory actuations are confirmed and the trains
         // actually move - the same arrangement testAutonomySimulationSanity uses.

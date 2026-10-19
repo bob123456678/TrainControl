@@ -51,7 +51,8 @@ public class testAutonomyPathValidation
         sandbox = support.LayoutSandbox.open();
 
         // showUI = true so the failure popup renders and the operator can see the error.
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
 
         // Not connected => exec() takes the simulated-echo branch; debug is on so that branch is active.
         model.setNetworkCommState(false);

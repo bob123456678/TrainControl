@@ -57,7 +57,8 @@ public class testAnImportedFacingGuessCanStart
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
     }
 
     @AfterClass(alwaysRun = true)

@@ -45,7 +45,8 @@ public class testLayoutPickPath
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
         model.stop();
 
         // Destination points require an s88; pickPath never reads it, so one shared feedback will do.

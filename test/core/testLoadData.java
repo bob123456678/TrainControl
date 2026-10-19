@@ -389,7 +389,8 @@ public class testLoadData
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
     }
 
     @AfterClass(alwaysRun = true)

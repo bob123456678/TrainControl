@@ -88,7 +88,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         session = new AutonomySession(sandbox.getFolder());
 

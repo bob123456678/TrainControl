@@ -92,7 +92,8 @@ public class testManualOnlyPathsAreADifferentColour
         // raised: its own comment says to give the class a sandbox instead, and that is this.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         // THE SANDBOX'S COPY, not the checked-in fixture.
         //

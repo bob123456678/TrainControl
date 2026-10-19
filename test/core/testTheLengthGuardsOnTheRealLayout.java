@@ -123,7 +123,8 @@ public class testTheLengthGuardsOnTheRealLayout
         // where the snapshot's trains stand either.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         // THIS CLASS'S OWN TRAIN, before anything is measured or placed.
         ourTrain = model.newMM2Locomotive(OUR_TRAIN, OUR_ADDRESS);

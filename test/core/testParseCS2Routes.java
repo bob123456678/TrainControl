@@ -38,7 +38,8 @@ public class testParseCS2Routes
     public testParseCS2Routes() throws Exception
     {
         parser = new CS2File(null, null);
-        model = init(null, true, false, false, false); 
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false)); 
                         
         accs = parser.parseMags(
             CS2File.parseFile(CS2File.fetchURL(cs2_mags))

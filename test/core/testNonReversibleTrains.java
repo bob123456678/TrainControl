@@ -33,7 +33,8 @@ public class testNonReversibleTrains
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         // The sensors these points stand on.  A destination Point insists on a feedback that exists,
         // which is the model refusing to describe a platform with no way of knowing a train is there.

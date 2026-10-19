@@ -159,7 +159,8 @@ public class testTheShadingFollowsTheTrain
 
         // showUI, because the defect is in the drawing.  debug on, so the simulated Central Station
         // echoes back the accessory commands a path configuration waits for.
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
         model.setNetworkCommState(false);
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 

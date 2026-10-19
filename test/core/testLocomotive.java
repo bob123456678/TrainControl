@@ -691,7 +691,8 @@ public class testLocomotive
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testLocomotive.model = init(null, true, false, false, true);
+        testLocomotive.model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
         model.stop();
         
         l = new MarklinLocomotive(model, 80, MarklinLocomotive.decoderType.MM2, "Test Loc",

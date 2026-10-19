@@ -53,7 +53,8 @@ public class testTheLoaderDoesNotCallAStationANonStation
         // BEFORE the model: `init` reads the machine-global layout preference (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         tap = new Handler()
         {

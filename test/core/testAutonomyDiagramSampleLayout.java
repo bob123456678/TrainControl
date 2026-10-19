@@ -95,7 +95,8 @@ public class testAutonomyDiagramSampleLayout
 
     private void build() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         File folder = findLayoutFolder();
 

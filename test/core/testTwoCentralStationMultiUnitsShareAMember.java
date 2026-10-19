@@ -33,7 +33,8 @@ public class testTwoCentralStationMultiUnitsShareAMember
     {
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
         model.stop();
     }
 

@@ -69,7 +69,8 @@ public class testATailIsNotHiddenByAnother
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         one = model.newMM2Locomotive(ONE, 2298);
         two = model.newMM2Locomotive(TWO, 2299);

@@ -62,7 +62,8 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
         legacy = new org.json.JSONObject(new String(
             java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8));
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         session = new AutonomySession(sandbox.getFolder());
 

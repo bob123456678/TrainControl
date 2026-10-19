@@ -93,7 +93,8 @@ public class testMassAssignLengths
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             try
             {
@@ -1480,7 +1481,8 @@ public class testMassAssignLengths
     private org.traincontrol.marklin.MarklinControlStation openHisRailway(support.LayoutSandbox sandbox) throws Exception
     {
         org.traincontrol.marklin.MarklinControlStation model =
-            org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
         session = new AutonomySession(sandbox.getFolder());
 
@@ -2262,7 +2264,8 @@ public class testMassAssignLengths
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             AutonomySession his = new AutonomySession(sandbox.getFolder());
 
@@ -3549,7 +3552,8 @@ public class testMassAssignLengths
             sandbox = support.LayoutSandbox.open();
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             try
             {

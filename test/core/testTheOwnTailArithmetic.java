@@ -52,7 +52,8 @@ public class testTheOwnTailArithmetic
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         train = model.newMM2Locomotive(TRAIN, 2300);
 

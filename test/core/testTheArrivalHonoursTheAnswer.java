@@ -113,7 +113,8 @@ public class testTheArrivalHonoursTheAnswer
         // open Adam's real railway (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         layout = new Layout(model);
 

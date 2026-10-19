@@ -184,7 +184,8 @@ public class testTheRoomRuleCensusOnTheRealLayout
         // classes that were reading his live one.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         // THE CENSUS'S OWN TRAINS, before anything is measured.
         //

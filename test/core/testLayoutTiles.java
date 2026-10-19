@@ -71,7 +71,8 @@ public class testLayoutTiles
         // the whole battery.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();

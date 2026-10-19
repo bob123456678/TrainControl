@@ -60,7 +60,8 @@ public class testLayoutRenameKeys
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
         model.stop();
 
         hadAutoLayout = readAutoLayout();
