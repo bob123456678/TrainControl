@@ -622,11 +622,140 @@ public class testAPastedTrainKeepsItsDirection
     @Test
     public void testTheLandingDirectionComesFromWalkingThere() throws Exception
     {
+        // THE WALK, ASKED OF THE RAILWAY (FR-136).  A train is put down on one square after another and walked, by
+        // this test's own breadth-first search, to every square that splits; the heading the paste records has to
+        // be the facing of the nearest copy the drive could end on.  Neither the heading the train had nor the first
+        // copy in build order is that answer everywhere, and both floors below say so.
+        List<TileKey> startsAt = new java.util.ArrayList<>();
+        List<String> startCopies = new java.util.ArrayList<>();
+        List<Side> startFacings = new java.util.ArrayList<>();
+
+        for (Point candidate : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(candidate.getName());
+
+            if (key == null || candidate.isTerminus() || startsAt.contains(key)) continue;
+
+            Side facing = session.facingsFor(key).get(candidate.getName());
+
+            if (facing == null) continue;
+
+            startsAt.add(key);
+            startCopies.add(candidate.getName());
+            startFacings.add(facing);
+
+            if (startsAt.size() == 6) break;
+        }
+
+        assertFalse(startsAt.isEmpty(), "no station can have a train put down on it, so nothing is walked from");
+
+        List<TileKey> splits = new java.util.ArrayList<>();
+
+        for (TileKey named : session.getStore().getNamedTiles())
+        {
+            if (session.facingsFor(named).size() > 1) splits.add(named);
+        }
+
+        assertTrue(splits.size() > 1,
+            "fewer than two squares on this railway split into copies, so there is nothing for a walk to choose between");
+
+        int checked = 0;
+        int notTheFirstCopy = 0;
+        int notTheCarriedHeading = 0;
+
+        for (int i = 0; i < startsAt.size(); i++)
+        {
+            putDown(startsAt.get(i), startCopies.get(i), startFacings.get(i));
+
+            try
+            {
+                model.parseAuto(session.buildConfiguration());
+
+                org.traincontrol.automation.Layout walked = model.getAutoLayout();
+
+                Point at = occupiedCopyOf(startsAt.get(i));
+
+                assertNotNull(at, "the train is on no copy of " + startsAt.get(i) + " after the build, so there is no"
+                    + " place to walk from");
+
+                Map<String, Integer> away = distancesFrom(walked, at);
+
+                Side carried = session.facingOf(train, walked);
+
+                assertEquals(carried, startFacings.get(i), "control: the railway does not have the train pointing the way"
+                    + " it was put down");
+
+                for (TileKey target : splits)
+                {
+                    if (target.equals(startsAt.get(i))) continue;
+
+                    Map<String, Side> copies = session.facingsFor(target);
+
+                    Side expected = nearestStandingFacing(walked, away, copies);
+
+                    // Nothing there can be driven to: the other arm of the rule, which has claims of its own.
+                    if (expected == null) continue;
+
+                    assertEquals(session.facingByPath(walked, train, target), expected,
+                        "put down on " + target + " after standing on " + startCopies.get(i) + " facing "
+                        + startFacings.get(i) + ", the train should face the way the nearest copy it could drive to does ("
+                        + expected + "). Copies: " + copies);
+
+                    checked++;
+
+                    if (expected != copies.values().iterator().next()) notTheFirstCopy++;
+
+                    if (expected != carried) notTheCarriedHeading++;
+                }
+            }
+            finally
+            {
+                lift(startsAt.get(i));
+            }
+        }
+
+        assertTrue(checked > 0, "no square was walked to, so this asserted nothing");
+
+        assertTrue(notTheFirstCopy > 0,
+            "every walk ended on the first copy of its square, so taking the first copy cannot be told from walking ("
+            + checked + " walks)");
+
+        assertTrue(notTheCarriedHeading > 0,
+            "every walk ended facing the way the train already pointed, so carrying the heading over cannot be told"
+            + " from walking (" + checked + " walks)");
+
+        // The ends of it that need no walk, asked of a train that is not on the railway at all.
+        model.parseAuto(session.buildConfiguration());
+
         org.traincontrol.automation.Layout built = model.getAutoLayout();
 
         assertNotNull(built, "the configuration did not build");
 
-        // A square with two copies to choose between, which this layout does not otherwise have.
+        assertNull(session.facingByPath(built, "no such locomotive anywhere", null),
+            "a null square must produce no direction at all");
+
+        int oneCopy = 0;
+
+        for (Point any : stations())
+        {
+            TileKey key = session.getStationIndex().squareOf(any.getName());
+
+            if (key == null || session.facingsFor(key).size() != 1) continue;
+
+            // ONE COPY IS ONE ANSWER, walk or no walk - and at a terminus that answer is the
+            // reversal.  A train that is not on the railway at all cannot be walked from, so this
+            // also covers the "no path" arm reaching its fallback.
+            assertEquals(session.facingByPath(built, "no such locomotive anywhere", key),
+                session.facingsFor(key).values().iterator().next(),
+                any.getName() + " has one copy, so there is one direction a train can be put down"
+                + " facing - whatever the walk did or did not find");
+
+            oneCopy++;
+        }
+
+        assertTrue(oneCopy > 0, "no square on this railway has one copy, so the single answer was not asked for");
+
+        // A square with two copies to choose between, made by marking one may-reverse.
         Point station = null;
 
         for (Point candidate : stations())
@@ -647,39 +776,100 @@ public class testAPastedTrainKeepsItsDirection
             session.setPointProperty(key, "canReverse", null);
         }
 
-        // The sample railway cannot be made to split, which the measurement above records.  Said
-        // rather than skipped, and the rule is still exercised by the two cases below it.
-        if (station == null)
+        if (station != null)
         {
-            assertNull(session.facingByPath(built, "no such locomotive anywhere", null),
-                "a null square must produce no direction at all");
+            TileKey square = session.getStationIndex().squareOf(station.getName());
 
-            for (Point any : stations())
+            model.parseAuto(session.buildConfiguration());
+
+            assertTrue(session.facingsFor(square).size() > 1,
+                "the split did not survive the rebuild, so there is nothing to choose between");
+
+            session.setPointProperty(square, "canReverse", null);
+        }
+    }
+
+    /**
+     * How far every Point is from where the train stands, in edges, by this test's own search.
+     *
+     * Breadth-first, so the distances are the true shortest ones whatever order `getNeighbors` shuffles the edges
+     * into.  A turning copy is reached but not driven through, as the rule it checks has it.
+     *
+     * @param walked the built railway
+     * @param start where the train stands
+     * @return the distance to each reachable Point, by name
+     */
+    private static Map<String, Integer> distancesFrom(Layout walked, Point start)
+    {
+        Map<String, Integer> out = new java.util.LinkedHashMap<>();
+        java.util.Deque<Point> queue = new java.util.ArrayDeque<>();
+
+        out.put(start.getName(), 0);
+        queue.add(start);
+
+        while (!queue.isEmpty())
+        {
+            Point here = queue.poll();
+
+            List<org.traincontrol.automation.Edge> leaving = walked.getNeighbors(here);
+
+            if (leaving == null) continue;
+
+            for (org.traincontrol.automation.Edge edge : leaving)
             {
-                TileKey key = session.getStationIndex().squareOf(any.getName());
+                Point next = edge.getEnd();
 
-                if (key == null || session.facingsFor(key).isEmpty()) continue;
+                if (next == null || out.containsKey(next.getName())) continue;
 
-                // ONE COPY IS ONE ANSWER, walk or no walk - and at a terminus that answer is the
-                // reversal.  A train that is not on the railway at all cannot be walked from, so this
-                // also covers the "no path" arm reaching its fallback.
-                assertEquals(session.facingByPath(built, "no such locomotive anywhere", key),
-                    session.facingsFor(key).values().iterator().next(),
-                    any.getName() + " has one copy, so there is one direction a train can be put down"
-                    + " facing - whatever the walk did or did not find");
+                out.put(next.getName(), out.get(here.getName()) + 1);
+
+                if (next.isTerminus() || next.isReversing()) continue;
+
+                queue.add(next);
             }
-
-            return;
         }
 
-        TileKey square = session.getStationIndex().squareOf(station.getName());
+        return out;
+    }
 
-        model.parseAuto(session.buildConfiguration());
+    /**
+     * The facing of the nearest copy a train could be standing on after driving there: a plain copy before a turning
+     * one at the same distance, and the first in build order among equals.
+     *
+     * @param walked the built railway
+     * @param away the distances from the train
+     * @param copies the target's copies, by name, in build order
+     * @return that side, or null when no copy can be driven to
+     */
+    private static Side nearestStandingFacing(Layout walked, Map<String, Integer> away, Map<String, Side> copies)
+    {
+        int nearest = Integer.MAX_VALUE;
 
-        assertTrue(session.facingsFor(square).size() > 1,
-            "the split did not survive the rebuild, so there is nothing to choose between");
+        for (String name : copies.keySet())
+        {
+            Integer at = away.get(name);
 
-        session.setPointProperty(square, "canReverse", null);
+            if (at != null && at < nearest) nearest = at;
+        }
+
+        if (nearest == Integer.MAX_VALUE) return null;
+
+        Side turning = null;
+
+        for (Map.Entry<String, Side> copy : copies.entrySet())
+        {
+            Integer at = away.get(copy.getKey());
+
+            if (at == null || at != nearest) continue;
+
+            Point point = walked.getPoint(copy.getKey());
+
+            if (point != null && !point.isTerminus() && !point.isReversing()) return copy.getValue();
+
+            if (turning == null) turning = copy.getValue();
+        }
+
+        return turning;
     }
 
     /**
