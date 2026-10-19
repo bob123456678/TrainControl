@@ -134,7 +134,25 @@ public class testEveryWindowWearsTheApplicationsLook
             //
             // Asserted against the display rather than against a number written here, so it holds on any
             // machine - and the message says what to do when it does not.
-            double expected = java.awt.Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+            //
+            // The scale the program states for this display, asked of the program itself: it is the same
+            // formula the install applies, with the 96 dpi baseline, the guard on a display that reports
+            // none and the UI_SCALE override.
+            double expected;
+
+            try
+            {
+                java.lang.reflect.Method states = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("uiScaleFor", int.class);
+
+                states.setAccessible(true);
+
+                expected = Double.parseDouble((String) states.invoke(null,
+                    java.awt.Toolkit.getDefaultToolkit().getScreenResolution()));
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new AssertionError("org.traincontrol.gui.TrainControlUI.uiScaleFor is not there to be asked: " + e, e);
+            }
 
             assertEquals(com.formdev.flatlaf.util.UIScale.getUserScaleFactor(), (float) expected, 0.001f,
                 "the interface is scaled " + com.formdev.flatlaf.util.UIScale.getUserScaleFactor()

@@ -1789,14 +1789,20 @@ public class testNoSetupEditWhileARouteRuns
 
         List<String> many = new ArrayList<>();
 
-        for (int i = 1; i <= 10; i++) many.add("Route number " + i);
+        // As many routes as the refusal names, and seven more: the program's own count, not a copy of it
+        int named = support.ProgramConstants.integer(TrainControlUI.class, "ROUTES_NAMED");
+
+        for (int i = 1; i <= named + 7; i++) many.add("Route number " + i);
 
         String ten = TrainControlUI.routeRunningRefusal(many);
 
-        assertTrue(ten.contains("Route number 1") && ten.contains("Route number 3"), "the first routes are not named: " + ten);
-        assertFalse(ten.contains("Route number 4"), "more than the first few are named, so the dialog grows with the routes: "
-            + ten);
-        assertTrue(ten.contains(I18n.f("autolayout.ui.routeNamesAndMore", "Route number 1, Route number 2, Route number 3", 7)),
+        List<String> first = new ArrayList<>(many.subList(0, named));
+
+        assertTrue(ten.contains("Route number 1") && ten.contains("Route number " + named),
+            "the first routes are not named: " + ten);
+        assertFalse(ten.contains("Route number " + (named + 1)),
+            "more than the first few are named, so the dialog grows with the routes: " + ten);
+        assertTrue(ten.contains(I18n.f("autolayout.ui.routeNamesAndMore", String.join(", ", first), 7)),
             "the rest are not counted: " + ten);
 
         StringBuilder long200 = new StringBuilder();
@@ -1808,7 +1814,9 @@ public class testNoSetupEditWhileARouteRuns
         assertFalse(longName.contains(long200.toString()), "a long name is shown whole, so it can make the dialog wide");
         assertTrue(longName.length() < 400, "a long name makes a long message: " + longName.length());
 
-        assertTrue(one.contains("width: 420px"), "the sentence is not wrapped at a fixed width: " + one);
+        // The wrap is at the refusal's own width: the program's, named
+        assertTrue(one.contains("width: " + support.ProgramConstants.integer(TrainControlUI.class, "ROUTE_REFUSAL_WIDTH")
+            + "px"), "the sentence is not wrapped at a fixed width: " + one);
 
         assertTrue(TrainControlUI.routeRunningRefusal(Collections.singletonList("A<B")).contains("A&lt;B"),
             "a name with markup in it is not escaped");

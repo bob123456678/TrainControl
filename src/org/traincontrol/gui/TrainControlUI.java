@@ -807,6 +807,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final int MENU_FONT_STEP = 0;
 
     /**
+     * The interface scale the application states for a display of this many dots per inch: the UI_SCALE override if
+     * there is one, otherwise the display's resolution over the 96 dpi baseline, or 1 where it reports none.
+     *
+     * @param dpi the display's resolution
+     * @return the scale, as the text the look and feel reads
+     */
+    private static String uiScaleFor(int dpi)
+    {
+        return !UI_SCALE.isEmpty() ? UI_SCALE
+            : String.valueOf(dpi > 0 ? dpi / (double) REFERENCE_DPI : 1.0);
+    }
+
+    /**
      * Installs the application's look and feel.
      *
      * **A method rather than three lines in the constructor, because a window is not the only thing
@@ -875,9 +888,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // AND IT CAN BE OVERRIDDEN, which is what UI_SCALE is for.  A system property rather than a UI
         // default because FlatLaf reads it while installing.
-        System.setProperty("flatlaf.uiScale",
-            !UI_SCALE.isEmpty() ? UI_SCALE
-                : String.valueOf(dpi > 0 ? dpi / (double) REFERENCE_DPI : 1.0));
+        System.setProperty("flatlaf.uiScale", uiScaleFor(dpi));
 
         // BEFORE setup(), because FlatLaf reads these when it installs itself - afterwards is too late
         // for the window decorations, which are decided once.
@@ -28378,6 +28389,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The longest a route's name is shown in the refusal, in characters (MT-760). */
     private static final int ROUTE_NAME_SHOWN = 40;
 
+    /** How wide the refusal's sentence is wrapped, in pixels. */
+    private static final int ROUTE_REFUSAL_WIDTH = 420;
+
     /**
      * What a door says when it refuses because a route is running, naming the route - the first three, then how many more -
      * and wrapped to a width, so that many routes or long names do not make a dialog as wide or as tall as the screen
@@ -28405,7 +28419,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return AutonomyEditorPanel.wrappedAt(I18n.f(running.size() == 1
-            ? "autolayout.ui.errorWaitForTheRouteToFinish" : "autolayout.ui.errorWaitForTheRoutesToFinish", names), 420);
+            ? "autolayout.ui.errorWaitForTheRouteToFinish" : "autolayout.ui.errorWaitForTheRoutesToFinish", names),
+            ROUTE_REFUSAL_WIDTH);
     }
 
     /**
