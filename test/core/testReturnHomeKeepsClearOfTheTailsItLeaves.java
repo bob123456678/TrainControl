@@ -348,6 +348,86 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
+     * The tail of a train that never moves closes the roads over its metal, locked or not (OB-184, AUT-B1).
+     *
+     * Every other claim in this class has the plan move A, so A's tail is the one `passesTheTailsOfTrainsItHasMoved`
+     * asks about.  Here A is already home and never moves: its tail is the one it left at the START of the plan, and the
+     * only check that sees it is `liesAcrossAtStart`, through `Layout.tailLiesOn` - once for the lock partner (the
+     * lock, with places on both edges) and once for the other copies of the same metal (no lock at all).  The other
+     * three callers of `tailLiesOn` are covered by `anotherTailOn` beside them, so nothing else would notice.
+     *
+     * The same railway as above, with A standing at `RS_HA` from the start, three units long behind a two-unit
+     * approach.  B's only road home runs over `RS_P -> RS_Y`, which shares the square `RS_bridge` with A's
+     * `RS_T -> RS_HA`, so B can only go home over A's tail.  The control puts the squares apart, and is READY.
+     *
+     * MUTATION: make `Layout.tailLiesOn` return false.  Both refusals go READY (the planner offers a move
+     * `Layout.isPathClear` refuses at dispatch, which is OB-073's shape), and the control stays READY.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATailAStandingTrainHasNotLeftClosesTheRoadsOverItsMetal() throws Exception
+    {
+        trainA.setTrainLength(3);
+        trainB.setTrainLength(1);
+
+        // THE CONTROL FIRST: the same two roads, the squares apart.  Without it, a refusal below could be the fixture
+        // being unsolvable rather than the tail being seen.
+        assertEquals(planWithATrainAlreadyHome(twoRoadsOverOneBridge(2500, true, "RS_bridge", "RS_elsewhere")).getOutcome(),
+            HomeStaging.Outcome.READY,
+            "control: A's tail is on neither of B's squares, so B goes home and nothing below shows the tail being seen");
+
+        // BOTH REFUSALS ARE ASKED BEFORE EITHER IS ASSERTED, so a failure names every one that was missed.
+        HomeStaging.Outcome locked = planWithATrainAlreadyHome(
+            twoRoadsOverOneBridge(2510, true, "RS_bridge", "RS_bridge")).getOutcome();
+        HomeStaging.Outcome unlocked = planWithATrainAlreadyHome(
+            twoRoadsOverOneBridge(2520, false, "RS_bridge", "RS_bridge")).getOutcome();
+
+        String missed = "";
+
+        // THE LOCK, WITH PLACES ON BOTH EDGES: the tail has to lie on a place B's edge runs over.
+        if (locked != HomeStaging.Outcome.NO_PLAN_FOUND)
+        {
+            missed += " The lock partner's tail was not seen (OB-184): " + locked + ".";
+        }
+
+        // NO LOCK AT ALL: the same two roads are two copies of one piece of metal only by their places (AUT-B1).
+        if (unlocked != HomeStaging.Outcome.NO_PLAN_FOUND)
+        {
+            missed += " The tail was not seen by place (AUT-B1): " + unlocked + ".";
+        }
+
+        assertEquals(missed, "", "B's road runs over the square the tail of A, standing at home from the start, is lying"
+            + " on, and the plan sent it anyway:");
+    }
+
+    /**
+     * Stands A at its home with its tail behind it, stands B, homes both, and plans.
+     *
+     * A is placed as a run leaves a train: moved, the side it came in by and the road it came along recorded, so its
+     * tail is the one the runtime walks.
+     *
+     * @param layout `twoRoadsOverOneBridge`
+     * @return the plan
+     */
+    private static HomeStaging.Plan planWithATrainAlreadyHome(Layout layout) throws Exception
+    {
+        assertTrue(layout.moveLocomotive(trainA.getName(), "RS_HA", false), "could not stand train A at RS_HA");
+        assertTrue(layout.moveLocomotive(trainB.getName(), "RS_X", false), "could not stand train B at RS_X");
+
+        Edge intoHome = layout.getEdge("RS_T", "RS_HA");
+        Point home = layout.getPoint("RS_HA");
+
+        home.setArrivedFrom(layout.entrySideOf(intoHome, home));
+        home.setArrivedAlong(java.util.Collections.singletonList(intoHome));
+
+        layout.setHomeLocomotive("RS_HA", trainA.getName());
+        layout.setHomeLocomotive("RS_Y", trainB.getName());
+
+        return HomeStaging.snapshot(layout).plan();
+    }
+
+    /**
      * Stands A and B where the fixture wants them, homes them, and plans.
      *
      * @param layout one of the three railways above

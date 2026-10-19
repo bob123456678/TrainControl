@@ -709,7 +709,8 @@ public class testATrainCoversTheTrackBehindIt
      * stands on: the square was neither claimed nor spent, and the tail reached one square further back than the train
      * lies - over a switch, a road refused for nothing.
      *
-     * MUTATION: stop the walk spending the standing square on that rail and this fails.
+     * MUTATION: stop the walk spending the standing square on that rail and this fails (the track behind is claimed);
+     * so does stopping it claiming that square (`places.put(own, loc)`), which the overlay and `anotherTailOn` read.
      *
      * @throws Exception on a failure to build the fixture
      */
@@ -782,6 +783,12 @@ public class testATrainCoversTheTrackBehindIt
             arrivedByEast.setArrivedFrom("W");
 
             claimed = layout.placesCoveredByStandingTrains();
+
+            // AND IT CLAIMS THE SQUARE ITSELF, as the control does: a square left out of the claim is left out of the grey
+            // overlay, and a route onto the other copy of it is not refused by place.
+            assertEquals(claimed.get(square), standing, "a train turned on its square does not claim the square it stands"
+                + " on: the walk took the rail running away from its copy and never put the square into the places (AUT-C3)."
+                + "  Claimed: " + claimed.keySet());
 
             assertFalse(claimed.containsKey("w1" + tag), "a two-unit train turned on a two-unit square claims the track"
                 + " behind it: the walk took the rail running away from its copy, whose places begin after the square it"

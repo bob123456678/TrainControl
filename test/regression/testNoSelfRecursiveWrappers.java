@@ -116,9 +116,13 @@ public class testNoSelfRecursiveWrappers
      * `Class.method(` and the collaborator calls the owner's statics as `TrainControlUI.method(`, so both spellings are
      * read as well.
      *
+     * The self-call half reads every method of the owner that shares a name with a method of the collaborator, not only
+     * those whose body still names the collaborator: a delegator rewritten to call itself names it nowhere.
+     *
      * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
      * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, or SessionRuns' `runs()` return
-     * `owner.runs()`.
+     * `owner.runs()`.  And so does making TrainControlUI's `combineLinkedPages` delegator call `this.combineLinkedPages()`
+     * (or a bare `combineLinkedPages()`) instead of `layoutFileActions.combineLinkedPages()`.
      */
     @Test
     public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
@@ -160,36 +164,55 @@ public class testNoSelfRecursiveWrappers
 
             assertTrue(checked > 0, each[4] + " hands nothing to " + each[0] + ", so this checks nothing");
 
-            // And a delegator that calls its own name, bare, beside the collaborator's.
+            // And a delegator that calls its own name, bare or through `this.`, beside the collaborator's.  Every method of
+            // the owner named like one of the collaborator's is read, since a delegator rewritten that way names the
+            // collaborator nowhere; the arity test in `callsItself` leaves another overload alone.
+            java.util.Set<String> collaboratorNames = new java.util.HashSet<>();
+
+            for (String line : helper)
+            {
+                String declared = methodDeclaredAt(line);
+
+                if (declared != null) collaboratorNames.add(declared);
+            }
+
+            int delegators = 0;
+
             for (int i = 0; i < window.size(); i++)
             {
                 String name = methodDeclaredAt(window.get(i));
 
-                if (name == null) continue;
+                if (name == null || !collaboratorNames.contains(name)) continue;
 
-                String declaration = window.get(i).trim();
+                delegators++;
 
-                // A declaration whose parameters run onto the next lines
-                for (int k = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < window.size(); k++)
+                int arity = arityOfTheDeclarationAt(window, i);
+
+                for (String line : bodyOf(window, i))
                 {
-                    declaration += " " + window.get(k).trim();
-                }
-
-                int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1,
-                    declaration.lastIndexOf(')')));
-
-                List<String> body = bodyOf(window, i);
-
-                if (body.stream().noneMatch(line -> line.contains(each[0] + "." + name + "(")
-                    || line.contains(each[2] + "." + name + "("))) continue;
-
-                for (String line : body)
-                {
-                    assertFalse(callsItself(line, name, arity), name + " calls itself instead of " + each[0]
-                        + "." + name + ".  Line: " + line.trim());
+                    assertFalse(callsItself(line, name, arity), each[4] + "." + name + " calls itself instead of "
+                        + each[0] + "." + name + ".  Line: " + line.trim());
                 }
             }
+
+            assertTrue(delegators > 0, "no method of " + each[4] + " is named like one of " + each[2] + "'s, so this"
+                + " checks nothing");
         }
+    }
+
+    /**
+     * How many parameters the method declared at a line takes, reading on while the parameters run onto the next lines.
+     */
+    private static int arityOfTheDeclarationAt(List<String> lines, int at)
+    {
+        String declaration = lines.get(at).trim();
+
+        for (int k = at + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < lines.size(); k++)
+        {
+            declaration += " " + lines.get(k).trim();
+        }
+
+        return argumentCount(declaration.substring(declaration.indexOf('(') + 1, declaration.lastIndexOf(')')));
     }
 
     /**
@@ -338,8 +361,14 @@ public class testNoSelfRecursiveWrappers
      * helper's method calling back into the delegator that leads to it.  Either is a StackOverflowError the compiler
      * accepts.
      *
+     * The helpers' own hand-offs are read too: a helper keeps overloads that hand to one another by the bare name
+     * (`explainCannotStart` 2 to 1, `walkStandingTrains` 2 to 3, `walkOneTail` 6 to 7), and one rewritten to call its own
+     * arity goes through neither the railway nor the owner, so nothing above would see it.
+     *
      * MUTATION: make LayoutExplanations.explainCannotStart(Locomotive) end `return owner.explainCannotStart(loc);`, or
-     * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails.
+     * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails; so does making
+     * LayoutExplanations' `explainCannotStart(loc, byHand)` hand to `explainCannotStart(loc, false)`, or StandingTrains'
+     * six-argument `walkOneTail` call `walkOneTail(` with six arguments.
      *
      * @throws Exception if the source cannot be read
      */
@@ -416,13 +445,95 @@ public class testNoSelfRecursiveWrappers
 
                 for (String line : bodyOf(railway, i))
                 {
-                    assertFalse(callsItself(line.replace("this." + name + "(", name + "("), name, arity),
+                    assertFalse(callsItself(line, name, arity),
                         "Layout." + name + " calls itself instead of " + each[0] + "." + name + ".  Line: " + line.trim());
                 }
             }
 
             assertTrue(delegators > 0, "no method of Layout is named like one of " + each[2] + "'s, so this checks nothing");
+
+            // AND THE HELPER'S OWN HAND-OFFS, bare, at their own arity.  Another arity is another overload (the idiom), the
+            // same arity is the helper calling itself.
+            int handOffs = 0;
+
+            for (int i = 0; i < helper.size(); i++)
+            {
+                String name = methodDeclaredAt(helper.get(i));
+
+                if (name == null) continue;
+
+                handOffs++;
+
+                int arity = arityOfTheDeclarationAt(helper, i);
+
+                for (String line : bodyOf(helper, i))
+                {
+                    assertFalse(callsItself(line, name, arity),
+                        each[2] + "." + name + " calls itself.  Line: " + line.trim());
+                }
+            }
+
+            assertTrue(handOffs > 0, each[2] + " declares no methods, so this checks nothing");
         }
+    }
+
+    /**
+     * Only the railway assigns its `edges` and `points` (FR-136).
+     *
+     * They are package-private so that `StandingTrains` can read them, which leaves them open to every class of the
+     * `automation` package.  Layout writes them under its monitor and builds the adjacency beside them (`createPoint`,
+     * `createEdge`), so a write from another class would skip both.  So no other file of the package assigns either
+     * through another object or calls a mutator on it, and Layout declares both `final`.
+     *
+     * MUTATION: have any other class of the package call `layout.points.put(`, `owner.edges.remove(` or assign
+     * `layout.points = `, and this fails; so does dropping `final` from either declaration in Layout.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testOnlyTheRailwayAssignsItsEdgesAndPoints() throws Exception
+    {
+        java.util.regex.Pattern write = java.util.regex.Pattern.compile("\\.\\s*(edges|points)\\s*(?:=(?!=)"
+            + "|\\.\\s*(?:put|putAll|putIfAbsent|remove|clear|compute|computeIfAbsent|computeIfPresent|merge|replace"
+            + "|replaceAll)\\s*\\("
+            + "|\\.\\s*(?:keySet|values|entrySet)\\s*\\(\\s*\\)\\s*\\.\\s*(?:remove|removeAll|removeIf|retainAll|clear)\\s*\\()");
+        java.util.regex.Pattern read = java.util.regex.Pattern.compile("\\.\\s*(?:edges|points)\\b");
+
+        List<File> files = new ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walked = Files.walk(
+            new File("src/org/traincontrol/automation").toPath()))
+        {
+            walked.filter(path -> path.toString().endsWith(".java")).forEach(path -> files.add(path.toFile()));
+        }
+
+        int readers = 0;
+
+        for (File file : files)
+        {
+            if (file.getName().equals("Layout.java")) continue;
+
+            String code = support.SourceOf.withoutComments(
+                new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+
+            java.util.regex.Matcher found = write.matcher(code);
+
+            if (found.find())
+            {
+                fail(file.getName() + " writes the railway's " + found.group(1) + " through another object, near: "
+                    + code.substring(Math.max(0, found.start() - 60), Math.min(code.length(), found.end() + 30))
+                        .replace('\n', ' '));
+            }
+
+            if (read.matcher(code).find()) readers++;
+        }
+
+        assertTrue(readers > 0, "nothing outside Layout reads its edges or points any more, so this checked nothing");
+
+        assertEquals(support.SourceOf.occurrences("final Map<String, Edge> edges;"), 1,
+            "Layout no longer declares `edges` final");
+        assertEquals(support.SourceOf.occurrences("final Map<String, Point> points;"), 1,
+            "Layout no longer declares `points` final");
     }
 
     /**
