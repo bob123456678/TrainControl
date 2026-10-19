@@ -399,6 +399,19 @@ when the power is off, clicking on routes in the route tab should open the edito
 
 at startup, there are log entries about station lengths.  dedupe by station name, rather than showing all copies (eastbound/westbound).
 
+### FR-141 - 2026-10-18 - train at a sensor options in the route editor
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-18 18:58  
+**Build:** commit e7391740, in English - build\classes, compiled 18 Oct 17:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+this condition needs to be reworked.  we need "train at a sensor" or "train not as a sensor".
+
+also, this is referring to autonomy, correct?  Prefix with "Autonomy: " if so.
+
+"setting" in this cas is/should be the sensor address, can it be made clearer?
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
