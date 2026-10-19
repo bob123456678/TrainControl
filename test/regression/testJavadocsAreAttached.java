@@ -59,7 +59,9 @@ public class testJavadocsAreAttached
     // activateTheConfigurationNamed's when that method was inserted - deleted (RLU2-C1, RLU3-C6).
     // 86 -> 68 on 2026-10-19: FR-136 Phase 2, AutonomyEditorPanel's 18 stacked javadocs - the first of each pair
     // describing a member that had its own - deleted or moved onto the member they were written for, in the comment trim.
-    private static final int ALLOWED = 68;
+    // 68 -> 66 on 2026-10-19: FR-136 Phase 2, the comment trim of Layout.java.  Its two stacked javadocs - clearLocomotiveExcept's
+    // (left above isSendableDestination) and fireCallback's (left above announceRunFinished) - moved onto the members they describe.
+    private static final int ALLOWED = 66;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -69,8 +71,6 @@ public class testJavadocsAreAttached
      * means a swap fails and names both files - the one that improved and the one that regressed.
      */
     private static final String[] ORPHANS_BY_FILE = {
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automation" + File.separator + "Layout.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyBuilder.java (5)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
