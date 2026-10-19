@@ -490,6 +490,10 @@ public class testTheRouteListShowsWhatRuns
                 + " original's");
 
             assertTrue(waitFor(() -> cellOf(copy) != null, 30000), "the copy is not in the route list");
+
+            // ITS SYNC OVER BEFORE THE NEXT CLAIM: the sync re-reads the pages and deletes every sensor on none of them,
+            // so one left running deleted Enable Auto Execution's sensor while it was held made, and the route never ran
+            assertTrue(waitFor(() -> !duplicating(), 60000), "Duplicate Route's worker was still going a minute on");
         }
         finally
         {
@@ -497,6 +501,20 @@ public class testTheRouteListShowsWhatRuns
 
             if (model.getRoute(copy) != null) model.deleteRoute(copy);
         }
+    }
+
+    /** Whether Duplicate Route's worker, which syncs with the station after the copy is made, is still going. */
+    private static boolean duplicating()
+    {
+        for (StackTraceElement[] frames : Thread.getAllStackTraces().values())
+        {
+            for (StackTraceElement frame : frames)
+            {
+                if (frame.getMethodName().startsWith("lambda$duplicateRoute$")) return true;
+            }
+        }
+
+        return false;
     }
 
     /**
