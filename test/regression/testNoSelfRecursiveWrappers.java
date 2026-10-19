@@ -109,6 +109,8 @@ public class testNoSelfRecursiveWrappers
             "LayoutEditor", "editor." },
         { "undoOps", "src/org/traincontrol/gui/LayoutEditorUndo.java", "LayoutEditorUndo", EDITOR,
             "LayoutEditor", "editor." },
+        { "autonomySettingsTab", "src/org/traincontrol/gui/AutonomySettingsTab.java", "AutonomySettingsTab", WINDOW,
+            "TrainControlUI", "ui." },
     };
 
     /**
