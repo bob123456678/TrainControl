@@ -13368,8 +13368,10 @@ public class testAutonomyDiagramSession
     /**
      * Clicking a notice copies its text to the clipboard as plain text, for sharing (MT-767).
      *
-     * Read back from the system clipboard after a sentinel is put there first, so a copy that never happens fails.  On a
-     * machine with no clipboard the claim is skipped rather than failed.
+     * Read back from the system clipboard after a sentinel is put there first, so a copy that never happens fails.  Windows
+     * opens the clipboard to one program at a time, and a clipboard listener (the history, a remote desktop) opens it after
+     * every change, so each use waits for it, and a click whose copy the program dropped on a busy clipboard is made again.
+     * Skipped only when another program holds the clipboard for the whole wait.
      *
      * MUTATION: take the copy out of the list's selection listener, and this fails.
      *
@@ -13410,27 +13412,24 @@ public class testAutonomyDiagramSession
 
         assertNotNull(expected, "precondition: the editor's list has no guard notice");
 
-        java.awt.datatransfer.Clipboard clipboard;
-        String copied;
+        final java.awt.datatransfer.Clipboard clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
 
-        try
+        final java.awt.datatransfer.StringSelection sentinel =
+            new java.awt.datatransfer.StringSelection("nothing copied yet");
+
+        String copied = "nothing copied yet";
+
+        // A CLICK THE PROGRAM COULD NOT COPY is made again: it leaves a busy clipboard alone by design, and a copy that
+        // never happens still reads the sentinel every time
+        for (int click = 0; click < CLIPBOARD_CLICKS && "nothing copied yet".equals(copied); click++)
         {
-            clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+            onTheClipboard(() -> { clipboard.setContents(sentinel, sentinel); return null; });
 
-            java.awt.datatransfer.StringSelection sentinel =
-                new java.awt.datatransfer.StringSelection("nothing copied yet");
-
-            clipboard.setContents(sentinel, sentinel);
+            javax.swing.SwingUtilities.invokeAndWait(list::clearSelection);
 
             clickTheGuardNotice(panel);
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> { });
-
-            copied = (String) clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor);
-        }
-        catch (java.awt.HeadlessException | IllegalStateException e)
-        {
-            throw new org.testng.SkipException("the clipboard is not available here: " + e);
+            copied = onTheClipboard(() -> (String) clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor));
         }
 
         assertEquals(copied, expected, "a click on a notice did not copy its text to the clipboard (MT-767)");
@@ -13450,9 +13449,9 @@ public class testAutonomyDiagramSession
 
         assertTrue(heading >= 0, "precondition: the editor's list has no heading row");
 
-        java.awt.datatransfer.StringSelection untouched = new java.awt.datatransfer.StringSelection("left alone");
+        final java.awt.datatransfer.StringSelection untouched = new java.awt.datatransfer.StringSelection("left alone");
 
-        clipboard.setContents(untouched, untouched);
+        onTheClipboard(() -> { clipboard.setContents(untouched, untouched); return null; });
 
         final int row = heading;
 
@@ -13460,8 +13459,45 @@ public class testAutonomyDiagramSession
 
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-        assertEquals(clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor), "left alone",
+        assertEquals(onTheClipboard(() -> clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor)), "left alone",
             "a click on the heading " + list.getModel().getElementAt(row) + " was copied over the clipboard");
+    }
+
+    /** How long a use of the clipboard waits for another program to let go of it. */
+    private static final long CLIPBOARD_PATIENCE_MS = 10_000;
+
+    /** How many times a notice is clicked while its copy keeps finding the clipboard busy. */
+    private static final int CLIPBOARD_CLICKS = 5;
+
+    /**
+     * One use of the system clipboard, made again while another program has it open (Windows: "cannot open system
+     * clipboard"), and skipped when that lasts the whole wait - the desktop, not the program, decides that.
+     *
+     * @param use the use
+     * @return what it answers
+     * @throws Exception from the use
+     */
+    private static <T> T onTheClipboard(java.util.concurrent.Callable<T> use) throws Exception
+    {
+        long until = System.currentTimeMillis() + CLIPBOARD_PATIENCE_MS;
+
+        while (true)
+        {
+            try
+            {
+                return use.call();
+            }
+            catch (IllegalStateException busy)
+            {
+                if (System.currentTimeMillis() > until)
+                {
+                    throw new org.testng.SkipException("another program held the system clipboard open for "
+                        + CLIPBOARD_PATIENCE_MS / 1000 + " s: " + busy);
+                }
+
+                Thread.sleep(20);
+            }
+        }
     }
 
     /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */
