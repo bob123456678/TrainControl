@@ -408,8 +408,16 @@ Tab icons provided by Freepik.
         - `Run Trains to Their Homes` is available whenever the Return Home button is, and `Place All Trains at Their Homes` is greyed out while anything is running, as is the Track Diagram's Bulk Tools item for placing all trains at their homes.
         - The autonomy editor has a new `Text Labels` box under `Show Trains` for showing or hiding the diagram's own text.
         - The editor's captions dropdown is now headed `Station Labels`, offers Station Names (the default), Standing Locs, Home Locs and Hide, and uses the same font as Track Directions.
+        - The setup check now warns when two sensors on the same page share one address.
+        - Clicking a notice in the setup check now also copies its text, so you can paste it into a message.
+        - `Create New Layout` now starts from a small sample with two stations, their signals and an autonomy configuration ready to try.
+    - Routes
+        - The Routes tab now shows a turning mark beside each route while it is running.
+        - When something has to wait for a route, the message now names the route that is running.
     - Track Diagram
         - The tunnel icons are easier to see, and the link and signal icons are sharper and meet the track cleanly.
+        - In the layout editor, a new piece of track placed from the palette now turns to join the track beside it: straights, sensors, signals, curves, bumpers, tunnels, links and the base of a switch.
+        - Tooltips in the Layouts menu no longer have empty space at the end.
     - Autonomy Bug Fixes
         - A locomotive that is not in your locomotive database is now taken out of the autonomy setup when it loads, and a popup tells you which ones.
         - You can now place a train from the Track Diagram on a station no train can leave, as you can in the editor.
@@ -421,6 +429,10 @@ Tab icons provided by Freepik.
         - Track that no station can be reached along no longer shows direction arrows and is greyed out in the editor.
         - Clicking a train in Test a Path or Why not Moving? now picks the station it stands on.
         - When the only trains away from home are paused, Return Home now names them and says how to set them going, instead of saying every locomotive is already at its home.
+        - A train's icon on the Track Diagram now turns round together with the arrow on its label when its direction is changed.
+        - The setup check no longer warns about moves no train can make, such as a signal that trains only pass on their way out, or a point that is not a station.
+        - The Track Diagram and the autonomy editor now draw the same direction arrows on every stretch of track, and a stretch whose squares disagreed is put right when the setup opens, with a line in the log.
+        - A stretch of track whose squares point opposite ways is now a warning in the setup check, and the One-Way tool now sets the whole stretch you click.
 * v3.0.1 [10/13/2026]
     - Updates
         - Download Update can now also install the new version for you: it backs up your data, keeps your old version next to the new one, and restarts TrainControl
