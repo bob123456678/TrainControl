@@ -20,6 +20,7 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 
 | # | Phase | What | Why it waits |
 |---|---|---|---|
+| 1 | 1b | `core.testRouteInventory`'s three skipped claims (hollow-scan H0387 to H0389) never check anything outside your main checkout: they read `tc_backup/Autonomy 1b.json`, `1d` and `1e`, which only your machine has. | Making them real means putting your bundles (or made-up stand-ins shaped like them) into `test/`.  Your data stays out of the repository unless you say so. |
 
 ## Issues found, for later
 
