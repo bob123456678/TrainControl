@@ -1773,7 +1773,19 @@ public class RouteEditorFrame extends JFrame
      */
     public JLabel conditionCellForTest(int line)
     {
-        return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(line, 4), line, 4);
+        return conditionCellForTest(line, 4);
+    }
+
+    /**
+     * For tests: any cell of a condition line as the table paints it, tooltip included (FR-141).
+     *
+     * @param line which line
+     * @param column which column
+     * @return the rendered label
+     */
+    public JLabel conditionCellForTest(int line, int column)
+    {
+        return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(line, column), line, column);
     }
 
     /** The colour "Reads as" gives on, straight and green - the settings that let a train go. */
@@ -2195,7 +2207,11 @@ public class RouteEditorFrame extends JFrame
             public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
                 boolean selected, boolean focused, int row, int column)
             {
-                java.awt.Component out = was.getTableCellRendererComponent(which, value, selected,
+                // A TRAIN'S SENSOR SAYS IT IS ONE (FR-141): shown, not stored, so the cell still holds and edits the number
+                Object shown = which instanceof ConditionTable
+                    ? ((ConditionTable) which).shownAs(row, column, value) : value;
+
+                java.awt.Component out = was.getTableCellRendererComponent(which, shown, selected,
                     focused, row, column);
 
                 boolean editable = which.getModel().isCellEditable(row, column);
@@ -2236,9 +2252,14 @@ public class RouteEditorFrame extends JFrame
                 String refused = which instanceof CommandTable
                     ? ((CommandTable) which).whyWrong(row) : null;
 
+                // And what a cell means where its column's name does not say (FR-141), which is not a refusal and
+                // leaves the ink alone
+                String explained = which instanceof ConditionTable
+                    ? ((ConditionTable) which).explains(row, column) : null;
+
                 if (out instanceof javax.swing.JComponent)
                 {
-                    ((javax.swing.JComponent) out).setToolTipText(refused);
+                    ((javax.swing.JComponent) out).setToolTipText(refused != null ? refused : explained);
                 }
 
                 if (!selected)
@@ -4253,6 +4274,45 @@ public class RouteEditorFrame extends JFrame
         boolean isJoinerRow(int line)
         {
             return line >= 0 && line < conditions.rows.size() && conditions.rows.get(line).isJoiner();
+        }
+
+        /**
+         * What a cell shows, where that is more than what it holds (FR-141).
+         *
+         * A train-at-a-sensor line's setting is the sensor's ADDRESS, and a bare number under "Setting" did not say so -
+         * Adam: *"setting" in this cas is/should be the sensor address, can it be made clearer?*  Only the painting
+         * changes: the cell's value, its editor and what Save reads are still the number.
+         *
+         * @param line the row
+         * @param column the column
+         * @param value what the cell holds
+         * @return what to paint
+         */
+        Object shownAs(int line, int column, Object value)
+        {
+            return column == 6 && asksWhereATrainIs(line)
+                ? I18n.f("route.ui.frameSensorAddress", String.valueOf(value)) : value;
+        }
+
+        /**
+         * The tooltip a cell carries to say what it means, or null for none (FR-141).
+         *
+         * @param line the row
+         * @param column the column
+         * @return the explanation
+         */
+        String explains(int line, int column)
+        {
+            return column == 6 && asksWhereATrainIs(line) ? I18n.t("route.ui.frameSensorAddressTip") : null;
+        }
+
+        private boolean asksWhereATrainIs(int line)
+        {
+            if (line < 0 || line >= rows.size() || rows.get(line).isJoiner()) return false;
+
+            CommandRow term = CommandRow.of(rows.get(line).getCommand());
+
+            return term != null && CommandRow.asksWhereATrainIs(term.getKind());
         }
 
         private final List<ConditionOutline.Row> rows = new ArrayList<>();

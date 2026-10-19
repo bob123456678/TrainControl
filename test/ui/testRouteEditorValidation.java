@@ -1177,6 +1177,83 @@ public class testRouteEditorValidation
         }
     }
 
+    /**
+     * A train-at-a-sensor line's setting says it is the sensor's address (FR-141).
+     *
+     * Adam: *"setting" in this cas is/should be the sensor address, can it be made clearer?*  The cell paints the number
+     * as a sensor address and its tooltip says what it is, on both kinds; a sensor line's own setting is left as it was.
+     *
+     * MUTATION: have `ConditionTable.shownAs` hand back the value as it is and the first assertion fails.
+     */
+    @Test
+    public void testATrainAtASensorsSettingSaysItIsTheSensorAddress() throws Exception
+    {
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        assertEquals(english.getProperty("route.ui.frameSensorAddress"), "Sensor address: {0}",
+            "the setting of a train-at-a-sensor line does not say it is the sensor address");
+
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 212", 1022, false)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(5)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            final String[][] cell = new String[3][2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                for (int at = 0; at < 3; at++)
+                {
+                    javax.swing.JLabel painted = frame.conditionCellForTest(at * 2, 6);
+
+                    cell[at][0] = painted.getText();
+                    cell[at][1] = painted.getToolTipText();
+                }
+            });
+
+            assertEquals(cell[0][0], I18n.f("route.ui.frameSensorAddress", "21"),
+                "the at line's setting is a bare number, not a sensor address");
+
+            assertEquals(cell[0][1], I18n.t("route.ui.frameSensorAddressTip"),
+                "the at line's setting has no tooltip saying what it is");
+
+            assertEquals(cell[1][0], I18n.f("route.ui.frameSensorAddress", "1022"),
+                "the not-at line's setting is a bare number, not a sensor address");
+
+            assertEquals(cell[1][1], I18n.t("route.ui.frameSensorAddressTip"),
+                "the not-at line's setting has no tooltip saying what it is");
+
+            assertEquals(cell[2][0], "on", "a sensor line's own setting changed");
+
+            assertNull(cell[2][1], "a sensor line's setting wears the train line's tooltip");
+
+            assertEquals(frame.conditionRowsForTest().get(0).getCommand().getAddress(), 21,
+                "painting the address changed the condition");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
     /** A feedback condition on one sensor. */
     private static org.traincontrol.base.RouteCommand feedback(int address)
     {
