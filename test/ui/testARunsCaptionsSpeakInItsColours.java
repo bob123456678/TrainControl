@@ -82,6 +82,7 @@ public class testARunsCaptionsSpeakInItsColours
         MarklinControlStation model = null;
         TrainControlUI ui = null;
         Thread run = null;
+        final Map<Locomotive, Integer> lengthsWere = new java.util.HashMap<>();
 
         try
         {
@@ -97,6 +98,19 @@ public class testARunsCaptionsSpeakInItsColours
             model = support.TestStationAddress.withNoStation(
                 () -> MarklinControlStation.init(null, true, true, false, true));
             model.setNetworkCommState(false);
+
+            // ITS TRAINS' LENGTHS, CLEARED: a length is the database's working state, and his 3505 SP of four units
+            // cannot stop at TopMainR1 (room for three).  A claim about colours keeps the length rule out.
+            for (String name : new String[] {MOVER, "75 407 DB"})
+            {
+                Locomotive borrowed = model.getLocByName(name);
+
+                assertNotNull(borrowed, "precondition: the database has no " + name);
+
+                lengthsWere.put(borrowed, borrowed.getTrainLength());
+
+                borrowed.setTrainLength(0);
+            }
 
             ui = (TrainControlUI) model.getGUI();
 
@@ -274,6 +288,8 @@ public class testARunsCaptionsSpeakInItsColours
         finally
         {
             if (run != null) run.interrupt();
+
+            for (Map.Entry<Locomotive, Integer> was : lengthsWere.entrySet()) was.getKey().setTrainLength(was.getValue());
 
             if (model != null) model.stop();
 
