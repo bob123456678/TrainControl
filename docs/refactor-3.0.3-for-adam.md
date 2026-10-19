@@ -29,6 +29,7 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 1 | 1b | `core.testRouteInventory`'s three skipped claims (hollow-scan H0387 to H0389) never check anything outside your main checkout: they read `tc_backup/Autonomy 1b.json`, `1d` and `1e`, which only your machine has. | Making them real means putting your bundles (or made-up stand-ins shaped like them) into `test/`.  Your data stays out of the repository unless you say so. |
 | 2 | 1a | Production speed-ups for tests: skip the start-up station sync when no station is configured or in simulation (about 4 s per init); make the fixed simulation pauses settable like `TIMETABLE_STUCK_MS` (`CONFIGURE_SLEEP` 150 ms, `FEEDBACK_DURATION_THRESHOLD`, `COMPLETION_POLL`, `NO_PATH_IDLE_MS`, the 1 s after a turn, `STAGING_RETRY_PAUSE`); a quick refusal in `HomeStaging` when a plan is plainly impossible (its 15 s budget). | They change production code, which you said needs your OK (plan, 1a). |
 | 3 | 1a | `core.testACompulsoryTurnIsNotAQuestion` could zero its builder delays (about 40 s), as other tests do. | It changes the scenario's timing, which may be what the test is about. |
+| 4 | 6 | A JaCoCo coverage run of the battery (a test-only jar in `resources_test`). | Downloading a file needs your OK.  The Phase 6 inventory is built from the code instead (which actions and events a test drives the way a user or the railway would); coverage figures can be added once JaCoCo is approved. |
 
 ## Issues found, for later
 
