@@ -19,7 +19,8 @@ import org.traincontrol.util.I18n;
 /**
  * A session's imports: a legacy autonomy.json, an exported bundle, and telling the two apart (FR-136).
  *
- * The session keeps its fields, its public methods and `LegacyImport`; each public method here is one line there.
+ * The session keeps its fields, its public methods - each a one-line call to a method here - and the nested types
+ * `LegacyImport`, `ImportFormat` and `LocomotiveLeftOut`.
  */
 final class SessionImport
 {

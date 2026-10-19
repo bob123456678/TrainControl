@@ -17,7 +17,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 /**
  * A session's runs of plain track, a direction set along one, and the marks the diagrams draw for them (FR-136).
  *
- * The session keeps its fields and its public methods; each public method here is one line there.
+ * The session keeps its fields and its public methods, each a one-line call to a method here.
  */
 final class SessionRuns
 {
