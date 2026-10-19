@@ -420,10 +420,11 @@ public class testALockReachesTheRailBeingRunOver
 
         List<String> wrong = new java.util.ArrayList<>();
         List<String> unresolved = new java.util.ArrayList<>();
+        List<String> allowedPairs = new java.util.ArrayList<>();
 
         for (String[] running : whileRunning)
         {
-            check(running, alsoOk, wrong, unresolved);
+            check(running, alsoOk, wrong, unresolved, allowedPairs);
         }
 
         check(new String[] {"BottomMainA", "TopMainR1"},
@@ -431,13 +432,21 @@ public class testALockReachesTheRailBeingRunOver
                 {"TopMainR2", "BottomSecondary"},
                 {"BottomInner", "BottomMainB"},
                 {"TopMainR2Pre", "TopMainR2"},
-            }, wrong, unresolved);
+            }, wrong, unresolved, allowedPairs);
 
         assertTrue(wrong.isEmpty(),
             "these pairs Adam says may run at once are refused: " + wrong
             + ".  His rule: \"nothing should disturb the ability to go from bottominner to"
             + " bottominnerotherside unless trains are crossing down, or passing through either of"
             + " those stations\"");
+
+        // A FLOOR UNDER THE PAIRS COMPARED (FR-136).  `wrong` is empty for a pair that was never compared, so a search
+        // that found no route for any of them - every pair "unresolved" - left the claim above green over nothing.  Eight
+        // of his eleven pairs run alongside on this railway today; the other three share rail on every combination of
+        // copies, which is the question for him that the list below carries.
+        assertTrue(allowedPairs.size() >= 8,
+            "only " + allowedPairs.size() + " of the 11 pairs Adam says may run at once were found to, so the locking was"
+            + " asked about fewer of them than it was: " + allowedPairs + ", not compared: " + unresolved);
 
         // NOT an assertion: a name his railway does not carry is a question for him, and failing on
         // it would stop the claim above being about the locking.
@@ -460,10 +469,11 @@ public class testALockReachesTheRailBeingRunOver
      * @param others the journeys that must still be possible
      * @param wrong filled with the ones no combination allows
      * @param unresolved filled with the ones this railway cannot express
+     * @param allowedPairs filled with the ones some combination allows
      * @throws Exception from the search
      */
     private static void check(String[] running, String[][] others, List<String> wrong,
-        List<String> unresolved) throws Exception
+        List<String> unresolved, List<String> allowedPairs) throws Exception
     {
         List<List<Edge>> runs = routesBetween(running[0], running[1]);
 
@@ -544,7 +554,12 @@ public class testALockReachesTheRailBeingRunOver
                 if (allowed) break;
             }
 
-            if (allowed) continue;
+            if (allowed)
+            {
+                allowedPairs.add(pair[0] + " -> " + pair[1] + " while " + running[0] + " -> " + running[1]);
+
+                continue;
+            }
 
             if (!everTried)
             {
