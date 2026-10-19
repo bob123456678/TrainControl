@@ -11,6 +11,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.StationIndex;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -416,11 +417,11 @@ public class testNonReversibleTrains
         // ONE HAND DOOR since 2026-09-29 (Adam: "can all the checks go through a single door?"): the track diagram's
         // destinations and the Auto tab's list both send through TrainControlUI.sendATrainByHand, and dispatch nothing
         // themselves
-        for (String hand : new String[] {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
-            "src/org/traincontrol/gui/AutoLocomotiveStatus.java"})
+        for (String hand : new String[] {"final class LayoutRightclickAutonomyMenu extends JPopupMenu",
+            "public final class AutoLocomotiveStatus extends javax.swing.JPanel"})
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(hand)),
-                java.nio.charset.StandardCharsets.UTF_8).replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\r\n]*", " ");
+            // The class itself is the claim: found by its declaration, wherever its file is.
+            String source = SourceOf.withoutComments(SourceOf.fileDeclaring(hand));
 
             assertTrue(source.contains("sendATrainByHand("), hand + " no longer sends through the one hand door");
 
@@ -429,18 +430,12 @@ public class testNonReversibleTrains
 
         final String[][] doors =
         {
-            {"src/org/traincontrol/gui/TrainControlUI.java", "the one hand door both hand doors send through"},
+            {"TrainControlUI.sendATrainByHand", "the one hand door both hand doors send through"},
         };
 
         for (String[] door : doors)
         {
-            java.io.File file = new java.io.File(door[0]);
-
-            assertTrue(file.exists(), "precondition: " + door[0] + " has to be readable, or this test "
-                + "reports every door as silent and means nothing");
-
-            String source = new String(java.nio.file.Files.readAllBytes(file.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+            String source = SourceOf.declaration("void sendATrainByHand(").replaceAll("\\s+", " ");
 
             // Either door may hand over the shared policy or call the prompt itself; what the census
             // refuses is a door that hands over neither.
@@ -449,19 +444,15 @@ public class testNonReversibleTrains
             // inside the run: "make it be on departure itself, that way there is no dispatch prior to
             // user input."
             // IN THE ONE HAND DOOR, before its dispatch
-            int at = source.indexOf("void sendATrainByHand(");
-
-            assertTrue(at > 0, "precondition: the one hand door has gone from " + door[0]);
-
             // ITS DISPATCH, by the name it has had since round 61 (BCR-C1) or the one before
-            int dispatch = source.indexOf("executePathByHand(", at);
+            int dispatch = source.indexOf("executePathByHand(");
 
-            if (dispatch < 0) dispatch = source.indexOf("executePath(", at);
+            if (dispatch < 0) dispatch = source.indexOf("executePath(");
 
-            assertTrue(dispatch > at, "precondition: the one hand door no longer dispatches through executePath or"
+            assertTrue(dispatch > 0, "precondition: the one hand door no longer dispatches through executePath or"
                 + " executePathByHand, so this checks nothing before it");
 
-            source = source.substring(at, dispatch);
+            source = source.substring(0, dispatch);
 
             assertTrue(source.contains("ManualReversalPrompt.forJourney(")
                     || source.contains("ManualReversalPrompt.forOperator(")
@@ -473,15 +464,15 @@ public class testNonReversibleTrains
         // AND THE UNATTENDED ONES DO NOT, which is the other half: the timetable is what Return Home
         // runs, and asking a dialog about a turn the planner chose would be asking about a decision
         // the operator already made.
-        String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        // The automation layer is the class that runs the journeys, found by the method every door ends in.
+        String layout = SourceOf.fileDeclaring(
+            "public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)");
 
         // COMMENTS STRIPPED FIRST.  This read the whole file and failed on a javadoc that names
         // `ManualReversalPrompt` while explaining why the automation layer must not call it - a guard
         // that cannot tell an explanation from an instruction reports on prose rather than on the
         // program, and this is the third one in this repository to do it.
-        String code = layout.replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+        String code = SourceOf.withoutComments(layout);
 
         assertFalse(code.contains("ManualReversalPrompt"),
             "the automation layer now reaches into the window for a dialog, so an unattended run can "
@@ -700,33 +691,16 @@ public class testNonReversibleTrains
     @Test
     public void testTheJourneyPolicyAnswersAsksAboutIndependentlyOfTheAnswer() throws Exception
     {
-        String prompt = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/ManualReversalPrompt.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        int journey = prompt.indexOf("forJourney(");
-
-        assertTrue(journey > 0, "forJourney has been renamed and this check now guards nothing");
-
-        int asks = prompt.indexOf("public boolean asksAbout(Point at)", journey);
-
-        assertTrue(asks > 0, "the journey policy no longer answers asksAbout");
-
-        StringBuilder code = new StringBuilder();
+        String journey = SourceOf.declaration(
+            "public static org.traincontrol.automation.Layout.ReversalPolicy forJourney(");
 
         // Comments stripped: the paragraph above this method explains the defect by name, and a guard
         // that reads its own explanation as code reports on prose rather than on the program.
-        for (String line : prompt.substring(asks,
-            prompt.indexOf("            }", asks)).split("\\r?\\n"))
-        {
-            String trimmed = line.trim();
-
-            if (!trimmed.startsWith("//")) code.append(trimmed).append(" ");
-        }
+        String code = SourceOf.withoutComments(SourceOf.declarationIn(journey, "public boolean asksAbout(Point at)"));
 
         // A WORD, not a substring: the first version of this check searched for "turn" and found it
         // inside "return", so it failed on the correct code it was written to protect.
-        assertFalse(code.toString().matches(".*\\bturn\\b.*"),
+        assertFalse(java.util.regex.Pattern.compile("\\bturn\\b").matcher(code).find(),
             "the journey policy answers asksAbout using the operator's answer. That lets a \"keep "
             + "direction\" make every may-reverse turning copy look compulsory to shouldReverseAt, "
             + "which turns the train against the explicit no (CONF2-B2). The answer belongs in "
@@ -894,11 +868,7 @@ public class testNonReversibleTrains
     @Test
     public void testTheRunAsksThatRule() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String flat = source.replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("private boolean executePathInternal(").replaceAll("\\s+", " ");
 
         // THE INTERMEDIATE POINTS.
         assertTrue(flat.contains(
@@ -980,7 +950,7 @@ public class testNonReversibleTrains
         // compulsory ones.  That is also why `asksAbout` must not depend on the ANSWER - when it
         // briefly returned `turn && ...`, "keep direction" made every may-reverse turning copy look
         // compulsory and turned the train against an explicit no.
-        assertTrue(flat.contains(
+        assertTrue(SourceOf.declaration("public boolean shouldReverseAt(").replaceAll("\\s+", " ").contains(
             "if (current.isReversing() && !reversals.asksAbout(current)) return true;"),
             "a compulsory turn can now reach a reversal policy, which answers \"keep direction\" - so "
             + "the train is driven forward off a turning copy whose only edges leave by the side it "

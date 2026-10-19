@@ -21,6 +21,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Home stations and the "return to home" planner.
@@ -223,21 +224,20 @@ public class testHomeStaging
     @Test
     public void testThePlannerAsksTheRuntimeQuestionAboutCoveredTrack() throws Exception
     {
-        String planner = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/HomeStaging.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
         // ONE TRAIN AT A TIME since TDD-A1: the railway's single map records one train per place, so the planner reads
         // each train's own record - `tailsOfEachStandingTrain` walks the same tails `edgesCoveredByStandingTrains` does.
-        assertTrue(planner.contains("layout.tailsOfEachStandingTrain()"),
+        assertTrue(SourceOf.declaration("private HomeStaging(").contains("layout.tailsOfEachStandingTrain()"),
             "the planner no longer asks which track the trains are lying across, so it routes through it"
             + " and the runtime refuses the plan on its first move (OB-184)");
 
-        assertTrue(planner.contains("passesTheTailsOfTrainsThatHaveNotMoved(e, loc, state)"),
+        assertTrue(SourceOf.declaration("private List<Edge> firstClearRoute(")
+            .contains("passesTheTailsOfTrainsThatHaveNotMoved(e, loc, state)"),
             "the route search does not consult the covered track, so the rule exists and nothing calls"
             + " it - which is what a half-finished refactor leaves behind");
 
-        assertTrue(planner.contains("sharing.getLockEdges().contains(edge)"),
+        String atStart = SourceOf.declaration("private static boolean liesAcrossAtStart(");
+
+        assertTrue(atStart.contains("sharing.getLockEdges().contains(edge)"),
             "the planner sweeps lock edges without checking they are SYMMETRIC. Sharing a tile is"
             + " mutual; the builder's travel restrictions live in the same collection and are"
             + " one-directional, so sweeping both refuses routes over physically clear track and blames"
@@ -245,9 +245,8 @@ public class testHomeStaging
 
         // AND THE RUNTIME STILL ASKS IT THE SAME WAY.  The pairing is the point: if `isPathClear` moves
         // to a different rule, this planner silently goes back to disagreeing with it.
-        String layout = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String layout = SourceOf.declaration(
+            "private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand)");
 
         assertTrue(layout.contains("if (!sharing.getLockEdges().contains(e)) continue;"),
             "the runtime's covered-track rule has changed shape, so the planner above is now mirroring"
@@ -259,12 +258,13 @@ public class testHomeStaging
         assertTrue(layout.contains("lyingAcross = anotherTailOn(e, loc, coveredPlaces);"),
             "the runtime no longer asks whether another train's tail lies on the metal an edge runs over (AUT-B1)");
 
-        assertTrue(planner.contains("if (Layout.anotherTailOn(edge, mover, places) != null) return false;"),
+        assertTrue(SourceOf.declaration("private boolean passesTheTailsOfTrainsItHasMoved(")
+            .contains("if (Layout.anotherTailOn(edge, mover, places) != null) return false;"),
             "the planner's check of the tails its own moves leave does not ask by place, so it plans onto a copy of"
             + " the rail the runtime refuses (AUT-B1)");
 
         // EVERY TRAIN on those places, not the first (AUT2-C2), each asked against its own record (TDD-A1).
-        assertTrue(planner.contains("return Layout.tailLiesOn(edge, train, places);"),
+        assertTrue(atStart.contains("return Layout.tailLiesOn(edge, train, places);"),
             "the planner's check of the tails of trains that have not moved does not ask by place, for every train"
             + " lying there (AUT-B1, AUT2-C2)");
     }    /**
