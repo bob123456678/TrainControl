@@ -473,7 +473,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         {
             List<Side> offered = session.facingChoices(square);
 
-            if (offered.size() != 1) throw new SkipException("TunnelRightPark does not offer one facing here: " + offered);
+            assertEquals(offered.size(), 1, "TunnelRightPark does not offer one facing here: " + offered);
 
             assertFalse(session.getRoutes(square).values().iterator().next().touches(Side.E), "precondition:"
                 + " TunnelRightPark's track runs east");
