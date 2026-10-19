@@ -319,6 +319,110 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
+     * The railway's helpers (FR-136): the field of Layout that holds each, the file it is declared in, and its class
+     * name - for the static delegators, which reach it as `Class.method(`.
+     */
+    private static final String[][] LAYOUT_HELPERS = {
+        { "layoutExplanations", "src/org/traincontrol/automation/LayoutExplanations.java", "LayoutExplanations" },
+    };
+
+    /**
+     * The railway's delegators and the helpers they hand to do not call each other for ever (FR-136).
+     *
+     * Layout keeps every public and `synchronized` method, and each private one that something outside a moved cluster
+     * calls, as a one-line call to a package-private helper; the helper calls back into the railway through `owner.`,
+     * or `Layout.` for a static.  Both loops are read: a delegator calling its own name instead of the helper's, and a
+     * helper's method calling back into the delegator that leads to it.  Either is a StackOverflowError the compiler
+     * accepts.
+     *
+     * MUTATION: make LayoutExplanations.explainCannotStart(Locomotive) end `return owner.explainCannotStart(loc);`, or
+     * make Layout.whyNoRouteFitsTo call `whyNoRouteFitsTo(loc, start, end)`, and this fails.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testARailwayDelegatorAndItsHelperDoNotCallEachOtherForEver() throws Exception
+    {
+        List<String> railway = Files.readAllLines(
+            new File("src/org/traincontrol/automation/Layout.java").toPath(), StandardCharsets.UTF_8);
+
+        for (String[] each : LAYOUT_HELPERS)
+        {
+            File source = new File(each[1]);
+
+            assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+
+            List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
+
+            // What each side calls on the other: the railway through its field (or `Class.` for a static), the helper
+            // through `owner.` (or `Layout.` for a static)
+            java.util.Map<String, java.util.Set<String>> railwayCalls = merged(
+                callsThrough(railway, each[0] + "."), callsThrough(railway, each[2] + "."));
+            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
+                callsThrough(helper, "owner."), callsThrough(helper, "Layout."));
+
+            int checked = 0;
+
+            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : railwayCalls.entrySet())
+            {
+                for (String handedTo : delegator.getValue())
+                {
+                    checked++;
+
+                    java.util.Set<String> back = helperCalls.get(handedTo);
+
+                    assertFalse(back != null && back.contains(delegator.getKey()),
+                        "Layout." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
+                        + ", which calls back into Layout." + delegator.getKey() + " - a loop the compiler accepts");
+                }
+            }
+
+            assertTrue(checked > 0, "Layout hands nothing to " + each[0] + ", so this checks nothing");
+
+            // And a delegator that calls its own name, bare or through `this.`, instead of the helper's.  Every method of
+            // Layout named like one of the helper's is read, since a delegator rewritten that way names the helper nowhere.
+            java.util.Set<String> helperNames = new java.util.HashSet<>();
+
+            for (String line : helper)
+            {
+                String name = methodDeclaredAt(line);
+
+                if (name != null) helperNames.add(name);
+            }
+
+            int delegators = 0;
+
+            for (int i = 0; i < railway.size(); i++)
+            {
+                String name = methodDeclaredAt(railway.get(i));
+
+                if (name == null || !helperNames.contains(name)) continue;
+
+                delegators++;
+
+                String declaration = railway.get(i).trim();
+
+                // A declaration whose parameters run onto the next lines
+                for (int k = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < railway.size(); k++)
+                {
+                    declaration += " " + railway.get(k).trim();
+                }
+
+                int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1,
+                    declaration.lastIndexOf(')')));
+
+                for (String line : bodyOf(railway, i))
+                {
+                    assertFalse(callsItself(line.replace("this." + name + "(", name + "("), name, arity),
+                        "Layout." + name + " calls itself instead of " + each[0] + "." + name + ".  Line: " + line.trim());
+                }
+            }
+
+            assertTrue(delegators > 0, "no method of Layout is named like one of " + each[2] + "'s, so this checks nothing");
+        }
+    }
+
+    /**
      * Whether a line calls the wrapper's own name from inside its own body - qualified or not.
      *
      * The bug this file was written for was `this.syncWithCS2()`, and `this.` + name + `(` is what

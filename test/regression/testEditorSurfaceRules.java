@@ -4624,6 +4624,11 @@ public class testEditorSurfaceRules
         excused.put("automation/Layout.java",
             "the rule itself, and `barredFromAutonomy` which decomposes it into named reasons");
 
+        excused.put("automation/LayoutExplanations.java",
+            "the body of Layout's `whyNotOfferedToOperator` (FR-136), which asks a DIFFERENT question of the clause: a"
+            + " terminus a train that cannot reverse would be stranded at is kept out of the menu only where autonomy"
+            + " may choose it, since a square it never chooses is a berth the operator puts trains away in (OB-205)");
+
         excused.put("automation/Point.java", "the accessor");
 
         excused.put("automationui/AutonomyChecks.java",

@@ -180,6 +180,9 @@ public class testTheDestinationDoorsAgree
 
         while (call.find())
         {
+            // The railway's one-line delegators to its explanations (FR-136) hand each form on as it came: no door
+            if (code.startsWith("layoutExplanations", call.start() - "layoutExplanations".length())) continue;
+
             calls++;
 
             // The arguments, to the matching parenthesis: a comma at depth one is a second argument.
