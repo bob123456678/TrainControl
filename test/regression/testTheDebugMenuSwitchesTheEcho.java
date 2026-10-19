@@ -224,7 +224,8 @@ public class testTheDebugMenuSwitchesTheEcho
     /**
      * A sensor made at the station is drawn made on the track diagram.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, take out `this.updateTiles();`.
+     * MUTATION: in `LayoutDiagramComponent`, where a sensor's picture is chosen,
+     * `if (this.getFeedback() != null && this.getFeedback().isSet())` to `if (false)`.
      *
      * @throws Exception from the event thread
      */
