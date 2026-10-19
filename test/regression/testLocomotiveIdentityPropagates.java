@@ -109,6 +109,13 @@ public class testLocomotiveIdentityPropagates
 
         assertFalse(layout.getTimetable().isEmpty(), "the timetable entry was not made");
 
+        // THE REFLECTION CAN SEE: before the delete the locomotive IS held, by the run list at least.  Without this the
+        // emptiness asserted after the delete is the answer of a scan that may be looking at nothing.
+        assertTrue(collectionsHolding(layout, going).contains("locomotivesToRun"),
+            "precondition: the scan of the layout's collections does not see the run list holding the locomotive, so"
+            + " 'nothing holds it after the delete' below would be true of any layout.  It sees: "
+            + collectionsHolding(layout, going));
+
         layout.locDeleted(going);
 
         assertNull(layout.getPoint("PR A").getCurrentLocomotive(),
@@ -342,8 +349,7 @@ public class testLocomotiveIdentityPropagates
         // Except Return Home's planner, whose maps are a copy of the layout's, taken when the button is pressed
         // (`HomeStaging.snapshot`) and dropped with the plan - so the deletion sweep has nothing of its to let go of.
         // That stays true only while nothing in the package keeps a planner in a field, which is asked here.
-        assertFalse(java.util.regex.Pattern.compile("\n    (?:\\w+ )*HomeStaging(?:\\.\\w+)? \\w+\\s*[;=]")
-                .matcher(text).find(),
+        assertFalse(keepsTheHomePlanner(text),
             "a field of the automation package now keeps Return Home's planner, so its locomotive maps outlive the"
             + " press and are holders the deletion sweep has to name");
 
@@ -381,6 +387,60 @@ public class testLocomotiveIdentityPropagates
             + "about: " + missing + ". Each one keeps a deleted locomotive alive somewhere - a claim "
             + "that lowers the cap on running trains, a sensor something is waiting on, a timetable "
             + "entry that drives it. Sweep it, or say here why it does not need sweeping");
+    }
+
+    /** A field declared at class level: its modifiers, then a type (generic or array too) in group 1, then its name. */
+    private static final java.util.regex.Pattern FIELD_DECLARATION = java.util.regex.Pattern.compile(
+        "\n    (?:(?:private|public|protected|static|final|volatile|transient) )*"
+        + "([\\w.]+(?:<[^;=(){}]*>)?(?:\\[\\])*) \\w+\\s*[;=]");
+
+    /**
+     * Whether any field of the code keeps Return Home's planner, as itself or inside a collection, map or array of them.
+     *
+     * @param code the code of the automation package, comments blanked
+     * @return true when a field's type names `HomeStaging`
+     */
+    private static boolean keepsTheHomePlanner(String code)
+    {
+        java.util.regex.Matcher field = FIELD_DECLARATION.matcher(code);
+
+        while (field.find())
+        {
+            if (field.group(1).matches(".*\\bHomeStaging\\b.*")) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The search for a field keeping the planner sees the declarations a layout would write, and not what is not one.
+     *
+     * The search used to match only a field typed directly `HomeStaging`, so `List<HomeStaging>` or `Map<String,
+     * HomeStaging.Plan>` went by it.  Driven here over made-up declarations, so it cannot go quiet unnoticed.
+     *
+     * MUTATION: add `private List<HomeStaging> plans = new ArrayList<>();` to `Layout`, and
+     * `testEveryLocomotiveHolderIsNamedInTheSweep` fails; narrow `FIELD_DECLARATION` to the plain type and this does.
+     */
+    @Test
+    public void testTheSearchForAPlannerHeldInAFieldSeesEveryShapeOfField()
+    {
+        assertTrue(keepsTheHomePlanner("\n    private HomeStaging planner;"), "a plain field is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    private HomeStaging.Plan plan = null;"), "a nested type is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    private List<HomeStaging> plans = new ArrayList<>();"),
+            "a list of planners is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    private final Map<String, HomeStaging.Plan> byName = new HashMap<>();"),
+            "a map of plans, with a space inside the type, is not found");
+
+        assertTrue(keepsTheHomePlanner("\n    static HomeStaging[] all;"), "an array of planners is not found");
+
+        assertFalse(keepsTheHomePlanner("\n    private int plans;\n    private List<Edge> edges = new ArrayList<>();"),
+            "fields that do not keep a planner are flagged");
+
+        assertFalse(keepsTheHomePlanner("\n    public HomeStaging planFor(Locomotive l)\n    {\n        HomeStaging local = null;"),
+            "a method that returns a planner, or a local variable, is flagged as a field");
     }
 
     /**
@@ -553,24 +613,58 @@ public class testLocomotiveIdentityPropagates
     {
         List<String> holding = new ArrayList<>();
 
-        for (Field field : Layout.class.getDeclaredFields())
-        {
-            field.setAccessible(true);
-
-            Object value = field.get(layout);
-
-            if (value instanceof java.util.Map && ((java.util.Map<?, ?>) value).containsKey(loc))
-            {
-                holding.add(field.getName());
-            }
-            else if (value instanceof java.util.Collection
-                && ((java.util.Collection<?>) value).contains(loc))
-            {
-                holding.add(field.getName());
-            }
-        }
+        holdingIn(layout, "", loc, holding, java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Object, Boolean>()));
 
         return holding;
+    }
+
+    /**
+     * The fields of an object, and of the helper objects of the automation package it owns, that hold a locomotive.
+     *
+     * Reached through the objects `Layout` keeps in its fields as well as its own collections, so a locomotive map moved
+     * into a helper class the layout owns (FR-136) is still found.
+     *
+     * @param owner the object whose fields are read
+     * @param path how it was reached, empty for the layout itself
+     * @param loc the locomotive
+     * @param holding receives `field` or `helper.field` for each collection holding it
+     * @param seen the objects already read
+     */
+    private void holdingIn(Object owner, String path, Locomotive loc, List<String> holding, java.util.Set<Object> seen)
+        throws Exception
+    {
+        if (!seen.add(owner)) return;
+
+        for (Class<?> type = owner.getClass(); type != null && type != Object.class; type = type.getSuperclass())
+        {
+            for (Field field : type.getDeclaredFields())
+            {
+                field.setAccessible(true);
+
+                Object value = field.get(owner);
+
+                if (value == null) continue;
+
+                String name = path + field.getName();
+
+                if (value instanceof java.util.Map && ((java.util.Map<?, ?>) value).containsKey(loc))
+                {
+                    holding.add(name);
+                }
+                else if (value instanceof java.util.Collection
+                    && ((java.util.Collection<?>) value).contains(loc))
+                {
+                    holding.add(name);
+                }
+                else if (!(value instanceof java.util.Map) && !(value instanceof java.util.Collection)
+                    && !(value instanceof Locomotive)
+                    && value.getClass().getName().startsWith("org.traincontrol.automation.")
+                    && !value.getClass().isEnum())
+                {
+                    holdingIn(value, name + ".", loc, holding, seen);
+                }
+            }
+        }
     }
 
     private Locomotive loc(String name) throws Exception
