@@ -659,7 +659,7 @@ public class testAutonomyDiagramPorts
      * `TileGraph.directionIsPossible` is the question the MENU asks.  `directionAllows` is not the
      * other half of it, though an earlier draft said so: they disagree about `NONE`, which is always
      * offerable and never passable.  The question about whether a train MOVES is `isPassable`, and
-     * `core.testAutonomyDiagramSession.testAShutRouteDrawsNoArrow` is what holds that one.
+     * `core.testTheDiagramDrawsWhatTrainsMayDo.testAShutRouteDrawsNoArrow` is what holds that one.
      *
      * **THE PORT MAP'S SHAPE IS ASSERTED, NOT ASSUMED (VD18-T2).**  An earlier draft derived the toe
      * and then compared it with `getA()` in a ternary whose true branch is dead - `into(toward, from)`

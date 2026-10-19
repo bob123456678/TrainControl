@@ -16,7 +16,8 @@ import support.SourceOf;
  * bounded source scan testARunSurvivesADiagramEdit uses, and this follows it. That has a real limit
  * worth stating: these assert that the CALL is in the right place, not that the call does the right
  * thing. What the calls do is covered where it can be exercised - AutonomySession.moveTiles,
- * forgetTiles and forgetCaptionsAt are tested directly in testAutonomyDiagramSession.
+ * forgetTiles and forgetCaptionsAt are tested directly in testAStationsTimetableFollowsItThroughRenamesAndEdits (moveTiles, forgetTiles)
+ * and testACaptionStaysWithItsSquare (forgetCaptionsAt).
  *
  * Each scan is bounded to one method body. An unbounded search would find the term anywhere in a
  * six-thousand-line file and pass while the method it names does nothing - which is the vacuous-scan

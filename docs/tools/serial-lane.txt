@@ -10,7 +10,7 @@
 # toFront, postEvent, getSystemClipboard and java.awt.Robot (none uses Robot).  A new class that uses any of them
 # belongs here.  One class per line; the text after # says why.
 
-core.testAutonomyDiagramSession              # reads the system clipboard back after a copy
+core.testASignalGuardsItsStationAndTheNoticeNamesIt  # reads the system clipboard back after a copy
 core.testMassAssignLengths                   # waits for its prompt to have the keyboard focus, and skips without it
 regression.testTheKeyMapReachesTheWholeWindow  # posts key events, which go to whichever component has the focus
 regression.testTheWindowTakesTheKeyboard     # asks which component has the keyboard focus

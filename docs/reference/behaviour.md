@@ -252,8 +252,8 @@ them, ignored while it is not a station* (GSE-C4).  A square demoted keeps its c
 by, its exit and entry guard signals and its turn setting, as it already kept its longest train (OB-291) and what blocks
 it (AMS-B2).  While it is not a station none of them is read: no caption is drawn for it, no guard is built for it, no
 side of it is barred.  Made a station again, it has them all back.  They used to be cleared on demotion, with nothing
-said and no way back.  `core.testAutonomyDiagramSession.testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`,
-`testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation`, `testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow`.
+said and no way back.  `core.testATrainIsPlacedOnceAndKeepsItsFacing.testADemotedStationHasItsSettingsBackWhenItIsAStationAgain`,
+`testADemotedStationsSettingsAreIgnoredWhileItIsNotAStation`, `core.testACaptionStaysWithItsSquare.testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow`.
 
 **And a route deleted takes the calls to it with it** (GSR-B4; Adam, 2026-10-10, asked: remove the calls).  The
 question before deleting a route names the routes that run it; deleting it takes those "run this route" commands out of
@@ -970,7 +970,7 @@ arrows the sensor's art shows round its contact while it reads occupied, and no 
 before it reaches another sensor (Adam, 2026-10-09, asked *"a station with only one way out becomes a terminus,
 correct?"*: yes).  It is drawn flat against that side whatever its turning setting.  The TRACK is asked, not the setup: a
 station that trains can leave only one way because of a one-way run or a barred arrival, its track carrying on, keeps
-its own shape.  With the classic icons it is the big square.  `AutonomySession.deadEndSide`; `core.testAutonomyDiagramSession.testAStationWhoseTrackRunsOutIsATerminus`.
+its own shape.  With the classic icons it is the big square.  `AutonomySession.deadEndSide`; `core.testATrainIsPlacedOnceAndKeepsItsFacing.testAStationWhoseTrackRunsOutIsATerminus`.
 
 On a curve the icon lies along the line between the curve's two ends, on its rails and its full size; what falls outside
 its square is drawn over the squares beside it, under any caption there, and their arrows, arrival marks and outline are
@@ -1450,7 +1450,7 @@ The editor notice about turn-round squares with no length is a different questio
   DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS are grouped per ROAD instead - the grain the
   reduction has used for them since AUR-B1 - and a train on one road leaves the other free. Grouping
   them by the tile refused a second train track that is physically free, which is the refusing
-  direction. `core.testAutonomyDiagramSession.testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`.
+  direction. `core.testTheDiagramDrawsWhatTrainsMayDo.testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`.
 - **But only over the part of it the train is actually lying on** (Adam, OB-207, 2026-09-12: *"75 407
   DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of
   one). An edge was covered whole or not at all, so a one-unit train parked at the end of a
@@ -1759,7 +1759,7 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
 - A **NOTICE**, not a warning, and that is his ruling rather than a grading: his own example is a railway
   with nothing wrong with it, and a setup where that is understood should not carry a warning for ever.
 
-`core.testAutonomyDiagramSession.testTheEditorSaysWhenAPlatformHoldsLessTrackThanItClaims` holds it, on
+`core.testThePlatformNoticeKnowsWhatATrainIsRefusedAt.testTheEditorSaysWhenAPlatformHoldsLessTrackThanItClaims` holds it, on
 his own 2 + 2 example and on the reversal branch.
 
 **Both were written while the sum ran only at termini and reversing berths, and that fence is gone**
@@ -2132,7 +2132,7 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   `core.testATrainComesHomeFacingTheWayItWasHomed.testATrainTurnedRoundOnItsHomeIsNotHome`. A home with no facing -
   an old setup, or a copy no train may arrive at - is still the square, either way.
   `core.testATrainComesHomeFacingTheWayItWasHomed`,
-  `core.testAutonomyDiagramSession.testAHomeRemembersTheWayItsTrainWasFacing`.
+  `core.testATrainIsPlacedOnceAndKeepsItsFacing.testAHomeRemembersTheWayItsTrainWasFacing`.
 - It refuses an inactive **start** (see §1) and obeys every length rule in §5.
 - It **does** read the occupancy restrictions of §1, in both halves, since Adam's ruling of
   2026-09-10 that they bind every tier. **Planning** asks them against the occupancy the plan has
@@ -2351,9 +2351,9 @@ the train"*) - is a **warning**: it can be started, and goes nowhere that way.  
 trains may not change direction at is an error** (Adam, 2026-10-01): a train sent there could never leave; marking it
 Trains Must Change Direction Here clears it.  A click on the track or a switch steps to the next direction, as it did
 before there were refusals.
-`core.testAutonomyDiagramSession.testADirectionUnderAPlacedTrainIsSetAndReportedAsAnError`,
-`core.testAutonomyDiagramSession.testATrainFacingTrackRunningTowardsItIsAWarning`,
-`core.testAutonomyDiagramSession.testAStationAtTheEndOfALineIsAnError`,
+`core.testTheEditorWarnsOfARailwayThatCannotWork.testADirectionUnderAPlacedTrainIsSetAndReportedAsAnError`,
+`core.testTheEditorWarnsOfARailwayThatCannotWork.testATrainFacingTrackRunningTowardsItIsAWarning`,
+`core.testTheEditorWarnsOfARailwayThatCannotWork.testAStationAtTheEndOfALineIsAnError`,
 `regression.testAnEditedPlacementSurvivesTheRebuild.testATrainTheRunLeftIsRecordedWhereItStandsWhenItsWayGoes`.
 
 **So the Facing menu is about the train the RAILWAY has on the square** (TDY4-C5, 2026-09-24). After a run
@@ -2776,7 +2776,7 @@ instead: *drop it.* Nothing is pruned automatically. A page whose file will not 
 that is missing right now, which is not the same as a page that is gone, and the answer that cannot
 lose anything is to keep. The question could not fire anyway once every page named in the index came
 back as something (T10-C3): there were no absences left for it to be about.
-`core.testAutonomyDiagramSession.testAPageThatWouldNotReadIsNotJudged` is what holds this - a stand-in
+`core.testASetupIsBuiltSavedAndReopenedWhole.testAPageThatWouldNotReadIsNotJudged` is what holds this - a stand-in
 must not let a save judge, and therefore prune, the settings of a page nobody can see.
 
 The message the operator gets says this too. It used to say the page *"could not be read and was

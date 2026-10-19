@@ -239,7 +239,18 @@
         <test-one-class class="testAutonomyDiagramTiles"/>
         <test-one-class class="testAutonomyDiagramReducer"/>
         <test-one-class class="testAutonomyDiagramStore"/>
-        <test-one-class class="testAutonomyDiagramSession"/>
+        <!-- testAutonomyDiagramSession, split by topic (FR-136 Phase 3); the fixtures they share are in
+             test/core/AutonomySessionFixture.java, which carries no test. -->
+        <test-one-class class="testAStationsTimetableFollowsItThroughRenamesAndEdits"/>
+        <test-one-class class="testASetupIsBuiltSavedAndReopenedWhole"/>
+        <test-one-class class="testTheEditorWarnsOfARailwayThatCannotWork"/>
+        <test-one-class class="testTheDiagramDrawsWhatTrainsMayDo"/>
+        <test-one-class class="testATrainIsPlacedOnceAndKeepsItsFacing"/>
+        <test-one-class class="testALegacyImportBringsWhatItCanAndSaysWhatItLeaves"/>
+        <test-one-class class="testACaptionStaysWithItsSquare"/>
+        <test-one-class class="testAStationNamedInTwoPlacesIsOneFinding"/>
+        <test-one-class class="testThePlatformNoticeKnowsWhatATrainIsRefusedAt"/>
+        <test-one-class class="testASignalGuardsItsStationAndTheNoticeNamesIt"/>
         <test-one-class class="testMassAssignLengths"/>
         <test-one-class class="testAutonomyDiagramMonitor"/>
         <test-one-class class="testAutonomyDiagramReversal"/>

@@ -290,7 +290,7 @@ public class testTheEditorSaysWhatItsToolsDo
      *
      * Both guards are given as the steps give them: the station's own menu item, the window it opens, Click It on the
      * Diagram, and a click on the signal.  The exit guard first, because the frozen railway has none and step 1 starts
-     * from a station that has one.  `core.testAutonomyDiagramSession.testAStationsEntryGuardIsNeverItsExitGuard` holds the
+     * from a station that has one.  `core.testASignalGuardsItsStationAndTheNoticeNamesIt.testAStationsEntryGuardIsNeverItsExitGuard` holds the
      * store's own refusal below this.
      *
      * MUTATION: take the editor's refusal out, or have it say the other guard's sentence, and this fails.

@@ -1748,7 +1748,7 @@ public class testHomeStaging
      * or renamed took the whole railway out of service, reported as a locomotive problem.  **Adam, asked which it
      * should be (2026-09-16): "drop the train and keep the rest."**
      *
-     * The legacy IMPORTER already behaved this way - `core.testAutonomyDiagramSession
+     * The legacy IMPORTER already behaved this way - `core.testATrainIsPlacedOnceAndKeepsItsFacing
      * .testAPlacementForAnUnknownLocomotiveIsRefused` names the unknown train and imports everything else - so this
      * was the runtime loader disagreeing with the importer about the same file.
      *
