@@ -1126,9 +1126,15 @@ public class testTheTailIsPickedOnTheDiagram
     /** What the model has logged since the listener below was put on - every line the operator's log shows. */
     private static final StringBuilder LOGGED = new StringBuilder();
 
+    /**
+     * The model's logger, held here: java.util.logging keeps loggers only weakly, so a handler put on a logger
+     * nothing else holds yet can be dropped by a garbage collection before the model's class loads (found under JaCoCo).
+     */
+    private static final java.util.logging.Logger MODEL_LOG = java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
+
     static
     {
-        java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).addHandler(
+        MODEL_LOG.addHandler(
             new java.util.logging.Handler()
             {
                 @Override

@@ -5324,9 +5324,15 @@ public class testTheImportDoorReadsAnOldFile
     /** The same, entry by entry: the main window's log puts each on top whole. */
     private static final List<String> ENTRIES = new ArrayList<>();
 
+    /**
+     * The model's logger, held here: java.util.logging keeps loggers only weakly, so a handler put on a logger
+     * nothing else holds yet can be dropped by a garbage collection before the model's class loads (found under JaCoCo).
+     */
+    private static final java.util.logging.Logger MODEL_LOG = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
     static
     {
-        java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(
+        MODEL_LOG.addHandler(
             new java.util.logging.Handler()
             {
                 @Override
