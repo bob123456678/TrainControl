@@ -15,6 +15,7 @@ import org.traincontrol.automationui.AutonomyRefreshCallback;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * When a run ends, whoever draws the railway is told - from every door, not from two of the four.
@@ -416,62 +417,12 @@ public class testTheGraphIsToldWhenARunEnds
     @Test
     public void testTheWindowsOneRefreshTellsTheGraph() throws Exception
     {
-        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8));
-
-        String attach = bodyOf(ui, "void attachAutonomyRefresh(Layout layout)");
-
-        assertNotEquals(attach, "",
-            "attachAutonomyRefresh is not declared that way any more, so this checked nothing");
+        String attach = SourceOf.withoutComments(SourceOf.declaration("void attachAutonomyRefresh(Layout layout)"));
 
         assertTrue(attach.contains("updateVisiblePoints()"),
             "the window's one refresh callback does not tell the graph.  updateVisiblePoints() is the"
             + " only route to reconcileFacingWhenIdle, which is the only thing that writes a reversal"
             + " a run made into the setup - so a timetable or Return Home run ends with the diagram"
             + " still drawing every turned train the way it set off (W7-A2)");
-    }
-
-    /** The declaration's body, brace-matched. */
-    private static String bodyOf(String source, String declaration)
-    {
-        // Mixed line endings in this file are not part of the rule being checked
-        source = source.replace("\r\n", "\n");
-        declaration = declaration.replace("\r\n", "\n");
-
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        return "";
-    }
-
-    /** The source with its line comments removed, so a comment cannot satisfy an assertion. */
-    private static String codeOnly(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        for (String line : source.split("\n", -1))
-        {
-            int slashes = line.indexOf("//");
-
-            out.append(slashes >= 0 ? line.substring(0, slashes) : line).append("\n");
-        }
-
-        return out.toString();
     }
 }
