@@ -36028,4 +36028,8 @@ Automatically Fire; run by hand, they are ignored.  Claim
 
 Changed before it was run, on Adam's word ("Get rid of the triangle icon- it doesn't render.  Just keep the rest of the text."): the warning is the red sentence alone, with no triangle.  Read step 1's expected result without it.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit b6f3dfcb, in English - build\classes, compiled 18 Oct 21:11 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
