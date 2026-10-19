@@ -2389,6 +2389,19 @@ public class TileAnnotation
      */
     private static final float ICON_SHARE = 0.43f;
 
+    /** How many times as long as it is tall a station's icon is, before the pixels Adam took off it. */
+    private static final float ICON_LENGTH_RATIO = 1.9f;
+
+    /** From this tile size up the larger proportions are used: the 60 pixel tile, against the 30. */
+    private static final int LARGE_TILE = 60;
+
+    /** The icon outline's stroke on a large tile and on a small one. */
+    private static final float ICON_STROKE_LARGE = 2f;
+    private static final float ICON_STROKE_SMALL = 1.5f;
+
+    /** On a small tile a terminus's point is this share of its height long; on a large one, half. */
+    private static final double TERMINUS_POINT_SMALL = 0.66;
+
     /**
      * A station's icon (FR-118): the shapes Adam chose on the station icon page on 2026-10-09
      * (https://claude.ai/artifact/Y9BydDSBLW3eLy85i1yQfB) - *"a hybrid of the D station for normal stations, B hexagon
@@ -2427,7 +2440,7 @@ public class TileAnnotation
 
         int h = Math.max(7, Math.round(tile * ICON_SHARE));
 
-        boolean large = tile >= 60;
+        boolean large = tile >= LARGE_TILE;
 
         boolean bends = trackBends();
 
@@ -2453,16 +2466,16 @@ public class TileAnnotation
 
         boolean turns = badge.isTerminus() || badge.isReversing();
 
-        float stroke = large ? 2f : 1.5f;
+        float stroke = large ? ICON_STROKE_LARGE : ICON_STROKE_SMALL;
 
         // THE LENGTHS ADAM ASKED FOR (MT-710, 2026-10-09): "Make terminuses 1px shorter, they appear just a bit too long.
         // Shorten may reverse stations by 1px in 30px view, 2px in 60px view.  Make sure must reverses are cumulatively
         // no longer" - asked, no longer than the may-turn hexagon, both halves and the gap together.  They were
         // `round(h * 1.9)` (25 at 30, 49 at 60), and the must-turn pair ran across the square.
-        int turning = Math.round(h * 1.9f) - (large ? 2 : 1), terminus = Math.round(h * 1.9f) - 1;
+        int turning = Math.round(h * ICON_LENGTH_RATIO) - (large ? 2 : 1), terminus = Math.round(h * ICON_LENGTH_RATIO) - 1;
 
         java.awt.Shape outline = !turns && deadEnd == null ? blockShape(h)
-            : deadEnd != null ? hexagon(terminus, h, true, large ? h / 2.0 : h * 0.66)
+            : deadEnd != null ? hexagon(terminus, h, true, large ? h / 2.0 : h * TERMINUS_POINT_SMALL)
             : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
             : mustTurnShape(h, turning, large);
 
@@ -2813,7 +2826,7 @@ public class TileAnnotation
      */
     private static void mustTurn(Graphics2D g, int tile, int h, int total, Color fill, Color line)
     {
-        boolean large = tile >= 60;
+        boolean large = tile >= LARGE_TILE;
 
         int gap = 4;
 

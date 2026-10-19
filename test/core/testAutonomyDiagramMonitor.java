@@ -21,6 +21,7 @@ import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TileOverlay.State;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.ProgramConstants;
 
 /**
  * Turning what the railway is doing into what each tile shows.
@@ -1481,7 +1482,7 @@ public class testAutonomyDiagramMonitor
             uy = -1;
         }
 
-        int side = Math.max((int) Math.round(Math.min(size, size) * 0.76), Math.max(6, size / 3));
+        int side = iconSideOn(size);
 
         java.awt.image.BufferedImage expected =
             new java.awt.image.BufferedImage(3 * size, 3 * size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
@@ -2347,9 +2348,17 @@ public class testAutonomyDiagramMonitor
     {
         for (int size : new int[] {30, 60})
         {
-            int h = Math.round(size * 0.43f), was = Math.round(h * 1.9f);
+            // The icon's own geometry is the program's: Adam's deltas below ("1px", "2px") are the claim
+            boolean large = size >= ProgramConstants.integer(TileAnnotation.class, "LARGE_TILE");
 
-            double stroke = size >= 60 ? 2 : 1.5;
+            int h = Math.round(size * (float) ProgramConstants.real(TileAnnotation.class, "ICON_SHARE"));
+
+            int was = Math.round(h * (float) ProgramConstants.real(TileAnnotation.class, "ICON_LENGTH_RATIO"));
+
+            double stroke = ProgramConstants.real(TileAnnotation.class,
+                large ? "ICON_STROKE_LARGE" : "ICON_STROKE_SMALL");
+
+            double smallPoint = ProgramConstants.real(TileAnnotation.class, "TERMINUS_POINT_SMALL");
 
             double may = lengthAlong(station(Side.W, Side.E, true, true, false, false, null), size);
             double must = lengthAlong(station(Side.W, Side.E, true, false, false, false, null), size);
@@ -2358,9 +2367,9 @@ public class testAutonomyDiagramMonitor
             // the outline's own length past each end: half the stroke at a flat end, more at a point, where the stroke's
             // mitre runs on - a point of length p on a shape h tall is an angle whose half has tan (h / 2) / p
             double pointed = stroke / 2 / Math.sin(Math.atan(h / 2.0 / (h / 2.0)));
-            double terminusPoint = stroke / 2 / Math.sin(Math.atan(h / 2.0 / (size >= 60 ? h / 2.0 : h * 0.66)));
+            double terminusPoint = stroke / 2 / Math.sin(Math.atan(h / 2.0 / (large ? h / 2.0 : h * smallPoint)));
 
-            assertEquals(may, was - (size >= 60 ? 2 : 1) + 2 * pointed, 0.35, "a may-turn station at " + size + " pixels is "
+            assertEquals(may, was - (large ? 2 : 1) + 2 * pointed, 0.35, "a may-turn station at " + size + " pixels is "
                 + may + " long, outline and all - Adam: \"Shorten may reverse stations by 1px in 30px view, 2px in 60px"
                 + " view\"");
 
@@ -3209,44 +3218,17 @@ public class testAutonomyDiagramMonitor
                 {
                     for (boolean editor : new boolean[] {false, true})
                     {
-                        java.awt.image.BufferedImage image =
-                            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+                        int[] ink = arrowAndArrivalInk(shut, road, size, editor);
 
-                        java.awt.Graphics2D g = image.createGraphics();
+                        int arrows = ink[0], arrivals = ink[1];
 
-                        try
-                        {
-                            g.setColor(java.awt.Color.WHITE);
-                            g.fillRect(0, 0, size, size);
+                        // The control, which these zeroes are worthless without: the same square in service shows
+                        // both, so the matchers can see what they are asserted to be missing.
+                        int[] open = arrowAndArrivalInk(null, road, size, editor);
 
-                            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
-                                road[1], org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, shut,
-                                false, road[0] != Side.W, false, null, false, Arrays.asList(
-                                    new TileAnnotation.Arrival(road[0], true), new TileAnnotation.Arrival(road[1], false)));
-
-                            if (editor) annotation = annotation.inTheEditor();
-
-                            annotation.paint(g, size, size);
-                        }
-                        finally
-                        {
-                            g.dispose();
-                        }
-
-                        int arrows = 0, arrivals = 0;
-
-                        for (int x = 0; x < size; x++)
-                        {
-                            for (int y = 0; y < size; y++)
-                            {
-                                int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
-
-                                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30
-                                    && Math.abs(gr - 205) < 30 && Math.abs(b - 90) < 30)) arrows++;
-
-                                if (r > 230 && Math.abs(gr - 205) < 25 && b < 40) arrivals++;
-                            }
-                        }
+                        assertTrue(open[0] > 0 && open[1] > 0, "precondition: the same square in service draws "
+                            + open[0] + " pixels of arrows and " + open[1] + " of an arrival mark at " + size
+                            + " pixels, so a zero for the square out of service says nothing");
 
                         String what = shut + " on " + road[0] + "-" + road[1] + " at " + size + " pixels"
                             + (editor ? " in the editor" : "");
@@ -3259,6 +3241,56 @@ public class testAutonomyDiagramMonitor
                 }
             }
         }
+    }
+
+    /**
+     * How many of a square's pixels are the arrows' red or green, and how many the arrival marks' yellow, painted as the
+     * diagram or the editor paints it, on a road one way from its first side to its second with an arrival at each end.
+     *
+     * @param badge the square's badge, or null for none
+     * @return the arrows' pixels, then the arrival marks'
+     */
+    private static int[] arrowAndArrivalInk(TileAnnotation.Badge badge, Side[] road, int size, boolean editor)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, size, size);
+
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(road[0],
+                road[1], org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)), -1, false, badge,
+                false, road[0] != Side.W, false, null, false, Arrays.asList(
+                    new TileAnnotation.Arrival(road[0], true), new TileAnnotation.Arrival(road[1], false)));
+
+            if (editor) annotation = annotation.inTheEditor();
+
+            annotation.paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        int arrows = 0, arrivals = 0;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
+
+                if (isArrowInk(r, gr, b)) arrows++;
+
+                if (isArrivalInk(r, gr, b)) arrivals++;
+            }
+        }
+
+        return new int[] {arrows, arrivals};
     }
 
     /** A badge painted on a canvas three squares across, the square in the middle - its own paint and its spill. */
@@ -3636,8 +3668,7 @@ public class testAutonomyDiagramMonitor
                 int rgb = image.getRGB(x, y), r = channel(rgb, 16), gr = channel(rgb, 8), b = channel(rgb, 0);
 
                 // the arrows' own red and green, solid: an antialiased edge takes the colour of what it is drawn over
-                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30 && Math.abs(gr - 205) < 30
-                    && Math.abs(b - 90) < 30)) n++;
+                if (isArrowInk(r, gr, b)) n++;
             }
         }
 
@@ -3782,12 +3813,71 @@ public class testAutonomyDiagramMonitor
         rgb -> channel(rgb, 0) > 150 && channel(rgb, 16) < 90 && channel(rgb, 8) < 90;
 
     /**
-     * The grey of a berth autonomy does not choose, rgb(128,130,134) - bluer than it is red, which the tile art's greys,
-     * all of them neutral, are not.
+     * The grey of a berth autonomy does not choose, the program's own `POINT_INACTIVE` - bluer than it is red, which the
+     * tile art's greys, all of them neutral, are not.  Asked rather than restated: a matcher for a colour the program no
+     * longer paints finds nothing, and every "no grey" claim below passes on nothing.
      */
-    private static final java.util.function.IntPredicate GREY = rgb -> Math.abs(channel(rgb, 16) - 128) < 10
-        && Math.abs(channel(rgb, 8) - 130) < 10 && Math.abs(channel(rgb, 0) - 134) < 10
-        && channel(rgb, 0) - channel(rgb, 16) >= 3;
+    private static final java.awt.Color INACTIVE = ProgramConstants.colour(TileAnnotation.class, "POINT_INACTIVE");
+
+    private static final java.util.function.IntPredicate GREY =
+        rgb -> Math.abs(channel(rgb, 16) - INACTIVE.getRed()) < 10
+        && Math.abs(channel(rgb, 8) - INACTIVE.getGreen()) < 10 && Math.abs(channel(rgb, 0) - INACTIVE.getBlue()) < 10
+        && channel(rgb, 0) - channel(rgb, 16) >= INACTIVE.getBlue() - INACTIVE.getRed() - 3;
+
+    /** The one-way arrows' red (a road shut one way, `CLOSED`) and green (`ONE_WAY`), and the arrival marks' yellow. */
+    private static final java.awt.Color ARROW_RED = ProgramConstants.colour(TileAnnotation.class, "CLOSED");
+
+    private static final java.awt.Color ARROW_GREEN = ProgramConstants.colour(TileAnnotation.class, "ONE_WAY");
+
+    private static final java.awt.Color ARRIVAL_YELLOW = ProgramConstants.colour(TileAnnotation.class, "ARRIVAL");
+
+    /**
+     * Whether a pixel is one of the arrows' own red or green, solid.
+     *
+     * The colours are the program's.  A matcher cut for a colour the program has stopped painting counts nothing, and the
+     * claims that assert there is NONE of it on a square then pass on nothing.
+     */
+    private static boolean isArrowInk(int r, int gr, int b)
+    {
+        return (Math.abs(r - ARROW_RED.getRed()) < 30 && gr < ARROW_RED.getGreen() + 40 && b < ARROW_RED.getBlue() + 40)
+            || (Math.abs(r - ARROW_GREEN.getRed()) < 30 && Math.abs(gr - ARROW_GREEN.getGreen()) < 30
+                && Math.abs(b - ARROW_GREEN.getBlue()) < 30);
+    }
+
+    /** Whether a pixel is the arrival marks' yellow. */
+    private static boolean isArrivalInk(int r, int gr, int b)
+    {
+        return r > ARRIVAL_YELLOW.getRed() - 25 && Math.abs(gr - ARRIVAL_YELLOW.getGreen()) < 25
+            && b < ARRIVAL_YELLOW.getBlue() + 40;
+    }
+
+    /** How wide the program draws the train's icon on a square this size: `TileOverlay.iconSide`. */
+    private static int iconSideOn(int size)
+    {
+        return sizeOfTrainMark("iconSide", size);
+    }
+
+    /** How wide the program draws the train's dot on a square this size: `TileOverlay.dotDiameter`. */
+    private static int dotOn(int size)
+    {
+        return sizeOfTrainMark("dotDiameter", size);
+    }
+
+    private static int sizeOfTrainMark(String method, int size)
+    {
+        try
+        {
+            java.lang.reflect.Method ask = TileOverlay.class.getDeclaredMethod(method, int.class, int.class);
+
+            ask.setAccessible(true);
+
+            return (Integer) ask.invoke(null, size, size);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError("TileOverlay." + method + " is not there to be asked: " + e, e);
+        }
+    }
 
     private static final java.util.function.IntPredicate ORANGE =
         rgb -> channel(rgb, 16) > 200 && channel(rgb, 8) > 60 && channel(rgb, 8) < 160 && channel(rgb, 0) < 70;
@@ -4214,10 +4304,10 @@ public class testAutonomyDiagramMonitor
         java.awt.image.BufferedImage standing =
             painted(new TileOverlay(State.IDLE, true, false, null), size);
 
-        // The dot is max(6, size/3) across, so nothing it draws reaches radius 8 at this size. The
-        // icon is round(size * 0.72) across, so it fills most of the way to 14.
-        int near = 9;
-        int far = 14;
+        // The dot is the program's dot across, so nothing it draws reaches a little more than its radius. The
+        // icon is the program's icon across, so it fills most of the way to its own.
+        int near = dotOn(size) / 2 + 3;
+        int far = iconSideOn(size) / 2 - 1;
 
         int onMoving = inkInRing(moving, near, far);
         int onStanding = inkInRing(standing, near, far);
@@ -4503,7 +4593,7 @@ public class testAutonomyDiagramMonitor
         java.awt.image.BufferedImage east = painted(TileOverlay.parked(Side.E), size);
         java.awt.image.BufferedImage west = painted(TileOverlay.parked(Side.W), size);
 
-        assertTrue(inkInRing(east, 9, 14) > 0, "a parked train is drawn with nothing bigger than the dot, not as the"
+        assertTrue(inkInRing(east, dotOn(size) / 2 + 3, iconSideOn(size) / 2 - 1) > 0, "a parked train is drawn with nothing bigger than the dot, not as the"
             + " locomotive a run draws (Adam, 2026-10-01)");
 
         assertFalse(java.util.Arrays.equals(pixels(east), pixels(west)), "a parked train facing east and one facing"
@@ -4562,7 +4652,9 @@ public class testAutonomyDiagramMonitor
 
         int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
 
-        return a >= 200 && min >= 110 && max <= 190 && max - min <= 20;
+        int paused = ProgramConstants.integer(TileOverlay.class, "PAUSED_GREY");
+
+        return a >= 200 && min >= paused - 40 && max <= paused + 40 && max - min <= 20;
     }
 
     /**
