@@ -50,6 +50,7 @@ public class testRouteCommandParity
         corpus.add(RouteCommand.RouteCommandFunctionsOff());
         corpus.add(RouteCommand.RouteCommandRoute("Test route 1"));
         corpus.add(RouteCommand.RouteCommandAutoLocomotive("Test loc 1", 87));
+        corpus.add(RouteCommand.RouteCommandAutoLocomotive("Test loc 1", 88, false));
         corpus.add(RouteCommand.RouteCommandAutonomyLightsOn());
         corpus.add(RouteCommand.RouteCommandLightsOn());
 

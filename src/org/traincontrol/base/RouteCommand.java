@@ -200,10 +200,32 @@ public class RouteCommand implements java.io.Serializable
      */
     public static RouteCommand RouteCommandAutoLocomotive(String name, int s88)
     {
+        return RouteCommandAutoLocomotive(name, s88, true);
+    }
+    
+    /**
+     * A train at a sensor, or NOT at it (FR-141).
+     *
+     * Only "not at" writes a SETTING, "false" the way a clear sensor's is.  Every route saved before FR-141 holds NAME and
+     * ADDRESS and nothing else - in routes.json and in the locomotive database - and has to go on reading as "at", and a
+     * command built here as "at" has to equal the one read back from them.
+     *
+     * @param name the locomotive
+     * @param s88 the sensor's address
+     * @param at true for the train standing at the sensor, false for it not standing there
+     * @return 
+     */
+    public static RouteCommand RouteCommandAutoLocomotive(String name, int s88, boolean at)
+    {
         RouteCommand r = new RouteCommand(TYPE_AUTO_LOCOMOTIVE);
         
         r.commandConfig.put(KEY_NAME, name);
         r.commandConfig.put(KEY_ADDRESS, Integer.toString(s88));
+        
+        if (!at)
+        {
+            r.commandConfig.put(KEY_SETTING, Boolean.toString(false));
+        }
         
         return r;
     }
@@ -328,6 +350,18 @@ public class RouteCommand implements java.io.Serializable
     public boolean getSetting()
     {
         return Boolean.parseBoolean(this.commandConfig.get(KEY_SETTING));
+    }
+    
+    /**
+     * Whether an auto locomotive condition asks for the train AT its sensor (true) or NOT at it (false) - FR-141.
+     *
+     * Not getSetting, which reads a missing SETTING as false: a missing one here is "at", which is what every such
+     * condition saved before FR-141 holds.
+     * @return 
+     */
+    public boolean isAtSensor()
+    {
+        return !Boolean.toString(false).equalsIgnoreCase(this.commandConfig.get(KEY_SETTING));
     }
     
     /**
@@ -572,7 +606,11 @@ public class RouteCommand implements java.io.Serializable
             case TYPE_AUTO_LOCOMOTIVE:
                 String locName = jsonObject.getJSONObject("state").getString(KEY_NAME);
                 int s88Addr = Integer.parseInt(jsonObject.getJSONObject("state").getString(KEY_ADDRESS));
-                routeCommand = RouteCommand.RouteCommandAutoLocomotive(locName, s88Addr);
+
+                // No SETTING is "at", which is every route saved before FR-141
+                boolean atSensor = !Boolean.toString(false).equalsIgnoreCase(
+                    jsonObject.getJSONObject("state").optString(KEY_SETTING, Boolean.toString(true)));
+                routeCommand = RouteCommand.RouteCommandAutoLocomotive(locName, s88Addr, atSensor);
                 break;
 
             default:
@@ -694,7 +732,8 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (this.isAutoLocomotive())
         {
-            return LOC_AUTO_PREFIX + "," + this.getName() + "," + this.getAddress() + "\n";
+            // A fourth field only for "not at" (FR-141), so a line written before it is written the same way again
+            return LOC_AUTO_PREFIX + "," + this.getName() + "," + this.getAddress() + (this.isAtSensor() ? "" : ",0") + "\n";
         }
         
         return "invalid command";
@@ -875,10 +914,32 @@ public class RouteCommand implements java.io.Serializable
         }
         else if (line.startsWith(LOC_AUTO_PREFIX + ","))
         {
-            String name = line.split(",")[1].trim();
-            int s88 = Math.abs(Integer.parseInt(line.split(",")[2].trim()));
+            String[] parts = line.split(",");
 
-            RouteCommand rc = RouteCommand.RouteCommandAutoLocomotive(name, s88);
+            String name = parts[1].trim();
+            int s88 = Math.abs(Integer.parseInt(parts[2].trim()));
+
+            // AT (1) OR NOT AT (0), FR-141.  Without the field it is at, which is every line written before it; anything
+            // else is refused rather than guessed, since a guess is a condition turned into its opposite
+            boolean at = true;
+
+            if (parts.length > 3)
+            {
+                String said = parts[3].trim();
+
+                if ("0".equals(said))
+                {
+                    at = false;
+                }
+                else if (!"1".equals(said))
+                {
+                    throw new Exception(
+                        I18n.f("error.invalidLine", line.trim())
+                    );
+                }
+            }
+
+            RouteCommand rc = RouteCommand.RouteCommandAutoLocomotive(name, s88, at);
 
             return rc;
         }

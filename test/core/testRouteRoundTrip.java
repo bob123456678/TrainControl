@@ -153,6 +153,131 @@ public class testRouteRoundTrip
             "only " + withCommands + " routes had commands - the fixture is not exercising much");
     }
 
+    /**
+     * A "train not at a sensor" condition comes back as "not at" from every form a route is kept in (FR-141).
+     *
+     * The text line (the condition CSV and the editor's paste), the JSON a route is saved, exported and imported as, the
+     * locomotive database (Java serialization of the condition), and a duplicate of the route.  Any one of them dropping
+     * the state turns the condition into its opposite, silently: "not at" read back as "at" fires the route exactly when
+     * it was written not to.
+     *
+     * MUTATION: drop the SETTING from `RouteCommandAutoLocomotive` and every form below reads back as "at".
+     */
+    @Test
+    public void testATrainNotAtASensorSurvivesEveryFormARouteIsKeptIn() throws Exception
+    {
+        RouteCommand notAt = RouteCommand.RouteCommandAutoLocomotive("RT loc", 21, false);
+
+        assertFalse(notAt.isAtSensor(), "built as not at, and it says at");
+
+        RouteCommand line = RouteCommand.fromLine(notAt.toLine(null), false);
+
+        assertFalse(line.isAtSensor(), "the text line lost the not: " + notAt.toLine(null).trim());
+        assertEquals(line, notAt, "the text line came back as a different condition");
+
+        RouteCommand json = RouteCommand.fromJSON(notAt.toJSON());
+
+        assertFalse(json.isAtSensor(), "the JSON lost the not: " + notAt.toJSON());
+        assertEquals(json, notAt, "the JSON came back as a different condition");
+
+        MarklinRoute route = new MarklinRoute(model, "RT not at", 90010,
+            Arrays.asList(RouteCommand.RouteCommandAccessory(5, Accessory.accessoryDecoderType.MM2, true)), 0,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, NodeExpression.fromList(Arrays.asList(notAt)));
+
+        // The route's JSON is what Save writes to routes.json and what Export and Import read and write
+        List<MarklinRoute> reread = model.parseRoutesFromJson(
+            "{\"routes\": [" + route.toJSON().toString() + "]}");
+
+        assertEquals(reread.size(), 1, "the route did not read back from its own JSON");
+        assertEquals(NodeExpression.toList(reread.get(0).getConditions()), Arrays.asList(notAt),
+            "the route's saved JSON lost the not");
+
+        // The condition CSV, read back the way a condition's text is parsed
+        NodeExpression text = NodeExpression.fromTextRepresentation(route.getConditionCSV(), model);
+
+        assertEquals(NodeExpression.toList(text), Arrays.asList(notAt),
+            "the condition CSV lost the not: " + route.getConditionCSV());
+
+        // The locomotive database keeps a route's conditions by Java serialization
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+
+        try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(bytes))
+        {
+            out.writeObject(route.getConditions());
+        }
+
+        NodeExpression kept;
+
+        try (java.io.ObjectInputStream in = new java.io.ObjectInputStream(
+            new java.io.ByteArrayInputStream(bytes.toByteArray())))
+        {
+            kept = (NodeExpression) in.readObject();
+        }
+
+        assertEquals(NodeExpression.toList(kept), Arrays.asList(notAt), "the locomotive database lost the not");
+
+        // A duplicate is made from the route's own commands and conditions, as TrainControlUI.duplicateRoute does
+        String copy = "RT not at (copy FR-141)";
+
+        assertTrue(model.newRoute(copy, route.getRoute(), route.getS88(), route.getTriggerType(), false,
+            route.getConditions()), "precondition: the copy was not made");
+
+        try
+        {
+            assertEquals(NodeExpression.toList(model.getRoute(copy).getConditions()), Arrays.asList(notAt),
+                "the duplicate lost the not");
+        }
+        finally
+        {
+            model.deleteRoute(copy);
+        }
+    }
+
+    /**
+     * A train-at-a-sensor condition saved before FR-141 reads as "at", and is written back as it was.
+     *
+     * Every route saved until now holds NAME and ADDRESS and nothing else, and its text line three fields.  Those have to
+     * mean what they always meant, and a route opened and saved again must not grow a field it did not have: the same
+     * command, equal to one built today as "at".
+     *
+     * MUTATION: read a missing SETTING as "not at" in `isAtSensor` and this fails on the sample layout's routes.
+     */
+    @Test
+    public void testATrainAtASensorSavedBeforeFR141StillReadsAsAt() throws Exception
+    {
+        String json = new String(Files.readAllBytes(new File(SAMPLE_ROUTES).toPath()), StandardCharsets.UTF_8);
+
+        int found = 0;
+
+        for (MarklinRoute route : model.parseRoutesFromJson(json))
+        {
+            if (route.getConditions() == null) continue;
+
+            for (RouteCommand condition : NodeExpression.toList(route.getConditions()))
+            {
+                if (!condition.isAutoLocomotive()) continue;
+
+                found++;
+
+                assertTrue(condition.isAtSensor(), "route '" + route.getName() + "' was saved as at, and reads as not at");
+
+                assertEquals(condition, RouteCommand.RouteCommandAutoLocomotive(condition.getName(),
+                    condition.getAddress()), "route '" + route.getName() + "' does not equal the same condition built today");
+
+                assertFalse(condition.toJSON().getJSONObject("state").has(RouteCommand.KEY_SETTING),
+                    "route '" + route.getName() + "' would be saved back with a field it was not saved with");
+            }
+        }
+
+        // Assert the variable: a sample with none would prove nothing
+        assertTrue(found >= 2, "the sample layout's train-at-a-sensor conditions were not found, so this proved nothing");
+
+        RouteCommand old = RouteCommand.fromLine("autoloc,EN57-203,10", false);
+
+        assertTrue(old.isAtSensor(), "an old three-field line reads as not at");
+        assertEquals(old.toLine(null).trim(), "autoloc,EN57-203,10", "an old line is written back differently");
+    }
+
     /** One accessory line, exactly as capture and the editor write it. */
     private static String line(int address, boolean thrown)
     {

@@ -240,6 +240,43 @@ public class testLoadData
     }
 
     /**
+     * A train-at-a-sensor condition in an old database reads as "at" (FR-141).
+     *
+     * The database keeps a route's conditions as serialized commands, and one written before FR-141 has no field saying
+     * at or not at.  It has to go on meaning what it meant: the train standing at that sensor.
+     *
+     * MUTATION: read a missing SETTING as "not at" in `RouteCommand.isAtSensor` and this fails, naming the fixture.
+     */
+    @Test
+    public void testATrainAtASensorInAnOldDatabaseStillReadsAsAt() throws Exception
+    {
+        int found = 0;
+
+        for (Manifest manifest : Arrays.asList(DB2_3_3, DB2_4_12, DB2_5_16, DB2_6_5, DB2_7_0,
+            DB2_8_0, DB3_0_0))
+        {
+            for (MarklinSimpleComponent component : model.restoreState(pathOf(manifest)))
+            {
+                if (component.getType() != ROUTE || component.getConditions() == null) continue;
+
+                for (org.traincontrol.base.RouteCommand condition
+                    : org.traincontrol.base.NodeExpression.toList(component.getConditions()))
+                {
+                    if (!condition.isAutoLocomotive()) continue;
+
+                    found++;
+
+                    assertTrue(condition.isAtSensor(), manifest + ": route \"" + component.getName()
+                        + "\" was saved as a train at a sensor and reads as not at it");
+                }
+            }
+        }
+
+        // Assert the variable: fixtures with none would prove nothing
+        assertTrue(found > 0, "no fixture held a train-at-a-sensor condition, so this proved nothing");
+    }
+
+    /**
      * Checks one fixture against its manifest.
      */
     private void assertRestores(Manifest manifest)
