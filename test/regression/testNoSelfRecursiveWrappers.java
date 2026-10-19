@@ -79,52 +79,68 @@ public class testNoSelfRecursiveWrappers
             + "looks for has probably changed");
     }
 
+    private static final String WINDOW = "src/org/traincontrol/gui/TrainControlUI.java";
+
+    private static final String SESSION = "src/org/traincontrol/automationui/AutonomySession.java";
+
     /**
-     * The window's collaborators (FR-136): each field of TrainControlUI that holds one, the file it is declared in, and
-     * its class name - for the static delegators, which reach it as `Class.method(` rather than through the field.
+     * The collaborators (FR-136), one row each: the field of the owner that holds it, the file it is declared in, its
+     * class name - for the static delegators, which reach it as `Class.method(` rather than through the field - the
+     * owner's file and class name, and the prefix the collaborator calls its owner by (`ui.`, `owner.`).
      */
     private static final String[][] COLLABORATORS = {
-        { "backupAction", "src/org/traincontrol/gui/BackupAction.java", "BackupAction" },
-        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java", "UpdateFlow" },
-        { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java", "LocIconActions" },
-        { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions" },
-        { "routeListPanel", "src/org/traincontrol/gui/RouteListPanel.java", "RouteListPanel" },
+        { "backupAction", "src/org/traincontrol/gui/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
+        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
+        { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java", "LocIconActions", WINDOW, "TrainControlUI",
+            "ui." },
+        { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions", WINDOW,
+            "TrainControlUI", "ui." },
+        { "routeListPanel", "src/org/traincontrol/gui/RouteListPanel.java", "RouteListPanel", WINDOW, "TrainControlUI",
+            "ui." },
+        { "sessionImport", "src/org/traincontrol/automationui/SessionImport.java", "SessionImport", SESSION,
+            "AutonomySession", "owner." },
+        { "sessionRuns", "src/org/traincontrol/automationui/SessionRuns.java", "SessionRuns", SESSION,
+            "AutonomySession", "owner." },
     };
 
     /**
      * A delegator and the collaborator it hands to do not call each other for ever (FR-136).
      *
-     * The extractions leave a one-line delegator on the window wherever something outside a moved cluster calls it,
-     * and the moved code calls back into the window through `ui`.  The same mechanical edit that made `syncWithCS2`
-     * call itself can make a delegator call its own name instead of the collaborator's, or make the moved body call
-     * the window's delegator that leads straight back to it.  Either is a StackOverflowError the compiler accepts.
+     * The extractions leave a one-line delegator on the window and on the session wherever something outside a moved
+     * cluster calls it, and the moved code calls back into its owner through `ui` or `owner`.  The same mechanical edit
+     * that made `syncWithCS2` call itself can make a delegator call its own name instead of the collaborator's, or make
+     * the moved body call the owner's delegator that leads straight back to it.  Either is a StackOverflowError the
+     * compiler accepts.
      *
-     * The static delegators (`askAboutTheUpdate`, `whenNoModalDialog`, `routeNamedIn`) hand over as `Class.method(` and
-     * the collaborator calls the window's statics as `TrainControlUI.method(`, so both spellings are read as well.
+     * The static delegators (`askAboutTheUpdate`, `whenNoModalDialog`, `routeNamedIn`, `detectImportFormat`) hand over as
+     * `Class.method(` and the collaborator calls the owner's statics as `TrainControlUI.method(`, so both spellings are
+     * read as well.
      *
      * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
-     * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`.
+     * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, or SessionRuns' `runs()` return
+     * `owner.runs()`.
      */
     @Test
     public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
     {
-        List<String> window = Files.readAllLines(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath(), StandardCharsets.UTF_8);
-
         for (String[] each : COLLABORATORS)
         {
+            assertTrue(new File(each[3]).isFile(), "cannot find " + new File(each[3]).getAbsolutePath());
+
+            List<String> window = Files.readAllLines(new File(each[3]).toPath(), StandardCharsets.UTF_8);
+
             File source = new File(each[1]);
 
             assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
 
             List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
 
-            // What each side calls on the other: the window through `this.<field>.` (or `Class.` for a static), the
-            // collaborator through `ui.` (or `TrainControlUI.` for a static).
+            // What each side calls on the other: the owner through `<field>.` (or `Class.` for a static), the
+            // collaborator through its back-prefix (or `OwnerClass.` for a static).
             java.util.Map<String, java.util.Set<String>> windowCalls = merged(
-                callsThrough(window, "this." + each[0] + "."), callsThrough(window, each[2] + "."));
+                callsThrough(window, each[0] + "."), callsThrough(window, each[2] + "."));
             java.util.Map<String, java.util.Set<String>> helperCalls = merged(
-                callsThrough(helper, "ui."), callsThrough(helper, "TrainControlUI."));
+                callsThrough(helper, each[5]), callsThrough(helper, each[4] + "."));
 
             int checked = 0;
 
@@ -137,12 +153,12 @@ public class testNoSelfRecursiveWrappers
                     java.util.Set<String> back = helperCalls.get(handedTo);
 
                     assertFalse(back != null && back.contains(delegator.getKey()),
-                        "TrainControlUI." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
-                        + ", which calls back into TrainControlUI." + delegator.getKey() + " - a loop the compiler accepts");
+                        each[4] + "." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
+                        + ", which calls back into " + each[4] + "." + delegator.getKey() + " - a loop the compiler accepts");
                 }
             }
 
-            assertTrue(checked > 0, "TrainControlUI hands nothing to " + each[0] + ", so this checks nothing");
+            assertTrue(checked > 0, each[4] + " hands nothing to " + each[0] + ", so this checks nothing");
 
             // And a delegator that calls its own name, bare, beside the collaborator's.
             for (int i = 0; i < window.size(); i++)
@@ -164,7 +180,7 @@ public class testNoSelfRecursiveWrappers
 
                 List<String> body = bodyOf(window, i);
 
-                if (body.stream().noneMatch(line -> line.contains("this." + each[0] + "." + name + "(")
+                if (body.stream().noneMatch(line -> line.contains(each[0] + "." + name + "(")
                     || line.contains(each[2] + "." + name + "("))) continue;
 
                 for (String line : body)
@@ -266,7 +282,7 @@ public class testNoSelfRecursiveWrappers
             if (name == null) continue;
 
             // A signature wrapped over several lines, whole
-            for (int next = i + 1; !declaration.contains(")") && next < lines.size(); next++)
+            for (int next = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && next < lines.size(); next++)
             {
                 declaration += " " + lines.get(next).trim();
             }
@@ -288,7 +304,7 @@ public class testNoSelfRecursiveWrappers
 
             int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1, declaration.lastIndexOf(')')));
 
-            assertFalse(callsItself(statement, name, arity) || statement.contains("this." + name + "("),
+            assertFalse(callsItself(statement, name, arity),
                 name + " calls itself instead of its collaborator - an infinite recursion the compiler accepts."
                 + "  Line: " + statement);
 
@@ -330,8 +346,11 @@ public class testNoSelfRecursiveWrappers
         // name alone reported that as an infinite recursion in working code, which is worse than the
         // gap the bare-name check closed: saveState is the only overloaded method in this file\u2019s
         // scope, so this would have been red for ever and somebody would have deleted it.
+        //
+        // A `this.` in front is the same call, and gets the same arity test: `this.name(a)` for a one-argument `name`
+        // is the loop, and `this.name(a, b)` is another overload.
         java.util.regex.Matcher call = java.util.regex.Pattern.compile(
-            "(^|[^.\\w])" + java.util.regex.Pattern.quote(name) + "\\s*\\(([^)]*)\\)")
+            "(^|[^.\\w]|\\bthis\\.)" + java.util.regex.Pattern.quote(name) + "\\s*\\(([^)]*)\\)")
             .matcher(code);
 
         while (call.find())
