@@ -1801,12 +1801,15 @@ public class testHomeStaging
             modelLog.removeHandler(ear);
         }
 
+        // The sentence is the bundle's own, with the phantom's name and the square it stood on
+        final String expected = org.traincontrol.util.I18n.f("autolayout.warnPlacedLocomotiveNotInDatabase",
+            "LD phantom, sold years ago", "LD_X");
+
         boolean said = false;
 
         for (String line : heard)
         {
-            if (line != null && line.contains("is not in the database")
-                && line.contains("placement has been removed")) said = true;
+            if (line != null && line.contains(expected)) said = true;
         }
 
         assertTrue(said,
