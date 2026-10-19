@@ -20,6 +20,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -179,8 +180,8 @@ public class testAStopRouteStandsAlone
                 + " the route's commands: the one after the stop is not last");
 
             // AND THE START-UP TAKES THAT STEP, after every saved route is restored
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/org/traincontrol/marklin/MarklinControlStation.java")), java.nio.charset.StandardCharsets.UTF_8);
+            String source = SourceOf.declaration("public MarklinControlStation(NetworkProxy network, View view,"
+                + " boolean autoPowerOn, boolean debug, boolean simulate)");
 
             int restored = source.indexOf("this.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME))");
             int splitAt = source.indexOf("this.splitRoutesThatMixAStop();", restored);
@@ -238,7 +239,7 @@ public class testAStopRouteStandsAlone
 
         assertNotNull(alone, "precondition: " + HIS + " was not split");
 
-        assertTrue(alone.getId() >= 1000, "the split numbered its stop route " + alone.getId() + ", among the numbers"
+        assertTrue(MarklinControlStation.isLocalRouteId(alone.getId()), "the split numbered its stop route " + alone.getId() + ", among the numbers"
             + " a Central Station sync replaces its own routes by (RLU5-B1)");
     }
 
@@ -468,15 +469,7 @@ public class testAStopRouteStandsAlone
     @Test
     public void testTheLatencyCutOffIsSentWhateverThePowerFlagSays() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8)
-            .replace("\r\n", "\n");
-
-        int start = source.indexOf("private void checkAutoLayoutLatency(");
-
-        assertTrue(start > 0, "cannot find checkAutoLayoutLatency");
-
-        String body = source.substring(start, source.indexOf("\n    }\n", start));
+        String body = SourceOf.declaration("private void checkAutoLayoutLatency(");
 
         int stop = body.indexOf("this.model.stop();");
 
