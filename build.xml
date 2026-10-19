@@ -591,6 +591,9 @@
         <test-one-class class="testThePageMenuEditsTheLayoutFolder"/>
         <test-one-class class="testDrivingFromTheKeyboard"/>
         <test-one-class class="testMappingPagesAndLocomotiveDoors"/>
+        <test-one-class class="testARunLeavesItsStateBehind"/>
+        <test-one-class class="testTheAutonomyEditorsQuestionsChangeTheSetup"/>
+        <test-one-class class="testStartingAutonomyFromTheWindow"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

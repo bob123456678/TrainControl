@@ -169,3 +169,5 @@ not fix it. Name the square.
 - `ui.testTheTimetableAnswersItsMenu`
 - `ui.testARestartKeepsTheRailway`
 - `ui.testOpenLayoutLeavesTheOldTrainsBehind`
+- `ui.testTheAutonomyEditorsQuestionsChangeTheSetup`
+- `ui.testStartingAutonomyFromTheWindow`
