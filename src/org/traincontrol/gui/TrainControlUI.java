@@ -14594,20 +14594,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             });
     }
 
-    /**
-     * The route names with "new route" at the top, for the picker above.
-     */
-    private Object[] withNewFirst(java.util.List<String> routes)
-    {
-        java.util.List<String> out = new java.util.ArrayList<>();
-
-        out.add(I18n.t("route.ui.frameNewRoute"));
-
-        if (routes != null) out.addAll(routes);
-
-        return out.toArray();
-    }
-
     public ExecutorService getTileImageLoader()
     {
         return this.TileImageLoader;
@@ -33790,17 +33776,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         showRouteInTheList(found);
-    }
-
-    /**
-     * The route this text names, or null when it names none or more than one.
-     *
-     * @param wanted what was typed
-     * @return the route's real name
-     */
-    private String routeNamed(String wanted)
-    {
-        return routeNamedIn(this.model.getRouteList(), wanted);
     }
 
     /**

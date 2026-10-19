@@ -3427,15 +3427,6 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The menu for a text square: which station, if any, it is showing.
-     */
-    private void showTextMenu(final TileKey tile, final LayoutDiagramComponent component,
-        java.awt.Component invoker, int x, int y)
-    {
-        buildTextMenu(tile, component).show(invoker, x, y);
-    }
-
-    /**
      * The text-square menu, built and handed back.  See buildTileMenu.
      */
     private javax.swing.JPopupMenu buildTextMenu(final TileKey tile,
