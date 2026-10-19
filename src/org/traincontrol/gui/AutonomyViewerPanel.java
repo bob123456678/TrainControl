@@ -498,6 +498,9 @@ public class AutonomyViewerPanel extends JPanel
 
                 if (bounds == null || !bounds.contains(e.getPoint())) return;
 
+                // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767)
+                AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
+
                 org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
 
                 // With the squares it names beside its own, outlined there as the editor's own list outlines them

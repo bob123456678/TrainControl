@@ -13187,6 +13187,79 @@ public class testAutonomyDiagramSession
             + " there to be outlined (OB-352); the plain page jump had " + plain);
     }
 
+    /**
+     * Clicking a notice copies its text to the clipboard as plain text, for sharing (MT-767).
+     *
+     * Read back from the system clipboard after a sentinel is put there first, so a copy that never happens fails.  On a
+     * machine with no clipboard the claim is skipped rather than failed.
+     *
+     * MUTATION: take the copy out of the list's selection listener, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testClickingANoticeCopiesItsTextToTheClipboard() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("there is no clipboard on a headless machine");
+        }
+
+        openTheGuardedLine(pageWithAGuardOffTheLine());
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 3);
+
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+
+        field.setAccessible(true);
+
+        final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
+
+        String expected = null;
+
+        for (int i = 0; i < list.getModel().getSize(); i++)
+        {
+            String shown = String.valueOf(list.getModel().getElementAt(i));
+
+            if (shown.contains("but no way into")) expected = shown.trim();
+        }
+
+        assertNotNull(expected, "precondition: the editor's list has no guard notice");
+
+        java.awt.datatransfer.Clipboard clipboard;
+        String copied;
+
+        try
+        {
+            clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+
+            java.awt.datatransfer.StringSelection sentinel =
+                new java.awt.datatransfer.StringSelection("nothing copied yet");
+
+            clipboard.setContents(sentinel, sentinel);
+
+            clickTheGuardNotice(panel);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            copied = (String) clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+        }
+        catch (java.awt.HeadlessException | IllegalStateException e)
+        {
+            throw new org.testng.SkipException("the clipboard is not available here: " + e);
+        }
+
+        assertEquals(copied, expected, "a click on a notice did not copy its text to the clipboard (MT-767)");
+
+        assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
+    }
+
     /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */
     private static void clickTheFinding(org.traincontrol.gui.AutonomyEditorPanel panel, String says, TileKey at)
         throws Exception

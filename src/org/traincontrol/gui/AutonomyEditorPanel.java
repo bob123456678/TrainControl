@@ -1264,6 +1264,10 @@ public class AutonomyEditorPanel extends JPanel
 
             int row = findings.getSelectedIndex();
 
+            // AND ITS TEXT ON THE CLIPBOARD, for sharing (Adam, on MT-767: "when clicked, copy the warning to the
+            // clipboard for easy sharing")
+            if (row >= 0 && row < findingsModel.size()) copyNoticeToClipboard(findingsModel.get(row));
+
             if (row >= 0 && row < findingTiles.size() && findingTiles.get(row) != null)
             {
                 TileKey at = findingTiles.get(row);
@@ -11609,6 +11613,35 @@ public class AutonomyEditorPanel extends JPanel
                 window.applyTrainLength(window.getModel().getLocByName(train), units);
             }
         };
+    }
+
+    /**
+     * Puts a setup check notice on the system clipboard as plain text, as its list shows it: the one door both lists of
+     * notices (this editor's and the autonomy setup's) copy through when a notice is clicked (MT-767).  A clipboard
+     * another program holds, or none at all, leaves it uncopied and says nothing: the click's own work goes on.
+     *
+     * @param shown the notice as the list holds it, markup or not
+     */
+    static void copyNoticeToClipboard(String shown)
+    {
+        if (shown == null) return;
+
+        String plain = shown.replaceAll("(?i)<br\\s*/?>", " ").replaceAll("<[^>]*>", "")
+            .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&amp;", "&")
+            .trim();
+
+        if (plain.isEmpty()) return;
+
+        try
+        {
+            java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(plain);
+
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+        }
+        catch (IllegalStateException | java.awt.HeadlessException | SecurityException e)
+        {
+            // NOT COPIED, AND THE CLICK STILL WORKS: the clipboard is busy with another program, or there is none
+        }
     }
 
     /**
