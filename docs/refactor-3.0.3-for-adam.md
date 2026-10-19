@@ -17,12 +17,16 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 5 | 1 | Phase 1's archive (`2ff1eecd`, `54ff433c`) is superseded by Phase 1c the same day. | Adam chose a database with a text dump; the archive treated a symptom. | The archive stays in git history. |
 | 6 | 2 | AutonomySession's comment trim stopped at 19% (6,180 to 4,988 comment lines), below the plan's 30-40%. | What is left is live rules, the ids that keep claims traceable and your quoted requirements; the comment rule forbids cutting those to reach a number.  The other three giants cut 31-32%. | A second pass can be run on AutonomySession at any time; nothing to undo. |
 | 7 | 2 | Long javadoc contracts were left whole (Layout's `whyItWouldMeetItsOwnTail` is 45 lines, AutonomySession has 58 blocks over 15 lines). | The rule allows a block over 15 lines when it is a javadoc contract. | A later pass can shorten them. |
+| 8 | 1a | The laned battery stays opt-in (`TC_LANES=auto`); `battery.sh` alone still runs one class at a time.  My own batteries from here on run laned. | The proof matched claim for claim (3,246 each side, one clipboard skip that the desktop caused, not the lanes), but nothing is lost by leaving the default where you know it. | Set `LANES="${TC_LANES:-auto}"` in battery.sh to make lanes the default, or drop `TC_LANES` to go back to serial. |
+| 9 | 1a | Tests point the station sync of `init()` at an address that fails in 20 ms (`support.TestStationAddress.withNoStation()`), instead of 127.0.0.1, which Windows refuses only after 2 s. | It cost about 4 s per init, about 30 minutes across the battery; the program is unchanged. | Remove the wrapper calls in `af897da2`. |
 
 ## Skipped, waiting for Adam
 
 | # | Phase | What | Why it waits |
 |---|---|---|---|
 | 1 | 1b | `core.testRouteInventory`'s three skipped claims (hollow-scan H0387 to H0389) never check anything outside your main checkout: they read `tc_backup/Autonomy 1b.json`, `1d` and `1e`, which only your machine has. | Making them real means putting your bundles (or made-up stand-ins shaped like them) into `test/`.  Your data stays out of the repository unless you say so. |
+| 2 | 1a | Production speed-ups for tests: skip the start-up station sync when no station is configured or in simulation (about 4 s per init); make the fixed simulation pauses settable like `TIMETABLE_STUCK_MS` (`CONFIGURE_SLEEP` 150 ms, `FEEDBACK_DURATION_THRESHOLD`, `COMPLETION_POLL`, `NO_PATH_IDLE_MS`, the 1 s after a turn, `STAGING_RETRY_PAUSE`); a quick refusal in `HomeStaging` when a plan is plainly impossible (its 15 s budget). | They change production code, which you said needs your OK (plan, 1a). |
+| 3 | 1a | `core.testACompulsoryTurnIsNotAQuestion` could zero its builder delays (about 40 s), as other tests do. | It changes the scenario's timing, which may be what the test is about. |
 
 ## Issues found, for later
 
