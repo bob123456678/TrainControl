@@ -229,6 +229,28 @@ public class testTheGoldenLayoutHoldsTogether
     @Test
     public void testWhatTheReversalGuardCanJudgeHere()
     {
+        // THE ARMING ANSWER ON A STORE MADE HERE, because the railway's own data cannot show the state this is about:
+        // once any square of it is measured, "armed" is the right answer whatever the question does.  Nothing measured
+        // must not arm the notice, and one measured square must, and taking it off must disarm it.
+        AutonomyCompanionStore fresh = new AutonomyCompanionStore(null);
+
+        TileKey somewhere = new TileKey("ZZ", 1, 1);
+
+        assertFalse(fresh.measuresAnyTrack(),
+            "a store with no length on any square arms the reversal-length notice - a warning that cannot answer (TCX-B3)");
+
+        assertTrue(fresh.tilesWithALength().isEmpty(), "precondition: a new store lists a measured square");
+
+        fresh.setTileLength(somewhere, 3);
+
+        assertTrue(fresh.measuresAnyTrack(), "one measured square does not arm the reversal-length notice");
+
+        assertEquals(fresh.tilesWithALength(), Arrays.asList(somewhere), "the measured square is not listed");
+
+        fresh.setTileLength(somewhere, 0);
+
+        assertFalse(fresh.measuresAnyTrack(), "taking the only length off does not disarm the notice");
+
         int measured = 0;
 
         for (TileKey tile : store.getNamedTiles())
@@ -246,15 +268,17 @@ public class testTheGoldenLayoutHoldsTogether
             assertEquals(measured, 0,
                 "the store says nothing is measured and " + measured + " named squares carry a "
                 + "length, so the arming question and the data disagree");
-
-            return;
         }
 
-        assertTrue(store.measuresAnyTrack(),
+        // THE ARMING ANSWER AGAINST THE DATA, not against itself: the squares that carry a length are listed by
+        // `tilesWithALength`, which reads the lengths and not the arming question.  Armed with none listed is the state
+        // TCX-B3 names, and so is a listed length with the notice off.
+        assertEquals(armed, !store.tilesWithALength().isEmpty(),
             "the reversal-length notice is armed by one measured square anywhere and then covers "
             + "every square trains turn round at.  Armed with nothing measured is the state TCX-B3 "
-            + "names: a warning that cannot answer the question it raises.  Measured squares among "
-            + "those named: " + measured);
+            + "names: a warning that cannot answer the question it raises.  The store says "
+            + (armed ? "a square is measured" : "none is") + "; it lists " + store.tilesWithALength().size()
+            + " squares with a length, and " + measured + " of those named carry one");
     }
     /**
      * Every square the setup names is a square the diagram still draws.
