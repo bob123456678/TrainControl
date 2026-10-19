@@ -260,8 +260,6 @@ public class testTheFacingMenuIsAboutTheTrainThere
     {
         final org.json.JSONObject asFound = session.snapshotSetup();
         final LayoutEditor[] editor = new LayoutEditor[1];
-        String moved = null;
-        Layout running = null;
 
         try
         {
@@ -269,45 +267,49 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             settle();
 
-            running = model.getAutoLayout();
+            Layout running = model.getAutoLayout();
 
-            // A SQUARE OF THE RAILWAY WITH NO FACING TO CHOOSE, and a copy of it to stand a train on
+            // A SQUARE WITH NO FACING TO CHOOSE, MADE HERE.  Every square the snapshot builds has a copy facing some way,
+            // so none of them is one - the claim used to skip for want of it.  A square of a page the build has no copy
+            // of is: a free locomotive placed on it in the setup is the train the menu names when the railway has none
+            // there, and nothing leads out of a square the railway does not have.
             TileKey square = null;
-            Point copy = null;
-            String standing = null;
 
-            for (Point point : running.getPoints())
+            for (TileKey tile : session.getGraph().getTiles().keySet())
             {
-                TileKey at = session.getStationIndex().squareOf(point);
+                if (model.getLayout(tile.getPage()) == null || !session.facingChoices(tile).isEmpty()) continue;
 
-                if (at == null || model.getLayout(at.getPage()) == null) continue;
+                if (!session.getStationIndex().pointNamesAt(tile).isEmpty()) continue;
 
-                if (!session.facingChoices(at).isEmpty()) continue;
+                square = tile;
 
-                square = at;
-                copy = point;
-                standing = point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName();
-
-                if (standing != null) break;
+                if (session.getStore().isStation(tile)) break;
             }
 
-            if (square == null) throw new SkipException("no square of the snapshot has no way out");
+            assertNotNull(square, "precondition: every square of the snapshot has a facing to choose, so there is no"
+                + " square to stand a train on that nothing leads out of");
 
-            for (String name : standing != null ? java.util.Collections.<String>emptyList() : model.getLocList())
+            // A LOCOMOTIVE PLACED NOWHERE, of the railway or the setup
+            String setupText = session.snapshotSetup().toString();
+            String named = null;
+
+            for (String name : model.getLocList())
             {
                 if (running.getLocomotiveLocation(model.getLocByName(name)) != null) continue;
 
-                if (running.moveLocomotive(name, copy.getName(), false))
-                {
-                    moved = name;
+                if (setupText.contains(org.json.JSONObject.quote(name))) continue;
 
-                    break;
-                }
+                named = name;
+
+                break;
             }
 
-            if (moved == null && standing == null) throw new SkipException("no train could be stood on " + copy.getName());
+            assertNotNull(named, "precondition: every locomotive is placed somewhere");
 
-            final String named = standing != null ? standing : moved;
+            session.placeLocomotive(square, named);
+
+            assertEquals(session.getLocomotiveNameAt(square), named, "precondition: " + named + " was not placed on "
+                + square);
 
             final LayoutDiagram page = model.getLayout(square.getPage());
 
@@ -345,9 +347,6 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
                 SwingUtilities.invokeAndWait(() -> closing.dispose());
             }
-
-            if (moved != null && running != null) running.moveLocomotive(null, running.getLocomotiveLocation(
-                model.getLocByName(moved)).getName(), false);
 
             session.restoreSetup(asFound);
 
