@@ -355,6 +355,10 @@ public class testLayoutEditorBulkEdits
             // by preference, so this is where one naturally ends up.
             session.setCaption(at(page, 3, 15), at(page, 5, 3));
 
+            // THE CAPTION IS THERE BEFORE THE SHRINK - the absence below means nothing if it never was
+            assertEquals(session.captionsOnPage(page).get(at(page, 3, 15)), at(page, 5, 3),
+                "precondition: the caption was not set on the last row, so its absence after the undo shows nothing");
+
             editor.shrinkEdges();
 
             editor.undo();
