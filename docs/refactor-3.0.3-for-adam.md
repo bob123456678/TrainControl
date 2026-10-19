@@ -54,6 +54,7 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 15 | 6 editor | **OB-364:** the track editor's Text Labels box opens ticked while the page's text is hidden, after the autonomy editor (unticked, its default) hid it; the first press of the box or Ctrl+L only shows the text. | Filed as OB-364; its claim is written and held out of the battery. |
 | 16 | 3-4 | The finding store's `cited_by` column (which source files cite a finding) was filled when the catalogue was built and nothing refreshes it now; after the splits it names some files the cited code has left (TrainControlUI, AutonomySession, testAutonomyDiagramSession).  No test reads it; the plan's step 'Re-run catalog-findings.py so cited_by follows the moved code' has no tool behind it since the review documents went. | A small refresher (scan src/ and test/ for each ref) can be added if you want the column live. |
 | 17 | 4 (Layout) | Three existing test gaps the Layout extraction found: `tailLiesOn` always false survives; the AUT-C3 standing-square branch of `walkOneTail` survives two mutations; the window's delegator-loop claim skips a delegator that no longer names its collaborator.  Not caused by the move. | For the review's fixtures; see `phase4_layout_review`. |
+| 18 | 4 (LayoutEditor) | No test notices the track editor's Undo no longer restoring captions (removing `restoreCaptions` from `undo` leaves every test green, before and after the move). | Not filed; for the next hollow-test pass. |
 
 ## Adam's answers (2026-10-19)
 
