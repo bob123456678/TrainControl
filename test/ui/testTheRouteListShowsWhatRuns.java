@@ -978,6 +978,10 @@ public class testTheRouteListShowsWhatRuns
             assertTrue(waitFor(() -> model.getRoute(route) != null && model.getRoute(route).isEnabled(), 10000),
                 "Enable Auto Execution did not arm the route");
 
+            // Its monitor on the sensor before the station reports it, or the report comes too soon to be heard
+            assertTrue(waitFor(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
+                "Enable Auto Execution armed the route and nothing is watching its sensor");
+
             pulse(sensor);
 
             assertTrue(waitFor(() -> switched(248), 10000), "the station reported the armed route's sensor clear then"
@@ -1009,7 +1013,7 @@ public class testTheRouteListShowsWhatRuns
 
         try
         {
-            assertTrue(waitFor(() -> watching(model.getRoute(route)), 10000),
+            assertTrue(waitFor(() -> support.RouteMonitor.watching(model.getRoute(route)), 10000),
                 "precondition: the armed route is not watching its sensor");
 
             final javax.swing.AbstractButton disable = support.Components.withText(rightClickTheRoute(route),
@@ -1105,24 +1109,6 @@ public class testTheRouteListShowsWhatRuns
 
             model.receiveMessage(support.Packets.s88(sensor, made));
         }
-    }
-
-    /** Whether the route's monitor, the thread it names after itself, is parked in its wait for the sensor to be made. */
-    private static boolean watching(MarklinRoute route)
-    {
-        String name = "route monitor " + route.getId() + " " + route.getName();
-
-        for (java.util.Map.Entry<Thread, StackTraceElement[]> t : Thread.getAllStackTraces().entrySet())
-        {
-            if (!name.equals(t.getKey().getName()) || t.getKey().getState() != Thread.State.WAITING) continue;
-
-            for (StackTraceElement frame : t.getValue())
-            {
-                if ("waitForOccupiedFeedback".equals(frame.getMethodName())) return true;
-            }
-        }
-
-        return false;
     }
 
     /** Leaves no route watching a sensor for the rest of the class. */

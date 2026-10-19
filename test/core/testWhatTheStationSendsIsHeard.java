@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -24,6 +23,7 @@ import org.traincontrol.marklin.udp.CS2Message;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Components;
 import support.Packets;
+import support.RouteMonitor;
 
 /**
  * What the Central Station sends reaches the model: sensors, turnouts thrown at the station, locomotives driven from
@@ -230,8 +230,8 @@ public class testWhatTheStationSendsIsHeard
         MarklinRoute route = armedRoute("disarmed", sensor, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, SWITCH + 2, null);
 
         // Watching its sensor already, as an armed route is long before anybody switches it off
-        assertTrue(Components.waitFor(() -> watching(route), HEARD_MS), "precondition: the route is not watching its"
-            + " sensor");
+        assertTrue(Components.waitFor(() -> RouteMonitor.watching(route), HEARD_MS),
+            "precondition: the route is not watching its sensor");
 
         // Switched off as the route list's Disable Auto Execution writes it
         assertTrue(model.editRoute(route.getName(), route.getName(), route.getRoute(), route.getS88(), route.getTriggerType(),
@@ -551,27 +551,6 @@ public class testWhatTheStationSendsIsHeard
         assertTrue(route.isEnabled(), "precondition: the route is not armed");
 
         return route;
-    }
-
-    /**
-     * Whether the route's monitor is parked on its sensor, waiting for it to be made: the thread the route names after
-     * itself, waiting inside the occupied wait.
-     */
-    private static boolean watching(MarklinRoute route)
-    {
-        String name = "route monitor " + route.getId() + " " + route.getName();
-
-        for (Map.Entry<Thread, StackTraceElement[]> t : Thread.getAllStackTraces().entrySet())
-        {
-            if (!name.equals(t.getKey().getName()) || t.getKey().getState() != Thread.State.WAITING) continue;
-
-            for (StackTraceElement frame : t.getValue())
-            {
-                if ("waitForOccupiedFeedback".equals(frame.getMethodName())) return true;
-            }
-        }
-
-        return false;
     }
 
     private static MarklinLocomotive locomotive(String name, int address)
