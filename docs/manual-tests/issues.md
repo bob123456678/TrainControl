@@ -381,19 +381,6 @@ refactor code to make agents work faster- split large files, consolidate documen
 
 From Adam's rulings on FR-136's plan (2026-10-18): the public methods on the API classes (Layout, Edge, Locomotive, MarklinControlStation) stay even where nothing in the program calls them, because *"these seem useful to an API user, and we should add examples later"*.  Write example code that shows them in use, beyond the examples the Readme and AutomationAPI.md have now.
 
-### FR-141 - 2026-10-18 - train at a sensor options in the route editor
-
-**Kind:** feature request  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-10-18 18:58  
-**Build:** commit e7391740, in English - build\classes, compiled 18 Oct 17:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-this condition needs to be reworked.  we need "train at a sensor" or "train not as a sensor".
-
-also, this is referring to autonomy, correct?  Prefix with "Autonomy: " if so.
-
-"setting" in this cas is/should be the sensor address, can it be made clearer?
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -410,6 +397,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-18 | FR-141 | feature request | Autonomy: Train Not At A Sensor beside Autonomy: Train At A Sensor in the route editor, the setting named the sensor address (`b0a06204`). | - | MT-770 |
 | 2026-10-18 | OB-362 | bug | A station's maximum train length is logged once as autonomy loads, by the station's name, not once per copy (`e7391740`). | - | MT-769 |
 | 2026-10-18 | FR-140 | feature request | With the power off, a click on a route on the Routes tab opens its editor (`2af8b119`). | - | MT-768 |
 | 2026-10-18 | FR-139 | feature request | A setup check warning for one sensor address on two squares of a page; a share between pages stays OB-150's error alone (`ae16f5d1`). | - | MT-767 |

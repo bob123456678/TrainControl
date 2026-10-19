@@ -29,8 +29,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-768](#mt-768) | 2026-10-18 | FR-140: with the power off, a click on a route opens its editor | fixed unvalidated | FR-140 |
 | [MT-769](#mt-769) | 2026-10-18 | OB-362: a station's maximum train length is logged once, by its name | fixed unvalidated | OB-362 |
+| [MT-770](#mt-770) | 2026-10-18 | FR-141: Autonomy: Train At / Not At A Sensor, and its sensor address | fixed unvalidated | FR-141 |
 
-Everything else - 767 of 769 - needs nothing from you unless the area changes again:
+Everything else - 767 of 770 - needs nothing from you unless the area changes again:
 612 **fixed validated** and 155 **superseded**.
 
 ---
@@ -35951,5 +35952,39 @@ the click with the power on are unchanged.  Claim `ui.testTheRouteListShowsWhatR
 
 *What this is:* OB-362 (`e7391740`): the copies a square builds into all carry its maximum; the load logs it once per station, by the
 place's name (`Layout.placeNameOf`).  Claim `core.testAPausedTrainStaysPaused.testAStationsMaximumIsSaidOnceByItsName`.
+
+---
+
+<a id="mt-770"></a>
+### MT-770 - 2026-10-18 - FR-141: Autonomy: Train At / Not At A Sensor, and its sensor address
+
+**Disposition:** fixed unvalidated
+**From:** FR-141
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open a route in the route editor and add a condition.  Open the Kind list.
+2. Choose Autonomy: Train At A Sensor, pick a locomotive and give a sensor address.  Look at the Setting cell and
+   hover over it; read the condition's words under the table.
+3. Change the line's kind to Autonomy: Train Not At A Sensor.  Save the route, close and reopen it.
+4. With autonomy loaded, place that train on the sensor's station, then elsewhere, and press Test (or let the route's
+   trigger fire): the condition is met only while the train is NOT at that sensor.
+5. Open a route saved before this version that has a Train At A Sensor condition.
+
+**Expected**
+
+- Step 1: the list offers "Autonomy: Train At A Sensor" and "Autonomy: Train Not At A Sensor".
+- Step 2: the Setting cell reads "Sensor address: N", and its tooltip says it is the address of the S88 sensor the
+  condition asks about; the words read like "BR 218 at S88 #21".
+- Step 3: the train and the address are kept; the words read "... not at S88 #N"; after reopening it is still Not At.
+- Step 4: Not At is met only while the train is away from that sensor (At the opposite); with no autonomy loaded,
+  neither is met.
+- Step 5: the old condition opens as Autonomy: Train At A Sensor, unchanged.
+
+*What this is:* FR-141 (`b0a06204`): one stored command for both (a "not at" carries SETTING false, so routes saved before read as
+"at"); two kinds in the editor; the Setting cell names the sensor address.  Claims in `core.testRoutes`,
+`core.testRouteRoundTrip`, `core.testLoadData`, `core.testCommandRow`, `ui.testRouteEditorValidation`.
 
 ---
