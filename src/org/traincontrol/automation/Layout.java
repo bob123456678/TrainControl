@@ -8032,9 +8032,8 @@ public class Layout
                     }
                     catch (InterruptedException ex)
                     {
-                        // Remembered rather than re-armed, for the reason spelled out on the same
-                        // pattern in Locomotive: re-arming here makes the next wait() throw at once and
-                        // turns a blocked thread into a spinning one.
+                          // Remembered rather than re-armed, as in Locomotive: re-arming makes the next wait() throw at once and
+                          // turns a blocked thread into a spinning one.
                         interrupted = true;
                     }
                 }
@@ -8069,7 +8068,7 @@ public class Layout
     }
     
     /**
-     * Asked before a train is turned round at a point it MAY reverse at (Adam, 2026-09-06).
+       * Asked before a train is turned round at a point it MAY reverse at.
      *
      * **Intent cannot be inferred, so it is asked for.** A reversing point turns whatever passes it,
      * and the reason for the turn lives in the leg after this one: a train may be going there to back
@@ -8097,45 +8096,30 @@ public class Layout
         /**
          * Whether this point is one the operator has a say over at all.
          *
-         * **It must be cheap, silent, and independent of the ANSWER.**  It runs at every point on
-         * every path, and `shouldReverseAt` reads it to tell a compulsory turn from a choice: a
-         * reversing copy nobody is asked about is one the railway turns every train at.  So it
-         * describes the RAILWAY - which squares anybody could have an opinion about - and never what
-         * the opinion was.
-         *
-         * Letting the answer leak in here cost a day.  `forJourney` briefly answered
-         * `turn && asking.asksAbout(at)`, to avoid braking at may-turn squares on a journey nobody
-         * was turning; "keep direction" then made every may-reverse turning copy look compulsory, and
-         * the train turned against the operator's explicit no with `shouldReverse` never consulted.
-         * `testTheJourneyPolicyAnswersAsksAboutIndependentlyOfTheAnswer` is the guard.
-         *
-         * **`shouldReverse` MAY NOW BE CALLED WHILE THE TRAIN IS MOVING (CONF2-B1).**  It used to be
-         * asked only after `executePathInternal` had brought the train to a stand, and this paragraph
-         * used to say so.  The stop is now the rule's own answer - a train is stopped exactly when it
-         * is about to be turned - which means the rule is evaluated first, at line speed.  Nothing
-         * reachable today blocks in it, because both doors answer at departure and hand over a
-         * constant.  A `shouldReverse` that puts a dialog up would reintroduce `DIR-A1` exactly: the
-         * train runs past the point for as long as the dialog stands open.
-         *
-         * **It exists because the runtime cannot answer it.**  `canReverse` - the operator's "trains
-         * may turn round here" - never reaches `parseAuto` at all: `AutonomyBuilder` skips it with
-         * *"it is the instruction to split, not something parseAuto knows"*, and expresses it by
-         * splitting the square into a plain copy and a turning one.  Where the square CANNOT be split
-         * the instruction cannot be expressed, so no flag exists anywhere and no rule in this class
-         * can find one.  Adam met exactly that: he marked a square may-reverse, sent a train to it,
-         * and nothing asked - twice, because the first fix looked for a flag that is never written.
-         *
-         * **The default answers `at.isReversing()`, and a real door must NOT inherit it (CONF-C1).**
-         * It is the pre-policy behaviour, kept so that autonomy and the four-argument overload answer
-         * about the same points they always did - and it is the exact expression that was removed from
-         * `ManualReversalPrompt` as `REG6-A1`, because `reversing` is true for every copy of a
-         * COMPULSORY turn as well as for a may-reverse one.  A policy that inherits it therefore
-         * offers the operator a question about a turn the railway has no choice about, and "keep
-         * direction" then drives the train forward off a copy whose only edges leave by the side it
-         * came in at.
-         *
-         * Anything built from the setup must override this.  `mayTurnTiles()` is the reversible
-         * squares minus the compulsory ones, and it is the only place that distinction is recorded.
+           * **It must be cheap, silent, and independent of the ANSWER.**  It runs at every point on every path, and
+           * `shouldReverseAt` reads it to tell a compulsory turn from a choice: a reversing copy nobody is asked about is one the
+           * railway turns every train at.  So it describes the RAILWAY - which squares anybody could have an opinion about - and
+           * never what the opinion was (letting the answer leak in made "keep direction" turn every may-reverse turning copy
+           * compulsory, and the train turned against the operator's explicit no;
+           * `testTheJourneyPolicyAnswersAsksAboutIndependentlyOfTheAnswer` is the guard).
+           *
+           * **`shouldReverse` MAY BE CALLED WHILE THE TRAIN IS MOVING (CONF2-B1).**  The stop is the rule's own answer (a train is
+           * stopped exactly when it is about to be turned), so the rule is evaluated first, at line speed.  Nothing reachable blocks
+           * in it, because both doors answer at departure and hand over a constant; a `shouldReverse` that puts a dialog up would
+           * reintroduce `DIR-A1`, the train running past the point for as long as the dialog stands open.
+           *
+           * **It exists because the runtime cannot answer it.**  `canReverse` - the operator's "trains may turn round here" - never
+           * reaches `parseAuto`: `AutonomyBuilder` skips it ("it is the instruction to split, not something parseAuto knows") and
+           * expresses it by splitting the square into a plain copy and a turning one.  Where the square CANNOT be split no flag
+           * exists anywhere, and no rule in this class can find one.
+           *
+           * **The default answers `at.isReversing()`, and a real door must NOT inherit it (CONF-C1).**  It is the pre-policy
+           * behaviour, kept so that autonomy and the four-argument overload answer about the same points they always did; it is
+           * the expression removed from `ManualReversalPrompt` as `REG6-A1`, because `reversing` is true for every copy of a
+           * COMPULSORY turn as well as for a may-reverse one, so an inheriting policy offers a question about a turn the railway
+           * has no choice about, and "keep direction" drives the train forward off a copy whose only edges leave by the side it
+           * came in at.  Anything built from the setup must override this: `mayTurnTiles()` is the reversible squares minus the
+           * compulsory ones, the only place that distinction is recorded.
          *
          * @param at the point
          * @return whether the operator has a say about turning here
@@ -8147,36 +8131,27 @@ public class Layout
     }
 
     /**
-     * Whether a train that has just arrived here is turned round (Adam, MT-368).
+     * Whether a train that has just arrived here is turned round (MT-368).
      *
-     * **The `||` this replaces is the defect.**  The arrival read
-     * `arrived.isTerminus() || shouldReverseAt(...)`, and `AutonomyBuilder` emits the turning copy of
-     * a MAY-turn square with `terminus: true` - so at BottomMainB the left operand was true, the right
-     * was never evaluated, and the operator's answer was collected and discarded.  Adam ran it twice
-     * and got the same turn from "keep direction" and from "turn round":
-     * *"it is just always getting reversed."*
-     *
-     * **The same flag confusion `OB-205` claims 2 and 3 named, at a third site.**  Two were repaired
-     * that evening - `ManualReversalPrompt.forJourney` and `shouldReverseAt` - and this was not.
+     * **The `||` this replaces is the defect.**  The arrival read `arrived.isTerminus() || shouldReverseAt(...)`, and
+     * `AutonomyBuilder` emits the turning copy of a MAY-turn square with `terminus: true`, so the operator's answer was collected
+     * and discarded (Adam: *"it is just always getting reversed."*).  The same flag confusion `OB-205` claims 2 and 3 named, at a
+     * third site (the other two: `ManualReversalPrompt.forJourney` and `shouldReverseAt`).
      *
      * **Three cases, and only the middle one changed.**
      *
-     *   - A square the door ASKS about is a may-turn square, and the answer is the operator's.  That
-     *     is Adam's ruling of 2026-09-06 - *"may reverse should always prompt in manual mode"* - and
-     *     it now reaches the arrival, which is where a journey ends.
-     *   - A terminus nobody is asked about is compulsory: the turn is how the train gets in and how it
-     *     leaves again, and `MT-245` turns on it.  Still unconditional.
+     *   - A square the door ASKS about is a may-turn square, and the answer is the operator's (Adam: *"may reverse should always
+     *     prompt in manual mode"*).
+     *   - A terminus nobody is asked about is compulsory: the turn is how the train gets in and how it leaves again, and
+     *     `MT-245` turns on it.  Still unconditional.
      *   - Everything else is `shouldReverseAt`, unchanged.
      *
-     * **Why `isTerminus` cannot simply be dropped.**  At a real terminus the arrival copy carries
-     * `terminus: true` and `reversing: false`, so `shouldReverseAt` answers `current.isReversing()` -
-     * false - and a train would arrive at a terminus and never turn.  The flag still has to be read;
-     * what it must not do is outrank a square the operator was promised a say over.
+     * **Why `isTerminus` cannot simply be dropped.**  At a real terminus the arrival copy carries `terminus: true` and
+     * `reversing: false`, so `shouldReverseAt` answers `current.isReversing()` - false - and a train would arrive at a terminus
+     * and never turn.  The flag still has to be read; what it must not do is outrank a square the operator was promised a say over.
      *
-     * **It is a METHOD so that what it does can be tested.**  The thing that let this survive was a
-     * guard asserting the old expression verbatim, which could not fail on behaviour and which broke
-     * when the line was corrected - so it argued for the bug.  `core.testTheArrivalHonoursTheAnswer`
-     * asks this what it answers.
+     * **It is a METHOD so that what it does can be tested** (`core.testTheArrivalHonoursTheAnswer` asks this what it answers),
+     * where a guard asserting the old expression verbatim could not fail on behaviour.
      *
      * @param arrived where the train has stopped
      * @param loc the train
@@ -8187,13 +8162,12 @@ public class Layout
     {
         if (arrived == null) return false;
 
-        // NOWHERE TO STAND FACING ON, SO NO CHOICE (RSA49-A1).  A journey that ends on a turning copy no copy of whose
-        // square faces on from the way it came - the end of a line marked "may", or a may-turn square one of whose ways in
-        // has no way on - turns the train whatever the door's answer and whether it can reverse.  Kept, it stood on the
-        // copy facing back out with its decoder driving it forward, and its next journey drove it into the end of the
-        // line over track nothing held: REG6-A1's hazard, on a square marked "may".  A dead end already turns a train
-        // that cannot reverse (SVV-C2, MT-245).  Asked of the journey the train holds, which is the one ending here; a
-        // caller with none gets the rules below.
+          // NOWHERE TO STAND FACING ON, SO NO CHOICE (RSA49-A1).  A journey that ends on a turning copy no copy of whose square
+          // faces on from the way it came (the end of a line marked "may", or a may-turn square one of whose ways in has no way on)
+          // turns the train whatever the door's answer and whether it can reverse: kept, it stood on the copy facing back out with
+          // its decoder driving it forward, and its next journey drove it into the end of the line over track nothing held
+          // (REG6-A1's hazard, on a square marked "may").  A dead end already turns a train that cannot reverse (SVV-C2, MT-245).
+          // Asked of the journey the train holds, which is the one ending here; a caller with none gets the rules below.
         if (loc != null && reversals != null && reversals != ALWAYS_REVERSE)
         {
             List<Edge> held = this.pathHeldBy(loc);
@@ -8205,53 +8179,27 @@ public class Layout
             }
         }
 
-        // A TRAIN THAT CANNOT REVERSE IS NEVER TURNED WHERE TURNING IS OPTIONAL (Adam, MT-368,
-        // 2026-09-13).
-        //
-        // *"I get the prompt, but I shouldn't because the train is not reversible and the station is
-        // selectable in full autonomy."*  The prompt is the visible half; this is the half that
-        // decides, and without it suppressing the prompt would make things worse rather than better:
-        // `ManualReversalPrompt.KEEP_DIRECTION.asksAbout` answers FALSE - "no opinion" - so the branch
-        // below is skipped and `arrived.isTerminus()` decides, which is TRUE at the turning copy of a
-        // may-turn square.  A train nobody asked about would be turned every time.
-        //
-        // `hasAWayThrough` is what tells an OPTIONAL turn from a compulsory one: a may-turn square
-        // keeps a plain copy, a compulsory turn does not.  So a terminus still turns a train that
-        // backed into it - Adam's ruling on MT-245, and
-        // `testATrainThatCannotReverseMayBackIntoATerminus` - and the only thing that changes is the
-        // square where turning was a preference nobody could act on.
-        // NOT WHERE A PLAN HAS ALREADY DECIDED (SEV-B2, the same day this clause was written).
-        //
-        // `executePath(path, loc, speed, ttp)` hands in `ALWAYS_REVERSE`, and that is the form
-        // autonomy and the staging planner use.  Without this fence the clause fired for them too: a
-        // plan that routed a non-reversible train to a turning copy - expecting it to turn, and having
-        // searched the next leg from that copy's edges - found the train re-stood on the plain copy
-        // instead, the next leg refused with `errorLocomotiveNotAtPathStart`, and Return Home
-        // abandoned half-staged after STAGING_MAX_ATTEMPTS.
-        //
-        // `shouldReverseAt` fifty lines below fences the identical question the identical way, and
-        // says why in four words: ALWAYS_REVERSE COUNTS AS NOBODY.  A policy that says "turn wherever
-        // the route turns" is a plan speaking, not an operator, and this rule is about what to do when
-        // nobody has decided.
-        //
-        // **What that leaves open**, and it is a routing question rather than an arrival one: whether
-        // autonomy should route a non-reversible train to a turning copy at all.  MT-367 stops it
-        // being OFFERED a compulsory turn; a may-turn square it can drive through is legitimately
-        // offered, and if the route then chooses the turning copy the turn is the route's own doing.
-        // Raised with Adam rather than decided here.
-        // NULL COUNTS AS A PLAN AS WELL (SVV-C1).  `shouldReverseAt` fences the identical question
-        // as `reversals == null || reversals == ALWAYS_REVERSE`, and this method's own @param calls a
-        // null policy autonomy.  Unreachable today - all four `executePath` sites resolve to
-        // ALWAYS_REVERSE or to a policy from `forJourney` - and a trap for the fifth.
+          // A TRAIN THAT CANNOT REVERSE IS NEVER TURNED WHERE TURNING IS OPTIONAL (MT-368; Adam: *"I get the prompt, but I
+          // shouldn't because the train is not reversible and the station is selectable in full autonomy."*).  This is the half
+          // that decides: `ManualReversalPrompt.KEEP_DIRECTION.asksAbout` answers FALSE ("no opinion"), so the branch below is
+          // skipped and `arrived.isTerminus()` decides, which is TRUE at the turning copy of a may-turn square.  `hasAWayThrough`
+          // tells an OPTIONAL turn from a compulsory one (a may-turn square keeps a plain copy), so a terminus still turns a train
+          // that backed into it (MT-245, `testATrainThatCannotReverseMayBackIntoATerminus`).
+          //
+          // NOT WHERE A PLAN HAS ALREADY DECIDED (SEV-B2): `executePath(path, loc, speed, ttp)` hands in `ALWAYS_REVERSE`, the form
+          // autonomy and the staging planner use, and a plan that routed a non-reversible train to a turning copy has searched the
+          // next leg from that copy's edges; re-standing the train on the plain copy would refuse that leg
+          // (`errorLocomotiveNotAtPathStart`).  `shouldReverseAt` fences the identical question the identical way, and NULL COUNTS
+          // AS A PLAN AS WELL (SVV-C1; unreachable today).  Open, and raised with Adam: whether autonomy should route a
+          // non-reversible train to a turning copy at all (MT-367 stops it being OFFERED a compulsory turn).
         if (loc != null && !loc.isReversible() && reversals != null && reversals != ALWAYS_REVERSE
             && hasAWayThrough(arrived))
         {
             return false;
         }
 
-        // A SQUARE THE DOOR ASKS ABOUT IS THE OPERATOR'S CALL, terminus flag or not.  `asksAbout`
-        // comes from `mayTurnTiles()` - the reversible squares MINUS the compulsory ones - which is
-        // the one place that distinction is actually recorded.
+          // A SQUARE THE DOOR ASKS ABOUT IS THE OPERATOR'S CALL, terminus flag or not: `asksAbout` comes from `mayTurnTiles()`, the
+          // reversible squares MINUS the compulsory ones, the one place that distinction is recorded.
         if (reversals != null && reversals != ALWAYS_REVERSE && reversals.asksAbout(arrived))
         {
             return reversals.shouldReverse(loc, arrived);
@@ -8261,31 +8209,21 @@ public class Layout
     }
 
     /**
-     * Whether a train reaching this point is turned round here (Adam, 2026-09-06).
+     * Whether a train reaching this point is turned round here.
      *
-     * **Three answers, and only one of them is a question.**
+     * **Three answers, and only one of them is a question.**  A point trains do not reverse at: no.  A journey whose DESTINATION
+     * is a terminus: yes, and nobody is asked.  Anywhere else the caller's policy decides, which is how a hand-driven send comes
+     * to ask the operator while autonomy does not.
      *
-     * A point trains do not reverse at: no.  A journey whose DESTINATION is a terminus: yes, and
-     * nobody is asked.  Anywhere else the caller's policy decides, which is how a hand-driven send
-     * comes to ask the operator while autonomy does not.
+     * **The terminus is the destination, not this point**: the model refuses a terminus set as reversing (*"Terminus stations
+     * cannot be set as reversing."*), so a rule asking whether THIS point is both could never fire.  A train backs into a
+     * terminus by turning at the reversing point BEFORE it (`testATrainThatCannotReverseMayBackIntoATerminus`; Adam, MT-245:
+     * *"trains should be allowed to back into terminuses if they are not reversible (that's why we have the reversing point at
+     * feedback 2013)."*), so on a journey that ENDS at a terminus the turn on the way is not a choice; it is how the train gets
+     * there (Adam: *"no unprompted reversals in manual mode unless going to a true terminus (must reverse)"*).
      *
-     * **The terminus is the destination, not this point** - and that correction came from the model
-     * refusing the first version's fixture: *"Terminus stations cannot be set as reversing."*  The two
-     * flags are mutually exclusive, so a rule asking whether THIS point is both could never fire.
-     *
-     * A train backs into a terminus by turning at the reversing point BEFORE it - which is exactly
-     * `testATrainThatCannotReverseMayBackIntoATerminus`, and Adam's own ruling on MT-245: *"trains
-     * should be allowed to back into terminuses if they are not reversible (that's why we have the
-     * reversing point at feedback 2013)."*  So on a journey that ENDS at a terminus the turn on the
-     * way is not a choice; it is how the train gets there.  That is what *"no unprompted reversals in
-     * manual mode unless going to a true terminus (must reverse)"* means.
-     *
-     * A null policy means yes, so every caller that has no opinion behaves as this method did before
-     * there was one.
-     *
-     * Named rather than left inline so it can be run: the alternative was a test that drives a train
-     * along a path, which on this fixture hung waiting for an arrival rather than failing.  The call
-     * site is pinned separately - naming a rule moves the defect to the call.
+     * A null policy means yes, so every caller that has no opinion behaves as this method did before there was one.  Named
+     * rather than left inline so it can be run; the call site is pinned separately.
      *
      * @param current the point the train has reached
      * @param destination where this journey ends
@@ -8299,98 +8237,55 @@ public class Layout
     {
         if (current == null) return false;
 
-        // NOBODY TO ASK MEANS AUTONOMY, and autonomy turns exactly where the flag says.
-        //
-        // Widening this branch would turn trains at plain copies of a may-reverse square, which is
-        // the promotion of "may" to "must" that `AutonomyBuilder` refuses to emit and says so: it
-        // "made a through station one no path could be routed through".
-        //
-        // ALWAYS_REVERSE COUNTS AS NOBODY, and leaving it out was a defect this rule introduced.
-        // The four-argument overload hands it to autonomy's own loop AND to the timetable, which is
-        // what Return Home runs - and being non-null, it fell through to the manual branch, answered
-        // yes to everything, and would have turned staged trains at every plain copy they passed.
-        // Adam, 2026-09-06: "no prompting in return home or auto."
+          // NOBODY TO ASK MEANS AUTONOMY, and autonomy turns exactly where the flag says.  Widening this branch would turn trains at
+          // plain copies of a may-reverse square, the promotion of "may" to "must" that `AutonomyBuilder` refuses to emit (it "made
+          // a through station one no path could be routed through").
+          //
+          // ALWAYS_REVERSE COUNTS AS NOBODY: the four-argument overload hands it to autonomy's own loop AND to the timetable, which
+          // is what Return Home runs; being non-null it would fall through to the manual branch, answer yes to everything, and turn
+          // staged trains at every plain copy they passed (Adam: "no prompting in return home or auto.").
         if (reversals == null || reversals == ALWAYS_REVERSE) return current.isReversing();
 
-        // ARRIVING at a terminus is not a question either way - the turn is how the train gets there,
-        // and MT-245 turns on it: "a train that cannot reverse may back into a terminus".
-        //
-        // SPEC-B1 / REG6-B1: THIS USED TO ASK ONLY WHETHER THE JOURNEY ENDED AT ONE, which threw away
-        // the operator's answer about every may-reverse square ON THE WAY there.  The prompt was
-        // still shown - `forJourney` scans the path and asks - and then this line answered the
-        // question itself and ignored what had been said.  A dialog whose answer is discarded is
-        // worse than no dialog: it reports a decision that was never taken.
-        //
-        // NARROWING THIS TO THE ARRIVAL WAS WRONG, and `testATrainThatCannotReverseMayBackIntoATer
-        // minus` said so within the minute: "that turn is not a choice - it is how a train backs into
-        // a terminus, and refusing it strands the journey".  The reversal ON THE WAY to a terminus is
-        // part of getting there, not a preference about it.
-        //
-        // So SPEC-B1 / REG6-B1 - a prompt whose answer this line then discards - is real, and the
-        // half to fix is the PROMPT.  `forJourney` no longer asks about a journey that ends at a
-        // terminus, because there is no answer it could give that this rule would honour.  Asking
-        // less is the repair; honouring more would strand trains.
-        // THE TURNING COPY OF A MAY-TURN SQUARE IS ALSO A TERMINUS (Adam, OB-205 claims 2 and 3).
-        //
-        // *"from the current position, 75 407 DB can go from Tunnel to BottomMainB and is reversed
-        // without a direction prompt"*, and *"when I set it as reversible, there is still no 'should it
-        // change direction' prompt."*
-        //
-        // Both are this line.  `AutonomyBuilder` emits the turning copy of a MAY-turn square with
-        // `terminus: true` - `json.put(stops ? "terminus" : "reversing", true)` - so `isTerminus()` is
-        // true at a square the operator was promised a question about, this branch answered
-        // `current.isReversing()` (true, at that copy) and nobody was asked.  Worse, `forJourney` read
-        // the same flag and returned KEEP_DIRECTION, so the prompt's own answer was the opposite of what
-        // happened: the train turned against the only answer it could have given.
-        //
-        // **The door is asked, because the door is the only thing that knows.**  That sentence is
-        // already in this method, fifty lines below, about `current` - `asksAbout` comes from
-        // `mayTurnTiles()`, the reversible squares MINUS the compulsory ones - and it was never applied
-        // to the destination. A destination the door asks about is a may-turn square, and a turn there
-        // is the operator's call; one it does not ask about is a real terminus, where the turn is how the
-        // train gets in and MT-245 says so.
+          // ARRIVING at a terminus is not a question either way - the turn is how the train gets there, and MT-245 turns on it: "a
+          // train that cannot reverse may back into a terminus".  The reversal ON THE WAY to a terminus is part of getting there,
+          // not a preference about it, so `forJourney` does not ask about a journey that ends at a terminus (SPEC-B1, REG6-B1): a
+          // dialog whose answer is discarded reports a decision that was never taken, and honouring more would strand trains.
+          //
+          // THE TURNING COPY OF A MAY-TURN SQUARE IS ALSO A TERMINUS (OB-205 claims 2 and 3; Adam: *"from the current position,
+          // 75 407 DB can go from Tunnel to BottomMainB and is reversed without a direction prompt"*, and *"when I set it as
+          // reversible, there is still no 'should it change direction' prompt."*).  `AutonomyBuilder` emits that copy with
+          // `terminus: true` (`json.put(stops ? "terminus" : "reversing", true)`), so `isTerminus()` is true at a square the
+          // operator was promised a question about, and this branch answered `current.isReversing()` and nobody was asked.
+          //
+          // **The door is asked, because the door is the only thing that knows**: `asksAbout` comes from `mayTurnTiles()`, the
+          // reversible squares MINUS the compulsory ones.  A destination the door asks about is a may-turn square, and a turn there
+          // is the operator's call; one it does not ask about is a real terminus, where the turn is how the train gets in (MT-245).
         if (destination != null && destination.isTerminus() && !reversals.asksAbout(destination))
         {
             return current.isReversing();
         }
 
-        // AND IN MANUAL MODE, THE DOOR DECIDES WHICH SQUARES ARE ASKED ABOUT (Adam, 2026-09-06).
+        // AND IN MANUAL MODE, THE DOOR DECIDES WHICH SQUARES ARE ASKED ABOUT (Adam: **"May reverse should always prompt in manual
+        // mode."**).
         //
-        // **"May reverse should always prompt in manual mode."**
+        // A COMPULSORY TURN TURNS, in every mode (CONF-A1).  A copy of a COMPULSORY turn leaves only by the side the train arrived
+        // from, so not turning is not an available outcome (it drives the train forward off its reserved path) and there is
+        // nothing for anybody to have an opinion about: it must not reach a policy.  (REG6-A1 stopped the operator being asked
+        // about it; that repair must not fall through to `shouldReverse`, which for a manual policy answers "keep direction".)
         //
-        // A COMPULSORY TURN TURNS, in every mode (CONF-A1).
+        // `current.isReversing()` alone is NOT that test: a may-reverse square that the build DID split also has a turning copy,
+        // and reaching it is a real question ("the reason for such a turn lives in the leg after this one, so nothing in the path
+        // can decide it and the operator is asked").  Nor can the two be told apart from the graph: inferring it (are all the
+        // copies sharing this block reversing?) is right about a split square and wrong about a square with one copy, which is
+        // most of them.
         //
-        // Removing the question at compulsory turns left the OUTCOME behind, and that was worse than
-        // the defect it repaired.  `REG6-A1` was that the operator got asked about a square the
-        // railway turns every train at, and would derail a train by pressing the default; the repair
-        // stopped the asking - and then this rule fell through to `shouldReverse`, which for a manual
-        // policy answers "keep direction".  So the turn was not merely defaulted away, it was skipped
-        // unconditionally, and the hazard went from "if the operator presses the default" to
-        // "always".  `fix-for-a-defect-can-be-worse` in one commit.
-        //
-        // A copy of a COMPULSORY turn leaves only by the side the train arrived from, so not turning
-        // is not an available outcome - it drives the train forward off its reserved path.  There is
-        // nothing for anybody to have an opinion about, which is why it must not reach a policy.
-        //
-        // `current.isReversing()` alone is NOT that test, and asserting it here failed three of Adam's
-        // rules within the minute.  A may-reverse square that the build DID split also has a turning
-        // copy, and reaching it is a real question: "the reason for such a turn lives in the leg after
-        // this one, so nothing in the path can decide it and the operator is asked".
-        //
-        // Nor can the two be told apart from the graph.  An attempt to infer it - are all the copies
-        // sharing this block reversing? - is right about a split square and wrong about a square with
-        // one copy, which is most of them, and every square on Adam's railway.
-        //
-        // **So the DOOR is asked, because the door is the only thing that knows.**  `asksAbout` comes
-        // from `mayTurnTiles()`, which is the reversible squares MINUS the compulsory ones - the
-        // distinction stated where it is actually recorded.  A reversing copy the door does not ask
-        // about is therefore a compulsory turn, and turning is not a preference about it.
+        // **So the DOOR is asked, because the door is the only thing that knows.**  `asksAbout` comes from `mayTurnTiles()`, the
+        // reversible squares MINUS the compulsory ones, so a reversing copy the door does not ask about is a compulsory turn.
         if (current.isReversing() && !reversals.asksAbout(current)) return true;
 
-        // `mayReverseAt` stays beside `asksAbout`, and removing it broke two more rules.  It is the
-        // runtime's own coverage of the plain copy of a split square, and it is what a policy that
-        // does not override `asksAbout` relies on - the default answers `isReversing()`, which is
-        // false at exactly that copy.  Only the DOOR's policy can answer from the setup.
+        // `mayReverseAt` stays beside `asksAbout`: it is the runtime's own coverage of the plain copy of a split square, which a
+        // policy that does not override `asksAbout` relies on (the default answers `isReversing()`, false at exactly that copy).
+        // Only the DOOR's policy can answer from the setup.
         if (!mayReverseAt(current) && !reversals.asksAbout(current)) return false;
 
         return reversals.shouldReverse(loc, current);
@@ -8473,17 +8368,14 @@ public class Layout
     /**
      * Which side of its END point an edge comes in by - the ONE definition, used by both readers.
      *
-     * **The build says, and the geometry is the fallback.** `AutonomyBuilder` splits a square on the
-     * side the metal actually enters by and now writes that into the configuration, so this is simply
-     * reading back a decision already made. Where it is missing - any setup saved before 2026-09-08,
-     * and every `Layout` a test builds by hand - the compass direction of the neighbouring POINT is
-     * used instead, which is the answer this program gave for its whole life and is wrong only on a
-     * curve.
+     * **The build says, and the geometry is the fallback.**  `AutonomyBuilder` splits a square on the side the metal actually
+     * enters by and writes that into the configuration, so this reads back a decision already made.  Where it is missing (a
+     * setup saved before 2026-09-08, and every `Layout` a test builds by hand) the compass direction of the neighbouring POINT
+     * is used, which is wrong only on a curve.
      *
-     * **Why it has to be one method.** The side is WRITTEN on arrival and READ by the walk that blocks
-     * the track behind a standing train. When those two disagreed, the walk matched nothing on a curve
-     * and blocked nothing at all - a protection that silently does nothing, which is worse than the
-     * wrong label it was fixing. They cannot drift apart if there is one rule and both call it.
+     * **Why it has to be one method.**  The side is WRITTEN on arrival and READ by the walk that blocks the track behind a
+     * standing train; when those disagreed the walk matched nothing on a curve and blocked nothing at all, a protection that
+     * silently does nothing.
      *
      * @param edge the edge
      * @param at the point being arrived at, which must be one of its ends
@@ -8522,36 +8414,24 @@ public class Layout
     /**
      * The track behind every standing train, which nothing else may run over.
      *
-     * Adam, 2026-09-06: **"if a train protrudes far behind where it is standing, those edges it
-     * reaches need to be considered blocked.  For example, bottommainc should currently be blocked
-     * since a train of length 4 is standing at bottommainb, which has a length of 1 leading up to its
-     * switch, but the length of the train is 4, so it protrudes past the switch."**
+     * Adam: **"if a train protrudes far behind where it is standing, those edges it reaches need to be considered blocked.  For
+     * example, bottommainc should currently be blocked since a train of length 4 is standing at bottommainb, which has a length
+     * of 1 leading up to its switch, but the length of the train is 4, so it protrudes past the switch."**
      *
-     * **EDGES, not points**, and that is his ruling rather than an implementation convenience:
-     * *"because the points are technically unoccupied.  But the blocked edges should prevent routing
-     * to the covered points."*  A train standing on one sensor does not make the next sensor occupied;
-     * it makes the track between them impassable, and a station reachable only across that track
-     * becomes unreachable as a CONSEQUENCE rather than by a second rule that could disagree with this
-     * one.  `guard-and-affordance-same-question` is why that distinction is worth keeping.
+     * **EDGES, not points** (his ruling): *"because the points are technically unoccupied.  But the blocked edges should prevent
+     * routing to the covered points."*  A train standing on one sensor does not make the next sensor occupied; it makes the track
+     * between them impassable, and a station reachable only across that track becomes unreachable as a CONSEQUENCE rather than by
+     * a second rule that could disagree with this one.
      *
-     * **Derived, never stored.**  This is recomputed from where the trains are, so it corrects itself
-     * the moment one moves - which is what "greyed out until the train blocking it moves" needs.  The
-     * reservation counter on `Edge` deliberately is NOT used: that counts route holds, a route release
-     * would zero it, and a train standing still holds nothing.  Two different facts about one edge.
+     * **Derived, never stored**: recomputed from where the trains are, so it corrects itself the moment one moves.  The
+     * reservation counter on `Edge` is deliberately NOT used: that counts route holds, which a route release would zero, and a
+     * train standing still holds nothing.
      *
-     * **It stops early on purpose, twice, and both are Adam's rulings.**
-     *
-     * At a FORK - *"if entering a switch from the no fork direction, keep following it.  If entering a
-     * switch from the fork direction where it splits, just end locking at the switch and call it a
-     * day."*  Walked backwards, one way in means the tail certainly lies there; several means the
-     * graph cannot say which, and blocking either would stop a train that could have run.
-     *
-     * At an UNMEASURED segment - *"if no length specified, just stop there.  Only segments with a
-     * positive length are determinate."*
-     *
-     * So this UNDER-claims, knowingly.  A tail that really does reach past a fork or across unmeasured
-     * track is not blocked here.  The alternative is blocking track on a guess, and a guess that
-     * refuses is still a refusal.
+     * **It stops early on purpose, twice (Adam's rulings).**  At a FORK - *"if entering a switch from the no fork direction, keep
+     * following it.  If entering a switch from the fork direction where it splits, just end locking at the switch and call it a
+     * day."* - walked backwards, one way in means the tail certainly lies there; several means the graph cannot say which.  At an
+     * UNMEASURED segment - *"if no length specified, just stop there.  Only segments with a positive length are determinate."*
+     * So this UNDER-claims, knowingly: the alternative is blocking track on a guess, and a guess that refuses is still a refusal.
      *
      * @return every covered edge, with the locomotive whose tail covers it
      */
@@ -8598,19 +8478,16 @@ public class Layout
     /**
      * The same walk, answered in PLACES rather than whole edges (OB-207).
      *
-     * Adam: *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, with a
-     * train length of one.  An edge is covered whole or not at all, and `isPathClear` then refuses every
-     * edge sharing metal with a covered one - so a one-unit train parked at the far end of a
-     * twelve-tile run fouled the whole of it and made a station beyond it unreachable from anywhere.
+     * Adam: *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, with a train length of one.  An
+     * edge is covered whole or not at all, and `isPathClear` then refuses every edge sharing metal with a covered one, so a
+     * one-unit train parked at the far end of a twelve-tile run fouled the whole of it.
      *
-     * This says how far the tail actually reaches: the places are ordered along the edge and carry their
-     * own lengths, so the walk spends the train's length across them from whichever end it entered by
-     * and stops.  A place is claimed when the tail reaches it AT ALL, including an unmeasured one the
-     * train lies over for nothing, which keeps this on the refusing side of a rounding.
+     * This says how far the tail actually reaches: the places are ordered along the edge and carry their own lengths, so the walk
+     * spends the train's length across them from whichever end it entered by and stops.  A place is claimed when the tail reaches
+     * it AT ALL, including an unmeasured one the train lies over for nothing, which keeps this on the refusing side of a rounding.
      *
-     * Empty of any edge the build did not describe in places - a hand-written configuration, or one
-     * written before 3.0.0.  Readers pair it with `edgesCoveredByStandingTrains` and fall back to that,
-     * so an old file behaves as it always did rather than suddenly claiming nothing is fouled.
+     * Empty of any edge the build did not describe in places (a hand-written configuration, or one written before 3.0.0).
+     * Readers pair it with `edgesCoveredByStandingTrains` and fall back to that, so an old file behaves as it always did.
      *
      * @return every claimed place, with the locomotive whose tail lies over it
      */
@@ -8810,30 +8687,19 @@ public class Layout
     private void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places,
         java.util.function.Predicate<Locomotive> which)
     {
-        // ONE TAIL PER TRAIN, AND A RUNNING ONE IS ANCHORED WHERE IT IS (MT-438).
-        //
-        // Adam, 2026-09-21, on an orange line left along a road his train never drove: *"There is no
-        // ambiguity - the tail is certain at departure and shouldn't change.  You also know which way
-        // the train went when it started running.  Just unlock the rest of the diagram once the tail by
-        // length is far enough away."*
-        //
-        // **A locked path reserves every point on it** - `Point.reserve`, which deliberately does not
-        // sweep, because that reservation is what holds a junction behind the train against a second
-        // train reaching it another way.  So while a run is going the locomotive is the occupant of
-        // several Points at once, and this loop used to walk a tail from EVERY one of them: a tail
-        // anchored at the destination it has not reached, another at a junction it passed ten minutes
-        // ago, each choosing its road from whatever arrival side that Point happens to carry.  Measured
-        // on his railway: four roads leave `BottomMainAPre` on one side, and a phantom claim there took
-        // the first of them in iteration order and painted two switches the train never crosses.
-        //
-        // A train has one body in one place.  For a running locomotive that place is its last
-        // MILESTONE, and the road behind it is the part of its path it has already driven - both of
-        // which the run is keeping anyway.  The walk then spends the train's length back along that
-        // road and stops, which is his "unlock the rest once the tail is far enough away" and the
-        // arithmetic `tailHasProvablyPassed` uses to hand an edge back - read generously here, the head at
-        // the far end of its milestone's square, where the release does not count that square until the
-        // next sensor answers (GS-B3).  So the release is never ahead of this walk: what the walk stops
-        // claiming may still be held for one square, never the other way round.
+          // ONE TAIL PER TRAIN, AND A RUNNING ONE IS ANCHORED WHERE IT IS (MT-438).  Adam: *"There is no ambiguity - the tail is
+          // certain at departure and shouldn't change.  You also know which way the train went when it started running.  Just
+          // unlock the rest of the diagram once the tail by length is far enough away."*
+          //
+          // **A locked path reserves every point on it** (`Point.reserve`, which deliberately does not sweep, because that
+          // reservation holds a junction behind the train against a second train reaching it another way), so while a run is
+          // going the locomotive is the occupant of several Points at once; walking a tail from EVERY one of them anchored
+          // phantom claims at the destination it has not reached and at a junction it passed ten minutes ago, each choosing its
+          // road from whatever arrival side that Point carries.  A train has one body in one place: for a running locomotive that
+          // is its last MILESTONE, and the road behind it is the part of its path it has already driven.  The walk then spends
+          // the train's length back along that road and stops, the arithmetic `tailHasProvablyPassed` uses to hand an edge back,
+          // read generously here (the head at the far end of its milestone's square, where the release does not count that
+          // square until the next sensor answers, GS-B3), so the release is never ahead of this walk.
         Set<Locomotive> alreadyWalked = new LinkedHashSet<>();
 
         for (Point standing : this.points.values())
@@ -8853,18 +8719,11 @@ public class Layout
             String side = standing.getArrivedFrom();
             List<Edge> road = standing.getArrivedAlong();
 
-            // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET (VD12-B3).
-            //
-            // `configureAndLockPath` claims `takingPath` and reserves every Point on the road before
-            // it returns; `activeLocomotives` is only written afterwards, by the caller.  So there is
-            // a window in which the locomotive holds several Points and has no path here - and the
-            // one-tail-per-train rule then walks ONE arbitrary reservation, which is usually not
-            // the square the train is standing on, so its real tail is claimed by nobody and another
-            // train can be routed onto track this one's body is lying over.
-            //
-            // `getActiveAccs` was given this same union for this same window (RC-A10), and says so.
-            //
-            // The claims first (RSA4-C3), see `pathHeldBy`.
+              // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET (VD12-B3): `configureAndLockPath` claims `takingPath` and reserves
+              // every Point on the road before it returns, and `activeLocomotives` is written only afterwards, so in that window the
+              // locomotive holds several Points and has no path here, and the one-tail-per-train rule would walk ONE arbitrary
+              // reservation and leave its real tail claimed by nobody.  `getActiveAccs` has the same union for the same window
+              // (RC-A10).  The claims first (RSA4-C3), see `pathHeldBy`.
             List<Edge> running = this.pathHeldBy(loc);
 
             if (running != null && !running.isEmpty())
@@ -8873,9 +8732,8 @@ public class Layout
 
                 if (head != null)
                 {
-                    // ANCHORED AT THE HEAD, and what that Point itself records is the starting point
-                    // for the road - not what some other reserved Point happens to carry, which is
-                    // what the first draft of this took when the driven road came back empty.
+                      // ANCHORED AT THE HEAD, and what that Point itself records is the starting point for the road, not what some
+                      // other reserved Point happens to carry.
                     anchor = head;
                     side = head.getArrivedFrom();
                     road = head.getArrivedAlong();
@@ -8892,9 +8750,8 @@ public class Layout
                 }
             }
 
-            // EVERY SQUARE THE BODY LIES OVER IS CHARGED, the one it stands on first (Adam, 2026-09-23,
-            // OB-278) - so a running train anchored at a milestone and a train at rest at its
-            // destination are walked alike, which is what OB-244 asked of the milestone.
+              // EVERY SQUARE THE BODY LIES OVER IS CHARGED, the one it stands on first (OB-278; OB-244 asked it of the milestone), so
+              // a running train anchored at a milestone and a train at rest at its destination are walked alike.
             walkOneTail(anchor, loc, side, road, covered, places);
         }
     }
@@ -8914,10 +8771,8 @@ public class Layout
     {
         Point reached = this.lastMilestone(loc);
 
-        // ITS OWN FALLBACK, and not `whereTheTrainIs`'s.  A train that has been given a path and has
-        // reported nothing is at the start of that path; asking which Point holds it would hand back
-        // one of the reservations that path has just taken, which is the answer this method exists to
-        // avoid.
+          // ITS OWN FALLBACK, and not `whereTheTrainIs`'s: a train given a path that has reported nothing is at the start of that
+          // path, and asking which Point holds it would hand back one of the reservations that path has just taken.
         return reached != null ? reached : path.get(0).getStart();
     }
 
@@ -8939,15 +8794,10 @@ public class Layout
 
         if (head == null) return driven;
 
-        // THE HEAD IS THE START OF THE PATH, so nothing has been driven yet (VD13-C1) - AND BY
-        // IDENTITY ONLY (VD14-B2).
-        //
-        // The javadoc has always promised this and nothing implemented it.  The first version asked by
-        // PLACE as well, which broke the case it was meant to help: a first leg that REVERSES IN PLACE
-        // ends at another copy of the start square, so the head is a different Point on the same piece
-        // of track - the train HAS driven that leg, and the walk below would have matched it by
-        // identity.  Answering "nothing driven" there sends the caller back to whatever the Point
-        // recorded on an earlier run, which is the stale road MT-438 was about.
+          // THE HEAD IS THE START OF THE PATH, so nothing has been driven yet (VD13-C1) - AND BY IDENTITY ONLY (VD14-B2): by place,
+          // a first leg that REVERSES IN PLACE ends at another copy of the start square, so the head is a different Point on the
+          // same piece of track and the train HAS driven that leg; answering "nothing driven" there sends the caller back to the
+          // stale road the Point recorded on an earlier run (MT-438).
         if (path.get(0) != null && path.get(0).getStart() == head)
         {
             return driven;
@@ -8959,18 +8809,14 @@ public class Layout
 
             driven.add(leg);
 
-            // IDENTITY FIRST, PLACE SECOND (VD12-C2).  `isSamePlaceAs` matches every copy of a
-            // square, so a path that passes one twice was truncated at the EARLIER copy and the
-            // side was then read off the wrong leg.  `theHeadOfTheRun` hands back a Point, so the
-            // copy is not in doubt; the place test stays as the fallback, because a milestone can
-            // be reported on a different copy than the path names - which is the same reason
-            // `cameFromAlong` compares this way, and its javadoc says the LATER arrival wins.
+              // IDENTITY FIRST, PLACE SECOND (VD12-C2): `isSamePlaceAs` matches every copy of a square, so a path that passes one
+              // twice would be truncated at the EARLIER copy and the side read off the wrong leg.  The place test stays as the
+              // fallback, because a milestone can be reported on a different copy than the path names (`cameFromAlong` compares
+              // this way, and its javadoc says the LATER arrival wins).
             if (leg.getEnd() == head) return driven;
         }
 
-        // NO COPY OF IT MATCHED BY IDENTITY, so ask by place - the later match, which is what
-        // `cameFromAlong` does for the same reason: a run may report a milestone on a different copy
-        // of a square than the path names.
+          // NO COPY OF IT MATCHED BY IDENTITY, so ask by place - the later match, as `cameFromAlong` does.
         List<Edge> byPlace = new java.util.ArrayList<>();
 
         for (int at = 0; at < path.size(); at++)
@@ -8984,19 +8830,17 @@ public class Layout
 
         if (!byPlace.isEmpty()) return byPlace;
 
-        // The head is not on the path at all - a milestone from an earlier run, or a path replaced
-        // underneath this one.  Nothing can be said about which way it came, so nothing is returned
-        // and the caller keeps what the Point itself records.
+          // The head is not on the path at all (a milestone from an earlier run, or a path replaced underneath this one): nothing
+          // can be said about which way it came, so nothing is returned and the caller keeps what the Point itself records.
         return new java.util.ArrayList<>();
     }
 
     /**
-     * One standing train's tail, walked (OB-228) - the body `walkStandingTrains` runs for each train, lifted out so a
-     * train that is not standing there yet can be walked by the same code.
+     * One standing train's tail, walked (OB-228) - the body `walkStandingTrains` runs for each train, lifted out so a train that
+     * is not standing there yet can be walked by the same code.
      *
-     * The Return Home planner puts trains down in a plan before any of them moves, and asked only the railway as it is it
-     * could not see the tail a moved train would leave - Adam's MT-335 run parked 75 407 DB at BottomMainA and then sent
-     * EN57-203 over the track behind it.  Handing the side and road in, rather than reading them off the Point, is what
+     * The Return Home planner puts trains down in a plan before any of them moves, and asked only the railway as it is it could
+     * not see the tail a moved train would leave.  Handing the side and road in, rather than reading them off the Point, is what
      * lets the planner ask about a train it has only imagined, without writing anything onto the running layout.
      *
      * @param standing the Point the train stands on
