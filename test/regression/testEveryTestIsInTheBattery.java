@@ -185,8 +185,12 @@ public class testEveryTestIsInTheBattery
         // javadoc quotes the wrong form to explain it. This file quotes it too, in the search below.
         // Both were flagged by the first version of this guard, which is the ordinary way a source
         // rule catches itself: the comment above it predicted exactly that and it happened anyway.
+        //
+        // `testTimetableOnDerivedGraph` spells the call with `java.util.LinkedList`, which the search now sees, and wires
+        // the pages by hand straight after (`wireAccessories(pages)`, with the reason written beside it).
         java.util.List<String> excused = java.util.Arrays.asList(
-            "testParseCS2Layout.java", "LayoutSandbox.java", "testEveryTestIsInTheBattery.java");
+            "testParseCS2Layout.java", "LayoutSandbox.java", "testEveryTestIsInTheBattery.java",
+            "testTimetableOnDerivedGraph.java");
 
         java.util.List<String> unwired = new java.util.ArrayList<String>();
 
@@ -209,8 +213,7 @@ public class testEveryTestIsInTheBattery
 
                 // The call, not the words: LayoutSandbox.wired contains this text itself, inside the
                 // helper that does the wiring, and naming it here would report the cure as the disease.
-                if (source.contains(".parseLayout(new LinkedList<MarklinAccessory>())")
-                    || source.contains(".parseLayout(new LinkedList<>())"))
+                if (parsesWithoutAccessories(source))
                 {
                     unwired.add(folder.getName() + "/" + file.getName());
                 }
@@ -220,6 +223,53 @@ public class testEveryTestIsInTheBattery
         assertTrue(unwired.isEmpty(),
             "these tests parse a layout and never wire its tiles to their accessories, so they run against a railway with almost no edges in it and pass by asserting about null. Use support.LayoutSandbox.wired(model, parser): " + unwired);
     }
+    /** A parse handed an empty list of accessories, spelled any way a test spells it: plain or qualified, any type argument. */
+    private static final java.util.regex.Pattern UNWIRED_PARSE = java.util.regex.Pattern.compile(
+        "\\.parseLayout\\(\\s*new\\s+(?:java\\.util\\.)?LinkedList\\s*<[^>()]*>\\s*\\(\\s*\\)\\s*\\)");
+
+    /**
+     * Whether a source file parses a layout with an empty accessory list.
+     *
+     * @param source the text of a test file
+     * @return true when it contains such a call
+     */
+    private static boolean parsesWithoutAccessories(String source)
+    {
+        return UNWIRED_PARSE.matcher(source).find();
+    }
+
+    /**
+     * The search for an unwired parse sees the spellings tests use, and not a wired one.
+     *
+     * The guard above looked for two exact spellings, so `new java.util.LinkedList<MarklinAccessory>()` - already in the
+     * tree - went by it, and an unwired parse spelled that way would have passed.  This drives the same search over
+     * made-up lines, so it cannot go quiet unnoticed.
+     *
+     * MUTATION: put an unwired parse spelled `new java.util.LinkedList<MarklinAccessory>()` in a test outside the excused
+     * list and `testNoTestParsesALayoutWithoutWiringIt` fails; narrow `UNWIRED_PARSE` to the plain spelling and this does.
+     */
+    @Test
+    public void testTheUnwiredParseSearchSeesEverySpelling()
+    {
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(new LinkedList<MarklinAccessory>());"),
+            "the plain spelling is no longer found");
+
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(new LinkedList<>());"),
+            "the diamond spelling is no longer found");
+
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(new java.util.LinkedList<MarklinAccessory>());"),
+            "the qualified spelling is no longer found - the one the guard used to miss");
+
+        assertTrue(parsesWithoutAccessories("pages = parser.parseLayout(\n    new java.util.LinkedList<org.traincontrol.marklin.MarklinAccessory>()\n);"),
+            "a parse split over lines, with a qualified argument type, is no longer found");
+
+        assertFalse(parsesWithoutAccessories("pages = parser.parseLayout(accessories);"),
+            "a parse handed a real accessory list is flagged as unwired");
+
+        assertFalse(parsesWithoutAccessories("pages = support.LayoutSandbox.wired(model, parser);"),
+            "the wiring helper is flagged as an unwired parse");
+    }
+
     /**
      * Every test-SHAPED method carries an annotation, not just the class (TST-C2).
      *
