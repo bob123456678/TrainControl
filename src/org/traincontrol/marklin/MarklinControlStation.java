@@ -98,7 +98,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * a constant somebody changes on purpose is the point, because a build that guesses whether it is a
      * release will guess wrong on the one day it matters.
      */
-    public static final boolean IS_PRE_RELEASE = true;
+    public static final boolean IS_PRE_RELEASE = false;
 
     /**
      * Which build this is, for a pre-release: when the code being run was built.
