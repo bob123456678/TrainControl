@@ -236,6 +236,73 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
+     * The session's one-line delegators call their collaborator, never themselves (FR-136).
+     *
+     * `AutonomySession` keeps each public method whose body moved to a package-private collaborator, as a one-line
+     * call to it; a mechanical rewrite that drops the collaborator's name leaves a method calling itself.
+     *
+     * MUTATION: make any of them call its own name instead of the collaborator's, and this fails.
+     *
+     * @throws Exception if the source cannot be read
+     */
+    @Test
+    public void testASessionDelegatorDoesNotCallItself() throws Exception
+    {
+        List<String> lines = java.util.Arrays.asList(
+            support.SourceOf.declaration("public class AutonomySession\n").split("\n"));
+
+        String[] collaborators = {"sessionImport.", "SessionImport."};
+
+        int checked = 0;
+
+        for (int i = 0; i < lines.size(); i++)
+        {
+            String declaration = lines.get(i).trim();
+
+            if (!declaration.startsWith("public ") || !declaration.contains("(")) continue;
+
+            String name = nameOf(declaration);
+
+            if (name == null) continue;
+
+            // A signature wrapped over several lines, whole
+            for (int next = i + 1; !declaration.contains(")") && next < lines.size(); next++)
+            {
+                declaration += " " + lines.get(next).trim();
+            }
+
+            // A ONE-STATEMENT BODY, the delegator's shape, whether it still calls the collaborator or has been
+            // rewritten to call itself
+            List<String> statements = new ArrayList<>();
+
+            for (String line : bodyOf(lines, i))
+            {
+                String code = withoutComments(line).replace("{", "").replace("}", "").trim();
+
+                if (!code.isEmpty()) statements.add(code);
+            }
+
+            if (statements.size() != 1) continue;
+
+            String statement = statements.get(0);
+
+            int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1, declaration.lastIndexOf(')')));
+
+            assertFalse(callsItself(statement, name, arity) || statement.contains("this." + name + "("),
+                name + " calls itself instead of its collaborator - an infinite recursion the compiler accepts."
+                + "  Line: " + statement);
+
+            for (String collaborator : collaborators)
+            {
+                if (statement.contains(collaborator + name + "(")) checked++;
+            }
+        }
+
+        assertTrue(checked >= 3, "only " + checked + " of the session's delegators were found, so this checked almost"
+            + " nothing - the shape it looks for has probably changed");
+    }
+
+    /**
      * Whether a line calls the wrapper's own name from inside its own body - qualified or not.
      *
      * The bug this file was written for was `this.syncWithCS2()`, and `this.` + name + `(` is what

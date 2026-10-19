@@ -323,6 +323,9 @@ public class testEditorSurfaceRules
                 // assignment made there reverted at the next configuration load.  It redraws through
                 // its callers, both of which repaint immediately after calling it.
                 "GraphLocAssign.java", "LayoutRightclickAutonomyMenu.java",
+                // SessionImport is the session's legacy import (FR-136): the session's own migration, before
+                // anything is on screen.
+                "SessionImport.java",
                 "TrainControlUI.java"),
             "a facing is written to the setup from a file this rule has not been told about. Each of "
             + "the three known ones redraws in its own way - the menu through placementChanged(), the "
