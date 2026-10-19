@@ -74,7 +74,8 @@ public class testTheRouteHighlightAsksWhatATileIs
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
         // showUI, because the registry this asks about is filled by the grid the window mounts.
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
 
         model.setNetworkCommState(false);
 

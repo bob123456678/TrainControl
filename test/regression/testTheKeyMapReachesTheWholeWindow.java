@@ -60,7 +60,8 @@ public class testTheKeyMapReachesTheWholeWindow
 
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         final MarklinControlStation loaded = model;
 

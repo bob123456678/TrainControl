@@ -56,7 +56,8 @@ public class testErrorsStopTheSetupRunning
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
     }
 
     /**

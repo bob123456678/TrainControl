@@ -147,7 +147,8 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
         // showUI, because `reconcileFacingWhenIdle` is a method of the window and this class exists to
         // RUN it.  debug on, because `Layout.setSimulate(true)` refuses outside debug mode and without
         // it no journey below ever reaches its destination.
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
         model.setNetworkCommState(false);
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 

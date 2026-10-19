@@ -81,7 +81,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         // THE MODEL'S OWN PAGES, wired to their accessories - a second parse of the same bytes gives a
         // railway of five edges with most of its points isolated, and every square then has one side.

@@ -62,7 +62,8 @@ public class testStuckTrainAdvisory
     {
         // Simulate and debug, as Adam's procedure says - this is the application's simulation, which
         // only stops it talking to a Central Station that is not there
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         model.stop();
 

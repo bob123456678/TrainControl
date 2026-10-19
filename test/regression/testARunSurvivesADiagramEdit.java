@@ -72,7 +72,8 @@ public class testARunSurvivesADiagramEdit
         // sandbox is about what `init` opens behind it.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
     }
 
     @AfterClass(alwaysRun = true)

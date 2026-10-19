@@ -54,7 +54,8 @@ public class testTriggerWaitsSayNothing
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         quotaWas = Locomotive.FEEDBACK_ADVISORY_MS;
         Locomotive.FEEDBACK_ADVISORY_MS = QUOTA_MS;

@@ -53,7 +53,8 @@ public class testThePaletteStillPlacesTiles
             // reads the layout-path preference, and without the sandbox it is Adam's own railway.
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 

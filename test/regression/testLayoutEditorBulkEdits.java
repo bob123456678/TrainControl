@@ -617,7 +617,8 @@ public class testLayoutEditorBulkEdits
             // Before the model, not just before the window (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 

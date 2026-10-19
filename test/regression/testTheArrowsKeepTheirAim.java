@@ -302,7 +302,8 @@ public class testTheArrowsKeepTheirAim
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             model.stop();
 

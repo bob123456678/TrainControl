@@ -61,7 +61,8 @@ public class testALocalLayoutNeverWritesAutonomyJson
 
         TrainControlUI.getPrefs().putBoolean(TrainControlUI.AUTO_LOAD_AUTONOMY, false);
 
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

@@ -931,7 +931,8 @@ public class testStationBlockedByAnotherPoint
     @org.testng.annotations.BeforeClass
     public static void setUpModel() throws Exception
     {
-        model = MarklinControlStation.init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         for (int address : new int[]{47441, 47442, 47443, 47444})
         {

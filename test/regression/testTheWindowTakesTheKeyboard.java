@@ -83,7 +83,8 @@ public class testTheWindowTakesTheKeyboard
         {
             up.sandbox = support.LayoutSandbox.open();
 
-            up.model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            up.model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             final org.traincontrol.marklin.MarklinControlStation model = up.model;
             final org.traincontrol.gui.TrainControlUI[] made = new org.traincontrol.gui.TrainControlUI[1];

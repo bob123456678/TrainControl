@@ -64,7 +64,8 @@ public class testAThreeWayIsLitOnce
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             // showUI, because the registry of labels is filled by the grid the window mounts.
-            model = init(null, true, true, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> MarklinControlStation.init(null, true, true, false, true));
 
             model.setNetworkCommState(false);
 

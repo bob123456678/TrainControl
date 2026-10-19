@@ -109,7 +109,8 @@ public class testLayoutFolderRobustness
             write(new File(pages, "Here.cs2"),
                 "[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=gerade\n .artikel=0\n");
 
-            MarklinControlStation model = MarklinControlStation.init(null, true, false, false, false);
+            MarklinControlStation model = support.TestStationAddress.withNoStation(
+                () -> MarklinControlStation.init(null, true, false, false, false));
 
             model.stop();
 
@@ -213,7 +214,8 @@ public class testLayoutFolderRobustness
         try
         {
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> MarklinControlStation.init(null, true, false, false, false));
 
             try
             {
@@ -258,7 +260,8 @@ public class testLayoutFolderRobustness
         try
         {
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> MarklinControlStation.init(null, true, false, false, false));
 
             try
             {
@@ -304,7 +307,8 @@ public class testLayoutFolderRobustness
         try
         {
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> MarklinControlStation.init(null, true, false, false, false));
 
             try
             {
@@ -372,7 +376,8 @@ public class testLayoutFolderRobustness
                 "[gleisbild]" + nl + "version" + nl + " .major=1" + nl + "groesse" + nl + " .wert=0" + nl);
 
             MarklinControlStation model =
-                MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> MarklinControlStation.init(null, true, false, false, false));
 
             try
             {

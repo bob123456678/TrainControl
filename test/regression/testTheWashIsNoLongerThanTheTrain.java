@@ -120,7 +120,8 @@ public class testTheWashIsNoLongerThanTheTrain
 
         // showUI, because the subject is what is drawn.  debug on, so the simulated Central Station
         // echoes the accessory commands a path configuration waits for.
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
         model.setNetworkCommState(false);
         simulatingWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 

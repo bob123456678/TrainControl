@@ -266,7 +266,8 @@ public class testTheExportRetiresItsGrid
         {
             up.sandbox = support.LayoutSandbox.open();
 
-            up.model = MarklinControlStation.init(null, true, false, false, false);
+            up.model = support.TestStationAddress.withNoStation(
+                () -> MarklinControlStation.init(null, true, false, false, false));
 
             final MarklinControlStation model = up.model;
             final TrainControlUI[] made = new TrainControlUI[1];

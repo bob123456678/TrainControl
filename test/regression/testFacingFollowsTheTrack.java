@@ -52,7 +52,8 @@ public class testFacingFollowsTheTrack
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         File folder = new File("test/test_layout");
 

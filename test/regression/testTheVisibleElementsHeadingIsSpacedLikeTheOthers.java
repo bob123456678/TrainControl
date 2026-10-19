@@ -55,7 +55,8 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

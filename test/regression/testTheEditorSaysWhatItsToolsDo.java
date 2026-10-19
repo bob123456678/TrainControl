@@ -175,7 +175,8 @@ public class testTheEditorSaysWhatItsToolsDo
             // A SANDBOX FIRST, so the model does not load the machine's own railway (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             org.traincontrol.base.Locomotive moved = model.newMM2Locomotive("FR-102 moved", 2301);
 
@@ -308,7 +309,8 @@ public class testTheEditorSaysWhatItsToolsDo
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
             org.traincontrol.marklin.MarklinControlStation model =
-                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+                support.TestStationAddress.withNoStation(
+                    () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             try
             {
@@ -1045,7 +1047,8 @@ public class testTheEditorSaysWhatItsToolsDo
             // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111)
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             String path = "file:///" + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
 
@@ -1374,7 +1377,8 @@ public class testTheEditorSaysWhatItsToolsDo
             // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111)
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             String path = "file:///" + sandbox.getFolder().getAbsolutePath().replace(File.separatorChar, '/') + "/";
 

@@ -57,7 +57,8 @@ public class testAReversalCommandIsEmitted
         // DEBUG ON, because setSimulate refuses outside it - and simulation is the only way the
         // train ever arrives here.  The last argument is debug; testAutonomySimulationSanity does the
         // same for the same reason.
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
         model.stop();
 
         model.newMM2Locomotive(DRIVER, ADDRESS);

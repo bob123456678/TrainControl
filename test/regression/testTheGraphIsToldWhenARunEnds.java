@@ -76,7 +76,8 @@ public class testTheGraphIsToldWhenARunEnds
         // dispatch could never reach its destination without it.  The flag adds logging and nothing
         // else; `testAutonomySimulationSanity`, which is the other class that drives a path to its
         // arrival, is built the same way.
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         // And the network is explicitly down, which is the other half of that condition.
         model.setNetworkCommState(false);

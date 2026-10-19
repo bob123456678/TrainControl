@@ -69,7 +69,8 @@ public class testAThrottleReversalIsFollowedFromItsEcho
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         // Simulating, with a window, in debug - the echo below answers only in debug.
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
 
         model.setNetworkCommState(false);
 

@@ -81,7 +81,8 @@ public class testConfirmedGoodState
     {
         capturing = Boolean.getBoolean("baseline.capture");
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
     }
 
     /**

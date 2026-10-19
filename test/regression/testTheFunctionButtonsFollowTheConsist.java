@@ -64,7 +64,8 @@ public class testTheFunctionButtonsFollowTheConsist
 
         sandbox = support.LayoutSandbox.open();
 
-        model = MarklinControlStation.init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

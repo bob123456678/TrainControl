@@ -48,7 +48,8 @@ public class testTheMenusComeBackAtOneMoment
             // otherwise open Adam's real railway.
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             model.stop();
 
@@ -215,7 +216,8 @@ public class testTheMenusComeBackAtOneMoment
             // BEFORE the model (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             model.stop();
 
@@ -409,7 +411,8 @@ public class testTheMenusComeBackAtOneMoment
             // BEFORE the model (OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             model.stop();
 

@@ -75,7 +75,8 @@ public class testOneChangeSticks
         // every class over it say something different every week.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         session = new AutonomySession(sandbox.getFolder());
 

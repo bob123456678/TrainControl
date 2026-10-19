@@ -124,7 +124,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
         {
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -284,7 +285,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             // Before the model, not just before the window (OB-111).
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -384,7 +386,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -490,7 +493,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -584,7 +588,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true));
 
             final org.traincontrol.marklin.MarklinControlStation finalModel = model;
 
@@ -718,7 +723,8 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             assertFalse(diagramSetups.exists(),
                 "the sandbox still has a diagram setup folder, so this is not the legacy state");
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
             model.stop();
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
