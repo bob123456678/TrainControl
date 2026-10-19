@@ -130,7 +130,7 @@ Line counts include javadoc. "Refl" is the number of test files naming the clust
 | 1 | Update check and install (offerTheUpdate, askAboutTheUpdate, downloadTheUpdate, installTheDownload, whenNoModalDialog, closeForTheUpdate) → `UpdateFlow` | ~570 | 1/1/0 |
 | 1 | Backup (prefixForBackup, backupData, writeTheBackup, BackupOutcome) → `BackupAction` | ~290 | 0/1/0 |
 | 1 | Route list (executeRoute, runAndTimeTheRoute, refreshRouteList, editRoute, duplicateRoute, BulkEnableOrDisable, the play button, findRoute and routeNamedIn, CustomTableRenderer) → `RouteListPanel` | ~2,015 | 1/4/0 |
-| 1 | Layout files and pages (duplicateOrRenameCurrentLayout, combineLinkedPages, writeIndexAndKeepLinksAimed, initializeEmptyLayout, unzipFile, downloadCentralStationLayout, createNewLayout, copy, paste and clear page) → `LayoutFileActions` | ~1,280 | 4/4/0 |
+| 1 | Layout files and pages (duplicateOrRenameCurrentLayout, combineLinkedPages, writeIndexAndKeepLinksAimed, initializeEmptyLayout, unzipFile, downloadCentralStationLayout, createNewLayout; the copy, paste and clear "page" actions are locomotive mapping pages, not layout pages, and stay out of this cluster) → `LayoutFileActions` | ~1,280 | 4/4/0 |
 | 2 | Timetable (repaintTimetable, timetableStop, delete, update and restart entries, clearTimetable) → `TimetableTab` | ~1,330 | 4/1/**3** |
 | 2 | Autonomy settings tab (loadAutoLayoutSettings plus the 12 `*MouseReleased` bodies) → `AutonomySettingsTab` | ~840 | 0/1/0 |
 | 2 | Locomotive operations (changeLocAddress, changeLocNotes, findSimilarLocs, deleteLoc, quickLocSearch) → `LocomotiveActions` | ~2,160 | 0/3/1 |
