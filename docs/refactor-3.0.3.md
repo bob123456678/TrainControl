@@ -153,7 +153,7 @@ Tiers 1 and 2 move about 11k lines out. With Tier 3 (about 4k more), TrainContro
 - **Layout.** Keep **every public and every `synchronized` signature in Layout.java** as a one-line delegator, so the API and the monitor guard both stay intact. Move only the bodies of unsynchronized clusters into package-private `automation` helpers:
   - `LayoutExplanations`: explain*, why*, Destinations; ~6,000-7,100.
   - `StandingTrains`: the walk* and tail* methods and placesCoveredByStandingTrains; ~8,000-9,100.
-  - `TrainFit`: whyTooLongForThisRoute and measuredRoomAtTheEndOf; ~12,000-13,100.
+  - `TrainFit`: whyTooLongForThisRoute and measuredRoomAtTheEndOf, and (taken in Phase 4, both already static) whyABerthCannotHoldIt and the 3-argument whyItWouldMeetItsOwnTail; ~12,000-13,100.
 
   Helpers must not take locks of their own; a call back into Layout while its monitor is held is re-entrant and safe. This needs Opus.
 - **AutonomyEditorPanel → gui.**
