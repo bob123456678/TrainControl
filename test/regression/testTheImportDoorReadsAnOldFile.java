@@ -4892,7 +4892,8 @@ public class testTheImportDoorReadsAnOldFile
     /** The main window over the sandbox, settled. */
     static TrainControlUI openTheWindow() throws Exception
     {
-        MarklinControlStation model = MarklinControlStation.init(null, true, false, false, true);
+        MarklinControlStation model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         final TrainControlUI[] made = new TrainControlUI[1];
 

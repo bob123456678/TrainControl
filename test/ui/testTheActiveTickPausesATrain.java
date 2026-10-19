@@ -76,7 +76,8 @@ public class testTheActiveTickPausesATrain
         databaseModified = databaseFile.lastModified();
         databaseLength = databaseFile.length();
 
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
         model.setNetworkCommState(false);
 
         ui = (TrainControlUI) model.getGUI();
@@ -2406,10 +2407,34 @@ public class testTheActiveTickPausesATrain
         return names;
     }
 
+    /**
+     * How many of this class's cards the tab builds now: one for each of its trains the railway runs.  A rebuilt railway
+     * no longer runs the train standing nowhere, so counting every name waited out the whole deadline (FR-136).
+     */
+    private static int cardsDue() throws Exception
+    {
+        final List<String> ours = cardNames();
+        final int[] due = new int[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            Layout running = railway();
+
+            if (running == null) return;
+
+            for (Locomotive loc : new ArrayList<>(running.getLocomotivesToRun()))
+            {
+                if (ours.contains(loc.getName())) due[0]++;
+            }
+        });
+
+        return due[0];
+    }
+
     /** Waits for the cards to be built and for each to take its routes. */
     private static void settleTheCards() throws Exception
     {
-        for (long end = System.currentTimeMillis() + 20000; cardOrder().size() < cardNames().size()
+        for (long end = System.currentTimeMillis() + 20000; cardOrder().size() < cardsDue()
             && System.currentTimeMillis() < end; )
         {
             Thread.sleep(100);

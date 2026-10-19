@@ -122,7 +122,8 @@ public class testTrainsComeHomeToTheirPlatforms
         sandbox = support.LayoutSandbox.open(frozen);
 
         // Debug mode, which simulation requires.
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
         model.stop();
 
         List<LayoutDiagram> pages = new ArrayList<>();

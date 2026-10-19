@@ -84,7 +84,8 @@ public class testReturnHomeOnRealLayout
     {
         // The last argument is debug mode, which simulation requires - without it setSimulate throws
         // and this suite would have no way to move a train without moving a real one.
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
         model.stop();
 
         File file = new File("test/autonomy.json");

@@ -76,7 +76,8 @@ public class testATrainIsDispatchedOnce
         // regression.testSwitchingToACentralStationLayout.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         for (int sensor = 194; sensor <= 198; sensor++)
         {
@@ -2799,10 +2800,13 @@ public class testATrainIsDispatchedOnce
 
             power.setBoolean(model, false);
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey whose route was being set when the power went"
-                + " off gave its train its speed during the cut, to take effect the moment the power came back (RSA61-C1)");
-
+            // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
+
+            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+
+            assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went"
+                + " off gave its train its speed during the cut, to take effect the moment the power came back (RSA61-C1)");
 
             assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off is still under way, waiting to set off when the"
@@ -2883,11 +2887,14 @@ public class testATrainIsDispatchedOnce
 
             power.invoke(model, true);
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey whose route was being set when the power went off"
+            // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
+            final Thread running = journey;
+
+            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+
+            assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went off"
                 + " and came back gave its train its speed over the switches commanded with no power to move them"
                 + " (RSA62-C2)");
-
-            final Thread running = journey;
 
             assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off and came back is still under way (RSA62-C2)");
@@ -3158,10 +3165,13 @@ public class testATrainIsDispatchedOnce
             // AND THE GO, while the route is still being set
             epoch.incrementAndGet();
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0, 6000), "a journey dispatched in the instant the power went off was"
-                + " given its speed over the route set while it was off (RSA63-C1)");
-
+            // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
+
+            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+
+            assertFalse(v.getSpeed() > 0, "a journey dispatched in the instant the power went off was"
+                + " given its speed over the route set while it was off (RSA63-C1)");
 
             assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " dispatched in the instant the power went off is still under way (RSA63-C1)");
