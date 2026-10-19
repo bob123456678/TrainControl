@@ -11145,23 +11145,11 @@ public class Layout
         {
             for (Point p : this.getPoints())
             {
-                // NEVER THE LOCOMOTIVE THIS WAS ASKED ABOUT (MT-149).
-                //
-                // isSimultaneousMultiUnitCompatible ends in `return !this.hasEquivalentAddress(l)`, so
-                // a locomotive compared with ITSELF has an equivalent address and is declared
-                // incompatible.  Asked about a train that is standing somewhere, this sweep therefore
-                // took it off the square it was standing on.
-                //
-                // Both rename doors call this straight after renameLoc, which is where Adam met it:
-                // "place loc on station.  Rename it.  It is now gone from the station, and in status
-                // ??? on the layout.  Rename it back, and it doesn't come back."  It does not come
-                // back because nothing restores a placement - the second rename finds nothing left to
-                // evict.
-                //
-                // It bites on rename and not on placement because moveLocomotive calls the same sweep
-                // BEFORE putting the locomotive down, so there is nothing of its own to find.
-                //
-                // A locomotive cannot conflict with itself.
+                // NEVER THE LOCOMOTIVE THIS WAS ASKED ABOUT (MT-149): isSimultaneousMultiUnitCompatible ends in
+                // `return !this.hasEquivalentAddress(l)`, so a locomotive compared with ITSELF is declared incompatible, and
+                // asked about a train standing somewhere this sweep would take it off its square (the rename doors call it
+                // straight after renameLoc; moveLocomotive calls it BEFORE putting the locomotive down, so it finds nothing
+                // of its own).  A locomotive cannot conflict with itself.
                 if (l.equals(p.getCurrentLocomotive())) continue;
 
                 if (
@@ -11171,8 +11159,7 @@ public class Layout
                     || p.getCurrentLocomotive() != null && !l.isSimultaneousMultiUnitCompatible(p.getCurrentLocomotive())
                 )
                 {
-                    // Through the bundles, like the other eighty warnings in this class (PFX-C1).
-                    // It also said "confliced".
+                      // Through the bundles, like the other warnings in this class (PFX-C1).
                     this.control.logf("autolayout.warnRemovedConflictingLocomotive",
                         p.getCurrentLocomotive().getName(), p.getName(), l.getName());
                     p.setLocomotive(null);
@@ -11400,20 +11387,11 @@ public class Layout
                 this.locomotivesToRun.add(l);
             }
 
-            // AND A SPEED, IF NOBODY HAS EVER GIVEN IT ONE (MT-233).
-            //
-            // parseAuto applies defaultLocSpeed as it loads, so every locomotive that came out of a
-            // file has a speed.  One placed by hand has not been through that path - and Adam placed
-            // one with Ctrl+V on the diagram, pressed Start, and got "Invalid speed specified" from
-            // runLocomotive's guard instead of the default he expected.
-            //
-            // This is the same rule as the load path, in the other door.  moveLocomotive is the single
-            // way a locomotive gets onto the graph - the diagram paste, the right-click menu and the
-            // autonomy editor all arrive here - so one place covers them.
-            //
-            // Only when the default is usable.  setDefaultLocSpeed refuses anything outside 1 to 100,
-            // so a layout read from a file always has one; a Layout built by hand in a test may still
-            // be at zero, and swapping one unusable speed for another would just move the complaint.
+              // AND A SPEED, IF NOBODY HAS EVER GIVEN IT ONE (MT-233): parseAuto applies defaultLocSpeed as it loads, so a
+              // locomotive placed by hand (the diagram paste, the right-click menu and the autonomy editor all arrive here)
+              // needs the same rule or Start answers "Invalid speed specified".  Only when the default is usable:
+              // setDefaultLocSpeed refuses anything outside 1 to 100, so a layout read from a file always has one, while a
+              // Layout built by hand in a test may be at zero.
             if (l.getPreferredSpeed() < 1 && this.defaultLocSpeed >= 1)
             {
                 l.setPreferredSpeed(this.defaultLocSpeed);
@@ -11422,9 +11400,7 @@ public class Layout
                     l.getName(), this.defaultLocSpeed);
             }
             
-            // Resolved once and null-checked, as the locomotive == null branch below already does.
-            // An unknown point name used to be dereferenced straight away and thrown, rather than
-            // reported - the two branches of this method disagreed about that.
+              // Resolved once and null-checked, as the locomotive == null branch below does: an unknown point name is reported.
             Point target = this.getPoint(targetPoint);
 
             if (target == null)
@@ -11453,30 +11429,21 @@ public class Layout
                 return result;
             }*/
             
-            // Removing from elsewhere is setLocomotive's own job now, and it does not stop at the
-            // first copy.  This loop broke after one - written when a station was one Point, and a
-            // square is several since - so a locomotive recorded on two copies of one platform lost
-            // one of them and kept the other.
+              // Removing from elsewhere is setLocomotive's own job, and it clears every copy, not the first: a square is several Points.
             
             // Ensure no multi-unit conflicts - asked before the train is put down, so the sweep itself, not the edit door
             // that asks only of a train already standing (BPV-A1).
             this.clearMultiUnitConflictsWith(l);
 
-            // Placing by hand DISPLACES whoever was there, and deliberately so: it is a person telling
-            // the model where a train actually is, and the previous occupant is by definition no longer
-            // there.  Refusing instead was tried and broke every displacing placement the multi-unit
-            // tests pin.
-            //
-            // The whole SQUARE is displaced, not just the copy being written to.  setLocomotive clears
-            // the train being placed off everywhere else - "one locomotive, one place" - but that says
-            // nothing about the other direction, and a square is several Points now: putting a second
-            // train on the other copy of an occupied platform left both standing on one piece of track.
-            // Autonomy cannot reach that state, because the block check refuses a route onto a platform
-            // whose sibling holds a train; hand placement was the way in.
-            //
-            // Only here, and deliberately not inside setLocomotive.  Path reservation goes through
-            // reserve(), which does not sweep, and a sweep on the shared setter is what collapsed
-            // reservations and stranded trains the last time this rule was widened.
+              // Placing by hand DISPLACES whoever was there, and deliberately: it is a person telling the model where a train
+              // actually is, so the previous occupant is by definition no longer there.
+              //
+              // The whole SQUARE is displaced, not just the copy being written to: setLocomotive clears the train being placed
+              // off everywhere else ("one locomotive, one place"), but a square is several Points, and a second train on the
+              // other copy of an occupied platform would leave both standing on one piece of track.  Autonomy cannot reach that
+              // state (the block check refuses a route onto a platform whose sibling holds a train); hand placement was the way
+              // in.  Only here, not inside setLocomotive: path reservation goes through reserve(), which does not sweep, and a
+              // sweep on the shared setter collapses reservations and strands trains.
             this.clearBlockExcept(target);
 
             // Set new location
@@ -11486,17 +11453,10 @@ public class Layout
             // free of claims.  Placing an already-homed locomotive somewhere else does not re-home it.
             this.claimHome(l, target);
 
-            // AND A HAND PLACEMENT SUPERSEDES A TURN THE WINDOW HAS NOT WRITTEN YET (REV9-A1).
-            //
-            // `reversedOnArrival` says "this train is standing where the railway turned it and the
-            // graph has not been told", and the window applies it by writing the side that Point was
-            // arrived by.  Somebody putting the train down is a newer answer about both facts than
-            // any of that - it is the same ruling as OB-183's exception, one door further on - and a
-            // record left behind would be applied to a placement the operator chose, on a square they
-            // may have chosen it for.
-            //
-            // A no-op on a REBUILD, which is the other caller: `parseAuto` replaces this whole object,
-            // so the layout being placed into has an empty record of its own.
+              // AND A HAND PLACEMENT SUPERSEDES A TURN THE WINDOW HAS NOT WRITTEN YET (REV9-A1): `reversedOnArrival` says "this
+              // train is standing where the railway turned it and the graph has not been told", and somebody putting the train
+              // down is a newer answer about both facts (OB-183's exception, one door further on).  A no-op on a REBUILD,
+              // since `parseAuto` replaces this whole object.
             this.reversedOnArrival.remove(locomotive);
 
             result = true;
@@ -11531,49 +11491,35 @@ public class Layout
     }
     
     /**
-     * THE TRACK NON-ATOMIC MODE COULD RELEASE UNDER A TRAIN - the atomic-routes gate's question
-     * (Adam, 2026-09-21; corrected by VD13-B1/B2/B3 and again by VD14-C5/C6).
+     * THE TRACK NON-ATOMIC MODE COULD RELEASE UNDER A TRAIN - the atomic-routes gate's question (Adam, 2026-09-21).
      *
-     * **Why this is the question and the editor's square count is not.**  Non-atomic mode is unsafe
-     * only through one escape: `tailHasProvablyPassed` returns true the moment `pathIsUnmeasured`, and
-     * that means NO EDGE ANYWHERE ON THE PATH is measured - a length, or every square answered 0 (TDU-C6).  An edge's length is the sum of its
-     * squares, so a railway with one unmeasured switch square still has a length on every edge - the
-     * escape can never fire on it, and the only cost of the missing square is that `behind`
-     * under-counts and edges are held LONGER, which is the conservative direction.  Asking the
-     * editor's `squaresNeedingALength` therefore refused a railway that is provably safe, and refusing
-     * something legal is the one thing Adam has asked not to happen.  It was also silent on a railway
-     * with no diagram, which is where the danger actually lives.
+     * **Why this is the question and the editor's square count is not.**  Non-atomic mode is unsafe only through one escape:
+     * `tailHasProvablyPassed` returns true the moment `pathIsUnmeasured`, that is, NO EDGE ANYWHERE ON THE PATH is measured
+     * (a length, or every square answered 0; TDU-C6).  An edge's length is the sum of its squares, so a railway with one
+     * unmeasured switch square still has a length on every edge: the escape can never fire on it, and the missing square
+     * only makes `behind` under-count, so edges are held LONGER, the conservative direction.  Refusing something legal is
+     * the one thing Adam has asked not to happen.
      *
-     * **BY RAIL, NOT BY EDGE.**  A rail is two `Edge` objects, one per direction, so counting edges
-     * told him "2 pieces of track" about one piece.  Counted by the pair of places it joins.
+     * **BY RAIL, NOT BY EDGE**: a rail is two `Edge` objects, one per direction, so it is counted by the pair of places it
+     * joins.
      *
-     * **AND ONLY WHERE A WHOLE PATH COULD BE UNMEASURED** (VD14-C6).  Counting every unmeasured rail
-     * refused a railway that is provably safe: the escape needs a path with NO measured edge, and a
-     * path always ENDS at a destination, so an unmeasured rail with measured track between it and every
-     * destination can never be part of one.  What this returns is the rails from whose far end an
-     * ACTIVE destination can be reached over unmeasured track alone - the rails that could really be
-     * handed back under a train.
+     * **AND ONLY WHERE A WHOLE PATH COULD BE UNMEASURED** (VD14-C6): a path always ENDS at a destination, so an unmeasured
+     * rail with measured track between it and every destination can never be part of one.  What this returns is the rails
+     * from whose far end an ACTIVE destination can be reached over unmeasured track alone.  A path may not run through or
+     * finish on a point that is switched off, so the reachability walk never reaches one.
      *
-     * That also settles what an earlier draft tried to say with an `isActive()` test on the far end
-     * (VD14-C5): the test was inert for an ordinary rail, because the opposite direction has an active
-     * far end and contributed the same rail anyway.  A path may not run through or finish on a point
-     * that is switched off, so the reachability walk below simply never reaches one.
+     * **WHERE THE PREMISE IS ENFORCED**, since it is what makes the narrowing safe (VD15-C4, VD16-C1): where a path is
+     * BUILT, not in `isPathClear`.  `Layout.bfs` returns null unless `end.isDestination()`, which covers every path
+     * autonomy runs, probes or enumerates; `HomeStaging.firstClearRoute`, which does not use `bfs`, gates on `canRest`,
+     * which requires `isDestination() && isActive()`.  If a path is ever allowed to finish anywhere else, this has to go
+     * back to counting every unmeasured edge.
      *
-     * **WHERE THE PREMISE IS ENFORCED, since it is what makes the narrowing safe (VD15-C4, VD16-C1).**
-     * Not in `isPathClear`, which never asks - one step earlier, where a path is BUILT, and there are
-     * two builders rather than the one an earlier draft named.  `Layout.bfs` returns null unless
-     * `end.isDestination()`, which covers every path autonomy runs, probes or enumerates; and
-     * `HomeStaging.firstClearRoute`, which does not use `bfs` at all, gates on `canRest` - which
-     * requires `isDestination() && isActive()` of its own.  If a path is ever allowed to finish
-     * anywhere else, this has to go back to counting every unmeasured edge.
+     * **An answered 0 is a measure** (Adam, TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*):
+     * track every square of which was answered 0 on purpose is not counted here, and the escape does not fire over it
+     * either; both ask `Edge.isMeasured`.  A 0 nobody answered is still no length.
      *
-     * **An answered 0 is a measure** (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be
-     * allowed"*).  Track every square of which was answered 0 on purpose is not counted here, and the escape does not
-     * fire over it either - both ask `Edge.isMeasured`.  A 0 nobody answered is still no length.
-     *
-     * SORTED, because `this.edges` is a `HashMap` and "the graph's own order" is no order at all
-     * (VD15-C2): the message names only the first three, and three arbitrary ones that change between
-     * runs of the same configuration are no remedy.  Alphabetical means he can work down the list.
+     * SORTED, because `this.edges` is a `HashMap` and "the graph's own order" is no order at all (VD15-C2): the message
+     * names only the first three, which must not change between runs of the same configuration.
      *
      * @return the rails, named by the two places each joins, in alphabetical order
      */
@@ -11665,15 +11611,12 @@ public class Layout
     /**
      * The locomotives autonomy would run that have no train length (VD14-B1).
      *
-     * **The second half of what makes non-atomic mode unsafe, and the gate missed it.**
-     * `tailHasProvablyPassed`'s other clause is `behind >= trainLength`, and a locomotive's length is
-     * **0** until somebody sets it - so the first time an edge is asked about, with `behind` still 0,
-     * `0 >= 0` is true and the edge is handed back with the whole train on it.  No amount of measuring
-     * the track prevents that; the tooltip has always said *"edge AND train lengths need to be set"*,
-     * and the gate was only asking about the edges.
+     * **The second half of what makes non-atomic mode unsafe.**  `tailHasProvablyPassed`'s other clause is
+     * `behind >= trainLength`, and a locomotive's length is **0** until somebody sets it, so the first time an edge is asked
+     * about, with `behind` still 0, `0 >= 0` is true and the edge is handed back with the whole train on it.  Measuring the
+     * track does not prevent that; the tooltip says *"edge AND train lengths need to be set"*.
      *
-     * Sorted, for the reason the rails are (VD15-C2): the run list is a concurrent SET and has no
-     * order, and the message names only the first three.
+     * Sorted, for the reason the rails are (VD15-C2): the run list is a concurrent SET and has no order.
      *
      * @return their names, alphabetically
      */
@@ -11695,48 +11638,31 @@ public class Layout
 
     /**
      * Returns all edges in the graph
-     *
-     * NOT synchronized, and NOT a copy - which is what it was for a few hours on 2026-08-24, and the
-     * reason it is not is worth more than the reason it was.
-     *
-     * DR-B7 observed that these two are live views read off-thread by the staging planner while the
-     * event thread can be writing them, and asked for the treatment `getHomeStations` had: copy under
-     * the monitor. Applying it here was wrong twice over, and Adam asked the right question about it
-     * before anybody had run the result.
-     *
-     * FIRST, it puts the event thread on the Layout monitor. `getPoints` is called from five places
-     * in the UI - the editor, the viewer, three menu paths - and a dispatch holds that monitor across
-     * its per-command sleeps. That is precisely the freeze IAR-B2 had just removed from
-     * `getActiveAccs`, reintroduced by a different door in the same commit.
-     *
-     * SECOND, and this is the one the revert note first missed, it is an outright DEADLOCK rather
-     * than a freeze. `TrainControlUI.updateVisiblePoints` and `repaintAutoLocList` are synchronized on
-     * the UI and call `getPoints()`, so they would take the Layout monitor while holding the UI's.
-     * The opposite order existed then: `configureAndLockPath` holds the Layout monitor and reaches
-     * `MarklinAccessory.setSwitched` -> `TrainControlUI.repaintSwitch`, which was synchronized on the UI
-     * until RSA67-C1. `DiagramMonitorDriver` calls `updateVisiblePoints` on the event thread every
-     * monitor tick during a run, so both halves fired on an ordinary run. AB-BA, unrecoverable, and it
-     * would have looked exactly like the deadlock Adam reported from a build that did not have it.
-     * Without that half it is the FIRST reason again: a freeze for as long as a dispatch holds the monitor.
-     *
-     * **AND THEN IT HAPPENED, BY A DIFFERENT DOOR (OB-192, 2026-09-09).** This paragraph was written
-     * about `getPoints()` and read as being about `getPoints()`. `updateVisiblePoints` was already
-     * taking this monitor while holding the window's - not through `getPoints()`, but through
-     * `refreshCoveredTrack` -> `AutonomySession.routesCoveredByStandingTrains` ->
-     * `edgesCoveredByStandingTrains`, which is `synchronized` here. Adam: *"I am now seeing autonomy
-     * freeze on every run, with the UI completely unresponsive... Things still seem to run in the
-     * background, just not the UI."* The rule this paragraph states is right; what it could not do was
-     * name every way of breaking it. The covered marks are computed on a worker now.
-     *
-     * THIRD, these are called from inside this class's own loops - `deleteEdge` walks every edge to
-     * strip lock references while removing one - so a copy per call turns a linear sweep into a
-     * quadratic one on a layout of any size.
-     *
-     * The hazard DR-B7 names is real and unaddressed. The right answer is the one this class already
-     * documents for its four UI-read collections: make the maps concurrent, so a reader gets a
-     * weakly-consistent iteration and no lock at all. That needs the null guards the note at those
-     * fields warns about - ConcurrentHashMap rejects a null key, and `getPoint`/`getEdge` pass one
-     * straight through - so it is filed rather than done in a hurry.
+       *
+       * NOT synchronized, and NOT a copy: these are live views read off-thread by the staging planner while the event
+       * thread can be writing them (DR-B7), and a copy under the monitor was tried and reverted.
+       *
+       * FIRST, it puts the event thread on the Layout monitor.  `getPoints` is called from five places in the UI, and a
+       * dispatch holds that monitor across its per-command sleeps: the freeze IAR-B2 removed from `getActiveAccs`.
+       *
+       * SECOND, it is a DEADLOCK rather than a freeze: `TrainControlUI.updateVisiblePoints` and `repaintAutoLocList` are
+       * synchronized on the UI and call `getPoints()`, so they would take the Layout monitor while holding the UI's, while
+       * `configureAndLockPath` holds the Layout monitor and reaches `MarklinAccessory.setSwitched` ->
+       * `TrainControlUI.repaintSwitch`, which was synchronized on the UI until RSA67-C1.  `DiagramMonitorDriver` calls
+       * `updateVisiblePoints` on the event thread every monitor tick during a run.
+       *
+       * The same freeze can arrive by another door (OB-192): `updateVisiblePoints` reached this monitor through
+       * `refreshCoveredTrack` -> `AutonomySession.routesCoveredByStandingTrains` -> `edgesCoveredByStandingTrains`, which is
+       * `synchronized` here, so the covered marks are computed on a worker.  Adam: *"I am now seeing autonomy freeze on
+       * every run, with the UI completely unresponsive... Things still seem to run in the background, just not the UI."*
+       *
+       * THIRD, these are called from inside this class's own loops (`deleteEdge` walks every edge to strip lock
+       * references), so a copy per call turns a linear sweep into a quadratic one.
+       *
+       * The answer this class documents for its four UI-read collections is to make the maps concurrent, so a reader gets a
+       * weakly-consistent iteration and no lock at all; that needs the null guards the note at those fields warns about
+       * (ConcurrentHashMap rejects a null key, and `getPoint`/`getEdge` pass one straight through), so it is filed rather
+       * than done.
      *
      * @return 
      */
@@ -11758,29 +11684,14 @@ public class Layout
     }
 
     /**
-     * Fires one repaint callback, and does not let it strand the railway.
-     *
-     * Every callback runs synchronously on the DRIVING thread and every registered one repaints
-     * something, so an exception out of the UI - a graph view that has drifted from the layout, a null
-     * node - kills that thread.  Killed at a milestone, the train stops mid-block with its track still
-     * locked, and every other train that needs that track is refused for the rest of the session.
-     *
-     * The start-of-path loop already guarded against this; the milestone and completion loops did not,
-     * which is the drift this one door removes - there is nowhere left to fire a callback un-guarded.
-     */
-    /**
      * Tells whoever is watching that the last locomotive thread has gone.
+     * Nothing reads isRunning() on a timer: the interface re-reads it when a path ENDS, and a train that is idle when the
+     * user presses Stop produces no path end, so the last thread could exit with the buttons still greyed and the Return
+     * Home tooltip still saying trains are running.  The exit-path capture of placements and homes is gated on isRunning()
+     * and skips silently, so closing the application in that window would lose the session's changes.
      *
-     * The counter alone was not enough, and this is the half that was missing. Nothing reads
-     * isRunning() on a timer: the interface re-reads it when a path ENDS, and a train that is idle
-     * when the user presses Stop produces no path end - so the last thread could exit with the buttons
-     * still greyed and the Return Home tooltip still saying trains are running, until some unrelated
-     * action happened to repaint. Worse, the exit-path capture of placements and homes is gated on
-     * isRunning() and skips silently, so closing the application in that window lost the session's
-     * changes without a word.
-     *
-     * An EMPTY edge list rather than null, because the registered callback walks it - and a null
-     * locomotive, which it already guards for.
+     * An EMPTY edge list rather than null, because the registered callback walks it - and a null locomotive, which it
+     * already guards for.
      */
     private void announceRunFinished()
     {
@@ -11790,6 +11701,19 @@ public class Layout
         }
     }
 
+    /**
+     * Fires one repaint callback, and does not let it strand the railway.
+     *
+     * Every callback runs synchronously on the DRIVING thread and every registered one repaints something, so an exception
+     * out of the UI (a graph view that has drifted from the layout, a null node) kills that thread: the train stops
+     * mid-block with its track still locked, and every other train that needs that track is refused for the rest of the
+     * session.  Every loop fires through this one door, so there is nowhere left to fire a callback un-guarded.
+     *
+     * @param callback the callback, or null for none
+     * @param edges the path the callback is told about
+     * @param loc the train
+     * @param flag passed to the callback unchanged
+     */
     private void fireCallback(TriFunction<List<Edge>, Locomotive, Boolean, Void> callback,
         List<Edge> edges, Locomotive loc, boolean flag)
     {
@@ -11801,10 +11725,9 @@ public class Layout
         }
         catch (Throwable e)
         {
-            // Throwable, not Exception.  The usual advice against catching Errors assumes the
-            // alternative is an orderly shutdown; here the alternative is a train stopped mid-block
-            // with its track locked for the rest of the session, and every other train refused that
-            // track.  A NoClassDefFoundError out of a repaint is not a reason to strand a railway.
+              // Throwable, not Exception: the alternative to catching an Error is a train stopped mid-block with its track
+              // locked for the rest of the session, and a NoClassDefFoundError out of a repaint is not a reason to strand a
+              // railway.
             this.control.log(e instanceof Exception ? (Exception) e : new Exception(e));
         }
     }
@@ -11893,9 +11816,8 @@ public class Layout
      */
     private boolean onlyPassing(Locomotive loc, Point point)
     {
-        // THE CLAIM FIRST, through `pathHeldBy` as every reader of one train's path (RSA30-C1).  The hand-over writes the
-        // journey and then takes the claim away; read the other way round, a refresh straddling it found the train in
-        // neither, read it as standing at the station it was passing, and turned that station's exit guard red.
+          // THE CLAIM FIRST, through `pathHeldBy` as every reader of one train's path (RSA30-C1): the hand-over writes the
+          // journey and then takes the claim away, so read the other way round a refresh straddling it finds the train in neither.
         List<Edge> path = this.pathHeldBy(loc);
 
         if (path == null || path.isEmpty()) return false;
@@ -11928,16 +11850,10 @@ public class Layout
     {
         if (point == null || this.control == null) return;
 
-        // Only while trains are actually being run.
-        //
-        // Every occupancy change comes through here, and placing a train by hand is an occupancy
-        // change - so arranging the railway before a run threw real signals: cutting a locomotive off
-        // a platform with Control+X drove its protecting signals on the spot, which is hardware moving
-        // in response to a setup gesture.  Nobody asked for the railway to be commanded while they were
-        // still deciding what it should look like.
-        //
-        // isRunning rather than isAutoRunning: a train under a driving thread is being run whether or
-        // not the whole layout is, and its arrival still has to protect its platform.
+        // Only while trains are actually being run: every occupancy change comes through here, and placing a train by hand is
+        // one, so arranging the railway before a run would throw real signals (hardware moving in response to a setup
+        // gesture).  isRunning rather than isAutoRunning: a train under a driving thread is being run whether or not the whole
+        // layout is, and its arrival still has to protect its platform.
         if (!this.isRunning()) return;
 
         List<String> accessories = point.getProtectingSignals();
@@ -11961,17 +11877,16 @@ public class Layout
      * A lock per signal, so that a protection refresh decides and commands as one step against a departure that sets the
      * signal GREEN (RSA67-C1, OB-340).
      *
-     * A refresh need not hold the railway's monitor - the early release on another train's thread, an arrival's re-stand,
-     * a placement by hand - so one that had read the holds could command RED after a departure claimed its route and set
-     * a shared guard GREEN: RED in front of the leaving train, held GREEN, until the next change of occupancy.
-     * `refreshOneSignal` holds this from its read to its command; a departure holds it to command each accessory of an
-     * edge it has taken (`configureEdge`) and the exit guards its first edge sets GREEN (`configureAndLockPath`), once
-     * its claim and that edge make the hold readable.
+     * A refresh need not hold the railway's monitor, so one that had read the holds could command RED after a departure
+     * claimed its route and set a shared guard GREEN, leaving RED in front of the leaving train until the next change of
+     * occupancy.  `refreshOneSignal` holds this from its read to its command; a departure holds it to command each
+     * accessory of an edge it has taken (`configureEdge`) and the exit guards its first edge sets GREEN
+     * (`configureAndLockPath`), once its claim and that edge make the hold readable.
      *
-     * Taken last: under it only what a refresh took anyway - the edges' monitors, the accessory database's, and the
-     * signal's command (the accessory's monitor, `Locomotive.accessoryMonitor`, and `NetworkProxy`'s as it sends; the
-     * window's repaint is only posted, never waited for).  None of them is held while this is waited for, so a thread
-     * waits here for one refresh or one command of the same signal, never for a sleep.
+     * Taken last: under it only what a refresh took anyway (the edges' monitors, the accessory database's, and the
+     * signal's command: the accessory's monitor, `Locomotive.accessoryMonitor`, and `NetworkProxy`'s as it sends; the
+     * window's repaint is only posted, never waited for).  None of them is held while this is waited for, so a thread waits
+     * here for one refresh or one command of the same signal, never for a sleep.
      */
     private final Map<Accessory, Object> signalLocks = new ConcurrentHashMap<>();
 
@@ -11987,12 +11902,9 @@ public class Layout
     }
 
     /**
-     * Throws one protecting signal to whatever the platforms behind it now say.
-     *
-     * Per SIGNAL rather than per point, because that is the thing being commanded and because a signal
-     * may protect more than one platform - and, since this change, a platform may have more than one
-     * signal.  Neither of those is a special case here: the question asked is only ever "is anything
-     * this signal protects claimed", of every Point in the layout.
+     * Throws one protecting signal to whatever the platforms behind it now say: per SIGNAL rather than per point, because
+     * that is the thing being commanded, a signal may protect more than one platform, and a platform may have more than one
+     * signal.  The question asked is only ever "is anything this signal protects claimed", of every Point in the layout.
      *
      * @param accessory the signal to bring up to date
      */
@@ -12009,13 +11921,9 @@ public class Layout
             // `signalLocks`)
             synchronized (this.signalLock(acc))
             {
-                // Red if ANY platform this signal protects is claimed.
-                //
-                // Asked of the SIGNAL rather than of the square, which fixes two things at once.  Every
-                // copy of a square carries the same accessory, so this covers the whole platform without
-                // having to ask for the block - and it also covers the case the pairing UI allows and
-                // nothing else handled: two different stations paired to one signal.  A signal can only
-                // show one aspect, so it must stay red while either of them is occupied.
+                // Red if ANY platform this signal protects is claimed: asked of the SIGNAL rather than of the square, which covers
+                // every copy of a square (they carry the same accessory) and two different stations paired to one signal, which
+                // can only show one aspect.
                 boolean claimed = false;
 
                 for (Point other : this.points.values())
@@ -12024,9 +11932,9 @@ public class Layout
 
                     Locomotive holding = other.getCurrentLocomotive();
 
-                    // NOT BY A TRAIN ONLY PASSING THROUGH (OB-315, OB-316).  Adam, 2026-10-03: *"the exit guard signals are
-                    // applied for more than just the arrival station"* - a locked path reserves every station along it, so
-                    // each one a train only passed turned its exit guard red.  Its own start and its destination still count.
+                    // NOT BY A TRAIN ONLY PASSING THROUGH (OB-315, OB-316).  Adam: *"the exit guard signals are applied for more
+                    // than just the arrival station"* - a locked path reserves every station along it, so each one a train only
+                    // passed turned its exit guard red.  Its own start and its destination still count.
                     if (holding != null && !onlyPassing(holding, other))
                     {
                         claimed = true;
@@ -12034,41 +11942,26 @@ public class Layout
                     }
                 }
 
-                // Only when it CHANGES.  This fires from every occupancy change, including each point a
-                // locked path reserves - and configureAndLockPath holds the layout monitor across that
-                // whole loop, so a command per reservation would put a burst of accessory traffic under
-                // the lock the event thread also needs.  A signal already showing the right aspect needs
-                // nothing sent to it.
+                // Only when it CHANGES.  This fires from every occupancy change, including each point a locked path reserves,
+                // and configureAndLockPath holds the layout monitor across that whole loop, so a command per reservation would
+                // put a burst of accessory traffic under the lock the event thread also needs.
                 //
-                // Remembered against the SIGNAL, not against a Point.  It used to be a field on Point
-                // while "claimed" was a fact about the whole square, so a refresh on one copy that saw the
-                // square claimed through ANOTHER copy wrote true into its own memo while standing empty.
-                // Nothing ever wrote false back - the clearing transition was recorded on the other copy -
-                // so the next real arrival there matched its stale memo and sent no command at all, and
-                // the signal stayed GREEN with a train standing at the platform.
+                // Remembered against the SIGNAL, not a Point: "claimed" is a fact about the whole square, so a memo per copy went
+                // stale when a refresh on one copy saw the square claimed through another, and the next real arrival matched its
+                // stale memo and sent no command.
                 // NOT RED UNDER A PATH THAT HOLDS IT GREEN (OB-340): the train it lets go goes first
                 if (claimed && Boolean.FALSE.equals(this.getActiveAccSettings().get(acc))) return;
 
                 Boolean showing = this.signalAspects.get(accessory);
 
-                // The memo AND the signal, because the memo is only the aspect protection last commanded
-                // and it is not the only thing that commands this accessory.  TilePorts gives a SIGNAL tile
-                // a GREEN configuration command, so a path configured across one drives it green through
-                // getConfigCommands - the same Accessory, and configureAndLockPath does it in the same loop
-                // that reserves the point, immediately after.  Protection then agreed with its own memo,
-                // sent nothing, and went on agreeing: the signal stood GREEN over an occupied platform
-                // until the train left, and no later occupancy change corrected it.
-                //
-                // Adam's ruling, 2026-08-23: a signal a path crosses and a signal protecting the
-                // destination are two different signals, so a railway wired the way he intends never asks
-                // which of them wins.  Nothing stops the two being paired to one accessory, though, and
-                // when they are the failure is silent - so what protection may not do is skip because of
-                // something it REMEMBERS.  Whatever moved the signal, the next occupancy change is decided
-                // by looking.
-                //
-                // isRed() rather than a second memo: Accessory.switched is set optimistically by every
-                // caller, protection and path configuration alike, so it is the one record that cannot go
-                // stale behind somebody's back.
+                // The memo AND the signal, because the memo is only the aspect protection last commanded and is not the only
+                // thing that commands this accessory: TilePorts gives a SIGNAL tile a GREEN configuration command, so a path
+                // configured across one drives it green through getConfigCommands, and protection would agree with its own memo,
+                // send nothing and leave the signal GREEN over an occupied platform.  A signal a path crosses and a signal
+                // protecting the destination are two different signals (Adam's ruling), but nothing stops the two being paired
+                // to one accessory, so protection may not skip because of something it REMEMBERS: whatever moved the signal,
+                // the next occupancy change is decided by looking.  isRed() rather than a second memo: Accessory.switched is
+                // set optimistically by every caller, so it is the one record that cannot go stale.
                 if (showing != null && showing == claimed && acc.isRed() == claimed) return;
 
                 this.signalAspects.put(accessory, claimed);
@@ -12088,35 +11981,20 @@ public class Layout
     /**
      * Whether this accessory is a signal protecting a square a locomotive is standing on (SVN-B16).
      *
-     * **The half of the route guard that `getActiveAccs` cannot see.** That walks the config commands
-     * of active edges, and a protecting signal is usually not one of them - it is driven separately, by
-     * occupancy. So a platform with a train at it can have its signal turned green by something that
-     * is not on any path, and nothing re-asserts it until the next occupancy change: a green aspect
-     * inviting a hand-driven train into an occupied platform, for as long as the train stays there.
+     * **The half of the route guard that `getActiveAccs` cannot see.**  That walks the config commands of active edges, and a
+     * protecting signal is usually not one of them: it is driven separately, by occupancy.  A platform with a train at it can
+     * have its signal turned green by something on no path, inviting a hand-driven train into an occupied platform.  Here
+     * rather than in the route so the diagram's own accessory tile asks it too: one rule, asked by both.
      *
-     * **Here rather than in the route**, because it was in the route and the diagram's own accessory
-     * tile never got it: clicking a protecting signal green by hand went unwarned while a route doing
-     * the same thing was refused. One rule, asked by both.
+     * BY RESOLVING the names rather than comparing the strings: a configuration says "Signal 12" or "Switch 12" and the
+     * accessory database is keyed by one of those; `getAccessoryByName` falls back across that difference.
      *
-     * BY RESOLVING the names rather than comparing the strings. A configuration says "Signal 12" or
-     * "Switch 12" and the accessory database is keyed by one of those; `getAccessoryByName` exists to
-     * fall back across that difference, and every other consumer of these lists goes through it.
-     *
-     * **NOT synchronized, deliberately** - the same reason `getActiveAccs` is not, and this was written
-     * with the keyword before two reviewers pointed at the javadoc four lines from its own call site
-     * (`WK3-A1`, `DY3-A1`).
-     *
-     * This is read from the EVENT THREAD, by the layout label's click handler, and only in the branch
-     * that runs while autonomy is going - which is exactly when `configureAndLockPath` holds this
-     * object's monitor across its per-command sleeps, for seconds on a long path.  So taking the
-     * monitor here froze the whole window, Stop included, for the length of the configuration phase:
-     * the freeze `IAR-B2` removed from `getActiveAccs`, reintroduced by a door beside it.  `getEdges`
-     * records the same monitor being taken from the UI once before, and reverted.
-     *
-     * Nothing here needs it.  It reads `points` - already documented as a live unsynchronised view for
-     * exactly this class of reader - and each Point's protecting-signal list, neither of which is
-     * mutated during a run in a way the monitor was protecting.  A list that grows a member while this
-     * walks it answers about the railway a moment ago, which is what every other reader of it gets.
+     * **NOT synchronized, deliberately** (`WK3-A1`, `DY3-A1`), for `getActiveAccs`'s reason.  It is read from the EVENT THREAD,
+     * by the layout label's click handler, in the branch that runs while autonomy is going, which is when
+     * `configureAndLockPath` holds this object's monitor across its per-command sleeps; taking the monitor here would freeze
+     * the window, Stop included (`IAR-B2`, `getEdges`).  Nothing here needs it: it reads `points`, a live unsynchronised view,
+     * and each Point's protecting-signal list; a list that grows while this walks it answers about the railway a moment ago,
+     * as every other reader gets.
      *
      * @param accessory the accessory about to be commanded, or null
      * @return true when something is standing at a platform this signal protects
@@ -12195,20 +12073,15 @@ public class Layout
     /**
      * Whether commanding this accessory that way would take protection off an occupied platform.
      *
-     * **The aspect is half the rule, and leaving it out was `WK3-B1`.**  A protecting signal's only
-     * harmful command is the one that turns protection OFF.  Setting it to danger is doing what the
-     * protection mechanism itself would do, and refusing that was "pure over-strictness" when the
-     * route door did it - found and removed by an earlier review, with the reasoning still written at
-     * `MarklinRoute.heldReason`.
+     * **The aspect is half the rule** (`WK3-B1`): a protecting signal's only harmful command is the one that turns
+     * protection OFF.  Setting it to danger does what the protection mechanism itself would do, and refusing that is "pure
+     * over-strictness" (see `MarklinRoute.heldReason`).
      *
-     * **Why the caller supplies the direction rather than this reading it.**  The three doors know it
-     * in three different ways and only they can say.  A diagram tile TOGGLES, so its green direction is
-     * `!isStraight()`.  The switch keyboard SETS an absolute state, so its green direction is "the
-     * button is not selected", and reading the accessory's current aspect there would answer about
-     * where it is rather than where it is being sent.  A route knows it from the command it holds.
-     *
-     * Only the question that follows is shared - and it has to be, because three surfaces asking three
-     * versions of it is how this project keeps finding one door guarded and its twin not.
+     * **The caller supplies the direction rather than this reading it**, because the three doors know it in three different
+     * ways: a diagram tile TOGGLES, so its green direction is `!isStraight()`; the switch keyboard SETS an absolute state, so
+     * reading the accessory's current aspect would answer about where it is, not where it is being sent; a route knows it
+     * from the command it holds.  Only the question that follows is shared, so that three surfaces cannot ask three
+     * versions of it.
      *
      * @param accessory what is being commanded, ignored when null
      * @param commandingGreen whether the command about to be sent is the one that clears protection
@@ -12222,37 +12095,26 @@ public class Layout
     /**
      * Whether a station autonomy may choose takes this train because the measured route in holds it (FR-087).
      *
-     * **Widened on 2026-09-15 from the approach alone to the route in.**  Adam, on MT-431: *"didn't we say that
-     * BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the
-     * length would be tracked?"*  Asked how far that reaches, he chose the route: the train is accepted if the measured
-     * track of the route it drives in on, counted back from the station without a gap, holds it - its tail lies on that
-     * route, a driven train's road is kept (WK7-B1), and the track under it is claimed.  A leg nobody measured ends the
-     * count - one answered 0 throughout is counted, adding nothing (Adam, 2026-09-25) - so a tail that would reach track
-     * nothing has measured is still refused.  What follows is the method as it was
-     * written for the approach.
+     * Adam, on MT-431: *"didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the
+     * station allows the length, and the length would be tracked?"*  The train is accepted if the measured track of the
+     * route it drives in on, counted back from the station without a gap, holds it: its tail lies on that route, a driven
+     * train's road is kept (WK7-B1), and the track under it is claimed.  A leg nobody measured ends the count, one answered 0
+     * throughout is counted and adds nothing, so a tail that would reach unmeasured track is still refused.
      *
-     * **Adam's relaxation of 2026-09-12, and the reason it is a method rather than a line.**  On a
-     * platform whose approach measures 6 with a switch in the middle and 3 either side: *"it would not
-     * fit just past 14,12.  14,12 would be blocked and the 6 units would be between bottommainapre and
-     * bottommaina.  so we need a clear rule to govern that this is OK, or simply make a rule that
-     * parking berths cant block any other edges, but not make that check for active stations."*
+     * **The reason it is a method rather than a line** (Adam, on a platform whose approach measures 6 with a switch in the
+     * middle and 3 either side): *"it would not fit just past 14,12.  14,12 would be blocked and the 6 units would be
+     * between bottommainapre and bottommaina.  so we need a clear rule to govern that this is OK, or simply make a rule that
+     * parking berths cant block any other edges, but not make that check for active stations."*  At a station autonomy may
+     * choose, a train is PASSING: it stands across the points until it is given its next route, and the cost is other
+     * trains waiting rather than a collision, since a standing tail claims the places it lies on (OB-207).  At a parking
+     * berth the train is STAYING and the road would be shut all evening, which `whyABerthCannotHoldIt` refuses.
      *
-     * At a station autonomy may choose, a train is PASSING: it stands across the points until it is
-     * given its next route, and the cost of that is other trains waiting rather than a collision -
-     * since OB-207 a standing tail claims the places it lies on and nothing is cleared over them.  At
-     * a parking berth the train is STAYING and the road would be shut all evening, which is what
-     * `whyABerthCannotHoldIt` refuses.
+     * **It only ever ALLOWS**, and only where the room rule has already refused.  The bound is the measured route in
+     * (`measuredRouteIn`), so a train longer than that is still refused: its tail would lie back over track nothing has
+     * measured.
      *
-     * **It only ever ALLOWS**, and only where the room rule has already refused.  The bound is the
-     * measured route in (`measuredRouteIn`; the approach's own length before FR-087), so a train longer than
-     * that is still refused: its tail would lie back over track nothing has measured.
-     *
-     * **Lifted out of `whyTooLongForThisRoute` for PRW-B2 leg 2 (Adam, 2026-09-13: "Do it").**  The
-     * staging planner needs this answer and cannot take the whole rule to get it - that was tried on
-     * 2026-09-13 and reverted, because `whyTooLongForThisRoute` also carries the station's stated
-     * capacity and, as it then was, the room test at every square on the way, and asking it made the planner stricter
-     * than the runtime it is planning for: five trains came back NO_PLAN_FOUND on the frozen railway.
-     * A relaxation bundled with two refusals cannot be bought separately, so it is unbundled.
+     * **Unbundled from `whyTooLongForThisRoute`** (PRW-B2): the staging planner needs this answer without the station's
+     * stated capacity and the room test at every square on the way, which made it stricter than the runtime it plans for.
      *
      * @param path the route, in order, ending at the square the train comes to rest on
      * @param loc the train
@@ -12275,17 +12137,17 @@ public class Layout
     /**
      * How much measured track the route in holds, counted back from where it ends (FR-087).
      *
-     * Leg by leg while each is measured - a leg nobody measured ends it; one answered 0 on purpose throughout is measured
-     * track of no length and is counted, adding nothing (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*), as the walk that claims a standing train's
-     * tail walks on over it, so what this admits is claimed (`Edge.isMeasured`; ADA-A1 was the two disagreeing) - and
-     * never back past a square the train turns at - Adam, 2026-09-11: the berth
-     * is *"measured back to whichever of the last switch and the reversal is met first"*, and a train that changed
-     * direction on the way does not lie back over the track it drove before the turn.  The same test
-     * `measuredRoomAtTheEndOf` makes, so the room rule and this allowance stop at the same square.
+     * Leg by leg while each is measured: a leg nobody measured ends the count; one answered 0 on purpose throughout is
+     * measured track of no length and is counted, adding nothing (Adam: *"we can't possibly have positive lengths everywhere
+     * because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the
+     * total track lengths allow"*), as the walk that claims a standing train's tail walks on over it, so what this admits is
+     * claimed (`Edge.isMeasured`; ADA-A1).  The count never goes back past a square the train turns at: the berth is
+     * *"measured back to whichever of the last switch and the reversal is met first"* (Adam), and a train that changed
+     * direction does not lie back over the track it drove before the turn.  The same test `measuredRoomAtTheEndOf` makes, so
+     * the room rule and this allowance stop at the same square.
      *
-     * One number for two readers (MFR-C6): `theApproachItselfHoldsIt` admits a train no longer than it, and the refusal
-     * in `whyTooLongForThisRoute` quotes it - a refusal quoting the room past the switch told the operator the square
-     * held less than it had just held.
+     * One number for two readers (MFR-C6): `theApproachItselfHoldsIt` admits a train no longer than it, and the refusal in
+     * `whyTooLongForThisRoute` quotes it.
      *
      * @param path the route, in order, ending where the train comes to rest
      * @return the measured units, 0 for none
@@ -12313,43 +12175,27 @@ public class Layout
     /**
      * Why a PARKING BERTH cannot hold this train: it would lie across somebody else's road.
      *
-     * Adam's ruling of 2026-09-12, the other half of the relaxation in `whyTooLongForThisRoute`:
-     * *"make a rule that parking berths cant block any other edges, but not make that check for active
-     * stations."*  A train at a platform is passing and may stand across the points; a train at a berth
-     * is staying, and a berth is not worth a road.
+     * Adam's ruling, the other half of the relaxation in `whyTooLongForThisRoute`: *"make a rule that parking berths cant
+     * block any other edges, but not make that check for active stations."*  A train at a platform is passing and may stand
+     * across the points; a train at a berth is staying, and a berth is not worth a road.  (On his railway a three-unit train
+     * at TunnelLongPark lies over the only two roads to the lower level, and 90 ordered pairs of stations stop being
+     * reachable from one another while it is there; SVX-C1.)
      *
-     * **Measured on his own railway before it was written.**  A three-unit train at TunnelLongPark lies
-     * over `BottomMainAPre -> RampDown` and `-> BottomCrossover`, the only two roads to the lower level,
-     * and 90 ordered pairs of stations stop being reachable from one another while it is there.  A
-     * two-unit train lies over nothing at all while the tile behind the berth is unmeasured - which is
-     * what that railway said when this was written, and not a promise about a short train (SVX-C1).
-     * On his measured railway TunnelLongPark is 2 on its own square and 1 behind it, so three units
-     * fit before the switch and four do not.
+     * **Which places the train would claim is the same arithmetic the tail walk uses**: spend the train's length across the
+     * approach's places from the end it comes in by, claiming each before spending it, the berth's own square first (Adam,
+     * OB-278: *"the 2 length tile with the s88 consumes 2 units of the train"*).  The two walks are written to agree and are
+     * not one piece of code (SEV-B1 and SVX-B1 came from a change reaching one before the other), so a reader who needs
+     * them to agree should check both.
      *
-     * **Which places the train would claim is the same arithmetic the tail walk uses** - spend the
-     * train's length across the approach's places from the end it comes in by, claiming each before
-     * spending it, the berth's own square first (Adam, 2026-09-23, OB-278: *"the 2 length tile with the
-     * s88 consumes 2 units of the train"*).
+     * **Its own way in and out does not count.**  Every road that starts or ends at the berth's own square is blocked by the
+     * train being there at all, whichever copy of a split square it is recorded on; `Point.isSamePlaceAs` knows that two
+     * Points are one piece of track.  **Shared metal only**, told from an FR-001 restriction by symmetry, as the covered-track
+     * sweep in `isPathClear` tells them apart: sharing a tile is mutual and the reducer records both directions, while a
+     * restriction is one-directional.
      *
-     * The two walks are written to agree and are not one piece of code, which is where SEV-B1 and
-     * SVX-B1 both came from: a change reached one of them a round before the other, and in each
-     * direction the pair was worse than either half alone.  A reader who needs them to agree should
-     * check both, not trust this sentence.
-     *
-     * **Its own way in and out does not count.**  Every road that starts or ends at the berth's own
-     * square is blocked by the train being there at all, whichever copy of a split square it is
-     * recorded on; refusing on those would make every berth refuse itself.  `Point.isSamePlaceAs` is
-     * what knows that two Points are one piece of track.
-     *
-     * **Shared metal only**, told from an FR-001 restriction by symmetry, exactly as the covered-track
-     * sweep in `isPathClear` tells them apart: sharing a tile is mutual and the reducer records both
-     * directions, while a restriction is one-directional.
-     *
-     * Silent on an edge the build did not describe in places - a hand-written configuration, or one
-     * written before 3.0.0 - so an old file keeps the answer it always had, from the room rule alone.
-     *
-     * Pure, like `whyTooLongForThisRoute` beside it, so the staging planner can ask the same question
-     * rather than carry a copy of it.
+     * Silent on an edge the build did not describe in places (a hand-written configuration, or one written before 3.0.0), so
+     * an old file keeps the answer from the room rule alone.  Pure, like `whyTooLongForThisRoute`, so the staging planner can
+     * ask the same question.
      *
      * @param path the route, in order
      * @param loc the train
@@ -12374,27 +12220,13 @@ public class Layout
 
         if (ids.isEmpty() || ids.size() != spans.size()) return null;
 
-        // AND NOTHING IS KNOWN ABOUT AN APPROACH NOBODY HAS MEASURED (PRW-B1).
-        //
-        // The walk below spends the train's length backwards over the places and stops when it runs
-        // out.  Against all zeroes it never runs out: it claims the WHOLE approach and then refuses
-        // the berth against any road sharing any part of it - a refusal invented out of the absence
-        // of a measurement rather than derived from one.
-        //
-        // Measured on the frozen snapshot: all 41 of Adam's non-station approaches are wholly
-        // unmeasured and 26 of them refused a three-unit train, so in practice every train with a
-        // length was refused every parking berth, by hand and through Return Home.
-        //
-        // This is the room rule's own answer at the other end of the same question -
-        // `walkStandingTrains` claims nothing on an unmeasured segment and declines to judge - and
-        // Adam's ruling of 2026-09-06 on MT-364: *"a stretch is only indeterminate when ALL of it is
-        // zero"*.  One measurement is something to reason from and the walk uses it; none is nothing,
-        // and a guard that refuses on nothing is the over-strict check he would rather not have at
-        // all.
-        // THE BERTH'S OWN SQUARE COUNTS (OB-278).  It is rail the train stands on and is spent first, so
-        // a berth measured on an otherwise unmeasured approach is something to reason from: a train that
-        // fits on it is held there, and one longer than it claims the unmeasured squares behind.  From
-        // 2026-09-13 it was left out here, because the walk below did not spend it (SVV-B1).
+        // AND NOTHING IS KNOWN ABOUT AN APPROACH NOBODY HAS MEASURED (PRW-B1).  The walk below spends the train's length
+        // backwards over the places and, against all zeroes, never runs out: it claims the WHOLE approach and refuses the berth
+        // against any road sharing any part of it, a refusal invented from the absence of a measurement.  This is the room
+        // rule's own answer (`walkStandingTrains` claims nothing on an unmeasured segment) and Adam's ruling on MT-364: *"a
+        // stretch is only indeterminate when ALL of it is zero"*.  One measurement is something to reason from; none is nothing.
+        // THE BERTH'S OWN SQUARE COUNTS (OB-278): it is rail the train stands on and is spent first, so a berth measured on an
+        // otherwise unmeasured approach is something to reason from (SVV-B1).
         boolean anyMeasured = false;
 
         for (int n = 0; n < spans.size(); n++)
@@ -12404,10 +12236,9 @@ public class Layout
             if (span != null && span > 0) anyMeasured = true;
         }
 
-        // AND AN APPROACH ANSWERED 0 THROUGHOUT IS KNOWN, at no length (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*): the walk
-        // claims it all for nothing and refuses where it reaches another road.  What the operator answered is no absence
-        // of information, and the room walk and the route in read it the same way (`Edge.isMeasured` - asked here of the
-        // places this walks, every one answered, as its second half asks it).
+        // AND AN APPROACH ANSWERED 0 THROUGHOUT IS KNOWN, at no length (Adam's words at `measuredRouteIn`): the walk claims it
+        // all for nothing and refuses where it reaches another road.  The room walk and the route in read it the same way
+        // (`Edge.isMeasured`, asked here of the places this walks, every one answered).
         boolean answeredThroughout = true;
 
         for (String id : ids)
@@ -12419,14 +12250,9 @@ public class Layout
 
         Set<String> claimed = new LinkedHashSet<>();
 
-        // HOW MUCH OF WHAT IS CLAIMED WAS NEVER MEASURED (RTX-C2, AUR-C2).
-        //
-        // An unmeasured place costs the walk nothing and is claimed anyway, which is the refusing side of
-        // the rounding and is ruled behaviour.  What the refusal never said is that this is why the whole
-        // approach ended up claimed: the operator reads a train length and a road, measures neither, and
-        // has nothing pointing at the piece Mass Assign Lengths left at zero.
-        //
-        // Counted over the places the walk actually claims, so a fully measured approach adds nothing.
+        // HOW MUCH OF WHAT IS CLAIMED WAS NEVER MEASURED (RTX-C2, AUR-C2): an unmeasured place costs the walk nothing and is
+        // claimed anyway (the refusing side of the rounding, ruled behaviour), so the refusal also says so, pointing the
+        // operator at the piece Mass Assign Lengths left at zero.  Counted over the places the walk actually claims.
         int unmeasured = 0;
 
         int left = loc.getTrainLength();
@@ -12435,10 +12261,9 @@ public class Layout
         {
             claimed.add(ids.get(n));
 
-            // THE BERTH'S OWN SQUARE FIRST, and spent like the rest (OB-278) - the same order and the
-            // same arithmetic as `walkOneTail`, which is what keeps a train this rule accepts from being
-            // claimed over a road once it is parked.  The last place is the square being arrived at:
-            // `placesAlong` orders them from the edge's start.
+            // THE BERTH'S OWN SQUARE FIRST, and spent like the rest (OB-278): the same order and arithmetic as `walkOneTail`,
+            // which keeps a train this rule accepts from being claimed over a road once parked.  The last place is the square
+            // being arrived at (`placesAlong` orders them from the edge's start).
             // AN ANSWERED 0 IS NOT COUNTED AS MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing"):
             // it is still read as nothing, and claimed, but the operator has already answered it.
             if ((spans.get(n) == null || spans.get(n) <= 0) && !approach.isPlaceAnswered(ids.get(n))) unmeasured++;
@@ -12551,47 +12376,37 @@ public class Layout
      * factors in whether the train will clear the area before it crosses over."*  And what must still go: *"the check
      * should pass if the train would be gone (i.e. if that one was only length 4, for example)."*
      *
-     * **A train never blocks itself** everywhere else (behaviour.md 5c), and rightly while the route leads away: its tail
-     * is behind it, and pulling forward off it is how a train leaves a berth.  A route that comes back round a loop to
-     * track the body still lies on is the case that does not hold, and nothing asked it.  On his railway every way from
-     * BottomSecondary to LowerFront leaves west, round by the tunnel, and returns east along row 11 - where a train that
-     * came down RampDown is lying.
+     * **A train never blocks itself** elsewhere (behaviour.md 5c), rightly while the route leads away: its tail is behind
+     * it, and pulling forward off it is how a train leaves a berth.  A route that comes back round a loop to track the body
+     * still lies on is the case that does not hold.
      *
      * **The rule: the head may come back to a place only once the tail has left it.**  Distances are measured along the
-     * journey from where the head stands, and the tail is always the train's length behind the head.  A place the body
-     * lies on at the start is left when the tail passes the end of it nearer the head, which is `reach` behind the start;
-     * a place the route has run over is left when the tail passes the end the head went out by.  The track run between
-     * leaving a place and coming back to it is the longest train that clears it in time - so a train longer than that is
-     * refused, and the refusal names the figure.  One exactly that long is clear as the head arrives, which is how every
-     * length rule here reads a fit.
+     * journey from where the head stands, and the tail is always the train's length behind the head.  A place the body lies
+     * on at the start is left when the tail passes the end of it nearer the head, which is `reach` behind the start; a place
+     * the route has run over is left when the tail passes the end the head went out by.  The track run between leaving a
+     * place and coming back to it is the longest train that clears it in time, so a longer train is refused and the refusal
+     * names the figure.  One exactly that long is clear as the head arrives, which is how every length rule here reads a fit.
      *
-     * **Only measured track binds**, as for every length rule here - *"only apply if lengths are specified"*.  A square
-     * with no length counts nothing, and a return with nothing measured on the way round is not judged - THE WAY ROUND
-     * being the route the head drives between leaving the place and coming back to it, not the body in front of it
-     * (TDA-B1: judged by the body, a loop with no length on it was refused at every length, though it may be thirty
-     * units long).  MEASURED as every length rule reads it: a length on it, or every place on it answered 0 on purpose -
-     * measured track of no length (OB-300, RLA-C6; Adam, 2026-10-10, asked: into 3.0.0).  A loop answered 0 all the way
-     * round used to go unjudged, since nothing on it adds a length, and a train of any length went round it into itself -
-     * the one length rule that erred towards letting through.  Asked place by place (`measuredThroughout`), since a way
-     * round begins and ends inside a leg; a square nobody answered, a switch included, still leaves it unmeasured.
-     * Unmeasured squares within a measured way round make it shorter than it is, which refuses rather than
-     * permits - so the refusal says how many things Mass Assign Lengths would ask a length for on the way round, and that
-     * measuring them is the way past: the pieces, switches and shared squares the build marks as still wanting one, over
-     * the places the head runs between leaving the place and coming back to it (OB-297, ADA-C1).  Its list and the note's
-     * are one list: TDA2-C1 counted whole stretches, and one measured only at its switch was missed; the runtime's own
-     * pieces then read a route tile's piece as measured and a piece whose units sit on a station's square as not.
+     * **Only measured track binds**, as for every length rule here (*"only apply if lengths are specified"*): a square with
+     * no length counts nothing, and a return with nothing measured on the way round is not judged.  THE WAY ROUND is the
+     * route the head drives between leaving the place and coming back to it, not the body in front of it (TDA-B1).
+     * MEASURED as every length rule reads it: a length on it, or every place on it answered 0 on purpose (OB-300, RLA-C6),
+     * asked place by place (`measuredThroughout`) since a way round begins and ends inside a leg; a square nobody answered,
+     * a switch included, leaves it unmeasured.  Unmeasured squares within a measured way round make it shorter than it is,
+     * which refuses rather than permits, so the refusal says how many things Mass Assign Lengths would ask a length for on
+     * the way round: the pieces, switches and shared squares the build marks as still wanting one (OB-297, ADA-C1).  The
+     * note's list and the editor's are one list (TDA2-C1).
      *
-     * **The tightest return is the one named** (TDA-C1).  A route that comes up behind the body meets it more than once,
-     * and a later return can allow less than an earlier one; the refusal's "a train of N units or shorter" has to be true
-     * of the whole route, so every return is asked and the smallest figure is the answer.
+     * **The tightest return is the one named** (TDA-C1): a route that comes up behind the body meets it more than once, and
+     * a later return can allow less than an earlier one, so every return is asked and the smallest figure is the answer.
      *
-     * **After a turn the body is ahead of the train**, and moves with it.  A train that turns - at a square it may turn
-     * at on the way, or where it stands before it sets off, which is a route leaving over its own tail - drives back over
-     * the track its body lies on, and that is no collision.  So the question starts again after every turn with nothing
-     * behind; the room rule in `whyTooLongForThisRoute` is what keeps a turning train on the track it came in by.
+     * **After a turn the body is ahead of the train**, and moves with it: a train that turns, at a square it may turn at on
+     * the way or where it stands before it sets off, drives back over the track its body lies on, which is no collision.
+     * So the question starts again after every turn with nothing behind; the room rule in `whyTooLongForThisRoute` keeps a
+     * turning train on the track it came in by.
      *
-     * By place, the relation the tail claims use: the two roads through a crossing share their square and meet here,
-     * and an overpass's two levels do not.
+     * By place, the relation the tail claims use: the two roads through a crossing share their square and meet here, and an
+     * overpass's two levels do not.
      *
      * @param path the route, in order, starting where the train stands
      * @param loc the train
@@ -13870,7 +13685,6 @@ public class Layout
           // while it runs and hands the original back when it ends; a fold in between (a reload confirmed during the run, or
           // Unload) must not save the plan as the timetable.  "A plan that was never saved cannot outlive the session" is
           // what Return Home is written on.
-
         List<TimetablePath> owners = this.timetableOnLoan;
 
         for (TimetablePath p : owners != null ? owners : this.timetable)
@@ -15220,7 +15034,6 @@ public class Layout
 
         // Applied only now: until every point exists there is no telling an assignment that will be honoured from one whose
         // locomotive has not been read yet.  A file with no assignments reaches here with nothing to apply.
-
         layout.rebuildHomeStations();
 
         return layout;
