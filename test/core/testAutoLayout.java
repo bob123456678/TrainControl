@@ -52,29 +52,54 @@ public class testAutoLayout
         layout.setActivateRoutes(false);
         
         assertEquals(r.isEnabled(), false);
-        
-        // This should not enable the route
-        model.applyAutonomyRouteActivations();
-        
-        layout.setActivateRoutes(true);
-        assertEquals(r.isEnabled(), false);
-        
-        // This should now enable the route
-        model.applyAutonomyRouteActivations();
-        
-        assertEquals(r.isEnabled(), true);
-        
-        // And disable all other routes
-        for (MarklinRoute otherRoute : model.getRoutes())
+
+        // A SECOND ROUTE, ENABLED, which autonomy has to switch off (FR-136).  The test configuration holds only the
+        // route above, so the loop at the end had nothing to disable and could not fail.
+        model.newRoute("AR switched off by autonomy", 9823,
+            Collections.singletonList(RouteCommand.RouteCommandStop()), 8873,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+        try
         {
-            if (otherRoute.getId() == r.getId())
+            MarklinRoute other = model.getRoute("AR switched off by autonomy");
+
+            other.enable();
+
+            assertEquals(other.isEnabled(), true);
+
+            // This should not enable the route
+            model.applyAutonomyRouteActivations();
+
+            layout.setActivateRoutes(true);
+            assertEquals(r.isEnabled(), false);
+
+            // This should now enable the route
+            model.applyAutonomyRouteActivations();
+
+            assertEquals(r.isEnabled(), true);
+
+            // And disable all other routes
+            int others = 0;
+
+            for (MarklinRoute otherRoute : model.getRoutes())
             {
-                assertEquals(otherRoute.isEnabled(), true);
+                if (otherRoute.getId() == r.getId())
+                {
+                    assertEquals(otherRoute.isEnabled(), true);
+                }
+                else
+                {
+                    assertEquals(otherRoute.isEnabled(), false);
+
+                    others++;
+                }
             }
-            else
-            {
-                assertEquals(otherRoute.isEnabled(), false);
-            }      
+
+            assertTrue(others > 0, "there is no other route, so nothing was disabled");
+        }
+        finally
+        {
+            model.deleteRoute("AR switched off by autonomy");
         }
     }
     
@@ -2414,6 +2439,12 @@ public class testAutoLayout
         });
 
         layout.runLocomotives();
+
+        // MOVING BEFORE THE FAULT (FR-136).  The callback throws ahead of anything that gives the train a speed, so a
+        // locomotive standing at 0 reads 0 afterwards whether or not the handler stopped it.
+        loc.setSpeed(30);
+
+        assertEquals(loc.getSpeed(), 30, "precondition: the locomotive must be moving before the fault");
 
         try
         {
