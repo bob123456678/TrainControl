@@ -14438,6 +14438,10 @@ public class Layout
         // The trains placed on a copy that is no station, warned about once every copy is read (GUI4-C5).
         List<String[]> placedOffAStation = new ArrayList<>();
 
+        // ONE LINE PER STATION (OB-362): the copies a square builds into, one per direction, all carry its maximum, and
+        // the log named each copy - "St60 (eastbound)", "St60 (westbound)" - for one setting.  Said once, by the place.
+        final Set<String> maximumsSaid = new HashSet<>();
+
         // Add points
         points.forEach(pnt ->
         { 
@@ -14717,12 +14721,15 @@ public class Layout
                     { 
                         layout.getPoint(point.getString("name")).setMaxTrainLength(point.getInt("maxTrainLength"));
 
-                        if (point.getInt("maxTrainLength") > 0)
+                        String place = placeNameOf(layout.getPoint(point.getString("name")));
+
+                        if (point.getInt("maxTrainLength") > 0
+                            && maximumsSaid.add(place + "\u0000" + point.getInt("maxTrainLength")))
                         {
                             control.logf(
                                 "autolayout.infoSetMaxTrainLength",
                                 point.getInt("maxTrainLength"),
-                                point.getString("name")
+                                place
                             );
                         }
                     }

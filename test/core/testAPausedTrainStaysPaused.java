@@ -858,6 +858,43 @@ public class testAPausedTrainStaysPaused
         return layout;
     }
 
+    /**
+     * A station's maximum train length is said once as a configuration loads, by the station's name, however many copies
+     * its square builds into (OB-362; Adam: "dedupe by station name, rather than showing all copies
+     * (eastbound/westbound)").
+     *
+     * MUTATION: log it per copy again, or by the copy's name, and this fails.
+     */
+    @Test
+    public void testAStationsMaximumIsSaidOnceByItsName()
+    {
+        JSONObject config = new JSONObject(ring(null, null).replace("PT A", "Yard (eastbound)")
+            .replace("PT B", "Yard (westbound)"));
+
+        JSONArray points = config.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            if (points.getJSONObject(i).getString("name").startsWith("Yard ")) points.getJSONObject(i).put("maxTrainLength", 3);
+        }
+
+        logged.clear();
+
+        load(config.toString());
+
+        String said = I18n.f("autolayout.infoSetMaxTrainLength", 3, "#").split("#", -1)[0].trim();
+
+        List<String> lines = new ArrayList<>();
+
+        for (String line : new ArrayList<>(logged))
+        {
+            if (line.trim().startsWith(said)) lines.add(line.trim());
+        }
+
+        assertEquals(lines, Collections.singletonList(I18n.f("autolayout.infoSetMaxTrainLength", 3, "Yard").trim()),
+            "the maximum of Yard's two copies was not said once, by the station's name: " + lines);
+    }
+
     /** Four stations in a ring, every edge both ways, with the two trains on PT A and PT B - their homes. */
     private static String ring(String atA, String atB)
     {
