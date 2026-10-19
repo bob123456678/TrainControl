@@ -381,6 +381,24 @@ refactor code to make agents work faster- split large files, consolidate documen
 
 From Adam's rulings on FR-136's plan (2026-10-18): the public methods on the API classes (Layout, Edge, Locomotive, MarklinControlStation) stay even where nothing in the program calls them, because *"these seem useful to an API user, and we should add examples later"*.  Write example code that shows them in use, beyond the examples the Readme and AutomationAPI.md have now.
 
+### FR-140 - 2026-10-18 - route editing shortcut
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-18 18:19  
+**Build:** commit d61f2971, in English - build\classes, compiled 18 Oct 17:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when the power is off, clicking on routes in the route tab should open the editor rather than ask for execution
+
+### OB-362 - 2026-10-18 - startup autonomy station length log redundancy
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-18 18:21  
+**Build:** commit d61f2971, in English - build\classes, compiled 18 Oct 17:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+at startup, there are log entries about station lengths.  dedupe by station name, rather than showing all copies (eastbound/westbound).
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
