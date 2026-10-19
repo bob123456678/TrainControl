@@ -54,8 +54,7 @@ public class testNoTwoShortcutsShareAKey
 {
     /**
      * The layout and autonomy editor, where FR-066's Control+E lives: named by its window class, the key of the
-     * allowances below.  Its shortcuts are found in the program's code by the spelling it writes them in, so they are
-     * found wherever its key handlers are kept.
+     * allowances below.  Its shortcuts are read from its own key handlers, found by declaration wherever they are kept.
      */
     private static final String EDITOR = "LayoutEditor.java";
 
@@ -63,6 +62,26 @@ public class testNoTwoShortcutsShareAKey
      * The main window, named the same way.
      */
     private static final String MAIN = "TrainControlUI.java";
+
+    /**
+     * Each window's key handlers, so "the editor" means the editor's handlers and not every file that happens to spell
+     * a shortcut the editor's way (FR-136): a Control+S added to another window must not stand in for the editor's.
+     *
+     * `formKeyPressed` is a name more than one window gives its handler, so the editor's is asked of its class.
+     */
+    private static final Map<String, String[][]> HANDLERS = new LinkedHashMap<>();
+
+    static
+    {
+        HANDLERS.put(EDITOR, new String[][] {
+            {"public class LayoutEditor extends PositionAwareJFrame",
+                "private void formKeyPressed(java.awt.event.KeyEvent evt)"},
+            {null, "public void receiveKeyEvent(KeyEvent e, LayoutLabel label)"}});
+
+        HANDLERS.put(MAIN, new String[][] {
+            {null, "private void LocControlPanelKeyPressed("},
+            {null, "private boolean locomotiveGestureOnDiagram("}});
+    }
 
     /**
      * `evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X`, and the same with `e.`.
@@ -258,9 +277,9 @@ public class testNoTwoShortcutsShareAKey
     }
 
     /**
-     * Every Control key bound in one window, in the order they appear in the program's code.
+     * Every Control key bound in one window's key handlers, handler by handler.
      *
-     * @param window the window, EDITOR or MAIN (for the report)
+     * @param window the window, EDITOR or MAIN
      * @param how the spelling that window uses
      * @return the key names, with repeats
      * @throws IOException when the source cannot be read
@@ -269,9 +288,15 @@ public class testNoTwoShortcutsShareAKey
     {
         List<String> out = new ArrayList<>();
 
-        Matcher found = how.matcher(SourceOf.allCode());
+        for (String[] handler : HANDLERS.get(window))
+        {
+            String text = handler[0] == null ? SourceOf.declaration(handler[1])
+                : SourceOf.declarationIn(SourceOf.declaration(handler[0]), handler[1]);
 
-        while (found.find()) out.add(found.group(1));
+            Matcher found = how.matcher(SourceOf.withoutComments(text));
+
+            while (found.find()) out.add(found.group(1));
+        }
 
         return out;
     }
