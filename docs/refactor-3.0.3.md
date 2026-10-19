@@ -310,7 +310,7 @@ The sweep looks for these shapes:
 - methods with no assert at all;
 - skips the battery counts as green (battery 101 had two classes that "tested nothing").
 
-A script under docs/tools flags candidates.  Workers then check each claim the way Phase 0 did:
+`docs/tools/hollow-scan.py` flags candidates (`--help` explains each shape, `--json` for tools), and flags each of the five cases above when it is put back on a copy.  Workers then check each claim the way Phase 0 did:
 1. mutate the production code the claim is about;
 2. see the claim go red;
 3. revert.
