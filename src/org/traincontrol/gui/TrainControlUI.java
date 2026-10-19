@@ -342,7 +342,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private int numLocMappings = DEFAULT_LOC_MAPPINGS;
     
     // How many columns to show in the route UI
-    private static final int ROUTE_UI_COLS = 3;
+    static final int ROUTE_UI_COLS = 3;
     
     // Keyboard colors
     // The teal the graph outlines a station with when its home locomotive is standing there, shared so
@@ -550,7 +550,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String railwaySource;
 
     /** The route editor, the only one; the old text-based editor has been deleted. */
-    private RouteEditorFrame routeEditor;
+    RouteEditorFrame routeEditor;
 
     /**
      * Whether every window holding unsaved work is willing to be closed - the exit's first question (UIX-B1, SVT-B1).
@@ -19594,113 +19594,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void executeRoute(String route)
     {
-        // The same answer at all three doors (SVN-B7, corrected by V31-B2).  Not protection against two threads throwing one route's
-        // accessories at once: `Route.setExecuting()` is a synchronized re-entrancy guard on the model's own funnel, so a second attempt has
-        // always returned immediately.  What it IS: the play button greys itself while `routesExecuting` holds the name, and the other two
-        // doors (the row click with its confirmation, and the right-click menu) did not ask, so the same gesture was refused at one door and
-        // accepted at two (the OB-057/OB-090 shape).  The window is short: `execRoute` returns as soon as it has spawned the route thread,
-        // so the name is cleared 600 ms later whatever the route is still doing - a debounce, not a lock.  Logged rather than silent,
-        // because unlike the greyed button these two doors say nothing on their own, and the operator confirmed a dialog and is owed a reason.
-        if (route != null && routesExecuting.contains(route))
-        {
-            this.model.log(I18n.f("route.ui.infoAlreadyRunning", route));
-
-            return;
-        }
-
-        // Marked before the thread starts, so the spinner is up by the time the pointer leaves the button (FR-043).  Every door that runs a
-        // route comes through here, including the right-click menu's own Execute (Adam: "executing the route from there should also start
-        // the spinner.").
-        routeStarted(route);
-
-        new Thread(() ->
-        {
-            runAndTimeTheRoute(route, () ->
-            {
-                // Asked here rather than inside the model, which has no business showing a dialog - and
-                // asked BEFORE the run, so the answer is about the route the operator picked.
-                // The model is held as a ViewListener, whose getRoute is typed as the base Route; only a
-                // MarklinRoute knows about the autonomy graph, and every route the station holds is one.
-                org.traincontrol.base.Route found = this.model.getRoute(route);
-
-                org.traincontrol.marklin.MarklinRoute picked =
-                    found instanceof org.traincontrol.marklin.MarklinRoute
-                    ? (org.traincontrol.marklin.MarklinRoute) found : null;
-
-                // Asked once, and the answer decides HOW it runs (A3): the conflict must not be checked here and again inside, since one that cleared
-                // between the two comes back as "yes, override" and runs the route with every guard off.  Three answers, and only the operator's own
-                // yes overrides anything.
-                if (picked != null)
-                {
-                    RouteConflict answer = askAboutRouteConflict(picked, this, null);
-
-                    if (answer == RouteConflict.OVERRIDE)
-                    {
-                        picked.execRouteOverridingConflicts();
-
-                        refreshRouteList();
-
-                        return;
-                    }
-
-                    // Said out loud, as the midway door says it (DIR-C2): MT-247 made the two doors agree that a cancel ends the route, but this one
-                    // returned in silence while the midway one logs two lines; the operator confirmed a dialog and is owed a reason why nothing
-                    // happened.  The two cancels are not the same size: a REFUSED here happens BEFORE the route starts, so not one command goes out,
-                    // whereas the midway question is answered from inside `MarklinRoute.execRoute`'s command loop, so every earlier command has gone
-                    // out and stands (a stop obeyed, an accessory thrown); `execRoute` says so where it happens, and behaviour.md section 7a carries
-                    // both halves.
-                    if (answer == RouteConflict.REFUSED)
-                    {
-                        this.model.logf("route.cancelledByOperator", picked.getName());
-                    }
-
-                    if (answer == RouteConflict.REFUSED)
-                    {
-                        refreshRouteList();
-
-                        return;
-                    }
-                }
-
-                // Nothing to confirm: run it the ordinary way, guarded, so a conflict appearing while it
-                // runs still stops and asks.
-                this.model.execRoute(route);
-                refreshRouteList();
-            });
-        }).start();
+        this.routeListPanel.executeRoute(route);
     }
 
-    /**
-     * The three ways out of executeRoute's thread, wrapped so all of them are timed.  Left as a wrapper rather than a try/finally
-     * around the body because the body returns early twice (an overridden conflict and a refused one), and a measurement that misses
-     * those two measures the happy path only.  It puts the button back on the last line of the finally, through
-     * `releaseTheRoutePlayButton`, which holds the grey for a minimum time first (V34-C4).
-     *
-     * @param route the route's name
-     * @param work what to run
-     */
-    private void runAndTimeTheRoute(String route, Runnable work)
-    {
-        long began = System.currentTimeMillis();
-
-        try
-        {
-            work.run();
-        }
-        finally
-        {
-            // What this measures is the dialog and the spawn, not the route (V34-C4): `work.run()` ends at `model.execRoute(route)`, which
-            // starts a thread, so this returns milliseconds later whatever the route is still doing.  It answers "did the press get through and
-            // how long did the asking take", not "how long did the route take".
-            if (this.model != null && this.model.isDebug())
-            {
-                this.model.log("Route " + route + " finished executing in "
-                    + (System.currentTimeMillis() - began) + "ms");
-            }
-
-            releaseTheRoutePlayButton(route);
-        }
-    }
         
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
@@ -21154,62 +21050,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
          
     public void editRoute(String routeName)
     {
-        new Thread(()->
-        {  
-            Route asked = routeName == null ? null : this.model.getRoute(routeName);
-
-            // LOOKED UP ONCE (FXV-B4).  This tested one lookup and then dereferenced a second, so a
-            // route deleted between the two threw on a worker with nothing to catch it.
-            if (asked != null)
-            {
-                {
-                    Route currentRoute = asked;
-                    
-                    // Realised on the EDT.  Everything above - the model lookups, toCSV - belongs
-                    // off it and stays off it, but constructing, packing and showing a JFrame is not
-                    // thread safe, and the command-capture path then writes this window's document
-                    // from the EDT while it is still being built on another thread.
-                    final String title = I18n.f(
-                        "route.ui.dialogEditRouteWithId",
-                        routeName,
-                        currentRoute.getId()
-                    );
-
-                    if (refuseWhileEditorOpen()) return;
-
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                    {
-            // Checked on the EDT, immediately before constructing, so the two cannot be separated: with the check on the worker and the
-            // construction posted, two quick clicks both saw a null field, both posted, and two editors opened, with captured commands going to
-            // the one assigned last while the user typed in the other.  The model reads above stay off the EDT; only the decision moves.
-                        if (routeEditor != null && routeEditor.isVisible())
-                        {
-                            JOptionPane.showMessageDialog(
-                                this,
-                                I18n.t("route.ui.errorOnlyOneRouteEditorAllowed")
-                            );
-
-                            routeEditor.requestFocus();
-                            routeEditor.toFront();
-
-                            return;
-                        }
-
-                        // The route itself, rather than its name to look up again: this window is
-                        // handed what it is to show, which is what makes its read-only behaviour
-                        // testable without a control station on the network.
-                        routeEditor = new RouteEditorFrame(this, routeName, currentRoute);
-
-                        // Not over a locked route's own title.  A route from the Central Station
-                        // opens with every control greyed and its title is the only thing that says
-                        // why; overwriting it with the ordinary edit-route title left a window full
-                        // of dead controls and no explanation.
-                        if (!routeEditor.isLocked()) routeEditor.setTitle(title);
-                        routeEditor.setVisible(true);
-                    });
-                }
-            }
-        }).start();
+        this.routeListPanel.editRoute(routeName);
     }
     
     public Route getRouteAtCursor(MouseEvent evt)
@@ -21252,68 +21093,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void duplicateRoute(String routeName)
     {
-        new Thread(()->
-        {  
-            if (routeName != null)
-            {
-                Route currentRoute = this.model.getRoute(routeName);
-
-                if (currentRoute != null && currentRoute instanceof Route)
-                {
-                    String proposedName = currentRoute.getName() + " (" + I18n.t("route.ui.copy") + " %s)";
-
-                    int i = 1;
-
-                    while (this.model.getRoute(String.format(proposedName, i)) != null)
-                    {
-                        i++;
-                    }
-
-                    this.model.newRoute(String.format(proposedName, i), currentRoute.getRoute(), 
-                            currentRoute.getS88(), currentRoute.getTriggerType(), false, currentRoute.getConditions()); 
-
-                    // The list first, and again after the sync: the copy exists the moment newRoute returns, so that is when the user should see it, and
-                    // the sync is a network round trip that, off the event thread, is a plain call that can throw (a station not answering ended this
-                    // worker on a stack trace nobody sees and the refresh never ran).
-                    refreshRouteList();
-
-                    try
-                    {
-                        // Ensure route changes are synced
-                        this.syncWithCS2();
-                    }
-                    finally
-                    {
-                        // Whatever the station said, the copy is real and the list has to show it
-                        this.repaintLayout();
-
-                        refreshRouteList();
-                    }
-                }  
-            }
-        }).start();
+        this.routeListPanel.duplicateRoute(routeName);
     }
         
     private void BulkEnableOrDisable(boolean enable)
     {
-        // The question is asked on the event thread (VB-B1): a modal JOptionPane raised inside `new Thread(...)` (both callers had started a
-        // thread of their own) pumps events from a thread Swing does not expect to, and can come up behind the window or not at all.  An
-        // action handler already runs on the event thread.  The thread below stays for what it was really for - a write per route and one
-        // station sync - and the two calls after it marshal themselves.
-        String searchString = JOptionPane.showInputDialog(
-            this,
-            I18n.f(
-                "route.ui.promptEnterSearchStringWithS88State",
-                enable ? I18n.t("ui.stateEnabled") : I18n.t("ui.stateDisabled")
-            ),
-            "*"
-        );
-
-        // Cancel returns null, which is not the same as an empty search: `!"".equals(null)` is true, so the loop ran and
-        // getName().contains(null) threw on a worker, skipping the sync and refresh that follow it.
-        if (searchString == null || "".equals(searchString)) return;
-
-        enableOrDisableMatching(searchString, enable);
+        this.routeListPanel.BulkEnableOrDisable(enable);
     }
 
     /**
@@ -22304,67 +22089,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_AddRouteButtonActionPerformed
 
     private void RouteListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseClicked
-
-        // Three answers, one for each way of clicking a route (FR-043, revised at MT-217; Adam: "if play button is hit, route executes
-        // without confirming.  If route is left-clicked elsewhere, pop up the confirmation first.  If right-clicked, then show the right
-        // click menu."): the confirmation was removed when a left click ANYWHERE ran the route and the dialog was the only thing between a
-        // stray click and a train moving; having to AIM, which only the button asks, makes it unnecessary.  The highlight has answered its
-        // question by the time somebody clicks in this table.
-        clearFoundRoute();
-
-        Route route = this.getRouteAtCursor(evt);
-
-        if (route == null) return;
-
-        if (!javax.swing.SwingUtilities.isLeftMouseButton(evt))
-        {
-            // The right-click menu is RightClickRouteMenu's own business - it listens for the popup
-            // trigger on press and release, which is where a platform decides what a right click is.
-            return;
-        }
-
-        if (isOverTheRoutePlayButton(evt))
-        {
-            // Disabled means disabled (MT-217): the button greys while its route runs, and a greyed button that still fires is a lie, and would
-            // start the same route twice.  Asked in executeRoute now (SVN-B7), not here: this was the only door that asked, and the two that do
-            // not (the row click with its confirmation, and the right-click menu) reach the same method; one guard on the funnel is the
-            // OB-057/OB-090 shape, where two copies, one per door, is how the other two came to be missing.
-            executeRoute(route.getName());
-
-            return;
-        }
-
-        // WITH THE POWER OFF, THE ROW OPENS THE ROUTE'S EDITOR (FR-140): nothing could run, so the click is taken as
-        // wanting to see or change the route.  The play button still runs it, as it always does.
-        if (this.model != null && !this.model.getPowerState())
-        {
-            editRoute(route.getName());
-
-            return;
-        }
-
-        // We need to set this in case there are popup windows
-        this.setAlwaysOnTop(true);
-
-        int dialogResult = JOptionPane.showOptionDialog(
-            RoutePanel,
-            I18n.f("route.ui.confirmExecuteRouteWithId", route.getName(),
-                this.model.getRouteId(route.getName())),
-            I18n.t("route.ui.dialogExecution"),
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.PLAIN_MESSAGE,
-            null,
-            YES_NO_OPTS,
-            YES_NO_OPTS[0] // default selection
-        );
-
-        if (dialogResult == JOptionPane.YES_OPTION)
-        {
-            executeRoute(route.getName());
-        }
-
-        // Revert preference
-        windowAlwaysOnTopMenuItemActionPerformed(null);
+        this.routeListPanel.RouteListMouseClicked(evt);
     }//GEN-LAST:event_RouteListMouseClicked
 
     /**
@@ -22883,7 +22608,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Populates the autonomy route list in the UI, then displays the selections to the user
      * Called when graphs are loaded
      */
-    private void updateAutoRouteList()
+    void updateAutoRouteList()
     {
         if (this.getModel().hasAutoLayout())
         {
@@ -26798,6 +26523,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final LayoutFileActions layoutFileActions = new LayoutFileActions(this);
 
     /**
+     * The route list: running, editing, duplicating, bulk arming, finding and refreshing routes.
+     */
+    private final RouteListPanel routeListPanel = new RouteListPanel(this);
+
+    /**
+     * @return the route list
+     */
+    javax.swing.JTable routeList()
+    {
+        return this.RouteList;
+    }
+
+    /**
+     * @return the Routes tab's panel
+     */
+    javax.swing.JPanel routePanel()
+    {
+        return this.RoutePanel;
+    }
+
+    /**
+     * @return the window's tabs
+     */
+    javax.swing.JTabbedPane getKeyboardTab()
+    {
+        return this.KeyboardTab;
+    }
+
+    /**
+     * Puts always-on-top back as Window > Always on Top says, as its handler does.
+     */
+    void windowAlwaysOnTopAsChosen()
+    {
+        windowAlwaysOnTopMenuItemActionPerformed(null);
+    }
+
+    /**
      * @return the page list over the track diagram
      */
     javax.swing.JComboBox layoutList()
@@ -27920,7 +27682,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * Concurrent: written from the route threads and read by the renderer on the event thread.
      */
-    private final java.util.Set<String> routesExecuting =
+    final java.util.Set<String> routesExecuting =
         java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
@@ -27961,7 +27723,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param route the route's name
      */
-    private void routeStarted(String route)
+    void routeStarted(String route)
     {
         if (route == null) return;
 
@@ -27990,7 +27752,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param route the route's name
      */
-    private void releaseTheRoutePlayButton(String route)
+    void releaseTheRoutePlayButton(String route)
     {
         if (route == null) return;
 
@@ -28077,19 +27839,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private boolean isOverTheRoutePlayButton(java.awt.event.MouseEvent evt)
     {
-        int row = RouteList.rowAtPoint(evt.getPoint());
-        int column = RouteList.columnAtPoint(evt.getPoint());
-
-        if (row < 0 || column < 0) return false;
-
-        // An empty cell has no button: the last row is padded out to three columns with nulls.
-        if (RouteList.getValueAt(row, column) == null) return false;
-
-        java.awt.Rectangle cell = RouteList.getCellRect(row, column, true);
-
-        java.awt.Rectangle button = routePlayButtonBox(cell);
-
-        return button.contains(evt.getPoint());
+        return this.routeListPanel.isOverTheRoutePlayButton(evt);
     }
 
     /**
@@ -28190,41 +27940,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void findRoute()
     {
-        String asked = JOptionPane.showInputDialog(this, I18n.t("route.ui.promptFindRoute"),
-            I18n.t("route.ui.menuFindRoute"), JOptionPane.PLAIN_MESSAGE);
-
-        // Cancel returns null, which is not the same as an empty search - and neither is worth a
-        // "no such route" complaint about a question nobody answered.
-        if (asked == null || asked.trim().isEmpty()) return;
-
-        String wanted = asked.trim();
-
-        List<String> matches = routesMatchingIn(this.model.getRouteList(), wanted);
-
-        if (matches.isEmpty())
-        {
-            JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorNoSuchRoute", wanted));
-
-            return;
-        }
-
-        String found = matches.get(0);
-
-        // MORE THAN ONE: ASK, rather than guess or refuse (MT-218).
-        //
-        // The key this asks with was already in all eight bundles and used by nothing - written for
-        // this and never wired up.
-        if (matches.size() > 1)
-        {
-            found = (String) JOptionPane.showInputDialog(this,
-                I18n.t("route.ui.promptWhichRoute"), I18n.t("route.ui.menuFindRoute"),
-                JOptionPane.PLAIN_MESSAGE, null, matches.toArray(), matches.get(0));
-
-            // Cancelled, which is not the same as choosing the first one.
-            if (found == null) return;
-        }
-
-        showRouteInTheList(found);
+        this.routeListPanel.findRoute();
     }
 
     /**
@@ -28241,9 +27957,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static String routeNamedIn(List<String> names, String wanted)
     {
-        List<String> matches = routesMatchingIn(names, wanted);
-
-        return matches.size() == 1 ? matches.get(0) : null;
+        return RouteListPanel.routeNamedIn(names, wanted);
     }
 
     /**
@@ -28295,7 +28009,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param name the route's name, as the model spells it
      */
-    private void showRouteInTheList(String name)
+    void showRouteInTheList(String name)
     {
         foundRoute = name;
 
@@ -28330,7 +28044,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Forgets the found route, so the highlight does not outlive the question it answered.
      */
-    private void clearFoundRoute()
+    void clearFoundRoute()
     {
         if (foundRoute == null) return;
 
@@ -28624,61 +28338,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void refreshRouteList()
     {   
-        // singlePass, not invokeLater: joins a pass already running rather than asking for another.
-        singlePass(() ->
-        {
-            DefaultTableModel tableModel = new DefaultTableModel()
-            {
-                @Override
-                public boolean isCellEditable(int row, int column)
-                {
-                    return false;
-                }
-            };
-
-            tableModel.setColumnCount(ROUTE_UI_COLS);
-
-            Object[] items = new Object[ROUTE_UI_COLS];
-
-            List<String> names = this.model.getRouteList();
-
-            if (prefs.getBoolean(ROUTE_SORT_PREF, false))
-            {
-                Collections.sort(names);
-            }
-            
-            // Collect the objects to store in the grid - no more strings
-            List<Route> routes = names.stream().map(this.model::getRoute).collect(Collectors.toList());
-
-            int i = 0;
-            while (!routes.isEmpty())
-            {
-                items[i++] = routes.get(0);
-                routes.remove(0);
-
-                if (i == ROUTE_UI_COLS || routes.isEmpty())
-                {
-                    i = 0;
-
-                    tableModel.addRow(items);
-
-                    items = new Object[ROUTE_UI_COLS];
-                }
-            }
-
-            this.RouteList.setModel(tableModel);
-            this.RouteList.setShowGrid(false);  
-
-            for (int j = 0; j < ROUTE_UI_COLS; j++)
-            {
-                this.RouteList.getColumnModel().getColumn(j).setCellRenderer(new CustomTableRenderer());
-            }
-
-            // Update autonomy route list
-            this.updateAutoRouteList();
-
-            // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
-        });
+        this.routeListPanel.refreshRouteList();
     }
         
     // Variables declaration - do not modify//GEN-BEGIN:variables

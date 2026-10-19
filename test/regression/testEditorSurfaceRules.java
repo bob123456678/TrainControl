@@ -785,7 +785,7 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryDoorThatRunsARouteAsksIfItIsAlreadyRunning() throws Exception
     {
-        String funnel = codeOf("public void executeRoute(String route)");
+        String funnel = codeOf("    void executeRoute(String route)");
 
         assertTrue(funnel.contains("routesExecuting.contains(route)"),
             "executeRoute does not ask whether the route is already running, and it is the method "
@@ -802,7 +802,7 @@ public class testEditorSurfaceRules
         // set to decide what to DRAW, and drawing is the affordance rather than the guard.  What must
         // not come back is a door deciding for itself whether to call executeRoute, because that is
         // the arrangement under which two of the three doors were missing the question entirely.
-        String door = codeOf("private void RouteListMouseClicked(java.awt.event.MouseEvent evt)");
+        String door = codeOf("    void RouteListMouseClicked(java.awt.event.MouseEvent evt)");
 
         // NOT VACUOUS WHEN THE HANDLER MOVES (V33-C7).
         //
@@ -3856,6 +3856,15 @@ public class testEditorSurfaceRules
             String code = SourceOf.withoutComments(new String(java.nio.file.Files.readAllBytes(f.toPath()),
                 java.nio.charset.StandardCharsets.UTF_8));
 
+            // Where each package-private method begins: a line four spaces in, a type and a name, no modifier
+            java.util.List<Integer> bareStarts = new java.util.ArrayList<>();
+
+            java.util.regex.Matcher bare = java.util.regex.Pattern.compile(
+                "\n    (?!(?:private|public|protected|static|return|new|else|throw)\\b)[A-Za-z_][\\w.<>\\[\\], ?]*\\s+\\w+\\(")
+                .matcher(code);
+
+            while (bare.find()) bareStarts.add(bare.start() + 1);
+
             for (String needle : needles)
             {
                 for (int at = code.indexOf(needle); at >= 0; at = code.indexOf(needle, at + 1))
@@ -3868,6 +3877,13 @@ public class testEditorSurfaceRules
                     for (String s : memberStarts)
                     {
                         from = Math.max(from, code.lastIndexOf(s, at));
+                    }
+
+                    // And a package-private method, with no modifier to find it by, as the window's collaborators
+                    // declare theirs (FR-136): otherwise its dialogs are read as the member above's.
+                    for (int start : bareStarts)
+                    {
+                        if (start < at) from = Math.max(from, start);
                     }
 
                     if (from < 0) from = 0;

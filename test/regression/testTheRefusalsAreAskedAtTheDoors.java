@@ -176,7 +176,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "combining rewrites several pages into one"},
         {"private void AddRouteButtonActionPerformed(", EDITOR,
             "a route is part of the diagram the editor holds"},
-        {"public void editRoute(String routeName)", EDITOR,
+        {"    void editRoute(String routeName)", EDITOR,
             "the same, from the other door - and this one asks from a worker thread, which is why the "
             + "refusal posts its dialog rather than showing it"},
         {"public void doSync(", AUTONOMY,
