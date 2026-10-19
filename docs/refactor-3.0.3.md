@@ -263,8 +263,9 @@ Each phase can be released on its own and ends with a battery. Workers use separ
 | 3. Low-risk extractions | TrainControlUI Tier 1 (five clusters, one commit each, **one worker in sequence**); AutonomySession `SessionImport` and `SessionRuns`; the testAutonomyDiagramSession split | Sonnet ×3, one per file group | 4-5 sessions, 2 batteries |
 | 4. Medium | TrainControlUI Tier 2; AutonomyEditorPanel menus, prompts and mass-assign; LayoutEditor selection and undo; Layout explanations, standing trains and fit (Opus) | Sonnet ×3 and Opus ×1 | 6-8 sessions, 2 batteries |
 | 5. Core (or 3.1.0) | TrainControlUI Tier 3; the `SettledQuestion` base class | Opus | 4-6 sessions, 2 batteries plus a fan-out round |
+| 6. Coverage through what the user does | Adam (2026-10-19): "increase test coverage (meaningfully, through actions the user would take)".  See **6** below the table. | Opus ×1 for the inventory; Sonnet ×4 in parallel, one area each; an integrator folds | 4-6 sessions, 1 battery |
 
-That is about 25-35 worker sessions and 12 batteries.  Phases 1a and 1b come before the comment trim and the
+That is about 30-40 worker sessions and 13 batteries.  Phases 1a and 1b come before the comment trim and the
 extractions on purpose: every later phase ends with one or two batteries, and every extraction leans on the tests
 being real.
 
@@ -322,6 +323,37 @@ and a new hollow shape found later is added to it. **Main risks:**
 - concurrency changes in Layout;
 - swallowed reflection failures;
 - line numbers in findings.tsv `file:line` evidence going stale (historical only, acceptable).
+
+**6. Coverage through what the user does.**  Adam: "This can be done in parallel, report, and fold later."
+- **The inventory first.**  List every action a user can take:
+  - every menu item, button and tab;
+  - every keyboard shortcut;
+  - every gesture on the diagram (click, drag, right-click, paste);
+  - every dialog's answers;
+  - every editor's tools.
+
+  For each, record which tests drive it the way the user does: through the real component (a click, a key event, a
+  menu item's action), not by calling its handler by reflection.  The reflection audit already lists the handlers
+  tests reach by name, which is where most of the gap shows.  A JaCoCo run of the battery, a test-only jar added with
+  Adam's OK, then shows which code those actions reach and no test does.  The inventory, ranked by how often a user
+  takes the action and by how much code it reaches untested, is the phase's first report.
+- **Meaningful means the user's outcome.**  Each new test acts as the user would and asserts what the user would see
+  or get:
+  - the window's state;
+  - the command that reaches the railway (through the mock Central Station and `WireRecorder`);
+  - the file that is saved;
+  - the sentence shown.
+
+  "Did not throw" is not an outcome.  Every new claim goes red under a mutation of the code it is about (the 1b rule),
+  runs on the sandboxed railway, and carries the usual bookkeeping (census, build.xml, Used by).
+- **In parallel, then reported.**  Workers take one area each (the main window, the layout editor, the autonomy
+  editor and run, routes and timetable) and work in parallel, because their tests drive the program from outside and
+  name no member.  For the same reason the phase could start beside Phases 3-5 as a net under the extractions, if Adam
+  wants it sooner.  Each worker reports what it covered, and every defect it finds.
+- **Folded later.**  A defect a new test exposes is filed (OB, through triagedb) with the test attached, not fixed in the
+  phase.  The release stays refactor-only, and a red test does not join the battery.  The test is folded in with its
+  fix in a later release.  The green tests are folded into the battery by one integrator, who owns the shared
+  bookkeeping files.  The final report gives the inventory's coverage before and after.
 
 ## 7. Questions, with Adam's answers (2026-10-18)
 
