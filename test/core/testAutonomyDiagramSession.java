@@ -264,7 +264,7 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A sensor address on a square in two places is said once, naming both squares, as a WARNING (FR-139).
+     * A sensor address on two squares of one page is said once, naming both squares, as a WARNING (FR-139).
      *
      * MUTATION: leave the check out of the setup check, or leave one of the two squares out of its places, and this fails.
      *
@@ -273,19 +273,46 @@ public class testAutonomyDiagramSession
     @Test
     public void testASensorAddressOnTwoSquaresIsSaidOnce() throws Exception
     {
-        session.open(Arrays.asList(runOfTrack(), sensorPage("second", "2", 11)));
+        session.open(Arrays.asList(runOfTrack(), twoSensorPage("second", "2", 40)));
         session.initialize("FR139 shared");
 
         org.traincontrol.automationui.AutonomyChecks.Finding shared = sharedAddressFinding();
 
-        assertNotNull(shared, "address 11 is on a square of each of two pages, and the setup check does not say so");
+        assertNotNull(shared, "address 40 is on two squares of one page, and the setup check does not say so");
 
         assertEquals(shared.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.WARNING,
             "a shared sensor address is not a WARNING: " + shared);
 
         assertEquals(new LinkedHashSet<>(shared.getRelated()),
-            new LinkedHashSet<>(Arrays.asList(new TileKey("main", 1, 1), new TileKey("second", 1, 1))),
-            "the places are not the two squares that carry address 11: " + shared.getRelated());
+            new LinkedHashSet<>(Arrays.asList(new TileKey("second", 1, 1), new TileKey("second", 3, 1))),
+            "the places are not the two squares that carry address 40: " + shared.getRelated());
+    }
+
+    /**
+     * A sensor address two pages share is OB-150's ERROR alone - the later page repeats the earlier one's sensors - and
+     * the shared-address warning does not say it again (FR-139; Adam, 2026-10-18: "suppress the warning where OB-150
+     * applies").
+     *
+     * MUTATION: count the squares of a page OB-150 reports, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASharedAddressThatOB150ReportsIsNotSaidAgain() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), sensorPage("second", "2", 11)));
+        session.initialize("FR139 OB150");
+
+        boolean repeated = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            repeated |= org.traincontrol.automationui.AutonomyChecks.DUPLICATE_SENSOR_PAGE.equals(finding.getMessageKey());
+        }
+
+        assertTrue(repeated, "precondition: address 11 on a square of each of two pages is not OB-150's ERROR");
+
+        assertNull(sharedAddressFinding(), "a share OB-150 already reports is said a second time");
     }
 
     /**
@@ -301,10 +328,10 @@ public class testAutonomyDiagramSession
     @Test
     public void testAnExcludedPageDoesNotShareItsSensorAddress() throws Exception
     {
-        session.open(Arrays.asList(runOfTrack(), sensorPage("second", "2", 11)));
+        session.open(Arrays.asList(runOfTrack(), twoSensorPage("second", "2", 40)));
         session.initialize("FR139 excluded");
 
-        assertNotNull(sharedAddressFinding(), "precondition: the two pages are not reported before one is left out");
+        assertNotNull(sharedAddressFinding(), "precondition: the page's two squares are not reported before it is left out");
 
         session.setPageExcluded("second", true);
 
@@ -381,6 +408,16 @@ public class testAutonomyDiagramSession
         }
 
         return null;
+    }
+
+    /** A page of its own with two sensors, at (1,1) and (3,1), both carrying `address`, and a straight between (FR-139). */
+    private LayoutDiagram twoSensorPage(String name, String id, int address) throws IOException
+    {
+        LayoutDiagram page = sensorPage(name, id, address);
+
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+
+        return page;
     }
 
     /** A page of its own with one sensor at (1,1) carrying `address`, and a straight beside it (FR-139). */

@@ -14564,6 +14564,10 @@ public class AutonomySession
      * so a square that builds into two Points is one place.  A page left out of autonomy has no places, and an address of
      * zero or less is no address, as `repeatedSensorPages` and the reduction both read it.
      *
+     * Nor has a page `repeatedSensorPages` reports: it repeats another page's sensors, which is an ERROR already (OB-150),
+     * and the same thing is not said twice (Adam, 2026-10-18: "suppress the warning where OB-150 applies").  So a share
+     * between two pages is OB-150's, and this one is about squares that share an address on a page of their own.
+     *
      * @return each shared address, to its squares
      */
     private Map<Integer, List<TileKey>> sensorAddressesSharedByPlaces()
@@ -14572,9 +14576,13 @@ public class AutonomySession
 
         if (pages == null) return new LinkedHashMap<>();
 
+        Set<String> repeating = new java.util.HashSet<>();
+
+        for (TileKey square : repeatedSensorPages().keySet()) repeating.add(square.getPage());
+
         for (LayoutDiagram page : pages)
         {
-            if (store.getExcludedPages().contains(page.getName())) continue;
+            if (store.getExcludedPages().contains(page.getName()) || repeating.contains(page.getName())) continue;
 
             for (LayoutDiagramComponent component : page.getAll())
             {
