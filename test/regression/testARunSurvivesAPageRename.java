@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * What a run did is folded into the setup BEFORE a page is renamed, not after.
@@ -104,20 +105,7 @@ public class testARunSurvivesAPageRename
     @Test
     public void testTheWindowCallsThemInThatOrder() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
-
-        int methodStart = ui.indexOf("private void duplicateOrRenameCurrentLayout(");
-
-        assertTrue(methodStart >= 0,
-            "duplicateOrRenameCurrentLayout has moved or been renamed - this test is reading the "
-            + "wrong method, or none at all");
-
-        int methodEnd = ui.indexOf("\n    private ", methodStart + 1);
-
-        assertTrue(methodEnd > methodStart, "could not find the end of the method to bound the scan");
-
-        String body = ui.substring(methodStart, methodEnd);
+        String body = SourceOf.declaration("private void duplicateOrRenameCurrentLayout(");
 
         int captured = body.indexOf("captureRunningLayout();");
         int renamed = body.indexOf("renameOrDuplicate(");
