@@ -822,6 +822,12 @@ public class testAPendingTurnSurvivesTheRebuild
 
             session.setPageExcluded(String.valueOf(leftOut), true);
 
+            // THE BUILD REFUSES, and for the page left out: a link pointing at it is the blocking problem the load door
+            // refuses on.  Without this a page left out that stops nothing takes the unchanged-railway branch below just
+            // the same, and the claim passes having met no refusal
+            assertTrue(refusedForALinkToAPageLeftOut(), "precondition: leaving page " + leftOut + " out does not leave the"
+                + " setup unable to build, so there is no refused build for this claim to be about (RSA39-C3)");
+
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
                 new java.util.LinkedHashSet<String>()));
 
@@ -1306,6 +1312,25 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
+     * Whether the setup's graph blocks the build because a link points at a page left out of autonomy.
+     *
+     * @return true when the blocking problem the load door refuses on is that one
+     */
+    private static boolean refusedForALinkToAPageLeftOut()
+    {
+        for (org.traincontrol.automationui.TileGraph.Problem problem : session.getGraph().getProblems())
+        {
+            if (problem.isBlocking()
+                && org.traincontrol.automationui.TileGraph.ERROR_PORTAL_EXCLUDED.equals(problem.getMessageKey()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * A station on the page shown that the window draws a caption for.
      *
      * @return its square
@@ -1406,6 +1431,10 @@ public class testAPendingTurnSurvivesTheRebuild
             // THE SETUP UNABLE TO BUILD, and the station renamed through the editor's door
             session.setPageExcluded(String.valueOf(out), true);
             session.setPointName(at, name + " C2");
+
+            // THE BUILD REFUSES, as in testARefusedRebuildStillTellsTheDiagram
+            assertTrue(refusedForALinkToAPageLeftOut(), "precondition: leaving page " + out + " out does not leave the"
+                + " setup unable to build, so there is no refused build for this claim to be about (RSA40-C2)");
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true,
                 new java.util.LinkedHashSet<String>()));
