@@ -1045,18 +1045,15 @@ public class AutonomySession
      * (RSA4-C4) - to the names this build gives its Points (RSA3-B1): the configuration in use by its build, every other
      * across a square renamed (RSA4-B1).
      *
-     * A captured timetable names Points, and a Point is named after its square - the square's name, and a heading where
-     * the square is more than one copy.  A station renamed, or a square given more copies or fewer, would leave every
-     * leg through it naming a Point no longer built, and the load would drop the entry.
+     * A Point is named after its square (the square's name, and a heading where the square is more than one copy), so a
+     * station renamed, or a square given more copies or fewer, leaves every leg through it naming a Point no longer built,
+     * and the load would drop the entry.  Each such name is traced to its square - by the builds this session has seen, or,
+     * for a name written before this session, as that square's own name with or without a heading - and then to a copy of
+     * it: the same copy under the square's name now, or where that copy is gone, the one copy every leg through it is an
+     * edge from or to.  A name that cannot be traced is left as it is.
      *
-     * Each name the build no longer has is traced to its square - by the builds this session has seen, or, for a name
-     * written before this session, as that square's own name with or without a heading - and then to a copy of it: the
-     * same copy under the square's name now, or where that copy is gone, the one copy every leg through it is an edge
-     * from or to.  A name that cannot be traced is left as it is, and the load drops that entry.
-     *
-     * Every other configuration is carried across a renamed square alone: its own build can differ from this one (which
-     * squares trains may turn round at is its own), so a name this build lacks for any other reason is left for that
-     * build to carry when the configuration is next the one in use.
+     * Every other configuration is carried across a renamed square alone: its own build can differ from this one, so any
+     * other missing name is left for that build to carry when the configuration is next in use.
      */
     private void carryTheNamesAcross(AutonomyBuilder naming)
     {
@@ -1637,23 +1634,19 @@ public class AutonomySession
     /**
      * Which way each imported train faces: the way the file ran it, and a guess only where the file cannot say.
      *
-     * READ FROM THE FILE FIRST (REG4-A1).  2.8.1 sent a train only along the edges that start at its point, so where
-     * every one of them leaves the square by one side, the train drives out that way.  Guessing instead could stand a
-     * train facing a way its decoder does not drive it.
+     * READ FROM THE FILE FIRST (REG4-A1): 2.8.1 sent a train only along the edges that start at its point, so where every
+     * one leaves the square by one side, the train drives out that way.  AFTER THE LOOP (REG4-C1): a legacy terminus or
+     * reversing point is marked "must turn round" later in the same point's import, and a square trains must turn at has
+     * only turning copies, so a facing is checked against the copies the build will make.
      *
-     * AFTER THE LOOP (REG4-C1).  A legacy terminus or reversing point is marked "must turn round" further down the same
-     * point's import, and a square trains must turn at has only turning copies, which face the other way from its plain
-     * ones, so a facing is checked against the copies the build will make.
+     * THE GUESS, where the file cannot say - no edge, edges both ways, or an end this diagram does not draw: a way trains
+     * may arrive in first (REG3-C1), since the copy IS the direction; else the first copy.  Deterministic (ACC-C4), and
+     * counted so the log can say how many were guessed.  A facing the square already records stays, if the guess itself
+     * could make it (RLA2-B3, OB-304).
      *
-     * THE GUESS, where the file cannot say - no edge, edges both ways, or an end this diagram does not draw.  A way
-     * trains may arrive in, first (REG3-C1): the build honours a recorded facing even where only a copy trains may not
-     * arrive at holds it, since the copy IS the direction.  The first copy's only where the square has none.
-     * Deterministic (ACC-C4), so two imports of one file agree; counted, so the log can say how many were guessed.
-     *
-     * A facing the file states and no copy holds - the diagram does not let a train arrive the way it would have to -
-     * is not saved (Adam, OB-270: *"we shouldn't allow an impossible facing to be saved"*): the train is stood the way
-     * the square allows, and named in `facingsNotHeld` rather than counted as a guess, since it is known to be the
-     * other way round from how the train drives.
+     * A facing the file states and no copy holds is not saved (Adam, OB-270: *"we shouldn't allow an impossible facing to
+     * be saved"*): the train is stood the way the square allows, and named in `facingsNotHeld` rather than counted as a
+     * guess, since it is known to be the other way round from how the train drives.
      *
      * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS (RLA2-B3): the last occupant's is a guess as good as
      * the first copy's.  Only one the guess itself could make, and counted with the guesses (OB-304).
@@ -2363,14 +2356,10 @@ public class AutonomySession
     /**
      * The address in a legacy command's accessory name, when that accessory is a signal (RG4-B1).
      *
-     * A 2.8.1 command names its accessory as a display string - "Signal 116", "Switch 68" - because
-     * that is what the old editor put in front of the user.  Only the signals are wanted here: a
-     * switch position is reproduced from the track diagram and needs no attention, and a signal is
-     * driven only where the operator pairs it.
-     *
-     * Anything that is not a signal, and anything whose number does not parse, is simply not a signal
-     * address - this is a report, and a report that throws on a malformed old file is worse than one
-     * that leaves a line out of it.
+     * A 2.8.1 command names its accessory as a display string - "Signal 116", "Switch 68".  Only signals are wanted: a
+     * switch position is reproduced from the track diagram, and a signal is driven only where the operator pairs it.
+     * Anything that is not a signal, or whose number does not parse, is not a signal address: a report that throws on a
+     * malformed old file is worse than one that leaves a line out.
      *
      * @param accessory the legacy command's `acc` value, which may be null
      * @return the address, or null when this is not a signal
@@ -2743,14 +2732,10 @@ public class AutonomySession
     /**
      * Each copy of a square a train may be put down on, with the way it faces (OB-270, GUI-B1).
      *
-     * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at is
-     * built as no station, and a train stood there is one autonomy will not start - it is told that trains may not
-     * arrive there facing its way (`autolayout.why.startFacingBarred`).  `copyFacing` asks this first, so that among the
-     * copies facing one way it takes one trains may arrive at.  The placement doors no longer filter a train's heading
-     * by it: they keep any heading a train can leave by (`departableFacingsFor`, OB-284).
-     *
-     * With no running layout there is nothing to ask a copy, and every copy is returned, which is what each door did
-     * before.
+     * `facingsFor` names every copy, but a copy trains may not arrive at is built as no station, and a train stood there is
+     * one autonomy will not start (`autolayout.why.startFacingBarred`).  `copyFacing` asks this first, so that among the
+     * copies facing one way it takes one trains may arrive at.  The placement doors keep any heading a train can leave by
+     * instead (`departableFacingsFor`, OB-284).  With no running layout every copy is returned.
      *
      * @param square the square
      * @param running the running layout, or null
@@ -3027,23 +3012,18 @@ public class AutonomySession
     /**
      * Faces a train the way it came in, because the railway has just turned it round there (REV9-A1).
      *
-     * **The answer is absolute.**  `flipFacing` is relative - it writes the other choice of the facing it finds - and
-     * what it finds cannot be trusted when the drain in `TrainControlUI.reconcileFacingWhenIdle` runs: behaviour.md 6a,
-     * *"a run moves trains, where they ended up lives only in the running layout, and nothing writes it back to the setup
-     * when the run ends"*, and `captureFromLayout` never clears `FACING`, so an arrival square carries either nothing or
-     * the previous occupant's answer (OB-190).
-     *
-     * What IS reliable is the side the train came in by.  behaviour.md 4: *"a train faces the way it will leave; once it
-     * has been turned round the two point the same way while the carriages have not moved."*  So the facing of a train
-     * that has just turned at its destination is its `arrivedFrom`, which the arrival wrote onto this very Point.
-     * Applying it a second time writes the same thing again rather than undoing it.
+     * **The answer is absolute.**  `flipFacing` is relative - it writes the other choice of the facing it finds - and what
+     * it finds cannot be trusted when `TrainControlUI.reconcileFacingWhenIdle` runs (behaviour.md 6a: *"a run moves trains,
+     * where they ended up lives only in the running layout, and nothing writes it back to the setup when the run ends"*;
+     * OB-190).  What IS reliable is the side the train came in by.  behaviour.md 4: *"a train faces the way it will leave;
+     * once it has been turned round the two point the same way while the carriages have not moved."*  So the facing of a
+     * train that has just turned at its destination is its `arrivedFrom`, which the arrival wrote onto this very Point;
+     * applying it a second time writes the same thing again rather than undoing it.
      *
      * **Both records, as `flipFacing` does** (DIR-B3, Adam 2026-09-06: *"flipFacing should also update the running
-     * layout"*): which copy a train stands on IS its direction.
-     *
-     * **Quiet where it cannot answer, by returning null** - a Point that is not this square's, a square the build has no
-     * copies for, an arrival side no copy of the square can face.  The caller keeps the record, so the turn is retried
-     * on the next refresh.
+     * layout"*): which copy a train stands on IS its direction.  **Quiet where it cannot answer, by returning null** - a
+     * Point that is not this square's, a square the build has no copies for, an arrival side no copy can face; the caller
+     * keeps the record, so the turn is retried on the next refresh.
      *
      * @param locomotive the locomotive that was turned
      * @param turnedAt the Point it was standing on when it turned, from the record the arrival made
@@ -3100,28 +3080,23 @@ public class AutonomySession
     /**
      * Turns a placed locomotive round on the graph, because the railway turned it (Adam, 2026-09-06).
      *
-     * Adam: **"changing the direction on the graph itself does not emit a locomotive direction command.  But a
-     * locomotive direction command WILL update the direction on the graph if it does not match."**
+     * Adam: **"changing the direction on the graph itself does not emit a locomotive direction command.  But a locomotive
+     * direction command WILL update the direction on the graph if it does not match."**  So one way only: the decoder is
+     * what the railway actually does, the setup is a record of it, and `setFacing` writes nothing to the track.
      *
-     * **One way only.**  The decoder is what the railway actually does; the setup is a record of it.  `setFacing`
-     * writes nothing to the track, and this follows the track.
+     * **The caller decides that something changed**, not this method: nothing maps a facing (a Side) to a direction
+     * (forwards or backwards).  What IS knowable is that a direction command reverses whatever was true before, so the
+     * window watches for the change and this performs the consequence; nothing is stored, so no migration.
      *
-     * **The caller decides that something changed**, not this method: a facing is a Side and a direction is
-     * forwards-or-backwards, and nothing maps one to the other.  The one thing that IS knowable is that a direction
-     * command reverses whatever was true before, so the window watches for the change and this performs the
-     * consequence.  That needs nothing stored, and so no migration.
-     *
-     * **What flipping means on a curve**: not the compass opposite.  A train on a curve joining north to east faces one
-     * of those two, and turning it round makes it face the other - "the other choice" of `facingChoices`, never a
-     * direction this square has no track in.
-     *
-     * **Left alone where the answer is not obvious**: a locomotive that is not placed, a square where neither the railway
-     * nor the setup says which way it faces, and a square offering other than two facings.  Reported by returning null.
+     * **What flipping means on a curve**: not the compass opposite.  A train on a curve joining north to east faces one of
+     * those two, and turning it round makes it face the other - "the other choice" of `facingChoices`.  **Left alone where
+     * the answer is not obvious** (a locomotive that is not placed, a square where neither the railway nor the setup says
+     * which way it faces, a square offering other than two facings): reported by returning null.
      *
      * **AND THE RUNNING LAYOUT** (`DIR-B3`; Adam, 2026-09-06: *"flipFacing should also update the running layout."*):
-     * which copy a locomotive stands on decides where it can go next, and `captureFromLayout` derives the facing from
-     * that copy, so writing only the setup left two records of one fact with no arbiter.  Both writes are here, in one
-     * method, so that they cannot drift.
+     * which copy a locomotive stands on decides where it can go next, and `captureFromLayout` derives the facing from that
+     * copy, so writing only the setup left two records of one fact with no arbiter.  Both writes are here, in one method,
+     * so that they cannot drift.
      *
      * @param locomotive the locomotive that has just been turned
      * @param running the layout to move it on, or null to write the setup only
@@ -3476,16 +3451,10 @@ public class AutonomySession
      *
      * Both directions, because a square can be either end of a caption:
      *
-     *   the square the text sits ON      its caption goes with it.  A caption may legitimately sit
-     *                                    on blank space, so an EMPTY square keeps its caption - but a
-     *                                    square somebody has just deleted is not blank, it is gone,
-     *                                    and the difference is the instruction they gave.
-     *   the station the text is ABOUT    every caption naming it goes.  Text pointing at track that
-     *                                    no longer exists is the orphan this whole design removed.
-     *
-     * Without this the label outlived the track: it stayed where it was, naming nothing, with no way
-     * to get rid of it - and putting any tile back on that square made it look like the new tile's
-     * label, because a caption is drawn wherever its square is.
+     *   the square the text sits ON      its caption goes with it.  An EMPTY square keeps its caption (a caption may
+     *                                    sit on blank space), but a square somebody has just deleted is gone.
+     *   the station the text is ABOUT    every caption naming it goes: text pointing at track that no longer exists is
+     *                                    the orphan this whole design removed.
      *
      * @param tile the square being deleted
      * @return true when something was forgotten, so the caller can say so
@@ -4459,15 +4428,11 @@ public class AutonomySession
      * **The square's own length is the first thing that stretch contains.**  An unmeasured berth square contributes
      * nothing to the total, so the guard under-counts by exactly that square, which is worth a notice.
      *
-     * **Two ways they still disagree:**
-     *
-     * - **Under-reports.** When the arriving edge crosses no switch the guard carries on to the edge before it, and this
-     *   only looks at edges arriving at the reversal square, so a notice can be cleared with the guard still blind.
-     * - **Over-reports.** On an edge that crosses no switch the guard asks only that the edge's own length be positive,
-     *   while this names every unmeasured tile on it.
-     *
-     * Neither is worth chasing without a ruling: closing the first changes what the count means, and Adam has accepted
-     * the count as it stands ("20 warnings sounds OK").
+     * **Two ways they still disagree.**  Under-reports: when the arriving edge crosses no switch the guard carries on to the
+     * edge before it, and this only looks at edges arriving at the reversal square, so a notice can be cleared with the
+     * guard still blind.  Over-reports: on an edge that crosses no switch the guard asks only that the edge's own length be
+     * positive, while this names every unmeasured tile on it.  Neither is worth chasing without a ruling: closing the first
+     * changes what the count means, and Adam has accepted the count as it stands ("20 warnings sounds OK").
      *
      * **The condition is his, and it is what stops this being a nag.** A railway that records no lengths anywhere has
      * decided not to model them; one that records some has started, and these are the ones that matter most.
@@ -5011,25 +4976,20 @@ public class AutonomySession
     /**
      * The squares more than one leg runs OVER - crossings, and double curves whose both roads carry track.
      *
-     * Adam, 2026-09-19: *"For crossings: if its length is set, count that length once in each direction."*  That is what
-     * the reduction already does - `GraphReducer.sumLength` adds every tile of every leg, so a crossing of 3 adds 3 to
-     * each road over it - and it is only right if no leg's PIECE contains it, because a piece's whole length is shared
-     * over its squares and would then be counted on the other road too.  So the square is cut out of every piece and
-     * asked for on its own, exactly as a switch is (MAL-B1).
+     * Adam, 2026-09-19: *"For crossings: if its length is set, count that length once in each direction."*  That is what the
+     * reduction already does (`GraphReducer.sumLength` adds every tile of every leg, so a crossing of 3 adds 3 to each road
+     * over it), and it is only right if no leg's PIECE contains it, because a piece's whole length is shared over its
+     * squares and would then be counted on the other road too.  So the square is cut out of every piece and asked for on
+     * its own, as a switch is (MAL-B1).
      *
-     * **Two ROADS THAT SHARE METAL, not two legs.**  A crossing's roads cross: a train on one is on the other's rail,
-     * which is why one length counts on both and why the square is asked for once.  A DOUBLE CURVE's two curves never
-     * touch (which is why the reduction keys it per road, AUR-B1); it is here only because both curves are measured by
-     * the one number the operator types for that square (OP2-C4).
+     * **Two ROADS THAT SHARE METAL, not two legs.**  A crossing's roads cross, so one length counts on both and the square
+     * is asked for once.  A DOUBLE CURVE's curves never touch (AUR-B1); it is here only because one number the operator
+     * types measures both (OP2-C4).  What makes a square shared is its geometry (`TilePorts` gives it two separate roads)
+     * AND legs actually running over it on more than one of them; a double curve with track on only one road stays
+     * ordinary track.
      *
-     * A square in front of a switch is run over by each leg through that switch and is ordinary track that belongs in a
-     * piece.  What makes a crossing different is its geometry (`TilePorts` gives it two separate roads) AND legs actually
-     * running over it on more than one of them, so a double curve with track on only one road stays ordinary track.
-     *
-     * **Intermediate occurrences only.**  A sensor square ends several legs, which MAL-C2's first-piece-keeps-it rule is
-     * for; it is an endpoint, never track a leg runs over, so counting endpoints here would cut every piece at both ends.
-     *
-     * **Switches are not listed**, because they have their own step and are already cut out.
+     * **Intermediate occurrences only.**  A sensor square ends several legs (MAL-C2's first-piece-keeps-it rule) but is an
+     * endpoint, never track a leg runs over.  **Switches are not listed**: they have their own step and are already cut out.
      *
      * @return the squares, ordered by page, row then column
      */
@@ -6264,13 +6224,13 @@ public class AutonomySession
 
     /**
      * Whether two Points are the same piece of track.
-     * Whether two Points are the same piece of track.
      *
      * A square is several Points - one per side a train can arrive by - so a train standing at BottomMainB would be offered
      * a path to BottomMainB, the copy facing the other way; going there is not a journey.  Asked HERE rather than of the
      * running layout, which cannot answer it: its obvious key is the sensor, and a station and its approach guard
      * legitimately share one and are genuinely two places.  What makes copies copies is the SQUARE they came from, and
      * only the setup knows which square a Point was built from.
+     *
      * @param a a point name from the built graph
      * @param b another
      * @return true when both were built from one square
@@ -6331,6 +6291,7 @@ public class AutonomySession
      * too, and copying the three lines into the second menu is how the two would come to disagree about a square.  A
      * square somebody named is called that, a sensor square is known by the address printed on the diagram, and everything
      * else has only its position.
+     *
      * @param tile the square
      * @return a name for it, never null
      */
@@ -6389,18 +6350,6 @@ public class AutonomySession
     }
 
     /**
-     * Whether trains may turn round on this square.
-     *
-     * Reads the older keys as well as the current one.  A setup authored before the three switches -
-     * station, turn round, parking - said the same things as "terminus" and "reversing", and those are
-     * now DERIVED rather than set: a configuration carrying them would otherwise quietly lose its
-     * termini the first time it was rebuilt.  Nothing is rewritten on disk; the old spelling is simply
-     * still understood, and the first edit to a square writes the new one.
-     *
-     * @param tile
-     * @return
-     */
-    /**
      * Whether every train arriving here must turn round, rather than merely being able to.
      * @param tile
      * @return
@@ -6410,10 +6359,6 @@ public class AutonomySession
         return Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.MUST_REVERSE));
     }
 
-    /**
-     * The squares where turning round is compulsory.
-     * @return
-     */
     /**
      * The squares where a run may change direction, as the path search wants them - reversible squares
      * minus the ones where turning is compulsory.
@@ -6503,6 +6448,10 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * The squares where turning round is compulsory.
+     * @return
+     */
     public Set<TileKey> mandatoryTurnTiles()
     {
         Set<TileKey> out = new LinkedHashSet<>();
@@ -6517,6 +6466,17 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * Whether trains may turn round on this square.
+     *
+     * Reads the older keys as well as the current one: a setup authored before the three switches (station, turn round,
+     * parking) said the same things as "terminus" and "reversing", which are now DERIVED, and a configuration carrying them
+     * would otherwise quietly lose its termini the first time it was rebuilt.  Nothing is rewritten on disk; the first edit
+     * to a square writes the new spelling.
+     *
+     * @param tile
+     * @return
+     */
     public boolean isTurnAround(TileKey tile)
     {
         if (isMustTurnAround(tile)) return true;
@@ -6639,13 +6599,10 @@ public class AutonomySession
      * Lifts what the running layout knows into the active configuration - placements, homes, termini,
      * pace settings - so that what was set while trains were running is what loads next time.
      *
-     * Takes the layout's own JSON rather than the layout, for two reasons: toJSON is the serialization
-     * the legacy path trusted for years, so anything it captures is by definition loadable; and a
-     * string can be tested without a control station.
-     *
-     * Keyed by tile rather than by name, so a Point renamed between sessions keeps its placements.
-     * Points whose names no longer match any tile are dropped silently - they belong to track that no
-     * longer exists, and carrying them forward would place a locomotive on nothing.
+     * Takes the layout's own JSON rather than the layout: toJSON is the serialization the legacy path trusted for years, so
+     * anything it captures is loadable, and a string can be tested without a control station.  Keyed by tile rather than by
+     * name, so a Point renamed between sessions keeps its placements; Points whose names no longer match any tile belong to
+     * track that no longer exists, and are dropped silently.
      *
      * @param layoutJson what the running Layout serialized to
      */
@@ -8540,6 +8497,7 @@ public class AutonomySession
      *
      * Here rather than in a panel, because two doors say this and each must pick the singular or plural message by the
      * same count.
+     *
      * @return the number of problems that would stop the setup being built, or zero when there is no
      *         graph to ask
      */
@@ -9149,7 +9107,6 @@ public class AutonomySession
 
     /**
      * The name of the locomotive this configuration puts on a square.
-     * The name of the locomotive this configuration puts on a square.
      *
      * A placement is an OBJECT - {"name": ..., "speed": ..., "arrivalFunc": ...} - because parseAuto resets whatever a
      * placement omits, so a train's length and functions travel with its name.  Anything wanting only the name has to
@@ -9249,6 +9206,7 @@ public class AutonomySession
      * described the train), so the loop that did it square by square cost 2N full builder constructions on the event
      * thread.  Through the same writer the single-square door uses, so the two cannot come to disagree about what clearing
      * a placement means; only the re-derive differs.
+     *
      * @return how many squares were cleared
      */
     public int clearEveryPlacement()
@@ -9316,12 +9274,10 @@ public class AutonomySession
      * with the facing and the arrival recorded for it; a home, with the way it was set facing; and a name on a square's
      * list.  Everything else about each square is kept as it is.
      *
-     * The loader drops each of these from the railway it builds, and the setup kept them - so every reader of the setup
-     * showed a train the railway did not have, the facing menu and the captions among them, and every save wrote it back.
-     * Taken out here, the setup and the railway agree.
-     *
-     * A run list is not held apart from the placements, so a train taken off its square is off it too.  The timetable and
-     * the paused trains are left to the loader, which drops a name it cannot find from each.
+     * The loader drops each of these from the railway it builds, and the setup kept them, so every reader of the setup
+     * showed a train the railway did not have and every save wrote it back; taken out here, the two agree.  A run list is
+     * not held apart from the placements, so a train taken off its square is off it too.  The timetable and the paused
+     * trains are left to the loader, which drops a name it cannot find from each.
      *
      * @param configuration the configuration's name
      * @param known the names the locomotive database holds
@@ -9523,6 +9479,7 @@ public class AutonomySession
 
     /**
      * The ways a train standing on this square could be pointing.
+     *
      * One per copy the build emits for the square, which is what a train standing there can actually be: the ONWARD side
      * of the route it came in on, not the opposite of the side it entered by.  Those two agree on a straight and differ on
      * a curve (MT-125, NR-7) - a train entering an N-E curve by N leaves by E, and saying it faces S describes a train
@@ -9654,7 +9611,6 @@ public class AutonomySession
     }
 
     /**
-     * The trains the walk above cannot draw, drawn from the places the railway says they lie over (OB-290).
      * The trains the walk above cannot draw, drawn from the places the railway says they lie over (OB-290).
      *
      * The walk follows covered EDGES, and a tail that stops at a fork right behind its platform covers none.  With no
@@ -9869,7 +9825,6 @@ public class AutonomySession
 
     /**
      * The same answer, saying WHICH ROAD of each square is blocked (OB-280).
-     * The same answer, saying WHICH ROAD of each square is blocked (OB-280).
      *
      * **What routing actually refuses: the squares standing trains claim.**  Adam, 2026-09-23: *"grey what routing
      * actually refuses.  if the train doesn't protrude past the switch, there should be nothing else to gray."*  So the
@@ -9885,6 +9840,7 @@ public class AutonomySession
      * place ids name the road, so the tile fades that road and leaves the other at full strength - the band
      * `LayoutLabel.theRoadToFade` draws.  Everywhere else the place is the whole square, and it is returned with no road
      * named, which fades the whole tile: a train on one leg of a turnout blocks the other.
+     *
      * @param running the layout, which is what knows where the trains are
      * @return each blocked square, with the routes of it that are blocked - none named where the whole square is
      */
@@ -10875,18 +10831,6 @@ public class AutonomySession
     }
 
     /**
-     * One of a Point's operational properties, in the active configuration.
-     *
-     * Kept per configuration rather than beside the track, because these are what a configuration IS:
-     * the same railway with different rules about where trains may stand and turn.  The keys are the
-     * ones parseAuto reads, so nothing has to translate them on the way out.
-     *
-     * @param tile
-     * @param key terminus, reversing, active, maxTrainLength, speedMultiplier, priority, home,
-     *        excludedLocs, excludedLocsMode
-     * @param value the value, or null to remove the property entirely
-     */
-    /**
      * Gives a square a home locomotive, taking that locomotive's home away from anywhere else.
      *
      * ONE locomotive, ONE station.  The running layout enforces this (setHomeLocomotive clears the same locomotive from
@@ -11472,6 +11416,18 @@ public class AutonomySession
         return out;
     }
 
+    /**
+     * One of a Point's operational properties, in the active configuration.
+     *
+     * Kept per configuration rather than beside the track, because these are what a configuration IS:
+     * the same railway with different rules about where trains may stand and turn.  The keys are the
+     * ones parseAuto reads, so nothing has to translate them on the way out.
+     *
+     * @param tile
+     * @param key terminus, reversing, active, maxTrainLength, speedMultiplier, priority, home,
+     *        excludedLocs, excludedLocsMode
+     * @param value the value, or null to remove the property entirely
+     */
     public void setPointProperty(TileKey tile, String key, Object value)
     {
         writePointProperty(tile, key, value);
