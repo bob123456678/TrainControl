@@ -72,3 +72,4 @@ pushed: `git checkout <tag>` to look, `git reset --hard <tag>` on a branch to go
 | `fr136-phase1c` | `5d9f42d6` | Phase 1c: the tracker is a database |
 | `fr136-phase2` | `1928cead` | Phase 2 (the four giants) and Phase 1b (battery 104) |
 | `fr136-phase6-tier1-net` | `f46174ee` | Phase 6: the safety net under TrainControlUI's Tier 1 |
+| `fr136-phase1a-sweep` | `496f4f99` | Phase 1a's follow-up (every test init skips the station timeout) with the Tier 1 net (battery 105) |
