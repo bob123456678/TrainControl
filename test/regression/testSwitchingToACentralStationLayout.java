@@ -220,9 +220,11 @@ public class testSwitchingToACentralStationLayout
             "something selects the track diagram tab by index again, so it reaches straight past "
             + "the greying - and assumes the diagram is tab 1 while it is at it");
 
-        assertTrue(count(ui, "showLayoutTab()") >= 9,
-            "fewer doors go through showLayoutTab than the nine that were converted, so one has "
-            + "found another way to open the tab");
+        // Seven since OB-359 took the legacy editor and Edit Current Page off the menu: two of the nine
+        // converted doors went with them.
+        assertTrue(count(ui, "showLayoutTab()") >= 7,
+            "fewer doors go through showLayoutTab than the seven left of the nine that were converted, "
+            + "so one has found another way to open the tab");
 
         // And the panel is emptied, not merely greyed.
         assertTrue(ui.contains("clearLayoutPanel();"),
@@ -234,6 +236,8 @@ public class testSwitchingToACentralStationLayout
     /**
      * How many test classes build a model without a sandbox today - see the ratchet above.
      *
+     * **54 since 2026-10-17, down from 55: `testRouteInventory` opens a sandbox before it builds its model (C6).**
+     *
      * **55 since 2026-09-08, down from 56, and the drop is the point of a ratchet.** The first full
      * battery in a while found this at 59: four classes had joined the population since it was pinned
      * - `testATrainCoversTheTrackBehindIt`, `testATrainTooLongIsRefusedTheBerth`,
@@ -244,7 +248,7 @@ public class testSwitchingToACentralStationLayout
      * opened a sandbox inside ONE test method, which reads as careful and is not the same thing - `init`
      * runs in `@BeforeClass` and had already loaded his railway by then.
      */
-    private static final int MODELS_WITHOUT_A_SANDBOX = 55;
+    private static final int MODELS_WITHOUT_A_SANDBOX = 54;
 
     /**
      * WHICH classes, not just how many (VAL-C8).
@@ -294,7 +298,6 @@ public class testSwitchingToACentralStationLayout
         "testParseCS3Routes.java",
         "testRenameRoundTripThroughTheUIPath.java",
         "testReturnHomeOnRealLayout.java",
-        "testRouteInventory.java",
         "testRoutePicking.java",
         "testRouteReachesTheRails.java",
         "testRouteRoundTrip.java",

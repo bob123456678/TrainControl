@@ -223,9 +223,10 @@ public class AutonomyMenu extends JMenu
      */
     private void guardWhileRunning(JMenuItem documentation)
     {
-        if (!ui.isAutonomyBusy()) return;
+        // A ROUTE TOO, saying so (`TrainControlUI.aRunHoldsTheSetup`)
+        if (!ui.aRunHoldsTheSetup()) return;
 
-        String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNotWhileRunning"));
+        String why = AutonomyEditorPanel.wrapped(ui.whyTheSetupIsHeld("autosetup.ui.tooltipNotWhileRunning"));
 
         for (int i = 0; i < getMenuComponentCount(); i++)
         {
@@ -389,6 +390,8 @@ public class AutonomyMenu extends JMenu
 
                 choice.addActionListener(e ->
                 {
+                    if (actions.refusedWhileRunning()) return;
+
                     actions.setSelectedConfiguration(name);
                     actions.load(name, true);
 
@@ -757,9 +760,9 @@ public class AutonomyMenu extends JMenu
      */
     private void deleteEverything(AutonomySession session)
     {
-        if (ui.isAutonomyBusy())
+        if (ui.aRunHoldsTheSetup())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            JOptionPane.showMessageDialog(ui, ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
             return;
         }
 
@@ -820,12 +823,12 @@ public class AutonomyMenu extends JMenu
                 // made right-clicks on that page's stations do nothing, while the layout carried on
                 // routing trains to those very stations.  The interface said the page was out of
                 // autonomy and the railway disagreed.
-                if (ui.isAutonomyBusy())
+                if (ui.aRunHoldsTheSetup())
                 {
                     box.setSelected(!box.isSelected());
 
                     JOptionPane.showMessageDialog(ui,
-                        I18n.t("autolayout.errorCannotEditWhileRunning"));
+                        ui.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
                     return;
                 }

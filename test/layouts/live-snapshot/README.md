@@ -138,6 +138,7 @@ not fix it. Name the square.
 - `core.testALockReachesTheRailBeingRunOver`
 - `ui.testBulkToolsHoldsTheWholeLayoutTools`
 - `ui.testOnlyAStationHoldsAnotherBack`
+- `core.testTheArrowsTellTheWholeStory`
 - `ui.testReturnHomeShowsItIsWorking`
 - `ui.testTheEditorNamesItsShortcuts`
 - `regression.testAPassingTrainMayStandAcrossThePoints`
@@ -146,6 +147,7 @@ not fix it. Name the square.
 - `regression.testTheTailCanBeGivenInTheEditor`
 - `regression.testPathTypeRedrawsTheTestInTheEditor`
 - `ui.testYourOwnRoutesToggleWithoutASync`
+- `ui.testTheRouteListShowsWhatRuns`
 - `ui.testTheLengthPromptHasTheKeyboard`
 - `core.testATailPastASwitchIsAskedAbout`
 - `core.testATrainIsPutOnlyWhereItCanStart`
@@ -154,6 +156,9 @@ not fix it. Name the square.
 - `regression.testANewStraightJoinsTheTrackBesideIt`
 - `regression.testTheImportDoorReadsAnOldFile`
 - `regression.testNoSetupEditDuringARun`
+- `regression.testALocomotiveNotInTheDatabaseLeavesTheSetup`
+- `regression.testReturnHomeRightClickPlacesTheTrainsAtHome`
+- `regression.testNoSetupEditWhileARouteRuns`
 - `regression.testTheAutoTabWaitsForTheTrains`
 - `regression.testDeleteAsksWhichConfiguration`
 - `core.testAStopRouteStandsAlone`

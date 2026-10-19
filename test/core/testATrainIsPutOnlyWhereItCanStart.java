@@ -203,9 +203,13 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         assertFalse(body.contains("Random"), "the right-click Place still draws the copy at random (OB-296)");
 
-        // AND THE ITEM IS OFFERED ON THE ACTION'S OWN QUESTION (ADU2-C2): every copy the train could leave by.
-        assertTrue(menu.contains("menuItem.setEnabled(!departable.isEmpty());"), "the right-click Place is greyed on a"
-            + " list the action no longer chooses from - the guard and the affordance ask different questions (ADU2-C2)");
+        // AND THE ITEM IS OFFERED ON THE ACTION'S OWN QUESTION (ADU2-C2): every copy the train could leave by - and
+        // where none can, offered still and placed where the build would, as the editor's Place is (OB-350).
+        assertFalse(menu.contains("menuItem.setEnabled(!departable.isEmpty());"), "the right-click Place is greyed where"
+            + " no copy can leave, while the editor's Place places there (OB-350)");
+
+        assertTrue(body.contains("copyWithNoFacing(station, running)"), "the right-click Place does nothing where no copy"
+            + " can leave: the action is handed an empty list (ADU2-C2, OB-350)");
 
         assertTrue(menu.contains("placeSomewhereLegal(offered)"), "the right-click Place is offered over copies it is then"
             + " not handed: with every copy it could leave by barred, the action gets an empty list and does nothing"

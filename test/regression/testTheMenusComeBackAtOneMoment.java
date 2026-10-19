@@ -181,23 +181,22 @@ public class testTheMenusComeBackAtOneMoment
     /**
      * "Combine linked pages" sits immediately after "Duplicate Current Page" (Adam, 2026-09-10).
      *
-     * **`add()` appends.** The item is mounted in code - the menu bar is generated, so everything the
-     * diagram work added to this window is hand-written - and appending put it at the BOTTOM of Manage
-     * Pages: past the divider and past Delete, in the group the menu's own gaps say is about destroying
-     * a page. Combining pages is the same kind of act as duplicating one.
+     * **In the form since 3.0.3's cleanup** (`combineLinkedPagesMenuItem`, Adam's `a4dac3dd`), where it was
+     * mounted in code before and appending put it at the BOTTOM of Manage Pages: past the divider and past
+     * Delete, in the group the menu's own gaps say is about destroying a page.  Combining pages is the
+     * same kind of act as duplicating one.
      *
      * **Found by searching for the item rather than by index**, which is the reason `mountEditPageMenu`
      * gives about this same menu: an index is a fact about the generated form and moves the next time
-     * somebody adds an item in the designer. It also has to survive two removals and a separator sweep
-     * that shift every index below them at runtime, which is why the test drives the real start-up
-     * rather than calling the mounting method on a fresh menu.
+     * somebody adds an item in the designer.  The test drives the real start-up, which is what the menu
+     * looks like to the user.
      *
      * **And the two adjacent claims are both needed.** "After Duplicate" alone passes for an item at the
      * bottom of a menu whose last entry happens to be Duplicate; "not last" alone passes for an item
      * anywhere in the middle. Together they say one position.
      *
-     * MUTATION: put `modifyLocalLayoutMenu.add(combinePagesItem)` back in `addCombinePagesItem` and this
-     * fails, naming where the item landed.
+     * MUTATION: move `modifyLocalLayoutMenu.add(combineLinkedPagesMenuItem)` below Delete in
+     * `initComponents` and this fails, naming where the item landed.
      */
     @Test
     public void testCombineSitsRightAfterDuplicateCurrentPage() throws Exception
@@ -231,7 +230,7 @@ public class testTheMenusComeBackAtOneMoment
             final org.traincontrol.marklin.MarklinControlStation connected = model;
             final org.traincontrol.gui.TrainControlUI window = ui;
 
-            // The real start-up, which is what mounts the item and then takes two others off the menu.
+            // The real start-up, the menu as the user sees it.
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 try
@@ -247,12 +246,12 @@ public class testTheMenusComeBackAtOneMoment
             javax.swing.JMenu manage = field(ui, "modifyLocalLayoutMenu", javax.swing.JMenu.class);
 
             Object duplicate = field(ui, "duplicateLayoutMenuItem", Object.class);
-            Object combine = field(ui, "combinePagesItem", Object.class);
+            Object combine = field(ui, "combineLinkedPagesMenuItem", Object.class);
 
             assertNotNull(manage, "the Manage Pages menu is not there, so this proves nothing");
             assertNotNull(duplicate, "Duplicate Current Page is not there");
             assertNotNull(combine, "Combine linked pages was never mounted, so its place cannot be "
-                + "asserted - mountAutonomyControls is what adds it");
+                + "asserted - the form adds it");
 
             int at = indexOf(manage, combine);
             int after = indexOf(manage, duplicate);
@@ -499,23 +498,23 @@ public class testTheMenusComeBackAtOneMoment
         }
     }
 
-    /** Whether text fits on one tooltip line at the width the editor wraps at. */
+    /**
+     * Whether text fits on one tooltip line, by the editor's own rule (`AutonomyEditorPanel.fitsOnOneLine`), so the claim
+     * and the wrapping cannot disagree: a copy of it at 320 pixels went red when OB-358 made the rule measure in the
+     * screen's pixels.
+     */
     private static boolean fitsOnALine(String text)
     {
-        java.awt.Font font = javax.swing.UIManager.getFont("ToolTip.font");
-
-        if (font == null) font = new java.awt.Font(java.awt.Font.DIALOG, java.awt.Font.PLAIN, 12);
-
-        java.awt.Graphics2D scratch =
-            new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics();
-
         try
         {
-            return scratch.getFontMetrics(font).stringWidth(text) <= 320;
+            java.lang.reflect.Method rule = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
+            rule.setAccessible(true);
+
+            return (Boolean) rule.invoke(null, text);
         }
-        finally
+        catch (ReflectiveOperationException e)
         {
-            scratch.dispose();
+            throw new AssertionError("the editor's one-line rule is not where this claim looks for it", e);
         }
     }
 }

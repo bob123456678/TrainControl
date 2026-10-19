@@ -141,6 +141,9 @@ public class testTheRefusalsAreAskedAtTheDoors
 
     private static final String AUTONOMY = "refuseWhileAutonomyRunning(";
 
+    /** The same for a door that edits the setup or the diagram, which a route running holds as well. */
+    private static final String SETUP = "refuseWhileARunHoldsTheSetup(";
+
     /**
      * The one gate every door that sends a train asks since 2026-09-29 (Adam: *"can all the checks go through a single
      * door?"*) - the editor, the setup and the power, in `whyNoTrainMayBeSent`.
@@ -161,12 +164,12 @@ public class testTheRefusalsAreAskedAtTheDoors
             "a timetable starts trains, and an editor holds the diagram they would run on"},
         {"requestReturnToHome", GATE,
             "Return Home is a timetable by another name and starts trains the same way"},
-        {"switchCSLayoutMenuItemActionPerformed", AUTONOMY + "|" + EDITOR,
+        {"switchCSLayoutMenuItemActionPerformed", SETUP + "|" + EDITOR,
             "it replaces the whole diagram - during a run the capture is skipped BECAUSE trains are "
             + "moving, the stop controls go, and runLocomotives keeps driving"},
-        {"chooseLocalDataFolderMenuItemActionPerformed", AUTONOMY + "|" + EDITOR,
+        {"chooseLocalDataFolderMenuItemActionPerformed", SETUP + "|" + EDITOR,
             "swapping the layout folder replaces the diagram, for the same reason"},
-        {"initializeLocalLayoutMenuItemActionPerformed", AUTONOMY,
+        {"initializeLocalLayoutMenuItemActionPerformed", SETUP,
             "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
 
         // AND THE REST, which were longhand at four doors before the two methods collected them.
@@ -184,11 +187,11 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
         {"syncFullLocStateMenuItemActionPerformed", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
-        {"deleteLayoutMenuItemActionPerformed", AUTONOMY + "|" + EDITOR,
+        {"deleteLayoutMenuItemActionPerformed", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
-        {"duplicateOrRenameCurrentLayout", AUTONOMY + "|" + EDITOR,
+        {"duplicateOrRenameCurrentLayout", SETUP + "|" + EDITOR,
             "renaming a page moves what the setup and the editor both point at"},
-        {"combineLinkedPages", AUTONOMY + "|" + EDITOR,
+        {"combineLinkedPages", SETUP + "|" + EDITOR,
             "combining rewrites several pages into one"},
         {"AddRouteButtonActionPerformed", EDITOR,
             "a route is part of the diagram the editor holds"},

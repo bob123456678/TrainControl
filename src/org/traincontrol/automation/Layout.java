@@ -13731,7 +13731,23 @@ public class Layout
      */
     public HomeStaging.Outcome triageReturnToHome()
     {
-        return HomeStaging.snapshot(this).triage();
+        return triageReturnToHome(null);
+    }
+
+    /**
+     * The same, and the paused trains standing away from their homes, taken from the one snapshot so the outcome and the
+     * trains it names cannot differ (OB-355).
+     *
+     * @param pausedAway receives those trains, or null to ask for none
+     * @return the outcome, or null when only a plan can say more
+     */
+    public HomeStaging.Outcome triageReturnToHome(List<Locomotive> pausedAway)
+    {
+        HomeStaging staging = HomeStaging.snapshot(this);
+
+        if (pausedAway != null) pausedAway.addAll(staging.getPausedAwayFromHome());
+
+        return staging.triage();
     }
 
     /**
@@ -14422,6 +14438,10 @@ public class Layout
         // The trains placed on a copy that is no station, warned about once every copy is read (GUI4-C5).
         List<String[]> placedOffAStation = new ArrayList<>();
 
+        // ONE LINE PER STATION (OB-362): the copies a square builds into, one per direction, all carry its maximum, and
+        // the log named each copy - "St60 (eastbound)", "St60 (westbound)" - for one setting.  Said once, by the place.
+        final Set<String> maximumsSaid = new HashSet<>();
+
         // Add points
         points.forEach(pnt ->
         { 
@@ -14670,8 +14690,8 @@ public class Layout
                             // An exclusion that vanishes is a safety restriction the operator believes
                             // is in force: a locomotive sent to a platform it was barred from. The
                             // drop is right - one bad entry must not take the layout out of service -
-                            // but it was silent, and the next save writes the configuration back
-                            // without it, so the loss is permanent as well as invisible.
+                            // but it was silent.  The load door takes the name out of the setup as well,
+                            // and logs it there (OB-349).
                             Locomotive excluded = control.getLocByName(locName);
 
                             if (excluded != null) excludedLocs.add(excluded);
@@ -14701,12 +14721,15 @@ public class Layout
                     { 
                         layout.getPoint(point.getString("name")).setMaxTrainLength(point.getInt("maxTrainLength"));
 
-                        if (point.getInt("maxTrainLength") > 0)
+                        String place = placeNameOf(layout.getPoint(point.getString("name")));
+
+                        if (point.getInt("maxTrainLength") > 0
+                            && maximumsSaid.add(place + "\u0000" + point.getInt("maxTrainLength")))
                         {
                             control.logf(
                                 "autolayout.infoSetMaxTrainLength",
                                 point.getInt("maxTrainLength"),
-                                point.getString("name")
+                                place
                             );
                         }
                     }
@@ -15075,7 +15098,9 @@ public class Layout
                             //
                             // The placement is simply not made: everything else about the point - its
                             // name, its home, its exclusions, its maximum, the track - is loaded as
-                            // written, and the next save writes the file back without the phantom.
+                            // written.  A save does not take the name out of the setup: the load door
+                            // does, before it builds (`AutonomyViewerPanel.loadPrepared`, OB-349), so this
+                            // arm is reached by a configuration handed to parseAuto some other way.
                             control.logf("autolayout.warnPlacedLocomotiveNotInDatabase", loc,
                                 point.getString("name"));
                         }

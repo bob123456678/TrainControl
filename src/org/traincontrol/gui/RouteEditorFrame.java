@@ -844,6 +844,9 @@ public class RouteEditorFrame extends JFrame
 
         enabledBox.addActionListener(e -> showSensorIfAutomatic());
 
+        // AND THE CONDITIONS SAY WHETHER THEY ARE ASKED AT ALL (Adam, 2026-10-18)
+        enabledBox.addActionListener(e -> updateReadsAs());
+
         showSensorIfAutomatic();
 
         return row;
@@ -1547,13 +1550,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Whether auto-fire is ticked, for the same test.
+     * Whether auto-fire is ticked, for the same test - ticked as a click ticks it, so what listens to the box hears it.
      *
      * @param on whether the route fires itself
      */
     public void setAutoFireForTest(boolean on)
     {
-        enabledBox.setSelected(on);
+        if (enabledBox.isSelected() != on) enabledBox.doClick();
     }
 
     /**
@@ -1773,7 +1776,19 @@ public class RouteEditorFrame extends JFrame
      */
     public JLabel conditionCellForTest(int line)
     {
-        return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(line, 4), line, 4);
+        return conditionCellForTest(line, 4);
+    }
+
+    /**
+     * For tests: any cell of a condition line as the table paints it, tooltip included (FR-141).
+     *
+     * @param line which line
+     * @param column which column
+     * @return the rendered label
+     */
+    public JLabel conditionCellForTest(int line, int column)
+    {
+        return (JLabel) conditions.prepareRenderer(conditions.getCellRenderer(line, column), line, column);
     }
 
     /** The colour "Reads as" gives on, straight and green - the settings that let a train go. */
@@ -1845,21 +1860,54 @@ public class RouteEditorFrame extends JFrame
      */
     private void updateReadsAs()
     {
+        String reading = readingOfTheConditions();
+
+        // CHECKED ONLY WHEN THE ROUTE FIRES ITSELF (Adam, 2026-10-18): a sentence in red saying these conditions are only
+        // evaluated when Automatically Fire is on - no warning triangle, which the font does not draw.  A route run by
+        // hand ignores its conditions; only its own sensor's trigger asks them, and that only while Automatically Fire is on.
+        boolean unasked = !enabledBox.isSelected()
+            && (conditionsEditable ? conditionCount() > 0 : conditionsAsFound != null);
+
+        if (!unasked)
+        {
+            readsAs.setText(reading);
+            return;
+        }
+
+        String below = reading.startsWith("<html>") && reading.endsWith("</html>")
+            ? reading.substring("<html>".length(), reading.length() - "</html>".length()) : marked(reading.trim());
+
+        readsAs.setText("<html><span style='color:#C62828'>" + marked(I18n.t("route.ui.frameConditionsNeedAutomaticFire"))
+            + "</span>" + (below.isEmpty() ? "" : "<br>" + below) + "</html>");
+    }
+
+    /**
+     * Whether the conditions' warning is showing: there are conditions and Automatically Fire is off.
+     *
+     * @return true while it is shown
+     */
+    public boolean warnsTheConditionsAreUnaskedForTest()
+    {
+        return readsAs.getText().contains(I18n.t("route.ui.frameConditionsNeedAutomaticFire"));
+    }
+
+    /**
+     * How the conditions read, in words, as `updateReadsAs` shows them under the warning when there is one.
+     *
+     * @return the text, markup or plain, or a blank
+     */
+    private String readingOfTheConditions()
+    {
         if (!conditionsEditable)
         {
             String text = conditionsAsFound == null ? ""
                 : NodeExpression.toTextRepresentation(conditionsAsFound,
                     parent == null ? null : parent.getModel());
 
-            readsAs.setText(I18n.f("route.ui.frameConditionsNotShown", text));
-            return;
+            return I18n.f("route.ui.frameConditionsNotShown", text);
         }
 
-        if (conditions.rows.size() < 2)
-        {
-            readsAs.setText(" ");
-            return;
-        }
+        if (conditions.rows.size() < 2) return " ";
 
         // What the outline means, in words and brackets.
         //
@@ -1869,8 +1917,8 @@ public class RouteEditorFrame extends JFrame
         // to be told.
         // BOLD WORDS AND COLOURED SETTINGS (Adam, 2026-09-14: "bold the operators, make on/straight/green green
         // and off/turn/red red").  As markup, so everything the conditions carry is escaped on the way in.
-        readsAs.setText("<html>" + I18n.f("route.ui.frameReadsAs",
-            describe(ConditionOutline.toExpression(conditions.rows))) + "</html>");
+        return "<html>" + I18n.f("route.ui.frameReadsAs",
+            describe(ConditionOutline.toExpression(conditions.rows))) + "</html>";
     }
 
     /**
@@ -2195,7 +2243,11 @@ public class RouteEditorFrame extends JFrame
             public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
                 boolean selected, boolean focused, int row, int column)
             {
-                java.awt.Component out = was.getTableCellRendererComponent(which, value, selected,
+                // A TRAIN'S SENSOR SAYS IT IS ONE (FR-141): shown, not stored, so the cell still holds and edits the number
+                Object shown = which instanceof ConditionTable
+                    ? ((ConditionTable) which).shownAs(row, column, value) : value;
+
+                java.awt.Component out = was.getTableCellRendererComponent(which, shown, selected,
                     focused, row, column);
 
                 boolean editable = which.getModel().isCellEditable(row, column);
@@ -2236,9 +2288,14 @@ public class RouteEditorFrame extends JFrame
                 String refused = which instanceof CommandTable
                     ? ((CommandTable) which).whyWrong(row) : null;
 
+                // And what a cell means where its column's name does not say (FR-141), which is not a refusal and
+                // leaves the ink alone
+                String explained = which instanceof ConditionTable
+                    ? ((ConditionTable) which).explains(row, column) : null;
+
                 if (out instanceof javax.swing.JComponent)
                 {
-                    ((javax.swing.JComponent) out).setToolTipText(refused);
+                    ((javax.swing.JComponent) out).setToolTipText(refused != null ? refused : explained);
                 }
 
                 if (!selected)
@@ -2530,6 +2587,10 @@ public class RouteEditorFrame extends JFrame
             // "Train X is standing at sensor 21" - the one kind that is a fact rather than an order,
             // which is why it is only ever a condition.
             case AUTO_LOCOMOTIVE: return I18n.f("route.reads.trainAt",
+                marked(row.getTarget()), marked(row.getSetting()));
+
+            // And the same fact denied (FR-141)
+            case AUTO_LOCOMOTIVE_NOT_AT: return I18n.f("route.reads.trainNotAt",
                 marked(row.getTarget()), marked(row.getSetting()));
 
             // Stop, all functions off, lights on: nothing to name and nothing to set, so the kind's
@@ -2843,6 +2904,7 @@ public class RouteEditorFrame extends JFrame
             case LOCOMOTIVE_DIRECTION:
             case FUNCTION:
             case AUTO_LOCOMOTIVE:
+            case AUTO_LOCOMOTIVE_NOT_AT:
                 if (parent.getModel().getLocByName(target) == null)
                 {
                     wrong.add(I18n.f("route.ui.frameNoSuchLocomotive", target));
@@ -2861,7 +2923,7 @@ public class RouteEditorFrame extends JFrame
 
                 // AND THE SENSOR an "is at" condition watches, its setting (GSR-C1): saved as 0 or nothing, the condition
                 // can never be true and the route never fires - FEEDBACK's own check, below
-                if (row.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE && numberOr(row.getSetting(), 0) <= 0)
+                if (CommandRow.asksWhereATrainIs(row.getKind()) && numberOr(row.getSetting(), 0) <= 0)
                 {
                     wrong.add(I18n.f("route.ui.frameNotASensor", row.getSetting() == null ? "" : row.getSetting()));
                 }
@@ -4103,7 +4165,7 @@ public class RouteEditorFrame extends JFrame
                 if (kind == CommandRow.Kind.LOCOMOTIVE_SPEED
                     || kind == CommandRow.Kind.LOCOMOTIVE_DIRECTION
                     || kind == CommandRow.Kind.FUNCTION
-                    || kind == CommandRow.Kind.AUTO_LOCOMOTIVE)
+                    || CommandRow.asksWhereATrainIs(kind))
                 {
                     return chooseFrom(withTheCellsOwn(parent.getModel().getLocList(),
                         rows.get(row).getRow().getTarget()));
@@ -4248,6 +4310,45 @@ public class RouteEditorFrame extends JFrame
         boolean isJoinerRow(int line)
         {
             return line >= 0 && line < conditions.rows.size() && conditions.rows.get(line).isJoiner();
+        }
+
+        /**
+         * What a cell shows, where that is more than what it holds (FR-141).
+         *
+         * A train-at-a-sensor line's setting is the sensor's ADDRESS, and a bare number under "Setting" did not say so -
+         * Adam: *"setting" in this cas is/should be the sensor address, can it be made clearer?*  Only the painting
+         * changes: the cell's value, its editor and what Save reads are still the number.
+         *
+         * @param line the row
+         * @param column the column
+         * @param value what the cell holds
+         * @return what to paint
+         */
+        Object shownAs(int line, int column, Object value)
+        {
+            return column == 6 && asksWhereATrainIs(line)
+                ? I18n.f("route.ui.frameSensorAddress", String.valueOf(value)) : value;
+        }
+
+        /**
+         * The tooltip a cell carries to say what it means, or null for none (FR-141).
+         *
+         * @param line the row
+         * @param column the column
+         * @return the explanation
+         */
+        String explains(int line, int column)
+        {
+            return column == 6 && asksWhereATrainIs(line) ? I18n.t("route.ui.frameSensorAddressTip") : null;
+        }
+
+        private boolean asksWhereATrainIs(int line)
+        {
+            if (line < 0 || line >= rows.size() || rows.get(line).isJoiner()) return false;
+
+            CommandRow term = CommandRow.of(rows.get(line).getCommand());
+
+            return term != null && CommandRow.asksWhereATrainIs(term.getKind());
         }
 
         private final List<ConditionOutline.Row> rows = new ArrayList<>();
@@ -4430,14 +4531,21 @@ public class RouteEditorFrame extends JFrame
                     // whatever - the dropdown offered the kind, the row threw on rebuild, and the
                     // cell snapped back with no message.  The first locomotive on the roster is a
                     // starting point somebody can then change, which is what every other kind gets.
-                    String starting = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+                    String starting = CommandRow.asksWhereATrainIs(became)
                         ? firstLocomotive() : (CommandRow.hasTarget(became) ? "1" : "");
 
-                    String settingFor = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+                    String settingFor = CommandRow.asksWhereATrainIs(became)
                         ? "1" : CommandRow.defaultSettingFor(became);
 
                     edited = new CommandRow(became, starting, settingFor,
                         null, CommandRow.defaultDelayFor(became));
+
+                    // AND BETWEEN AT AND NOT AT (FR-141), which are one condition asked either way round: the line keeps
+                    // its train and its sensor, and only the question turns round.
+                    if (CommandRow.asksWhereATrainIs(became) && CommandRow.asksWhereATrainIs(term.getKind()))
+                    {
+                        edited = new CommandRow(became, term.getTarget(), term.getSetting());
+                    }
 
                     // EXCEPT BETWEEN SWITCH AND SIGNAL, which are one command in two vocabularies (2026-09-14):
                     // the line keeps its address and says the same setting in the other words - turn is red,
@@ -4636,12 +4744,12 @@ public class RouteEditorFrame extends JFrame
 
                 if (words != null) return chooseFrom(words);
 
-                if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE) return digitsOnly();
+                if (CommandRow.asksWhereATrainIs(term.getKind())) return digitsOnly();
             }
 
             if (column == 5)
             {
-                if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE)
+                if (CommandRow.asksWhereATrainIs(term.getKind()))
                 {
                     return chooseFrom(withTheCellsOwn(parent.getModel().getLocList(), term.getTarget()));
                 }

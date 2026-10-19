@@ -290,6 +290,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     private static final String PREF_CAPTION_MODE = "autonomyEditorCaptionMode";
 
+    /** Whether the diagram's text labels are shown, remembered beside the caption mode (FR-133). */
+    private static final String PREF_TEXT_LABELS = "autonomyEditorTextLabels";
+
     /** Captions name the station.  The default, because this window is where a railway is named. */
     public static final int CAPTIONS_STATIONS = 0;
 
@@ -299,18 +302,14 @@ public class AutonomyEditorPanel extends JPanel
     /** Captions name the locomotive that lives there (MT-261 ruling 2, R28-C3). */
     public static final int CAPTIONS_HOMES = 2;
 
-    /** No captions at all - what the editor's Text Labels box used to say when unticked. */
+    /** No captions at all - the option the dropdown calls Hide (FR-133). */
     public static final int CAPTIONS_NONE = 3;
 
     /**
-     * The text written on the diagram, and no captions (Adam, 2026-09-23, OB-272).
-     *
-     * *"make text labels be a dedicated setting, and hide the text labels unless it is selected"*, and, asked which
-     * options Control+L steps through: *"the dropdown's 4, plus add an option to the dropdown that shows the labels
-     * only"*.  Appended rather than put before None, because the index IS the remembered mode: anybody who had None
-     * remembered keeps None.
+     * What an earlier version remembered for its fifth option, Labels Only (OB-272).  It opens as Station Names with the
+     * Text Labels box ticked (FR-133); the dropdown has no such option any more.
      */
-    public static final int CAPTIONS_LABELS = 4;
+    private static final int LEGACY_LABELS_ONLY = 4;
 
     /**
      * Whether captions name each square's HOME locomotive (MT-261 ruling 2).
@@ -345,6 +344,13 @@ public class AutonomyEditorPanel extends JPanel
      * were drawn; remembered like Track Lengths; the track diagram's own trains are not this switch's.
      */
     private final JCheckBox showTrains = new JCheckBox(I18n.t("autosetup.ui.btnShowTrains"), true);
+
+    /**
+     * Shows the writing on this editor's diagram, or hides it (FR-133; Adam, 2026-10-17: *"move the "labels only"
+     * setting currently in the dropdown to a Text Labels checkbox below Show Trains."*).  Off by default and remembered
+     * beside the caption mode; the caption dropdown decides the station captions and this box only the text.
+     */
+    private final JCheckBox showText = new JCheckBox(I18n.t("layout.ui.textLabels"), false);
 
     /**
      * The squares it highlights, worked out once per refresh rather than once per square painted - null until asked.
@@ -408,8 +414,7 @@ public class AutonomyEditorPanel extends JPanel
         I18n.t("autosetup.ui.captionsStations"),
         I18n.t("autosetup.ui.captionsParked"),
         I18n.t("autosetup.ui.captionsHomes"),
-        I18n.t("autosetup.ui.captionsNone"),
-        I18n.t("autosetup.ui.captionsLabels")
+        I18n.t("autosetup.ui.captionsNone")
     });
 
 
@@ -860,8 +865,23 @@ public class AutonomyEditorPanel extends JPanel
         // between them they could describe states this control cannot be in - both on, or a caption
         // choice with the text switched off - and migrating a contradiction produces a window that
         // disagrees with itself on the first open.
-        captions.setSelectedIndex(Math.max(CAPTIONS_STATIONS, Math.min(CAPTIONS_LABELS,
-            VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS))));
+        int rememberedMode = VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS);
+        boolean rememberedText = VIEW_PREFS.getBoolean(PREF_TEXT_LABELS, false);
+
+        // A remembered Labels Only opens as Station Names, the default, with the Text Labels box ticked, and is stored
+        // that way so the box is not ticked again at every open (FR-133).
+        if (rememberedMode == LEGACY_LABELS_ONLY)
+        {
+            rememberedMode = CAPTIONS_STATIONS;
+            rememberedText = true;
+
+            VIEW_PREFS.putInt(PREF_CAPTION_MODE, rememberedMode);
+            VIEW_PREFS.putBoolean(PREF_TEXT_LABELS, rememberedText);
+        }
+
+        captions.setSelectedIndex(Math.max(CAPTIONS_STATIONS, Math.min(CAPTIONS_NONE, rememberedMode)));
+
+        showText.setSelected(rememberedText);
 
         captions.setFocusable(false);
 
@@ -870,14 +890,6 @@ public class AutonomyEditorPanel extends JPanel
 
         showParkedTrains.setFocusable(false);
         showHomeLocomotives.setFocusable(false);
-
-        // Seeded from what was restored, so the text switch turned off from Labels Only comes back to
-        // the mode this window opened with rather than to the default (RGD-C3, OB-272).  The listener
-        // below is added after this and does not fire for the restore.
-        if (isACaptionMode(captions.getSelectedIndex()))
-        {
-            lastNamedCaptionMode = captions.getSelectedIndex();
-        }
 
         applyCaptionMode();
 
@@ -900,6 +912,10 @@ public class AutonomyEditorPanel extends JPanel
         // Nor this one (OB-019)
         showTrains.setFocusable(false);
         showTrains.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowTrains")));
+
+        // Nor the Text Labels box under it (OB-019; FR-133)
+        showText.setFocusable(false);
+        showText.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowTextLabels")));
 
         // NOR THE DIRECTIONS BOX, which the window mounts in its Toggle visibility box (OB-200), for the same reason
         directions.setFocusable(false);
@@ -939,16 +955,17 @@ public class AutonomyEditorPanel extends JPanel
             if (window != null) window.repaint();
         });
 
+        // The diagram's text follows the box and nothing else (FR-133): the dropdown below decides the captions.
+        showText.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(PREF_TEXT_LABELS, showText.isSelected());
+
+            applyTextLabels();
+        });
+
         captions.addActionListener(e ->
         {
             VIEW_PREFS.putInt(PREF_CAPTION_MODE, captions.getSelectedIndex());
-
-            // What the text switch comes back to when it is turned off from outside (RGD-C3).  Only the
-            // three caption modes: None and Labels Only draw no caption to come back to.
-            if (isACaptionMode(captions.getSelectedIndex()))
-            {
-                lastNamedCaptionMode = captions.getSelectedIndex();
-            }
 
             applyCaptionMode();
 
@@ -1162,6 +1179,18 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Whether a click on a train drawn on the diagram is a click on the station it stands on: while Test a Path or Why Not
+     * Moving? waits for a station and no gesture has the click first (OB-354).
+     *
+     * @return true where the train's square is the answer
+     */
+    public boolean takesATrainForItsStation()
+    {
+        return (tool == Tool.TEST || tool == Tool.WHY) && tailFor == null && oneWayFrom == null && signalFor == null
+            && blockingFor == null;
+    }
+
+    /**
      * Whether a tool is armed or a two-click gesture is half made.
      *
      * ONE DEFINITION, asked by `putToolsDown` and by `cancelPendingGesture`.  It was written out twice
@@ -1235,6 +1264,13 @@ public class AutonomyEditorPanel extends JPanel
 
             int row = findings.getSelectedIndex();
 
+            // AND ITS TEXT ON THE CLIPBOARD, for sharing (Adam, on MT-767: "when clicked, copy the warning to the
+            // clipboard for easy sharing") - a notice only: a heading has no severity (RSA75-C3)
+            if (row >= 0 && row < findingSeverity.size() && findingSeverity.get(row) != null)
+            {
+                copyNoticeToClipboard(findingsModel.get(row));
+            }
+
             if (row >= 0 && row < findingTiles.size() && findingTiles.get(row) != null)
             {
                 TileKey at = findingTiles.get(row);
@@ -1242,7 +1278,9 @@ public class AutonomyEditorPanel extends JPanel
                 // AND THE SQUARES IT IS ABOUT BESIDE ITS OWN (Adam, on MT-505: "also highlight the affected signals when
                 // the notice is clicked").  A guard notice's own square is the station; the signal it names is what is
                 // wrong, so both are outlined, and the station is shown.
-                List<TileKey> related = row < findingRelated.size() ? findingRelated.get(row) : null;
+                // EVERY FINDING THE SAME STRONG WAY, outlined and flashed, whether or not it names other squares (OB-352)
+                List<TileKey> related = row < findingRelated.size() && findingRelated.get(row) != null
+                    ? findingRelated.get(row) : java.util.Collections.<TileKey>emptyList();
 
                 // A finding on another page is reached by opening that page, which this window cannot
                 // do in place - it is built around one diagram.  So it hands the square to the main
@@ -1250,7 +1288,7 @@ public class AutonomyEditorPanel extends JPanel
                 // names beside its own, for the editor opened there to outline (RLV9-C5).
                 if (!onThisPage(at))
                 {
-                    if (related != null && !related.isEmpty() && onJumpToNotice != null)
+                    if (onJumpToNotice != null)
                     {
                         onJumpToNotice.accept(at, related);
                     }
@@ -1262,22 +1300,7 @@ public class AutonomyEditorPanel extends JPanel
                     return;
                 }
 
-                if (related != null && !related.isEmpty())
-                {
-                    outlineTheNotice(at, related);
-
-                    return;
-                }
-
-                // Another finding: the last one's outline goes
-                if (!noticeOutline.isEmpty())
-                {
-                    noticeOutline.clear();
-
-                    refresh();
-                }
-
-                if (onReveal != null) onReveal.accept(at);
+                outlineTheNotice(at, related);
             }
         });
 
@@ -1509,7 +1532,7 @@ public class AutonomyEditorPanel extends JPanel
             // accessible via track diagram).  Show it if there is a locomotive at that station").  Read off the setup,
             // which is what this menu is about, and written to the train and the setup together.  Not in the deep menu,
             // whose train items are on the track diagram's own menu one level up; and only at rest, as he answered.
-            if (standing != null && !menuOnly && (parentWindow() == null || !parentWindow().isAutonomyBusy()))
+            if (standing != null && !menuOnly && (parentWindow() == null || !parentWindow().aRunHoldsTheSetup()))
             {
                 menu.add(toggle(I18n.f("autolayout.ui.menuLocomotiveActive", standing),
                     "autolayout.ui.hintLocomotiveActive", !session.getPausedLocomotives().contains(standing),
@@ -1928,9 +1951,9 @@ public class AutonomyEditorPanel extends JPanel
             boolean many = routes.size() > 1;
 
             // Every arm, tickable, all visible together.  A click steps through four common answers,
-            // which is right for the common case and cannot reach the rest; the per-branch submenus
-            // below can reach the rest but only by working out which branch owns which arm.  These are
-            // the arrows themselves, one box each, so any combination is one look and one tick.
+            // which is right for the common case and cannot reach the rest.  These are the arrows
+            // themselves, one box each, so any combination is one look and one tick - and on a switch
+            // they are the whole of its settings (OB-351).
             if (many)
             {
                 final java.util.List<org.traincontrol.automationui.TilePorts.Side> arms =
@@ -1952,9 +1975,19 @@ public class AutonomyEditorPanel extends JPanel
                 connections.addSeparator();
             }
 
+            // NO ROAD OF ITS OWN WHERE ROADS SHARE AN ARM (OB-351; Adam: *"into spur should simply require S to be green,
+            // and out of spur should require W to be green.  Align it so that the arrows tell the full story."*).  On a
+            // switch a road's own submenu could shut its spur's way out at the toe while the main line's arrow there stayed
+            // green - a closure the diagram does not show.  The arm boxes above are the whole of what such a square can
+            // be told.  A crossing's or a double curve's roads end at arms of their own, so each road's submenu is two of
+            // the boxes, and it stays.
+            boolean byArmsOnly = many && session.getGraph().sharesAnArm(target);
+
             for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry : routes.entrySet())
             {
                 org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
+
+                if (byArmsOnly) break;
 
                 // A switch's branches each get their own submenu; a plain target puts its four answers
                 // straight on the menu rather than burying them one level down.
@@ -2622,10 +2655,15 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JMenuItem placeHome = item(
             I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes), () -> placeEveryTrainAtHome());
 
-        placeHome.setEnabled(homes > 0);
-        placeHome.setToolTipText(wrapped(homes > 0
+        // ON THE TRACK DIAGRAM, RETURN HOME'S QUESTION (FR-129): the live setup, so the item is refused while anything runs
+        String placeRefused = menuOnly && parentWindow() != null
+            ? parentWindow().whyTheTrainsCannotBePlacedAtTheirHomes()
+            : homes > 0 ? null : I18n.t("autosetup.ui.infoNoHomesToPlace");
+
+        placeHome.setEnabled(placeRefused == null);
+        placeHome.setToolTipText(wrapped(placeRefused == null
             ? I18n.f("autosetup.ui.tipPlaceEveryTrainAtHome", homes)
-            : I18n.t("autosetup.ui.infoNoHomesToPlace")));
+            : placeRefused));
 
         bulk.add(placeHome);
 
@@ -2896,11 +2934,38 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void placeEveryTrainAtHome()
     {
+        // ON THE TRACK DIAGRAM AS FROM RETURN HOME (FR-129): there is no banner and no Cancel, so it asks as Return Home's
+        // item asks, re-checks the same question, and says the result in the log
+        final TrainControlUI window = menuOnly ? parentWindow() : null;
+
+        if (window != null)
+        {
+            placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand",
+                window::whyTheTrainsCannotBePlacedAtTheirHomes, said -> window.getModel().log(said));
+
+            return;
+        }
+
+        placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHome", () -> null, text -> say(hint, text));
+    }
+
+    /**
+     * The door behind Place All Trains at Their Homes, for the editor's menu and for the main window's Return Home
+     * button, which has no editor open (FR-129).  The caller's question is asked again once the confirmation has been
+     * answered, because the railway can change while it is on screen.
+     *
+     * @param confirmKey the bundle key of the confirmation text, which takes the homed count and the homeless count
+     * @param refusedBecause why the placement is not allowed now, or null; asked after the confirmation
+     * @param saying where the outcome is said
+     */
+    void placeEveryTrainAtHome(String confirmKey, java.util.function.Supplier<String> refusedBecause,
+        java.util.function.Consumer<String> saying)
+    {
         java.util.Map<TileKey, String> homes = session.homesToPlace();
 
         if (homes.isEmpty())
         {
-            say(hint, I18n.t("autosetup.ui.infoNoHomesToPlace"));
+            saying.accept(I18n.t("autosetup.ui.infoNoHomesToPlace"));
             return;
         }
 
@@ -2915,7 +2980,7 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         if (JOptionPane.showOptionDialog(owner(),
-            I18n.f("autolayout.ui.confirmPlaceEveryTrainAtHome", homes.size(), homeless),
+            I18n.f(confirmKey, homes.size(), homeless),
             I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -2923,9 +2988,17 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        String refused = refusedBecause.get();
+
+        if (refused != null)
+        {
+            JOptionPane.showMessageDialog(owner(), refused);
+            return;
+        }
+
         java.util.Set<String> touched = session.placeEveryTrainAtHome(homeCopyFacings());
 
-        say(hint, I18n.f("autosetup.ui.infoTrainsPlacedAtHome", homes.size(), homeless));
+        saying.accept(I18n.f("autosetup.ui.infoTrainsPlacedAtHome", homes.size(), homeless));
 
         placementChanged(touched);
     }
@@ -3055,9 +3128,29 @@ public class AutonomyEditorPanel extends JPanel
     {
         TrainControlUI window = parentWindow();
 
-        if (window == null || !window.isAutonomyBusy()) return false;
+        // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+        if (window == null || !window.aRunHoldsTheSetup()) return false;
 
-        JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.errorCannotEditWhileRunning"));
+        JOptionPane.showMessageDialog(owner(), window.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
+
+        return true;
+    }
+
+    /**
+     * The same refusal for a gesture on the diagram or a key, which has no menu item to ask first: said on the message
+     * strip rather than in a dialog the next click would raise again (Adam, 2026-09-28: *"There should be no setup edit
+     * possible during a run"*).  An editor opened at rest stays open when a route begins, so every write the diagram's
+     * clicks and the shortcuts make asks this first.
+     *
+     * @return true where the gesture is refused
+     */
+    private boolean heldByARun()
+    {
+        TrainControlUI window = parentWindow();
+
+        if (window == null || !window.aRunHoldsTheSetup()) return false;
+
+        say(hint, window.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
         return true;
     }
@@ -3224,6 +3317,21 @@ public class AutonomyEditorPanel extends JPanel
     private static final int TOOLTIP_WIDTH = 320;
 
     /**
+     * TOOLTIP_WIDTH in the pixels the text is measured in.  Swing draws a CSS width at the screen's resolution, so
+     * on a 120-dpi screen the 320px body is 400 pixels; testing one line against 320 wrapped a tooltip that then
+     * sat in a box 400 wide (OB-358).
+     *
+     * @return the wrapping width, in pixels
+     */
+    private static int wrappingWidth()
+    {
+        int dpi = java.awt.GraphicsEnvironment.isHeadless() ? 96
+            : java.awt.Toolkit.getDefaultToolkit().getScreenResolution();
+
+        return dpi > 0 ? (int) Math.round(TOOLTIP_WIDTH * dpi / 96.0) : TOOLTIP_WIDTH;
+    }
+
+    /**
      * Whether a tooltip's text is one line no wider than the wrapping width, in the font tooltips are drawn in.
      *
      * @param text the text
@@ -3242,7 +3350,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            return scratch.getFontMetrics(font).stringWidth(text) <= TOOLTIP_WIDTH;
+            return scratch.getFontMetrics(font).stringWidth(text) <= wrappingWidth();
         }
         finally
         {
@@ -3622,6 +3730,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public boolean moveCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return false;
+
         String refused = refuseCaptionDrop(from, to, onTarget);
 
         if (refused != null)
@@ -5791,6 +5902,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null || session == null || session.getGraph() == null) return;
 
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu does (MFW-C1).
         cancelPendingGesture();
 
@@ -6619,6 +6733,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptNameFor(TileKey tile)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
         cancelPendingGesture();
 
@@ -6670,6 +6787,9 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null || menuOnly || session == null || session.getGraph() == null) return;
 
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         cancelPendingGesture();
 
         if (!offersAStationName(tile))
@@ -6713,6 +6833,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptLengthFor(TileKey tile)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
         cancelPendingGesture();
 
@@ -6810,6 +6933,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptMaxTrainLengthFor(TileKey tile)
     {
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`
+        if (heldByARun()) return;
+
         // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu does (MFW-C1).
         cancelPendingGesture();
 
@@ -7698,33 +7824,25 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The last caption mode, for the text switch to come back to when it is turned off from Labels Only (RGD-C3,
-     * OB-272).
-     *
-     * Only the three modes that draw a caption are kept here - None and Labels Only draw none to come back to.
-     * Station Names to begin with, which is what the dropdown itself defaults to.
-     */
-    private int lastNamedCaptionMode = CAPTIONS_STATIONS;
-
-    /**
      * Asks again once this panel is in a window, which is when half of it can be answered (MT-292).
      *
      * Adam, 2026-09-12: *"none is shown in the dropdown, but station names are still drawn."*  The
-     * remembered mode is restored during CONSTRUCTION and applied there, and the half of
-     * `applyCaptionMode` that reaches the diagram goes through `owner()` -
-     * `SwingUtilities.getWindowAncestor(this)` - which is null until the panel has been added to the
-     * editor.  So the two tick boxes were set and the text switch - which under FR-061 was what None
-     * meant, and since OB-272 is Labels Only's - was not: the dropdown said None over a diagram still
-     * drawing every station name, which is precisely the state exclusive options exist to make
-     * impossible.
+     * remembered mode is restored during CONSTRUCTION and applied there, and the half of it that reaches the
+     * diagram goes through `owner()` - `SwingUtilities.getWindowAncestor(this)` - which is null until the panel has
+     * been added to the editor.  So the two tick boxes were set and the diagram's text switch - which under FR-061
+     * was what None meant, and is the Text Labels box's since FR-133 - was not: the dropdown said None over a diagram
+     * still drawing every station name, which is precisely the state exclusive options exist to make impossible.
      *
      * Called by `LayoutEditor.setAutonomyMode` from the same posted block that redraws the grid, and
      * for the same reason written there - *"the first draw happened before this window knew what it
      * was"*.  Idempotent, like everything else on this path.
+     *
+     * The Text Labels box is applied here too (FR-133): it is remembered and the diagram's text switch is not.
      */
     public void applyRememberedCaptionMode()
     {
         applyCaptionMode();
+        applyTextLabels();
     }
 
     /**
@@ -7735,22 +7853,10 @@ public class AutonomyEditorPanel extends JPanel
      * mutually exclusive here by construction, which is what retires OB-174: there is no longer a
      * state where somebody has asked for parked trains while the text is off.
      *
-     * **Text on for Labels Only, off for every other option (OB-272).** The switch is the writing on
-     * the diagram and nothing else now: whether a caption is drawn is the dropdown's own answer,
-     * `isDrawingCaptions`.  Under FR-061 it was on for the three caption modes and off for None, so
-     * choosing Station Names drew the labels as well.  Driving it from here is still why the two
-     * boxes need not reach for it themselves.
-     *
-     * **At open as well, which it did not used to be (RGD-C3).** The text switch was left alone when
-     * the window opened, on the grounds that opening a setup should not override a choice somebody
-     * made in the plain editor. But the mode is REMEMBERED between opens ("with the setting remembered
-     * between open") and the text switch is not - it is a plain field that defaults to on - so None
-     * came back as a word and not as an effect: the dropdown said None while station names were drawn
-     * under it, which is the state exclusive options exist to make impossible.
-     *
-     * The cost is the courtesy: opening the autonomy editor now imposes its caption mode on the text
-     * switch. That is what a control naming five exclusive options claims to do, and the alternative
-     * was a control that lies on the first open after every restart.
+     * **The text switch is not touched (OB-272, FR-133).** It is the writing on the diagram and nothing
+     * else: whether a caption is drawn is the dropdown's own answer, `isDrawingCaptions`, and the text
+     * is the Text Labels box's (`applyTextLabels`).  Under FR-061 the dropdown drove it, so choosing
+     * Station Names drew the labels as well.
      */
     private void applyCaptionMode()
     {
@@ -7758,13 +7864,19 @@ public class AutonomyEditorPanel extends JPanel
 
         showParkedTrains.setSelected(mode == CAPTIONS_PARKED);
         showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES);
+    }
 
-        // THE TEXT SWITCH IS THE TEXT'S OWN NOW (Adam, 2026-09-23, OB-272): *"make text labels be a dedicated
-        // setting, and hide the text labels unless it is selected."*  It was on for every caption mode, on
-        // FR-061's reading that None was that switch turned off - so choosing Station Names drew his own writing
-        // as well.  The captions follow the dropdown directly (`isDrawingCaptions`, which the grid asks); the
-        // switch is on for Labels Only and off for everything else.
-        if (mode == CAPTIONS_LABELS) turnTextLabelsOn();
+    /**
+     * Makes the diagram's text switch agree with the Text Labels box (FR-133).
+     *
+     * Applied when the box is clicked and at open, where it matters (RGD-C3): the box is REMEMBERED
+     * between opens and the text switch is not, so a remembered unticked box would otherwise come back
+     * as a box saying one thing over a diagram drawing the other.  The cost is the courtesy: opening
+     * the autonomy editor imposes the box on the text switch.
+     */
+    private void applyTextLabels()
+    {
+        if (showText.isSelected()) turnTextLabelsOn();
         else turnTextLabelsOff();
     }
 
@@ -7772,7 +7884,7 @@ public class AutonomyEditorPanel extends JPanel
      * Whether the diagram draws station captions - Station Names, Standing Locs or Homes (OB-272).
      *
      * The grid asks this for a caption, and the editor's text switch for the writing on the diagram, so the two are
-     * independent: a caption is drawn under the three caption modes whatever the switch says.
+     * independent: a caption is drawn under the three caption modes whatever the Text Labels box says.
      *
      * @return true under a caption mode
      */
@@ -7789,9 +7901,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Control+L: the next caption option, wrapping from the last to the first (OB-272).
      *
-     * Adam, asked which options: *"the dropdown's 4, plus add an option to the dropdown that shows the labels
-     * only"*.  Selecting fires the dropdown's own listener, so the step is remembered and drawn like a choice made
-     * with the mouse.
+     * The dropdown's four options; the Text Labels box is not part of the cycle (FR-133).  Selecting fires the
+     * dropdown's own listener, so the step is remembered and drawn like a choice made with the mouse.
      */
     public void cycleCaptionMode()
     {
@@ -7809,42 +7920,25 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Told that the diagram's text switch moved on its own, so the dropdown can agree (RGD-C3).
+     * Told that the diagram's text switch moved on its own, so the Text Labels box can agree (RGD-C3, FR-133).
      *
-     * The Text Labels checkbox is hidden in autonomy mode because the dropdown shows its state: Labels
-     * Only IS that switch turned on (OB-272).  Control+L steps the dropdown there (`cycleCaptionMode`)
-     * rather than flipping the switch, and `applyCaptionMode`'s own flips arrive already agreeing - so no
-     * caller in the autonomy editor reaches the re-selection below today; it is kept as the answer to
-     * anything that flips the switch on its own (DCN2-C1).  Written
-     * under FR-061, when None was the switch turned off and Control+L still flipped it: pressing it with
-     * "Parked Locs" selected made every caption vanish under a control still saying Parked, which is
-     * OB-174's symptom ("indistinguishable from a control that does not work").
-     *
-     * On selects Labels Only.  Off from Labels Only goes back to the last caption mode rather than a
-     * default: somebody who turned the labels off asked for what they had before.
-     *
-     * Selecting fires the dropdown's own listener, which is wanted - the choice really did change, and
-     * it should be stored and drawn like any other. The listener's call back into the text switch is
-     * idempotent, so this does not bounce.
+     * The box's own clicks arrive already agreeing; this answers anything else that flips the switch (DCN2-C1).
+     * The dropdown is not touched: it decides the captions and the switch only the text.  The state is stored like a
+     * click on the box.
      *
      * @param shown whether the labels are now displayed
      */
     public void textLabelsChanged(boolean shown)
     {
-        if (captions == null) return;
+        if (showText == null || showText.isSelected() == shown) return;
 
-        // THE SWITCH IS LABELS ONLY'S NOW (OB-272): on means that option, and off from it goes back to the last
-        // caption mode, which is what somebody who turned the text off from there had before.
-        boolean labelsOnly = captions.getSelectedIndex() == CAPTIONS_LABELS;
+        showText.setSelected(shown);
 
-        if (shown == labelsOnly) return;
-
-        captions.setSelectedIndex(shown ? CAPTIONS_LABELS : lastNamedCaptionMode);
+        VIEW_PREFS.putBoolean(PREF_TEXT_LABELS, shown);
     }
 
     /**
-     * The editor's own text switch turned off, for every option but Labels Only (OB-272; under FR-061
-     * this was how None was said).
+     * The editor's own text switch turned off, for an unticked Text Labels box (FR-133).
      *
      * The twin of `turnTextLabelsOn`, and idempotent for the same reason: `toggleText` flips, which is
      * the wrong verb for a caller that needs a particular state.
@@ -7856,8 +7950,8 @@ public class AutonomyEditorPanel extends JPanel
         if (where instanceof LayoutEditor) ((LayoutEditor) where).hideTextLabels();
     }
     /**
-     * Turns the diagram's text labels on, if this panel is in an editor that has them - for Labels Only
-     * (OB-174, OB-272).
+     * Turns the diagram's text labels on, if this panel is in an editor that has them - for a ticked Text Labels box
+     * (OB-174, FR-133).
      *
      * Captions no longer depend on it: the grid asks `isDrawingCaptions`.  They did until OB-272, and
      * with the switch off the caption choices were settings whose effect arrived at some unrelated
@@ -8092,6 +8186,8 @@ public class AutonomyEditorPanel extends JPanel
         // square is not the question.
         if (tailFor != null)
         {
+            if (heldByARun()) return;
+
             java.util.List<TailCrossedPrompt.Choice> here = tailPicks.get(tile);
 
             if (here == null)
@@ -8123,6 +8219,8 @@ public class AutonomyEditorPanel extends JPanel
         // The one-way tool: the first click names one end.
         if (tool == Tool.ONE_WAY && oneWayFrom == null)
         {
+            if (heldByARun()) return;
+
             if (needsTheGrid(tile)) return;
 
             // NOT ON A SQUARE AUTONOMY TAKES NO NOTICE OF (OB-235): the tool's clicks came before that question.
@@ -8144,6 +8242,8 @@ public class AutonomyEditorPanel extends JPanel
         // ... and the second names the other, after which it asks which way round it goes.
         if (oneWayFrom != null)
         {
+            if (heldByARun()) return;
+
             TileKey from = oneWayFrom;
 
             // Cleared before the dialog, not after: a modal dialog runs its own event loop, and a
@@ -8224,6 +8324,8 @@ public class AutonomyEditorPanel extends JPanel
         // on one.  Here it is the only thing worth clicking.
         if (signalFor != null)
         {
+            if (heldByARun()) return;
+
             TileKey station = signalFor;
 
             // IN A POPUP as well as on the line (MT-505) - see `refuseGuard` - AND BACK TO THE GUARD WINDOW (Adam,
@@ -8263,6 +8365,8 @@ public class AutonomyEditorPanel extends JPanel
         // what an ORDINARY click does. It refuses on its own terms a line later, naming what it wanted.
         if (blockingFor != null)
         {
+            if (heldByARun()) return;
+
             TileKey station = blockingFor;
 
             String refusal = whyNotABlocker(station, tile);
@@ -8318,7 +8422,7 @@ public class AutonomyEditorPanel extends JPanel
             {
                 case TEST: applyTest(tile, component); break;
                 case WHY: applyWhy(tile, component); break;
-                default: cycle(tile); break;
+                default: if (!heldByARun()) cycle(tile); break;
             }
         }
         catch (RuntimeException e)
@@ -8388,7 +8492,8 @@ public class AutonomyEditorPanel extends JPanel
         TileKey target = leaderOf(tile);
 
         // NOR A SQUARE OUT OF SERVICE (RSA63-C5): nothing can pass it, it draws no arrows, and `cycle` declines it
-        if (isALink(target) || isOutOfService(target)) return false;
+        // - NOR TRACK NO STATION IS ON, which draws none either (OB-353)
+        if (isALink(target) || isOutOfService(target) || session.reachesNoStation(target)) return false;
 
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
@@ -8399,7 +8504,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // One track: the click's next state, which goes on whole unless it is one way - and one way lands only on a run
         // with track between its ends (`cycle`, which says there is no path where it does not)
-        Direction next = after(session.getGraph().getDirection(target, routes.keySet().iterator().next()));
+        Direction next = after(session.directionAsDrawn(target, routes.keySet().iterator().next()));
 
         return next == Direction.BOTH || next == Direction.NONE || session.canRunOneWay(target);
     }
@@ -8450,6 +8555,13 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // NOR TRACK NO STATION IS ON (OB-353): it draws no arrows, so a click there has none to change
+        if (session.reachesNoStation(target))
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoStationHasNoDirection"));
+            return;
+        }
+
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(target);
 
         if (routes.isEmpty()) return;
@@ -8472,7 +8584,7 @@ public class AutonomyEditorPanel extends JPanel
 
         org.traincontrol.automationui.TilePorts.Route route = only.getValue();
 
-        Direction next = after(session.getGraph().getDirection(target, only.getKey()));
+        Direction next = after(session.directionAsDrawn(target, only.getKey()));
 
         int changed = session.setRunDirection(target, only.getKey(), next);
 
@@ -8739,11 +8851,8 @@ public class AutonomyEditorPanel extends JPanel
     private static Direction answerFor(org.traincontrol.automationui.TilePorts.Route route,
         java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
     {
-        boolean openA = (mask & (1 << sides.indexOf(route.getA()))) != 0;
-        boolean openB = (mask & (1 << sides.indexOf(route.getB()))) != 0;
-
-        return openA && openB ? Direction.BOTH : openA ? Direction.TOWARD_A
-            : openB ? Direction.TOWARD_B : Direction.NONE;
+        // ONE TRANSLATION, the session's too (OB-351): every door that sets a direction stores its arms' answers
+        return TileGraph.answerFor(route, sides, mask);
     }
 
     /**
@@ -8824,21 +8933,7 @@ public class AutonomyEditorPanel extends JPanel
     private static java.util.List<org.traincontrol.automationui.TilePorts.Side> armsOf(
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes)
     {
-        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = new java.util.ArrayList<>();
-
-        for (org.traincontrol.automationui.TilePorts.Side side
-            : org.traincontrol.automationui.TilePorts.Side.values())
-        {
-            for (org.traincontrol.automationui.TilePorts.Route route : routes.values())
-            {
-                if ((route.getA() == side || route.getB() == side) && !sides.contains(side))
-                {
-                    sides.add(side);
-                }
-            }
-        }
-
-        return sides;
+        return TileGraph.armsOf(routes.values());
     }
 
     /**
@@ -10080,6 +10175,11 @@ public class AutonomyEditorPanel extends JPanel
 
         boolean ignored = isIgnored(tile);
 
+        // TRACK NO STATION IS ON is greyed and draws no arrows (OB-353) - drawn so only: `isIgnored` does not ask it, so
+        // every other edit still works there, and its lengths and outlines are still drawn (Adam: "yes, it can accept
+        // edits")
+        boolean stationless = !ignored && session.reachesNoStation(tile);
+
         // Everything that is not a signal gets out of the way - greyed, and below, no arrows and no
         // lengths (OB-040).  Asked once and used three times, because a de-clutter that is on for one
         // of the three and off for the others is worse than not having it: the diagram then looks
@@ -10092,8 +10192,8 @@ public class AutonomyEditorPanel extends JPanel
         // sentence rather than an instruction until the squares it could possibly mean are the only
         // ones left in colour.  It inverts the usual meaning of grey here - a signal is normally the
         // greyed thing, because autonomy runs no trains through one - which is exactly why the two
-        // states cannot be on screen at once.
-        if (focused) ignored = !isPairableSignal(componentAt(tile));
+        // states cannot be on screen at once.  Nor is anything greyed for its track meanwhile (OB-353).
+        if (focused) { ignored = !isPairableSignal(componentAt(tile)); stationless = false; }
 
         // A link autonomy has been told to ignore carries no trains, so it carries no arrows either.
         // Its route is still a stub the port map knows about, and drawn from that it kept an arrow
@@ -10112,7 +10212,7 @@ public class AutonomyEditorPanel extends JPanel
         // this diagram means autonomy cannot use a square, and a follower is perfectly usable.
         boolean follower = isFollower(tile);
 
-        if (isShowingDirections() && !focused && session.getGraph() != null && !ignored && !follower)
+        if (isShowingDirections() && !focused && session.getGraph() != null && !ignored && !follower && !stationless)
         {
             // Asked of the SESSION since FR-037, so this window and the ordinary track diagram cannot
             // disagree about which way a piece of track runs.  What stayed here is every reason this
@@ -10185,6 +10285,9 @@ public class AutonomyEditorPanel extends JPanel
 
         // NONE WHERE A CROSSING'S SQUARES MEET, as on the track diagram (OB-322)
         session.withoutTheCrossingsMiddle(tile, annotation);
+
+        // GREYED as a square autonomy takes no notice of is, where no station is on its track (OB-353)
+        if (stationless && !ignored && componentAt(tile) != null) annotation.withNoStation();
 
         // ALLOWED ONLY: the green arrows, and none of the red
         if (directionsView() == VIEW_ALLOWED) annotation.withoutRestrictions();
@@ -10274,7 +10377,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // WHAT IS IN FORCE, not what is stored (VD18-B1) - `inForce`, which the arm boxes beside these submenus ask
         // too (VD18-C2), so the two cannot tick different ways.
-        Direction current = inForce(session.getGraph().getDirection(tile, routeId), route);
+        Direction current = inForce(session.directionAsDrawn(tile, routeId), route);
 
         if (TileGraph.directionIsPossible(Direction.BOTH, route))
         {
@@ -10318,11 +10421,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private static Direction inForce(Direction stored, org.traincontrol.automationui.TilePorts.Route route)
     {
-        if (TileGraph.directionIsPossible(stored, route)) return stored;
-
-        return !TileGraph.isPassable(stored, route) ? Direction.NONE
-            : TileGraph.directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
-            : Direction.TOWARD_B;
+        return TileGraph.inForce(stored, route);
     }
 
     private javax.swing.JMenuItem directionItem(final TileKey tile, final RouteId routeId,
@@ -10493,9 +10592,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     private boolean isFollower(TileKey tile)
     {
-        TileKey leader = runLeaders.get(tile);
-
-        return leader != null && !leader.equals(tile);
+        // THE SESSION'S ANSWER, which the track diagram asks too (OB-361)
+        return session.followsItsRun(tile);
     }
 
     /**
@@ -11031,6 +11129,14 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (page == null) return;
 
+        // NOT WHILE A RUN HOLDS THE SETUP - see `heldByARun`; the box goes back to what the setup says
+        if (heldByARun())
+        {
+            excludePage.setSelected(!excluded);
+
+            return;
+        }
+
         if (excluded)
         {
             // showOptionDialog with TrainControl's own button text, not showConfirmDialog, whose
@@ -11510,6 +11616,34 @@ public class AutonomyEditorPanel extends JPanel
                 window.applyTrainLength(window.getModel().getLocByName(train), units);
             }
         };
+    }
+
+    /**
+     * Puts a setup check notice on the system clipboard as the list shows it, without its indent: the one door both lists
+     * of notices (this editor's and the autonomy setup's) copy through when a notice is clicked (MT-767).  The lists hold
+     * plain text, so nothing is stripped: a station named "Yard <old>" is copied as it is named (RSA75-C3).  A clipboard
+     * another program holds, or none at all, leaves it uncopied and says nothing: the click's own work goes on.
+     *
+     * @param shown the notice as the list holds it
+     */
+    static void copyNoticeToClipboard(String shown)
+    {
+        if (shown == null) return;
+
+        String plain = shown.trim();
+
+        if (plain.isEmpty()) return;
+
+        try
+        {
+            java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(plain);
+
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+        }
+        catch (IllegalStateException | java.awt.HeadlessException | SecurityException e)
+        {
+            // NOT COPIED, AND THE CLICK STILL WORKS: the clipboard is busy with another program, or there is none
+        }
     }
 
     /**
@@ -12233,6 +12367,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * @return the Text Labels switch, for the window to mount under Show Trains (FR-133)
+     */
+    public JCheckBox getShowTextLabels()
+    {
+        return control(showText);
+    }
+
+    /**
      * Whether this editor's diagram draws its trains (FR-119) - asked by its squares as they paint.
      *
      * @return the Show Trains switch's state
@@ -12255,7 +12397,8 @@ public class AutonomyEditorPanel extends JPanel
      */
     public javax.swing.JComboBox<String> getCaptionChoice()
     {
-        return captions;
+        // The Track Directions box's font, from the same place (FR-133)
+        return control(captions);
     }
 
     /**

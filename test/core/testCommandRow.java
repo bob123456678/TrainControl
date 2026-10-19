@@ -266,6 +266,37 @@ public class testCommandRow
     }
 
     /**
+     * A train NOT at a sensor is a row of its own kind, and back again (FR-141).
+     *
+     * One stored command asked either way round, offered as two kinds because this kind's setting is already the sensor's
+     * address and has no room for the way round - as Switch and Signal are two kinds of one command.  A condition and
+     * never a command, like the at form.
+     *
+     * MUTATION: answer AUTO_LOCOMOTIVE for both in `CommandRow.of` and the first assertion fails.
+     */
+    @Test
+    public void testATrainNotAtASensorIsARowOfItsOwnKind()
+    {
+        RouteCommand notAt = RouteCommand.RouteCommandAutoLocomotive("some train", 21, false);
+
+        assertEquals(CommandRow.of(notAt).getKind(), CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT,
+            "a not-at condition opened as some other kind");
+
+        assertEquals(CommandRow.of(notAt).getSetting(), "21", "and its setting is not the sensor's address");
+
+        assertEquals(CommandRow.of(notAt).toCommand(), notAt, "and it did not come back as the same condition");
+
+        assertEquals(CommandRow.of(RouteCommand.RouteCommandAutoLocomotive("some train", 21)).getKind(),
+            CommandRow.Kind.AUTO_LOCOMOTIVE, "and the at form is not its own kind any more");
+
+        assertTrue(CommandRow.canBeACondition(CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT),
+            "the condition Kind drop-down does not offer it");
+
+        assertFalse(CommandRow.canBeACommand(CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT),
+            "the command Kind drop-down offers a fact as an instruction");
+    }
+
+    /**
      * A row that cannot be made into a command says which part is wrong.
      */
     @Test

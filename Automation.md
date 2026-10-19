@@ -84,7 +84,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
 
-Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy is running, so stop the trains first. While it is open, the Autonomy menu is greyed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
+Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy or a route is running, so stop the trains first. While it is open, the Autonomy menu is greyed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
 
 ---
 
@@ -124,8 +124,8 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 6. **`Autonomy Tools`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
 7. **`Path Type`**: `Auto` or `Manual`: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
 8. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…`.
-9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected).
-10. **`Text Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), `None`, or `Labels Only` (your own diagram text instead). Control+L steps through them.
+9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn.
+10. **`Station Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), or `Hide`. Control+L steps through them.
 11. **`Track Directions`** chooses which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut, the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
 12. **`Save Changes`** and **`Cancel`**: see [Saving, cancelling, and changing page](#saving-cancelling-and-changing-page).
 
@@ -189,7 +189,7 @@ Right-click any square for everything else. The menu opens with the square's nam
 
 ### On track, switches and signals
 
-- **`Trains May Depart...`** on plain track and signals: `Both Ways`, `One Way, Toward` *a compass point*, or `Closed - No Trains`. On a switch or crossing: tick each side trains may leave by (`The N Side` and so on), set each branch on its own (`Branch E to W`...), or open or close `Every Branch of This Switch` at once.
+- **`Trains May Depart...`** on plain track and signals: `Both Ways`, `One Way, Toward` *a compass point*, or `Closed - No Trains`. On a switch or crossing: tick each side trains may leave by (`The N Side` and so on), or open or close `Every Branch of This Switch` at once. On a switch, three-way switch or double slip the arrows are the whole story: a train may run through it exactly where the side it leaves by is green, so to keep trains out of a branch altogether, close the track beyond it. A crossing still sets each road on its own (`Branch E to W`...).
 - **`Segment Length...`**, and on plain track and crossings the caption items, `Show a Station Name Here...`.
 
 Names cannot sit on switches or signals.
@@ -260,10 +260,10 @@ These act on the square under the pointer.
 | Control+B | The station's Maximum Train Length |
 | Control+H | The station's home locomotive |
 | Control+G | Show or hide Track Lengths |
-| Control+L | Step through the Text Labels choices |
+| Control+L | Step through the Station Labels choices |
 | Control+D | Show or hide Addresses |
 | Control+K | Show or hide the Grid |
-| + and - | Next and previous page |
+| + and - | Next and previous page (the number pad ones too) |
 | Shift+click | Pick a square, or let it go |
 | Escape | Put down an armed tool; with nothing armed, the same as Cancel |
 
@@ -449,7 +449,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **What the marks on the diagram mean.** Each station has a mark on its square, the same on the track diagram and in the editor. The shape says whether trains turn round there: a circle where they do not, a diamond where they may (`Trains May Change Direction Here`), and a square where they must (`Trains Must Change Direction Here`) or where the track runs out. The mark is blue, or grey where autonomy will not choose the station by itself (`Can Be Chosen in Full Autonomy` unticked), and hollow until the station has a name. A sensor that is not a station gets a smaller mark of the same kind: on every sensor in the editor, and on the track diagram only where trains turn round. A station or sensor out of service (`No - Nothing Can Pass`) shows an orange sign with an X instead: solid orange with a white X on a station, white with an orange ring and X on a plain sensor.
 
-**Station names are shown on the diagram.** In the editor, right-click a square beside a station and choose `Show a Station Name Here...` (or press Control+N over it); a station square shows its own name. `Text Labels` then chooses what every such caption shows: the station, the train parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption, and removed from its page so it is not shown twice; the page keeps a `.bak` copy of itself as it was, and the log names each page changed. To hide the names of stations autonomy will never send a train to, or to draw captions in blue rather than light grey, see **Preferences** → Autonomy.
+**Station names are shown on the diagram.** In the editor, right-click a square beside a station and choose `Show a Station Name Here...` (or press Control+N over it); a station square shows its own name. `Station Labels` then chooses what every such caption shows: the station, the train parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption, and removed from its page so it is not shown twice; the page keeps a `.bak` copy of itself as it was, and the log names each page changed. To hide the names of stations autonomy will never send a train to, or to draw captions in blue rather than light grey, see **Preferences** → Autonomy.
 
 **A signal paired with a station** (`Exit Guard Signal...`) goes red while a train is standing there, and green again once it leaves.
 
@@ -534,9 +534,9 @@ It is worth recording a timetable that ends where it began. That way it can be r
 
 Getting everyone home is rarely as simple as driving each train to its own station, because a station holds one train at a time, so a train cannot go home while another is standing there. TrainControl works out an order that succeeds, moving trains out of each other's way and bringing them back afterwards where that is what it takes.
 
-Trains must be stopped first, so use `Graceful Stop` if autonomy is running. The button is greyed when there is nothing to do, and its tooltip says why. If no arrangement can be found you are told so and nothing moves. A paused train stays where it stands, and the others are worked round it. To put every train back on its home without driving anything (after moving them by hand, say), use `Bulk Tools` → `Place All Trains at Their Homes`.
+Trains must be stopped first, so use `Graceful Stop` if autonomy is running. The button is greyed when there is nothing to do, and its tooltip says why. If no arrangement can be found you are told so and nothing moves. A paused train stays where it stands, and the others are worked round it. To put every train back on its home without driving anything (after moving them by hand, say), use `Bulk Tools` → `Place All Trains at Their Homes`, or right-click `Return Home` and choose the same item. That menu also has `Run Trains to Their Homes` above it, which is the same as pressing the button. It asks first, and you then move the real trains to their homes yourself. It is greyed, with the reason in its tooltip, while anything is running (autonomy, a timetable, Return Home or a route) or an editor is open.
 
-To see the homes on the diagram, set `Text Labels` to **Home Locs**: each station caption then names its home locomotive, on an ordinary caption when that locomotive is standing there, and in white on dark grey when it is somewhere else. Return Home moves every dark grey one, and also a train standing on its own home turned round (where the home was set facing a way), which the caption, comparing names only, draws as an ordinary one.
+To see the homes on the diagram, set `Station Labels` to **Home Locs**: each station caption then names its home locomotive, on an ordinary caption when that locomotive is standing there, and in white on dark grey when it is somewhere else. Return Home moves every dark grey one, and also a train standing on its own home turned round (where the home was set facing a way), which the caption, comparing names only, draws as an ordinary one.
 
 ---
 
@@ -600,7 +600,7 @@ A configuration is one way of running your railway. They are all under the Auton
 - Also under `Manage Configurations…`: `Stop Using Autonomy` unloads the configuration without deleting anything; `Delete This Layout’s Whole Autonomy Setup...` removes every configuration, with every station name, direction and caption; the track diagram itself is not touched. After `Stop Using Autonomy`, the strip above the diagram offers `Load this configuration`.
 - `Pages with Autonomy Enabled…` says which pages autonomy uses.
 
-None of these can be done while autonomy is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked under Preferences → Startup.
+None of these can be done while autonomy or a route is running. The configuration you were last using is loaded when TrainControl starts, unless `Load Autonomy` is unticked under Preferences → Startup.
 
 **Every configuration shares the railway itself:**
 
@@ -640,6 +640,8 @@ The log is verbose about all of this too, and worth reading: it names the train,
 **The track power is off.** Start, Execute Timetable, Return Home and every train you send by hand are refused until it is on: "To start autonomy, please turn the track power on, or cycle the power." If the power goes off while autonomy, a timetable or Return Home is already running, nothing new is sent, the log says autonomy is waiting for the power, and the run carries on by itself once the power is back.
 
 **The autonomy editor is open.** No train is sent while it is open. Save or Cancel first.
+
+**A route is running.** Start, Execute Timetable, Return Home and every train you send by hand are refused until it has finished, with a message naming it: "The route ... is running.  Wait for it to finish, then try again." With several routes running, the first few are named. Routes that a sensor fires while autonomy is already running do not stop it.
 
 **Autonomy stopped by itself.** When a train fails part way along its route, it is stopped, its track is released, and autonomy stops, naming the train. Check where that train is really standing, and if TrainControl has it somewhere else, put it right before you start again. A train that has not reached its next sensor after five minutes is named in the log.
 

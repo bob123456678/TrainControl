@@ -354,6 +354,11 @@ public final class HomeStaging
     {
         /** Every locomotive with a home is already on it */
         ALREADY_HOME,
+        /**
+         * Every train that can be sent home is on its home, but some that are not are paused (OB-355): nothing is
+         * planned for a paused train, so this is not ALREADY_HOME - see getBlocked for those trains.
+         */
+        PAUSED_AWAY,
         /** A plan exists - see getMoves */
         READY,
         /** No locomotive is placed on the graph */
@@ -482,7 +487,7 @@ public final class HomeStaging
             return Collections.unmodifiableList(this.moves);
         }
 
-        /** Locomotives that cannot reach their home, when the outcome is IMPOSSIBLE */
+        /** Locomotives that cannot reach their home, when the outcome is IMPOSSIBLE; the paused ones away, for PAUSED_AWAY */
         public List<Locomotive> getBlocked()
         {
             return Collections.unmodifiableList(this.blocked);
@@ -500,6 +505,9 @@ public final class HomeStaging
     public Plan plan()
     {
         Outcome trivial = triage();
+
+        // The paused trains away from their homes are the plan's "blocked" for this outcome, so the sentence can name them
+        if (trivial == Outcome.PAUSED_AWAY) return new Plan(trivial, empty(), new ArrayList<>(this.pausedAway));
 
         if (trivial != null) return new Plan(trivial, empty(), noLocs());
 
@@ -877,7 +885,12 @@ public final class HomeStaging
 
         if (!anyHomed) return Outcome.NO_HOMES;
 
-        if (misplaced(this.start) == 0) return Outcome.ALREADY_HOME;
+        if (misplaced(this.start) == 0)
+        {
+            // A paused train counts as home for the plan (FR-117), which is true of nothing else: said apart, so "every
+            // locomotive is already home" is not shown over trains standing away from theirs (OB-355)
+            return this.pausedAway.isEmpty() ? Outcome.ALREADY_HOME : Outcome.PAUSED_AWAY;
+        }
 
         return null;
     }

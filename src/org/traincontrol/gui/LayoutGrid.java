@@ -205,10 +205,13 @@ public class LayoutGrid
             // The event is CONVERTED first: the menu opens at the coordinates it is given, and the
             // caption's coordinates are not the square's - the popup would appear offset by however
             // far the label sits from the corner of its tile.
+            // AND A LEFT CLICK ON A TRAIN drawn over the name, to a tool that takes it for its station (OB-354): the editor
+            // finds the train's square
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                if (handle != square && javax.swing.SwingUtilities.isRightMouseButton(e))
+                if (handle != square && (javax.swing.SwingUtilities.isRightMouseButton(e)
+                    || editor.trainClicked(e) != null))
                 {
                     editor.receiveClickEvent(
                         javax.swing.SwingUtilities.convertMouseEvent(handle, e, square), square);
@@ -1452,10 +1455,10 @@ public class LayoutGrid
                     if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
 
                     // WHETHER THIS LABEL IS DRAWN AT ALL (OB-272).  In the autonomy editor a CAPTION follows
-                    // the caption dropdown and the user's own writing follows the text switch, which only
-                    // Labels Only turns on - Adam, 2026-09-23: *"make text labels be a dedicated setting, and
-                    // hide the text labels unless it is selected."*  Everywhere else one switch decides both,
-                    // as it always has.
+                    // the caption dropdown and the user's own writing follows the text switch, which only the
+                    // Text Labels box turns on (FR-133) - Adam, 2026-09-23: *"make text labels be a dedicated
+                    // setting, and hide the text labels unless it is selected."*  Everywhere else one switch
+                    // decides both, as it always has.
                     final AutonomyEditorPanel captionPanel = autonomyEditor && master instanceof LayoutEditor
                         ? ((LayoutEditor) master).getAutonomyPanel() : null;
 

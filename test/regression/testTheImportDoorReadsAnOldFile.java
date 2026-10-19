@@ -3312,10 +3312,10 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * The editor opened for a finding outlines what the finding names - its own square and those beside it - and a
-     * finding that names nothing beside its own is shown, not outlined (RLV10-C3, RLV10-C5): the editor's own list does
-     * the same.  The Auto tab's list opens the editor this way, with each row's squares, an empty list for most.
+     * finding that names nothing beside its own is outlined as well (OB-352, RLV10-C5): the editor's own list does the
+     * same.  The Auto tab's list opens the editor this way, with each row's squares, an empty list for most.
      *
-     * MUTATION: open without the outline, or outline a finding that names nothing, and this fails.
+     * MUTATION: open without the outline, or outline only a finding that names other squares, and this fails.
      *
      * @throws Exception from the window
      */
@@ -3356,9 +3356,9 @@ public class testTheImportDoorReadsAnOldFile
 
             org.traincontrol.gui.AutonomyEditorPanel shown = openTheEditorFor(ui[0], first, Collections.emptyList());
 
-            assertFalse(shown.isOutlined(first), "the editor opened for a finding that names nothing beside its own"
-                + " outlines its square, as it outlines the bulk selection - the editor's own list only shows it"
-                + " (RLV10-C3)");
+            // OUTLINED TOO, as the editor's own list now outlines every finding it goes to (OB-352)
+            assertTrue(shown.isOutlined(first), "the editor opened for a finding that names nothing beside its own does"
+                + " not outline its square, as the editor's own list does (OB-352, RLV10-C3)");
 
             closeTheEditor(ui[0]);
 
@@ -3382,6 +3382,192 @@ public class testTheImportDoorReadsAnOldFile
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * A click on a train drawn on the diagram is a click on the station it stands on, to Test a Path and to Why Not
+     * Moving? (OB-354).  Adam: *"if clicking on a locomotive in test a path / why not moving, make it register a click on
+     * the station."*  The train is drawn over the station's caption, so a click on it landed on the caption, which kept a
+     * left click to itself.  On the frozen railway: a station with a train standing on it, and a point on the train where
+     * something other than the station's own square is on top.
+     *
+     * MUTATION: take the click where it lands, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAClickOnATrainIsAClickOnItsStation() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        // SHOW TRAINS ON, SET AND NOT TOGGLED: the editor's box is remembered in the preferences, and a run's copy of them
+        // starts as Adam's own, so a claim about the trains drawn was green only while his box was ticked
+        final java.util.prefs.Preferences viewPrefs =
+            org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.AutonomyEditorPanel.class);
+
+        final String trainsWas = viewPrefs.get("autonomyEditorTrains", null);
+
+        try
+        {
+            viewPrefs.putBoolean("autonomyEditorTrains", true);
+
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            boolean tried = false;
+
+            for (org.traincontrol.automation.Point p : ui[0].getModel().getAutoLayout().getPoints())
+            {
+                final TileKey station = p.isDestination() ? session.getStationIndex().squareOf(p.getName()) : null;
+
+                if (station == null || session.getLocomotiveNameAt(station) == null) continue;
+
+                org.traincontrol.base.LayoutDiagramComponent drawn = session.getGraph().getTiles().get(station);
+
+                // A straight one, whose train is drawn round the middle of its square
+                if (drawn == null || drawn.getType() != org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK)
+                {
+                    continue;
+                }
+
+                final org.traincontrol.gui.AutonomyEditorPanel panel = openTheEditorFor(ui[0], station, null);
+
+                java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+                open.setAccessible(true);
+
+                final org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui[0]);
+
+                java.lang.reflect.Field gridField = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("grid");
+                gridField.setAccessible(true);
+
+                final org.traincontrol.gui.LayoutLabel square =
+                    ((org.traincontrol.gui.LayoutGrid) gridField.get(editor)).getValueAt(station.getX(), station.getY());
+
+                // Where on the train something else is on top: within a third of a square of its middle, which the
+                // icon - three quarters of a square across - covers
+                final Component[] on = new Component[1];
+                final java.awt.Point[] at = new java.awt.Point[1];
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    Container diagram = square.getParent();
+
+                    int span = Math.min(square.getWidth(), square.getHeight());
+
+                    for (int dy = -span / 3; dy <= span / 3 && on[0] == null; dy++)
+                    {
+                        for (int dx = -span / 3; dx <= span / 3 && on[0] == null; dx += Math.max(1, span / 6))
+                        {
+                            if (dx * dx + dy * dy > span * span / 9) continue;
+
+                            java.awt.Point there = new java.awt.Point(square.getX() + square.getWidth() / 2 + dx,
+                                square.getY() + square.getHeight() / 2 + dy);
+
+                            // What a click there reaches: the deepest component that listens for one
+                            Component top = SwingUtilities.getDeepestComponentAt(diagram, there.x, there.y);
+
+                            while (top != null && top.getMouseListeners().length == 0) top = top.getParent();
+
+                            if (top != null && top != square)
+                            {
+                                on[0] = top;
+                                at[0] = SwingUtilities.convertPoint(diagram, there, top);
+                            }
+                        }
+                    }
+                });
+
+                if (on[0] == null || !panel.isShowingTrains())
+                {
+                    closeTheEditor(ui[0]);
+
+                    continue;
+                }
+
+                tried = true;
+
+                // TEST A PATH: the click names where the path starts
+                final javax.swing.JToggleButton test = (javax.swing.JToggleButton) panelPart(panel, "testButton");
+
+                SwingUtilities.invokeAndWait(() -> test.doClick());
+
+                assertFalse(panel.isOutlined(station), "precondition: " + station + " is outlined before it is clicked");
+
+                clickOn(on[0], at[0]);
+
+                assertTrue(panel.isOutlined(station), "a click on the train standing at " + station + ", where "
+                    + on[0].getClass().getSimpleName() + " is on top, did not start Test a Path there (OB-354)");
+
+                // WHY NOT MOVING?: the click names the station asked about
+                final javax.swing.JToggleButton why = (javax.swing.JToggleButton) panelPart(panel, "whyButton");
+
+                SwingUtilities.invokeAndWait(() -> why.doClick());
+
+                clickOn(on[0], at[0]);
+
+                assertEquals(panelPart(panel, "lastWhyTile"), station, "a click on the train standing at " + station
+                    + ", where " + on[0].getClass().getSimpleName() + " is on top, did not ask Why Not Moving? about it"
+                    + " (OB-354)");
+
+                closeTheEditor(ui[0]);
+
+                break;
+            }
+
+            assertTrue(tried, "precondition: no straight station of the frozen railway has a train drawn, with Show"
+                + " Trains on, where something else is on top");
+        }
+        finally
+        {
+            if (trainsWas == null) viewPrefs.remove("autonomyEditorTrains");
+            else viewPrefs.put("autonomyEditorTrains", trainsWas);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                closeTheEditor(ui[0]);
+
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** Presses and lets go of the left button at a point of a component, as a click there arrives. */
+    private static void clickOn(final Component on, final java.awt.Point at) throws Exception
+    {
+        for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+            java.awt.event.MouseEvent.MOUSE_CLICKED})
+        {
+            SwingUtilities.invokeAndWait(() -> on.dispatchEvent(new java.awt.event.MouseEvent(on, id,
+                System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_DOWN_MASK, at.x, at.y, 1, false,
+                java.awt.event.MouseEvent.BUTTON1)));
+        }
+
+        for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** A private field of the editor's panel, by name. */
+    private static Object panelPart(org.traincontrol.gui.AutonomyEditorPanel panel, String name) throws Exception
+    {
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.get(panel);
     }
 
     /** Opens the autonomy editor at a square, as a finding's click does, and waits for it to settle. */
@@ -4742,7 +4928,24 @@ public class testTheImportDoorReadsAnOldFile
     private static List<String> importFromTheMenu(TrainControlUI ui, File file, String name, Set<String> no)
         throws Exception
     {
+        return importFromTheMenu(ui, file, name, no, null);
+    }
+
+    /**
+     * The same, with the height of each message's window put in `heights`, in the order of what it said (OB-349).
+     */
+    static List<String> importFromTheMenu(TrainControlUI ui, File file, String name, List<Integer> heights)
+        throws Exception
+    {
+        return importFromTheMenu(ui, file, name, Collections.<String>emptySet(), heights);
+    }
+
+    private static List<String> importFromTheMenu(TrainControlUI ui, File file, String name, Set<String> no,
+        List<Integer> heights) throws Exception
+    {
         Answerer answerer = pressImport(ui, file, name, no);
+
+        if (heights != null) heights.addAll(answerer.heights);
 
         assertTrue(answerer.chose, "precondition: the import never showed the file chooser");
         assertTrue(answerer.named, "precondition: the import never asked for the configuration's name");
@@ -4802,6 +5005,7 @@ public class testTheImportDoorReadsAnOldFile
         private final String name;
         private final Set<String> no;
         private final List<String> said = Collections.synchronizedList(new ArrayList<>());
+        private final List<Integer> heights = Collections.synchronizedList(new ArrayList<>());
         private final Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
         private volatile boolean running = true;
         private volatile boolean chose = false;
@@ -4859,7 +5063,7 @@ public class testTheImportDoorReadsAnOldFile
 
                     if (pane == null || !handled.add(pane)) continue;
 
-                    final String text = String.valueOf(pane.getMessage());
+                    final String text = textOf(pane.getMessage());
 
                     if (I18n.t("autosetup.ui.promptImportName").equals(text))
                     {
@@ -4875,6 +5079,7 @@ public class testTheImportDoorReadsAnOldFile
                     }
 
                     said.add(text);
+                    heights.add(window.getHeight());
 
                     final Object[] options = pane.getOptions();
 
@@ -4884,6 +5089,42 @@ public class testTheImportDoorReadsAnOldFile
                         ? options[answer] : Integer.valueOf(JOptionPane.OK_OPTION)));
                 }
             }
+        }
+    }
+
+    /**
+     * What a message says: its text, or - for a message that is a panel, as the list of locomotives an import left out is
+     * (OB-349) - the text of each label and each line of each list in it, one to a line.
+     */
+    static String textOf(Object message)
+    {
+        if (!(message instanceof Component)) return String.valueOf(message);
+
+        StringBuilder text = new StringBuilder();
+
+        textOf((Component) message, text);
+
+        return text.toString();
+    }
+
+    private static void textOf(Component component, StringBuilder text)
+    {
+        if (component instanceof javax.swing.JLabel)
+        {
+            text.append(String.valueOf(((javax.swing.JLabel) component).getText()).replaceAll("<[^>]*>", "")
+                .replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")).append('\n');
+        }
+
+        if (component instanceof javax.swing.JList)
+        {
+            javax.swing.ListModel<?> lines = ((javax.swing.JList<?>) component).getModel();
+
+            for (int at = 0; at < lines.getSize(); at++) text.append(lines.getElementAt(at)).append('\n');
+        }
+
+        if (component instanceof Container)
+        {
+            for (Component child : ((Container) component).getComponents()) textOf(child, text);
         }
     }
 

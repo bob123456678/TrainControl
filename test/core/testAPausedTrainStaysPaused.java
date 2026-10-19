@@ -255,8 +255,10 @@ public class testAPausedTrainStaysPaused
 
         assertEquals(layout.getLocomotiveLocation(alpha).getName(), "PT C", "the paused train did not stay where it stood");
 
-        assertEquals(layout.triageReturnToHome(), HomeStaging.Outcome.ALREADY_HOME, "with every train but the paused"
-            + " one home, Return Home's check after a run says not everyone is, and the window reports the run stopped");
+        // PAUSED_AWAY, and not ALREADY_HOME, since the paused one stands away (OB-355); the window counts it as done
+        assertEquals(layout.triageReturnToHome(), HomeStaging.Outcome.PAUSED_AWAY, "with every train but the paused"
+            + " one home, Return Home's check after a run does not say only the paused one is away, and the window"
+            + " reports the run stopped");
     }
 
     /**
@@ -854,6 +856,43 @@ public class testAPausedTrainStaysPaused
         assertTrue(layout != null && layout.isValid(), "precondition: the ring must build - " + Layout.getLastError());
 
         return layout;
+    }
+
+    /**
+     * A station's maximum train length is said once as a configuration loads, by the station's name, however many copies
+     * its square builds into (OB-362; Adam: "dedupe by station name, rather than showing all copies
+     * (eastbound/westbound)").
+     *
+     * MUTATION: log it per copy again, or by the copy's name, and this fails.
+     */
+    @Test
+    public void testAStationsMaximumIsSaidOnceByItsName()
+    {
+        JSONObject config = new JSONObject(ring(null, null).replace("PT A", "Yard (eastbound)")
+            .replace("PT B", "Yard (westbound)"));
+
+        JSONArray points = config.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            if (points.getJSONObject(i).getString("name").startsWith("Yard ")) points.getJSONObject(i).put("maxTrainLength", 3);
+        }
+
+        logged.clear();
+
+        load(config.toString());
+
+        String said = I18n.f("autolayout.infoSetMaxTrainLength", 3, "#").split("#", -1)[0].trim();
+
+        List<String> lines = new ArrayList<>();
+
+        for (String line : new ArrayList<>(logged))
+        {
+            if (line.trim().startsWith(said)) lines.add(line.trim());
+        }
+
+        assertEquals(lines, Collections.singletonList(I18n.f("autolayout.infoSetMaxTrainLength", 3, "Yard").trim()),
+            "the maximum of Yard's two copies was not said once, by the station's name: " + lines);
     }
 
     /** Four stations in a ring, every edge both ways, with the two trains on PT A and PT B - their homes. */

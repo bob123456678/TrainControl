@@ -1,0 +1,149 @@
+{
+    "points": [
+        {
+            "name": "Departure",
+            "station": false,
+            "x": 105,
+            "y": 133
+        },
+        {
+            "name": "Main Track",
+            "station": false,
+            "s88": 4,
+            "x": 57,
+            "y": 164
+        },
+        {
+            "name": "Station 1",
+            "station": true,
+            "s88": 1,
+            "maxTrainLength": 0,
+            "x": 61,
+            "y": 113
+        },
+        {
+            "name": "Station 2",
+            "station": true,
+            "s88": 2,
+            "maxTrainLength": 0,
+            "x": 61,
+            "y": 98
+        },
+        {
+            "name": "StationArrival",
+            "station": true,
+            "s88": 3,
+            "maxTrainLength": 0,
+            "x": 4,
+            "y": 129
+        }
+    ],
+    "edges": [
+        {
+            "start": "Departure",
+            "end": "Main Track",
+            "length": 0
+        },
+        {
+            "start": "Main Track",
+            "end": "StationArrival",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 4",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 5",
+                    "state": "red"
+                }
+            ]
+        },
+        {
+            "start": "Station 1",
+            "end": "Departure",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 3",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "Station 2",
+            "end": "Departure",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Switch 1",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 3",
+                    "state": "green"
+                }
+            ]
+        },
+        {
+            "start": "StationArrival",
+            "end": "Station 1",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 4",
+                    "state": "green"
+                },
+                {
+                    "acc": "Switch 2",
+                    "state": "straight"
+                },
+                {
+                    "acc": "Signal 5",
+                    "state": "red"
+                },
+                {
+                    "acc": "Signal 3",
+                    "state": "red"
+                }
+            ]
+        },
+        {
+            "start": "StationArrival",
+            "end": "Station 2",
+            "length": 0,
+            "commands": [
+                {
+                    "acc": "Signal 4",
+                    "state": "red"
+                },
+                {
+                    "acc": "Switch 2",
+                    "state": "turn"
+                },
+                {
+                    "acc": "Signal 5",
+                    "state": "green"
+                },
+                {
+                    "acc": "Signal 3",
+                    "state": "red"
+                }
+            ]
+        }
+    ],
+    "minDelay": 1,
+    "maxDelay": 2,
+    "defaultLocSpeed": 35,
+    "preArrivalSpeedReduction": 0.5,
+    "turnOffFunctionsOnArrival": true,
+    "turnOnFunctionsOnDeparture": true,
+    "atomicRoutes": true,
+    "maxLocInactiveSeconds": 120,
+    "timetable": [],
+    "simulate": true
+}

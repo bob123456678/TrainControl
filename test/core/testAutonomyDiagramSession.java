@@ -263,6 +263,175 @@ public class testAutonomyDiagramSession
             "the square the train was moved off still records the road it came in along (AMS-C1, WK7-B1)");
     }
 
+    /**
+     * A sensor address on two squares of one page is said once, naming both squares, as a WARNING (FR-139).
+     *
+     * MUTATION: leave the check out of the setup check, or leave one of the two squares out of its places, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASensorAddressOnTwoSquaresIsSaidOnce() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), twoSensorPage("second", "2", 40)));
+        session.initialize("FR139 shared");
+
+        org.traincontrol.automationui.AutonomyChecks.Finding shared = sharedAddressFinding();
+
+        assertNotNull(shared, "address 40 is on two squares of one page, and the setup check does not say so");
+
+        assertEquals(shared.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.WARNING,
+            "a shared sensor address is not a WARNING: " + shared);
+
+        assertEquals(new LinkedHashSet<>(shared.getRelated()),
+            new LinkedHashSet<>(Arrays.asList(new TileKey("second", 1, 1), new TileKey("second", 3, 1))),
+            "the places are not the two squares that carry address 40: " + shared.getRelated());
+    }
+
+    /**
+     * A sensor address two pages share is OB-150's ERROR alone - the later page repeats the earlier one's sensors - and
+     * the shared-address warning does not say it again (FR-139; Adam, 2026-10-18: "suppress the warning where OB-150
+     * applies").
+     *
+     * MUTATION: count the squares of a page OB-150 reports, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASharedAddressThatOB150ReportsIsNotSaidAgain() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), sensorPage("second", "2", 11)));
+        session.initialize("FR139 OB150");
+
+        boolean repeated = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            repeated |= org.traincontrol.automationui.AutonomyChecks.DUPLICATE_SENSOR_PAGE.equals(finding.getMessageKey());
+        }
+
+        assertTrue(repeated, "precondition: address 11 on a square of each of two pages is not OB-150's ERROR");
+
+        assertNull(sharedAddressFinding(), "a share OB-150 already reports is said a second time");
+    }
+
+    /**
+     * A page autonomy does not use is not one of the places a sensor address is shared between (FR-139).
+     *
+     * The control is the same two squares with both pages in, so the absence below is about the exclusion and not about
+     * a check that has stopped finding anything.
+     *
+     * MUTATION: read the excluded pages out of the sensor check, or leave the excluded page in its places, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAnExcludedPageDoesNotShareItsSensorAddress() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), twoSensorPage("second", "2", 40)));
+        session.initialize("FR139 excluded");
+
+        assertNotNull(sharedAddressFinding(), "precondition: the page's two squares are not reported before it is left out");
+
+        session.setPageExcluded("second", true);
+
+        assertNull(sharedAddressFinding(), "a sensor on a page left out of autonomy is still said to share its address");
+    }
+
+    /**
+     * A sensor with no address is not a shared address, however many squares have none (FR-139).
+     *
+     * An address of zero or less is no address: the reduction makes no point of one and the duplicate-sensor check passes
+     * over one.
+     *
+     * MUTATION: count a sensor whose address is 0 or -1 as an address, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASensorWithNoAddressIsNotShared() throws Exception
+    {
+        LayoutDiagram unaddressed = new LayoutDiagram("second", 6, 4, null, null);
+
+        unaddressed.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        unaddressed.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, -1, -1, accessoryDecoderType.MM2, null);
+        unaddressed.setPageId("2");
+
+        session.open(Arrays.asList(runOfTrack(), unaddressed));
+        session.initialize("FR139 none");
+
+        assertNull(sharedAddressFinding(), "two sensors with no address are said to share one");
+    }
+
+    /**
+     * A square that builds into two copies, one per way a train comes in, is one place and is not said to share its
+     * address with itself (FR-139).
+     *
+     * The precondition is the copies: the middle square builds into more than one Point, or the claim says nothing.
+     *
+     * MUTATION: count each copy of a square as a place, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASquareThatBuildsIntoCopiesIsNotSharedWithItself() throws Exception
+    {
+        threeStationsInARow("FR139 copies");
+
+        TileKey middle = new TileKey("main", 3, 1);
+
+        int copies = 0;
+
+        org.json.JSONArray points = new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            if (middle.toString().equals(points.getJSONObject(i).optString("square"))) copies++;
+        }
+
+        assertTrue(copies > 1, "precondition: the middle square builds into " + copies + " Point, so the claim below is"
+            + " about nothing");
+
+        assertNull(sharedAddressFinding(), "a square that builds into " + copies + " copies is said to share its address"
+            + " with itself");
+    }
+
+    /** The setup check's shared-sensor-address finding, or null (FR-139). */
+    private org.traincontrol.automationui.AutonomyChecks.Finding sharedAddressFinding()
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.SENSOR_ADDRESS_SHARED.equals(finding.getMessageKey()))
+            {
+                return finding;
+            }
+        }
+
+        return null;
+    }
+
+    /** A page of its own with two sensors, at (1,1) and (3,1), both carrying `address`, and a straight between (FR-139). */
+    private LayoutDiagram twoSensorPage(String name, String id, int address) throws IOException
+    {
+        LayoutDiagram page = sensorPage(name, id, address);
+
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+
+        return page;
+    }
+
+    /** A page of its own with one sensor at (1,1) carrying `address`, and a straight beside it (FR-139). */
+    private LayoutDiagram sensorPage(String name, String id, int address) throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram(name, 6, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.setPageId(id);
+
+        return page;
+    }
+
     @BeforeMethod
     public void setUp() throws IOException
     {
@@ -888,6 +1057,9 @@ public class testAutonomyDiagramSession
     {
         threeStationsInARow("OB-201");
 
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
+
         TileKey beta = new TileKey("main", 3, 1);
 
         // EAST OF BETA, ONE WAY TOWARDS IT: a train arriving from the west cannot go on, one from the east can
@@ -932,6 +1104,9 @@ public class testAutonomyDiagramSession
     {
         threeStationsInARow("RSA37-B1");
 
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
+
         TileKey beta = new TileKey("main", 3, 1);
 
         // EAST OF BETA, ONE WAY TOWARDS IT: a train arriving from the west cannot go on
@@ -956,10 +1131,10 @@ public class testAutonomyDiagramSession
 
     /**
      * The trapped-arrival warning offers to close arrivals only where the arrivals menu can do it (RSA37-B1): not at a
-     * station trapped from every way in, whose last open side the menu will not shut, nor at a plain point, which has no
-     * arrivals menu.  There it offers the other two ways out, and names the side once.
+     * station trapped from every way in, whose last open side the menu will not shut.  There it offers the other two ways
+     * out, and names the side once.  A plain point is not told at all: no train is sent there (OB-361).
      *
-     * MUTATION: offer closing arrivals everywhere, or nowhere, and this fails.
+     * MUTATION: offer closing arrivals everywhere, or nowhere, or tell a plain point, and this fails.
      *
      * @throws Exception from the build
      */
@@ -967,6 +1142,9 @@ public class testAutonomyDiagramSession
     public void testClosingArrivalsIsOfferedOnlyWhereTheMenuCanDoIt() throws Exception
     {
         threeStationsInARow("RSA37-B1 offered");
+
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
 
         TileKey beta = new TileKey("main", 3, 1);
 
@@ -1006,29 +1184,84 @@ public class testAutonomyDiagramSession
         assertEquals(last.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING, "a"
             + " station is told to close arrivals from its last open way in, which the arrivals menu refuses (RSA37-B1)");
 
-        // A PLAIN POINT, trapped from the west: no arrivals menu at all
+        // AND THE WORDS: the side named once, as where the train comes from, and no more
+        String side = org.traincontrol.util.I18n.t("autosetup.ui.sideE");
+
+        String said = org.traincontrol.util.I18n.f(last.getMessageKey(), "3,1", last.getSubject());
+
+        assertEquals(said.split(java.util.regex.Pattern.quote(side), -1).length - 1, 1, "the advice without closing"
+            + " arrivals names the side other than as where the train comes from: " + said);
+
+        // A PLAIN POINT, trapped from the west, where trains from 1,1 arrive: nothing is sent there, so nothing is said
         session.setBarredArrivals(beta, new LinkedHashSet<Side>());
         session.setDirection(west, new RouteId(0, 0), Direction.BOTH);
         session.setStation(beta, false);
         session.rebuild();
 
-        org.traincontrol.automationui.AutonomyChecks.Finding point = trappedAt(beta);
+        assertTrue(hasACopyWithNoWayOut(beta), "precondition: the plain point 3,1 has no copy a train cannot leave");
 
-        assertNotNull(point, "precondition: the plain point 3,1 is not reported trapped from the west: " + session.check());
+        assertNull(trappedAt(beta), "a plain point is said to trap a train, and no train is sent there (OB-361): "
+            + session.check());
+    }
 
-        assertEquals(point.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.INFO, "precondition: 3,1"
-            + " is not a plain point");
+    /**
+     * An arrival no train can make is not said to be trapped (OB-361; Adam: *"it is impossible for trains to arrive from
+     * the west anyway, so both these conditions should disqualify the notice."*).  3,1 is a station with track east of it
+     * running only towards it, so a train arriving from the west could not go on; then trains stop turning round at 1,1,
+     * the end of the line west of it, and no train arrives at 3,1 from the west at all.
+     *
+     * MUTATION: say it for a copy no train reaches, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAnArrivalNoTrainMakesIsNotTrapped() throws Exception
+    {
+        threeStationsInARow("OB-361 unreached");
 
-        assertEquals(point.getMessageKey(), org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED_NO_CLOSING, "a"
-            + " plain point is told to close arrivals, and has no arrivals menu (RSA37-B1)");
+        // TRAINS TURN ROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
+        turnTrainsRoundAtBothEnds();
 
-        // AND THE WORDS: the side named once, as where the train comes from, and no more
-        String side = org.traincontrol.util.I18n.t("autosetup.ui.sideW");
+        TileKey beta = new TileKey("main", 3, 1);
 
-        String said = org.traincontrol.util.I18n.f(point.getMessageKey(), "3,1", point.getSubject());
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.rebuild();
 
-        assertEquals(said.split(java.util.regex.Pattern.quote(side), -1).length - 1, 1, "the advice without closing"
-            + " arrivals names the side other than as where the train comes from: " + said);
+        assertNotNull(trappedAt(beta), "precondition: a train arriving at 3,1 from the west is not reported trapped: "
+            + session.check());
+
+        // AND NOW NO TRAIN ARRIVES FROM THE WEST: trains reaching 1,1, the end of the line, no longer turn round there
+        session.setPointProperty(new TileKey("main", 1, 1), "mustReverse", null);
+        session.rebuild();
+
+        assertTrue(hasACopyWithNoWayOut(beta), "precondition: 3,1 no longer has a copy a train cannot leave, so nothing"
+            + " below is about one no train reaches");
+
+        assertNull(trappedAt(beta), "an arrival at 3,1 from the west, which no train can make, is said to be trapped"
+            + " (OB-361): " + session.check());
+    }
+
+    /** Whether the built railway has a copy of this square that no edge leaves. */
+    private boolean hasACopyWithNoWayOut(TileKey square) throws Exception
+    {
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        Set<String> leaving = new LinkedHashSet<>();
+
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++) leaving.add(edges.getJSONObject(i).getString("start"));
+
+        org.json.JSONArray points = built.getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.getJSONObject(i);
+
+            if (square.toString().equals(point.optString("square")) && !leaving.contains(point.getString("name"))) return true;
+        }
+
+        return false;
     }
 
     /** The setup check's trapped-arrival finding at this square, whichever advice it gives, or null. */
@@ -2234,17 +2467,22 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A square of a run that lets trains through otherwise than the run's first square keeps its own arrows (OB-321).  A
-     * run disagreeing with itself is the one thing a single arrow per run would hide, and the running diagram must not.
+     * A run whose squares say different things is brought to one, its narrowest - what a train finds - and every square
+     * of it stores that, as its first square draws it (OB-361; Adam, on OB-321: *"Any disagreement should be corrected so
+     * that the viewer displays the source of truth, and the editor flags issues, rather than surprising the user."*).  A
+     * train passes every square of a run, so one square closed in a run open one way closes the run: every square is
+     * stored closed, the first draws it closed and the rest draw nothing, on the track diagram as in the editor, and the
+     * log says it once.
      *
-     * MUTATION: leave out every square but the run's first, whatever it says, and this fails.
+     * MUTATION: leave a run's squares as they were stored, draw a square that follows its run, or draw the first square's
+     * own direction, and this fails.
      *
-     * @throws Exception from the session
+     * @throws Exception from the session or the panel
      */
     @Test
-    public void testARunSquareThatSaysOtherwiseKeepsItsArrows() throws Exception
+    public void testARunThatSaysTwoThingsIsBroughtToWhatATrainFinds() throws Exception
     {
-        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-321 odd");
+        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-361 odd");
 
         TileKey leader = session.runLeaders().get(run.get(0));
 
@@ -2255,20 +2493,207 @@ public class testAutonomyDiagramSession
 
         assertFalse(odd.equals(leader), "precondition: the square closed is the run's first");
 
+        session.takeSquaresBroughtToTheirArrows();
+
+        // ONE SQUARE CLOSED ALONE, as no door of the editor does now but a file or an older version can
         session.setDirection(odd, new RouteId(0, 0), Direction.NONE);
+
+        // STORED: every square of the run closed, as a train finds it
+        for (TileKey square : run)
+        {
+            assertEquals(session.getStore().getTileDirection(square, new RouteId(0, 0)), Direction.NONE, square + " is"
+                + " stored otherwise than closed, in a run a closed square closes (OB-361)");
+        }
+
+        // SAID ONCE, under the run's first square
+        assertEquals(session.getSquaresBroughtToTheirArrows().keySet(), java.util.Collections.singleton(leader), "the run"
+            + " brought to one direction is not said once, under its first square: "
+            + session.getSquaresBroughtToTheirArrows());
+
+        session.takeSquaresBroughtToTheirArrows();
         session.rebuild();
 
+        assertTrue(session.takeSquaresBroughtToTheirArrows().isEmpty(), "the run was said again by the next rebuild");
+
+        // DRAWN: the first square closed, the rest nothing, as in the editor
         java.util.Map<TileKey, TileAnnotation> drawn = session.staticAnnotations(run, true, false);
 
-        assertTrue(drawn.get(odd) != null && !drawn.get(odd).isBlank(), odd + ", closed in a run open one way, draws"
-            + " nothing, so the diagram hides that the run disagrees with itself (OB-321)");
+        assertTrue(drawn.get(leader) != null && drawn.get(leader).getMarks().size() == 1
+            && drawn.get(leader).getMarks().get(0).getDirection() == Direction.NONE, "the run's first square does not draw"
+            + " the run closed, and a train can pass no square of it: " + (drawn.get(leader) == null ? null
+                : drawn.get(leader).getMarks()));
+
+        org.traincontrol.gui.AutonomyEditorPanel panel = aPanel();
 
         for (TileKey square : run)
         {
-            if (square.equals(leader) || square.equals(odd)) continue;
+            if (!square.equals(leader))
+            {
+                assertTrue(drawn.get(square) == null || drawn.get(square).isBlank(), square + " draws its own arrows though"
+                    + " it follows its run (OB-361)");
+            }
 
-            assertTrue(drawn.get(square) == null || drawn.get(square).isBlank(), square + " draws its own arrows though it"
-                + " says only what the run's first square says (OB-321)");
+            List<TileAnnotation.Mark> diagram = drawn.get(square) == null
+                ? new ArrayList<TileAnnotation.Mark>() : drawn.get(square).getMarks();
+
+            assertEquals(diagram, panel.annotationFor(square).getMarks(), square + " is drawn otherwise on the track diagram"
+                + " than in the editor (OB-361)");
+        }
+    }
+
+    /**
+     * A click on a run whose track simply stops sets every square of it, the last one too (OB-361): it was left out, as
+     * a boundary, and the run said two things.
+     *
+     * MUTATION: leave the square beside the end of the track out again, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testARunToTheEndOfTheTrackIsSetToItsEnd() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 6, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+
+        for (int x = 2; x <= 4; x++) page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("OB-361 end of the track");
+        session.setStation(new TileKey("main", 1, 1), true);
+
+        TileKey leader = session.runLeaders().get(new TileKey("main", 3, 1));
+
+        assertNotNull(leader, "precondition: the straights are not a run");
+
+        assertEquals(session.runs().get(leader).getTiles().size(), 3, "precondition: the three straights are not one run");
+
+        session.takeSquaresBroughtToTheirArrows();
+
+        assertTrue(session.setRunDirection(leader, new RouteId(0, 0), Direction.TOWARD_A) > 0, "precondition: the run"
+            + " could not be made one way");
+
+        for (TileKey square : session.runs().get(leader).getTiles())
+        {
+            assertNotNull(session.getStore().getTileDirection(square, new RouteId(0, 0)), square + " of the run clicked one"
+                + " way was left both ways");
+        }
+
+        assertTrue(session.takeSquaresBroughtToTheirArrows().isEmpty(), "the click left its run for the correction to"
+            + " bring into line");
+    }
+
+    /**
+     * Track laid on a blank square beside a one-way run takes the run's direction and is saved with the edit, so the next
+     * open has nothing to correct (RSA75-C1).  The store held nothing about the blank square, so the edit's answer said
+     * nothing was forgotten, the editor did not save, and the next open logged the run as a setup that "did not say the
+     * same on every square" - about track just laid.  The drop is done as the track diagram editor does it: the tile
+     * placed, then `forgetTiles` on its square, and a save when that says something changed.
+     *
+     * MUTATION: answer only what the store forgot again, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTrackLaidBesideAOneWayRunIsSavedWithTheEdit() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+
+        for (int x = 2; x <= 4; x++)
+        {
+            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("RSA75-C1");
+        session.setStation(new TileKey("main", 1, 1), true);
+
+        TileKey leader = session.runLeaders().get(new TileKey("main", 3, 1));
+
+        assertTrue(session.setRunDirection(leader, new RouteId(0, 0), Direction.TOWARD_A) > 0, "precondition: the run"
+            + " could not be made one way");
+
+        session.save();
+
+        // A STRAIGHT DROPPED ON THE BLANK SQUARE AT THE END OF THE RUN, as the editor drops one
+        TileKey laid = new TileKey("main", 5, 1);
+
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        if (session.forgetTiles(Arrays.asList(laid))) session.saveQuietly();
+
+        assertNotNull(session.getStore().getTileDirection(laid, new RouteId(0, 0)), "precondition: the straight laid did"
+            + " not take its run's direction");
+
+        AutonomySession reopened = new AutonomySession(layout);
+
+        reopened.open(Arrays.asList(page));
+
+        assertNotNull(reopened.getStore().getTileDirection(laid, new RouteId(0, 0)), "the straight laid beside the one-way"
+            + " run took the run's direction in memory and was not saved with the edit (RSA75-C1)");
+
+        assertTrue(reopened.getSquaresBroughtToTheirArrows().isEmpty(), "the next open logged the track just laid as a"
+            + " correction (RSA75-C1): " + reopened.getSquaresBroughtToTheirArrows());
+    }
+
+    /**
+     * A run whose squares point opposite ways - no train can pass it - is left as it is and is a warning, about the run,
+     * naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.  Closing it in
+     * the correction would hide which way was meant behind a setting that looks chosen.
+     *
+     * MUTATION: say nothing, or close the run, or name another square, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testARunPointingOppositeWaysIsAWarning() throws Exception
+    {
+        List<TileKey> run = aRunOfFourBetweenTwoStations("OB-361 opposite");
+
+        TileKey leader = session.runLeaders().get(run.get(0));
+
+        TileKey west = new TileKey("main", 2, 1);
+        TileKey east = new TileKey("main", 5, 1);
+
+        // ONE END ONE WAY, THE OTHER THE OTHER, as no door of the editor does but a file or an older version can
+        session.setDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
+        session.setDirection(east, new RouteId(0, 0), Direction.TOWARD_B);
+
+        assertEquals(session.getStore().getTileDirection(east, new RouteId(0, 0)), Direction.TOWARD_B, "the run pointing"
+            + " opposite ways was not left as it is");
+        assertNotEquals(session.getStore().getTileDirection(west, new RouteId(0, 0)), Direction.NONE, "the run pointing"
+            + " opposite ways was closed");
+
+        org.traincontrol.automationui.AutonomyChecks.Finding said = null;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkRunPointsOppositeWays".equals(finding.getMessageKey())) said = finding;
+        }
+
+        assertNotNull(said, "a run no train can pass, its squares pointing opposite ways, is not a warning: "
+            + session.check());
+
+        assertEquals(said.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.WARNING, "graded");
+
+        assertEquals(said.getTile(), leader, "the warning is not about the run's first square, where its arrow is");
+
+        assertEquals(new LinkedHashSet<>(said.getRelated()), new LinkedHashSet<>(run), "the warning does not name the"
+            + " run's squares, so a click on it cannot outline the run");
+
+        // THE ARROW CLICKED: one way for all of it
+        session.setRunDirection(leader, new RouteId(0, 0), Direction.TOWARD_A);
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            assertNotEquals(finding.getMessageKey(), "autosetup.ui.checkRunPointsOppositeWays", "the warning stayed after"
+                + " the run was set one way");
         }
     }
 
@@ -2841,8 +3266,10 @@ public class testAutonomyDiagramSession
         session.setDirection(turnout, road, Direction.NONE);
         session.rebuild();
 
-        assertEquals(session.routesNotOpenBothWays().get(turnout), java.util.Collections.singletonList(road), "a turnout"
-            + " with no address, closed, is not counted as shut");
+        // CLOSED AT ITS TOE, so both its roads (OB-351): a road shut shuts the arm it leaves by, and every road leaves by
+        // the toe - whose arrow is the whole of what the square says
+        assertEquals(session.routesNotOpenBothWays().get(turnout), new ArrayList<>(session.getGraph().getRoutes(turnout)
+            .keySet()), "a turnout with no address, closed, is not counted as shut on both its roads");
 
         assertEquals(session.allowEveryPath(), 1, "Allow Every Path does not say it opened the closed turnout");
 
@@ -2914,6 +3341,14 @@ public class testAutonomyDiagramSession
         for (int x : new int[] {1, 3, 5}) session.setStation(new TileKey("main", x, 1), true);
 
         return page;
+    }
+
+    /** Trains must change direction at both ends of `threeStationsInARow`, so each sets off back along the line. */
+    private void turnTrainsRoundAtBothEnds()
+    {
+        session.setPointProperty(new TileKey("main", 1, 1), "mustReverse", Boolean.TRUE);
+        session.setPointProperty(new TileKey("main", 5, 1), "mustReverse", Boolean.TRUE);
+        session.rebuild();
     }
 
     /** One of the editor panel's own controls, by its field. */
@@ -3264,10 +3699,13 @@ public class testAutonomyDiagramSession
         TileKey middle = new TileKey("main", 2, 1);
         RouteId route = session.getRoutes(middle).keySet().iterator().next();
 
-        session.setDirection(middle, route, Direction.TOWARD_A);
+        // THE SQUARE'S RUN, as a click sets it: a square of a run takes its run's direction (OB-361)
+        TileKey leader = session.runLeaders().get(middle);
+
+        session.setRunDirection(leader, route, Direction.TOWARD_A);
         assertNotNull(session.getStore().getTileDirection(middle, route));
 
-        session.setDirection(middle, route, Direction.BOTH);
+        session.setRunDirection(leader, route, Direction.BOTH);
         assertNull(session.getStore().getTileDirection(middle, route),
             "back at the default, so nothing should be stored");
     }
@@ -12735,6 +13173,203 @@ public class testAutonomyDiagramSession
 
         assertTrue(handed.contains(signal), "a click on a guard notice about another page did not take its signal with"
             + " it (RLV9-C5): " + handed);
+    }
+
+    /**
+     * Every finding with a square is shown the strong way when clicked - flashed AND outlined - not only one that names
+     * squares beside its own (OB-352).  Adam: *"autonomy must be fixed: "is at the end of the line", when clicked, does a
+     * regular highlight, whereas "is shown more than ones" gives the yellow highlight plus a strong outline.  make them
+     * consistent, using the latter, which is easier to use."*
+     *
+     * MUTATION: outline only a finding that names other squares, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAFindingAtTheEndOfALineIsOutlinedWhenClicked() throws Exception
+    {
+        threeStationsInARow("OB-352");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.rebuild();
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+        final List<TileKey> revealed = new ArrayList<>();
+
+        panel.setOnReveal(revealed::add);
+
+        clickTheFinding(panel, "is at the end of a line", alpha);
+
+        assertTrue(panel.isOutlined(alpha), "a click on \"is at the end of a line\" did not outline its square, as a click"
+            + " on \"is shown more than once\" outlines its squares (OB-352)");
+
+        assertEquals(revealed, Arrays.asList(alpha), "a click on \"is at the end of a line\" no longer flashes its square");
+
+        assertTrue(panel.getSelection().isEmpty(), "a click on a finding made its square the bulk selection (RLV9-C3): "
+            + panel.getSelection());
+    }
+
+    /**
+     * A finding about another page that names nothing beside its own square goes there by the same door as one that does,
+     * so the editor opened there outlines it too (OB-352).
+     *
+     * MUTATION: send it through the plain page jump, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAFindingOnAnotherPageIsOutlinedThere() throws Exception
+    {
+        threeStationsInARow("OB-352 far");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.rebuild();
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "far", () -> { });
+
+        final List<Object> outlined = new ArrayList<>();
+        final List<Object> plain = new ArrayList<>();
+
+        panel.setOnJumpToNotice((at, related) -> outlined.add(at));
+        panel.setOnJumpToPage(plain::add);
+
+        clickTheFinding(panel, "is at the end of a line", alpha);
+
+        assertEquals(outlined, Arrays.asList(alpha), "a click on \"is at the end of a line\" about another page did not go"
+            + " there to be outlined (OB-352); the plain page jump had " + plain);
+    }
+
+    /**
+     * Clicking a notice copies its text to the clipboard as plain text, for sharing (MT-767).
+     *
+     * Read back from the system clipboard after a sentinel is put there first, so a copy that never happens fails.  On a
+     * machine with no clipboard the claim is skipped rather than failed.
+     *
+     * MUTATION: take the copy out of the list's selection listener, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testClickingANoticeCopiesItsTextToTheClipboard() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new org.testng.SkipException("there is no clipboard on a headless machine");
+        }
+
+        openTheGuardedLine(pageWithAGuardOffTheLine());
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 3);
+
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+
+        field.setAccessible(true);
+
+        final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
+
+        String expected = null;
+
+        for (int i = 0; i < list.getModel().getSize(); i++)
+        {
+            String shown = String.valueOf(list.getModel().getElementAt(i));
+
+            if (shown.contains("but no way into")) expected = shown.trim();
+        }
+
+        assertNotNull(expected, "precondition: the editor's list has no guard notice");
+
+        java.awt.datatransfer.Clipboard clipboard;
+        String copied;
+
+        try
+        {
+            clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+
+            java.awt.datatransfer.StringSelection sentinel =
+                new java.awt.datatransfer.StringSelection("nothing copied yet");
+
+            clipboard.setContents(sentinel, sentinel);
+
+            clickTheGuardNotice(panel);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            copied = (String) clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+        }
+        catch (java.awt.HeadlessException | IllegalStateException e)
+        {
+            throw new org.testng.SkipException("the clipboard is not available here: " + e);
+        }
+
+        assertEquals(copied, expected, "a click on a notice did not copy its text to the clipboard (MT-767)");
+
+        assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
+
+        // AND A HEADING IS NOT A NOTICE (RSA75-C3): clicking "Warnings" or a page's name leaves the clipboard alone
+        java.lang.reflect.Field severities = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
+
+        severities.setAccessible(true);
+
+        final java.util.List<?> severity = (java.util.List<?>) severities.get(panel);
+
+        int heading = -1;
+
+        for (int i = 0; i < severity.size() && heading < 0; i++) if (severity.get(i) == null) heading = i;
+
+        assertTrue(heading >= 0, "precondition: the editor's list has no heading row");
+
+        java.awt.datatransfer.StringSelection untouched = new java.awt.datatransfer.StringSelection("left alone");
+
+        clipboard.setContents(untouched, untouched);
+
+        final int row = heading;
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> list.setSelectedIndex(row));
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor), "left alone",
+            "a click on the heading " + list.getModel().getElementAt(row) + " was copied over the clipboard");
+    }
+
+    /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */
+    private static void clickTheFinding(org.traincontrol.gui.AutonomyEditorPanel panel, String says, TileKey at)
+        throws Exception
+    {
+        final javax.swing.JList<?> list = (javax.swing.JList<?>) panelPart(panel, "findings");
+
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingTiles");
+
+        field.setAccessible(true);
+
+        final List<?> tiles = (List<?>) field.get(panel);
+
+        final int[] row = {-1};
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (int i = 0; i < list.getModel().getSize() && row[0] < 0; i++)
+            {
+                if (String.valueOf(list.getModel().getElementAt(i)).contains(says) && at.equals(tiles.get(i))) row[0] = i;
+            }
+
+            if (row[0] >= 0) list.setSelectedIndex(row[0]);
+        });
+
+        assertTrue(row[0] >= 0, "precondition: the editor's list has no \"" + says + "\" about " + at);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 
     /** Selects the guard notice in the editor's list, as a click on it does. */

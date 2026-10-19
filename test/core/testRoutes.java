@@ -530,6 +530,49 @@ public class testRoutes
     }
 
     /**
+     * NOT AT is the same question with the answer turned round (FR-141).
+     *
+     * Adam: *we need "train at a sensor" or "train not as a sensor"*.  A train is not at a sensor it is not standing at,
+     * and a train on no sensor at all - not on the autonomy graph - is not at this one either.  A name with no locomotive
+     * behind it satisfies neither form: a typo must not make a condition true.
+     *
+     * MUTATION: have `Route.evaluate` ignore `isAtSensor` and the first assertion fails; answer "not at" for a name with no
+     * locomotive and the last one does.
+     */
+    @Test
+    public void testAutoLocomotiveConditionCanAskForATrainNotAtTheSensor() throws Exception
+    {
+        model.parseAuto(stationOnlyAutonomy("FR141_Station", 8805));
+
+        String locName = model.getLocList().get(0);
+
+        assertNull(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(locName)),
+            "precondition: the locomotive is not on the graph");
+
+        assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8805, false), model),
+            "a locomotive on no sensor was not said to be away from this one");
+
+        assertTrue(model.getAutoLayout().moveLocomotive(locName, "FR141_Station", false),
+            "precondition: the locomotive is placed at the station");
+
+        assertFalse(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8805, false), model),
+            "a locomotive standing at the sensor was said not to be at it");
+
+        assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8806, false), model),
+            "a locomotive standing at 8805 was not said to be away from 8806");
+
+        // The "at" form beside it, asked of the same train in the same place
+        assertTrue(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8805, true), model),
+            "the at form no longer finds the locomotive at its own sensor");
+
+        assertFalse(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive(locName, 8806, true), model),
+            "the at form finds the locomotive at a sensor it is not standing at");
+
+        assertFalse(Route.evaluate(RouteCommand.RouteCommandAutoLocomotive("FR-141 no such locomotive", 8806, false),
+            model), "a name with no locomotive behind it satisfied a not-at condition");
+    }
+
+    /**
      * The operational consequence, end to end.
      *
      * executeAutoRoute evaluates a route's conditions inside a bare Thread with no exception handler.

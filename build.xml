@@ -545,6 +545,9 @@
         <test-one-class class="testAHandSendIsRefusedWhileTheSetupIsBroken"/>
         <test-one-class class="testTheImportDoorReadsAnOldFile"/>
         <test-one-class class="testNoSetupEditDuringARun"/>
+        <test-one-class class="testALocomotiveNotInTheDatabaseLeavesTheSetup"/>
+        <test-one-class class="testReturnHomeRightClickPlacesTheTrainsAtHome"/>
+        <test-one-class class="testNoSetupEditWhileARouteRuns"/>
         <test-one-class class="testTheAutoTabWaitsForTheTrains"/>
         <test-one-class class="testTheWordingSaysWhatIsThere"/>
         <test-one-class class="testTheRoutesImportDoorAsksByName"/>
@@ -559,6 +562,7 @@
         <test-one-class class="testACopiedCustomizationBringsTheIcons"/>
         <test-one-class class="testTheOrangeRunsOverTheSwitchesBehindTheTrain"/>
         <test-one-class class="testATrainWithNoWayOutFacesAlongItsTrack"/>
+        <test-one-class class="testTheRouteListShowsWhatRuns"/>
         <test-one-class class="testTheRouteHighlightAsksWhatATileIs"/>
         <test-one-class class="testTheRouteEditorAsksHowManyFunctionsALocomotiveHas"/>
         <test-one-class class="testNonAtomicRoutesNeedTheirLengths"/>
@@ -569,6 +573,8 @@
         <test-one-class class="testTheUpdaterSwapsTheJar"/>
         <test-one-class class="testTheUpdateQuestion"/>
         <test-one-class class="testTheUpdateIsWiredEndToEnd"/>
+        <test-one-class class="testTheArrowsTellTheWholeStory"/>
+        <test-one-class class="testTheSampleLayoutSaysOnlyWhatTrainsCanDo"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

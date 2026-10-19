@@ -160,6 +160,8 @@ public class testTheCheckerAgreesWithTheBuild
      *     no way forward is not a trap there - it is the turn.  The checker skips them for the same
      *     reason.
      *
+     * And neither is told about a square that is no station, nor an arrival no train makes (OB-361).
+     *
      * Mutation this must fail: in `AutonomySession.check`, delete the `if (isTurnAround(tile))
      * continue;` that opens the trapped walk, so the squares where turning is allowed are judged like
      * everything else.  Run 2026-08-25: 1 of 5 tests in this class fails - the checker starts naming
@@ -188,6 +190,11 @@ public class testTheCheckerAgreesWithTheBuild
 
         Set<TileKey> emitted = new TreeSet<>(BY_KEY);
 
+        Set<String> arrivedAt = copiesATrainArrivesAt();
+
+        // every copy no edge leaves, before the rules below choose among them
+        int noWayOut = 0;
+
         for (Point point : built.getPoints())
         {
             if (!built.getNeighbors(point).isEmpty()) continue;
@@ -195,6 +202,11 @@ public class testTheCheckerAgreesWithTheBuild
             TileKey square = index().squareOf(point.getName());
 
             if (square == null) continue;
+
+            noWayOut++;
+
+            // only at a station, and only an arrival a train makes (OB-361)
+            if (!session.getStore().isStation(square) || !arrivedAt.contains(point.getName())) continue;
 
             // not split at all, so there is no arrival for a train to be trapped by
             if (session.arrivalSides(square).isEmpty()) continue;
@@ -209,8 +221,8 @@ public class testTheCheckerAgreesWithTheBuild
             emitted.add(square);
         }
 
-        assertFalse(reported.isEmpty(), "the sample layout has trapped arrivals - ten of them - so a "
-            + "run finding none is a harness fault, not a clean setup");
+        assertTrue(noWayOut >= 10, "the sample layout builds copies no edge leaves - ten trapped arrivals among them - so"
+            + " a run finding " + noWayOut + " is a harness fault, not a clean setup");
 
         assertEquals(reported.toString(), emitted.toString(),
             "the checker and the build disagree about which squares a train can arrive at and not "
@@ -668,6 +680,38 @@ public class testTheCheckerAgreesWithTheBuild
      *
      * @return station square to every square reachable from any of its copies, itself included
      */
+    /**
+     * The copies a train arrives at on the built railway: on from every destination and every copy a train stands on,
+     * along the edges, and the copies trains stand on.  Asked of the railway, not of the setup the checker reads.
+     *
+     * @return their names
+     */
+    private static Set<String> copiesATrainArrivesAt()
+    {
+        Set<String> arrived = new LinkedHashSet<>();
+        Set<String> seen = new LinkedHashSet<>();
+        Deque<Point> queue = new ArrayDeque<>();
+
+        for (Point point : built.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null) arrived.add(point.getName());
+
+            if ((point.isDestination() || point.getCurrentLocomotive() != null) && seen.add(point.getName())) queue.add(point);
+        }
+
+        while (!queue.isEmpty())
+        {
+            for (Edge edge : built.getNeighbors(queue.remove()))
+            {
+                arrived.add(edge.getEnd().getName());
+
+                if (seen.add(edge.getEnd().getName())) queue.add(edge.getEnd());
+            }
+        }
+
+        return arrived;
+    }
+
     private static Map<TileKey, Set<TileKey>> reachFromEachStation()
     {
         Map<TileKey, Set<TileKey>> out = new LinkedHashMap<>();

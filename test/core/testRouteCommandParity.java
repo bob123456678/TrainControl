@@ -50,6 +50,7 @@ public class testRouteCommandParity
         corpus.add(RouteCommand.RouteCommandFunctionsOff());
         corpus.add(RouteCommand.RouteCommandRoute("Test route 1"));
         corpus.add(RouteCommand.RouteCommandAutoLocomotive("Test loc 1", 87));
+        corpus.add(RouteCommand.RouteCommandAutoLocomotive("Test loc 1", 88, false));
         corpus.add(RouteCommand.RouteCommandAutonomyLightsOn());
         corpus.add(RouteCommand.RouteCommandLightsOn());
 
@@ -181,6 +182,7 @@ public class testRouteCommandParity
             { "AUTONOMY_LIGHTS_ON",  "isAutonomyLightsOn()"   },
             { "ROUTE",               "isRoute()"              },
             { "AUTO_LOCOMOTIVE",     "isAutoLocomotive()"     },
+            { "AUTO_LOCOMOTIVE_NOT_AT", "isAutoLocomotive()"  },
         };
 
         assertEquals(handledBy.length, org.traincontrol.base.CommandRow.Kind.values().length,

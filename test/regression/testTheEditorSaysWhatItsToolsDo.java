@@ -1144,23 +1144,23 @@ public class testTheEditorSaysWhatItsToolsDo
         }
     }
 
-    /** Whether text fits on one tooltip line at the width the editor wraps at. */
+    /**
+     * Whether text fits on one tooltip line, by the editor's own rule (`AutonomyEditorPanel.fitsOnOneLine`), so the claim
+     * and the wrapping cannot disagree: a copy of it at 320 pixels went red when OB-358 made the rule measure in the
+     * screen's pixels.
+     */
     private static boolean fitsOnALine(String text)
     {
-        java.awt.Font font = javax.swing.UIManager.getFont("ToolTip.font");
-
-        if (font == null) font = new java.awt.Font(java.awt.Font.DIALOG, java.awt.Font.PLAIN, 12);
-
-        java.awt.Graphics2D scratch =
-            new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics();
-
         try
         {
-            return scratch.getFontMetrics(font).stringWidth(text) <= 320;
+            java.lang.reflect.Method rule = AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
+            rule.setAccessible(true);
+
+            return (Boolean) rule.invoke(null, text);
         }
-        finally
+        catch (ReflectiveOperationException e)
         {
-            scratch.dispose();
+            throw new AssertionError("the editor's one-line rule is not where this claim looks for it", e);
         }
     }
 

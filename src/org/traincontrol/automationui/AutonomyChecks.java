@@ -259,6 +259,14 @@ public class AutonomyChecks
     public static final String TERMINUS_STRANDED = "autosetup.ui.checkTerminusStranded";
     public static final String POINT_ISOLATED = "autosetup.ui.checkPointIsolated";
     public static final String RUN_CLOSED_BOTH_WAYS = "autosetup.ui.checkRunClosedBothWays";
+
+    /**
+     * A run of plain track whose squares point opposite ways, so no train can pass it (OB-361).  The correction that
+     * brings every run to one direction leaves it as it is - closing it would hide which way was meant behind a setting
+     * that looks chosen - so this says so.  A WARNING about the run's first square, with its squares as the related ones,
+     * so a click on it outlines the run; a click on the run's arrow sets one way for all of it.
+     */
+    public static final String RUN_POINTS_OPPOSITE_WAYS = "autosetup.ui.checkRunPointsOppositeWays";
     public static final String NO_STATIONS = "autosetup.ui.checkNoStations";
     public static final String ONE_STATION = "autosetup.ui.checkOneStation";
     public static final String UNNAMED_POINT = "autosetup.ui.checkUnnamedPoint";
@@ -269,8 +277,8 @@ public class AutonomyChecks
     public static final String ARRIVAL_TRAPPED = "autosetup.ui.checkArrivalTrapped";
 
     /**
-     * A trapped arrival whose advice leaves out closing arrivals, because the editor cannot close them there: a plain
-     * point has no arrivals menu, and a station's last open way in cannot be shut (RSA37-B1).  The same finding as
+     * A trapped arrival whose advice leaves out closing arrivals, because the editor cannot close them there: a
+     * station's last open way in cannot be shut (RSA37-B1).  The same finding as
      * `ARRIVAL_TRAPPED` in every other respect - `isArrivalTrapped` answers for either.
      */
     public static final String ARRIVAL_TRAPPED_NO_CLOSING = "autosetup.ui.checkArrivalTrappedNoClosing";
@@ -297,6 +305,14 @@ public class AutonomyChecks
      * related ones and their number as its count (OB-341).
      */
     public static final String STATION_NAMED_TWICE = "autosetup.ui.checkStationNamedTwice";
+
+    /**
+     * One WARNING per sensor address that sensor squares on two or more places share (FR-139).
+     *
+     * The places are the squares, each once, and the message names them by page and square.  A square that builds into
+     * copies is still one place, and a page left out of autonomy has no places.  Address zero or less is no address.
+     */
+    public static final String SENSOR_ADDRESS_SHARED = "autosetup.ui.checkSensorAddressShared";
 
     public static final String HOME_NEEDS_REVERSIBLE = "autosetup.ui.checkHomeNeedsReversible";
 
@@ -691,6 +707,28 @@ public class AutonomyChecks
     }
 
     /**
+     * A WARNING per run of plain track whose squares point opposite ways (OB-361): `{0}` is its first square, `{1}` its
+     * last, and its squares are the related ones.
+     *
+     * @param runs each run's first square to its squares, in order
+     * @return the findings
+     */
+    static List<Finding> checkRunsPointingOppositeWays(Map<TileKey, List<TileKey>> runs)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (Map.Entry<TileKey, List<TileKey>> run : runs.entrySet())
+        {
+            TileKey last = run.getValue().get(run.getValue().size() - 1);
+
+            findings.add(new Finding(Severity.WARNING, RUN_POINTS_OPPOSITE_WAYS, last.getX() + "," + last.getY(),
+                run.getKey(), run.getValue()));
+        }
+
+        return findings;
+    }
+
+    /**
      * An ERROR per station at the end of a line trains may not turn at (Adam, 2026-10-01): a train sent there could never
      * leave.
      *
@@ -741,6 +779,36 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.ERROR, STATION_NAMED_TWICE, andJoined(squares), station.getValue().get(0),
                 station.getValue().size(), 0, 0, station.getValue()).about(station.getKey()));
+        }
+
+        return findings;
+    }
+
+    /**
+     * One WARNING per sensor address that sensor squares on two or more places share (FR-139).
+     *
+     * A train reported by one of them cannot be told which square it is on, so the setup may take it for the other.  It
+     * changes nothing about how trains run: the graph is built as before.  The places are the squares, each once, and the
+     * sentence names them by page and square.  Nothing is offered to fix it beyond the click, which outlines the squares.
+     *
+     * @param shared each shared address, to the squares that carry it, in reading order
+     * @return the findings
+     */
+    static List<Finding> checkSensorAddressesShared(Map<Integer, List<TileKey>> shared)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (Map.Entry<Integer, List<TileKey>> address : shared.entrySet())
+        {
+            List<String> places = new ArrayList<>();
+
+            for (TileKey square : address.getValue())
+            {
+                places.add("\"" + square.getPage() + "\" (" + square.getX() + "," + square.getY() + ")");
+            }
+
+            findings.add(new Finding(Severity.WARNING, SENSOR_ADDRESS_SHARED, andJoined(places),
+                address.getValue().get(0), address.getValue().size(), address.getKey(), 0, address.getValue()));
         }
 
         return findings;
@@ -1261,21 +1329,17 @@ public class AutonomyChecks
         {
             TileKey tile = square.getKey();
 
-            ReducedPoint point = reducer.getPoints().get(tile);
-
-            // A NOTICE on a square trains only pass through.  "Could not go on" warns about a place a
-            // train can be SENT and then be stuck; nothing is ever sent to a plain point, so there the
-            // same sentence is a remark about the shape of the track rather than something to fix.
+            // A STATION'S, as `AutonomySession` gathers them: "could not go on" warns about a place a train can be SENT
+            // and then be stuck, and nothing is sent to a plain point (OB-361).
             //
             // ITS SUBJECT IS THE SIDE THE TRAIN COMES IN BY, in words (OB-201; Adam, 2026-09-12: *"This error message
             // should say either close arrivals from <direction>, open the way ahead, or let trains change
             // direction."*) - the square is {0} wherever a finding is shown, and the side is {1}.
             //
             // CLOSING ARRIVALS IS OFFERED ONLY WHERE THE EDITOR CAN DO IT (RSA37-B1): on a station, for sides that are not
-            // its last open way in.  A plain point has no arrivals menu, and a station trapped from every open side would
-            // be left with no way in, which the menu refuses; there the advice is the other two.
-            findings.add(new Finding(
-                point != null && point.isStation() ? Severity.WARNING : Severity.INFO,
+            // its last open way in.  A station trapped from every open side would be left with no way in, which the menu
+            // refuses; there the advice is the other two.
+            findings.add(new Finding(Severity.WARNING,
                 closable != null && closable.contains(tile) ? ARRIVAL_TRAPPED : ARRIVAL_TRAPPED_NO_CLOSING,
                 sidesInWords(square.getValue()), tile));
         }

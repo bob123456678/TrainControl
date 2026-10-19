@@ -1187,7 +1187,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through
                     // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask
                     // (RLV12-B1), the setup, the power - this path's standing rules, the reversal question, the
-                    // atomic-routes gate and the dispatch, in that order.
+                    // last-moment question again, the atomic-routes gate and the dispatch, in that order.
                     this.parent.sendATrainByHand(this.layout, chosen, locomotive);
                 }
             } 

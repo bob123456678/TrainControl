@@ -8,8 +8,10 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.util.I18n;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 /**
@@ -356,6 +358,73 @@ public class testTheToolbarButtonsHonourTheirTooltips
         }
 
         return false;
+    }
+
+    /**
+     * A short tooltip on the Layouts menu is exactly as wide as its text, and a long one still wraps.
+     *
+     * OB-358: the wrapping decision measured the text in device pixels against the body's CSS width, which Swing
+     * draws wider on a high-dpi screen, so a tooltip just over the line was wrapped and drawn wide with its text on
+     * one line.  The reference is the same sentence shown plain: a tooltip that holds it on one line is that size.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAShortLayoutTooltipIsAsWideAsItsText() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("a tooltip is drawn on a window");
+        }
+
+        Started up = start();
+
+        try
+        {
+            Field field = TrainControlUI.class.getDeclaredField("initializeLocalLayoutMenuItem");
+
+            field.setAccessible(true);
+
+            javax.swing.JMenuItem create = (javax.swing.JMenuItem) field.get(up.ui);
+
+            assertEquals(create.getText(), I18n.t("ui.main.toolbar.createLayout"),
+                "precondition: the item found is not Create New Layout");
+
+            String sentence = I18n.t("ui.main.toolbar.tooltip.createLayout");
+
+            assertEquals(tooltipSize(create.getToolTipText()).width, tooltipSize(sentence).width,
+                "the tooltip on Create New Layout is drawn " + tooltipSize(create.getToolTipText()).width
+                + "px wide for a sentence that is " + tooltipSize(sentence).width + "px on one line, so the"
+                + " box has room to spare at its end: " + create.getToolTipText());
+
+            // THE OTHER SIDE: a long one still wraps, so it is taller than one line.
+            String long1 = "Creates a blank track diagram that you can edit visually, with every track, signal and"
+                + " switch placed where you put it and nothing else.";
+
+            String wrapped = org.traincontrol.gui.AutonomyEditorPanel.wrappedIfLong(long1);
+
+            assertTrue(tooltipSize(wrapped).height > tooltipSize(long1).height,
+                "a long tooltip did not wrap at all, so it runs off the edge of the display: " + wrapped);
+        }
+        finally
+        {
+            up.close();
+        }
+    }
+
+    /**
+     * The size Swing lays a tooltip with this text out at.
+     *
+     * @param text the tooltip, plain or HTML
+     * @return its preferred size
+     */
+    private static java.awt.Dimension tooltipSize(String text)
+    {
+        javax.swing.JToolTip tip = new javax.swing.JToolTip();
+
+        tip.setTipText(text);
+
+        return tip.getPreferredSize();
     }
 
     /**

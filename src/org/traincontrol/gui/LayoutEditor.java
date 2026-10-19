@@ -1744,13 +1744,12 @@ public class LayoutEditor extends PositionAwareJFrame
         if (this.plusButton != null) this.plusButton.setVisible(session == null);
         if (this.minusButton != null) this.minusButton.setVisible(session == null);
 
-        // AND THE TEXT LABELS BOX, which the autonomy caption choice subsumes (FR-061).
+        // AND THE TEXT LABELS BOX, which the autonomy editor mounts its own copy of (FR-133).
         //
-        // Its Labels Only option IS this switch turned on (OB-272; under FR-061 None was it turned
-        // off), so showing both would be two controls for one decision - and the one that is only a
-        // switch cannot express the other four options.  Hidden rather than removed: it belongs to the
-        // generated form, and it is the plain editor's control.  Control+L reaches it only there; in
-        // the autonomy editor Control+L steps the caption dropdown (`cycleCaptionMode`).
+        // The panel's Text Labels box under Show Trains IS this switch, so showing both would be two controls
+        // for one decision.  Hidden rather than removed: it belongs to the generated form, and it is the plain
+        // editor's control.  Control+L reaches it only there; in the autonomy editor Control+L steps the
+        // caption dropdown (`cycleCaptionMode`).
         if (this.showTextCheckbox != null) this.showTextCheckbox.setVisible(session == null);
 
         // And the gap under it, which is its own (OB-289).
@@ -2010,6 +2009,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowTrains().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTrains());
 
+                // AND THE DIAGRAM'S TEXT under it, a subject of its own, so the same gap (FR-133, OB-312)
+                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+
+                autonomyPanel.getShowTextLabels().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                visibility.add(autonomyPanel.getShowTextLabels());
+
                 // WHAT THE CAPTIONS SAY, as one choice (FR-061).
                 //
                 // Adam: "add a Text Labels label and dropdown right above Track Directions, with the
@@ -2017,14 +2022,13 @@ public class LayoutEditor extends PositionAwareJFrame
                 //
                 // It replaces two tick boxes and the form's own Text Labels switch, which were not
                 // independent: ticking either box while the text was off changed nothing anybody could
-                // see, so each box turned the text on for you (OB-174). Options that exclude one another -
-                // five since OB-272 added Labels Only - cannot be in a state that needs correcting, which is
-                // what "fully address it" means here.
+                // see, so each box turned the text on for you (OB-174). Options that exclude one another
+                // cannot be in a state that needs correcting, which is what "fully address it" means here.
                 //
                 // In the window's own heading style, copied off jLabel1 rather than restated, like the
                 // Track Directions heading below it.
                 javax.swing.JLabel captionsLabel =
-                    new javax.swing.JLabel(I18n.t("layout.ui.textLabels"));
+                    new javax.swing.JLabel(I18n.t("autosetup.ui.captionsHeading"));
                 captionsLabel.setFont(this.jLabel1.getFont());
                 captionsLabel.setForeground(this.jLabel1.getForeground());
                 captionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
@@ -2305,6 +2309,45 @@ public class LayoutEditor extends PositionAwareJFrame
         return autonomyPanel;
     }
 
+    /**
+     * The square of the train drawn under a click, where the autonomy tool armed takes a train for its station - Test a
+     * Path and Why Not Moving? (OB-354).  A train is drawn over the captions and reaches past its tile on a curve, so the
+     * click lands on a caption or on the next square, neither of which is the station it stands on.
+     *
+     * @param e the click, in its own component's coordinates
+     * @return the square the train stands on, or null where none is drawn there or the tool does not ask
+     */
+    LayoutLabel trainClicked(MouseEvent e)
+    {
+        if (e == null || e.getComponent() == null || grid == null || autonomyPanel == null
+            || !autonomyPanel.takesATrainForItsStation())
+        {
+            return null;
+        }
+
+        // The square clicked first, where its own train is drawn there too
+        if (e.getComponent() instanceof LayoutLabel && ((LayoutLabel) e.getComponent()).trainDrawnAt(e.getPoint()))
+        {
+            return (LayoutLabel) e.getComponent();
+        }
+
+        for (int x = 0; grid.getValueAt(x, 0) != null; x++)
+        {
+            for (int y = 0; grid.getValueAt(x, y) != null; y++)
+            {
+                LayoutLabel square = grid.getValueAt(x, y);
+
+                if (square.getParent() != null && square.trainDrawnAt(
+                    javax.swing.SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), square)))
+                {
+                    return square;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public void receiveClickEvent(MouseEvent e, LayoutLabel label)
     {
         // THE CLICK OF A BOX ESCAPE DROPPED, ignored once (RSA34-C2) - kept only by a release on its square with the pointer
@@ -2322,8 +2365,12 @@ public class LayoutEditor extends PositionAwareJFrame
         // and less surprising than intercepting events before they get here.
         if (isAutonomyMode())
         {
-            int x = getX(label);
-            int y = getY(label);
+            // A TRAIN CLICKED IS ITS STATION, to the tools that ask for a station (OB-354; Adam: "if clicking on a
+            // locomotive in test a path / why not moving, make it register a click on the station.")
+            LayoutLabel train = javax.swing.SwingUtilities.isRightMouseButton(e) ? null : trainClicked(e);
+
+            int x = getX(train != null ? train : label);
+            int y = getY(train != null ? train : label);
 
             if (x >= 0 && y >= 0)
             {
@@ -2483,13 +2530,19 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Which way round a straight put down on a square should lie so that it joins the track beside it (OB-292).
+     * Which way round a track tile put down on a square should lie so that it joins the track beside it (OB-292,
+     * OB-360).
      *
-     * The way it is held, if that joins track at both ends or if no way round does; otherwise the way round that does.
+     * Every tile with roads in the port table is turned, however many; a lamp, a text label, a route button, a
+     * turntable and the scissors drawings are not.  The way round that meets the most track wins: a switch first by its
+     * base - the end every position of its points shares, where a straight's end would be (Adam, OB-360: *"the base of a
+     * switch behaves like a straight track would, so that at least something is aligned (for switches, there's always
+     * some guessing involved, which is ok)"*) - then by roads with every end on track (a curve with track on both sides
+     * joins both: *"a curve connects if it can"*), then by ends on track, so one end beats none (*"meet the single
+     * neighbor"*).  The way it is held wins whenever it meets as much as any other, and otherwise the nearest turn from
+     * it does (a signal has four ways round, and which end it faces is the operator's).
      * A neighbour joins where any of its roads, in any position of its points, reaches the edge the two squares share -
-     * the same port table the autonomy graph is built from, so a straight laid this way is one the graph runs over.
-     * Only a plain STRAIGHT: a switch or a sensor is turned on purpose, and turning one for the operator would be a
-     * decision about the railway rather than about a piece of track.
+     * the same port table the autonomy graph is built from, so a tile laid this way is one the graph runs over.
      *
      * @param layout the page
      * @param placing the tile about to be put down
@@ -2502,31 +2555,64 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         int held = placing.getOrientation();
 
-        if (layout == null || placing.getType() != LayoutDiagramComponent.componentType.STRAIGHT) return held;
+        if (layout == null || !org.traincontrol.automationui.TilePorts.isRoutable(placing.getType())
+            || org.traincontrol.automationui.TilePorts.isTransparent(placing.getType())) return held;
 
-        if (joinsAtBothEnds(layout, placing.getType(), held, x, y)) return held;
+        int ways = LayoutDiagramComponent.getNumOrientations(placing.getType());
+        int best = held;
+        int bestScore = joinScore(layout, placing.getType(), held, x, y);
 
-        for (int way = 0; way < LayoutDiagramComponent.getNumOrientations(placing.getType()); way++)
+        // The held way first, then a quarter turn either way before the half turn: the first of equals stays.
+        for (int turn : new int[] { 1, ways - 1, 2 })
         {
-            if (way != held && joinsAtBothEnds(layout, placing.getType(), way, x, y)) return way;
+            int way = (held + turn) % ways;
+
+            if (way == held) continue;
+
+            int score = joinScore(layout, placing.getType(), way, x, y);
+
+            if (score > bestScore)
+            {
+                best = way;
+                bestScore = score;
+            }
         }
 
-        return held;
+        return best;
     }
 
-    /** Whether a tile of this type, this way round, on this square, meets track at both ends of one of its roads. */
-    private static boolean joinsAtBothEnds(org.traincontrol.base.LayoutDiagram layout,
+    /**
+     * How much track a tile of this type, this way round, on this square, meets: a thousand if the base of its switch is
+     * on track, ten for every road, in any position of its points, with both its ends on track (or its one end, for a
+     * tile whose road ends in the square), and one for every side with an end that is.
+     */
+    private static int joinScore(org.traincontrol.base.LayoutDiagram layout,
         LayoutDiagramComponent.componentType type, int orientation, int x, int y)
     {
-        for (org.traincontrol.automationui.TilePorts.Route road
-            : org.traincontrol.automationui.TilePorts.ports(type, orientation, 0))
-        {
-            if (road.getA() == road.getB()) continue;
+        org.traincontrol.automationui.TilePorts.Side toe =
+            org.traincontrol.automationui.TilePorts.deriveToe(type, orientation);
 
-            if (meetsTrack(layout, x, y, road.getA()) && meetsTrack(layout, x, y, road.getB())) return true;
+        int score = toe != null && meetsTrack(layout, x, y, toe) ? 1000 : 0;
+
+        java.util.Set<org.traincontrol.automationui.TilePorts.Side> met =
+            java.util.EnumSet.noneOf(org.traincontrol.automationui.TilePorts.Side.class);
+
+        for (int state = 0; state < org.traincontrol.automationui.TilePorts.getStateCount(type); state++)
+        {
+            for (org.traincontrol.automationui.TilePorts.Route road
+                : org.traincontrol.automationui.TilePorts.ports(type, orientation, state))
+            {
+                boolean a = meetsTrack(layout, x, y, road.getA());
+                boolean b = meetsTrack(layout, x, y, road.getB());
+
+                if (a && b) score += 10;
+
+                if (a) met.add(road.getA());
+                if (b) met.add(road.getB());
+            }
         }
 
-        return false;
+        return score + met.size();
     }
 
     /** Whether the square beside this one, on this side, has a road that reaches the edge between them. */
@@ -2572,8 +2658,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // A STRAIGHT PUT DOWN BETWEEN TWO PIECES OF TRACK LIES ALONG THEM (OB-292; Adam, 2026-09-24: *"when new
             // straight tracks are placed ... and they would connect two other tracks, they are automatically oriented
-            // to connect rather than not."*).  A move keeps the way the tile was: it is the same piece of track.
-            if (!move)
+            // to connect rather than not."*).  Only a tile newly placed from the palette: a move is the same piece of
+            // track, and a pasted copy carries the way round the user gave it (Adam, OB-360: *"only turn the first time
+            // the user places it, if it's already placed, don't change it."*).
+            if (placingFromPalette())
             {
                 newComponent.setOrientation(orientationThatJoins(layout, newComponent,
                     getX(destLabel), getY(destLabel)));
@@ -5502,9 +5590,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * Turns the diagram's text labels on, leaving them on if they already are (OB-174).
      *
      * `toggleText` flips, which is the wrong verb for a caller that needs them ON.  The autonomy
-     * editor calls this for Labels Only, which IS the switch turned on (OB-272); the captions no
-     * longer depend on it - the grid asks the caption dropdown for those.  A flip there would turn
-     * the text OFF for somebody who already had it on.
+     * editor calls this for a ticked Text Labels box (FR-133); the captions do not depend on it - the
+     * grid asks the caption dropdown for those.  A flip there would turn the text OFF for somebody
+     * who already had it on.
      *
      * Idempotent, and it does not touch the flag when nothing needs to change - so it costs no grid
      * rebuild in the ordinary case.
@@ -5520,8 +5608,8 @@ public class LayoutEditor extends PositionAwareJFrame
      * Hides the writing on the diagram, idempotently - the other half of the pair (FR-061).  The
      * station captions stay: since OB-272 the caption dropdown draws them, whatever this switch says.
      *
-     * The autonomy editor calls it for every caption option but Labels Only, which is the switch
-     * turned on (OB-272; under FR-061 it was None alone). Written as a twin of
+     * The autonomy editor calls it for an unticked Text Labels box (FR-133; under FR-061 it was None
+     * alone). Written as a twin of
      * `showTextLabels` rather than as a call to `toggleText`, for the reason given there: a flip is the
      * wrong verb for a caller that needs a particular state, and would turn the text back ON for
      * somebody who already had it off.
@@ -5545,14 +5633,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
             refreshGrid();
 
-            // AND THE CAPTION DROPDOWN, which is the only visible state of this switch in autonomy
-            // mode (RGD-C3).  The checkbox above is hidden there because Labels Only IS this switch
-            // on (OB-272), so without this the diagram's writing changed under a dropdown still naming
-            // another option.  (Control+L no longer reaches here in autonomy mode: it steps the
-            // dropdown instead.)
+            // AND THE AUTONOMY PANEL'S TEXT LABELS BOX, which is the visible state of this switch in
+            // autonomy mode (RGD-C3, FR-133).  The checkbox above is hidden there, so without this the
+            // diagram's writing changed under a box still saying the other thing.  (Control+L no longer
+            // reaches here in autonomy mode: it steps the caption dropdown instead.)
             //
-            // After the rebuild, not before: the panel answers by changing its selection, which asks
-            // for a rebuild of its own.
+            // After the rebuild, not before.
             if (autonomyPanel != null && autonomyPanel.isVisible())
             {
                 autonomyPanel.textLabelsChanged(!this.layout.getEditHideText());
@@ -6707,11 +6793,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             org.traincontrol.automationui.AutonomySession session =
                 autonomy ? parent.editableAutonomySession() : null;
 
-            if (autonomy && (session == null || parent.isAutonomyBusy()))
+            if (autonomy && (session == null || parent.aRunHoldsTheSetup()))
             {
                 javax.swing.JOptionPane.showMessageDialog(this,
-                    I18n.t(session == null ? "autosetup.ui.errorNoSetupToEdit"
-                        : "autolayout.errorCannotEditWhileRunning"));
+                    session == null ? I18n.t("autosetup.ui.errorNoSetupToEdit")
+                        : parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
                 autonomy = false;
                 session = null;
@@ -6894,10 +6980,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     {
         try
         {
-            if (parent.getModel() != null && parent.getModel().isAutonomyRunning())
+            // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+            if ((parent.getModel() != null && parent.getModel().isAutonomyRunning()) || parent.aRunHoldsTheSetup())
             {
                 JOptionPane.showMessageDialog(this,
-                    I18n.t("autolayout.errorCannotEditWhileRunning"));
+                    parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
 
                 return false;
             }
@@ -7249,11 +7336,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             autonomyModeButton.setToolTipText(
                 AutonomyEditorPanel.wrapped(I18n.t("layout.ui.hintNoAutonomyToEdit")));
         }
-        else if (parent.isAutonomyBusy())
+        else if (parent.aRunHoldsTheSetup())
         {
             autonomyModeButton.setEnabled(false);
             autonomyModeButton.setToolTipText(
-                AutonomyEditorPanel.wrapped(I18n.t("autolayout.errorCannotEditWhileRunning")));
+                AutonomyEditorPanel.wrapped(parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning")));
         }
 
         return column;
@@ -7679,10 +7766,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // the original bug.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
-                // IN THE AUTONOMY EDITOR, THE NEXT CAPTION OPTION (Adam, 2026-09-23, OB-272: *"make control+L
-                // cycle the options"* - *"the dropdown's 4, plus ... the labels only"*).  The same test
-                // `toggleText` uses to decide the dropdown is showing.  In the track editor it is still the
-                // text switch, which is the only text setting there.
+                // IN THE AUTONOMY EDITOR, THE NEXT CAPTION OPTION (OB-272: *"make control+L cycle the options"*),
+                // which since FR-133 are the dropdown's four; the Text Labels box is not part of the cycle.  The
+                // same test `toggleText` uses to decide the dropdown is showing.  In the track editor it is still
+                // the text switch, which is the only text setting there.
                 if (autonomyPanel != null && autonomyPanel.isVisible()) autonomyPanel.cycleCaptionMode();
                 else toggleText();
 
@@ -7995,9 +8082,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         try
         {
-            if (parent.getModel().isAutonomyRunning())
+            // A ROUTE TOO (`TrainControlUI.aRunHoldsTheSetup`)
+            if (parent.getModel().isAutonomyRunning() || parent.aRunHoldsTheSetup())
             {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+                JOptionPane.showMessageDialog(this, parent.whyTheSetupIsHeld("autolayout.errorCannotEditWhileRunning"));
                 return;
             }
 

@@ -181,11 +181,11 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 
 * Primary controls
     * Selecting and speed
-        * A-Z letter keys (select a locomotive)
-        * Up/down arrow (speed up/slow down) (hold Alt to double the increment or Control to reduce)
+        * A-Z letter keys (select a locomotive; Alt with a letter that has no Alt shortcut of its own does the same)
+        * Up/down arrow (speed up/slow down by 4%) (hold Alt to double the increment or Control to reduce it to 1%)
         * 1 through 0 (set locomotive speed, 1 is stopped and 0 is max)
     * Direction
-        * Left/right arrow (change direction)
+        * Left/right arrow (switch direction)
         * Control+Left/right arrow (set direction as reverse / set direction as forward)
     * Functions
         * Numpad 0/backquote/Alt+0 (toggle lights/F0)
@@ -226,7 +226,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
 * UI shortcuts
     * Control+M (show menu bar)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
-    * Plus/minus, \[/\], '/( (cycle through keyboards and layout pages, Control+plus/minus jumps 4 keyboards)
+    * Minus/plus, \[/\], '/( (previous/next accessory keyboard, or previous/next layout page on the Track Diagram tab; Control with these jumps 4 accessory keyboards)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
 * Track diagram editor
     * Editing tiles
@@ -244,6 +244,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+Y (redo)
     * Picking squares
         * Shift+click (pick several squares at once)
+        * Shift+drag (pick a box of squares)
         * Control+M (select by dragging a box)
         * Escape (let go of whatever is held; with nothing held, close the editor)
     * What is shown
@@ -251,7 +252,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+D (show address labels)
         * Control+K (show the grid)
     * Pages and size
-        * Plus/minus (next / previous page)
+        * Plus/minus, also on the number pad (next / previous page)
         * Control+I (increase diagram by 1 row and 1 column)
 * Autonomy editor
     * A square's settings
@@ -266,7 +267,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+D (show address labels)
         * Control+K (show the grid)
     * Moving around
-        * Plus/minus (next / previous page)
+        * Plus/minus, also on the number pad (next / previous page)
         * Shift+click (pick several squares at once)
         * Escape (put down an armed tool; with nothing armed, close the editor)
 * Track diagram (with autonomy loaded and stopped, pointer over a station)
@@ -274,7 +275,9 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+V (put it, or the locomotive selected in the main window, down)
     * Delete (take the train off)
 
-![Diagram of TrainControl's keyboard mappings for locomotive and function control](assets/keyboard.png?raw=true)
+![Diagram of TrainControl's main window keyboard mappings, showing the plain, Control and Alt keys for locomotive and function control](assets/keyboard.png?raw=true)
+
+![Diagram of the keyboard shortcuts in the track and autonomy editors](assets/keyboard_editor.png?raw=true)
 
 ## Requirements
 
@@ -399,6 +402,41 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.2 [10/18/2026]
+    - Autonomy Features
+        - Right-clicking Return Home now offers `Run Trains to Their Homes`, which does the same as the button, and `Place All Trains at Their Homes`, which puts each homed train on its home in the setup without moving anything, so you can then move the real trains by hand.
+        - `Run Trains to Their Homes` is available whenever the Return Home button is, and `Place All Trains at Their Homes` is greyed out while anything is running, as is the Track Diagram's Bulk Tools item for placing all trains at their homes.
+        - The autonomy editor has a new `Text Labels` box under `Show Trains` for showing or hiding the diagram's own text.
+        - The editor's captions dropdown is now headed `Station Labels`, offers Station Names (the default), Standing Locs, Home Locs and Hide, and uses the same font as Track Directions.
+        - The setup check now warns when two sensors on the same page share one address.
+        - Clicking a notice in the setup check now also copies its text, so you can paste it into a message.
+        - `Create New Layout` now starts from a small sample with two stations, their signals and an autonomy configuration ready to try.
+    - Routes
+        - The Routes tab now shows a turning mark beside each route while it is running.
+        - When something has to wait for a route, the message now names the route that is running.
+        - With the track power off, clicking a route opens it for editing instead of asking whether to run it.
+        - A route condition can now ask whether an autonomy train is not at a sensor, as well as whether it is, and the condition's setting now says it is the sensor address.
+        - In the route editor, a red warning above the conditions now says they are only checked when Automatically Fire is on, whenever it is off.
+    - Track Diagram
+        - The tunnel icons are easier to see, and the link and signal icons are sharper and meet the track cleanly.
+        - In the layout editor, a new piece of track placed from the palette now turns to join the track beside it: straights, sensors, signals, curves, bumpers, tunnels, links and the base of a switch.
+        - Tooltips in the Layouts menu no longer have empty space at the end.
+    - Autonomy Bug Fixes
+        - A locomotive that is not in your locomotive database is now taken out of the autonomy setup when it loads, and a popup tells you which ones.
+        - You can now place a train from the Track Diagram on a station no train can leave, as you can in the editor.
+        - On switches, three-way switches and double slips, the direction arrows now decide fully which way trains may run, and older setups with a hidden closed road are brought in line with their arrows, with the log listing the switches.
+        - Setup edits (in the editors, on the Auto tab, in the timetable, when loading or exporting a configuration, with `Stop Using Autonomy`, and routes on or off) are now refused with a message while a route is running, not only while autonomy is.
+        - Every finding you click in the setup check is now outlined in the autonomy editor's diagram.
+        - A locomotive turned round while a route is running, by the route or by hand, is now turned round in the autonomy setup when the route finishes.
+        - Start, Execute Timetable, Return Home and sending a train from the Track Diagram or the Auto tab now ask you to wait while a route is running.
+        - Track that no station can be reached along no longer shows direction arrows and is greyed out in the editor.
+        - Clicking a train in Test a Path or Why not Moving? now picks the station it stands on.
+        - When the only trains away from home are paused, Return Home now names them and says how to set them going, instead of saying every locomotive is already at its home.
+        - A train's icon on the Track Diagram now turns round together with the arrow on its label when its direction is changed.
+        - The setup check no longer warns about moves no train can make, such as a signal that trains only pass on their way out, or a point that is not a station.
+        - The Track Diagram and the autonomy editor now draw the same direction arrows on every stretch of track, and a stretch whose squares disagreed is put right when the setup opens, with a line in the log.
+        - A stretch of track whose squares point opposite ways is now a warning in the setup check, and the One-Way tool now sets the whole stretch you click.
+        - When autonomy loads, each station's maximum train length is now written to the log once, by the station's name.
 * v3.0.1 [10/13/2026]
     - Updates
         - Download Update can now also install the new version for you: it backs up your data, keeps your old version next to the new one, and restarts TrainControl

@@ -64,7 +64,12 @@ public final class CommandRow
         LIGHTS_ON,
         AUTONOMY_LIGHTS_ON,
         ROUTE,
-        AUTO_LOCOMOTIVE
+        AUTO_LOCOMOTIVE,
+
+        // The same condition asked the other way round: the train NOT standing at the sensor (FR-141).  One stored
+        // command, as Switch and Signal are; a kind of its own because this kind's setting is already the sensor's
+        // address, so unlike a sensor's on and off the way round has no cell to go in.
+        AUTO_LOCOMOTIVE_NOT_AT
     }
 
     private final Kind kind;
@@ -208,7 +213,21 @@ public final class CommandRow
      */
     public static boolean canBeACommand(Kind kind)
     {
-        return kind != Kind.AUTO_LOCOMOTIVE && kind != Kind.FEEDBACK;
+        return !asksWhereATrainIs(kind) && kind != Kind.FEEDBACK;
+    }
+
+    /**
+     * Whether this kind is a train at a sensor, either way round: AUTO_LOCOMOTIVE or AUTO_LOCOMOTIVE_NOT_AT (FR-141).
+     *
+     * Both have a locomotive for a target and a sensor's address for a setting, so every cell is offered and checked the
+     * same way for the two.
+     *
+     * @param kind the kind
+     * @return true for either of the two
+     */
+    public static boolean asksWhereATrainIs(Kind kind)
+    {
+        return kind == Kind.AUTO_LOCOMOTIVE || kind == Kind.AUTO_LOCOMOTIVE_NOT_AT;
     }
 
     /**
@@ -245,7 +264,8 @@ public final class CommandRow
             // the kind outright, the commands dropdown is built from that predicate, and the Kind cell
             // is read-only on a row that already exists.  So this case is unreachable and identical to
             // `default`; it stays as the place that record lives.
-            case AUTO_LOCOMOTIVE: return "";
+            case AUTO_LOCOMOTIVE:
+            case AUTO_LOCOMOTIVE_NOT_AT: return "";
 
             default: return "";
         }
@@ -295,7 +315,7 @@ public final class CommandRow
     public static boolean canBeACondition(Kind kind)
     {
         return kind == Kind.ACCESSORY || kind == Kind.SIGNAL
-            || kind == Kind.FEEDBACK || kind == Kind.AUTO_LOCOMOTIVE;
+            || kind == Kind.FEEDBACK || asksWhereATrainIs(kind);
     }
 
     /**
@@ -309,9 +329,9 @@ public final class CommandRow
     /**
      * Whether this kind can carry a delay.
      *
-     * SEVEN OF THE THIRTEEN CANNOT (X8-C3): FEEDBACK, STOP, FUNCTIONS_OFF, LIGHTS_ON,
-     * AUTONOMY_LIGHTS_ON, ROUTE and AUTO_LOCOMOTIVE.  This sentence used to name the first three, and
-     * `Kind` has grown since.
+     * EIGHT OF THE FOURTEEN CANNOT (X8-C3): FEEDBACK, STOP, FUNCTIONS_OFF, LIGHTS_ON,
+     * AUTONOMY_LIGHTS_ON, ROUTE, AUTO_LOCOMOTIVE and AUTO_LOCOMOTIVE_NOT_AT.  This sentence used to name
+     * the first three, and `Kind` has grown since.
      *
      * The reason is unchanged and is the thing to check this list against: `RouteCommand.toLine`
      * writes a delay in its accessory, direction, speed and function branches and nowhere else, so a
@@ -411,8 +431,8 @@ public final class CommandRow
 
         if (command.isAutoLocomotive())
         {
-            return new CommandRow(Kind.AUTO_LOCOMOTIVE, command.getName(),
-                String.valueOf(command.getAddress()));
+            return new CommandRow(command.isAtSensor() ? Kind.AUTO_LOCOMOTIVE : Kind.AUTO_LOCOMOTIVE_NOT_AT,
+                command.getName(), String.valueOf(command.getAddress()));
         }
 
         // Anything a later version adds.  Answering null keeps the command exactly as it was found
@@ -507,9 +527,10 @@ public final class CommandRow
                 return RouteCommand.RouteCommandRoute(target);
 
             case AUTO_LOCOMOTIVE:
+            case AUTO_LOCOMOTIVE_NOT_AT:
                 requireName();
                 return RouteCommand.RouteCommandAutoLocomotive(target,
-                    number(setting, "route.wordAddress"));
+                    number(setting, "route.wordAddress"), kind == Kind.AUTO_LOCOMOTIVE);
 
             // One command either way.  The two kinds differ in the words the editor offers and in
             // nothing else, and oneOf below has always accepted all four.

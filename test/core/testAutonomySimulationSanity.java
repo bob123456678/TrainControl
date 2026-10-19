@@ -38,7 +38,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * counter never resets - any single failure would therefore be caught.  DEBUG_SIMULATE_PACKETS is on so
  * the Central Station echoes are simulated, which is what advances each accessory's actuation count.
  *
- * The frozen layout (test/autonomy_sanity.json) is a larger version of the UI's sample_autonomy.json:
+ * The frozen layout (test/autonomy_sanity.json) is a larger version of test/sample_autonomy.json:
  * three departure stations plus an arrival station, four switches and three signals, three locomotives,
  * and 0-1s action delays so trains cycle quickly.  The switches are commanded to different positions on
  * different routes, so they toggle constantly as the trains move around.

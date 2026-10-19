@@ -304,6 +304,71 @@ public class testRouteEditorValidation
             && !org.traincontrol.base.RouteCommand.isNameUsable("A, B"), "control: the rule itself has changed");
     }
 
+    /**
+     * With Automatically Fire off, the conditions say above themselves, in red, that they are only checked when it is
+     * on; ticking it takes the warning away, and a route with no conditions has none (Adam, 2026-10-18: "a message that
+     * states these conditions are only evaluated when Automatically Fire is set to on" - and no triangle, which did not
+     * render).
+     *
+     * MUTATION: show the reading alone whatever the tick, or leave the warning up once it is ticked, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testConditionsSayTheyAreUncheckedWithoutAutomaticFire() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final boolean[] warns = new boolean[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setAutoFireForTest(false);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertFalse(warns[0], "a route with no conditions warns about its conditions");
+
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(rows);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertTrue(warns[0], "with Automatically Fire off, the conditions do not say they are only checked when it is"
+                + " on: " + frame.readsAsForTest());
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setAutoFireForTest(true);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertFalse(warns[0], "with Automatically Fire ticked, the conditions still say they are not checked");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setAutoFireForTest(false);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertTrue(warns[0], "unticking Automatically Fire again did not bring the warning back");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
     {
         final org.traincontrol.gui.RouteEditorFrame[] frame =
@@ -1060,6 +1125,198 @@ public class testRouteEditorValidation
         }
 
         return "x";
+    }
+
+    /**
+     * The two train-at-a-sensor kinds say they are autonomy's, and the reading says which way round each one is (FR-141).
+     *
+     * Adam: *also, this is referring to autonomy, correct?  Prefix with "Autonomy: " if so.*  It is: `Route.evaluate`
+     * asks autonomy's record of where the train is, not the sensor.  The labels are read from the English bundle, so the
+     * claim is about the words Adam reads rather than about a key.
+     *
+     * MUTATION: read a not-at command as AUTO_LOCOMOTIVE in `CommandRow.of` and the reading says "at" for both lines.
+     */
+    @Test
+    public void testTheTrainAtASensorKindsSayAutonomyAndWhichWayRound() throws Exception
+    {
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        assertEquals(english.getProperty("route.kind." + CommandRow.Kind.AUTO_LOCOMOTIVE.name()),
+            "Autonomy: Train At A Sensor", "the at kind does not say it is autonomy's");
+
+        assertEquals(english.getProperty("route.kind." + CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT.name()),
+            "Autonomy: Train Not At A Sensor", "the not-at kind does not say it is autonomy's, or not which way round");
+
+        assertEquals(english.getProperty("route.reads.trainNotAt"), "{0} not at S88 #{1}",
+            "the reading of a not-at line does not say not");
+
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 212", 22, false)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            final String[] text = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> text[0] = frame.readsAsForTest());
+
+            assertTrue(text[0].contains(I18n.f("route.reads.trainAt", "BR 218", "21")),
+                "\"Reads as\" does not say the first train is at its sensor: " + text[0]);
+
+            assertTrue(text[0].contains(I18n.f("route.reads.trainNotAt", "BR 212", "22")),
+                "\"Reads as\" does not say the second train is NOT at its sensor: " + text[0]);
+
+            assertFalse(text[0].contains(I18n.f("route.reads.trainAt", "BR 212", "22")),
+                "\"Reads as\" says the not-at train is at its sensor: " + text[0]);
+
+            final String[] kind = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> kind[0] = frame.conditionCellForTest(2).getText());
+
+            assertEquals(kind[0], CommandRow.labelFor(CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT),
+                "the not-at line's Kind cell does not show the not-at kind");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * Choosing Not At on an At line, or the other way, keeps its train and its sensor (FR-141).
+     *
+     * One condition asked either way round, so choosing the other kind turns the question round and changes nothing
+     * else - the way Switch and Signal keep their address.  Without a layout there is no first locomotive to start a
+     * new line on, so a reset would leave the line unbuildable and the choice would not take at all.
+     *
+     * MUTATION: drop the at-or-not-at arm in the condition table's `setValueAt` and the kind does not change.
+     */
+    @Test
+    public void testSwitchingBetweenAtAndNotAtKeepsTheTrainAndTheSensor() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionKindForTest(0, CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT));
+
+            assertEquals(frame.conditionRowsForTest().get(0).getCommand(),
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, false),
+                "choosing Not At did not make the same train and sensor a not-at condition");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionKindForTest(0, CommandRow.Kind.AUTO_LOCOMOTIVE));
+
+            assertEquals(frame.conditionRowsForTest().get(0).getCommand(),
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true),
+                "choosing At again did not turn it back");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * A train-at-a-sensor line's setting says it is the sensor's address (FR-141).
+     *
+     * Adam: *"setting" in this cas is/should be the sensor address, can it be made clearer?*  The cell paints the number
+     * as a sensor address and its tooltip says what it is, on both kinds; a sensor line's own setting is left as it was.
+     *
+     * MUTATION: have `ConditionTable.shownAs` hand back the value as it is and the first assertion fails.
+     */
+    @Test
+    public void testATrainAtASensorsSettingSaysItIsTheSensorAddress() throws Exception
+    {
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        assertEquals(english.getProperty("route.ui.frameSensorAddress"), "Sensor address: {0}",
+            "the setting of a train-at-a-sensor line does not say it is the sensor address");
+
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 212", 1022, false)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(5)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            final String[][] cell = new String[3][2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                for (int at = 0; at < 3; at++)
+                {
+                    javax.swing.JLabel painted = frame.conditionCellForTest(at * 2, 6);
+
+                    cell[at][0] = painted.getText();
+                    cell[at][1] = painted.getToolTipText();
+                }
+            });
+
+            assertEquals(cell[0][0], I18n.f("route.ui.frameSensorAddress", "21"),
+                "the at line's setting is a bare number, not a sensor address");
+
+            assertEquals(cell[0][1], I18n.t("route.ui.frameSensorAddressTip"),
+                "the at line's setting has no tooltip saying what it is");
+
+            assertEquals(cell[1][0], I18n.f("route.ui.frameSensorAddress", "1022"),
+                "the not-at line's setting is a bare number, not a sensor address");
+
+            assertEquals(cell[1][1], I18n.t("route.ui.frameSensorAddressTip"),
+                "the not-at line's setting has no tooltip saying what it is");
+
+            assertEquals(cell[2][0], "on", "a sensor line's own setting changed");
+
+            assertNull(cell[2][1], "a sensor line's setting wears the train line's tooltip");
+
+            assertEquals(frame.conditionRowsForTest().get(0).getCommand().getAddress(), 21,
+                "painting the address changed the condition");
+        }
+        finally
+        {
+            close(frame);
+        }
     }
 
     /** A feedback condition on one sensor. */

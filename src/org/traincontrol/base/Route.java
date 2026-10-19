@@ -406,36 +406,46 @@ abstract public class Route
                 return false;
             }
 
+            // NEITHER FORM HOLDS WITHOUT A TRAIN AND A RECORD TO ASK (FR-141): no autonomy above, or no such locomotive here.
+            // A name with no locomotive behind it is a mistake, and "not at" must not make a mistake true
             Locomotive loc = control.getLocByName(rc.getName());
 
             if (loc == null)
             {
                 return false;
             }
-            String s88 = Integer.toString(rc.getAddress());
 
-            // THE RUN'S BOOKKEEPING CAUGHT UP WITH THE TRAIN FIRST, and no longer (RSA56-C1): while the train stands on
-            // the sensor its run has not yet recorded - the gap in which a route fired by that sensor asks - and not at all
-            // for a sensor it has not reached, which this used to wait for, untimed, until the train got there
-            layout.waitForTheRunToRecord(loc, 3000);
-
-            // The last milestone reached, while the locomotive is running a path
-            if (s88.equals(layout.getLatestMilestoneS88(loc)))
-            {
-                return true;
-            }
-
-            // Otherwise WHERE THE TRAIN IS NOW (OB-250; Adam, 2026-10-08: "250- the first" - the last sensor it
-            // reached, or where it stands): the start of the road it was given until it reaches a sensor, and wherever
-            // it stands once a path has completed.  This asked which Point holds the train, and every Point of a locked
-            // path holds it - the first in hash order, which could be one the train had not reached.  A locomotive that
-            // is not on the autonomy graph at all is nowhere, and so simply does not satisfy this condition
-            Point location = layout.whereTheTrainIs(loc);
-
-            return location != null && s88.equals(location.getS88());
+            // NOT AT is the same question with the answer turned round
+            return trainStandsAt(layout, loc, Integer.toString(rc.getAddress())) == rc.isAtSensor();
         }
         
         return false;
+    }
+
+    /**
+     * Whether autonomy has this train at this sensor, for `evaluate`: its last milestone, or where it stands.
+     */
+    private static boolean trainStandsAt(Layout layout, Locomotive loc, String s88)
+    {
+        // THE RUN'S BOOKKEEPING CAUGHT UP WITH THE TRAIN FIRST, and no longer (RSA56-C1): while the train stands on
+        // the sensor its run has not yet recorded - the gap in which a route fired by that sensor asks - and not at all
+        // for a sensor it has not reached, which this used to wait for, untimed, until the train got there
+        layout.waitForTheRunToRecord(loc, 3000);
+
+        // The last milestone reached, while the locomotive is running a path
+        if (s88.equals(layout.getLatestMilestoneS88(loc)))
+        {
+            return true;
+        }
+
+        // Otherwise WHERE THE TRAIN IS NOW (OB-250; Adam, 2026-10-08: "250- the first" - the last sensor it
+        // reached, or where it stands): the start of the road it was given until it reaches a sensor, and wherever
+        // it stands once a path has completed.  This asked which Point holds the train, and every Point of a locked
+        // path holds it - the first in hash order, which could be one the train had not reached.  A locomotive that
+        // is not on the autonomy graph at all is nowhere, and so stands at no sensor
+        Point location = layout.whereTheTrainIs(loc);
+
+        return location != null && s88.equals(location.getS88());
     }
     
     /**

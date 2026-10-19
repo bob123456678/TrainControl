@@ -362,6 +362,15 @@ public class testAnImportedFacingGuessCanStart
 
             assertTrue(imported.facingsNotHeld.isEmpty(), "with the old file's directions carried, a facing it gives"
                 + " still cannot be held: " + imported.facingsNotHeld);
+
+            // AND EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351): a switch the file ran one way along one road and the
+            // other along another is set by its arms, so no road is shut a way its arrow draws open
+            for (TileKey square : session.getGraph().getTiles().keySet())
+            {
+                String hidden = testTheArrowsTellTheWholeStory.hidden(session, square);
+
+                assertTrue(hidden == null, "after the import, " + square + " hides a move from its arrows: " + hidden);
+            }
         }
         finally
         {
