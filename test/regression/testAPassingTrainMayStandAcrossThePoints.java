@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -336,7 +335,7 @@ public class testAPassingTrainMayStandAcrossThePoints
             if (side != null && side != now) other = side;
         }
 
-        if (other == null) throw new SkipException("BottomMainA is not split into two lanes on the snapshot: " + copies);
+        if (other == null) throw new AssertionError("BottomMainA is not split into two lanes on the snapshot: " + copies);
 
         final java.lang.reflect.Method turn = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
             "moveOntoFacingCopy", Layout.class, String.class, TileKey.class, org.traincontrol.automationui.TilePorts.Side.class);
@@ -393,7 +392,7 @@ public class testAPassingTrainMayStandAcrossThePoints
 
         if (scenario.getSession().facingsFor(square).size() < 2)
         {
-            throw new SkipException("BottomMainA is not split on the snapshot, so it has no other copy to hold a stale tail");
+            throw new AssertionError("BottomMainA is not split on the snapshot, so it has no other copy to hold a stale tail");
         }
 
         assertNotNull(scenario.getSession().getArrivedFrom(square), "precondition: the capture did not record the side");
@@ -489,7 +488,7 @@ public class testAPassingTrainMayStandAcrossThePoints
             if (found == null || name.length() < found.getName().length()) found = point;
         }
 
-        if (found == null) throw new SkipException("the snapshot has no " + square);
+        if (found == null) throw new AssertionError("the snapshot has no " + square);
 
         return found;
     }

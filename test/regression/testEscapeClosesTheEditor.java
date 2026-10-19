@@ -86,12 +86,12 @@ public class testEscapeClosesTheEditor
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no autonomy mode to open");
+            throw new AssertionError("no autonomy configuration, so there is no autonomy mode to open");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
     }
 
     @AfterClass(alwaysRun = true)

@@ -84,12 +84,12 @@ public class testTheHoveredSquareIsForgotten
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no autonomy mode to be in");
+            throw new AssertionError("no autonomy configuration, so there is no autonomy mode to be in");
         }
 
         final LayoutDiagram page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 

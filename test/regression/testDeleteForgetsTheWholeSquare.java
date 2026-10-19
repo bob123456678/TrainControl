@@ -75,12 +75,12 @@ public class testDeleteForgetsTheWholeSquare
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no setup to forget");
+            throw new AssertionError("no autonomy configuration, so there is no setup to forget");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -175,7 +175,7 @@ public class testDeleteForgetsTheWholeSquare
             }
         });
 
-        if (found[0] == null) throw new SkipException("no square on " + PAGE + " the editor agrees about");
+        if (found[0] == null) throw new AssertionError("no square on " + PAGE + " the editor agrees about");
 
         final TileKey square = chosen[0];
 

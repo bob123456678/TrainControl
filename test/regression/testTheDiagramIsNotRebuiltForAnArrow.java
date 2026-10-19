@@ -103,16 +103,16 @@ public class testTheDiagramIsNotRebuiltForAnArrow
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there are no arrows to change");
+            throw new AssertionError("no autonomy configuration, so there are no arrows to change");
         }
 
         final LayoutDiagram page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         track = plainTrackOn(page);
 
-        if (track == null) throw new SkipException("no single-route track square on " + PAGE);
+        if (track == null) throw new AssertionError("no single-route track square on " + PAGE);
 
         route = session.getRoutes(track).keySet().iterator().next();
 
@@ -235,7 +235,7 @@ public class testTheDiagramIsNotRebuiltForAnArrow
             break;
         }
 
-        if (from == null) throw new SkipException("no caption on " + PAGE + " with room beside it");
+        if (from == null) throw new AssertionError("no caption on " + PAGE + " with room beside it");
 
         List<LayoutLabel> was = tilesOf(editor);
 

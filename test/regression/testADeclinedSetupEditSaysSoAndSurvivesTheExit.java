@@ -73,7 +73,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration on the snapshot");
+            throw new AssertionError("no autonomy configuration on the snapshot");
         }
 
         if (ui.getActiveDiagramConfiguration() == null)

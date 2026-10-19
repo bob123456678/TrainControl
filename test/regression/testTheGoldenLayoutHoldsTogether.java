@@ -52,8 +52,8 @@ import org.traincontrol.marklin.file.CS2File;
  * of its four siblings have run, so a write made by the third or fourth was never in scope. Review
  * caught this as TST-B2.
  *
- * Skipped rather than failed when the folder is not there, so this travels with the repository
- * without demanding that everybody have Adam's railway.
+ * Failed, not skipped, when the folder is not there: `cs2_sample_layout` is tracked, so the battery always has it
+ * (FR-136).
  *
  * @author Adam
  */
@@ -97,7 +97,7 @@ public class testTheGoldenLayoutHoldsTogether
     {
         if (!GOLDEN.isDirectory())
         {
-            throw new SkipException("no golden layout at " + GOLDEN.getAbsolutePath());
+            throw new AssertionError("no golden layout at " + GOLDEN.getAbsolutePath());
         }
 
         before = fingerprint(GOLDEN);

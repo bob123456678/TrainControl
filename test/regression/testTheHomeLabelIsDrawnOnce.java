@@ -117,6 +117,15 @@ public class testTheHomeLabelIsDrawnOnce
     /** Every caption the editor actually drew, as text */
     private static List<String> drawn;
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -148,12 +157,17 @@ public class testTheHomeLabelIsDrawnOnce
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration to draw captions from");
+            unbuilt = "no autonomy configuration to draw captions from";
+            return;
         }
 
         final LayoutDiagram page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null)
+        {
+            unbuilt = "no page " + PAGE;
+            return;
+        }
 
         // THREE STATIONS, ARRANGED HERE rather than found in the file.
         //
@@ -179,13 +193,18 @@ public class testTheHomeLabelIsDrawnOnce
 
         if (selfCaptioned.size() < 3)
         {
-            throw new SkipException("this layout has fewer than three self-captioned stations with "
-                + "room beside them - found " + selfCaptioned.size());
+            unbuilt = "this layout has fewer than three self-captioned stations with "
+                + "room beside them - found " + selfCaptioned.size();
+            return;
         }
 
         List<String> locomotives = model.getLocList();
 
-        if (locomotives.size() < 3) throw new SkipException("fewer than three locomotives");
+        if (locomotives.size() < 3)
+        {
+            unbuilt = "fewer than three locomotives";
+            return;
+        }
 
         doubled = selfCaptioned.get(0);
         selfOnly = selfCaptioned.get(1);
@@ -281,6 +300,8 @@ public class testTheHomeLabelIsDrawnOnce
     @Test
     public void testAStationNamedTwiceDrawsItsHomeOnce()
     {
+        assertBuilt();
+
         assertEquals(session.captionsFor(doubled).size(), 2,
             "precondition: " + doubled + " is meant to be captioned on its own square and beside it, "
             + "and it is captioned on " + session.captionsFor(doubled));
@@ -297,6 +318,8 @@ public class testTheHomeLabelIsDrawnOnce
     @Test
     public void testTheCaptionThatSurvivesIsTheOffsetOne()
     {
+        assertBuilt();
+
         assertEquals(ui.autonomyCaptionAt(doubledOffset), doubled,
             "the offset label stopped naming its station, so the caption moved onto the track "
             + "instead of staying where it was put");
@@ -315,6 +338,8 @@ public class testTheHomeLabelIsDrawnOnce
     @Test
     public void testAStationNamedOnlyOnItsOwnSquareKeepsIt()
     {
+        assertBuilt();
+
         assertEquals(session.captionsFor(selfOnly).size(), 1,
             "precondition: " + selfOnly + " is captioned on " + session.captionsFor(selfOnly));
 
@@ -336,6 +361,8 @@ public class testTheHomeLabelIsDrawnOnce
     @Test
     public void testAStationNamedOnlyBesideItselfKeepsIt()
     {
+        assertBuilt();
+
         assertEquals(session.captionsFor(offsetOnly).size(), 1,
             "precondition: " + offsetOnly + " is captioned on " + session.captionsFor(offsetOnly));
 
@@ -375,6 +402,8 @@ public class testTheHomeLabelIsDrawnOnce
     @Test
     public void testTopMainR2DrawsOneLabelOnTheFrozenRailway()
     {
+        assertBuilt();
+
         assertEquals(session.getStore().getPointName(OB193), "TopMainR2",
             "1 - Main:6,4 is called " + session.getStore().getPointName(OB193) + " on this snapshot"
             + " rather than TopMainR2, so the square OB-193 was reported about is somewhere else and"
@@ -410,9 +439,11 @@ public class testTheHomeLabelIsDrawnOnce
     @Test
     public void testTheSetupCheckCountsWhatTheDiagramDraws()
     {
+        assertBuilt();
+
         if (twoBeside == null)
         {
-            throw new SkipException("this railway has no fourth self-captioned station with two free squares beside it");
+            throw new AssertionError("this railway has no fourth self-captioned station with two free squares beside it");
         }
 
         // WHAT THE GRID SHOWS

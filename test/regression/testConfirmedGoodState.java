@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
@@ -165,7 +164,7 @@ public class testConfirmedGoodState
 
         if (!from.isDirectory())
         {
-            throw new SkipException(capturing
+            throw new AssertionError(capturing
                 ? "no test/test_layout to capture from"
                 : "no blessed baseline yet - capture one with -Dbaseline.capture=true once the "
                 + "railway is in a state you have confirmed is right");
@@ -249,7 +248,7 @@ public class testConfirmedGoodState
     {
         if (!file.isFile())
         {
-            throw new SkipException("no blessed " + file.getName() + " yet - capture one with "
+            throw new AssertionError("no blessed " + file.getName() + " yet - capture one with "
                 + "-Dbaseline.capture=true once the railway is in a state you have confirmed");
         }
 

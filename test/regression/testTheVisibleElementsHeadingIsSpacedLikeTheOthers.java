@@ -64,7 +64,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("the sandbox holds no autonomy setup, so there is no autonomy editor");
+        if (session == null) throw new AssertionError("the sandbox holds no autonomy setup, so there is no autonomy editor");
 
         page = model.getLayout(model.getLayoutList().get(0));
     }

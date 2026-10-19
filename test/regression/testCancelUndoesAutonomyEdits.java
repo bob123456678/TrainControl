@@ -78,12 +78,12 @@ public class testCancelUndoesAutonomyEdits
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no autonomy mode to open");
+            throw new AssertionError("no autonomy configuration, so there is no autonomy mode to open");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         // A CONFIGURATION LOADED, as it is on Adam's railway: the rebuild each gesture asks for - and the
         // save inside it that hid the edit - runs only when one is.
@@ -843,7 +843,7 @@ public class testCancelUndoesAutonomyEdits
                     break;
                 }
             }
-            if (second == null) throw new SkipException("no square to record a second copy of a placed train on");
+            if (second == null) throw new AssertionError("no square to record a second copy of a placed train on");
             session.setPointProperty(second, "loc", new org.json.JSONObject().put("name", twice));
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
             settle();

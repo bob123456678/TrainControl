@@ -125,7 +125,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         model.parseAuto(session.buildConfiguration());
 
@@ -300,7 +300,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             }
         }
 
-        throw new SkipException("no path on this railway commands an accessory");
+        throw new AssertionError("no path on this railway commands an accessory");
     }
 
     /**

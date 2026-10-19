@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -95,7 +94,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new SkipException("the snapshot did not build");
+        if (layout == null) throw new AssertionError("the snapshot did not build");
 
         // Nothing of his standing about, so everything drawn is this class's train.
         for (Point point : layout.getPoints())
@@ -105,7 +104,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
 
         List<String> copies = session.getStationIndex().pointNamesAt(PLATFORM);
 
-        if (copies.size() != 1) throw new SkipException("TunnelLeftPark is not one Point on this snapshot: " + copies);
+        if (copies.size() != 1) throw new AssertionError("TunnelLeftPark is not one Point on this snapshot: " + copies);
 
         platform = layout.getPoint(copies.get(0));
 
@@ -231,7 +230,7 @@ public class testTheOrangeRunsOverTheSwitchesBehindTheTrain
             if (copy.getValue() == Side.S) southbound = layout.getPoint(copy.getKey());
         }
 
-        if (southbound == null) throw new SkipException("Tunnel has no southbound copy on this snapshot");
+        if (southbound == null) throw new AssertionError("Tunnel has no southbound copy on this snapshot");
 
         int length = train.getTrainLength();
 

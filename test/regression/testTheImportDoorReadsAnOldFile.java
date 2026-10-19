@@ -271,7 +271,7 @@ public class testTheImportDoorReadsAnOldFile
                 }
             }
 
-            if (named == null) throw new SkipException("the import gave no named station a maximum on this diagram");
+            if (named == null) throw new AssertionError("the import gave no named station a maximum on this diagram");
 
             final TileKey changed = named;
             final int corrected = maxOf(session, changed) + 3;

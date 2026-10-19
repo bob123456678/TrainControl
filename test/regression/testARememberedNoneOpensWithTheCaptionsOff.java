@@ -171,12 +171,12 @@ public class testARememberedNoneOpensWithTheCaptionsOff
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration to draw captions from");
+            throw new AssertionError("no autonomy configuration to draw captions from");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         captionModeWas = prefs().getInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
         textWas = prefs().get(PREF_TEXT_LABELS, null);

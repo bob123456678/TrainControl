@@ -70,7 +70,7 @@ public class testCutWithNothingHovered
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -197,7 +197,7 @@ public class testCutWithNothingHovered
 
                 int[] blank = blankSquare(grid);
 
-                if (blank == null) throw new SkipException("the fixture page has no blank square");
+                if (blank == null) throw new AssertionError("the fixture page has no blank square");
 
                 editor.initCopy(grid.getValueAt(blank[0], blank[1]), null, true);
 
@@ -255,7 +255,7 @@ public class testCutWithNothingHovered
             }
         }
 
-        throw new SkipException("the fixture page holds no components at all");
+        throw new AssertionError("the fixture page holds no components at all");
     }
 
     /**
@@ -271,6 +271,6 @@ public class testCutWithNothingHovered
             }
         }
 
-        throw new SkipException("the fixture page holds no components at all");
+        throw new AssertionError("the fixture page holds no components at all");
     }
 }

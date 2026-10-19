@@ -14,7 +14,6 @@ import javax.swing.Icon;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -159,7 +158,7 @@ public class testTheWashIsNoLongerThanTheTrain
         // The length was whatever Adam's database says, and the room rule is asked wherever a train
         // comes to rest - its destination and any square it turns at (behaviour.md 5a) - so a long train
         // on a railway this tightly measured is refused everywhere, the one real run below never starts,
-        // and every claim after it skips.  A class that skips everything reads as a green one.
+        // and every claim after it fails.
         //
         // This is the class's to set: each claim sets its own length, and `tearDownClass` puts the
         // real one back.
@@ -402,7 +401,7 @@ public class testTheWashIsNoLongerThanTheTrain
      * **THE ARRANGEMENT IS SOUGHT, NOT HOPED FOR.**  Whether the old anchor picked a wrong Point
      * depended on `HashMap` order, so this tries candidate destinations until the anchor actually moves
      * off the square the train stands on, and only then makes its claim; if no path can move it, it says
-     * so and skips rather than passing on a fixture that cannot show it.  A LOCK rather than a run,
+     * so and fails rather than passing on a fixture that cannot show it.  A LOCK rather than a run,
      * because a lock reserves the whole road and returns with the train still standing - the state under
      * test, and deterministic.
      *
@@ -495,7 +494,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
         if (locked == null)
         {
-            throw new SkipException("no path from " + standing.getName() + " reserves a Point that comes"
+            throw new AssertionError("no path from " + standing.getName() + " reserves a Point that comes"
                 + " before it in the graph's own iteration order, so the anchor this is about cannot be"
                 + " made to move on this railway - the claim would pass without asking anything");
         }

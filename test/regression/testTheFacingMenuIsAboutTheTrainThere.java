@@ -66,7 +66,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration on the snapshot");
+            throw new AssertionError("no autonomy configuration on the snapshot");
         }
 
         if (ui.getActiveDiagramConfiguration() == null)
@@ -147,7 +147,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 break;
             }
 
-            if (square == null) throw new SkipException("no placed train on the snapshot stands where two facings can be"
+            if (square == null) throw new AssertionError("no placed train on the snapshot stands where two facings can be"
                 + " chosen");
 
             // AND A TRAIN ON NO SQUARE, of the railway or the setup.
@@ -165,7 +165,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 break;
             }
 
-            if (onTheRailway == null) throw new SkipException("every locomotive is placed somewhere");
+            if (onTheRailway == null) throw new AssertionError("every locomotive is placed somewhere");
 
             // AFTER A RUN: the railway has T where the setup still has P.
             Side recordedWas = session.getFacing(square);
@@ -428,7 +428,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             }
         }
 
-        if (turning == null) throw new SkipException("the snapshot has no free may-turn square with an approach to both copies");
+        if (turning == null) throw new AssertionError("the snapshot has no free may-turn square with an approach to both copies");
 
         // A TRAIN STANDING NOWHERE
         String train = null;
@@ -629,7 +629,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
             }
         }
 
-        if (turning == null) throw new SkipException("the snapshot has no free may-turn square with an approach to both copies");
+        if (turning == null) throw new AssertionError("the snapshot has no free may-turn square with an approach to both copies");
 
         String train = null;
 

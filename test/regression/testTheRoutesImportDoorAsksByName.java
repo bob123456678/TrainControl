@@ -146,7 +146,7 @@ public class testTheRoutesImportDoorAsksByName
                 }
             }
 
-            throw new SkipException("every route in this data has a sensor, so none can be saved armed without one");
+            throw new AssertionError("every route in this data has a sensor, so none can be saved armed without one");
         });
 
         assertNotNull(noSensor[0], "precondition: no route with no sensor was saved armed in the file");

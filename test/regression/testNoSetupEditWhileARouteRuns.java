@@ -984,7 +984,7 @@ public class testNoSetupEditWhileARouteRuns
 
         stations.sort(java.util.Comparator.comparing(TileKey::toString));
 
-        if (stations.isEmpty()) throw new SkipException("no station on " + page);
+        if (stations.isEmpty()) throw new AssertionError("no station on " + page);
 
         return stations.get(0);
     }
@@ -1015,7 +1015,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         }
 
-        throw new SkipException("no station label on " + page.getName() + " that may be dragged anywhere");
+        throw new AssertionError("no station label on " + page.getName() + " that may be dragged anywhere");
     }
 
     /**
@@ -1063,7 +1063,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         }
 
-        throw new SkipException("no run of three plain squares on " + page);
+        throw new AssertionError("no run of three plain squares on " + page);
     }
 
     /**
@@ -1850,7 +1850,7 @@ public class testNoSetupEditWhileARouteRuns
             if (square != null && session.facingChoices(square).size() == 2) return point;
         }
 
-        throw new SkipException("no train stands on a square with two facings");
+        throw new AssertionError("no train stands on a square with two facings");
     }
 
     /** The items of the timetable's right-click menu, built now. */
@@ -1963,7 +1963,7 @@ public class testNoSetupEditWhileARouteRuns
             }
         }
 
-        throw new SkipException("no train stands on a station of the snapshot");
+        throw new AssertionError("no train stands on a station of the snapshot");
     }
 
     /** Makes a train other than this one the active locomotive, as the window makes one; its name. */
