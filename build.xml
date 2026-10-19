@@ -308,6 +308,8 @@
         <test-one-class class="testBulkToolsHoldsTheWholeLayoutTools"/>
         <test-one-class class="testReturnHomeSaysWhy"/>
         <test-one-class class="testTheEditorNamesItsShortcuts"/>
+        <test-one-class class="testTheTrackEditorByHand"/>
+        <test-one-class class="testADiagramClickAsksFirst"/>
         <test-one-class class="testOnlyAStationHoldsAnotherBack"/>
         <test-one-class class="testReturnHomeShowsItIsWorking"/>
         <test-one-class class="testARefusalNamesTheSquare"/>
