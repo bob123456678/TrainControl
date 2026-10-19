@@ -1827,7 +1827,7 @@ public class testEditorSurfaceRules
     @Test
     public void testAHoverAsksTheGridSettingOncePerPass() throws Exception
     {
-        String pass = codeOf("private void clearBordersFromChildren(JPanel panel)");
+        String pass = codeOf("    void clearBordersFromChildren(JPanel panel)");
 
         int loop = pass.indexOf("for (java.awt.Component component : panel.getComponents())");
 
@@ -4813,8 +4813,9 @@ public class testEditorSurfaceRules
     @Test
     public void testACutAsksForNoSetupItWillNotTell() throws Exception
     {
-        // The method, wherever it is (FR-136); renamed, `SourceOf.declaration` fails rather than look for nothing
-        String body = codeOf("synchronized public boolean deleteSelection(boolean tellAutonomy)");
+        // The method, wherever it is (FR-136); renamed, `SourceOf.declaration` fails rather than look for nothing.  Its body
+        // is LayoutEditorSelection's; the editor's `synchronized public` form is a delegator.
+        String body = codeOf("    boolean deleteSelection(boolean tellAutonomy)");
 
         int ask = body.indexOf("getAutonomySession()");
 

@@ -42,13 +42,13 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testAGroupCutCarriesItsSetupToWhereItIsPasted() throws Exception
     {
-        String paste = bodyOf("public boolean pasteSelection(int atX, int atY)");
+        String paste = bodyOf("    boolean pasteSelection(int atX, int atY)");
 
         assertTrue(paste.contains("moveTiles("),
             "pasteSelection no longer calls moveTiles, so a group cut and paste leaves the autonomy "
             + "setup on the squares it emptied and the next reconciling save prunes it (LE-A1)");
 
-        String cut = bodyOf("public boolean cutSelection()");
+        String cut = bodyOf("    boolean cutSelection()");
 
         // The ASSIGNMENT, not a mention of the name.  This asked only that the identifier appeared,
         // so setting the flag to false here - which is precisely "the paste cannot tell a move from a
@@ -58,7 +58,7 @@ public class testTheEditorTellsAutonomy
             "cutSelection no longer sets the cut flag FROM the delete's result, so the paste cannot "
             + "tell a move from a copy and will not carry the setup (LE-A1)");
 
-        assertTrue(cut.contains("this.clipboardCutSquares = emptied"),
+        assertTrue(cut.contains("this.editor.clipboardCutSquares = emptied"),
             "cutSelection no longer records WHICH squares it emptied, so a non-rectangular cut moves "
             + "the setup off squares that still hold their track (LE-A5)");
 
@@ -66,8 +66,8 @@ public class testTheEditorTellsAutonomy
         // before deleteSelection, because deleting clears the selection.  Collected after, the set is
         // empty, every origin is skipped and the paste carries nothing - and an assertion that only
         // asked for the assignment could not see it (LE-C8).
-        int collected = cut.indexOf("this.selection.all()");
-        int deleted = cut.indexOf("this.deleteSelection(");
+        int collected = cut.indexOf("this.editor.selection.all()");
+        int deleted = cut.indexOf("this.editor.deleteSelection(");
 
         // Both proved present before they are compared, which this class's own header promises and
         // this one assertion was not doing: an absent term's index is -1, which is less than every
@@ -135,7 +135,7 @@ public class testTheEditorTellsAutonomy
 
         // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
         // would take the station and its placed locomotive away from the squares still holding track.
-        String copy = bodyOf("public boolean copySelection()");
+        String copy = bodyOf("    boolean copySelection()");
 
         assertTrue(copy.contains("clipboardWasCut = false"),
             "copySelection must clear the cut flag, or pasting a COPY would move the original's setup "
