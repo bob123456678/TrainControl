@@ -117,7 +117,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Change Delay on an entry, answered with a number of seconds, sets that entry's delay and no other.
      *
-     * MUTATION: in `TrainControlUI.updateTimetableDelay`, `Long.parseLong(input) * 1000` to `Long.parseLong(input) * 100`.
+     * MUTATION: in `TimetableTab.updateTimetableDelay`, `Long.parseLong(input) * 1000` to `Long.parseLong(input) * 100`.
      *
      * @throws Exception from the event thread
      */
@@ -146,7 +146,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Delete Entry, answered Yes, takes that entry out of the timetable and off the tab, and leaves the other.
      *
-     * MUTATION: in `TrainControlUI.deleteTimetableEntry`, take out `layout.removeTimetableEntry(row, (TimetablePath) shown);`.
+     * MUTATION: in `TimetableTab.deleteTimetableEntry`, take out `layout.removeTimetableEntry(row, (TimetablePath) shown);`.
      *
      * @throws Exception from the event thread
      */
@@ -176,7 +176,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Delete Entry, answered No, removes nothing.
      *
-     * MUTATION: in `TrainControlUI.deleteTimetableEntry`, the `if (dialogResult != JOptionPane.YES_OPTION) return;`
+     * MUTATION: in `TimetableTab.deleteTimetableEntry`, the `if (dialogResult != JOptionPane.YES_OPTION) return;`
      * after the question to `if (false) return;`.
      *
      * @throws Exception from the event thread
@@ -204,7 +204,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Restart Timetable, answered Yes, marks every entry as not yet run, so the next run starts from the top.
      *
-     * MUTATION: in `TrainControlUI.restartTimetable`, take out `this.getModel().getAutoLayout().resetTimetable();`.
+     * MUTATION: in `TimetableTab.restartTimetable`, take out `this.ui.getModel().getAutoLayout().resetTimetable();`.
      *
      * @throws Exception from the event thread
      */
@@ -231,7 +231,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Restart Timetable over a timetable nothing has run yet says it is already reset, and asks nothing.
      *
-     * MUTATION: in `TrainControlUI.restartTimetable`, `getUnfinishedTimetablePathIndex() == 0` to `== 1`.
+     * MUTATION: in `TimetableTab.restartTimetable`, `getUnfinishedTimetablePathIndex() == 0` to `== 1`.
      *
      * @throws Exception from the event thread
      */
@@ -256,7 +256,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Clear Timetable, answered Yes, empties the timetable, the tab, and the timetable saved in the layout's setup.
      *
-     * MUTATION: in `TrainControlUI.clearTimetable`, take out `keeping.clearTheTimetable();`.
+     * MUTATION: in `TimetableTab.clearTimetable`, take out `keeping.clearTheTimetable();`.
      *
      * @throws Exception from the event thread
      */
@@ -288,7 +288,7 @@ public class testTheTimetableAnswersItsMenu
     /**
      * Clear Timetable, answered No, changes nothing.
      *
-     * MUTATION: in `TrainControlUI.clearTimetable`, the `if (dialogResult != JOptionPane.YES_OPTION) return;` after the
+     * MUTATION: in `TimetableTab.clearTimetable`, the `if (dialogResult != JOptionPane.YES_OPTION) return;` after the
      * question to `if (false) return;`.
      *
      * @throws Exception from the event thread

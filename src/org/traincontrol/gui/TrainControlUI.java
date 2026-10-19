@@ -600,7 +600,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private LinkedHashSet<LocomotiveKeyboardMapping> lastResults = new LinkedHashSet<>();
     
     // Cache timetable state to minimize repaining
-    private String lastTimetableState = "";
+    // Package-private for TimetableTab.repaintTimetable, which reads and writes it on the event thread only
+    String lastTimetableState = "";
     
     // Help ensure that duplicate accessory commands are not captured
     private String lastCapturedAccessoryCommand;
@@ -20795,72 +20796,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public void clearTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
-        {
-            if (this.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(
-                    this,
-                    whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop")
-                );
-                return;
-            }
-
-            int dialogResult = JOptionPane.showOptionDialog(
-                this,
-                I18n.t("timetable.ui.confirmRemoveAllEntries"),
-                I18n.t("ui.dialogConfirmDeletion"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                YES_NO_OPTS,
-                // VAL-B5: default to No - this clears the whole timetable, not one entry.
-                YES_NO_OPTS[1]
-            );
-
-            // Anything but Yes.  This one wipes the whole captured timetable with no undo, and
-            // Escape - which means no - was reaching it.
-            if (dialogResult != JOptionPane.YES_OPTION) return;
-
-            // ASKED AGAIN AFTER THE QUESTION, as Delete Entry asks (OB-260, RSA48-C1): it can stay open as long as the
-            // operator likes, and a run may have started meanwhile
-            if (this.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
-
-            final org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
-
-            // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as every
-            // door onto that lock from the window is (OB-192)
-            new Thread(() ->
-            {
-                layout.emptyTimetable();
-
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once (RSA5-C1): left to the next fold, a Clear pressed
-                    // while a page was out came back with the page
-                    org.traincontrol.automationui.AutonomySession keeping = this.autonomySession;
-
-                    if (keeping != null && this.activeDiagramConfiguration != null)
-                    {
-                        try
-                        {
-                            keeping.clearTheTimetable();
-                        }
-                        catch (java.io.IOException e)
-                        {
-                            this.model.log(e);
-                        }
-                    }
-
-                    this.repaintTimetable();
-                    this.repaintAutoLocListLite();
-                });
-            }, "Timetable clear").start();
-        });
+        this.timetableTab.clearTimetable();
     }
         
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
@@ -25192,114 +25128,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     public void deleteTimetableEntry(MouseEvent evt)
     {
-        try
-        {
-            if (this.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
-            
-            int index = this.getTimetableIndexAtCursor(evt);
-            
-            if (index >= 0)
-            {
-                // THE ENTRY SHOWN, so the one removed is it or none (OB-260)
-                final Object shown = this.getTimetableEntryAtCursor(evt);
-
-                int dialogResult = JOptionPane.showOptionDialog(
-                    this,
-                    I18n.f(
-                        "timetable.ui.confirmRemoveEntryContinue",
-                        index,
-                        shown
-                    ),
-                    I18n.t("timetable.ui.dialogConfirmDeletion"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    YES_NO_OPTS,
-                    // UXR-B5: index 0 is Yes - this said "No" and pre-selected the delete. Enter on
-                    // this confirmation deleted the timetable entry with no undo, one keypress rather
-                    // than the two the comment believed it was requiring.
-                    YES_NO_OPTS[1] // default selection = "No"
-                );
-
-                // Anything but Yes.
-                if (dialogResult != JOptionPane.YES_OPTION) return;
-
-                // ASKED AGAIN AFTER THE QUESTION (OB-260): it can stay open as long as the operator likes, and a run may
-                // have started meanwhile
-                if (this.aRunHoldsTheSetup())
-                {
-                    JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                    return;
-                }
-
-                if (!(shown instanceof TimetablePath)) return;
-
-                final org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
-                final int row = index;
-
-                // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as
-                // every door onto that lock from the window is (OB-192)
-                new Thread(() ->
-                {
-                    layout.removeTimetableEntry(row, (TimetablePath) shown);
-
-                    javax.swing.SwingUtilities.invokeLater(this::repaintTimetable);
-                }, "Timetable entry removal").start();
-            }
-        }
-        catch (Exception e)
-        {
-            this.model.log(e);
-
-            JOptionPane.showMessageDialog(this, I18n.f("error.generic", e.getMessage()));
-        }    
+        this.timetableTab.deleteTimetableEntry(evt);
     }
     
     public void updateTimetableDelay(MouseEvent evt)
     {
-        try
-        {
-            if (this.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
-            
-            TimetablePath ttp = (TimetablePath) getTimetableEntryAtCursor(evt);
-
-            if (ttp != null)
-            {
-                String input = JOptionPane.showInputDialog(
-                    this,
-                    I18n.t("timetable.ui.enterDelaySecondsBeforeRouteExecutes"),
-                    (int) (ttp.getSecondsToNext() / 1000.0)
-                );
-
-                if (input != null)
-                {
-                    // ASKED AGAIN AFTER THE QUESTION, as the other timetable doors ask (RSA49-C2): it can stay open as
-                    // long as the operator likes, and a run started meanwhile may be waiting on this entry's delay
-                    if (this.aRunHoldsTheSetup())
-                    {
-                        JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                        return;
-                    }
-
-                    ttp.setSecondsToNext(Long.parseLong(input) * 1000);
-                    this.repaintTimetable();
-                } 
-            }
-        }
-        catch (Exception e)
-        {
-            this.model.log(e);
-
-            JOptionPane.showMessageDialog(this, I18n.f("error.generic", e.getMessage()));
-        }
+        this.timetableTab.updateTimetableDelay(evt);
     }
     
     /**
@@ -25307,52 +25141,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void restartTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
-        {
-            if (this.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
-            
-            // Check if a reset will do anything
-            if (this.getModel().getAutoLayout().getUnfinishedTimetablePathIndex() == 0
-                && !this.getModel().getAutoLayout().getTimetable().isEmpty()
-                && this.getModel().getAutoLayout().getTimetable().get(0).getExecutionTime() == 0
-            )
-            {
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("timetable.ui.infoTimetableAlreadyReset")
-                );
-                return;
-            }
+        this.timetableTab.restartTimetable();
+    }
 
-            int dialogResult = JOptionPane.showOptionDialog(
-                this,
-                I18n.t("timetable.ui.confirmRestartMarkEntriesUnvisited"),
-                I18n.t("timetable.ui.dialogConfirmRestart"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                YES_NO_OPTS,
-                YES_NO_OPTS[0]
-            );
+    /**
+     * The timetable: repainting it, and the entry menu's delete, change delay, restart and clear.
+     */
+    private final TimetableTab timetableTab = new TimetableTab(this);
 
-            // Anything but Yes.
-            if (dialogResult != JOptionPane.YES_OPTION) return;
+    /**
+     * @return the timetable's table
+     */
+    javax.swing.JTable timetable()
+    {
+        return this.timetable;
+    }
 
-            // ASKED AGAIN AFTER THE QUESTION (RSA48-C1): a reset under a timetable started meanwhile would set back the
-            // execution times its loop waits on
-            if (this.aRunHoldsTheSetup())
-            {
-                JOptionPane.showMessageDialog(this, whyTheSetupIsHeld("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                return;
-            }
-
-            this.getModel().getAutoLayout().resetTimetable();
-            this.repaintTimetable();
-        });
+    /**
+     * @return the timetable's capture button
+     */
+    javax.swing.JToggleButton timetableCapture()
+    {
+        return this.timetableCapture;
     }
         
     public void setFunctionIcon(Locomotive l, JButton source, MouseEvent evt)
@@ -26288,7 +26098,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param point a Point of the running configuration, or null
      * @return the station's own name
      */
-    private String stationLabel(org.traincontrol.automation.Point point)
+    String stationLabel(org.traincontrol.automation.Point point)
     {
         if (point == null) return "";
 
@@ -26309,7 +26119,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * to ask the running Layout for a snapshot, and at construction there is none.  Idempotent, on the column count, because both callers
      * may run in either order.
      */
-    private void prepareTimetableColumns()
+    void prepareTimetableColumns()
     {
         if (this.timetable.getColumnCount() == 5) return;
 
@@ -26376,20 +26186,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Where a timetable entry starts or ends, as the timetable shows it: by the name it was written with where the railway cannot run it,
-     * so an entry through a page left out of autonomy is listed like any other.
+     * Delegates to `TimetableTab.timetableStop`.
      */
     private String timetableStop(TimetablePath path, boolean start)
     {
-        if (path.isRunnable()) return stationLabel(start ? path.getStart() : path.getEnd());
-
-        String name = start ? path.getStartName() : path.getEndName();
-
-        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-        String base = session == null || name == null ? null : session.baseNameOf(name);
-
-        return base == null ? String.valueOf(name) : base;
+        return this.timetableTab.timetableStop(path, start);
     }
 
     /**
@@ -26403,7 +26204,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param timeTable the snapshot about to be drawn
      * @return a key that changes when the drawing would
      */
-    private String timetableSignature(List<TimetablePath> timeTable)
+    String timetableSignature(List<TimetablePath> timeTable)
     {
         StringBuilder out = new StringBuilder();
 
@@ -26420,60 +26221,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return out.toString();
     }
 
+    /**
+     * Delegates to `TimetableTab.repaintTimetable`.
+     */
     void repaintTimetable()
     {
-        // The snapshot must not be taken on the EDT: getTimetableSnapshot holds the Layout monitor, and configureAndLockPath holds that same
-        // monitor across its per-command sleeps (half a second to two seconds on an ordinary path, deliberately, because locking a path has to
-        // be atomic).  This method runs at every path start and end, so with two or more trains one locomotive is regularly mid-configuration
-        // when another's callback lands here, and taken inside the invokeLater the whole UI froze for the length of someone else's
-        // switch-throwing.  The callback thread pays that wait instead, where contention for this monitor is already the design (it holds
-        // activeLocomotives, and activeLocomotives -> Layout is the order the completion block establishes); idle callers take it uncontended
-        // and hand the EDT a finished copy.  The UI callers' busy guard does not make the monitor free by the time they run: three hold a modal
-        // dialog open between the check and the snapshot, and a dispatch started meanwhile takes the monitor (`isRunning()` is true from the
-        // moment `Layout.executePath` counts the train's thread, but the guard is asked before that - GST-C4).  Bouncing off the EDT costs one
-        // short-lived thread on a user action and asks nothing of the callers, which still marshal their own work through the invokeLater below.
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
-        {
-            new Thread(() -> this.repaintTimetable()).start();
-            return;
-        }
-
-        // ASKED, NOT BUILT (RLV8-C2): every milestone's refresh runs this, and after Unload it built an empty railway
-        final Layout shown = this.model.getAutoLayoutIfLoaded();
-
-        final List<TimetablePath> timeTable =
-            shown == null ? java.util.Collections.<TimetablePath>emptyList() : shown.getTimetableSnapshot();
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            prepareTimetableColumns();
-
-            // Update the data
-            this.timetableCapture.setSelected(shown != null && shown.isTimetableCapture());
-            
-            // Do nothing if what the table SHOWS has not changed (MT-149): this compared `timeTable.hashCode()`, and a locomotive hashes by
-            // IDENTITY (deliberately, so renaming one cannot move it out of the consists and run lists that hold it), so a rename changed the name
-            // in every row and no hash at all, and the table went on showing a locomotive that no longer exists under that name (Adam: "the
-            // timetable is not updated").  Keyed on the text of the rows instead, the only thing that can answer "does this need redrawing"; one
-            // string per repaint of a list tens of entries long.
-            String showing = timetableSignature(timeTable);
-
-            if (showing.equals(lastTimetableState)) return;
-
-            lastTimetableState = showing;
-            
-            DefaultTableModel tableModel = (DefaultTableModel) this.timetable.getModel();
-            tableModel.setRowCount(0);
-                        
-            for (TimetablePath path : timeTable)
-            {
-                Object[] data = {tableModel.getRowCount() + 1, path.getLoc().getName(),
-                timetableStop(path, true), timetableStop(path, false),
-                path.isExecuted() ? Conversion.convertSecondsToDatetime(path.getExecutionTime()) : "Pending Start +" + (path.getSecondsToNext() / 1000) + "s"};
-
-                tableModel.addRow(data);
-            }
-        });
+        this.timetableTab.repaintTimetable();
     }
     
     synchronized public void repaintAutoLocList(boolean external)
@@ -26533,7 +26286,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Repaints the auto locomotive list paths only
      */
-    synchronized private void repaintAutoLocListLite()
+    synchronized void repaintAutoLocListLite()
     { 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
