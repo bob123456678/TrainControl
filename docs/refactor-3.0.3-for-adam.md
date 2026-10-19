@@ -70,6 +70,7 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | Issue 4 (`isATurningCopyForTests`) | "remove the now dead code if it has a suitable replacement" | Done (`3c2eb71a`); the tail-crossed test reads the builder's name instead. |
 | Issue 6 (the made-up facing-menu case) | "fine, tests that cover more than what my layout supports are encouraged" | Kept. |
 | Issue 7 (loud skips) | "figure out why they skip and fix them, generally skips should be inspected to understand why" | **Done** (`25e1d5bc`..`fe85de86`): all 509 skip sites read.  277 skip only without a display and never fire in the battery; 182 whose condition the battery can never meet now fail with the same message; 22 set-up checks in 7 classes moved into each test, so a broken feature reads as a failure of each claim, not as skips; 28 kept as real desktop, machine or runner dependencies (keyboard focus, the Windows shell, the screen size, the clipboard, the runner's own data folder).  Every converted skip was shown to fail under the mutation that used to make it skip. |
+| Phase 5 (TrainControlUI Tier 3, `SettledQuestion`) | "Let's defer phase 5 for now, and finish once 4 is fully validated." | Deferred.  3.0.3 ends when Phase 4 is validated (its extractions merged, reviewed, a green battery, and its tag); Phase 5 waits for a later release and his go. |
 
 ## Rollback points
 

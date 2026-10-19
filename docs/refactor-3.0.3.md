@@ -263,7 +263,7 @@ Each phase can be released on its own and ends with a battery. Workers use separ
 | 2. Comment trim | Comment-only, bytecode-verified, one file per worker: TrainControlUI, Layout, AutonomySession, AutonomyEditorPanel, then the next six. Expect a 30-40% cut of comment lines in the giants. | Sonnet ×4 in parallel; Haiku integrator for ratchets and orphan counts | 4-5 sessions, 1 battery |
 | 3. Low-risk extractions | TrainControlUI Tier 1 (five clusters, one commit each, **one worker in sequence**); AutonomySession `SessionImport` and `SessionRuns`; the testAutonomyDiagramSession split | Sonnet ×3, one per file group | 4-5 sessions, 2 batteries |
 | 4. Medium | TrainControlUI Tier 2; AutonomyEditorPanel menus, prompts and mass-assign; LayoutEditor selection and undo; Layout explanations, standing trains and fit (Opus) | Sonnet ×3 and Opus ×1 | 6-8 sessions, 2 batteries |
-| 5. Core (or 3.1.0) | TrainControlUI Tier 3; the `SettledQuestion` base class | Opus | 4-6 sessions, 2 batteries plus a fan-out round |
+| 5. Core (**deferred**) | TrainControlUI Tier 3; the `SettledQuestion` base class.  Adam (2026-10-19): "Let's defer phase 5 for now, and finish once 4 is fully validated." | Opus | 4-6 sessions, 2 batteries plus a fan-out round |
 | 6. Coverage of what the user does and what comes of it (beside Phases 2-5) | Adam (2026-10-19): "increase test coverage (meaningfully, through actions the user would take)"; "Sooner sounds better.  Don't limit this to UI interactions, it can also be state outcomes."  See **6** below the table. | Opus ×1 for the inventory; Sonnet ×4 in parallel, one area each; an integrator folds | 4-6 sessions, 1 battery |
 
 That is about 32-43 worker sessions and 13 batteries.  Phases 1a and 1b come before the comment trim and the
