@@ -66,7 +66,9 @@ public class testJavadocsAreAttached
     // isTurnAround, mandatoryTurnTiles, setPointProperty).
     // 57 -> 46 on 2026-10-19: FR-136 Phase 2, the comment trim of TrainControlUI.java.  Eleven stacked or stale javadocs merged into
     // the member they described or deleted (getAutonomySession, updateStationLabels and setAutoTabEnabled re-attached).
-    private static final int ALLOWED = 46;
+    // 46 -> 45 on 2026-10-19: FR-136 Phase 3 review, the stacked "Duplicates or renames" javadoc left above combineLinkedPages moved onto
+    // LayoutFileActions.duplicateOrRenameCurrentLayout, the member it describes.
+    private static final int ALLOWED = 45;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -109,7 +111,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "RouteEditorFrame.java (3)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "TrainControlUI.java (12)",
+            + "gui" + File.separator + "TrainControlUI.java (11)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "marklin" + File.separator + "MarklinControlStation.java (1)",
     };
