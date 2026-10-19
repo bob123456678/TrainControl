@@ -1,9 +1,6 @@
 package regression;
 
-import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -13,6 +10,7 @@ import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
+import support.SourceOf;
 
 /**
  * Every collection the store keeps is in the registry, and the registry is what the sites walk.
@@ -60,9 +58,6 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
  */
 public class testStoreCollectionsAreHandledEverywhere
 {
-    private static final File SOURCE =
-        new File("src/org/traincontrol/automationui/AutonomyCompanionStore.java");
-
     /**
      * The collections that are part of the SETUP - the things a square or a page carries.
      */
@@ -276,10 +271,7 @@ public class testStoreCollectionsAreHandledEverywhere
     @Test
     public void testEveryKeptCollectionIsHandledAtEverySite() throws Exception
     {
-        assertTrue(SOURCE.isFile(),
-            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        String source = new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
+        String source = source();
 
         List<String> missing = new ArrayList<>();
 
@@ -313,10 +305,7 @@ public class testStoreCollectionsAreHandledEverywhere
     @Test
     public void testNoExemptionIsStale() throws Exception
     {
-        assertTrue(SOURCE.isFile(),
-            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        String source = new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
+        String source = source();
 
         List<String> stale = new ArrayList<>();
 
@@ -364,20 +353,15 @@ public class testStoreCollectionsAreHandledEverywhere
     /**
      * The store's source, or a failure that says so.
      *
-     * A test that reads the source cannot pass by not finding it. This used to be three copies of the
-     * same two lines; the assertion inside is the reason they existed and it is kept.
+     * A test that reads the source cannot pass by not finding it: the store is looked for by its declaration,
+     * wherever the file is, and not finding it fails.
      *
-     * @return the file's text
-     * @throws Exception if it cannot be read
+     * @return the text of the file that declares the store
+     * @throws Exception if it cannot be found
      */
     private String source() throws Exception
     {
-        assertTrue(SOURCE.isFile(),
-            "cannot find " + SOURCE.getAbsolutePath() + " - a test that reads the source cannot pass "
-            + "by not finding it. Renaming or moving that file would otherwise have taken this rule "
-            + "with it and said nothing");
-
-        return new String(Files.readAllBytes(SOURCE.toPath()), StandardCharsets.UTF_8);
+        return SourceOf.fileDeclaring("public class AutonomyCompanionStore\n");
     }
 
     private String withoutComments(String body)
