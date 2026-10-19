@@ -304,6 +304,74 @@ public class testRouteEditorValidation
             && !org.traincontrol.base.RouteCommand.isNameUsable("A, B"), "control: the rule itself has changed");
     }
 
+    /**
+     * With Automatically Fire off, the conditions say above themselves, with a red warning triangle, that they are only
+     * checked when it is on; ticking it takes the warning away, and a route with no conditions has none (Adam,
+     * 2026-10-18: "display a little red warning triangle and a message that states these conditions are only evaluated
+     * when Automatically Fire is set to on").
+     *
+     * MUTATION: show the reading alone whatever the tick, or leave the warning up once it is ticked, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testConditionsSayTheyAreUncheckedWithoutAutomaticFire() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final boolean[] warns = new boolean[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setAutoFireForTest(false);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertFalse(warns[0], "a route with no conditions warns about its conditions");
+
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setConditionRowsForTest(rows);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertTrue(warns[0], "with Automatically Fire off, the conditions do not say they are only checked when it is"
+                + " on: " + frame.readsAsForTest());
+
+            assertTrue(frame.readsAsForTest().contains("\u26A0"), "the warning has no warning triangle: "
+                + frame.readsAsForTest());
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setAutoFireForTest(true);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertFalse(warns[0], "with Automatically Fire ticked, the conditions still say they are not checked");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.setAutoFireForTest(false);
+                warns[0] = frame.warnsTheConditionsAreUnaskedForTest();
+            });
+
+            assertTrue(warns[0], "unticking Automatically Fire again did not bring the warning back");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
     {
         final org.traincontrol.gui.RouteEditorFrame[] frame =

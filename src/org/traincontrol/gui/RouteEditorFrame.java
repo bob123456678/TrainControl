@@ -844,6 +844,9 @@ public class RouteEditorFrame extends JFrame
 
         enabledBox.addActionListener(e -> showSensorIfAutomatic());
 
+        // AND THE CONDITIONS SAY WHETHER THEY ARE ASKED AT ALL (Adam, 2026-10-18)
+        enabledBox.addActionListener(e -> updateReadsAs());
+
         showSensorIfAutomatic();
 
         return row;
@@ -1547,13 +1550,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Whether auto-fire is ticked, for the same test.
+     * Whether auto-fire is ticked, for the same test - ticked as a click ticks it, so what listens to the box hears it.
      *
      * @param on whether the route fires itself
      */
     public void setAutoFireForTest(boolean on)
     {
-        enabledBox.setSelected(on);
+        if (enabledBox.isSelected() != on) enabledBox.doClick();
     }
 
     /**
@@ -1857,21 +1860,54 @@ public class RouteEditorFrame extends JFrame
      */
     private void updateReadsAs()
     {
+        String reading = readingOfTheConditions();
+
+        // CHECKED ONLY WHEN THE ROUTE FIRES ITSELF (Adam, 2026-10-18: "display a little red warning triangle and a message
+        // that states these conditions are only evaluated when Automatically Fire is set to on").  A route run by hand
+        // ignores its conditions; only its own sensor's trigger asks them, and that only while Automatically Fire is on.
+        boolean unasked = !enabledBox.isSelected()
+            && (conditionsEditable ? conditionCount() > 0 : conditionsAsFound != null);
+
+        if (!unasked)
+        {
+            readsAs.setText(reading);
+            return;
+        }
+
+        String below = reading.startsWith("<html>") && reading.endsWith("</html>")
+            ? reading.substring("<html>".length(), reading.length() - "</html>".length()) : marked(reading.trim());
+
+        readsAs.setText("<html><span style='color:#C62828'>\u26A0 " + marked(I18n.t("route.ui.frameConditionsNeedAutomaticFire"))
+            + "</span>" + (below.isEmpty() ? "" : "<br>" + below) + "</html>");
+    }
+
+    /**
+     * Whether the conditions' warning is showing: there are conditions and Automatically Fire is off.
+     *
+     * @return true while it is shown
+     */
+    public boolean warnsTheConditionsAreUnaskedForTest()
+    {
+        return readsAs.getText().contains(I18n.t("route.ui.frameConditionsNeedAutomaticFire"));
+    }
+
+    /**
+     * How the conditions read, in words, as `updateReadsAs` shows them under the warning when there is one.
+     *
+     * @return the text, markup or plain, or a blank
+     */
+    private String readingOfTheConditions()
+    {
         if (!conditionsEditable)
         {
             String text = conditionsAsFound == null ? ""
                 : NodeExpression.toTextRepresentation(conditionsAsFound,
                     parent == null ? null : parent.getModel());
 
-            readsAs.setText(I18n.f("route.ui.frameConditionsNotShown", text));
-            return;
+            return I18n.f("route.ui.frameConditionsNotShown", text);
         }
 
-        if (conditions.rows.size() < 2)
-        {
-            readsAs.setText(" ");
-            return;
-        }
+        if (conditions.rows.size() < 2) return " ";
 
         // What the outline means, in words and brackets.
         //
@@ -1881,8 +1917,8 @@ public class RouteEditorFrame extends JFrame
         // to be told.
         // BOLD WORDS AND COLOURED SETTINGS (Adam, 2026-09-14: "bold the operators, make on/straight/green green
         // and off/turn/red red").  As markup, so everything the conditions carry is escaped on the way in.
-        readsAs.setText("<html>" + I18n.f("route.ui.frameReadsAs",
-            describe(ConditionOutline.toExpression(conditions.rows))) + "</html>");
+        return "<html>" + I18n.f("route.ui.frameReadsAs",
+            describe(ConditionOutline.toExpression(conditions.rows))) + "</html>";
     }
 
     /**
