@@ -783,8 +783,8 @@ def verify_findings_mirror(conn=None, path=FINDINGS_MIRROR):
         if not os.path.exists(path):
             return False, path + " is not there at all, and it is what Java reads the catalogue from"
 
-        # Line endings aside: git may check the file out with CRLF.
-        if io.open(path, "rb").read().replace(b"\r\n", b"\n") == fresh:
+        # Line endings aside, on both sides: git may check the file out with CRLF, and the render may write either.
+        if io.open(path, "rb").read().replace(b"\r\n", b"\n") == fresh.replace(b"\r\n", b"\n"):
             return True, "the mirror is the store's own rows"
 
         return False, ("%s is not what the store renders - regenerate it with"
