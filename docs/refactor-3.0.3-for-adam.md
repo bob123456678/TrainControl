@@ -58,3 +58,17 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | Issue 4 (`isATurningCopyForTests`) | "remove the now dead code if it has a suitable replacement" | Done (`3c2eb71a`); the tail-crossed test reads the builder's name instead. |
 | Issue 6 (the made-up facing-menu case) | "fine, tests that cover more than what my layout supports are encouraged" | Kept. |
 | Issue 7 (loud skips) | "figure out why they skip and fix them, generally skips should be inspected to understand why" | In progress: every skip in the suite is inspected, including issue 5's twelve. |
+
+## Rollback points
+
+Adam, 2026-10-19: *"commit each phase for safe rollback as needed."*  Each accepted phase is an annotated tag on dev,
+pushed: `git checkout <tag>` to look, `git reset --hard <tag>` on a branch to go back.
+
+| Tag | Commit | What it holds |
+|---|---|---|
+| `fr136-phase0` | `5b04438d` | Phase 0: the tests survive a file split (battery 102) |
+| `fr136-phase1` | `54ff433c` | Phase 1: dead weight (battery 103) |
+| `fr136-phase1a` | `af897da2` | Phase 1a: the laned battery (proved claim by claim) |
+| `fr136-phase1c` | `5d9f42d6` | Phase 1c: the tracker is a database |
+| `fr136-phase2` | `1928cead` | Phase 2 (the four giants) and Phase 1b (battery 104) |
+| `fr136-phase6-tier1-net` | `f46174ee` | Phase 6: the safety net under TrainControlUI's Tier 1 |
