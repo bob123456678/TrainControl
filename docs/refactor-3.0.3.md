@@ -57,6 +57,9 @@ time taken before 3.0.3 ... FR-130, ... which we would then release concurrently
   lock, separately (it depends on what else runs).  Its result merges and ships in 3.0.3.
 - After Phase 5 (or whichever phase ends the work): the same model and brief implement FR-130 again, on the refactored
   code, in a throwaway branch that is never merged.  Same four figures; the difference is the plan's result.
+- **Before, measured 2026-10-18** (dev `acaaf3fc`, Sonnet, commit `9e55fb8f`, merged as `ec7925d4`): 372 s of agent time
+  (about 7 minutes from launch to report), 32 tool calls, 107,349 tokens, 30 s waiting for the test lock.  Two files
+  changed (`TileOverlay`, `ui.testDiagramLooksRight`); no glow needed.
 
 ## Summary
 
