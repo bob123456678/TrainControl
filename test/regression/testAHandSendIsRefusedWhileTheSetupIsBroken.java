@@ -8,6 +8,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * A train is not sent by hand while the setup has errors, any more than autonomy is started (MT-263).
@@ -80,45 +81,24 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         // THROUGH ONE DOOR (Adam, 2026-09-29: "can all the checks go through a single door?"): both hand doors send through
         // `sendATrainByHand`, and neither dispatches past it
         for (String[] hand : new String[][] {
-            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java", "private void locAvailPathsMouseClicked(",
-                "the Auto tab's list of paths"},
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private JMenuItem destinationItem(",
-                "the track diagram's right-click destinations"}})
+            {"private void locAvailPathsMouseClicked(", "the Auto tab's list of paths"},
+            {"private JMenuItem destinationItem(", "the track diagram's right-click destinations"}})
         {
-            String source = read(hand[0]);
+            String body = code(hand[0]);
 
-            int start = source.indexOf(hand[1]);
-
-            assertTrue(start >= 0, "cannot find " + hand[1] + " in " + hand[0] + " - if the door moved, move this");
-
-            int end = source.indexOf("\n    }", start);
-
-            String body = source.substring(start, end < 0 ? source.length() : end);
-
-            assertTrue(body.contains("sendATrainByHand("), hand[2] + " does not send through the one door both hand doors"
+            assertTrue(body.contains("sendATrainByHand("), hand[1] + " does not send through the one door both hand doors"
                 + " share, so what one asks the other can miss (RLV12-B1)");
 
-            assertFalse(body.contains("executePath(") || body.contains("executePathByHand("), hand[2] + " dispatches a train"
+            assertFalse(body.contains("executePath(") || body.contains("executePathByHand("), hand[1] + " dispatches a train"
                 + " itself, past the one door");
         }
 
-        door("src/org/traincontrol/gui/TrainControlUI.java", "void sendATrainByHand(",
-            "the one door both hand doors send through");
+        door("void sendATrainByHand(", "the one door both hand doors send through");
 
-        String window = read("src/org/traincontrol/gui/TrainControlUI.java");
-
-        int gate = window.indexOf("String whyNoTrainMayBeSent(");
-
-        assertTrue(gate >= 0, "the window has no whyNoTrainMayBeSent for the doors to ask");
-
-        assertTrue(window.substring(gate, window.indexOf("\n    }", gate)).contains(REFUSAL), "the gate every door asks"
+        assertTrue(code("String whyNoTrainMayBeSent(").contains(REFUSAL), "the gate every door asks"
             + " does not ask " + REFUSAL + " - a hand send goes out over a setup Start refuses (MT-263)");
 
-        int rule = window.indexOf("public String " + REFUSAL);
-
-        assertTrue(rule >= 0, "the window has no " + REFUSAL + " for the doors to ask");
-
-        String body = window.substring(rule, window.indexOf("\n    }", rule));
+        String body = code("public String " + REFUSAL);
 
         assertTrue(body.contains("autonomyHasErrors()"), REFUSAL + " does not ask autonomyHasErrors(), the question"
             + " Start is refused on - so a hand send and Start can disagree about the same setup: " + body);
@@ -139,22 +119,18 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testTheRunDoorsAskItToo() throws Exception
     {
-        String window = read("src/org/traincontrol/gui/TrainControlUI.java");
-
         for (String[] door : new String[][] {
             {"private void executeTimetableActionPerformed(", "this.executeTimetable.setEnabled(false);", "Execute Timetable"},
             {"public void requestReturnToHome()", "loadReturnToHomeTimetable(", "Return Home"}})
         {
-            int start = window.indexOf(door[0]);
+            String body = code(door[0]);
 
-            assertTrue(start >= 0, "cannot find " + door[0] + " - if the door moved, move this");
+            int asked = body.indexOf(GATE);
+            int acts = body.indexOf(door[1]);
 
-            int asked = window.indexOf(GATE, start);
-            int acts = window.indexOf(door[1], start);
+            assertTrue(acts >= 0, "precondition: " + door[2] + " no longer does " + door[1]);
 
-            assertTrue(acts > start, "precondition: " + door[2] + " no longer does " + door[1]);
-
-            assertTrue(asked > start && asked < acts, door[2] + " runs trains without asking " + GATE + " - over a setup"
+            assertTrue(asked >= 0 && asked < acts, door[2] + " runs trains without asking " + GATE + " - over a setup"
                 + " Start refuses (TDU-B1)");
         }
     }
@@ -466,8 +442,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testTheMenuAsksTheSetupOnceWhereStartIsOffered() throws Exception
     {
-        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
-        String item = read("src/org/traincontrol/gui/HomeLocomotiveMenu.java");
+        // The menu is built by its constructor; the Return Home item is the whole of HomeLocomotiveMenu's file.
+        String menu = code("private LayoutRightclickAutonomyMenu(");
+        String item = SourceOf.withoutComments(SourceOf.fileDeclaring("final class HomeLocomotiveMenu"));
 
         assertTrue(menu.contains("canStart ? null : ui.whyStartAndAHandSendAreRefused()"), "the right-click menu does"
             + " not work Start's and the hand doors' sentences out together from Start's answer (ADU-C3, ADU2-C5)");
@@ -512,13 +489,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     {
         // ONE PLACE FOR BOTH (Adam, 2026-09-29): the standing rules are `whyThisPathCannotBeTaken`, which the one hand door
         // asks before the reversal question
-        String window = read("src/org/traincontrol/gui/TrainControlUI.java");
-
-        int rules = window.indexOf("static String whyThisPathCannotBeTaken(");
-
-        assertTrue(rules >= 0, "the standing rules a hand send explains are no longer asked in one place");
-
-        String body = window.substring(rules, window.indexOf("\n    }", rules));
+        String body = code("static String whyThisPathCannotBeTaken(");
 
         int berth = body.indexOf("whyABerthCannotHoldIt(");
         int ownTail = body.indexOf("whyItWouldMeetItsOwnTail(");
@@ -528,11 +499,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertTrue(ownTail > berth, "the hand doors do not say when a train would run into its own tail (OB-294) - the"
             + " send is refused at dispatch with \"check the log\"");
 
-        int door = window.indexOf("void sendATrainByHand(");
-
-        assertTrue(door >= 0, "the one hand door has gone");
-
-        String send = window.substring(door, window.indexOf("\n    }", door));
+        String send = code("void sendATrainByHand(");
 
         int asked = send.indexOf("whyThisPathCannotBeTaken(");
         int question = send.indexOf("ManualReversalPrompt.forJourney(");
@@ -949,17 +916,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         }
     }
 
-    private static void door(String file, String handler, String what) throws Exception
+    private static void door(String handler, String what) throws Exception
     {
-        String source = read(file);
-
-        int start = source.indexOf(handler);
-
-        assertTrue(start >= 0, "cannot find " + handler + " in " + file + " - if the door moved, move this");
-
-        int end = source.indexOf("\n    }", start);
-
-        String body = source.substring(start, end < 0 ? source.length() : end);
+        String body = code(handler);
 
         int asked = body.indexOf(GATE);
 
@@ -988,14 +947,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         return (String) rule.invoke(null, errors, blocking);
     }
 
-    private static String read(String path) throws Exception
+    /** A declaration's code, found wherever the program keeps it, with its comments blanked. */
+    private static String code(String signature)
     {
-        File f = new File(path);
-
-        assertTrue(f.isFile(), "cannot find " + f.getAbsolutePath());
-
-        String raw = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
-
-        return raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+        return SourceOf.withoutComments(SourceOf.declaration(signature));
     }
 }
