@@ -256,7 +256,7 @@ public final class Answering implements AutoCloseable
 
                 pressed(pane, answer).doClick();
             }
-            catch (IllegalStateException cannot)
+            catch (RuntimeException cannot)
             {
                 asked.add("UNANSWERED: " + cannot.getMessage());
 
@@ -320,7 +320,7 @@ public final class Answering implements AutoCloseable
         field.setText(text);
     }
 
-    /** The dialog's own buttons, in order: those outside its message. */
+    /** The dialog's own buttons, in order: not those in its message, nor a list's or a combo box's arrows. */
     private static List<JButton> buttonsOf(JOptionPane pane)
     {
         Object message = pane.getMessage();
@@ -332,6 +332,9 @@ public final class Answering implements AutoCloseable
             if (!(c instanceof JButton)) continue;
 
             if (message instanceof Component && SwingUtilities.isDescendingFrom(c, (Component) message)) continue;
+
+            if (SwingUtilities.getAncestorOfClass(JComboBox.class, c) != null
+                || SwingUtilities.getAncestorOfClass(javax.swing.JScrollPane.class, c) != null) continue;
 
             buttons.add((JButton) c);
         }
