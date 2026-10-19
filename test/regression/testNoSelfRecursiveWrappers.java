@@ -80,14 +80,15 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * The window's collaborators (FR-136): each field of TrainControlUI that holds one, and the file it is declared in.
+     * The window's collaborators (FR-136): each field of TrainControlUI that holds one, the file it is declared in, and
+     * its class name - for the static delegators, which reach it as `Class.method(` rather than through the field.
      */
     private static final String[][] COLLABORATORS = {
-        { "backupAction", "src/org/traincontrol/gui/BackupAction.java" },
-        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java" },
-        { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java" },
-        { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java" },
-        { "routeListPanel", "src/org/traincontrol/gui/RouteListPanel.java" },
+        { "backupAction", "src/org/traincontrol/gui/BackupAction.java", "BackupAction" },
+        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java", "UpdateFlow" },
+        { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java", "LocIconActions" },
+        { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions" },
+        { "routeListPanel", "src/org/traincontrol/gui/RouteListPanel.java", "RouteListPanel" },
     };
 
     /**
@@ -98,7 +99,11 @@ public class testNoSelfRecursiveWrappers
      * call itself can make a delegator call its own name instead of the collaborator's, or make the moved body call
      * the window's delegator that leads straight back to it.  Either is a StackOverflowError the compiler accepts.
      *
-     * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails.
+     * The static delegators (`askAboutTheUpdate`, `whenNoModalDialog`, `routeNamedIn`) hand over as `Class.method(` and
+     * the collaborator calls the window's statics as `TrainControlUI.method(`, so both spellings are read as well.
+     *
+     * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
+     * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`.
      */
     @Test
     public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
@@ -114,9 +119,12 @@ public class testNoSelfRecursiveWrappers
 
             List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
 
-            // What each side calls on the other: the window through `this.<field>.`, the collaborator through `ui.`.
-            java.util.Map<String, java.util.Set<String>> windowCalls = callsThrough(window, "this." + each[0] + ".");
-            java.util.Map<String, java.util.Set<String>> helperCalls = callsThrough(helper, "ui.");
+            // What each side calls on the other: the window through `this.<field>.` (or `Class.` for a static), the
+            // collaborator through `ui.` (or `TrainControlUI.` for a static).
+            java.util.Map<String, java.util.Set<String>> windowCalls = merged(
+                callsThrough(window, "this." + each[0] + "."), callsThrough(window, each[2] + "."));
+            java.util.Map<String, java.util.Set<String>> helperCalls = merged(
+                callsThrough(helper, "ui."), callsThrough(helper, "TrainControlUI."));
 
             int checked = 0;
 
@@ -129,8 +137,8 @@ public class testNoSelfRecursiveWrappers
                     java.util.Set<String> back = helperCalls.get(handedTo);
 
                     assertFalse(back != null && back.contains(delegator.getKey()),
-                        "TrainControlUI." + delegator.getKey() + " hands to " + each[0] + "." + handedTo
-                        + ", which calls ui." + delegator.getKey() + " - a loop the compiler accepts");
+                        "TrainControlUI." + delegator.getKey() + " hands to " + each[2] + "." + handedTo
+                        + ", which calls back into TrainControlUI." + delegator.getKey() + " - a loop the compiler accepts");
                 }
             }
 
@@ -156,7 +164,8 @@ public class testNoSelfRecursiveWrappers
 
                 List<String> body = bodyOf(window, i);
 
-                if (body.stream().noneMatch(line -> line.contains("this." + each[0] + "." + name + "("))) continue;
+                if (body.stream().noneMatch(line -> line.contains("this." + each[0] + "." + name + "(")
+                    || line.contains(each[2] + "." + name + "("))) continue;
 
                 for (String line : body)
                 {
@@ -165,6 +174,19 @@ public class testNoSelfRecursiveWrappers
                 }
             }
         }
+    }
+
+    /**
+     * Two maps of method name to the names it calls, as one.
+     */
+    private static java.util.Map<String, java.util.Set<String>> merged(java.util.Map<String, java.util.Set<String>> first,
+        java.util.Map<String, java.util.Set<String>> second)
+    {
+        java.util.Map<String, java.util.Set<String>> both = new java.util.HashMap<>(first);
+
+        second.forEach((name, called) -> both.computeIfAbsent(name, k -> new java.util.HashSet<>()).addAll(called));
+
+        return both;
     }
 
     /**
