@@ -4872,6 +4872,63 @@ public class testAutonomyDiagramSession
             "an ordinary two-way run reports a station nothing can reach: "
             + session.destinationCopiesWithNoWayIn());
 
+        // THE NO-WAY-IN HALF, BY INJECTION (FR-136).  No diagram provokes it, so the built graph the check reads is
+        // handed one with every way into a copy of the middle station cut: the copy has to be named, and only that one.
+        org.json.JSONObject injected = new org.json.JSONObject(session.buildConfigurationForInspection());
+
+        String cutCopy = null;
+
+        for (Object o : injected.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            if (point.optBoolean("station", false) && point.getString("name").startsWith("Middle"))
+            {
+                cutCopy = point.getString("name");
+
+                break;
+            }
+        }
+
+        assertNotNull(cutCopy, "the middle station built to no copy, so there is none to cut the ways into");
+
+        java.lang.reflect.Method noWayIn = AutonomySession.class.getDeclaredMethod("destinationCopiesWithNoWayIn",
+            org.json.JSONObject.class, java.util.Map.class);
+
+        noWayIn.setAccessible(true);
+
+        assertTrue(((java.util.Map<?, ?>) noWayIn.invoke(session, injected, null)).isEmpty(),
+            "control: the intact graph reports a copy nothing can reach");
+
+        org.json.JSONArray kept = new org.json.JSONArray();
+
+        int cut = 0;
+
+        for (Object o : injected.getJSONArray("edges"))
+        {
+            org.json.JSONObject edge = (org.json.JSONObject) o;
+
+            if (cutCopy.equals(edge.getString("end")))
+            {
+                cut++;
+
+                continue;
+            }
+
+            kept.put(edge);
+        }
+
+        assertTrue(cut > 0, "control: nothing led into " + cutCopy + ", so there was no way in to cut");
+
+        injected.put("edges", kept);
+
+        java.util.Map<?, ?> unreachable = (java.util.Map<?, ?>) noWayIn.invoke(session, injected, null);
+
+        assertEquals(unreachable.get(middle), cutCopy,
+            "a copy of a healthy station with every way into it cut was not reported: " + unreachable);
+
+        assertEquals(unreachable.size(), 1, "the copy nothing can reach was reported with others: " + unreachable);
+
         // ONE WAY ALONG THE FAR SECTION ONLY, so the middle station keeps its healthy arrival.
         Set<TileKey> far = new LinkedHashSet<>();
 
@@ -5346,6 +5403,10 @@ public class testAutonomyDiagramSession
         {
             session.setDirection(toe, entry.getKey(), Direction.BOTH);
         }
+
+        // A MARK PER ROAD, which is what keeps the loop below from running over nothing (FR-136)
+        assertEquals(session.directionMarks(toe).size(), routes.size(),
+            "the turnout is open in the direction the blades allow, and the diagram draws no mark for its roads");
 
         for (TileAnnotation.Mark mark : session.directionMarks(toe))
         {
@@ -6844,9 +6905,12 @@ public class testAutonomyDiagramSession
     {
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
-        // A station hard against the top-left of the drawn area, with its only neighbour to the east
+        // A station hard against the top-left of the drawn area, with its only neighbour to the east a curve (FR-136).
+        // Beside a straight the name went on that straight and the search for blank space was never reached, which is
+        // where the square outside the drawn area was found; with no plain track to put it on, the blank squares are
+        // looked at, and the ones outside have to be refused.
         page.addComponent(componentType.FEEDBACK, 0, 0, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CURVE, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.setPageId("1");
         page.checkBounds();
 
@@ -6857,7 +6921,9 @@ public class testAutonomyDiagramSession
         session.getStore().setStation(station, true);
         session.setPointName(station, "Kopfbahnhof");
 
-        session.placeCaption(station);
+        assertNull(session.placeCaption(station), "the name found no square at all, even the station's own");
+
+        assertFalse(session.getCaptions().isEmpty(), "placing the name left no caption, so none can be outside anything");
 
         for (TileKey where : session.getCaptions().keySet())
         {
@@ -9861,7 +9927,9 @@ public class testAutonomyDiagramSession
         session.getStore().setStation(station, true);
         session.setPointName(station, "Kopfbahnhof");
 
-        session.placeCaption(station);
+        assertNull(session.placeCaption(station), "the name found no square at all, even the station's own");
+
+        assertFalse(session.getCaptions().isEmpty(), "placing the name left no caption, so none can be outside anything");
 
         for (TileKey where : session.getCaptions().keySet())
         {
@@ -10312,6 +10380,18 @@ public class testAutonomyDiagramSession
 
         assertTrue(session.captionsFor(station).contains(thereToo), "placing the name on the station's page took the"
             + " other page's caption off");
+
+        // AND THE OWN PAGE'S MOVED (FR-136): a placement that did nothing leaves the caption on the square it was put on
+        TileKey shown = null;
+
+        for (TileKey where : session.captionsFor(station))
+        {
+            if (where.getPage().equals("main")) shown = where;
+        }
+
+        assertNotNull(shown, "placing the name left the station without a caption on its own page");
+
+        assertNotEquals(shown, beside, "placing the name on the station's page did not move the caption off " + beside);
 
         // MOVING ONE (the drag's door): only on its own page
         session.moveCaption(thereToo, there);
@@ -11269,6 +11349,29 @@ public class testAutonomyDiagramSession
         assertTrue(session.arrivalMarks(station, false).isEmpty(),
             "an unrestricted station draws marks on the running diagram, which is the clutter this "
             + "setting exists to avoid");
+
+        // AND A RESTRICTED ONE DRAWS THEM (FR-136), which is what the empty answer above is told apart from
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+
+        TileKey restricted = new TileKey("main", 3, 1);
+
+        session.setStation(restricted, true);
+        session.setPointName(restricted, "Bahnhof");
+
+        assertTrue(session.arrivalMarks(restricted, false).isEmpty(), "control: the second station is unrestricted too");
+
+        org.traincontrol.automationui.TilePorts.Side shut = session.arrivalSides(restricted).get(0);
+
+        session.setBarredArrivals(restricted, new java.util.LinkedHashSet<>(Arrays.asList(shut)));
+
+        boolean marked = false;
+
+        for (TileAnnotation.Arrival mark : session.arrivalMarks(restricted, false))
+        {
+            if (mark.getSide() == shut && !mark.isAllowed()) marked = true;
+        }
+
+        assertTrue(marked, "a station with a side barred draws no mark for it on the running diagram");
     }
 
     /**
