@@ -2586,6 +2586,63 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Track laid on a blank square beside a one-way run takes the run's direction and is saved with the edit, so the next
+     * open has nothing to correct (RSA75-C1).  The store held nothing about the blank square, so the edit's answer said
+     * nothing was forgotten, the editor did not save, and the next open logged the run as a setup that "did not say the
+     * same on every square" - about track just laid.  The drop is done as the track diagram editor does it: the tile
+     * placed, then `forgetTiles` on its square, and a save when that says something changed.
+     *
+     * MUTATION: answer only what the store forgot again, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTrackLaidBesideAOneWayRunIsSavedWithTheEdit() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+
+        for (int x = 2; x <= 4; x++)
+        {
+            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("RSA75-C1");
+        session.setStation(new TileKey("main", 1, 1), true);
+
+        TileKey leader = session.runLeaders().get(new TileKey("main", 3, 1));
+
+        assertTrue(session.setRunDirection(leader, new RouteId(0, 0), Direction.TOWARD_A) > 0, "precondition: the run"
+            + " could not be made one way");
+
+        session.save();
+
+        // A STRAIGHT DROPPED ON THE BLANK SQUARE AT THE END OF THE RUN, as the editor drops one
+        TileKey laid = new TileKey("main", 5, 1);
+
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        if (session.forgetTiles(Arrays.asList(laid))) session.saveQuietly();
+
+        assertNotNull(session.getStore().getTileDirection(laid, new RouteId(0, 0)), "precondition: the straight laid did"
+            + " not take its run's direction");
+
+        AutonomySession reopened = new AutonomySession(layout);
+
+        reopened.open(Arrays.asList(page));
+
+        assertNotNull(reopened.getStore().getTileDirection(laid, new RouteId(0, 0)), "the straight laid beside the one-way"
+            + " run took the run's direction in memory and was not saved with the edit (RSA75-C1)");
+
+        assertTrue(reopened.getSquaresBroughtToTheirArrows().isEmpty(), "the next open logged the track just laid as a"
+            + " correction (RSA75-C1): " + reopened.getSquaresBroughtToTheirArrows());
+    }
+
+    /**
      * A run whose squares point opposite ways - no train can pass it - is left as it is and is a warning, about the run,
      * naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.  Closing it in
      * the correction would hide which way was meant behind a setting that looks chosen.

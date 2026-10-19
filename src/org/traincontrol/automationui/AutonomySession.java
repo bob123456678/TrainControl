@@ -4375,7 +4375,10 @@ public class AutonomySession
             joiningTheirRuns = Collections.emptySet();
         }
 
-        return changed;
+        // AND WHAT THE REBUILD GAVE THEM, which the caller saves on this answer (RSA75-C1): track laid on a blank square
+        // beside a one-way run takes the run's direction, and the store held nothing about that square to forget - so it
+        // was in memory only, and the next open logged the run as a correction
+        return changed || !graph.getNormalizedRuns().isEmpty() || !graph.getNormalizedToArms().isEmpty();
     }
 
     /** The squares just built over, which take their runs' direction without its being said (OB-361). */
