@@ -1016,8 +1016,32 @@ public class testEditorSurfaceRules
 
         overlay.setAccessible(true);
 
+        // THE COLOUR A HOVERED SQUARE REALLY WEARS, asked of the editor rather than chosen here: handing the outline
+        // a colour of this test's own and reading the same colour back proves only that the outline paints what it
+        // is given.
+        java.lang.reflect.Field hoveredColour =
+            LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_HOVERED_COLOR");
+
+        hoveredColour.setAccessible(true);
+
+        java.awt.Color wornWhenHovered = (java.awt.Color) hoveredColour.get(null);
+
+        java.lang.reflect.Field restingColour =
+            LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_DEFAULT_COLOR");
+
+        restingColour.setAccessible(true);
+
+        java.awt.Color wornAtRest = (java.awt.Color) restingColour.get(null);
+
+        // SEEN: opaque, and not the colour of the grid line a square rests in with the grid on
+        assertEquals(wornWhenHovered.getAlpha(), 255,
+            "the colour a hovered square wears is not opaque, so hovering one with the grid off shows nothing at all");
+
+        assertNotEquals(wornWhenHovered, wornAtRest,
+            "a hovered square wears the colour of the grid line it rests in, so the hover cannot be seen");
+
         javax.swing.border.Border hover =
-            (javax.swing.border.Border) overlay.invoke(null, java.awt.Color.BLUE, 1);
+            (javax.swing.border.Border) overlay.invoke(null, wornWhenHovered, 1);
 
         java.awt.Insets hovered = hover.getBorderInsets(square);
 
@@ -1041,7 +1065,7 @@ public class testEditorSurfaceRules
 
         g.dispose();
 
-        assertEquals(picture.getRGB(0, 0), java.awt.Color.BLUE.getRGB(),
+        assertEquals(picture.getRGB(0, 0), wornWhenHovered.getRGB(),
             "the hover outline reserves no space and draws nothing either, so hovering a square with "
             + "the grid off shows nothing at all");
     }
