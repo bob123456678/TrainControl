@@ -77,13 +77,15 @@ final class RouteRunningMarks
     /**
      * A route has ended.  May be called from the route's thread.
      *
+     * The name is not taken out here: `check` takes out every route that is no longer executing, on the event thread.  A
+     * route started again between this run's `stopExecuting` and this call is executing once more, and taking its name
+     * out would leave its mark drawn and still (RSA75-C2).
+     *
      * @param name the route's name
      */
     void finished(String name)
     {
         if (name == null) return;
-
-        running.remove(name);
 
         SwingUtilities.invokeLater(this::check);
     }
