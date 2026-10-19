@@ -26544,14 +26544,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * @return the window's tabs
-     */
-    javax.swing.JTabbedPane getKeyboardTab()
-    {
-        return this.KeyboardTab;
-    }
-
-    /**
      * Puts always-on-top back as Window > Always on Top says, as its handler does.
      */
     void windowAlwaysOnTopAsChosen()

@@ -199,7 +199,7 @@ public class testSwitchingToACentralStationLayout
             + "about, arrived at from the other side");
 
         // Every door goes through the guarded helper rather than picking the tab by index - the field by name or
-        // through `getKeyboardTab()`, so a door moved out of the window and reaching the tabs by its accessor is seen.
+        // through an accessor, so a door moved out of the window and reaching the tabs that way is seen.
         assertFalse(java.util.regex.Pattern.compile("KeyboardTab(?:\\(\\))?\\.setSelectedIndex\\(1\\)")
                 .matcher(SourceOf.allCode()).find(),
             "something selects the track diagram tab by index again, so it reaches straight past "
