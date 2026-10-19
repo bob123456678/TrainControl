@@ -15,6 +15,8 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 3 | 1 | `testTheRecordsCountTheStore` runs `python` for its nine new claims about `catalog-findings.py --next`. | The tool is Python; asking it beats copying its rules into Java.  A missing `python` makes the class fail, never skip. | Delete the nine claims (`ce8a0b70`). |
 | 4 | 1 | The "pre-3.0.0" manual-test archive ended at 2.8.2 (2026-09-26). | The brief gave no lower bound for 3.0.0.  **Moot once 1c lands**: the archives are deleted with the markdown. | Nothing to undo after 1c. |
 | 5 | 1 | Phase 1's archive (`2ff1eecd`, `54ff433c`) is superseded by Phase 1c the same day. | Adam chose a database with a text dump; the archive treated a symptom. | The archive stays in git history. |
+| 6 | 2 | AutonomySession's comment trim stopped at 19% (6,180 to 4,988 comment lines), below the plan's 30-40%. | What is left is live rules, the ids that keep claims traceable and your quoted requirements; the comment rule forbids cutting those to reach a number.  The other three giants cut 31-32%. | A second pass can be run on AutonomySession at any time; nothing to undo. |
+| 7 | 2 | Long javadoc contracts were left whole (Layout's `whyItWouldMeetItsOwnTail` is 45 lines, AutonomySession has 58 blocks over 15 lines). | The rule allows a block over 15 lines when it is a javadoc contract. | A later pass can shorten them. |
 
 ## Skipped, waiting for Adam
 
