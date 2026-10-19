@@ -84,6 +84,7 @@ public class testNoSelfRecursiveWrappers
      */
     private static final String[][] COLLABORATORS = {
         { "backupAction", "src/org/traincontrol/gui/BackupAction.java" },
+        { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java" },
     };
 
     /**

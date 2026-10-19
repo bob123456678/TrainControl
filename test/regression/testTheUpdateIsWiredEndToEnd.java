@@ -286,10 +286,10 @@ public class testTheUpdateIsWiredEndToEnd
             && close.contains("aModalDialogIsShowing"), "the update's exit no longer waits for an open dialog, so"
             + " System.exit can close one with the typing in it unapplied");
 
-        inOrder(bodyOf("private void closeNowForTheUpdate("), "the update's exit", "whyThisUpdateMustWait()",
+        inOrder(bodyOf("void closeNowForTheUpdate("), "the update's exit", "whyThisUpdateMustWait()",
             "updateHandOver.exitWith(", "WindowClosed(null)");
 
-        String why = bodyOf("private String whyThisUpdateMustWait()");
+        String why = bodyOf("String whyThisUpdateMustWait()");
 
         assertTrue(why.contains("theAutoTabWaits()") && why.contains("stagingFlowActive"), "the update asks less than"
             + " the Auto tab does, so a hand send between its click and its thread is not refused");
