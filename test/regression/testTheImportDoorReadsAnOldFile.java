@@ -4142,6 +4142,21 @@ public class testTheImportDoorReadsAnOldFile
 
             assertNotNull(at, "precondition: no train with a tail on a split square");
 
+            // A ROAD THE TAIL LIES ALONG, given when the snapshot's train has none (it records no road), so the claim about
+            // the road below always runs: one edge into the square, as the railway records a train that drove in
+            if (at.getArrivedAlong() == null)
+            {
+                for (org.traincontrol.automation.Edge into : railway.getEdges())
+                {
+                    if (into.getEnd() == at)
+                    {
+                        at.setArrivedAlong(java.util.Collections.singletonList(into));
+
+                        break;
+                    }
+                }
+            }
+
             final TileKey square = session.getStationIndex().squareOf(at.getName());
 
             org.json.JSONObject railwaysPoint = null;
@@ -4217,12 +4232,12 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(written.optString("arrivedFrom", null), side, "Stop Using Autonomy while an edit waited did not"
                 + " write " + at.getCurrentLocomotive().getName() + "'s tail side on " + square + " (RLV11-C6)");
 
-            if (road != null)
-            {
-                assertEquals(String.valueOf(written.opt("arrivedAlong")), String.valueOf(road), "Stop Using Autonomy"
-                    + " while an edit waited did not write " + at.getCurrentLocomotive().getName() + "'s tail road"
-                    + " (RLV11-C6)");
-            }
+            assertNotNull(road, "precondition: the railway writes no road for " + at.getName() + ", so the claim about"
+                + " the road below would not run");
+
+            assertEquals(String.valueOf(written.opt("arrivedAlong")), String.valueOf(road), "Stop Using Autonomy"
+                + " while an edit waited did not write " + at.getCurrentLocomotive().getName() + "'s tail road"
+                + " (RLV11-C6)");
 
             assertEquals(written.optString(AutonomyBuilder.FACING, null), facing, "Stop Using Autonomy while an edit"
                 + " waited did not write the facing of the copy " + at.getCurrentLocomotive().getName() + " stands on"
