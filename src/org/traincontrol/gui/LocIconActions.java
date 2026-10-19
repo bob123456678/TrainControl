@@ -848,7 +848,14 @@ final class LocIconActions
     }
 
     /**
-     * `TrainControlUI.deleteLocIconFile`'s body.
+     * Removes a cropped icon file that nothing points at any more.
+     *
+     * Only ever called for a URL {@link Util#isLocIconFile} has already vouched for, so this cannot
+     * reach the user's own pictures.  Failure is ignored on purpose: a stale file in our own folder
+     * is untidy, and telling the user about it in the middle of setting an icon that worked would be
+     * worse than the untidiness.
+     *
+     * @param url the URL of the file to remove
      */
     void deleteLocIconFile(String url)
     {

@@ -38,7 +38,21 @@ final class LayoutFileActions
     }
 
     /**
-     * `TrainControlUI.writeIndexAndKeepLinksAimed`'s body.
+     * Writes the page index and re-aims every arrow on the layout at the page it was aimed at.
+     *
+     * **A LINK TILE HOLDS A POSITION IN THE NAME-SORTED PAGE LIST** (N8-A1), so every operation that changes the set of page names
+     * changes what the arrows mean (Add, Rename, Duplicate, Delete and Combine); nothing re-aimed them, and adding one page repointed
+     * FOUR OF SEVEN arrows on the sample layout.  **Delete and Combine go through here**; Add, Duplicate and Rename go through
+     * `LayoutPageEdit`, which re-aims the arrows before it writes the page and then writes the index itself
+     * (`LayoutDiagram.writeLayoutIndex`).  The order the arrows were written against is worked out here rather than by the caller,
+     * and taken from the PAGES this session holds, not from the index file, because an index naming two pages the same aliases them
+     * onto one entry (FV3-A2, T10-C1).  A page that has gone leaves its arrows pointing at nothing rather than at whatever slid into
+     * its place: see `LayoutDiagramComponent.setLinkedPageIndex`.
+     *
+     * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
+     * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through `LayoutPageEdit`
+     * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
+     * @throws java.io.IOException if the index cannot be written, which is the caller's to report
      */
     void writeIndexAndKeepLinksAimed(List<String> layoutList, Map<String, String> renamed,
         java.util.Collection<String> keepAbsent) throws java.io.IOException
@@ -63,7 +77,8 @@ final class LayoutFileActions
     }
 
     /**
-     * `TrainControlUI.initializeEmptyLayout`'s body.
+     * Unzips an empty layout to the current folder and returns the path
+     * @return
      */
     String initializeEmptyLayout(String folderName)
     {
@@ -232,7 +247,14 @@ final class LayoutFileActions
     }
 
     /**
-     * `TrainControlUI.combineLinkedPages`'s body.
+     * Builds one page showing this page and every page it links to: a link is a hole in the diagram that comes out somewhere else, and
+     * following one means losing sight of where you were, so this lays the pages the current one reaches out one under another.
+     *
+     * ONE LEVEL, deliberately: following links recursively on a layout whose pages all reach each other produces every page, in an order
+     * nobody chose.  The result is EXCLUDED FROM AUTONOMY as it is written, and this is not optional: every square on it is a redrawing
+     * of a square that exists elsewhere, so left included it would mint a second Point for every sensor and a parallel set of edges (the
+     * "Combined page problem" of the diagram-autonomy plan).  Pages are stacked with a blank row between them, in the order the links
+     * appear when the page is read left to right and top to bottom, so two runs over the same diagram produce the same page.
      */
     void combineLinkedPages()
     {
@@ -384,7 +406,11 @@ final class LayoutFileActions
     }
 
     /**
-     * `TrainControlUI.duplicateOrRenameCurrentLayout`'s body.
+     * Duplicates or renames the current layout page, optionally clearing it
+     * @param newLayoutName - name of the new layout
+     * @param rename - true if renaming
+     * @param duplicate - true if duplicating
+     * @param blank - true to clear
      */
     void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {

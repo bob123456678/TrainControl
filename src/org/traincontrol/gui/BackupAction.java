@@ -75,7 +75,8 @@ final class BackupAction
     }
 
     /**
-     * `backupData`'s body, which only `backupData` calls.
+     * `backupData`'s body, which only `backupData` calls.  It takes no lock of its own: it is called only through
+     * `TrainControlUI.backupData`, which holds `oneBackupAtATime` around it.
      *
      * @return the archive, or no archive, and what could not be saved
      */

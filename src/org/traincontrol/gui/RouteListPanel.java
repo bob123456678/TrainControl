@@ -276,7 +276,8 @@ final class RouteListPanel
     }
 
     /**
-     * A click on the route list: the play button runs its route, a row asks first.  `TrainControlUI.RouteListMouseClicked`'s body.
+     * A click on the route list: the play button runs its route, and a row asks first - or, with the power off, opens the route's
+     * editor and asks nothing (FR-140).  `TrainControlUI.RouteListMouseClicked`'s body.
      */
     void RouteListMouseClicked(java.awt.event.MouseEvent evt)
     {
@@ -344,7 +345,15 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.isOverTheRoutePlayButton`'s body.
+     * Whether a click landed on a cell's play button rather than on the cell.
+     *
+     * The button is painted by the renderer at the right-hand end of the cell, so its box is worked out
+     * the same way here - from the cell's own rectangle - rather than from anything the renderer
+     * remembers. A renderer is one component reused for every cell; asking it where it last drew would
+     * be asking about whichever cell was painted most recently.
+     *
+     * @param evt the click
+     * @return true if the pointer is over the button of a cell that has one
      */
     boolean isOverTheRoutePlayButton(java.awt.event.MouseEvent evt)
     {
@@ -364,7 +373,16 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.findRoute`'s body.
+     * Asks for a route by name and goes to it (FR-044).
+     *
+     * Adam: "'Find Route' popup that asks the user for the route name.  system jumps to the route page
+     * and highlights the matched cell (scrolling to it if needed), otherwise shows a notice that it
+     * doesn't exist."
+     *
+     * Matched case-insensitively, and on a unique CONTAINS when nothing matches exactly - somebody who
+     * types "yard" and has one route with that in its name meant that route, and refusing them on
+     * exactness would be pedantry. Ambiguity is not resolved by guessing: two matches is treated as no
+     * match, because landing on the wrong one silently is worse than being told to be specific.
      */
     void findRoute()
     {
