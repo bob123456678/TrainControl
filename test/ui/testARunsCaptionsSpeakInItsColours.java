@@ -46,6 +46,19 @@ public class testARunsCaptionsSpeakInItsColours
         return c != null && c.getRed() == r && c.getGreen() == g && c.getBlue() == b;
     }
 
+    /** Whether a colour is this one, whatever its transparency. */
+    private static boolean sameInk(Color c, Color wanted)
+    {
+        return rgb(c, wanted.getRed(), wanted.getGreen(), wanted.getBlue());
+    }
+
+    /**
+     * The darker blue the window's own labels are written in: the program's `HEADING_COLOUR`, which the Auto tab's
+     * `TAB_BLUE` is.  Asked rather than restated, so a change of the labels' blue is followed by the tab.
+     */
+    private static final Color LABEL_BLUE =
+        support.ProgramConstants.colour(org.traincontrol.gui.AutonomyViewerPanel.class, "HEADING_COLOUR");
+
     /**
      * Staged on the frozen railway: the placed train with the longest offered route, past its first sensor, then held
      * there - simulation switched off once the run is waiting for that sensor, so the next never comes.
@@ -182,7 +195,7 @@ public class testARunsCaptionsSpeakInItsColours
                 // THE TRAIN'S LINE AS IT SHOWS ON WHITE, SOLID (Adam, 2026-10-09: "Make the yellow labels (trains on their
                 // way somewhere) have the same orange background color as occupied train tiles, just without the fading",
                 // then "Go with as the line actually looks on white")
-                if (rgb(fill, 255, 171, 115) && fill.getAlpha() == 255) destination = pill;
+                if (sameInk(fill, DiagramColours.DESTINATION) && fill.getAlpha() == 255) destination = pill;
                 if (rgb(fill, 255, 214, 64)) warmYellow++;
                 if (rgb(fill, 255, 255, 0)) oldYellow++;
                 if (text != null && text.getBlue() > text.getRed() + 60 && text.getBlue() > text.getGreen() + 40) ahead++;
@@ -195,7 +208,7 @@ public class testARunsCaptionsSpeakInItsColours
                 + " train is on");
 
             assertNotNull(destination, mover.getName() + "'s destination is not the train's line as it shows on white,"
-                + " rgb(255,171,115), solid");
+                + " " + DiagramColours.DESTINATION + ", solid");
 
             Color text = destination.getForeground();
 
@@ -231,15 +244,15 @@ public class testARunsCaptionsSpeakInItsColours
 
                 blueBadges++;
 
-                assertTrue(rgb(badge, 0, 0, 115), "an Auto tab card's station badge is " + badge + ", not the darker blue"
-                    + " the window's labels are written in, rgb(0,0,115)");
+                assertTrue(sameInk(badge, LABEL_BLUE), "an Auto tab card's station badge is " + badge + ", not the darker"
+                    + " blue the window's labels are written in, " + LABEL_BLUE);
 
                 Color written = ((JLabel) destinationField.get(card)).getForeground();
 
                 if (written.getRed() > 140) continue;
 
-                assertTrue(rgb(written, 0, 0, 115), "an Auto tab card's text is " + written + ", not the darker blue the"
-                    + " window's labels are written in, rgb(0,0,115)");
+                assertTrue(sameInk(written, LABEL_BLUE), "an Auto tab card's text is " + written + ", not the darker blue"
+                    + " the window's labels are written in, " + LABEL_BLUE);
             }
 
             assertTrue(blueBadges > 0, "precondition: no Auto tab card has a station badge in blue to look at");

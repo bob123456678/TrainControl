@@ -26,6 +26,9 @@ public class testTheDiagramPrintsItsCoordinates
     /** A square, big enough for two digits at the ruler's own font size. */
     private static final int SIZE = 30;
 
+    /** The room the ruler reserves at the top and on the left, asked of the ruler's own border insets. */
+    private static final int GUTTER = AxisRuler.uniform(SIZE, 0, 0, 1, 1).getBorderInsets(null).top;
+
     /**
      * The gutter is on the top and the left, and nowhere else.
      *
@@ -133,7 +136,7 @@ public class testTheDiagramPrintsItsCoordinates
     {
         final int pitch = 31;
         final int cell = 30;
-        final int gutter = 18;
+        final int gutter = GUTTER;
         final int columns = 12;
 
         AxisRuler drifting = new AxisRuler(0, 0, columns, 0,
@@ -331,7 +334,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         container.setBorder(AxisRuler.uniform(size, 0, 0, columns, columns));
 
-        container.setBounds(0, 0, 18 + columns * size, 18 + columns * size);
+        container.setBounds(0, 0, GUTTER + columns * size, GUTTER + columns * size);
 
         // AN OPAQUE CHILD ACROSS THE WHOLE GUTTER, which is what a caption at the edge amounts to.
         javax.swing.JPanel intruder = new javax.swing.JPanel();
@@ -359,7 +362,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         for (int x = 0; x < img.getWidth(); x++)
         {
-            for (int y = 0; y < 18; y++)
+            for (int y = 0; y < GUTTER; y++)
             {
                 if ((img.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) inkInGutter++;
             }
@@ -389,7 +392,7 @@ public class testTheDiagramPrintsItsCoordinates
 
         for (int x = 0; x < clean.getWidth(); x++)
         {
-            for (int y = 0; y < 18; y++)
+            for (int y = 0; y < GUTTER; y++)
             {
                 if ((clean.getRGB(x, y) & 0xFFFFFF) != 0xFFFFFF) inkWithout++;
             }
@@ -419,7 +422,7 @@ public class testTheDiagramPrintsItsCoordinates
         {
             boolean inked = false;
 
-            for (int y = 0; y < 18; y++)
+            for (int y = 0; y < GUTTER; y++)
             {
                 if (ink.charAt(y * 400 + x) == '#') inked = true;
             }
@@ -511,8 +514,9 @@ public class testTheDiagramPrintsItsCoordinates
 
         g.setColor(java.awt.Color.WHITE);
         g.fillRect(0, 0, 40, 20);
-        g.setFont(new javax.swing.JPanel().getFont().deriveFont(java.awt.Font.PLAIN, 10f));
-        g.setColor(java.awt.Color.GRAY);
+        g.setFont(new javax.swing.JPanel().getFont().deriveFont(java.awt.Font.PLAIN,
+            (float) support.ProgramConstants.real(AxisRuler.class, "FONT_SIZE")));
+        g.setColor(support.ProgramConstants.colour(AxisRuler.class, "INK"));
         g.drawString(number, 2, 14);
         g.dispose();
 

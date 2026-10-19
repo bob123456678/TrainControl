@@ -1237,7 +1237,7 @@ public class testTheEditorNamesItsShortcuts
 
             picked.setAccessible(true);
 
-            String outlined = "hl:" + ((java.awt.Color) picked.get(null)).getRGB() + ":";
+            String outlined = highlightKey(((java.awt.Color) picked.get(null)).getRGB());
 
             for (int x = 1; x <= 5; x++)
             {
@@ -1599,7 +1599,7 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final String blue = "hl:" + java.awt.Color.BLUE.getRGB() + ":";
+            final String blue = highlightKey(editorColour("COMPONENT_BORDER_HOVERED_COLOR").getRGB());
 
             // A TILE PICKED UP UNDER THE POINTER, then Escape
             final org.traincontrol.gui.LayoutLabel tile = aTrackSquare(track[0]);
@@ -3666,7 +3666,7 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final String red = "hl:" + java.awt.Color.RED.getRGB() + ":";
+            final String red = highlightKey(editorColour("NEW_COMPONENT_BORDER_ACTIVE_COLOR").getRGB());
 
             final org.traincontrol.gui.LayoutLabel piece = aPalettePiece(track[0]);
 
@@ -3770,7 +3770,19 @@ public class testTheEditorNamesItsShortcuts
         for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
     }
 
-    /** Whether a square wears the hover outline (blue), read from the editor's own record of what each square wears. */
+    /** The colour the track editor draws one of its borders in, asked of the editor's own constant. */
+    private static java.awt.Color editorColour(String constant)
+    {
+        return support.ProgramConstants.colour(LayoutEditor.class, constant);
+    }
+
+    /** How the editor's record of a square's border begins when the border is a highlight of this colour. */
+    private static String highlightKey(int rgb)
+    {
+        return support.ProgramConstants.get(LayoutEditor.class, "HIGHLIGHT_KEY_PREFIX") + Integer.toString(rgb) + ":";
+    }
+
+    /** Whether a square wears the hover outline (`COMPONENT_BORDER_HOVERED_COLOR`), read from the editor's own record of what each square wears. */
     private static boolean wearsTheHover(LayoutEditor editor, javax.swing.JLabel square) throws ReflectiveOperationException
     {
         java.lang.reflect.Field stateField = LayoutEditor.class.getDeclaredField("borderState");
@@ -3779,16 +3791,16 @@ public class testTheEditorNamesItsShortcuts
 
         Object key = ((java.util.Map<?, ?>) stateField.get(editor)).get(square);
 
-        return key != null && key.toString().startsWith("hl:" + java.awt.Color.BLUE.getRGB() + ":");
+        return key != null && key.toString().startsWith(highlightKey(editorColour("COMPONENT_BORDER_HOVERED_COLOR").getRGB()));
     }
 
-    /** Whether a square wears the track editor's picked-up outline (`COMPONENT_BORDER_COPIED_COLOR`, red). */
+    /** Whether a square wears the track editor's picked-up outline (`COMPONENT_BORDER_COPIED_COLOR`). */
     private static boolean wearsTheOutline(javax.swing.JLabel square)
     {
         javax.swing.border.Border border = square.getBorder();
 
         return border instanceof javax.swing.border.LineBorder
-            && java.awt.Color.RED.equals(((javax.swing.border.LineBorder) border).getLineColor());
+            && editorColour("COMPONENT_BORDER_COPIED_COLOR").equals(((javax.swing.border.LineBorder) border).getLineColor());
     }
 
     /**

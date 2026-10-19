@@ -104,6 +104,9 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final Color COMPONENT_BORDER_HOVERED_COLOR = Color.BLUE;
     private static final Color COMPONENT_BORDER_DEFAULT_COLOR = Color.LIGHT_GRAY;
 
+    /** What a highlight's record in `borderState` starts with: this, then the colour, width and whether it reserves room. */
+    private static final String HIGHLIGHT_KEY_PREFIX = "hl:";
+
     /**
      * The colour a picked square is outlined in.
      *
@@ -4883,7 +4886,7 @@ public class LayoutEditor extends PositionAwareJFrame
             applyBorder(label,
                 reservesRoom
                     ? BorderFactory.createLineBorder(color, width) : overlayLine(color, width),
-                "hl:" + color.getRGB() + ":" + width + ":" + reservesRoom);
+                HIGHLIGHT_KEY_PREFIX + color.getRGB() + ":" + width + ":" + reservesRoom);
         }
     }
     

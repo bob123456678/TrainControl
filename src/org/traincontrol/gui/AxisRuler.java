@@ -60,6 +60,12 @@ public class AxisRuler implements Border
     /** So the numbers do not crowd the first square. */
     private static final int PAD = 2;
 
+    /** The numbers' size in points: smaller than the diagram's own text. */
+    private static final float FONT_SIZE = 10f;
+
+    /** And the grid's grey they are drawn in. */
+    private static final Color INK = Color.GRAY;
+
     private final int offsetX;
 
     private final int offsetY;
@@ -210,8 +216,8 @@ public class AxisRuler implements Border
 
         // Smaller than the diagram's own text and in the grid's grey, because this is scenery for
         // reading coordinates off rather than part of the railway.
-        g.setFont(wasFont.deriveFont(Font.PLAIN, 10f));
-        g.setColor(Color.GRAY);
+        g.setFont(wasFont.deriveFont(Font.PLAIN, FONT_SIZE));
+        g.setColor(INK);
 
         FontMetrics metrics = g.getFontMetrics();
 

@@ -94,12 +94,6 @@ public class testEveryLanguageFits
     private static final int SLACK = 3;
 
     /**
-     * The window the form declares, which is the window an operator gets on first run.
-     *
-     * `pack()` gives the window whatever the longest string in the language being measured needs, which
-     * is the question rather than the answer - so the measurements are taken at this size.
-     */
-    /**
      * How many text-bearing components a non-English run is expected to change.
      *
      * Set from the measurement rather than chosen, and a FLOOR: the point is to catch the locale failing
@@ -107,17 +101,20 @@ public class testEveryLanguageFits
      */
     private static final int LOCALISED_FLOOR = 30;
 
-    private static final int WINDOW_WIDTH = 1110;
-
-    private static final int WINDOW_HEIGHT = 619;
-
     /**
      * How wide a menu may be before it is a problem.
      *
-     * Half the declared window width, which is where a menu stops being a menu and starts being a
-     * page.
+     * Half the window's width, which is where a menu stops being a menu and starts being a page.  The window's
+     * own: its minimum size, which the form declares as the size an operator gets on first run.
      */
-    private static final int MENU_CEILING = 555;
+    private static int menuCeiling(javax.swing.JMenuBar bar)
+    {
+        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(bar);
+
+        assertNotNull(window, "the menu bar is not in a window, so there is no width to hold its menus to");
+
+        return window.getMinimumSize().width / 2;
+    }
 
     /**
      * The rule can fail, which nothing here used to show (Adam, 2026-09-11).
@@ -381,8 +378,8 @@ public class testEveryLanguageFits
 
                 // Then the size the form declares, which is the window an operator gets on first run
                 // - pack() gives it whatever the longest string in THIS language needs, which is the
-                // question rather than the answer.
-                ui[0].setSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+                // question rather than the answer.  The window's own minimum size is that size.
+                ui[0].setSize(ui[0].getMinimumSize());
                 ui[0].validate();
             });
 
@@ -720,10 +717,12 @@ public class testEveryLanguageFits
                 seen++;
             }
 
-            if (widest > MENU_CEILING)
+            int ceiling = menuCeiling(bar);
+
+            if (widest > ceiling)
             {
                 found.add("menu \"" + oneLine(menu.getText()) + "\" is " + widest
-                    + "px wide, over the " + MENU_CEILING + "px this window can show");
+                    + "px wide, over the " + ceiling + "px this window can show");
             }
         }
 
