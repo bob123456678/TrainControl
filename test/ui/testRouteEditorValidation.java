@@ -61,9 +61,17 @@ public class testRouteEditorValidation
         final java.util.List<String> blank = new java.util.ArrayList<>();
         final java.util.List<String> automatic = new java.util.ArrayList<>();
         final java.util.List<String> rubbish = new java.util.ArrayList<>();
+        final java.util.List<String> zero = new java.util.ArrayList<>();
+        final java.util.List<String> letters = new java.util.ArrayList<>();
+
+        // THE FIELD IS DIGITS-ONLY and drops anything else typed into it, spaces and letters among it, so the editor would
+        // be handed an empty field in their place.  The filter is taken off so that what is set is what the editor reads.
+        final javax.swing.JTextField s88 = (javax.swing.JTextField) privateField(editor, "s88Field");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
+            ((javax.swing.text.AbstractDocument) s88.getDocument()).setDocumentFilter(null);
+
             editor.setAutoFireForTest(false);
             editor.setS88TextForTest("");
 
@@ -77,26 +85,50 @@ public class testRouteEditorValidation
 
             // A SPACE, not letters.  The field is digits-only (`digitsOnlyField`), so "east" cannot
             // be typed into it at all - asserting that it is refused would be testing a state the UI
-            // cannot reach, which is a check that can never fail.  A field holding only whitespace is
-            // reachable and must read as none, like an empty one.
+            // cannot reach, which is a check that can never fail.  A field holding only whitespace
+            // must read as none, like an empty one.
             editor.setAutoFireForTest(false);
             editor.setS88TextForTest("   ");
 
             rubbish.addAll(editor.problemsForTest());
+
+            // WHAT AN EXPLICIT 0 IS REFUSED FOR, which is all a blank field is (Adam: "just treat this as 0")
+            editor.setS88TextForTest("0");
+
+            zero.addAll(editor.problemsForTest());
+
+            // AND A SENSOR THE EDITOR CANNOT READ, so the refusal looked for below is seen to be there when it is earned
+            editor.setS88TextForTest("east");
+
+            letters.addAll(editor.problemsForTest());
         });
 
-        assertFalse(named(blank, "S88"),
+        final String notANumber = I18n.t("route.ui.frameS88NotANumber");
+
+        assertTrue(letters.contains(notANumber),
+            "precondition: a sensor field the editor cannot read is not refused with " + notANumber
+            + ", so the claims below look for a message that is never said.  Problems: " + letters);
+
+        assertFalse(blank.contains(notANumber),
             "a manual route with the sensor field left blank was refused as not-a-number.  Blank is "
             + "the answer a manual route gives - the field only means anything with auto-fire on "
             + "(OB-178).  Problems: " + blank);
+
+        assertEquals(blank, zero,
+            "a manual route with the sensor field left blank is refused for something a sensor of 0 is not.  "
+            + "Blank is treated as 0 (OB-178).  Blank: " + blank + "; 0: " + zero);
 
         assertTrue(automatic.size() > blank.size(),
             "auto-fire with no sensor was accepted.  That route can never fire itself, and saved it "
             + "sits in the list marked automatic doing nothing: " + automatic);
 
-        assertFalse(named(rubbish, "S88"),
+        assertFalse(rubbish.contains(notANumber),
             "a sensor field holding only spaces was refused as not-a-number.  It is trimmed and it "
             + "is empty, which is the same answer a cleared field gives: " + rubbish);
+
+        assertEquals(rubbish, blank,
+            "a sensor field holding only spaces is refused for something a cleared field is not: " + rubbish
+            + " against " + blank);
         }
         finally
         {
@@ -104,22 +136,6 @@ public class testRouteEditorValidation
         }
     }
 
-    /**
-     * Whether any problem mentions a thing.
-     *
-     * @param problems what the editor refused
-     * @param what a word from the message
-     * @return true when one of them mentions it
-     */
-    private static boolean named(java.util.List<String> problems, String what)
-    {
-        for (String problem : problems)
-        {
-            if (problem != null && problem.toLowerCase().contains(what.toLowerCase())) return true;
-        }
-
-        return false;
-    }
     /**
      * Changing the kind does not leave the old target behind.
      *
@@ -358,6 +374,15 @@ public class testRouteEditorValidation
         {
             close(frame);
         }
+    }
+
+    private static Object privateField(Object owner, String name) throws Exception
+    {
+        java.lang.reflect.Field field = owner.getClass().getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.get(owner);
     }
 
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
