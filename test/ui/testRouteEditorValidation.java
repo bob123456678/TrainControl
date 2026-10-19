@@ -305,10 +305,10 @@ public class testRouteEditorValidation
     }
 
     /**
-     * With Automatically Fire off, the conditions say above themselves, with a red warning triangle, that they are only
-     * checked when it is on; ticking it takes the warning away, and a route with no conditions has none (Adam,
-     * 2026-10-18: "display a little red warning triangle and a message that states these conditions are only evaluated
-     * when Automatically Fire is set to on").
+     * With Automatically Fire off, the conditions say above themselves, in red, that they are only checked when it is
+     * on; ticking it takes the warning away, and a route with no conditions has none (Adam, 2026-10-18: "a message that
+     * states these conditions are only evaluated when Automatically Fire is set to on" - and no triangle, which did not
+     * render).
      *
      * MUTATION: show the reading alone whatever the tick, or leave the warning up once it is ticked, and this fails.
      *
@@ -346,9 +346,6 @@ public class testRouteEditorValidation
 
             assertTrue(warns[0], "with Automatically Fire off, the conditions do not say they are only checked when it is"
                 + " on: " + frame.readsAsForTest());
-
-            assertTrue(frame.readsAsForTest().contains("\u26A0"), "the warning has no warning triangle: "
-                + frame.readsAsForTest());
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {

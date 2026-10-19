@@ -1862,9 +1862,9 @@ public class RouteEditorFrame extends JFrame
     {
         String reading = readingOfTheConditions();
 
-        // CHECKED ONLY WHEN THE ROUTE FIRES ITSELF (Adam, 2026-10-18: "display a little red warning triangle and a message
-        // that states these conditions are only evaluated when Automatically Fire is set to on").  A route run by hand
-        // ignores its conditions; only its own sensor's trigger asks them, and that only while Automatically Fire is on.
+        // CHECKED ONLY WHEN THE ROUTE FIRES ITSELF (Adam, 2026-10-18): a sentence in red saying these conditions are only
+        // evaluated when Automatically Fire is on - no warning triangle, which the font does not draw.  A route run by
+        // hand ignores its conditions; only its own sensor's trigger asks them, and that only while Automatically Fire is on.
         boolean unasked = !enabledBox.isSelected()
             && (conditionsEditable ? conditionCount() > 0 : conditionsAsFound != null);
 
@@ -1877,7 +1877,7 @@ public class RouteEditorFrame extends JFrame
         String below = reading.startsWith("<html>") && reading.endsWith("</html>")
             ? reading.substring("<html>".length(), reading.length() - "</html>".length()) : marked(reading.trim());
 
-        readsAs.setText("<html><span style='color:#C62828'>\u26A0 " + marked(I18n.t("route.ui.frameConditionsNeedAutomaticFire"))
+        readsAs.setText("<html><span style='color:#C62828'>" + marked(I18n.t("route.ui.frameConditionsNeedAutomaticFire"))
             + "</span>" + (below.isEmpty() ? "" : "<br>" + below) + "</html>");
     }
 
