@@ -10706,18 +10706,15 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The sentence a bulk clear will show, for the surface this panel is serving (OP2-C2).
      *
-     * **One builder, so the pair cannot drift.**  `clearLocomotivesWarning` below states the rule for its own
-     * pair - *"used by the confirmation AND by the menu item's tooltip, so the warning cannot be shown in one
-     * place and not the other"* - and AUS-C2 built the track-length and maximum pairs by copying the choice
-     * instead, into four places for two menu items.  Nothing in that shape stops a fifth copy, or a pair of
-     * keys swapped in one of them; the comment above the track-length tooltip already records that this pair
-     * had drifted once.
+     * **One builder, so the pair cannot drift.**  AUS-C2 built the track-length and maximum pairs by copying the choice
+     * into four places for two menu items, and nothing in that shape stops a fifth copy, or a pair of keys swapped in one
+     * of them (this pair had drifted once).  `clearLocomotivesWarning` states the same rule for its own pair: used by the
+     * confirmation AND by the menu item's tooltip, so the warning cannot be shown in one place and not the other.
      *
-     * The choice itself is the one both sentences turn on: a panel serving the track diagram has no page and
-     * saves as it goes, so the clear is immediate and says so; inside the editor it is undone by Cancel.
-     *
-     * **And the tooltip's short form through it too (FR-112):** a `tip` key with its own "AtOnce" sibling, so the menu
-     * item says in brief what the dialog will say in full, and cannot promise a Cancel the dialog does not.
+     * The choice itself: a panel serving the track diagram has no page and saves as it goes, so the clear is immediate and
+     * says so; inside the editor it is undone by Cancel.  The tooltip's short form goes through it too (FR-112): a `tip`
+     * key with its own "AtOnce" sibling, so the menu item says in brief what the dialog says in full, and cannot promise
+     * a Cancel the dialog does not.
      *
      * @param key the message key for the editor's sentence, whose "AtOnce" sibling is the other one
      * @param count how many squares the clear will touch
@@ -10731,30 +10728,22 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What the bulk clear says before it takes every locomotive off (OB-194).
      *
-     * Adam, on MT-311, 2026-09-08: **"bug: clearning locomotives in the autonomy editor cannot be
-     * undone by a cancel.  Make this clear in the popup."**  His ruling of 2026-09-09 was for the
-     * warning rather than a real undo: *"Warning if using the bulk tool."*
+     * Adam, on MT-311: **"bug: clearning locomotives in the autonomy editor cannot be undone by a cancel.  Make this
+     * clear in the popup."**, and then *"Warning if using the bulk tool."*
      *
-     * **What Cancel does, which has changed twice.**  MT-311's expectation read *"neither writes to disk -
-     * Cancel puts everything back"*.  After OB-183 it did not - placements are carried across a rebuild
-     * (`TrainControlUI.putTheTrainsBack`), and the old discard re-read a file the per-gesture save had already
-     * written without them - so this warned that Cancel would not bring them back (OB-194).  Since OB-223
-     * Cancel restores the setup as the editor opened it, placements included, and the rebuild when the editor
-     * closes regenerates them from it: `putTheTrainsBack` only moves trains that were standing, which the
-     * cleared ones are not.  So they come back, and the warning says so (WK7-C2, 2026-09-14);
+     * **What Cancel does** (WK7-C2): Cancel restores the setup as the editor opened it, placements included (OB-223), and
+     * the rebuild when the editor closes regenerates them from it (`TrainControlUI.putTheTrainsBack` only moves trains
+     * that were standing, which the cleared ones are not).  So they come back, and the warning says so;
      * `regression.testCancelUndoesAutonomyEdits.testCancelPutsBackTheLocomotivesABulkClearTook` runs it.
      *
-     * **It names them**, because a bulk gesture is an answer about every one of them at once and a
-     * count is not something anybody can check.  The same reason `placementChanged` is given the list
-     * it lifted rather than being left to work it out afterwards.
+     * **It names them**, because a bulk gesture is an answer about every one of them at once and a count is not something
+     * anybody can check.  One builder, used by the confirmation; the menu item's tooltip is its short form,
+     * `clearLocomotivesTip`, chosen the same way (FR-112).
      *
-     * One builder, used by the confirmation, so the warning cannot be shown in one place and not the
-     * other; the menu item's tooltip is its short form, `clearLocomotivesTip`, chosen the same way (FR-112).
-     *
-     * **On the track diagram's own menu there is no Cancel (WKV-B1).**  That menu is this panel served with no
-     * page, its changes are saved as they are made, and it is not offered at all while an editor is open
-     * (`TrainControlUI.buildAutonomyTileMenu`) - so no Cancel can reach a clear made there, and the warning says
-     * it is saved at once instead.  `regression.testTheBulkClearSaysWhatCancelDoes` asks both doors.
+     * **On the track diagram's own menu there is no Cancel (WKV-B1).**  That menu is this panel served with no page, its
+     * changes are saved as they are made, and it is not offered while an editor is open
+     * (`TrainControlUI.buildAutonomyTileMenu`), so the warning says it is saved at once.
+     * `regression.testTheBulkClearSaysWhatCancelDoes` asks both doors.
      *
      * @return the warning, already translated
      */
@@ -10762,22 +10751,14 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (session == null) return I18n.t("autosetup.ui.infoNoLocomotivesToClear");
 
-        // THE SET THE CLEAR ACTUALLY WALKS, COUNTED AND NAMED FROM ONE PLACE (GSE-B2).
-        //
-        // This sentence held three populations: the names came from the panel's own
-        // `placedLocomotives()`, the count from `session.tilesWithALocomotive()` - every page,
-        // excluded ones included - and the clear itself walks `placementsAutonomyWillWrite()`, which
-        // skips them.  With one page excluded the menu offered "Clear All Locomotives (9)" and its
-        // confirmation said "12 locomotives" over a list of nine names.  The label and the guard were
-        // swept onto the right question by `SEV-C3`; this one was not, and the comment above it says
-        // in the past tense that it was.
-        //
-        // Sorted, because a map's iteration order is not an order and this list is read (VD15-C2).
+        // THE SET THE CLEAR ACTUALLY WALKS, COUNTED AND NAMED FROM ONE PLACE (GSE-B2): `placementsAutonomyWillWrite()` skips
+        // excluded pages, so counting `tilesWithALocomotive()` offered "Clear All Locomotives (9)" and confirmed "12
+        // locomotives" over a list of nine names with one page excluded (SEV-C3 swept the label and the guard).  Sorted,
+        // because a map's iteration order is not an order and this list is read (VD15-C2).
         java.util.Map<TileKey, String> clearing = session.placementsAutonomyWillWrite();
 
-        // ONE UNIT IN BOTH HALVES OF THE SENTENCE (VD17-C7).  The map is keyed by SQUARE and the
-        // sentence is about LOCOMOTIVES, so counting the map while naming its values counted one
-        // thing and listed another - and the sentence reads "N locomotives: a, b, c".
+        // ONE UNIT IN BOTH HALVES OF THE SENTENCE (VD17-C7): the map is keyed by SQUARE and the sentence is about
+        // LOCOMOTIVES.
         java.util.Set<String> locomotives = new java.util.TreeSet<>(clearing.values());
 
         StringBuilder names = new StringBuilder();
@@ -10800,11 +10781,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The menu item's tooltip: `clearLocomotivesWarning` in short - how many, and what Cancel does, chosen as that sentence
-     * is (FR-112; Adam, 2026-10-05: *"make them be more concise so they don't cover up other things"*).  The names are the
-     * dialog's, which shows them before anything is cleared.
-     *
-     * Counted as the warning counts: locomotives, not the squares they stand on (VD17-C7).
+     * The menu item's tooltip: `clearLocomotivesWarning` in short - how many, and what Cancel does, chosen as that
+     * sentence is (FR-112).  The names are the dialog's, which shows them before anything is cleared.  Counted as the
+     * warning counts: locomotives, not the squares they stand on (VD17-C7).
      *
      * @return the tooltip, already translated
      */
@@ -10819,32 +10798,20 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Takes every locomotive off the setup (MT-257 item 1).
      *
-     * Adam: **"Yes, I want it back."**  2.8.1 had it on the graph window's own menu, and it went with
-     * the window - `git show master:.../GraphRightClickGeneralMenu.java:111`.
+     * Adam: **"Yes, I want it back."**  2.8.1 had it on the graph window's own menu, and it went with the window.
      *
-     * That version walked the RUNNING layout and called `moveLocomotive(null, ...)`, skipping
-     * reversing points and non-destinations.  This one is the editor's, so it goes through
-     * `placeLocomotive(tile, null)` - the same door the per-square "Remove" item uses, which also
-     * clears the facing the placement left behind.  No skipping: a placement the editor can show is a
-     * placement the editor can clear, and the 2.8.1 filter was about which squares the running model
-     * would accept a MOVE to rather than about which ones may be emptied.
+     * It goes through `placeLocomotive(tile, null)`, the same door the per-square "Remove" item uses, which also clears
+     * the facing the placement left behind.  No skipping: a placement the editor can show is a placement the editor can
+     * clear.
      *
-     * **Cancel puts them back** (OB-223; WK7-C2): the discard restores the setup as the editor opened it and
-     * the rebuild regenerates the placements from it.  `clearLocomotivesWarning` says so before they answer,
-     * and why it once said the opposite.
+     * **Cancel puts them back** (OB-223; WK7-C2): the discard restores the setup as the editor opened it and the rebuild
+     * regenerates the placements from it.  `clearLocomotivesWarning` says so before they answer.
      */
     private void clearAllPlacements()
     {
-        // THE SET `clearEveryPlacement` ACTUALLY WALKS (SEV-C3, swept from its sibling).
-        //
-        // The reviewer found the home door counting `tilesWithALocomotive()` - every page - while the
-        // bulk write walked `placedLocomotives()`, which skips pages excluded from autonomy. This door
-        // had the same split and was not reported: `clearEveryPlacement` walks `placedLocomotives()`
-        // too. So on a layout with an excluded page this dialog named a number the clear would not
-        // reach.
-        //
-        // `fix-one-site-sweep-the-siblings`: the real defect in this file is usually beside a comment
-        // describing the same fix somewhere else.
+        // THE SET `clearEveryPlacement` ACTUALLY WALKS (SEV-C3): `placedLocomotives()` skips pages excluded from autonomy,
+        // so counting `tilesWithALocomotive()` (every page) would name a number the clear would not reach.
+        // `fix-one-site-sweep-the-siblings`: the real defect is usually beside a comment describing the same fix elsewhere.
         java.util.List<TileKey> placed =
             new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
 
@@ -10863,15 +10830,12 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // THE SESSION'S BULK DOOR, not one per square (REL-C4).
+        // THE SESSION'S BULK DOOR, not one per square (REL-C4): clearing one placement writes two properties (the
+        // placement and the facing), and each write re-derives the station index, a full builder construction on the event
+        // thread, so this cost 2N of them.
         //
-        // Clearing one placement writes two properties - the placement and the facing that described
-        // the train standing there - and each write re-derives the station index, which is a full
-        // builder construction on the event thread.  So this cost 2N of them, for the gesture that
-        // exists precisely because doing it one at a time is too many.  Same writer, one re-derive.
-        // WHOSE PLACEMENTS THESE ARE, read before the clear takes them away (D2-A1).  Clearing is an
-        // answer about every one of them, and an unnamed clear is undone by the rebuild that carries
-        // it - the same defect as the single-square Remove, in the bulk door.
+        // WHOSE PLACEMENTS THESE ARE, read before the clear takes them away (D2-A1): an unnamed clear is undone by the
+        // rebuild that carries it, the same defect as the single-square Remove.
         java.util.List<String> lifted = placedLocomotives();
 
         int cleared = session.clearEveryPlacement();
@@ -10884,12 +10848,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Asks for one name, with somewhere to go for a square the user does not want to name.
      *
-     * Three answers rather than two.  Naming forty points is a long walk, and there was no way along
-     * it that was not either typing a name or abandoning the whole thing - the way to skip one was to
-     * press OK with the box empty, which works and which nobody would ever guess.
-     *
-     * Built as a dialog rather than through showInputDialog so that Enter still means OK: typing a
-     * name and reaching for the mouse forty times is the difference between a tool and a chore.
+     * Three answers rather than two: naming forty points is a long walk, and the way to skip one was to press OK with the
+     * box empty, which nobody would guess.  Built as a dialog rather than through showInputDialog so that Enter still
+     * means OK.
      *
      * @param question which square this is, and how far along the walk
      * @return the name, "" to skip this one, or null to stop
@@ -10917,12 +10878,9 @@ public class AutonomyEditorPanel extends JPanel
             I18n.t("ui.cancel") };
 
         final JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
-            // NO INITIAL VALUE, so the field has the keyboard focus (Adam, on MT-454: "make sure the entry field is
-            // focused").  With OK as the initial value, JOptionPane gave the focus to that button when the dialog gained
-            // it, and asking for the field earlier - when it was added, before the dialog was on screen - lost to that;
-            // so what was typed went nowhere, and Enter on the empty field counted as Skip.  With none, the field is the
-            // first thing in the prompt that can take the focus, and takes it.  Enter in the field still answers OK,
-            // through the field's own listener.
+            // NO INITIAL VALUE, so the field has the keyboard focus (MT-454), as in `askForWholeLength`: with OK as the
+            // initial value, JOptionPane gave the focus to that button, so what was typed went nowhere and Enter on the
+            // empty field counted as Skip.
             JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
 
         final javax.swing.JDialog dialog = pane.createDialog(owner(),
@@ -10956,9 +10914,6 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * @param onReveal called with a tile that should be scrolled to and flashed
-     */
-    /**
      * @param onDiagramChanged run after a track diagram page is written, so the grid can be rebuilt
      */
     public void setOnDiagramChanged(Runnable onDiagramChanged)
@@ -10966,6 +10921,9 @@ public class AutonomyEditorPanel extends JPanel
         this.onDiagramChanged = onDiagramChanged;
     }
 
+    /**
+     * @param onReveal called with a tile that should be scrolled to and flashed
+     */
     public void setOnReveal(java.util.function.Consumer<TileKey> onReveal)
     {
         this.onReveal = onReveal;
@@ -11106,9 +11064,8 @@ public class AutonomyEditorPanel extends JPanel
     {
         try
         {
-            // Shown through the one display every door uses now (DR-B10).  This was the only
-            // door that showed it at all; the other five threw the answer away, including the refusal
-            // that says a page's settings were left alone because its file is not loaded.
+            // Shown through the one display every door uses (DR-B10), including the refusal that says a page's settings were
+            // left alone because its file is not loaded.
             AutonomyReport.show(owner(), session.save());
 
             refresh();
