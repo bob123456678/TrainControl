@@ -654,7 +654,8 @@ public class testTheTailCrossedQuestion
         assertEquals(offersOfR, 1, "R is offered " + offersOfR + " times - one piece of metal read as several roads back: "
             + farthestOf(choices));
 
-        assertFalse(TailCrossedPrompt.isATurningCopyForTests(choices.get(0).getFarthest()),
+        // BY THE NAME THE BUILDER GIVES A TURNING COPY, not by the predicate the dedupe itself uses (FR-136)
+        assertFalse(choices.get(0).getFarthest().getName().contains(", reverse)"),
             "of two copies leaving by the same rail the turning copy was kept, so the road recorded is the turn's rather than"
             + " the lane's: " + farthestOf(choices));
 
@@ -674,6 +675,61 @@ public class testTheTailCrossedQuestion
 
         assertEquals(deeperOffersOfR, 1, "R is offered " + deeperOffersOfR + " times from two rails back - the same rail"
             + " counted as two roads past the first hop: " + farthestOf(behindQ));
+
+        // THE TURNING COPY'S RAIL COMING BACK FIRST (FR-136).  The diagram above emits the plain copy's rail first, so
+        // keeping the first one met is the plain copy there whether or not the plain one is preferred.  Rails come back
+        // in the order of a hash of their names, so names are tried until the turning copy's is the first.
+        Layout turningFirst = null;
+
+        for (int i = 0; i < 200 && turningFirst == null; i++)
+        {
+            Layout candidate = twoCopiesOfOneSquareBehindAPlatform(2500, "TQ_R" + i);
+
+            if (candidate.getIncomingEdges(candidate.getPoint("TQ_Q")).get(0).getStart().getName().contains(", reverse)"))
+            {
+                turningFirst = candidate;
+            }
+        }
+
+        assertNotNull(turningFirst, "no names were found for which the turning copy's rail comes back first, so the"
+            + " preference for the plain copy is not asked");
+
+        List<TailCrossedPrompt.Choice> kept = TailCrossedPrompt.choicesFor(turningFirst, turningFirst.getPoint("TQ_Q"),
+            "W", 5, null);
+
+        assertEquals(kept.size(), 1, "two copies leaving by one rail are not one road back: " + farthestOf(kept));
+
+        assertFalse(kept.get(0).getFarthest().getName().contains(", reverse)"),
+            "the turning copy's rail came back first and was kept, so the road recorded is the turn's rather than the"
+            + " lane's: " + farthestOf(kept));
+    }
+
+    /** R's plain lane and its turning copy, one square under two names, both leaving for the platform Q by one rail. */
+    private static Layout twoCopiesOfOneSquareBehindAPlatform(int s88, String square) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String plain = square + " (eastbound)";
+        String turning = square + " (eastbound, reverse)";
+
+        layout.createPoint(turning, true, model.newFeedback(s88 + 1, null).getName());
+        layout.createPoint(plain, true, model.newFeedback(s88, null).getName());
+        layout.createPoint("TQ_Q", true, model.newFeedback(s88 + 2, null).getName());
+
+        layout.getPoint(plain).setBlock(square + "-square");
+        layout.getPoint(turning).setBlock(square + "-square");
+
+        layout.createEdge(turning, "TQ_Q");
+        layout.createEdge(plain, "TQ_Q");
+
+        layout.getEdge(turning, "TQ_Q").setLength(3);
+        layout.getEdge(plain, "TQ_Q").setLength(3);
+        layout.getEdge(turning, "TQ_Q").setEntrySide("W");
+        layout.getEdge(plain, "TQ_Q").setEntrySide("W");
+
+        return layout;
     }
 
     private static Point pointWithSensor(Layout layout, int s88)
