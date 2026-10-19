@@ -33,8 +33,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-764](#mt-764) | 2026-10-18 | OB-358: the Layouts menu's tooltips have no padding at the end | fixed unvalidated | OB-358 |
 | [MT-765](#mt-765) | 2026-10-18 | OB-360: a new tile from the palette turns to join the track beside it | fixed unvalidated | OB-360 |
 | [MT-766](#mt-766) | 2026-10-18 | OB-361: the new sample layout says only what trains can do, and a run of track is stored as it is drawn | fixed unvalidated | OB-361 |
+| [MT-767](#mt-767) | 2026-10-18 | FR-139: a warning for one sensor address on two squares | fixed unvalidated | FR-139 |
 
-Everything else - 760 of 766 - needs nothing from you unless the area changes again:
+Everything else - 760 of 767 - needs nothing from you unless the area changes again:
 605 **fixed validated** and 155 **superseded**.
 
 ---
@@ -35845,5 +35846,33 @@ any track type, so that most of its ends meet track, a switch's base first.  Cla
 - Step 6: nothing on your layout is brought into line or warned about.
 
 *What this is:* OB-361 (`25fcf33f`): an exit guard passed only by trains leaving its station is no longer read as guarding a way in; a trapped arrival is told only at a station a train can reach that way; every run of plain track stores its narrowest direction, what a train finds, on open (as OB-351 does for switches), so the editor and the Track Diagram draw what is stored; a run pointing opposite ways is a warning; the One-Way tool and a re-placed tile no longer leave a run disagreeing.  Claims in `core.testTheSampleLayoutSaysOnlyWhatTrainsCanDo` and `core.testAutonomyDiagramSession`.
+
+---
+
+<a id="mt-767"></a>
+### MT-767 - 2026-10-18 - FR-139: a warning for one sensor address on two squares
+
+**Disposition:** fixed unvalidated
+**From:** FR-139
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Choose Layouts > Create New Layout (the sample has s88 1 on Station A and on PostDeparture) and run the
+   setup check in the autonomy editor.  Click the warning.
+2. Give PostDeparture's sensor its own address in the track diagram editor and run the check again.
+3. On a copy of a layout, give two sensors on DIFFERENT pages the same address, both pages in autonomy, and run the
+   check.
+4. Run the check on your own layout.
+
+**Expected**
+
+- Step 1: one warning says sensor s88 1 is on 2 squares and names both; clicking it outlines the two squares.
+- Step 2: the warning is gone.
+- Step 3: only the existing error about a page repeating another page's sensors appears, not this warning as well.
+- Step 4: no such warning (its pages that share sensors with Main are left out of autonomy).
+
+*What this is:* FR-139 (`ae16f5d1`): a WARNING per sensor address that two squares share on a page of their own; a page left out of autonomy, or one OB-150 already reports, has no places in it.  Claims in `core.testAutonomyDiagramSession` and `core.testTheSampleLayoutSaysOnlyWhatTrainsCanDo`.
 
 ---

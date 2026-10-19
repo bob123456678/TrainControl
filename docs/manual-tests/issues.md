@@ -381,14 +381,6 @@ refactor code to make agents work faster- split large files, consolidate documen
 
 From Adam's rulings on FR-136's plan (2026-10-18): the public methods on the API classes (Layout, Edge, Locomotive, MarklinControlStation) stay even where nothing in the program calls them, because *"these seem useful to an API user, and we should add examples later"*.  Write example code that shows them in use, beyond the examples the Readme and AutomationAPI.md have now.
 
-### FR-139 - 2026-10-18 - an autonomy warning for sensors with the same address in different locations
-
-**Kind:** feature request  
-**Raised from:** the triage API  
-**Filed:** 2026-10-18  
-
-Adam, 2026-10-18: "We need an autonomy warning for sensors with the same address in different locations".  Found on the new sample layout, where Station A (7,5) and PostDeparture (10,4) are both s88 contact 1.  Not on pages autonomy leaves out, and not for the copies one square builds into.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -405,6 +397,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-18 | FR-139 | feature request | A setup check warning for one sensor address on two squares of a page; a share between pages stays OB-150's error alone (`ae16f5d1`). | - | MT-767 |
 | 2026-10-18 | OB-361 | bug | The new sample layout's setup check says nothing about moves no train can make; every run of track stores what a train finds, so both windows draw the same; a run pointing opposite ways is a warning (`25fcf33f`). | - | MT-766 |
 | 2026-10-18 | OB-360 | bug | A tile placed from the palette, of any track type, turns to join the track beside it; a switch lies with its base on the track; pasted, moved and rotated tiles keep their way (`3cb3970a`). | - | MT-765 |
 | 2026-10-18 | OB-358 | bug | Tooltips of middling length are as wide as their text on a scaled display (`13b5c6df`). | - | MT-764 |
