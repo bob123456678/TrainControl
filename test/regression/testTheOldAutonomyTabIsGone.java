@@ -432,7 +432,21 @@ public class testTheOldAutonomyTabIsGone
         // AND A FOLDER CHOSEN SINCE IS THE ONE REMEMBERED.  Every door that names a layout folder - Open Layout, Create
         // New Layout, the download, the demo layout - writes it through the one method that remembers it, so that
         // method is asked here and the doors are counted.
-        assertEquals(SourceOf.occurrences("prefs.put(LAYOUT_OVERRIDE_PATH_PREF"), 1, "a door writes the layout"
+        //
+        // Counted however the write reaches the preferences - `prefs.put`, `getPrefs().put`, the key qualified by its
+        // class - so a door moved out of the window is still seen (FR-136).  Less the control station's fallback to
+        // the Central Station's layout when a folder cannot be read, which names no folder.
+        java.util.regex.Pattern write =
+            java.util.regex.Pattern.compile("\\.put\\(\\s*(?:\\w+\\.)*LAYOUT_OVERRIDE_PATH_PREF\\b");
+
+        int writers = 0;
+
+        for (java.util.regex.Matcher each = write.matcher(SourceOf.allCode()); each.find(); ) writers++;
+
+        for (java.util.regex.Matcher each = write.matcher(SourceOf.withoutComments(
+            SourceOf.declaration("private void syncLayoutsFromConfiguredSource()"))); each.find(); ) writers--;
+
+        assertEquals(writers, 1, "a door writes the layout"
             + " folder without going through `layoutFolderIs`, so the folder it names is not remembered (OB-308)");
 
         final java.lang.reflect.Method folderIs = TrainControlUI.class.getDeclaredMethod("layoutFolderIs", String.class);
