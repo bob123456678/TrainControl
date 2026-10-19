@@ -166,7 +166,7 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testShrinkingThePageDropsCaptionsOnTheEdgeItRemoves() throws Exception
     {
-        String body = bodyOf("public void shrinkEdges()");
+        String body = bodyOf("    void shrinkEdges()");
 
         int forgotten = body.indexOf("forgetCaptionsOnTrimmedEdge");
         int trimmed = body.indexOf("trimEdges()");
@@ -218,7 +218,7 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testTheShiftsCheckBeforeTheyRecordAnUndoStep() throws Exception
     {
-        for (String method : new String[] {"public void shiftDown()", "public void shiftRight()"})
+        for (String method : new String[] {"    void shiftDown()", "    void shiftRight()"})
         {
             String body = bodyOf(method);
 
@@ -291,8 +291,8 @@ public class testTheEditorTellsAutonomy
             + "whatever its predicate says (LE-C1)");
 
         // and the method must ask it too, or the two can still disagree
-        for (String pair : new String[] {"public void shiftUp()|canShiftUp",
-            "public void shiftLeft()|canShiftLeft"})
+        for (String pair : new String[] {"    void shiftUp()|canShiftUp",
+            "    void shiftLeft()|canShiftLeft"})
         {
             String method = pair.split("\\|")[0];
             String predicate = pair.split("\\|")[1];
