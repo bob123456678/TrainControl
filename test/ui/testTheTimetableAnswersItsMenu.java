@@ -621,11 +621,17 @@ public class testTheTimetableAnswersItsMenu
         Components.press(item);
     }
 
-    private static AbstractButton executeButton()
+    /** The Auto tab's Execute Timetable button, by its field, and saying what the operator reads on it. */
+    private static AbstractButton executeButton() throws Exception
     {
-        AbstractButton execute = Components.withText(ui, I18n.t("ui.main.executeTimetable"));
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("executeTimetable");
 
-        assertNotNull(execute, "the window has no Execute Timetable");
+        field.setAccessible(true);
+
+        AbstractButton execute = (AbstractButton) field.get(ui);
+
+        assertEquals(Components.onTheEventThread(execute::getText), I18n.t("ui.main.executeTimetable"),
+            "the window's Execute Timetable does not say so");
 
         return execute;
     }

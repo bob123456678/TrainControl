@@ -56,7 +56,7 @@ public class testARestartKeepsTheRailway
 
     private static final long PATIENCE_MS = 10000;
 
-    private static support.LayoutSandbox sandbox;
+    private static Restart restart;
     private static MarklinControlStation first;
     private static MarklinControlStation second;
 
@@ -72,9 +72,9 @@ public class testARestartKeepsTheRailway
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        restart = Restart.open(support.Scenario.folderFor("live-snapshot"));
 
-        first = Restart.start();
+        first = restart.getModel();
 
         assertNotNull(first.getAutoLayout(), "precondition: the frozen railway's setup did not load");
 
@@ -150,7 +150,7 @@ public class testARestartKeepsTheRailway
         assertFalse(covered.isEmpty(), "precondition: the train's tail covers nothing, so there is nothing to keep");
 
         // And the program closes and starts again
-        second = Restart.again(first);
+        second = restart.again();
 
         assertNotNull(second.getAutoLayout(), "the setup did not load again after the restart");
     }
@@ -162,16 +162,12 @@ public class testARestartKeepsTheRailway
         {
             for (MarklinControlStation model : new MarklinControlStation[] {second, first})
             {
-                if (model == null) continue;
-
-                if (model.getRoute(ROUTE) != null) model.deleteRoute(ROUTE);
-
-                Restart.discard(model);
+                if (model != null && model.getRoute(ROUTE) != null) model.deleteRoute(ROUTE);
             }
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            if (restart != null) restart.close();
         }
     }
 

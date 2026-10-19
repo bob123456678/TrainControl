@@ -54,7 +54,7 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
     /** The four stations' squares: WestEnd, Approach, BranchPlatform, MainPlatform. */
     private static final int[][] STATIONS = { {1, 3}, {3, 3}, {6, 2}, {7, 3} };
 
-    private static support.LayoutSandbox sandbox;
+    private static Restart restart;
     private static MarklinControlStation model;
 
     @BeforeClass
@@ -62,9 +62,9 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        restart = Restart.open(support.Scenario.folderFor("single-switch"));
 
-        model = Restart.start();
+        model = restart.getModel();
 
         final TrainControlUI ui = (TrainControlUI) model.getGUI();
 
@@ -104,16 +104,11 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
     {
         try
         {
-            if (model != null)
-            {
-                if (model.getAutoLayout() != null) model.getAutoLayout().stopLocomotives();
-
-                Restart.discard(model);
-            }
+            if (model != null && model.getAutoLayout() != null) model.getAutoLayout().stopLocomotives();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            if (restart != null) restart.close();
         }
     }
 
@@ -165,10 +160,15 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
 
         assertTrue(model.waitForPowerState(true, 10000), "precondition: the power is not on");
 
-        final AbstractButton returnHome = Components.withText((java.awt.Component) model.getGUI(),
-            I18n.t("ui.main.returnHome"));
+        // The Auto tab's Return Home button, by its field, saying what the operator reads on it
+        final java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("returnHomeButton");
 
-        assertNotNull(returnHome, "the window has no Return Home");
+        field.setAccessible(true);
+
+        final AbstractButton returnHome = (AbstractButton) field.get(model.getGUI());
+
+        assertEquals(Components.onTheEventThread(returnHome::getText), I18n.t("ui.main.returnHome"),
+            "the window's Return Home does not say so");
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {

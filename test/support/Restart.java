@@ -1,12 +1,13 @@
 package support;
 
+import java.io.File;
 import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * The program started with its window, closed as the window's close box closes it, and started again over the same
- * railway and the same saved data: a restart, inside one test.
+ * The program started with its window on a throwaway copy of a railway, closed as the window's close box closes it, and
+ * started again over the same railway and the same saved data: a restart, inside one test.
  *
  * The close is the window's own exit (`TrainControlUI.WindowClosed`) without its `System.exit`: the model saves the
  * locomotive database, the window saves its state and folds the running autonomy layout back into the setup, and the
@@ -14,8 +15,16 @@ import org.traincontrol.marklin.MarklinControlStation;
  * which reads the layout the sandbox points at and the database the run's data folder holds; and, as the window does
  * at start when Autonomy &gt; Load at Start is ticked, the setup's active configuration is loaded.
  *
- * Open a `LayoutSandbox` (or a `Scenario`'s folder) first: the start reads the layout preference.  Every window this
- * starts is the model's own (`getGUI`), so a class using it does not build a `TrainControlUI` itself.
+ * The sandbox is opened here, before the first model, so the program never reads the operator's own railway (OB-111),
+ * and closed by `close()`.  Every window this starts is the model's own (`getGUI`), so a class using it builds no
+ * `TrainControlUI` itself.
+ *
+ *     restart = support.Restart.open(support.Scenario.folderFor("live-snapshot"));
+ *     MarklinControlStation first = restart.getModel();
+ *     ...
+ *     MarklinControlStation second = restart.again();
+ *     ...
+ *     restart.close();
  *
  * Written for list 2's restart rows (FR-136 Phase 6): what stands where, what is claimed, the switches and the
  * statistics, read back after the restart.
@@ -27,22 +36,122 @@ public final class Restart
     /** How long the window is given to load the setup's active configuration. */
     private static final long LOAD_MS = 30000;
 
-    private Restart()
+    private final LayoutSandbox sandbox;
+
+    private MarklinControlStation model;
+
+    private Restart(LayoutSandbox sandbox)
     {
+        this.sandbox = sandbox;
+    }
+
+    /**
+     * Copies the railway to a sandbox and starts the program with its window over the copy.
+     *
+     * @param fixture the railway's folder, as `Scenario.folderFor` names one
+     * @return the running program, to be closed when the class is done with it
+     * @throws Exception if the folder cannot be copied or the program cannot start
+     */
+    public static Restart open(File fixture) throws Exception
+    {
+        LayoutSandbox opened = null;
+
+        try
+        {
+            // BEFORE the model, always (OB-111)
+            opened = LayoutSandbox.open(fixture);
+
+            Restart restart = new Restart(opened);
+
+            restart.model = start();
+
+            return restart;
+        }
+        catch (Exception | Error failed)
+        {
+            // The preference goes back before the failure is reported, as Scenario.open does
+            if (opened != null) opened.close();
+
+            throw failed;
+        }
+    }
+
+    /**
+     * @return the program running now; its window is `getGUI()`
+     */
+    public MarklinControlStation getModel()
+    {
+        return model;
+    }
+
+    /**
+     * @return the throwaway copy of the railway the program runs over
+     */
+    public File getFolder()
+    {
+        return sandbox.getFolder();
+    }
+
+    /**
+     * Closes the program as its window's close box does, and starts it again over the same railway and data.
+     *
+     * @return the program started again
+     * @throws Exception if the close or the start fails
+     */
+    public MarklinControlStation again() throws Exception
+    {
+        final MarklinControlStation running = model;
+
+        final TrainControlUI ui = (TrainControlUI) running.getGUI();
+
+        // The window's exit, without its System.exit: the database saved, the window's state saved, the window gone
+        SwingUtilities.invokeAndWait(() ->
+        {
+            running.saveState(false);
+
+            if (ui != null)
+            {
+                ui.saveState(false);
+
+                ui.dispose();
+            }
+        });
+
+        Components.settle();
+
+        model = start();
+
+        return model;
+    }
+
+    /**
+     * Throws the window away without saving anything, and puts the layout preference back.
+     *
+     * @throws Exception from the event thread
+     */
+    public void close() throws Exception
+    {
+        try
+        {
+            final TrainControlUI ui = model == null ? null : (TrainControlUI) model.getGUI();
+
+            if (ui != null) SwingUtilities.invokeAndWait(ui::dispose);
+        }
+        finally
+        {
+            sandbox.close();
+        }
     }
 
     /**
      * Starts the program with its window, as a launch does, and loads the setup's active configuration if there is one.
-     *
-     * @return the model; its window is `getGUI()`
-     * @throws Exception if the model cannot be built
      */
-    public static MarklinControlStation start() throws Exception
+    private static MarklinControlStation start() throws Exception
     {
-        MarklinControlStation model = TestStationAddress.withNoStation(
+        MarklinControlStation started = TestStationAddress.withNoStation(
             () -> MarklinControlStation.init(null, true, true, false, true));
 
-        final TrainControlUI ui = (TrainControlUI) model.getGUI();
+        final TrainControlUI ui = (TrainControlUI) started.getGUI();
 
         if (ui == null) throw new IllegalStateException("the program started without its window");
 
@@ -66,63 +175,6 @@ public final class Restart
 
         Components.settle();
 
-        return model;
-    }
-
-    /**
-     * Closes the program as its window's close box does, and starts it again over the same railway and data.
-     *
-     * @param running the model to close, whose window is closed with it
-     * @return the new model
-     * @throws Exception if the close or the start fails
-     */
-    public static MarklinControlStation again(MarklinControlStation running) throws Exception
-    {
-        close(running);
-
-        return start();
-    }
-
-    /**
-     * Closes the program as its window's close box does: the database saved, the window's state saved, the window gone.
-     * The model is not used again.
-     *
-     * @param running the model to close
-     * @throws Exception from the event thread
-     */
-    public static void close(MarklinControlStation running) throws Exception
-    {
-        if (running == null) return;
-
-        final TrainControlUI ui = (TrainControlUI) running.getGUI();
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            running.saveState(false);
-
-            if (ui != null)
-            {
-                ui.saveState(false);
-
-                ui.dispose();
-            }
-        });
-
-        Components.settle();
-    }
-
-    /**
-     * Throws the window away without saving anything, for a teardown.
-     *
-     * @param running the model, or null
-     * @throws Exception from the event thread
-     */
-    public static void discard(MarklinControlStation running) throws Exception
-    {
-        if (running == null) return;
-
-        final TrainControlUI ui = (TrainControlUI) running.getGUI();
-
-        if (ui != null) SwingUtilities.invokeAndWait(ui::dispose);
+        return started;
     }
 }

@@ -43,7 +43,7 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
 {
     private static final long PATIENCE_MS = 30000;
 
-    private static support.LayoutSandbox sandbox;
+    private static Restart restart;
     private static MarklinControlStation model;
     private static TrainControlUI ui;
 
@@ -55,9 +55,9 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        restart = Restart.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = Restart.start();
+        model = restart.getModel();
 
         ui = (TrainControlUI) model.getGUI();
 
@@ -97,14 +97,7 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            Restart.discard(model);
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        if (restart != null) restart.close();
     }
 
     /**
