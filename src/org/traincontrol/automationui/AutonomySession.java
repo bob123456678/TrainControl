@@ -88,24 +88,17 @@ public class AutonomySession
     /**
      * Whether a page has been renamed since these page objects were handed over.
      *
-     * A rename rekeys the STORE and writes a new diagram file. It does not rename the LayoutDiagram
-     * objects this session is holding, and it cannot: `saveChanges` writes a file, and the graph and
-     * the reducer were derived from the old names when `open` ran. So between a rename and the next
-     * `open`, this session's naming and its store disagree - the store says "1 - Main2", everything
-     * derived from the pages still says "1 - Main".
-     *
-     * Nothing reads the naming in that window except `captureFromLayout`, which is why this exists
-     * rather than a general repair: see the refusal there for what it cost.
+     * A rename rekeys the STORE and writes a new diagram file, but cannot rename the LayoutDiagram objects this session
+     * holds, so until the next `open` the store's naming and everything derived from the pages disagree.  Only
+     * `captureFromLayout` reads the naming in that window, and it refuses while this is set.
      */
     private boolean pagesStale = false;
 
     /**
      * Whether squares have been moved, removed or built over since the railway running was built (RSA6-B2, RSA6-A2,
-     * RSA7-A1): the fold is refused until the next `open`, as it is after a page rename.  That railway names and places
-     * what it knows by the squares as they were, so the track editor's Save folded the old names back over the ones the
-     * move carried - and, where the move reordered two stations of one name, each train onto the other's.  And after a
-     * square deleted and the edit cancelled, the fold judged the squares Cancel had put back against the page the editor
-     * had emptied, and erased them again.  Opening the editor folded already, and nothing runs while it is open, so
+     * RSA7-A1): the fold is refused until the next `open`, as after a page rename.  That railway names and places what
+     * it knows by the squares as they were, so a fold would write the old names back over the moved ones, or judge the
+     * squares a Cancel put back against the page the editor had emptied.  Nothing runs while the editor is open, so
      * nothing the refusal keeps out is new.
      */
     private boolean squaresMoved = false;
@@ -132,10 +125,8 @@ public class AutonomySession
     /**
      * The squares the railway running says its Points are copies of, moved as the setup's are (RSA7-B3).
      *
-     * While an edit declined during a run waits, a load carries each train by the square the railway says it stands on.
-     * A move, or a page renamed, moved the setup's squares and not the railway's, so the carry read each train's square
-     * as it was: after a move each train went onto the station that had taken its old square, and after a rename every
-     * train on the page was left where the setup last had it.
+     * While an edit declined during a run waits, a load carries each train by the square the railway says it stands on,
+     * so a move or a page rename must move the railway's squares too, or the carry reads each train's square as it was.
      *
      * @param to each square, to where it is now
      */
@@ -161,12 +152,7 @@ public class AutonomySession
      * What an edit of the track changes outside the setup of its page (RSA8-B2, RSA8-B3): what the carry remembers of
      * the builds it has seen, the squares the railway running says its Points are copies of, and the names in every
      * configuration's stored legs.  A page's undo point holds it, and the session holds it as it was before the first
-     * move, for a Cancel; each is put back with the setup.
-     *
-     * A move remembers its stations on their new squares and moves the railway's squares with them - and an undo or a
-     * Cancel that put back the setup alone rebuilt against what the move had made them: the carry sent every leg through
-     * a moved station to the station now on its old square, and each train to another station.  Every move is made in
-     * the track editor, after the snapshot its Cancel restores, and the editor's reset makes a new session.
+     * move, for a Cancel; each is put back with the setup, because a move changes them in step with the squares.
      */
     private static final class Remembered
     {
@@ -193,7 +179,7 @@ public class AutonomySession
     /**
      * What the carry remembered, and the railway's squares, as the editor opened - or before the first move where no
      * editor said it opened - for a Cancel (RSA8-B2, RSA9-B2).  Taken at the first move alone, a Cancel after two names
-     * were swapped found each remembered on the other's square, and carried every leg there.
+     * were swapped would find each remembered on the other's square.
      */
     private Remembered asTheEditBegan;
 
@@ -325,11 +311,10 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            // A placeholder's id is NOT offered to the store (FV3-A1).  `pageIsHere` answers from this
-            // map, and answering yes about a page whose contents did not load is what releases the
-            // entries OB-067 holds out of memory to be written back verbatim.  The placeholder keeps
-            // its id for the index writer, which is a different question - that one is "which page is
-            // this", and this one is "is its track here to judge".
+            // A placeholder's id is NOT offered to the store (FV3-A1): `pageIsHere` answers from this map, and answering
+            // yes about a page whose contents did not load would release the entries OB-067 holds out of memory to be
+            // written back verbatim.  The placeholder keeps its id for the index writer ("which page is this"); this
+            // map answers "is its track here to judge".
             if (page.isUnreadable()) continue;
 
             if (page.getPageId() != null) pageIds.put(page.getName(), page.getPageId());
@@ -381,9 +366,8 @@ public class AutonomySession
 
         migrationFailures = migrateStationLabels();
 
-        // NO CAPTION IS FORGOTTEN HERE FOR NAMING A SQUARE THAT IS NOT A STATION NOW (GSE-C4).  It was, to clean up setups
-        // written before demoting took the caption with it; demoting keeps it now (Adam, 2026-10-10: keep them, ignored
-        // while not a station), and `getCaptionTarget` leaves it undrawn until the square is a station again.
+        // NO CAPTION IS FORGOTTEN HERE FOR NAMING A SQUARE THAT IS NOT A STATION NOW (GSE-C4): demoting keeps it, ignored
+        // while not a station (Adam, 2026-10-10), and `getCaptionTarget` leaves it undrawn until the square is one again.
 
         dirty = false;
     }
@@ -548,20 +532,17 @@ public class AutonomySession
     /**
      * Moves any length a route tile holds onto the track beside it, keeping the total (Adam, 2026-09-23).
      *
-     * A route tile takes no length (OB-273) - *"it just implicitly connects things as if it were a crossing"* - so
-     * nothing asks for one: Mass Assign Lengths passes over it and the notices skip it.  But the room and tail sums still
-     * add whatever it holds (`GraphReducer.sumLength` and `lengthOf` read every step, AUT-C4), so a unit left there is
-     * counted without being anywhere the editor shows or asks about.  Five of Adam's held a length of 1 from before that
-     * ruling, most likely written by a Mass Assign Lengths run that shared a piece's length over them.  Asked whether to
-     * drop them or move them: *"Fold them, they were likely auto set during the mass assignment run."*  So each goes to
-     * the square beside the route tile along the road it carries - plain track in preference to a switch, whose length is
-     * the page's one turnout length - and the sums come out as they were.
+     * A route tile takes no length (OB-273) - *"it just implicitly connects things as if it were a crossing"* - but the
+     * room and tail sums still add whatever it holds (`GraphReducer.sumLength` and `lengthOf` read every step, AUT-C4),
+     * so a unit left there is counted without being anywhere the editor shows or asks about.  Adam: *"Fold them, they
+     * were likely auto set during the mass assignment run."*  Each goes to the square beside the route tile along the
+     * road it carries - plain track in preference to a switch, whose length is the page's one turnout length - and the
+     * sums come out as they were.
      *
-     * **Never onto a sensor square** (AUT-C4).  A sensor's length is the last place of every rail arriving at it and the
-     * first thing a train standing there spends, so a unit put there lengthens every other approach to that sensor too.
+     * **Never onto a sensor square** (AUT-C4): a sensor's length is the last place of every rail arriving at it, so a
+     * unit put there lengthens every other approach too.
      *
-     * Run as the setup is opened, so it applies to any layout carrying one, and to one written again by hand.  A route
-     * tile with no plain track or switch beside it keeps its length, which the sums still count.
+     * Run as the setup is opened.  A route tile with no plain track or switch beside it keeps its length.
      *
      * @return route tile to the square that took its length
      */
@@ -614,16 +595,9 @@ public class AutonomySession
     /**
      * Every caption on one page, as a snapshot something else can hold and hand back.
      *
-     * **Not the editor's undo, which is what this used to say** (`VD9-C16`). That is
-     * `snapshotPage`/`restorePage`, through the companion store; this method and its partner were a
-     * second, parallel implementation of the same idea, and the partner - `restoreCaptionsOnPage` -
-     * was deleted as uncalled by `REL-C15`.
-     *
-     * What is left has one caller: `LayoutEditor.forgetCaptionsOutsideThePage`, the `RC-B1` cleanup
-     * that runs when a page is shrunk and drops the captions now off the edge. It wants the keys and
-     * not the round trip, which is why only half of the pair survived.
-     *
-     * By page, because that is what the caller is about.
+     * Not the editor's undo, which is `snapshotPage`/`restorePage` through the companion store (VD9-C16).  The one
+     * caller is `LayoutEditor.forgetCaptionsOutsideThePage`, the `RC-B1` cleanup that runs when a page is shrunk; it
+     * wants the keys and not a round trip.
      *
      * @param page the page name
      * @return caption square to station square, for that page only
@@ -655,15 +629,9 @@ public class AutonomySession
         for (Map.Entry<TileKey, Set<Side>> entry
             : new LinkedHashMap<>(store.getBarredArrivals()).entrySet())
         {
-            // Only squares this setup can still SEE.
-            //
-            // The index is derived from the graph, and the graph leaves out excluded pages - so a
-            // square on an excluded page has no arrival sides at all, and pruning against that would
-            // read as "every side of this station has gone" and delete the restriction outright.
-            // Excluding a page has to be reversible, which is the same rule the reconciliation below
-            // this call exists to keep, and this would have broken it for one field only.
-            //
-            // The same shape catches a station fed through a link, which splits into nothing.
+            // Only squares this setup can still SEE: the index is derived from the graph, which leaves out excluded pages
+            // and a station fed through a link, so pruning against it would read "every side of this station has gone"
+            // and delete the restriction outright.  Excluding a page has to be reversible.
             if (!getStationIndex().squares().contains(entry.getKey())) continue;
 
             Set<Side> live = new LinkedHashSet<>(entry.getValue());
@@ -690,15 +658,9 @@ public class AutonomySession
     /**
      * The pages the caption migration DID rewrite, for the same reader (RGN-B1).
      *
-     * The migration edits files the user owns - a `Point:` label typed onto their own track diagram is
-     * taken into the setup and emptied out of the `.cs2` - and until this it did so without a word.  A
-     * user who upgraded, then went back to 2.7.4c, found their station captions gone from the diagram
-     * and nothing anywhere saying why.  `LayoutDiagram.saveChanges` keeps a `.cs2.bak` the first time
-     * it rewrites a page, so the names are recoverable; that is only useful to somebody who knows to
-     * look.
-     *
-     * Failures were already reported and successes were not, which is the wrong way round for a change
-     * that is one-way: a failure means it will simply run again next time.
+     * The migration edits files the user owns - a `Point:` label typed onto their own track diagram is taken into the
+     * setup and emptied out of the `.cs2` - so the user has to be told.  `LayoutDiagram.saveChanges` keeps a `.cs2.bak`
+     * the first time it rewrites a page, so the names are recoverable.
      */
     private List<String> migratedPages = new ArrayList<>();
 
@@ -718,21 +680,10 @@ public class AutonomySession
     /**
      * Throws away every edit made since the last save, by reading the setup back off disk.
      *
-     * Without this, "exit without saving" was a promise nothing kept.  Every edit goes straight into the
-     * live configuration this session hands out - there was no copy to go back to - so the discarded
-     * work was still in memory afterwards, still drawn on the diagram, and written out by the next save
-     * from anywhere at all: ticking a page, loading a configuration, or closing the application.
-     *
-     * Re-reading rather than undoing: what is on disk is by definition the last state the user agreed
-     * to, and rebuilding from it cannot leave a half-reverted graph the way replaying edits backwards
-     * could.  Anything already saved deliberately survives, which is what makes the Save button in the
-     * editor mean something.
-     *
-     * Station captions ARE taken back, along with everything else.  They used to live on the track
-     * diagram and be written to the layout file the moment they were set, which made them the one
-     * thing this could not undo; they have been part of the setup since captions stopped being text
-     * labels, so they are re-read with the rest of it and the question asked of the user no longer
-     * has to make an exception of them.
+     * Every edit goes straight into the live configuration this session hands out, so there is no copy to go back to;
+     * re-reading is the discard.  What is on disk is by definition the last state the user agreed to, and rebuilding
+     * from it cannot leave a half-reverted graph the way replaying edits backwards could.  Station captions are part of
+     * the setup and are taken back with the rest.
      *
      * @throws IOException if the setup cannot be re-read, in which case nothing is changed
      */
@@ -753,12 +704,8 @@ public class AutonomySession
      */
     public void initialize(String configurationName) throws IOException
     {
-        // Always creates one.  This used to do nothing at all unless the store was empty, which was
-        // right while it was the "set autonomy up for the first time" button and wrong the moment it
-        // became "add a configuration": the second one silently did nothing, and the menu came back
-        // unchanged with the old configuration still running.
-        //
-        // A name already in use throws, as it does for a duplicate - the caller says so.
+        // Always creates one: this is "add a configuration" as well as the first-time setup.  A name already in use
+        // throws, as for a duplicate - the caller says so.
         store.createConfiguration(
             configurationName == null || configurationName.trim().isEmpty()
                 ? "Default" : configurationName.trim(),
@@ -777,14 +724,9 @@ public class AutonomySession
      */
     public final void rebuild()
     {
-        // The index is NOT nulled here.  Nulling opened a window - the whole expensive rebuild body
-        // below - in which a feedback-thread reader (updateStationLabels) could see null and derive the
-        // index itself, against the reducer this method is at that moment replacing.  That is the
-        // unsynchronised derivation SA-C1 set out to remove, reopened across the rebuild instead of a
-        // single field write.
-        //
-        // Left alone, a reader mid-rebuild sees the OLD index - immutable, built from the old reducer,
-        // and safe to read - until the new one is published in one assignment at the end.
+        // The index is NOT nulled here: a feedback-thread reader (updateStationLabels) that saw null would derive the index
+        // itself against the reducer this method is replacing (SA-C1).  A reader mid-rebuild sees the OLD index -
+        // immutable, built from the old reducer - until the new one is published in one assignment at the end.
         graph = new TileGraph(pages, store.getExcludedPages());
 
         store.applyTo(graph);
@@ -816,13 +758,10 @@ public class AutonomySession
 
         graph.validatePortals();
 
-        // HANDED OUT ONLY ONCE REDUCED (OB-298, ADA-C2).  This assigned the field a line before reducing, so a build asking
-        // for the reducer in between walked lists being filled - the incident OB-298 was filed from - and, once `reduce`
-        // swapped its lists whole, got the empty ones a new reducer starts with, silently.  A build takes the field once,
-        // so it holds the old railway or the whole new one.  This session's own methods read the field at every use, and
-        // `graph` is published first, so one that read twice across a rebuild on another thread could see two railways:
-        // they rely on every rebuild running on the event thread, as every caller does - the loads and the revert, Delete
-        // Everything, and the editor's edits (ADA2-C6).
+        // HANDED OUT ONLY ONCE REDUCED (OB-298, ADA-C2): a build asking for the reducer mid-reduce would walk lists still
+        // being filled.  A build takes the field once, so it holds the old railway or the whole new one.  This session's
+        // own methods read the field at every use and `graph` is published first, so they rely on every rebuild running
+        // on the event thread, as every caller does (ADA2-C6).
         GraphReducer fresh = new GraphReducer(graph, store.asAuthored());
 
         fresh.reduce();
@@ -981,20 +920,14 @@ public class AutonomySession
     /**
      * The name the latest build gives a Point of the running layout (RSA4-A1), found by the square it was a copy of and
      * the way a train on it faced (RSA5-A1): the name itself where the build still gives it to that square; otherwise the
-     * same copy under the square's name now - what follows a square's name is its copy's heading - or, where that copy is
-     * gone, the copy of the square facing the same way, a turning copy last.  A copy is its facing, so no other is
-     * offered, and where none faces that way, or the square is gone, there is none.  By the square and not the name:
-     * a station renamed to the name another has hands that name to the other square, and the train recorded there was
-     * stood on the renamed station and the one on it taken off the railway.
+     * same copy under the square's name now, or, where that copy is gone, the copy of the square facing the same way, a
+     * turning copy last.  A copy is its facing, so no other is offered; where none faces that way, or the square is
+     * gone, there is none.  Found by the square and not the name, because a station renamed to the name another has
+     * hands that name to the other square.
      *
      * Where the trains stand after a run lives on the running layout alone, and a rebuild from the setup puts each back
-     * by the name of the Point it stood on (OB-183) - a name that a station renamed, or a square's copies changed, had
-     * just replaced, so the train was left where the setup last had it and the square it stood on read free.
+     * by the name of the Point it stood on (OB-183), so that name has to follow the square.
      *
-     * @param name the Point's name on the running layout
-     * @param square the square of the diagram it is a copy of, as the running layout says, or null
-     * @param facing the way a train on it faces, as the running layout says, or null
-     * @return the name of that Point now, or null where the build has no copy of the square facing that way
      */
     public String pointNamedNow(String name, String square, String facing)
     {
@@ -1072,8 +1005,7 @@ public class AutonomySession
     }
 
     /**
-     * The same by the name alone, for a railway that does not say which square each Point is a copy of - one written by
-     * hand, or before round 21.
+     * The same by the name alone, for a railway that does not say which square each Point is a copy of.
      */
     private String pointNamedByName(String name)
     {
@@ -1114,20 +1046,17 @@ public class AutonomySession
      * across a square renamed (RSA4-B1).
      *
      * A captured timetable names Points, and a Point is named after its square - the square's name, and a heading where
-     * the square is more than one copy.  A station renamed, or a square given more copies or fewer, left every leg
-     * through it naming a Point no longer built: the load dropped the entry, and the next capture wrote the shorter
-     * timetable over the configuration.  The locomotive half was carried long ago (OB-069); this is the station half.
+     * the square is more than one copy.  A station renamed, or a square given more copies or fewer, would leave every
+     * leg through it naming a Point no longer built, and the load would drop the entry.
      *
      * Each name the build no longer has is traced to its square - by the builds this session has seen, or, for a name
      * written before this session, as that square's own name with or without a heading - and then to a copy of it: the
      * same copy under the square's name now, or where that copy is gone, the one copy every leg through it is an edge
-     * from or to.  A name that cannot be traced is left as it is, and the load drops that entry as before.
+     * from or to.  A name that cannot be traced is left as it is, and the load drops that entry.
      *
-     * Every other configuration is carried across a renamed square alone (RSA4-B1): its own build can differ from this
-     * one - which squares trains may turn round at is its own - so a name this build lacks for any other reason is left
-     * for that build to carry when the configuration is next the one in use.  The carry reached the configuration in use
-     * alone, and the names in the others could be traced only by the session that saw them: after a restart the load
-     * dropped their entries and the next fold erased them.
+     * Every other configuration is carried across a renamed square alone: its own build can differ from this one (which
+     * squares trains may turn round at is its own), so a name this build lacks for any other reason is left for that
+     * build to carry when the configuration is next the one in use.
      */
     private void carryTheNamesAcross(AutonomyBuilder naming)
     {
@@ -1155,9 +1084,8 @@ public class AutonomySession
                 }
 
                 // AND THE LEGS OF THE TIMETABLE THE EDIT SESSION'S FOLDS TOOK FROM THE RAILWAY (OB-343), which Cancel writes
-                // back: carried through each build of the edit as the setup's own are, so that they name the latest build's
-                // Points when Cancel comes - each one a single square's.  Carried only then, against a memory that had
-                // forgotten the builds between, a name an edit gave two stations in turn took a leg to the wrong one.
+                // back: carried through each build of the edit, each one a single square's, so that they name the latest
+                // build's Points when Cancel comes.
                 org.json.JSONObject taken = takenFromTheRailway == null ? null : takenFromTheRailway.get(name);
 
                 if (taken != null && taken.has("timetable"))
@@ -1483,9 +1411,8 @@ public class AutonomySession
          *
          * The file states one where every edge from the train's point leaves the square by one side (REG4-A1).
          * Elsewhere a split square still needs one, so the import picks a way trains may arrive in.  It is a guess,
-         * corrected in the autonomy editor and by the first real run's capture, and before ACC-C4 it was made silently
-         * AND at random.  A facing the square already recorded, kept for the train, is counted too: it is no more
-         * evidence about the train the file puts there than a chosen one (OB-304).
+         * corrected in the autonomy editor and by the first real run's capture.  A facing the square already recorded,
+         * kept for the train, is counted too: it is no more evidence about the train than a chosen one (OB-304).
          */
         public int facingsInvented;
 
@@ -1525,8 +1452,7 @@ public class AutonomySession
         /**
          * Old points whose square this import had already met from another point on the same sensor - a station and its
          * approach guard, the ordinary shape of an old file - each as a line naming the point and the name its square kept,
-         * whether this import named the square or it had its name before (RSA44-C3, RSA45-C1).  A square has one name;
-         * these were counted in `skipped` once each, as squares that "already had a name", and their names went unsaid.
+         * whether this import named the square or it had its name before (RSA44-C3, RSA45-C1).  A square has one name.
          */
         public final List<String> namesNotKept = new ArrayList<>();
 
@@ -1561,10 +1487,8 @@ public class AutonomySession
         /**
          * Locomotives the file places that this database has never heard of.
          *
-         * Not placed.  The running model refuses a placement naming a locomotive it cannot find, and
-         * refuses it by invalidating the WHOLE layout - so writing these in would have produced a
-         * setup that will not load, reported as a locomotive problem with nothing to connect it to
-         * the import that caused it.
+         * Not placed: the running model refuses a placement naming a locomotive it cannot find by invalidating the WHOLE
+         * layout, which would leave a setup that will not load, with nothing to connect it to the import.
          */
         public final List<String> unknownLocomotives = new ArrayList<>();
 
@@ -1665,36 +1589,11 @@ public class AutonomySession
     }
 
     /**
-     * Brings station names, station flags and lengths across from a legacy autonomy.json.
-     *
-     * The graph this replaces held its points by NAME and carried the s88 each one watched.  The
-     * diagram derives its points from the feedback squares themselves, so the two can be matched by
-     * that s88 - it is the one thing both models agree on, and it is what makes a square a point in
-     * the first place.
-     *
-     * This exists because the names were never derivable.  A diagram gives the track's shape; what any
-     * of it is CALLED, and which squares count as stations, are decisions somebody made once and would
-     * otherwise have to make again, square by square, on upgrading.
-     *
-     * Names already here are kept, the same rule importing a configuration follows: this fills gaps,
-     * it does not overwrite somebody's work with a file's.
-     *
-     * Nothing is written to disk BY THIS METHOD.  Its caller, `AutonomyViewerPanel.importLegacyGraph`, reads the rest of
-     * the file and saves once it has, or puts the setup back as it was where the file fails part way (RLA-C3) - so an
-     * import is committed only whole.  This used to say a bad match "can still be cancelled", which described a step
-     * that has never existed and would have led the next reader to add it back (ACC-C5).
-     *
-     * @param legacy the parsed autonomy.json
-     * @return what was matched, skipped and not found
-     */
-    /**
      * The per-point settings an old graph holds that the build still reads, unchanged.
      *
-     * Everything here is copied into the configuration verbatim and emitted verbatim: the builder
-     * passes unknown extras straight through, so these need translating no more than the placement
-     * did.  Listed rather than copied wholesale because the rest of a legacy point - name, station,
-     * s88, terminus, reversing, x, y - is either handled deliberately above or derived now, and
-     * copying those would fight the derivation.
+     * Copied into the configuration verbatim and emitted verbatim: the builder passes unknown extras straight through.
+     * Listed rather than copied wholesale because the rest of a legacy point - name, station, s88, terminus, reversing,
+     * x, y - is handled deliberately or derived now, and copying those would fight the derivation.
      *
      *   priority          how strongly autonomy prefers this destination
      *   speedMultiplier   the pace trains take through it
@@ -1703,27 +1602,33 @@ public class AutonomySession
      *                     station, where `false` arrives as "on, and not a destination autonomy chooses"
      *                     (REG-B1, below).
      *
-     * **The build stopped ignoring `active` on a non-station on 2026-09-02** (`D24-B5`), and this line
-     * used to give that as the reason for carrying it unfiltered (`DY3-C2`).  The reason now is the
-     * plainer one: it is the operator's setting and the import is a migration, not an edit.
-     *
-     * What that changes for an imported graph is worth knowing.  Adam's own frozen legacy file carries
-     * twenty-four points with `active: false`, eighteen of them stations, and each of those is now a
-     * point no path may pass through OR END ON - manual routes included, because neither
-     * `isPathClear`'s intermediate rule nor, since Adam's ruling of 2026-09-06, its destination rule is
-     * fenced behind `isAutoRunning`.  For the six that are not stations that is a RESTORATION: at v2.8.1
-     * the raw `autonomy.json` went straight into `parseAuto` and those points blocked paths then too.
-     * For the eighteen stations it is not (REG-B1): v2.8.1 let a hand-picked route END on a switched-off
-     * station, and sixteen of them are reversing stations the import already marks parking, where
-     * `active: false` was the old way of saying "autonomy stays out, I drive in by hand".  After the
-     * import nobody drives in; switching the station back on is the way past.  **Adam's ruling, 2026-09-24:** *"yes,
-     * translate as on but not auto destination."*  So on a station `active: false` is written as
-     * `autoDestination: false` and the switch is left on - what it meant at v2.8.1.  On any other point it is
-     * carried as given, which is what the six non-stations had at v2.8.1 too.
+     * `active` is carried unfiltered on a non-station because it is the operator's setting and the import is a
+     * migration, not an edit (D24-B5).  An `active: false` point is one no path may pass through OR END ON, manual
+     * routes included.  On a station that would shut out a hand-picked route that v2.8.1 allowed - there `active: false`
+     * was the old way of saying "autonomy stays out, I drive in by hand" - so (Adam, 2026-09-24: *"yes, translate as on
+     * but not auto destination."*) on a station `active: false` is written as `autoDestination: false` and the switch
+     * is left on (REG-B1).
      */
     private static final List<String> CARRIED_SETTINGS =
         Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active", "maxTrainLength");
 
+    /**
+     * Brings station names, station flags and lengths across from a legacy autonomy.json.
+     *
+     * The old graph held its points by NAME and carried the s88 each one watched.  The diagram derives its points from
+     * the feedback squares, so the two are matched by that s88.  What a square is CALLED, and which squares are
+     * stations, are decisions somebody made once and would otherwise make again, square by square, on upgrading.
+     *
+     * Names already here are kept, the same rule importing a configuration follows: this fills gaps, it does not
+     * overwrite somebody's work with a file's.
+     *
+     * Nothing is written to disk BY THIS METHOD.  Its caller, `AutonomyViewerPanel.importLegacyGraph`, reads the rest of
+     * the file and saves once it has, or puts the setup back as it was where the file fails part way (RLA-C3), so an
+     * import is committed only whole (ACC-C5).
+     *
+     * @param legacy the parsed autonomy.json
+     * @return what was matched, skipped and not found
+     */
     public LegacyImport importLegacy(org.json.JSONObject legacy)
     {
         return importLegacy(legacy, null);
@@ -1732,31 +1637,26 @@ public class AutonomySession
     /**
      * Which way each imported train faces: the way the file ran it, and a guess only where the file cannot say.
      *
-     * READ FROM THE FILE FIRST (REG4-A1).  The old graph had one Point per sensor and no facing field, and this used to
-     * say that the file therefore cannot state a facing.  It can, for almost every point: 2.8.1 sent a train only along
-     * the edges that start at its point, and never commanded a direction except to turn round, so where every one of
-     * them leaves the square by one side, the train drives out that way.  Eighty-eight of the ninety edges in Adam's
-     * frozen file have no reverse twin.  Guessing instead stood a train facing south at TopMainR1, whose one edge leads
-     * north - a path locked south for a train whose decoder drives it north.
+     * READ FROM THE FILE FIRST (REG4-A1).  2.8.1 sent a train only along the edges that start at its point, so where
+     * every one of them leaves the square by one side, the train drives out that way.  Guessing instead could stand a
+     * train facing a way its decoder does not drive it.
      *
      * AFTER THE LOOP (REG4-C1).  A legacy terminus or reversing point is marked "must turn round" further down the same
-     * point's import, and a square trains must turn at has only turning copies, which face the other way from its
-     * plain ones.  Asked inside the loop, a facing was checked against copies the build would no longer make.
+     * point's import, and a square trains must turn at has only turning copies, which face the other way from its plain
+     * ones, so a facing is checked against the copies the build will make.
      *
      * THE GUESS, where the file cannot say - no edge, edges both ways, or an end this diagram does not draw.  A way
      * trains may arrive in, first (REG3-C1): the build honours a recorded facing even where only a copy trains may not
-     * arrive at holds it, since the copy IS the direction, so a guess of such a facing stood the imported train where
-     * autonomy will not start it.  The first copy's only where the square has none.  Deterministic rather than random
-     * (ACC-C4), so two imports of one file agree; counted, so the log can say how many were guessed.
+     * arrive at holds it, since the copy IS the direction.  The first copy's only where the square has none.
+     * Deterministic (ACC-C4), so two imports of one file agree; counted, so the log can say how many were guessed.
      *
      * A facing the file states and no copy holds - the diagram does not let a train arrive the way it would have to -
      * is not saved (Adam, OB-270: *"we shouldn't allow an impossible facing to be saved"*): the train is stood the way
      * the square allows, and named in `facingsNotHeld` rather than counted as a guess, since it is known to be the
      * other way round from how the train drives.
      *
-     * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS: the last occupant's is a guess as good as the first
-     * copy's, and a guess made by somebody standing a train there (RLA2-B3).  Only one the guess itself could make - a
-     * way trains may arrive in, where the square has one - and counted with the guesses, which it is (OB-304).
+     * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS (RLA2-B3): the last occupant's is a guess as good as
+     * the first copy's.  Only one the guess itself could make, and counted with the guesses (OB-304).
      *
      * @param facingToFind the placed trains, by square and legacy point name
      * @param edgesLeadTo each legacy point's edges, by the square each ends on (null: not on this diagram)
@@ -1783,11 +1683,10 @@ public class AutonomySession
 
             java.util.Set<Side> mayArrive = homeFacingsFor(tile);
 
-            // A FACING THE SQUARE RECORDS STAYS where the file cannot say (RLA2-B3) - only one the guess below could
-            // make, and counted with the guesses, which it is (OB-304).  It is the last occupant's, no evidence
-            // about the train the file puts there: kept unasked, a facing trains may not arrive in stood the imported
-            // train where autonomy will not start it (REG3-C1), and the log said nothing had been guessed.  Where no
-            // copy is one trains may arrive at, the guess takes the first copy, and the recorded one is as good.
+            // A FACING THE SQUARE RECORDS STAYS where the file cannot say (RLA2-B3) - only one the guess below could make,
+            // and counted with the guesses (OB-304).  Kept unasked, a facing trains may not arrive in would stand the
+            // imported train where autonomy will not start it (REG3-C1).  Where no copy is one trains may arrive at, the
+            // guess takes the first copy, and the recorded one is as good.
             Side recorded = ran == null ? getFacing(tile) : null;
 
             boolean keepIt = recorded != null && ways.contains(recorded)
@@ -1828,19 +1727,17 @@ public class AutonomySession
      * Sets the track each of the old file's edges ran over running the way it ran (Adam, 2026-09-24: *"Carry the old
      * file's directions onto the diagram - yes, to the extent possible."*).
      *
-     * A 2.8.1 graph is one-way edges: a train on a point went only along the edges starting there.  The diagram has its
-     * own defaults - plain track both ways, a switch out of its toe only - which on a fresh upgrade can forbid the very
-     * way the old graph ran a train (TopMainR1Inter, reached from the north through a switch, became reachable from the
-     * east only).  So each edge is followed as its facing is (`sideTheEdgesLeaveBy`: the side from which its end is the
-     * next square the old graph had a point on) and the track between is set as the editor's one-way run sets it.
+     * A 2.8.1 graph is one-way edges: a train on a point went only along the edges starting there.  The diagram's
+     * defaults - plain track both ways, a switch out of its toe only - can forbid the very way the old graph ran a
+     * train.  So each edge is followed as its facing is (`sideTheEdgesLeaveBy`) and the track between is set as the
+     * editor's one-way run sets it.
      *
      * To the extent possible:
      *  - track the file ran both ways is left both ways, and so is a square two edges run over opposite ways;
      *  - an edge whose end is next by more than one side, or none, or across a link, is skipped for what it cannot say;
      *  - and ONLY ONTO A DIAGRAM NOBODY HAS SET A DIRECTION ON.  A default is stored as nothing, so filling the gaps of a
-     *    tuned diagram cannot tell track left running both ways on purpose from track nobody has looked at - on Adam's
-     *    own railway (118 set) it made 176 pieces one-way, 170 of them plain track he runs both ways, in the setup every
-     *    configuration shares.  There the pieces are only counted, for the log.
+     *    tuned diagram cannot tell track left running both ways on purpose from track nobody has looked at.  There the
+     *    pieces are only counted, for the log.
      * The facings are found afterwards, over the copies these directions make.
      *
      * @param oldEdges each edge as the squares of its two points (null for one this diagram does not draw)
@@ -2029,31 +1926,19 @@ public class AutonomySession
     {
         LegacyImport result = new LegacyImport();
 
-        // One locomotive stands in one place.  Tracked across the whole file rather than per point,
-        // because the model's objection is global: two points naming the same locomotive invalidate
-        // the layout, whichever pages they are on.
+        // One locomotive stands in one place.  Tracked across the whole file rather than per point: two points naming the
+        // same locomotive invalidate the layout, whichever pages they are on.
         Set<String> placedAlready = new LinkedHashSet<>();
 
-        // And one locomotive has one HOME, for the same reason and by the same means (OB-075).
-        //
-        // setHome sweeps duplicates and says why - "a rule enforced at one door of two is the shape
-        // this defect came from" (TD-8). This is that second door: the import writes "home" straight
-        // into the configuration and never goes near setHome.
-        //
-        // A file written before the rule existed can legitimately name two, and both were imported.
-        // Layout.rebuildHomeStations then drops one by iteration order with a log line, and the next
-        // capture writes that arbitrary choice back permanently - so the user keeps a home they never
-        // chose, and nothing says which had been theirs.
-        //
-        // First one wins, which is the file's own order and therefore at least reproducible; the rest
-        // are counted so the choice can be reported rather than made silently.
+        // And one locomotive has one HOME, for the same reason (OB-075).  `setHome` sweeps duplicates (TD-8); this is the
+        // second door, as the import writes "home" straight into the configuration.  A file written before the rule can
+        // name two; the first one wins, which is the file's own order and so reproducible, and the rest are counted so
+        // the choice can be reported rather than made silently.
         Set<String> homedAlready = new LinkedHashSet<>();
 
-        // AND ACROSS WHAT THE CONFIGURATION ALREADY SAYS (RLA-B2).  Kept across the file alone, a second import of the
-        // same file, into a configuration where one of its trains had been moved since - by a run and the capture after
-        // it, or by the editor's Place - found the square the train had left empty, and put the train there as well: one
-        // train on two squares, which refuses the whole configuration.  Where a train already stands, and which train
-        // already has a home, are facts about the configuration, and gap-filling does not overrule them.
+        // AND ACROSS WHAT THE CONFIGURATION ALREADY SAYS (RLA-B2): where a train already stands, and which train already has
+        // a home, are facts about the configuration, and gap-filling does not overrule them.  A second import could
+        // otherwise put a train that has since moved on two squares, which refuses the whole configuration.
         Set<String> standingAlready = new LinkedHashSet<>();
 
         // And the homes it already has, told apart from a home the file names twice so the message can say which (RLA2-C3)
@@ -2090,13 +1975,10 @@ public class AutonomySession
 
         Map<Integer, TileKey> bySensor = new LinkedHashMap<>();
 
-        // Sensors carried by more than one square, which no amount of reading the file can resolve.
-        //
-        // Two squares on the same s88 is ordinary - a station and its approach guard - and on a layout
-        // whose pages repeat a section it happens across pages too.  The old graph names ONE point per
-        // sensor, so there is no way to tell which square it meant, and putting it on whichever came
-        // last would land somebody's station on the wrong page silently.  Refused and reported instead;
-        // excluding the duplicating pages first is what makes the rest of the import unambiguous.
+        // Sensors carried by more than one square, which no amount of reading the file can resolve: two squares on the same
+        // s88 is ordinary (a station and its approach guard), and the old graph names ONE point per sensor, so putting it
+        // on whichever came last would land a station on the wrong page silently.  Refused and reported; excluding the
+        // duplicating pages first makes the rest of the import unambiguous.
         Set<Integer> ambiguous = new LinkedHashSet<>();
 
         for (GraphReducer.ReducedPoint point : reducer.getPoints().values())
