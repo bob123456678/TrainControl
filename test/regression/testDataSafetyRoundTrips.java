@@ -184,11 +184,25 @@ public class testDataSafetyRoundTrips
         assertTrue(written.contains("element") || written.contains("id"),
             "the page does not look like a diagram file: " + brief(written));
 
-        // Nothing left half-written beside it
-        for (File stray : file.getParent().toFile().listFiles())
+        // Nothing left half-written beside it.  The program stages a write as `<file>.part`
+        // (Util.PARTIAL_DOWNLOAD_SUFFIX) and moves it over the target, so that is the name a stray
+        // would carry; `.tmp` is kept for any other writer.
+        File[] beside = file.getParent().toFile().listFiles();
+
+        assertNotNull(beside, "the folder the page was saved to cannot be listed");
+
+        java.util.List<String> names = new java.util.ArrayList<>();
+
+        for (File each : beside) names.add(each.getName());
+
+        // A FLOOR, so the loop below cannot walk an empty or wrong folder: the page and its backup are in it
+        assertTrue(names.contains(file.getFileName().toString()) && names.contains(backup.getFileName().toString()),
+            "the folder listed does not hold the page and its backup, so the check for strays looked nowhere: " + names);
+
+        for (String name : names)
         {
-            assertFalse(stray.getName().endsWith(".tmp"),
-                "a temporary file was left behind: " + stray.getName());
+            assertFalse(name.endsWith(".tmp") || name.endsWith(org.traincontrol.util.Util.PARTIAL_DOWNLOAD_SUFFIX),
+                "a staging file was left behind beside the page: " + name);
         }
     }
 
