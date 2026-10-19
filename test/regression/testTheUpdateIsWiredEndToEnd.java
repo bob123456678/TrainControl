@@ -15,6 +15,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.util.JarUpdater;
 import org.traincontrol.util.SelfUpdate;
+import support.SourceOf;
 
 /**
  * One-click updates are wired together end to end (FR-125, the validation of 2026-10-13).
@@ -187,14 +188,13 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testTheMarkerIsWrittenWhereTheVersionIsUp() throws Exception
     {
-        String main = bodyOf(code("src/TrainControl.java"), "public static void main(String[] args)");
+        // `main` is the application's and the updater's and the examples': cut out of TrainControl's own file
+        String main = mainOf("public class TrainControl\n");
 
         assertFalse(main.contains("reportStarted"), "TrainControl.main reports the start before init has run, so a"
             + " version that fails in its own start-up counts as started and is kept");
 
-        String model = code("src/org/traincontrol/marklin/MarklinControlStation.java");
-
-        String init = bodyOf(model, "public static MarklinControlStation init(String initIP");
+        String init = bodyOf("public static MarklinControlStation init(String initIP,");
 
         int display = init.indexOf("theUI.display()");
         int report = init.indexOf("SelfUpdate.reportStarted()", display);
@@ -216,7 +216,7 @@ public class testTheUpdateIsWiredEndToEnd
         assertTrue(leaving.contains("SelfUpdate.reportStarted()"), "cancelling the IP address leaves without saying"
             + " the version started, so an update into it is put back for the user's own choice");
 
-        inOrder(bodyOf(model, "public static void exitUnconnected(java.util.prefs.Preferences prefs, Runnable exit)"),
+        inOrder(bodyOf("public static void exitUnconnected(java.util.prefs.Preferences prefs, Runnable exit)"),
             "the first sync given up", "SelfUpdate.reportStarted()", "exit.run()");
     }
 
@@ -232,7 +232,7 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testTheUpdaterSaysItRunsFirst() throws Exception
     {
-        String main = bodyOf(code("src/org/traincontrol/util/JarUpdater.java"), "public static void main(String[] args)");
+        String main = mainOf("public final class JarUpdater\n");
 
         inOrder(main, "the updater's main", "Request.parse(args)", "writeMarker(request.running)", "update(request");
 
@@ -253,8 +253,7 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testTheExitStartsTheUpdaterLastOfAll() throws Exception
     {
-        String exit = bodyOf(code("src/org/traincontrol/gui/TrainControlUI.java"),
-            "private void WindowClosed(java.awt.event.WindowEvent evt)");
+        String exit = bodyOf("private void WindowClosed(java.awt.event.WindowEvent evt)");
 
         inOrder(exit, "the exit", "everyOpenWindowMaySettle()", "confirmExitAutonomyRunning", "model.saveState(false)",
             "this.updateHandOver.take()", "SelfUpdate.startUpdater(", "completeExitDiscard()", "System.exit(0)");
@@ -281,26 +280,24 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testTheUpdateLeavesThroughTheExitAsTheAutoTabAsks() throws Exception
     {
-        String ui = code("src/org/traincontrol/gui/TrainControlUI.java");
-
-        String close = bodyOf(ui, "private void closeForTheUpdate(");
+        String close = bodyOf("private void closeForTheUpdate(");
 
         assertTrue(close.contains("whenNoModalDialog(") && close.contains("closeNowForTheUpdate(")
             && close.contains("aModalDialogIsShowing"), "the update's exit no longer waits for an open dialog, so"
             + " System.exit can close one with the typing in it unapplied");
 
-        inOrder(bodyOf(ui, "private void closeNowForTheUpdate("), "the update's exit", "whyThisUpdateMustWait()",
+        inOrder(bodyOf("private void closeNowForTheUpdate("), "the update's exit", "whyThisUpdateMustWait()",
             "updateHandOver.exitWith(", "WindowClosed(null)");
 
-        String why = bodyOf(ui, "private String whyThisUpdateMustWait()");
+        String why = bodyOf("private String whyThisUpdateMustWait()");
 
         assertTrue(why.contains("theAutoTabWaits()") && why.contains("stagingFlowActive"), "the update asks less than"
             + " the Auto tab does, so a hand send between its click and its thread is not refused");
 
-        inOrder(bodyOf(ui, "private void downloadTheUpdate("), "Download & Update", "updateHandOver.begin()",
+        inOrder(bodyOf("private void downloadTheUpdate("), "Download & Update", "updateHandOver.begin()",
             "whyThisUpdateMustWait()");
 
-        inOrder(bodyOf(ui, "private boolean installTheDownload("), "the install", "whyNotAWholeJar(", "backupData()",
+        inOrder(bodyOf("private boolean installTheDownload("), "the install", "whyNotAWholeJar(", "backupData()",
             "closeForTheUpdate(");
     }
 
@@ -315,20 +312,17 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testOneBackupAtATime() throws Exception
     {
-        String ui = code("src/org/traincontrol/gui/TrainControlUI.java");
-
-        String backup = bodyOf(ui, "private BackupOutcome backupData()");
+        String backup = bodyOf("private BackupOutcome backupData()");
 
         assertTrue(backup.contains("synchronized (this.oneBackupAtATime)") && backup.contains("writeTheBackup()"),
             "backupData no longer holds one backup at a time");
 
-        int writes = 0;
-
-        for (int at = ui.indexOf("writeTheBackup("); at >= 0; at = ui.indexOf("writeTheBackup(", at + 1)) writes++;
+        // Asked of the whole program's code: the declaration and the one call.
+        int writes = SourceOf.occurrences("writeTheBackup(");
 
         assertEquals(writes, 2, "something other than backupData writes a backup, around its lock");
 
-        assertTrue(bodyOf(ui, "private void backupDataMenuItemActionPerformed(").contains("backupData()"),
+        assertTrue(bodyOf("private void backupDataMenuItemActionPerformed(").contains("backupData()"),
             "File > Backup does not go through backupData");
     }
 
@@ -379,115 +373,20 @@ public class testTheUpdateIsWiredEndToEnd
     }
 
     /**
-     * A source file without its comments, strings kept.
+     * A declaration's code, found wherever the program keeps it, without its comments and with its strings kept.
      */
-    private static String code(String path) throws Exception
+    private static String bodyOf(String signature)
     {
-        File file = new File(path);
-
-        assertTrue(file.isFile(), "cannot find " + file.getAbsolutePath() + " - run from the project root");
-
-        String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-
-        StringBuilder out = new StringBuilder(text.length());
-
-        for (int i = 0; i < text.length(); )
-        {
-            char c = text.charAt(i);
-
-            if (c == '"' || c == '\'')
-            {
-                int end = endOfLiteral(text, i);
-
-                out.append(text, i, end);
-
-                i = end;
-            }
-            else if (text.startsWith("//", i))
-            {
-                while (i < text.length() && text.charAt(i) != '\n') i++;
-            }
-            else if (text.startsWith("/*", i))
-            {
-                int end = text.indexOf("*/", i + 2);
-
-                i = end < 0 ? text.length() : end + 2;
-
-                out.append(' ');
-            }
-            else
-            {
-                out.append(c);
-
-                i++;
-            }
-        }
-
-        return out.toString();
+        return SourceOf.withoutComments(SourceOf.declaration(signature));
     }
 
     /**
-     * Where a string or character literal starting at `at` ends.
+     * The `main` of the class whose declaration starts with `classSignature`, without its comments.
      */
-    private static int endOfLiteral(String text, int at)
+    private static String mainOf(String classSignature)
     {
-        char quote = text.charAt(at);
-
-        int i = at + 1;
-
-        while (i < text.length())
-        {
-            char c = text.charAt(i);
-
-            if (c == '\\')
-            {
-                i += 2;
-
-                continue;
-            }
-
-            i++;
-
-            if (c == quote || c == '\n') break;
-        }
-
-        return i;
-    }
-
-    /**
-     * The body of the first member whose declaration starts with `signature`, braces matched outside literals.
-     */
-    private static String bodyOf(String code, String signature)
-    {
-        int at = code.indexOf(signature);
-
-        assertTrue(at >= 0, "no `" + signature + "` in the source");
-
-        int open = code.indexOf('{', at);
-
-        int depth = 0;
-
-        for (int i = open; i < code.length(); )
-        {
-            char c = code.charAt(i);
-
-            if (c == '"' || c == '\'')
-            {
-                i = endOfLiteral(code, i);
-
-                continue;
-            }
-
-            if (c == '{') depth++;
-
-            if (c == '}' && --depth == 0) return code.substring(open, i + 1);
-
-            i++;
-        }
-
-        fail("the body of `" + signature + "` never closes");
-
-        return null;
+        return SourceOf.withoutComments(SourceOf.declarationIn(SourceOf.fileDeclaring(classSignature),
+            "public static void main(String[] args)"));
     }
 
     private static String read(File file) throws Exception
