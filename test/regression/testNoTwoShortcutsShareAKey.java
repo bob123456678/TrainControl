@@ -136,13 +136,11 @@ public class testNoTwoShortcutsShareAKey
      *
      * **Measured by running the regexes**, which is how the first version of this got them wrong: it
      * said 10 and 15 from a reading, and floors of 8 and 12 would have let half the editor's handlers
-     * go invisible before anything reddened.  The scan finds **17 in the editor and 16 in the main
-     * window** - 17 because the `e.` alternative added afterwards also matches
-     * `LayoutEditor.receiveKeyEvent`, and a first re-measurement said 16 because it was taken before
-     * that.  Three below the real count, so that removing a shortcut is ordinary and losing a spelling
-     * is not.
+     * go invisible before anything reddened.  The scan of each window's own key handlers finds **20 in
+     * the editor and 16 in the main window** (2026-10-19).  A little below the real count, so that
+     * removing a shortcut is ordinary and losing a spelling is not.
      */
-    private static final int EDITOR_FLOOR = 14;
+    private static final int EDITOR_FLOOR = 17;
 
     private static final int MAIN_FLOOR = 14;
 

@@ -34730,7 +34730,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Says which layout the application is on - a folder of this computer's, or "" for the Central Station's - and
      * remembers a folder as the last of this computer's, which switching to the Central Station's does not forget
-     * (OB-308).  Every writer of the layout preference comes through here.
+     * (OB-308).  Every writer of the layout preference in this window comes through here.  The control station's
+     * fall-back to the Central Station's layout writes "" itself, which forgets nothing, since "" is never remembered.
      *
      * @param path the folder, or "" for the Central Station's layout
      */
