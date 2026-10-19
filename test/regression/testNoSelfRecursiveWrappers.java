@@ -83,10 +83,12 @@ public class testNoSelfRecursiveWrappers
 
     private static final String SESSION = "src/org/traincontrol/automationui/AutonomySession.java";
 
+    private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
+
     /**
      * The collaborators (FR-136), one row each: the field of the owner that holds it, the file it is declared in, its
      * class name - for the static delegators, which reach it as `Class.method(` rather than through the field - the
-     * owner's file and class name, and the prefix the collaborator calls its owner by (`ui.`, `owner.`).
+     * owner's file and class name, and the prefix the collaborator calls its owner by (`ui.`, `owner.`, `editor.`).
      */
     private static final String[][] COLLABORATORS = {
         { "backupAction", "src/org/traincontrol/gui/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
@@ -101,16 +103,26 @@ public class testNoSelfRecursiveWrappers
             "AutonomySession", "owner." },
         { "sessionRuns", "src/org/traincontrol/automationui/SessionRuns.java", "SessionRuns", SESSION,
             "AutonomySession", "owner." },
+        { "selectionOps", "src/org/traincontrol/gui/LayoutEditorSelection.java", "LayoutEditorSelection", EDITOR,
+            "LayoutEditor", "editor." },
+        { "reshapeOps", "src/org/traincontrol/gui/LayoutEditorReshape.java", "LayoutEditorReshape", EDITOR,
+            "LayoutEditor", "editor." },
+        { "undoOps", "src/org/traincontrol/gui/LayoutEditorUndo.java", "LayoutEditorUndo", EDITOR,
+            "LayoutEditor", "editor." },
     };
 
     /**
      * A delegator and the collaborator it hands to do not call each other for ever (FR-136).
      *
-     * The extractions leave a one-line delegator on the window and on the session wherever something outside a moved
-     * cluster calls it, and the moved code calls back into its owner through `ui` or `owner`.  The same mechanical edit
+     * The extractions leave a one-line delegator on the window, the session and the track editor wherever something
+     * outside a moved cluster calls it, and the moved code calls back into its owner through `ui`, `owner` or `editor`.
+     * The same mechanical edit
      * that made `syncWithCS2` call itself can make a delegator call its own name instead of the collaborator's, or make
      * the moved body call the owner's delegator that leads straight back to it.  Either is a StackOverflowError the
      * compiler accepts.
+     *
+     * Methods are told apart by name AND number of arguments: the editor's `deleteSelection()` hands to the collaborator's,
+     * which calls `editor.deleteSelection(true)`, a different method by design.
      *
      * The static delegators (`askAboutTheUpdate`, `whenNoModalDialog`, `routeNamedIn`, `detectImportFormat`) hand over as
      * `Class.method(` and the collaborator calls the owner's statics as `TrainControlUI.method(`, so both spellings are
@@ -121,7 +133,7 @@ public class testNoSelfRecursiveWrappers
      *
      * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails; so does making
      * UpdateFlow's static `whenNoModalDialog` call `TrainControlUI.whenNoModalDialog(`, or SessionRuns' `runs()` return
-     * `owner.runs()`.  And so does making TrainControlUI's `combineLinkedPages` delegator call `this.combineLinkedPages()`
+     * `owner.runs()`, or LayoutEditorUndo's `undo()` call `editor.undo()`.  And so does making TrainControlUI's `combineLinkedPages` delegator call `this.combineLinkedPages()`
      * (or a bare `combineLinkedPages()`) instead of `layoutFileActions.combineLinkedPages()`.
      */
     @Test
@@ -229,7 +241,8 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
-     * For each method declared at the class's top level, the names it calls through a prefix.
+     * For each method declared at the class's top level, the methods it calls through a prefix - each as `name/arguments`
+     * (the declared one too), so that one overload handing to another is not read as a loop.
      */
     private static java.util.Map<String, java.util.Set<String>> callsThrough(List<String> lines, String prefix)
     {
@@ -244,18 +257,42 @@ public class testNoSelfRecursiveWrappers
 
             if (name == null) continue;
 
+            String declared = name + "/" + arityOfTheDeclarationAt(lines, i);
+
             for (String line : bodyOf(lines, i))
             {
-                java.util.regex.Matcher m = call.matcher(withoutComments(line));
+                String code = withoutComments(line);
+
+                java.util.regex.Matcher m = call.matcher(code);
 
                 while (m.find())
                 {
-                    calls.computeIfAbsent(name, k -> new java.util.HashSet<>()).add(m.group(1));
+                    calls.computeIfAbsent(declared, k -> new java.util.HashSet<>())
+                        .add(m.group(1) + "/" + argumentCount(argumentsFrom(code, m.end())));
                 }
             }
         }
 
         return calls;
+    }
+
+    /**
+     * The text of a call's arguments: from just after its opening bracket to the bracket that closes it, or to the end of
+     * the line when the call runs on.
+     */
+    private static String argumentsFrom(String code, int from)
+    {
+        int depth = 1;
+
+        for (int at = from; at < code.length(); at++)
+        {
+            char c = code.charAt(at);
+
+            if (c == '(') depth++;
+            else if (c == ')' && --depth == 0) return code.substring(from, at);
+        }
+
+        return code.substring(from);
     }
 
     /**
