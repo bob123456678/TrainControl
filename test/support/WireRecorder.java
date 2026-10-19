@@ -49,6 +49,10 @@ import org.traincontrol.util.Conversion;
  * Lifted out of `regression.testTheReversalReachesTheTracks`, which had all of this privately and could
  * therefore only make the one comparative claim it makes.
  *
+ * **Every kind of command, read back** (FR-136 Phase 6): {@link #sentSince} parses each logged command into a
+ * {@link Sent}, and the filters pick the speed, function, direction, accessory and system (power, stop) commands, to
+ * one locomotive or accessory where a UID is given.
+ *
  * @author Adam
  */
 public final class WireRecorder
@@ -180,6 +184,208 @@ public final class WireRecorder
     {
         return directionCommandsSince(0);
     }
+
+    /**
+     * One command the control station tried to send, read back from its log line.
+     *
+     * The line is `CS2Message.toString`, which prints the command in hex ("Command: 0x6") and the data as hex bytes
+     * ("Data:   0x00|0x00|0x40|0x05|0x01|0x01"), so both are read back as the station would have been given them.
+     */
+    public static final class Sent
+    {
+        /** The command, as `CS2Message.CMD_*` names it. */
+        public final int command;
+
+        private final int[] data;
+
+        private Sent(int command, int[] data)
+        {
+            this.command = command;
+            this.data = data;
+        }
+
+        /**
+         * @return how many data bytes it carries; a question to the station carries fewer than a command does
+         */
+        public int length()
+        {
+            return this.data.length;
+        }
+
+        /**
+         * @return the locomotive's or accessory's UID, the first four bytes; 0 for the whole railway
+         */
+        public int uid()
+        {
+            return this.data.length < 4 ? -1
+                : (this.data[0] << 24) | (this.data[1] << 16) | (this.data[2] << 8) | this.data[3];
+        }
+
+        /**
+         * @return the byte after the UID: a function's number, an accessory's position, a direction, a system
+         * sub-command
+         */
+        public int fifth()
+        {
+            return this.data.length < 5 ? -1 : this.data[4];
+        }
+
+        /**
+         * @return the byte after that: 1 for a function switched on
+         */
+        public int sixth()
+        {
+            return this.data.length < 6 ? -1 : this.data[5];
+        }
+
+        /**
+         * @return a speed command's speed, as the locomotive's 0 to 100 (the wire carries ten times it)
+         */
+        public int speed()
+        {
+            return this.data.length < 6 ? -1 : ((this.data[4] << 8) | this.data[5]) / 10;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder s = new StringBuilder("0x" + Integer.toHexString(this.command) + " [");
+
+            for (int i = 0; i < this.data.length; i++) s.append(i == 0 ? "" : " ").append(this.data[i]);
+
+            return s.append("]").toString();
+        }
+    }
+
+    /**
+     * Every command the control station tried to send since a mark, in order.
+     *
+     * Only the lines it logs for a command it could not send are read: a packet handed to `receiveMessage` can be
+     * logged in the same format, and is not something the program sent.
+     *
+     * @param from a position returned by {@link #mark()}
+     * @return the commands
+     */
+    public List<Sent> sentSince(int from)
+    {
+        String unsent = org.traincontrol.util.I18n.f("network.transmissionDisabled", "");
+
+        List<Sent> sent = new java.util.ArrayList<>();
+
+        for (String line : since(from))
+        {
+            if (line == null || !line.startsWith(unsent)) continue;
+
+            java.util.regex.Matcher command = COMMAND.matcher(line);
+            java.util.regex.Matcher data = DATA.matcher(line);
+
+            if (!command.find() || !data.find()) continue;
+
+            List<Integer> values = new java.util.ArrayList<>();
+
+            java.util.regex.Matcher hex = BYTE.matcher(data.group(1));
+
+            while (hex.find()) values.add(Integer.parseInt(hex.group(1), 16));
+
+            int[] bytes = new int[values.size()];
+
+            for (int i = 0; i < bytes.length; i++) bytes[i] = values.get(i);
+
+            sent.add(new Sent(Integer.parseInt(command.group(1), 16), bytes));
+        }
+
+        return sent;
+    }
+
+    /**
+     * The speed commands sent to one locomotive since a mark: commands, not the questions a sync asks.
+     *
+     * @param from a position returned by {@link #mark()}
+     * @param uid the locomotive's UID (`MarklinLocomotive.getIntUID`)
+     * @return the commands, oldest first; {@link Sent#speed()} reads each one's speed
+     */
+    public List<Sent> speedCommandsSince(int from, int uid)
+    {
+        return to(from, CS2Message.CMD_LOCO_VELOCITY, uid, 6);
+    }
+
+    /**
+     * The function commands sent to one locomotive since a mark.
+     *
+     * @param from a position returned by {@link #mark()}
+     * @param uid the locomotive's UID
+     * @return the commands; {@link Sent#fifth()} is the function, {@link Sent#sixth()} 1 for on
+     */
+    public List<Sent> functionCommandsSince(int from, int uid)
+    {
+        return to(from, CS2Message.CMD_LOCO_FUNCTION, uid, 6);
+    }
+
+    /**
+     * The direction commands sent to one locomotive since a mark.
+     *
+     * @param from a position returned by {@link #mark()}
+     * @param uid the locomotive's UID
+     * @return the commands; {@link Sent#fifth()} is 1 for forward, 2 for backward
+     */
+    public List<Sent> directionCommandsSince(int from, int uid)
+    {
+        return to(from, CS2Message.CMD_LOCO_DIRECTION, uid, 5);
+    }
+
+    /**
+     * The commands sent since a mark to one accessory.
+     *
+     * @param from a position returned by {@link #mark()}
+     * @param uid the accessory's UID (`MarklinAccessory.UIDfromAddress(address - 1, type)`)
+     * @return the commands; {@link Sent#fifth()} is the position, 0 for turned (red) and 1 for straight (green)
+     */
+    public List<Sent> accessoryCommandsSince(int from, int uid)
+    {
+        return to(from, CS2Message.CMD_ACC_SWITCH, uid, 6);
+    }
+
+    /**
+     * The system commands of one kind sent since a mark, to the whole railway or to one locomotive.
+     *
+     * @param from a position returned by {@link #mark()}
+     * @param subCommand `CS2Message.CMD_SYSSUB_STOP` (power off), `CMD_SYSSUB_GO` (power on), `CMD_SYSSUB_HALT`
+     * (every train stops) or `CMD_SYSSUB_TRAINSTOP` (one train stops)
+     * @return the commands; {@link Sent#uid()} is the locomotive's for a train stop
+     */
+    public List<Sent> systemCommandsSince(int from, int subCommand)
+    {
+        List<Sent> found = new java.util.ArrayList<>();
+
+        for (Sent s : sentSince(from))
+        {
+            if (s.command == CS2Message.CMD_SYSTEM && s.fifth() == subCommand) found.add(s);
+        }
+
+        return found;
+    }
+
+    /** The commands of one kind to one UID that carry at least this many bytes. */
+    private List<Sent> to(int from, int command, int uid, int length)
+    {
+        List<Sent> found = new java.util.ArrayList<>();
+
+        for (Sent s : sentSince(from))
+        {
+            if (s.command == command && s.uid() == uid && s.length() >= length) found.add(s);
+        }
+
+        return found;
+    }
+
+    /** "Command: 0x6", as `CS2Message.toString` prints it. */
+    private static final java.util.regex.Pattern COMMAND = java.util.regex.Pattern.compile("Command: 0x([0-9a-fA-F]+)");
+
+    /** "Data:   0x00|0x00|...", as `CS2Message.toString` prints it, to the end of its line. */
+    private static final java.util.regex.Pattern DATA = java.util.regex.Pattern.compile("Data:([^\r\n]*)");
+
+    /** One byte of it. */
+    private static final java.util.regex.Pattern BYTE = java.util.regex.Pattern.compile("0x([0-9a-fA-F]{2})");
 
     /**
      * What was heard since a mark, for a failure message.
