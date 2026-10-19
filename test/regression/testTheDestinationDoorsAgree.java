@@ -1,13 +1,11 @@
 package regression;
 
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Every door that offers a destination asks the same question, and the "..." means the list was cut
@@ -51,24 +49,18 @@ public class testTheDestinationDoorsAgree
     @Test
     public void testEveryDoorThatOffersADestinationAsksTheRule() throws Exception
     {
+        // Each door is the method that gathers the destinations it offers, found wherever it is.
         final String[][] doors =
         {
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "the track diagram menu"},
-            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java", "the Locomotive commands tab"},
+            {"private static PathOptions gatherPathOptions(TrainControlUI ui, Point current)", "the track diagram menu"},
+            {"private List<List<Edge>> whatTheOperatorMayChoose(List<List<Edge>> paths)", "the Locomotive commands tab"},
         };
 
         for (String[] door : doors)
         {
-            java.io.File file = new java.io.File(door[0]);
-
-            assertTrue(file.exists(), "precondition: " + door[0] + " has to be readable, or this test "
-                + "reports every door as asking and means nothing");
-
-            String source = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-
             // COMMENTS STRIPPED, for the reason `testEveryManualDoorHandsOverAPrompt` gives one file
             // over: a guard that cannot tell an explanation from an instruction reports on prose.
-            String code = source.replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+            String code = SourceOf.withoutComments(SourceOf.declaration(door[0]));
 
             assertTrue(code.contains("isOfferableToOperator("),
                 door[1] + " (" + door[0] + ") offers destinations without asking"
@@ -131,23 +123,10 @@ public class testTheDestinationDoorsAgree
         // valid paths"*.  A second site sat outside the rule, for the case where the train has nowhere
         // at all to go - so the rule could be right and the symptom stay.  One site is what makes the
         // rule the whole answer, and counting them is the only way to say that from outside the class.
-        String menuSource = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java")),
-            StandardCharsets.UTF_8);
-
-        String menuCode = menuSource.replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\r\n]*", " ");
-
-        // Counted with indexOf rather than a regex: the marker is punctuation and a quote, and
+        // Counted as text rather than with a regex: the marker is punctuation and a quote, and
         // escaping that twice - once for Java, once for the pattern - is how a guard comes to
-        // search for something it does not mean.
-        String marker = "new JMenuItem(\"...\")";
-
-        int sites = 0;
-
-        for (int at = menuCode.indexOf(marker); at >= 0; at = menuCode.indexOf(marker, at + 1))
-        {
-            sites++;
-        }
+        // search for something it does not mean.  Over the whole program's code, comments blanked.
+        int sites = SourceOf.occurrences("new JMenuItem(\"...\")");
 
         assertEquals(sites, 1,
             "the menu draws the \"...\" in " + sites + " places. It must be decided in one, through"
@@ -193,42 +172,38 @@ public class testTheDestinationDoorsAgree
 
         int calls = 0;
 
-        try (java.util.stream.Stream<java.nio.file.Path> walk = Files.walk(Paths.get("src/org/traincontrol/gui")))
+        // Every file of the program, comments blanked, so a door added anywhere is counted without being listed.
+        String code = SourceOf.allCode();
+
+        java.util.regex.Matcher call = java.util.regex.Pattern
+            .compile("\\.(explainCannotStart|explainDestinationsGrouped|explainDestinations)\\(").matcher(code);
+
+        while (call.find())
         {
-            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) walk::iterator)
+            calls++;
+
+            // The arguments, to the matching parenthesis: a comma at depth one is a second argument.
+            int depth = 1;
+            boolean second = false;
+
+            for (int i = call.end(); i < code.length() && depth > 0; i++)
             {
-                if (!file.toString().endsWith(".java")) continue;
+                char c = code.charAt(i);
 
-                String code = new String(Files.readAllBytes(file), StandardCharsets.UTF_8)
-                    .replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+                if (c == '(') depth++;
+                else if (c == ')') depth--;
+                else if (c == ',' && depth == 1) second = true;
+            }
 
-                java.util.regex.Matcher call = java.util.regex.Pattern
-                    .compile("\\.(explainCannotStart|explainDestinationsGrouped|explainDestinations)\\(").matcher(code);
-
-                while (call.find())
-                {
-                    calls++;
-
-                    // The arguments, to the matching parenthesis: a comma at depth one is a second argument.
-                    int depth = 1;
-                    boolean second = false;
-
-                    for (int i = call.end(); i < code.length() && depth > 0; i++)
-                    {
-                        char c = code.charAt(i);
-
-                        if (c == '(') depth++;
-                        else if (c == ')') depth--;
-                        else if (c == ',' && depth == 1) second = true;
-                    }
-
-                    if (!second) untiered.add(file.getFileName() + ": " + call.group(1));
-                }
+            if (!second)
+            {
+                untiered.add(call.group(1) + " in `" + code.substring(Math.max(0, call.start() - 60), call.end()).trim()
+                    + "`");
             }
         }
 
-        assertTrue(calls >= 6, "precondition: the census found " + calls + " calls to the three explain methods under"
-            + " gui/, fewer than the diagram's two and the locomotive list's four - it is not reading the doors");
+        assertTrue(calls >= 6, "precondition: the census found " + calls + " calls to the three explain methods in the"
+            + " program, fewer than the diagram's two and the locomotive list's four - it is not reading the doors");
 
         assertTrue(untiered.isEmpty(), "a why-window asks autonomy's question whatever the Path Type, so on Manual it"
             + " gives reasons that stop nothing a hand-driven send does (REG4, GUI3-C1; Adam, OB-225).  Name the tier -"
