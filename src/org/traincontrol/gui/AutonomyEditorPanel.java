@@ -1265,8 +1265,11 @@ public class AutonomyEditorPanel extends JPanel
             int row = findings.getSelectedIndex();
 
             // AND ITS TEXT ON THE CLIPBOARD, for sharing (Adam, on MT-767: "when clicked, copy the warning to the
-            // clipboard for easy sharing")
-            if (row >= 0 && row < findingsModel.size()) copyNoticeToClipboard(findingsModel.get(row));
+            // clipboard for easy sharing") - a notice only: a heading has no severity (RSA75-C3)
+            if (row >= 0 && row < findingSeverity.size() && findingSeverity.get(row) != null)
+            {
+                copyNoticeToClipboard(findingsModel.get(row));
+            }
 
             if (row >= 0 && row < findingTiles.size() && findingTiles.get(row) != null)
             {
@@ -11616,19 +11619,18 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Puts a setup check notice on the system clipboard as plain text, as its list shows it: the one door both lists of
-     * notices (this editor's and the autonomy setup's) copy through when a notice is clicked (MT-767).  A clipboard
+     * Puts a setup check notice on the system clipboard as the list shows it, without its indent: the one door both lists
+     * of notices (this editor's and the autonomy setup's) copy through when a notice is clicked (MT-767).  The lists hold
+     * plain text, so nothing is stripped: a station named "Yard <old>" is copied as it is named (RSA75-C3).  A clipboard
      * another program holds, or none at all, leaves it uncopied and says nothing: the click's own work goes on.
      *
-     * @param shown the notice as the list holds it, markup or not
+     * @param shown the notice as the list holds it
      */
     static void copyNoticeToClipboard(String shown)
     {
         if (shown == null) return;
 
-        String plain = shown.replaceAll("(?i)<br\\s*/?>", " ").replaceAll("<[^>]*>", "")
-            .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&amp;", "&")
-            .trim();
+        String plain = shown.trim();
 
         if (plain.isEmpty()) return;
 

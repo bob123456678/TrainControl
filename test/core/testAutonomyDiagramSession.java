@@ -13258,6 +13258,32 @@ public class testAutonomyDiagramSession
         assertEquals(copied, expected, "a click on a notice did not copy its text to the clipboard (MT-767)");
 
         assertFalse(copied.contains("<"), "the copied notice carries markup, which is not plain text: " + copied);
+
+        // AND A HEADING IS NOT A NOTICE (RSA75-C3): clicking "Warnings" or a page's name leaves the clipboard alone
+        java.lang.reflect.Field severities = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingSeverity");
+
+        severities.setAccessible(true);
+
+        final java.util.List<?> severity = (java.util.List<?>) severities.get(panel);
+
+        int heading = -1;
+
+        for (int i = 0; i < severity.size() && heading < 0; i++) if (severity.get(i) == null) heading = i;
+
+        assertTrue(heading >= 0, "precondition: the editor's list has no heading row");
+
+        java.awt.datatransfer.StringSelection untouched = new java.awt.datatransfer.StringSelection("left alone");
+
+        clipboard.setContents(untouched, untouched);
+
+        final int row = heading;
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> list.setSelectedIndex(row));
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor), "left alone",
+            "a click on the heading " + list.getModel().getElementAt(row) + " was copied over the clipboard");
     }
 
     /** Selects the first row of the editor's list that says this and is about this square, as a click on it does. */

@@ -498,8 +498,12 @@ public class AutonomyViewerPanel extends JPanel
 
                 if (bounds == null || !bounds.contains(e.getPoint())) return;
 
-                // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767)
-                AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
+                // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767) - a notice only: a heading has no
+                // severity (RSA75-C3)
+                if (row < findingSeverity.size() && findingSeverity.get(row) != null)
+                {
+                    AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
+                }
 
                 org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
 
