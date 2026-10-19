@@ -453,9 +453,23 @@ until 2026-09-03 it did not say (`SV2-C7`).
   overlap on 2026-08-30, which damaged the operator's real railway. The JVM probe in `battery.sh` is
   what covers it now - it counts test JVMs machine-wide rather than trusting the lock.
 
-**Neither runner may be used while the other is running**, and no `.java`, `.properties` or `build.xml`
-may be edited while either is: both recompile the working tree, so an edit mid-run is a run that
-reports on code that never existed.
+**The lock is a count of test slots now** (FR-136 Phase 1a, `docs/tools/slots.sh`), one per four logical
+processors, from two to six, each a lock file beside the old one (which is slot 1).  Every run has its own
+data folder, preference node and temp folder, so runs no longer share anything but the screen:
+
+- `one.sh` takes one slot, and so runs beside a battery's lanes or another worker's run.  Two runs from the
+  same `TC_SCRATCH` would write over each other's results, so the second refuses.
+- `battery.sh` takes every slot.  With `TC_LANES=auto` (or a number) it runs the classes in that many JVMs
+  at once and gives back the slots its lanes do not need, always leaving one for a worker; without it, it
+  runs one class at a time as it always has.  `TC_CLASSES` names a file of classes to run instead of all.
+- The classes in `docs/tools/serial-lane.txt` need the machine to themselves (the keyboard focus, the
+  clipboard): a battery runs them first, alone, and `one.sh` takes every slot to run one.
+- Every refusal says "nothing was run", which is what a worker's retry loop looks for.
+
+`docs/tools/compare-batteries.py` compares two batteries' `tng-run` folders claim by claim.
+
+No `.java`, `.properties` or `build.xml` may be edited while either runner is going: both recompile the
+working tree, so an edit mid-run is a run that reports on code that never existed.
 
 ---
 

@@ -1,0 +1,18 @@
+# Test classes that need the machine to themselves (FR-136 Phase 1a).
+#
+# A battery with lanes runs these first, one at a time, holding every test slot; one.sh takes every slot to run
+# any of them.  Everything else may run beside other test JVMs, each with its own data folder, preference node and
+# temp folder.  These cannot, because what they check belongs to the whole desktop rather than to one JVM: which
+# window has the keyboard, and what is on the system clipboard.  Another JVM's window shown at the wrong moment
+# takes the focus, and another JVM's copy replaces the clipboard.
+#
+# Found by searching test/ for requestFocus, isFocusOwner, getFocusOwner, isFocused, KeyboardFocusManager,
+# toFront, postEvent, getSystemClipboard and java.awt.Robot (none uses Robot).  A new class that uses any of them
+# belongs here.  One class per line; the text after # says why.
+
+core.testAutonomyDiagramSession              # reads the system clipboard back after a copy
+core.testMassAssignLengths                   # waits for its prompt to have the keyboard focus, and skips without it
+regression.testTheKeyMapReachesTheWholeWindow  # posts key events, which go to whichever component has the focus
+regression.testTheWindowTakesTheKeyboard     # asks which component has the keyboard focus
+ui.testTheKeyboardDrag                       # reads the system clipboard back after a drag
+ui.testTheLengthPromptHasTheKeyboard         # brings its window to the front and asks for the keyboard focus
