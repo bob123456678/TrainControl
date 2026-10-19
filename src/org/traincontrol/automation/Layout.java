@@ -47,28 +47,22 @@ public class Layout
     // ms to wait between configuration commands
     public static final int CONFIGURE_SLEEP = 150;
 
-    // Base time budget for path validation: the actual deadline is PATH_VALIDATION_MS * (accessories on
-    // the path + 1) - see validatePathActuation - so paths with more accessories get proportionally more
-    // time.  Not final so tests can shorten it; the wait exits early on success and only blocks the full
-    // duration when an accessory never confirms.
+    // Base time budget for path validation: the deadline is PATH_VALIDATION_MS * (accessories on the path + 1) (see validatePathActuation), so longer
+    // paths get proportionally more time.  Not final so tests can shorten it; the wait exits early on success and blocks the full duration only when an
+    // accessory never confirms.
     public static int PATH_VALIDATION_MS = 1000;
 
-    // When true, configureAndLockPath verifies (via the CS echo) that every accessory on the path actually
-    // reached its commanded state before releasing the locomotive; on a persistent mismatch it stops that
-    // locomotive and releases its locks rather than letting it depart onto an unset path.  Tied to the
+    // When true, configureAndLockPath verifies (via the CS echo) that every accessory on the path reached its commanded state before releasing the
+    // locomotive; on a persistent mismatch it stops that locomotive and releases its locks rather than letting it depart onto an unset path.  Tied to the
     // "Path Integrity Validation" preference in the UI, but respected headless via this flag.  Default on.
     public static boolean PATH_INTEGRITY_VALIDATION = true;
 
-    // Every path validation failure is always logged to the console.  A UI popup is only raised once this
-    // many failures have accumulated, and - unlike the console log - at most ONCE per Layout instance:
-    // after that first popup, the console is considered sufficient and we do not keep interrupting the
-    // user with repeated popups for the rest of this session.  Tunable.
+    // Every path validation failure is always logged to the console.  A UI popup is only raised once this many failures have accumulated, and at most
+    // ONCE per Layout instance: after that the console is considered sufficient.  Tunable.
     public static int PATH_VALIDATION_ALERT_THRESHOLD = 3;
 
-    // Running count of path validation failures on this Layout.  Never reset - purely informational /
-    // used by tests.  Per-instance (not static) so a re-created Layout - e.g. after the user loads a
-    // different autonomy configuration or edits the layout - starts clean and never confounds old
-    // failures with new state.  Guarded by this Layout since its locomotives validate paths concurrently.
+    // Running count of path validation failures on this Layout.  Never reset; informational / used by tests.  Per-instance (not static) so a re-created
+    // Layout starts clean.  Guarded by this Layout since its locomotives validate paths concurrently.
     private int pathValidationFailureCount = 0;
 
     // Whether the one-time UI alert has already been shown for this Layout instance.  Guarded by this
@@ -90,9 +84,7 @@ public class Layout
     /**
      * How autonomy chooses between the routes a train could take.
      *
-     * An application preference rather than a property of a railway: it is how the user wants their
-     * trains to behave, and it has to survive a configuration being reloaded.  Static and volatile for
-     * the same reason - one running program, one answer, read on whichever thread is dispatching.
+     * Every rule ranks routes by a number, lower being better (`costOf`); the choice is held per layout in `pathPreference`.
      */
     public enum PathPreference
     {
@@ -127,13 +119,8 @@ public class Layout
         FEWEST_POINTS,
 
         /**
-         * The route past the MOST other stations, and its two companions below.
-         *
-         * The mirror of each rule above, and not a joke: a layout that should look busy wants its
-         * trains taking the long way round and calling past things, not going straight there.  Short
-         * is right for a timetable and wrong for a railway somebody is watching.
-         *
-         * Free to implement, since every rule ranks by a number - these are the same numbers negated.
+         * The route past the MOST other stations, and its two companions below: the mirror of each rule above, for a layout that should look busy
+         * rather than direct.  Free to implement, since every rule ranks by a number - these are the same numbers negated.
          */
         MOST_STATIONS,
 
@@ -143,83 +130,51 @@ public class Layout
 
         /**
          * The route to whichever station has gone longest without a train.
+         * The route to whichever station has gone longest without a train: on a layout with a favourite loop every other rule can leave the far corner
+         * untouched all evening, because none of them knows where trains have already been.
          *
-         * The rule an operator reaches for first, and the one that was missing: on a layout with a
-         * favourite loop, every other rule here can leave the far corner of the railway untouched all
-         * evening, because none of them knows or cares where trains have already been.  This one does.
-         *
-         * Ranked by when the destination last had an arrival, so a station never visited wins outright
-         * and the busiest loses.  Station PRIORITY still applies first, so this arranges the stations
-         * you are equally happy with rather than overriding the ones you are not.
+         * Ranked by when the destination last had an arrival, so a station never visited wins outright and the busiest loses.  Station PRIORITY still
+         * applies first, so this arranges the stations you are equally happy with rather than overriding the ones you are not.
          */
         LEAST_RECENTLY_VISITED,
 
         /**
          * Whatever is found first, which with the destinations shuffled is effectively at random.
-         *
-         * The DEFAULT, because it is what every version before this did.  A preference that changed
-         * how existing railways behave the moment its owner upgraded would not be a preference, it
-         * would be a regression with a switch next to it - and the people most affected drive from
-         * scripts and would never see the menu.
-         *
-         * It is also the cheapest, so defaulting to it means the upgrade costs nothing either: the
-         * ranked options have to enumerate the alternatives before they can compare them, and this one
-         * stops at the first route that works.
+         * The DEFAULT, because it is what every version before this did: a preference that changed how existing railways behave on upgrade would be a
+         * regression with a switch next to it.  It is also the cheapest, since the ranked options have to enumerate the alternatives before they can
+         * compare them and this one stops at the first route that works.
          */
         RANDOM,
 
         /**
          * Whatever is found first, with station priority ignored entirely (OB-156).
-         *
-         * The opposite of RANDOM, which sounds like this one and is not: RANDOM shuffles and then
-         * SORTS by priority, and the band gate settles the highest band before it looks at the next -
-         * so RANDOM is "at random among the highest-priority stations available", which is what a
-         * railway usually wants and what the name never said.
-         *
-         * This is the other thing Adam asked for: "one completely random, and one that respects
-         * priority".  Every reachable destination is equally likely, however its priority is set - so
-         * a station pushed down to -5 is visited exactly as often as one raised to 9.
-         *
-         * One line carries it: the priority comparator answers "equal" for this rule, and Collections.
-         * sort is stable, so the shuffle survives untouched.  The band gate needs no exception - both
-         * random rules take the first route that works, and the gate cannot fire until a ranked rule
-         * has stored one.
+         * The opposite of RANDOM, which shuffles and then SORTS by priority, so the band gate settles the highest band first: RANDOM is "at random among
+         * the highest-priority stations available".  This is the other thing Adam asked for ("one completely random, and one that respects priority"):
+         * every reachable destination is equally likely, so a station pushed down to -5 is visited exactly as often as one raised to 9.  One line carries
+         * it: the priority comparator answers "equal" for this rule, and Collections.sort is stable, so the shuffle survives untouched.  The band gate
+         * needs no exception (both random rules take the first route that works, and it cannot fire until a ranked rule has stored one).
          */
         RANDOM_ANY_STATION,
 
         /**
          * Priority weighed against how far away it is, rather than priority winning outright.
-         *
          * Adam: "one that balances priority vs distance as a ratio."
          *
-         * THE ONLY RULE THAT SEES PAST THE TOP PRIORITY BAND. Every other one ranks within a band,
-         * because pickPath settles the highest band before it looks at the next - which is what makes
-         * priority absolute and makes "highest priority available station" the behaviour already. A
-         * ratio is the rule under which a nearer, less important station may win, so for this one the
-         * band gate is opened and every candidate competes.
-         *
-         * Worth knowing before choosing it: with every priority left at its default this ranks purely
-         * by 1/distance, which is SHORTEST_LENGTH with extra arithmetic. It earns its place only on a
-         * railway where priorities have been set.
+         * THE ONLY RULE THAT SEES PAST THE TOP PRIORITY BAND: every other one ranks within a band, because pickPath settles the highest band before it
+         * looks at the next, which makes priority absolute.  A ratio lets a nearer, less important station win, so for this one the band gate is opened.
+         * With every priority at its default this ranks purely by 1/distance, which is SHORTEST_LENGTH with extra arithmetic; it earns its place only on
+         * a railway where priorities have been set.
          */
         BALANCED_PRIORITY
     }
 
     /**
      * Which routing logic this layout uses.
-     *
-     * PER LAYOUT, NOT PER PROGRAM. This was static, which made it a property of the running
-     * application: one value shared by every configuration, surviving one being swapped out for
-     * another, and loaded from the UI preferences by the window's menu builder - so it did not travel
-     * with the configuration it belonged to, and anything running autonomy without opening that window
-     * was on RANDOM whatever had been chosen.
-     *
-     * Adam: "Let's update it so that the preference is written into the autonomy config, not the UI
-     * preferences.  that way it travels with the config, not the UI."
-     *
-     * It reaches the file through the road every other run-wide setting already uses: toJSON writes it,
-     * captureFromLayout copies every top-level key into the configuration's globals, and the builder
-     * puts them back for fromJSON.
+     * PER LAYOUT, NOT PER PROGRAM, so it travels with the configuration it belongs to (Adam: "Let's update it so that the preference is written into the
+     * autonomy config, not the UI preferences.  that way it travels with the config, not the UI."); a static, loaded from the UI preferences by the
+     * window's menu builder, left anything running autonomy without opening that window on RANDOM.  It reaches the file through the road every other
+     * run-wide setting uses: toJSON writes it, captureFromLayout copies every top-level key into the configuration's globals, and the builder puts them
+     * back for fromJSON.
      */
     private volatile PathPreference pathPreference = PathPreference.RANDOM;
 
@@ -300,40 +255,21 @@ public class Layout
 
         int length = Math.max(1, lengthOf(path));
 
-        // WHAT A STATION IS WORTH, which must never be zero or below (RC-B2).
+        // WHAT A STATION IS WORTH, which must never be zero or below (RC-B2).  At and above zero this is priority plus one, times a million, because the
+        // default priority is ZERO: a bare priority/distance would make every ordinary station score 0 however close it is, so among unprioritised ones
+        // everything would tie.  The baseline means an unprioritised railway ranks purely by 1/distance (Over the Shortest Track), and each step of
+        // priority multiplies what a station is worth against the track it costs to reach.
         //
-        // At and above zero this is priority plus one, times a thousand, because the default priority
-        // is ZERO. A bare priority/distance makes every ordinary station score 0 however close it is,
-        // so the rule could only ever choose a station somebody had prioritised, and among
-        // unprioritised ones everything would tie. The baseline means an unprioritised railway ranks
-        // purely by 1/distance - which is Over the Shortest Track - and each step of priority
-        // multiplies what a station is worth against the track it costs to reach.
+        // BELOW ZERO IT SHRINKS INSTEAD OF GOING NEGATIVE: negative priorities are supported and meant (Point.setPriority takes them, and the editor
+        // says negatives are "perfectly valid"); at -1 a zero numerator made every route to that station score 0, and at -2 and below a negative
+        // numerator divided by a larger length gets LARGER, so "go here less" was read as "go here the long way round".  Shrinking rather than clamping
+        // at 1, because a clamp ties every de-prioritised station with an ordinary one.  Below zero a station is worth 1/(1 - priority) of an ordinary
+        // one: half at -1, a third at -2, a sixth at -5, always positive, always below what priority 0 gets, and ordered among themselves.
         //
-        // BELOW ZERO IT SHRINKS INSTEAD OF GOING NEGATIVE, and until RC-B2 it did not.
-        //
-        // Negative priorities are supported and meant - Point.setPriority takes them and the editor
-        // says this is a field "where negatives are perfectly valid" - and the baseline above was
-        // reasoned about only from a floor of zero. At -1 the numerator was 0, so every route to that
-        // station scored 0 and distance stopped mattering. At -2 and below it was NEGATIVE, and
-        // dividing a negative by a larger length makes it LARGER: among de-prioritised stations the
-        // rule picked the most distant route it could find. "Go here less" was read as "go here the
-        // long way round".
-        //
-        // Shrinking rather than clamping at 1. A clamp stops the inversion and then ties every
-        // de-prioritised station with an ordinary one, which is a different wrong answer. Below zero a
-        // station is worth 1/(1 - priority) of an ordinary one: half at -1, a third at -2, a sixth at
-        // -5 - always positive, always below what priority 0 gets, and ordered among themselves.
-        // Nothing at or above zero changes.
-        //
-        // A MILLION RATHER THAN A THOUSAND, and in long (RC-B8). This is integer division, so the
-        // ratio ties at zero for every route longer than `worth` - and at a thousand, `worth` for a
-        // de-prioritised station was at most 500, so on any layout with real lengths every route to it
-        // scored 0 and distance stopped mattering. That is exactly the symptom this arithmetic was
-        // rewritten to remove, moved rather than removed.
-        //
-        // It cannot be pushed away entirely; integer division always ties eventually. What it can be
-        // is pushed past anything real: the tie needs a route longer than 1000000/(1 - priority), so
-        // half a million tiles at -1, and still a thousand at -1000. Every ordering below that holds.
+        // A MILLION RATHER THAN A THOUSAND, and in long (RC-B8): this is integer division, so the ratio ties at zero for every route longer than
+        // `worth`, and at a thousand a de-prioritised station's `worth` was at most 500, so on any layout with real lengths distance stopped mattering.
+        // It cannot be pushed away entirely; it is pushed past anything real (the tie needs a route longer than 1000000/(1 - priority), half a million
+        // tiles at -1).
         long worth = end.getPriority() >= 0
             ? (end.getPriority() + 1L) * 1000000L
             : 1000000L / (1L - end.getPriority());
@@ -345,27 +281,18 @@ public class Layout
     /**
      * How long a route is, from the lengths set on its tiles.
      *
-     * AN EDGE WITH NO LENGTH COUNTS ONE, and without that this whole ranking was a tie at zero. Only 18
-     * of the 132 edges in the derived graph carry a recorded length, so every route scored 0, every
-     * route tied, and SHORTEST_LENGTH and LONGEST_LENGTH chose the same route as each other - which is
-     * what "the setting does nothing" looks like from outside.
+     * AN EDGE WITH NO LENGTH COUNTS ONE, and without that this whole ranking was a tie at zero: only 18 of the 132 edges in the derived graph carry a
+     * recorded length, so every route scored 0, and SHORTEST_LENGTH and LONGEST_LENGTH chose the same route as each other (Adam: "a min length option
+     * that tries to minimize total track length, where we count each s88 as length 1 by default.").  An edge runs from one sensor to the next, so
+     * crossing one is one s88's worth of track until somebody says otherwise.
      *
-     * Adam: "a min length option that tries to minimize total track length, where we count each s88 as
-     * length 1 by default." An edge runs from one sensor to the next, so crossing one is one s88's
-     * worth of track until somebody says otherwise.
+     * THE FLOOR ONLY WORKS BECAUSE THE UNITS ARE SMALL (LE2-B9): if lengths ran to tens or hundreds, an unmeasured edge counting 1 would make
+     * SHORTEST_LENGTH route AROUND every measured section.  On this railway they are 1 to 6 in the hand-built graph and 2 to 4 in the derived one, so
+     * the floor is the same size as the smallest real edge.  It would not hold for a railway measured in centimetres; if lengths ever grow, the floor
+     * needs to become proportional to the measured ones rather than a flat 1.
      *
-     * THE FLOOR ONLY WORKS BECAUSE THE UNITS ARE SMALL, and that was measured rather than assumed
-     * (LE2-B9). A reviewer pointed out that if lengths ran to tens or hundreds, an unmeasured edge
-     * counting 1 would make SHORTEST_LENGTH route AROUND every measured section - the opposite of what
-     * it says. On this railway they are 1 to 6 in the hand-built graph and 2 to 4 in the derived one,
-     * so the floor is the same size as the smallest real edge and the ranking holds.
-     *
-     * It would not hold for a railway measured in centimetres. If lengths ever grow, this needs to
-     * become a floor proportional to the measured ones rather than a flat 1.
-     *
-     * AN EDGE ANSWERED 0 COUNTS 0 (Adam, 2026-09-25: *"Yes, count answered 0 as 0"*).  The floor is for
-     * track nobody has measured; an answered 0 is a measurement (`Edge.isMeasured`), as every length rule reads it - the
-     * own-tail one since OB-300 - and counted as 1 it made a route through sensors side by side look longer than it is.
+     * AN EDGE ANSWERED 0 COUNTS 0 (Adam: *"Yes, count answered 0 as 0"*).  The floor is for track nobody has measured; an answered 0 is a measurement
+     * (`Edge.isMeasured`), as every length rule reads it, and counted as 1 it made a route through sensors side by side look longer than it is.
      */
     private int lengthOf(List<Edge> path)
     {
@@ -433,15 +360,10 @@ public class Layout
     /**
      * What "this station" means when recording a visit: the SQUARE, not the arrival-side copy.
      *
-     * By block where a Point has one, exactly as sensorsOn counts, and by the Point's own identity
-     * otherwise - a hand-built graph has no blocks and its Points already are one square each.
-     *
-     * Keying by uniqueId made the whole preference useless on the graphs it was written for. A train
-     * arriving at Tunnel by its north copy recorded nothing about the south copy, so a later route to
-     * the south copy found no visit and won outright as "never visited" - which on a derived graph is
-     * every station, every time. The rule degraded to random, and worse than random: once every
-     * station had one visited side, the just-visited ones kept beating the far corner nobody had been
-     * near, which is the exact opposite of what it promises.
+     * By block where a Point has one, exactly as sensorsOn counts, and by the Point's own identity otherwise (a hand-built graph has no blocks and its
+     * Points already are one square each).  Keying by uniqueId made the whole preference useless on derived graphs: a train arriving at Tunnel by its
+     * north copy recorded nothing about the south copy, so a later route to the south copy won outright as "never visited", which on a derived graph is
+     * every station, every time, and the just-visited ones kept beating the far corner nobody had been near.
      */
     private String recencyKeyOf(Point point)
     {
@@ -462,19 +384,14 @@ public class Layout
     /**
      * The visit history, so a rebuild can put it back (AUR-C3).
      *
-     * **A session is longer than a `Layout`.**  This map says it is kept in memory because it describes
-     * this session's running - but `parseAuto` replaces the whole object on every setup gesture, and
-     * applying a diagram edit, placing a locomotive or loading a configuration all come through there.
-     * So `LEAST_RECENTLY_VISITED` went back to knowing nothing each time, and every station read as
-     * never visited: random, and then worse than random once the near ones started being re-visited.
+     * **A session is longer than a `Layout`.**  `parseAuto` replaces the whole object on every setup gesture (applying a diagram edit, placing a
+     * locomotive or loading a configuration), so `LEAST_RECENTLY_VISITED` went back to knowing nothing each time, and every station read as never
+     * visited: random, and then worse than random once the near ones started being re-visited.
      *
-     * **Keyed by POINT NAME, not by the key the rule uses** (FXV-C5, second round).  `recencyKeyOf` is the
-     * block, or failing that `getUniqueId` - and unique ids come from a global allocator that hands a new one
-     * to every Point built, so a rebuilt railway's squares have different ids.  Carried over as they stood,
-     * every entry for a point with no block was dead weight the rule could never match: the map moved and
-     * nothing could read it.  A name survives a rebuild of the same railway, which is the case this is for.
-     *
-     * A copy, because the caller holds it across the moment the old layout is invalidated.
+     * **Keyed by POINT NAME, not by the key the rule uses** (FXV-C5): `recencyKeyOf` is the block, or failing that `getUniqueId`, and unique ids come
+     * from a global allocator that hands a new one to every Point built, so carried over as they stood, every entry for a point with no block would be
+     * dead weight the rule could never match.  A name survives a rebuild of the same railway.  A copy, because the caller holds it across the moment
+     * the old layout is invalidated.
      *
      * @return where trains have been, by point name
      */
@@ -495,10 +412,8 @@ public class Layout
     /**
      * Puts a previous layout's visit history back after a rebuild (AUR-C3).
      *
-     * Keyed by POINT NAME on the way in, and translated back into this layout's own keys here (FNL-C4).
-     * This used to say "block or unique id, which survives a rebuild" - unique ids do not: they come from
-     * a global allocator, so a rebuilt railway's squares get new ones.  A name this configuration does not
-     * have is dropped, which is the same answer as never having been there.
+     * Keyed by POINT NAME on the way in, and translated back into this layout's own keys here (FNL-C4): unique ids do not survive a rebuild (they come
+     * from a global allocator), so a name this configuration does not have is dropped, which is the same answer as never having been there.
      *
      * @param history what the outgoing layout knew
      */
@@ -506,12 +421,9 @@ public class Layout
     {
         if (history == null || history.isEmpty()) return;
 
-        // TRANSLATED BACK INTO THIS RAILWAY'S OWN KEYS.
-        //
-        // The names come from the outgoing layout; the keys the rule reads belong to this one.  A name
-        // this configuration does not have is simply dropped, which also answers the other door
-        // `parseAuto` serves (FXV-C5): the configuration text box takes any railway the operator pastes
-        // in, and a station that is not on it has never been visited.
+        // TRANSLATED BACK INTO THIS RAILWAY'S OWN KEYS: the names come from the outgoing layout and the keys the rule reads belong to this one.  A name
+        // this configuration does not have is simply dropped, which also answers the other door `parseAuto` serves (FXV-C5): the configuration text box
+        // takes any railway the operator pastes in, and a station that is not on it has never been visited.
         for (java.util.Map.Entry<String, Long> been : history.entrySet())
         {
             Point here = this.getPoint(been.getKey());
@@ -521,11 +433,8 @@ public class Layout
     }
 
     /**
-     * Records an arrival at a point, for a test that needs a known visit history.
-     *
-     * The real recording happens at the end of executePath, which means driving a train - minutes of
-     * simulation to establish a fact that takes a line to state.  Exposed rather than reached for with
-     * reflection, and named so nobody mistakes it for part of the running machinery.
+     * Records an arrival at a point, for a test that needs a known visit history: the real recording happens at the end of executePath, which means
+     * driving a train.  Exposed rather than reached for with reflection, and named so nobody mistakes it for part of the running machinery.
      *
      * @param pointName the point that has just had a train
      */
@@ -533,9 +442,8 @@ public class Layout
     {
         Point at = this.getPoint(pointName);
 
-        // By unique id, which is what the real recording uses.  Keying by NAME here made the lookup
-        // miss every time, so every station looked never-visited and the preference silently did
-        // nothing - which the test caught, having been written to fail if it did nothing.
+        // By `recencyKeyOf`, which is what the real recording uses: keying by NAME here made the lookup miss every time, so every station looked
+        // never-visited and the preference silently did nothing.
         if (at != null) this.lastArrival.put(recencyKeyOf(at), System.currentTimeMillis());
     }
 
@@ -564,28 +472,20 @@ public class Layout
     /**
      * How many locomotive threads are alive, including any between one path and the next.
      *
-     * isRunning() used to be "the flag, or somebody is on a path", and there is a window where neither
-     * is true and a train is nevertheless about to move: the thread has passed its `while (running)`
-     * check and is inside pickPath - a shuffle, a sort and a breadth-first search of the whole graph -
-     * and does not appear in activeLocomotives until executePath registers it.
-     *
-     * So a graceful stop could report itself finished while a locomotive was one instruction from
-     * departing, and everything that asks "is it safe to edit now" believed it: moveLocomotive refuses
-     * while running and would accept, and the interface re-enables what it disables during a run.  The
-     * timetable test caught it - it waited for the layout to stop, got its answer, and had its very
-     * next edit refused by the train it had waited for.
-     *
-     * Counted from the moment the thread starts to the moment it exits, so the window closes exactly.
+     * isRunning() used to be "the flag, or somebody is on a path", and there is a window where neither is true and a train is nevertheless about to
+     * move: the thread has passed its `while (running)` check and is inside pickPath (a shuffle, a sort and a breadth-first search of the whole graph)
+     * and does not appear in activeLocomotives until executePath registers it.  So a graceful stop could report itself finished while a locomotive was
+     * one instruction from departing, and everything that asks "is it safe to edit now" believed it.  Counted from the moment the thread starts to the
+     * moment it exits, so the window closes exactly.
      */
     private final java.util.concurrent.atomic.AtomicInteger locomotiveThreads =
         new java.util.concurrent.atomic.AtomicInteger();
 
     /**
-     * The timetable entries alive, each counted from before its thread starts until it leaves (RSA3-C5) - including
-     * while it pauses between refusals, when no journey of it is under way - and the timetable's own loop while it
-     * dispatches them, pausing between entries (RSA4-C1).  Uncounted, a run the Yes had stopped read
-     * idle while an entry paused; its call returned, the next run began, and the entry woke into that run and stopped it
-     * at its stuck limit, blaming the track.
+     * The timetable entries alive, each counted from before its thread starts until it leaves (RSA3-C5) - including while it pauses between refusals,
+     * when no journey of it is under way - and the timetable's own loop while it dispatches them, pausing between entries (RSA4-C1).  Uncounted, a run
+     * the Yes had stopped read idle while an entry paused; the next run began, and the entry woke into that run and stopped it at its stuck limit,
+     * blaming the track.
      */
     private final java.util.concurrent.atomic.AtomicInteger timetableEntries =
         new java.util.concurrent.atomic.AtomicInteger();
@@ -625,27 +525,17 @@ public class Layout
     /**
      * Locomotives that have locked a path but are not yet running it.
      *
-     * The cap on how many trains may be out at once was counted from activeLocomotives, and a
-     * locomotive does not appear there until executePath registers it - which is AFTER the path has
-     * been locked, the accessories thrown, and validatePathActuation has waited for them to confirm.
-     * That wait deliberately holds no lock and takes up to a second per accessory, so the gap between
-     * "this train has claimed its route" and "this train is counted" is seconds wide.
+     * The cap on how many trains may be out at once was counted from activeLocomotives, and a locomotive does not appear there until executePath
+     * registers it, AFTER the path has been locked, the accessories thrown, and validatePathActuation has waited for them to confirm (seconds).  Two
+     * trains taking disjoint routes could both cross that gap: each checked the cap, each saw the other uncounted, and both went.  The track was never
+     * at risk (the edges are exclusively locked either way), but a cap is usually set for something the model cannot see, like what a booster will carry.
      *
-     * Two trains taking disjoint routes could both cross it: each checked the cap, each saw the other
-     * uncounted, and both went. The track was never at risk - the edges are exclusively locked either
-     * way - but a cap is usually set for something the model cannot see, like what a booster will
-     * carry, and quietly running more trains than asked is not a small thing to get wrong.
+     * Claimed inside the same monitor that locks the path, so the check and the claim cannot be separated, and given up when the locomotive is
+     * registered or the path is released.
      *
-     * Claimed inside the same monitor that locks the path, so the check and the claim cannot be
-     * separated, and given up when the locomotive is registered or the path is released.
-     *
-     * AND IT CARRIES THE PATH ITSELF, not merely the fact that one was claimed (RC-A10).
-     *
-     * This was a Set, and the path was thrown away - so for the whole of that seconds-wide gap
-     * getActiveAccs could not say which accessories the dispatch had already thrown, and an
-     * s88-triggered route with nobody present could move a turnout on a half-configured path with the
-     * route guard having nothing to refuse it with.  Membership means exactly what it always did;
-     * there is simply an answer attached to it now.
+     * AND IT CARRIES THE PATH ITSELF, not merely the fact that one was claimed (RC-A10): for the whole of that seconds-wide gap getActiveAccs could not
+     * otherwise say which accessories the dispatch had already thrown, and an s88-triggered route with nobody present could move a turnout on a
+     * half-configured path with the route guard having nothing to refuse it with.
      */
     private final Map<Locomotive, List<Edge>> takingPath;
 
@@ -660,13 +550,9 @@ public class Layout
     /**
      * Edges of a running path that the train has completely finished with - tail and all.
      *
-     * Separate from the LOCK, deliberately, because they answer different questions.  The lock asks
-     * "may another train be routed here", and with atomicRoutes on the answer is deliberately no for
-     * the whole run.  This asks "is there still a train on top of this", and once the tail has gone
-     * past, the answer is no whatever the lock says.
-     *
-     * Adam, 2026-08-25: "once a train passes, signals on the route, but behind the train, should
-     * still be allowed to be changed by auto routes."
+     * Separate from the LOCK, deliberately: the lock asks "may another train be routed here", and with atomicRoutes on the answer is deliberately no for
+     * the whole run; this asks "is there still a train on top of this", and once the tail has gone past, the answer is no whatever the lock says (Adam:
+     * "once a train passes, signals on the route, but behind the train, should still be allowed to be changed by auto routes.").
      */
     private final Map<Locomotive, Set<Edge>> clearedEdges;
 
@@ -684,21 +570,13 @@ public class Layout
     /**
      * The monitor for the pending-s88 bookkeeping, which is NOT the layout monitor.
      *
-     * It used to be, and that put a RUNNING train behind a train that was still being dispatched.
-     * configureAndLockPath holds the layout monitor across its whole lock loop - deliberately, because
-     * claiming a path has to be atomic - and that loop sleeps CONFIGURE_SLEEP per edge and again per
-     * accessory inside configureEdge, so it is held for seconds on a long path.  Meanwhile every
-     * locomotive already under way calls updatePendingS88 immediately before waiting for its next
-     * sensor, and that needed the same monitor.
-     *
-     * So a second train could be blocked here while its own train crossed the sensor it was about to
-     * start waiting for AND cleared it again.  waitForOccupiedFeedback tests a LEVEL, so by the time
-     * it ran the sensor read clear: it then waited for the next occupancy of a sensor the train had
-     * already passed, and drove on without slowing or stopping.
-     *
-     * Nothing else waits on or notifies the layout monitor - waitForS88Reached and updatePendingS88
-     * are the only pair - so moving them here costs nothing and unpicks the two jobs.  (`waitForTheRunToRecord`
-     * waits here too since RSA56-C1, briefly and never while it reads the feedback store.)
+     * It used to be, and that put a RUNNING train behind a train that was still being dispatched: configureAndLockPath holds the layout monitor across
+     * its whole lock loop (deliberately, claiming a path has to be atomic) and sleeps CONFIGURE_SLEEP per edge and per accessory, so for seconds on a
+     * long path, while every locomotive already under way calls updatePendingS88 immediately before waiting for its next sensor.  A train blocked there
+     * could cross the sensor it was about to wait for AND clear it again; waitForOccupiedFeedback tests a LEVEL, so it then waited for the next
+     * occupancy of a sensor the train had already passed, and drove on without slowing or stopping.  Nothing else waits on or notifies the layout
+     * monitor (waitForS88Reached and updatePendingS88 are the only pair); `waitForTheRunToRecord` waits here too (RSA56-C1), briefly and never while it
+     * reads the feedback store.
      */
     private final Object pendingS88Monitor = new Object();
     
@@ -744,18 +622,11 @@ public class Layout
     /**
      * How long a timetable entry may go on being unexecutable before the run gives up, in ms.
      *
-     * A TIME rather than a count of attempts, because the pause between attempts is the user's own
-     * delay setting, which ranges from nothing to tens of seconds - so a count of attempts would mean
-     * a wildly different wall-clock bound on one layout than on another, and the thing being bounded
-     * here is how long a train stands still.
-     *
-     * (An earlier version of this said the pause "may be zero".  It may not: pacedWait falls back to
-     * COMPLETION_POLL when both delay settings are zero, precisely so that no wait loop spins.  The
-     * conclusion was right and the reason was wrong.)
-     *
-     * Minutes, deliberately. A train in a parallel timetable may legitimately wait a long while for
-     * another to clear its way, and ending a run that would have worked is worse than a late finish.
-     * Not final so a test can shorten it; there is no user-facing setting for it.
+     * A TIME rather than a count of attempts, because the pause between attempts is the user's own delay setting, which ranges from nothing to tens of
+     * seconds (pacedWait falls back to COMPLETION_POLL when both delay settings are zero, so no wait loop spins), so a count would mean a wildly
+     * different wall-clock bound on one layout than on another, and the thing bounded is how long a train stands still.  Minutes, deliberately: a train
+     * in a parallel timetable may legitimately wait a long while for another to clear its way, and ending a run that would have worked is worse than a
+     * late finish.  Not final so a test can shorten it; there is no user-facing setting for it.
      */
     public static volatile long TIMETABLE_STUCK_MS = 180000;
 
@@ -775,40 +646,20 @@ public class Layout
     /**
      * Where each locomotive was standing when this railway last turned it round at a destination.
      *
-     * **The SQUARE, not a flip owed (REV9-A1).**  This used to be a set of names whose membership was
-     * a parity - two turns cancelling, because the window applied each one by FLIPPING the facing the
-     * setup had recorded.  That pivot is unsound at the only moment it is ever read: behaviour.md 6a
-     * says a run moves trains and nothing writes where they ended up back to the setup, so at the
-     * arrival square the recorded facing is absent or belongs to the previous occupant.  A flip of it
-     * lost the turn or wrote it backwards, and OB-190 is what that looks like from the outside.
+     * **The SQUARE, not a flip owed (REV9-A1).**  A parity of names (two turns cancelling) assumed the window applies each turn by FLIPPING the facing
+     * the setup recorded, which is unsound at the only moment it is read: behaviour.md 6a says a run moves trains and nothing writes where they ended
+     * up back to the setup, so at the arrival square the recorded facing is absent or belongs to the previous occupant (OB-190).  Naming the Point
+     * makes the answer ABSOLUTE: a train that has just turned faces the way it came in (behaviour.md 4), the arrival wrote that side onto this very
+     * Point before turning it, and applying it twice writes the same thing twice.
      *
-     * Naming the Point makes the answer ABSOLUTE instead: a train that has just turned faces the way
-     * it came in (behaviour.md 4), the arrival wrote that side onto this very Point before turning it,
-     * and applying it twice writes the same thing twice.  So there is nothing for a parity to protect
-     * against, and the shuttle that turned at both ends - which the parity existed for - is simply
-     * written from the end it is standing at.
+     * **Dropped when the train arrives somewhere without turning**: a record only means anything while the train is still standing where it turned;
+     * once it has run on, the graph is already right, and otherwise the drain would be handed a square the train had left.
      *
-     * **Dropped when the train arrives somewhere without turning**, which is the other half of making
-     * this absolute.  A record only means anything while the train is still standing where it turned;
-     * once it has run on, the arrival has placed it on the copy its journey ended at and the graph is
-     * already right.  Without the drop, an autonomy session that turned a train at a terminus and then
-     * ran it on somewhere else would hand the drain a square the train had left.
-     *
-     * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same
-     * as always."**
-     *
-     * A reversal at the arrival is one the RAILWAY made, and it is the one direction change nothing
-     * was following.  The echo of it lands inside the run’s own pause, while `isRunning()` is still
-     * true, so the window takes the baseline-only branch; and when the run ends the idle reconcile
-     * LEVELS the baseline rather than following it.  Both of those are right for a command somebody
-     * else sent mid-run - which is what they were written for - and both are wrong for this one,
-     * because this one is not news arriving late: it is a thing this code did on purpose and knows
-     * about at the moment it does it.
-     *
-     * So it is recorded here, where it is certain, and the window drains it when the railway next goes
-     * idle.  Recorded rather than acted on: writing a facing means writing the SETUP, and nothing in
-     * this class may call the window - a rule this file's own tests pin.
-     *
+     * Recorded at the destination (Adam: **"it should be recorded at the destination.  Otherwise, it's just the same as always."**).  A reversal at
+     * the arrival is one the RAILWAY made, the one direction change nothing was following: its echo lands inside the run's own pause while
+     * `isRunning()` is true, so the window takes the baseline-only branch, and when the run ends the idle reconcile LEVELS the baseline rather than
+     * following it.  So it is recorded here, where it is certain, and the window drains it when the railway next goes idle: recorded rather than acted
+     * on, because writing a facing means writing the SETUP and nothing in this class may call the window (a rule this file's own tests pin).
      * Concurrent because driver threads write it and the event thread drains it.
      */
     private final java.util.Map<String, String> reversedOnArrival =
@@ -819,22 +670,15 @@ public class Layout
     private List<Integer> activateRouteIDs;
 
     // Track the layout version so we know whether an orphan instance of this class is stale
-    // Volatile because the thread that writes it is never the thread that reads it: it is written
-    // once, by whichever thread loads a layout, and read by every driving thread at six points in its
-    // loop and by both timetable waits.  Without it a locomotive can keep reading the value it cached
-    // before the reload and drive a whole path against a graph that has been retired.  Every other
-    // piece of cross-thread state in this class - running, stagingInProgress, timetableExecuting, and
-    // isValid since GST-C1 - is volatile; this one was missed.
+    // Volatile because the thread that writes it (whichever loads a layout) is never the thread that reads it (every driving thread at six points in its
+    // loop, and both timetable waits): without it a locomotive can keep reading the value it cached before the reload and drive a whole path against a
+    // retired graph.  Every other piece of cross-thread state in this class is volatile or concurrent.
     private static volatile int layoutVersion = 0;
 
-    // Whether a staging flow owns this Layout - set at the commit point and cleared when the flow
-    // unwinds, mirroring the UI flag of the same lifetime.
-    //
-    // It lives here rather than only on the UI because six guards ask the *model* whether autonomy is
-    // busy, and one of them - the sync adopting Central Station addresses - is not reachable from any
-    // UI predicate at all.  Nothing is dispatched while a plan is being derived, so isRunning() alone
-    // reads that whole window as idle, and a locomotive could be deleted, renamed or re-addressed out
-    // from under a plan that is about to drive it.
+    // Whether a staging flow owns this Layout - set at the commit point and cleared when the flow unwinds, mirroring the UI flag of the same lifetime.  It
+    // lives here rather than only on the UI because six guards ask the *model* whether autonomy is busy, and one of them (the sync adopting Central
+    // Station addresses) is not reachable from any UI predicate; nothing is dispatched while a plan is being derived, so isRunning() alone reads that
+    // window as idle.
     private volatile boolean stagingInProgress = false;
 
     // This instance's version, fixed at construction.  Compared against layoutVersion to answer "am I
@@ -894,12 +738,10 @@ public class Layout
         this.edges = new HashMap<>();
         this.points = new HashMap<>();
         this.adjacency = new HashMap<>();    
-        // These four are read by the UI (getActiveAccs, getActiveLocomotives, getReachedMilestones)
-        // without holding the writers' synchronized(activeLocomotives) lock, so they must be
-        // individually thread-safe.  The existing synchronized blocks still provide the writers'
-        // compound atomicity; the concurrent collections add safe lock-free reads on top.
-        // NOTE: ConcurrentHashMap rejects null keys/values, so accessors that take a Locomotive
-        // must null-guard before touching these (see getDestination/getStart/getReachedMilestones/etc.).
+        // These four are read by the UI (getActiveAccs, getActiveLocomotives, getReachedMilestones) without holding the writers'
+        // synchronized(activeLocomotives) lock, so they must be individually thread-safe; the synchronized blocks still give the writers' compound
+        // atomicity.  ConcurrentHashMap rejects null keys/values, so accessors that take a Locomotive must null-guard before touching these (see
+        // getDestination/getStart/getReachedMilestones).
         this.locomotivesToRun = ConcurrentHashMap.<Locomotive>newKeySet();
         // ConcurrentHashMap: setCallback (e.g. opening the graph view) puts on the EDT while
         // executePath iterates callbacks.values() on loco threads - a plain HashMap would CME.
@@ -925,9 +767,8 @@ public class Layout
             this.version = Layout.layoutVersion;
         }
 
-        // EVERY JOURNEY OF A RAILWAY THIS RETIRES ASKS AGAIN whether to go on waiting (RSA-B1): the reload's and
-        // Unload's Yes stop the trains between two sensors, and a journey left waiting on a sensor its train will not
-        // reach stopped whichever train next occupied it - by then, perhaps, one the next railway was driving.
+        // EVERY JOURNEY OF A RAILWAY THIS RETIRES ASKS AGAIN whether to go on waiting (RSA-B1): the reload's and Unload's Yes stop the trains between two
+        // sensors, and a journey left waiting on a sensor its train will not reach would stop whichever train next occupied it.
         Locomotive.wakeEveryWait();
 
         Layout.lastError = "";
@@ -952,10 +793,9 @@ public class Layout
      */
     synchronized private boolean addTimetableEntry(Locomotive loc, List<Edge> path, long timestamp)
     {
-        // A staging run drives the timetable it is executing, so capturing it would append each move
-        // to the list being walked - and the dispatch loop re-reads its own size, so it then executes
-        // the copies, fails them (the locomotive is at the path's END now), and reports a run that
-        // actually succeeded as abandoned, with a stop.  Capture is for what the operator drives.
+        // A staging run drives the timetable it is executing, so capturing it would append each move to the list being walked, and the dispatch loop
+        // re-reads its own size: it would execute the copies, fail them (the locomotive is at the path's END now), and report a run that succeeded as
+        // abandoned.  Capture is for what the operator drives.
         if (!path.isEmpty() && loc != null && this.timetableCapture && !this.timetableExecuting)
         {
             timetable.add(new TimetablePath(loc, path, timestamp)); 
@@ -966,16 +806,10 @@ public class Layout
                 TimetablePath second = timetable.get(timetable.size() - 1);
                 TimetablePath first = timetable.get(timetable.size() - 2);
 
-                // Stored on the LATER of the pair.  Everywhere else this field is read as the delay
-                // BEFORE that entry runs: executeTimetable waits on the current entry's own value
-                // before dispatching it, and the edit dialog says so in as many words - "enter delay
-                // (seconds) before this route executes".  Writing the gap onto the earlier entry made
-                // capture the only place using the opposite convention, so a captured timetable
-                // replayed with every gap shifted one entry back - the first captured gap was never
-                // applied and the last entry always started immediately.
-                //
-                // Affects newly captured timetables only.  Saved ones keep whatever they stored, and a
-                // delay set by hand in the UI was already correct.
+                // Stored on the LATER of the pair: everywhere else this field is read as the delay BEFORE that entry runs (executeTimetable waits on the
+                // current entry's own value before dispatching it, and the edit dialog says "enter delay (seconds) before this route executes"), so writing
+                // the gap onto the earlier entry shifted every captured gap one entry back.  Affects newly captured timetables only; saved ones keep
+                // whatever they stored.
                 second.setSecondsToNext(second.getExecutionTime() - first.getExecutionTime());
             }
             
@@ -1060,23 +894,13 @@ public class Layout
     /**
      * Returns all accessories along active routes, the exit guards each path's first edge sets among them (OB-340)
      *
-     * NOT synchronized, deliberately (IAR-B2).
-     *
-     * This is read from the EVENT THREAD, by the layout label's click handler, and only in the branch
-     * that runs while autonomy is going - which is exactly when `configureAndLockPath` holds this
-     * object's monitor across its per-command sleeps. So throwing a turnout by hand during a run froze
-     * the whole window, Stop included, for the length of the configuration phase. OB-079 fixed three
-     * sites of this shape and its list was one short.
-     *
-     * Safe without the monitor, and by the pattern this class already documents for UI reads:
-     * `activeLocomotives` is a ConcurrentHashMap, so iterating its values is weakly consistent rather
-     * than a ConcurrentModificationException, and the lists inside it are only ever put and removed
-     * whole - never edited in place - so a captured reference cannot change under this loop.
-     *
-     * What is given up is compound atomicity: the answer may straddle one locomotive's path being
-     * replaced. That is the right trade here. The caller uses it to decide whether to WARN before
-     * throwing an accessory on an active route, and a warning computed a moment ago is worth having;
-     * a frozen Stop button is not.
+     * NOT synchronized, deliberately (IAR-B2): this is read from the EVENT THREAD, by the layout label's click handler, in the branch that runs while
+     * autonomy is going, which is when `configureAndLockPath` holds this object's monitor across its per-command sleeps, so taking it would freeze the
+     * whole window, Stop included, for the length of the configuration phase (OB-079 fixed three sites of this shape).  Safe without the monitor, by
+     * the pattern this class documents for UI reads: `activeLocomotives` is a ConcurrentHashMap, so iterating its values is weakly consistent, and the
+     * lists inside it are only ever put and removed whole.  What is given up is compound atomicity (the answer may straddle one locomotive's path being
+     * replaced), the right trade: the caller decides whether to WARN before throwing an accessory on an active route, and a warning computed a moment
+     * ago is worth having; a frozen Stop button is not.
      *
      * @return 
      */
