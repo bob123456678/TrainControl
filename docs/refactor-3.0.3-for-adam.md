@@ -51,6 +51,7 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 12 | 1b skips | The clipboard is refused to every program in your session for hours at a time (Windows error 5 on `OpenClipboard`): the clipboard claim passed at 01:43 and 03:43 and skipped from 05:41 on.  It now retries for 10 s before skipping.  Windows Media Player was "Not Responding" from 23:10 the night before; that may be what holds the clipboard, not confirmed. | Not filed: it is your desktop, not the program. |
 | 13 | 1b skips | About 80 generic set-up checks ("the snapshot did not build", "no session") in about 55 classes now fail as a configuration failure of the class (the battery counts it as a failed class), rather than failing in each test. | A follow-up can move them into each test if you want that everywhere. |
 | 14 | 6 routes | **OB-363:** File > Open Layout shows the new railway but leaves the old railway's autonomy layout in the model (its trains standing, a tail's track covered); Unload clears it, the switch does not.  It may be deliberate (RLV7-C2). | Filed as OB-363 for your ruling; its claim is written and held out of the battery. |
+| 15 | 6 editor | **OB-364:** the track editor's Text Labels box opens ticked while the page's text is hidden, after the autonomy editor (unticked, its default) hid it; the first press of the box or Ctrl+L only shows the text. | Filed as OB-364; its claim is written and held out of the battery. |
 
 ## Adam's answers (2026-10-19)
 
