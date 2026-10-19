@@ -84,3 +84,5 @@ pushed: `git checkout <tag>` to look, `git reset --hard <tag>` on a branch to go
 | `fr136-phase1a-sweep` | `496f4f99` | Phase 1a's follow-up (every test init skips the station timeout) with the Tier 1 net (battery 105) |
 | `fr136-phase3-tcui-tier1` | `742d56f8` | Phase 3: TrainControlUI's Tier 1 in BackupAction, UpdateFlow, LocIconActions, LayoutFileActions, RouteListPanel (battery 106) |
 | `fr136-phase3-session` | `e2dadb68` | Phase 3: SessionImport and SessionRuns out of AutonomySession, the Tier 1 review fixes, the harness speed-ups (battery 107) |
+| `fr136-phase1b-skips-phase6` | `0054eee3` | Every skip inspected and fixed; Phase 6 coverage of the main window, routes and events, layout editor (battery 108) |
+| `fr136-phase6` | `572c31c0` | Phase 6's fourth area, autonomy, merged: 157 new user-level claims in all (battery 109, 353 classes) |
