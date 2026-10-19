@@ -35,8 +35,8 @@ What survives a round:
 | the same, greppable | `docs/manual-tests/findings.tsv`, rendered from the store: `grep "^MKR-B1" docs/manual-tests/findings.tsv` |
 | the rules it settled | [../reference/behaviour.md](../reference/behaviour.md) |
 | the questions it left | [../reference/open-questions.md](../reference/open-questions.md) |
-| the work it left | the Inbox in [../manual-tests/issues.md](../manual-tests/issues.md) |
-| the tests it asked for | [../manual-tests/tests.md](../manual-tests/tests.md), tagged `MT-###` |
+| the work it left | the Inbox, in the same store: `py -3 docs/manual-tests/triagedb.py issues` |
+| the tests it asked for | the manual tests, in the same store, tagged `MT-###`: `triagedb.py show MT-###` |
 
 Adam's ruling on MON-C11, 2026-09-08: *"update our MT triage database to catalog each review item. Now,
 no reference will ever be stale or lost, but useless prose will go away. Then everything relevant, that
@@ -76,16 +76,16 @@ The findings themselves keep their old identifiers. Several early documents pred
 convention below and use ad-hoc letters; their ids are cited from commits, from comments and from each
 other, and renumbering would break that for no gain.
 
-**Hands-on tests live somewhere else.** Everything that needs the real railway or a display is in
-[../manual-tests/tests.md](../manual-tests/tests.md), under the rules in
-[../manual-tests/README.md](../manual-tests/README.md) - one file, append-only, tagged `MT-###`, each
-entry carrying a disposition that says whether its last result still means anything. Nothing about the
+**Hands-on tests live somewhere else.** Everything that needs the real railway or a display is a manual
+test in `docs/manual-tests/triage.db`, under the rules in
+[../manual-tests/README.md](../manual-tests/README.md) - append-only, tagged `MT-###`, each entry
+carrying a disposition that says whether its last result still means anything. Nothing about the
 review process below changes: a finding is still lettered by severity and dispositioned here. What
 changed is that the TEST for a finding is written there and referenced by tag, rather than living in a
 document of its own that goes stale the moment the code moves.
 
-When a round produces work for the layout, add entries there and put their tags beside the findings
-here.
+When a round produces work for the layout, add entries there (`triagedb.py add-test`) and put their
+tags beside the findings here.
 
 ---
 

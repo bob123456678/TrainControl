@@ -292,31 +292,29 @@ public class testTheSuppliedManualTestFilesAreWhatTheySay
     }
 
     /**
-     * Every manual-test entry's text: tests.md and the archive of every release beside it.
+     * Every manual-test entry's text, every comment on one, and every Inbox item: the store's text dump.
      *
-     * A released entry is kept in `tests-archive-<release>.md` (FR-136), and the files it names are
-     * still shipped - MT-298's, MT-452's and MT-470's entries are all archived - so tests.md alone
-     * would report them as named by nobody.
+     * The record is `docs/manual-tests/triage.db` (FR-136 Phase 1c), and there is no SQLite driver on
+     * this project's classpath, so it is read from the dump `triagedb.py` writes beside the store on
+     * every write.  A file can be named in an entry's steps or in a comment on it, so both are read.
      *
-     * @return the files' text, run together
-     * @throws Exception from reading them
+     * @return the dump's text, run together
+     * @throws Exception from reading it
      */
     private static String entries() throws Exception
     {
-        File folder = new File("docs" + File.separator + "manual-tests");
+        File dump = new File("docs" + File.separator + "manual-tests" + File.separator + "dump");
 
-        StringBuilder all = new StringBuilder(new String(Files.readAllBytes(
-            new File(folder, "tests.md").toPath()), StandardCharsets.UTF_8));
+        StringBuilder all = new StringBuilder();
 
-        File[] archives = folder.listFiles((dir, name) -> name.startsWith("tests-archive-")
-            && name.endsWith(".md"));
-
-        assertNotNull(archives, "could not list " + folder);
-
-        for (File archive : archives)
+        for (String name : new String[] {"tests.txt", "comments.txt", "issues.txt"})
         {
-            all.append('\n').append(new String(Files.readAllBytes(archive.toPath()),
-                StandardCharsets.UTF_8));
+            File file = new File(dump, name);
+
+            assertTrue(file.isFile(), file + " is not there, so no entry can be read.  triagedb.py writes"
+                + " it on every write to the store, and `triagedb.py dump` writes it again");
+
+            all.append(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)).append('\n');
         }
 
         return all.toString();

@@ -7,3 +7,8 @@
 # (found by the battery, 2026-09-03).  The test strips carriage returns as well; this stops a fresh
 # clone needing it.
 test/baseline/** text eol=lf
+
+# The tracker's text dump (docs/manual-tests/dump/) is written by triagedb.py with LF and compared byte for byte with
+# what the store renders, and it keeps every line of an entry as written, trailing spaces (markdown's hard break)
+# included - which git's whitespace check would otherwise flag on every diff.
+docs/manual-tests/dump/** text eol=lf -whitespace

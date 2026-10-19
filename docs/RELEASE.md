@@ -47,7 +47,3 @@ pictures).  `docs/tools/release-tree.sh` computes that tree, so a release never 
 
 12. On `dev`: the next version in `RAW_VERSION`, `IS_PRE_RELEASE = true`, and an undated `* vX.Y.Z` heading above the
     release just made.
-13. Archive the released manual tests: add the release's row (name and day) to `ARCHIVES` in
-    `docs/manual-tests/triagedb.py`, then `py -3 docs/manual-tests/triagedb.py archive` and `... verify`, with Adam's
-    triage app closed (a window still running the old code would write the moved entries back).  Commit `tests.md` and
-    the new `tests-archive-<version>.md`.

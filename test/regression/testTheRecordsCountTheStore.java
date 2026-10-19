@@ -112,23 +112,25 @@ public class testTheRecordsCountTheStore
     /**
      * The Inbox count quoted in `open-questions.md` is the number of entries the Inbox holds.
      *
+     * Counted from the store's text dump, `issues.txt`: one record per item ever filed, `inbox: yes`
+     * while it is in the Inbox (FR-136 Phase 1c - the Inbox was a section of `issues.md` before).
+     *
      * @throws Exception on a failure to read
      */
     @Test
     public void testTheInboxCountIsTheInboxsOwn() throws Exception
     {
-        String issues = read("docs/manual-tests/issues.md");
+        List<String> refs = inTheInbox();
 
-        int inbox = issues.indexOf("## Inbox");
+        int obs = 0;
+        int frs = 0;
 
-        int after = issues.indexOf("## What has been picked up");
+        for (String ref : refs)
+        {
+            if (ref.startsWith("OB-")) obs++;
 
-        assertTrue(inbox > 0 && after > inbox, "issues.md no longer has an Inbox section to count");
-
-        String section = issues.substring(inbox, after);
-
-        int obs = occurrences(section, "\n### OB-");
-        int frs = occurrences(section, "\n### FR-");
+            if (ref.startsWith("FR-")) frs++;
+        }
 
         assertTrue(obs > 0 && frs > 0, "the Inbox holds no entries at all, so nothing below is a check");
 
@@ -248,6 +250,128 @@ public class testTheRecordsCountTheStore
             "the README says " + reviews + " review documents were deleted on 2026-09-08 and " + second
             + " on 2026-09-21, which is " + (reviews + second) + " - so its spelled-out total has to"
             + " read \"" + words + " review documents\"");
+    }
+
+    /**
+     * The refs `issues.txt` says are in the Inbox: the records whose `inbox` field is `yes`.
+     *
+     * @return the refs, in the dump's order
+     * @throws Exception on a failure to read
+     */
+    private static List<String> inTheInbox() throws Exception
+    {
+        List<String> refs = new ArrayList<>();
+
+        String ref = null;
+
+        for (String line : read(DUMP + "issues.txt").split("\n"))
+        {
+            if (line.startsWith("[issue ")) ref = line.substring("[issue ".length(), line.length() - 1);
+
+            if (line.equals("inbox: yes") && ref != null) refs.add(ref);
+        }
+
+        return refs;
+    }
+
+    /** The store's text dump, which `triagedb.py` writes beside `triage.db` on every write. */
+    private static final String DUMP = "docs/manual-tests/dump/";
+
+    /**
+     * The dump holds the record whole: every test once, in tag order, each record's text opening with its
+     * own anchor, and every comment on a test or an issue the dump holds, numbered from nought without a gap.
+     *
+     * The dump is the only form of the tests a Java test can read, and `triagedb.py verify` - which proves
+     * it is the store's own rows - needs Python.  What can be held here is that it is whole: a dump cut
+     * short, written from the wrong store, or merged badly by hand leaves a comment on nothing, a gap in a
+     * test's comments, or two records for one tag.
+     *
+     * MUTATION: add a record `[comment MT-9999 0]` to comments.txt, or delete any comment record but a
+     * test's last, and this names it.
+     *
+     * @throws Exception on a failure to read
+     */
+    @Test
+    public void testTheDumpHoldsTheRecordWhole() throws Exception
+    {
+        String tests = read(DUMP + "tests.txt");
+
+        assertTrue(tests.contains("triagedb.py") && tests.contains("triage.db"),
+            "tests.txt no longer says it is written by triagedb.py from triage.db, so the next person to find"
+            + " it has no way to know it must never be edited");
+
+        java.util.Set<String> held = new java.util.HashSet<>();
+
+        int last = 0;
+
+        String tag = null;
+
+        for (String line : tests.split("\n"))
+        {
+            if (line.startsWith("[test "))
+            {
+                tag = line.substring("[test ".length(), line.length() - 1);
+
+                int number = Integer.parseInt(tag.substring("MT-".length()));
+
+                assertTrue(number > last, "tests.txt holds " + tag + " after MT-" + last + ", so its records are not"
+                    + " one per test in tag order");
+
+                last = number;
+
+                held.add(tag);
+
+                continue;
+            }
+
+            // The first line of a test's body is its anchor, naming the same tag.
+            if (tag != null && line.startsWith("| <a id="))
+            {
+                assertEquals(line, "| <a id=\"" + tag.toLowerCase() + "\"></a>",
+                    "the body under " + tag + " opens with another entry's anchor");
+
+                tag = null;
+            }
+        }
+
+        assertTrue(held.size() > 700, "tests.txt holds " + held.size() + " tests, far fewer than the record");
+
+        assertTrue(tag == null, "the last test in tests.txt, " + tag + ", has no body");
+
+        for (String line : read(DUMP + "issues.txt").split("\n"))
+        {
+            if (line.startsWith("[issue ")) held.add(line.substring("[issue ".length(), line.length() - 1));
+        }
+
+        for (String line : read(DUMP + "receipts.txt").split("\n"))
+        {
+            if (line.startsWith("[receipt ")) held.add(line.substring("[receipt ".length(), line.length() - 1));
+        }
+
+        java.util.Map<String, Integer> next = new java.util.HashMap<>();
+
+        int comments = 0;
+
+        for (String line : read(DUMP + "comments.txt").split("\n"))
+        {
+            if (!line.startsWith("[comment ")) continue;
+
+            String[] parts = line.substring("[comment ".length(), line.length() - 1).split(" ");
+
+            assertTrue(held.contains(parts[0]), "comments.txt holds a comment on " + parts[0]
+                + ", which no test, Inbox item or receipt in the dump is");
+
+            int expected = next.containsKey(parts[0]) ? next.get(parts[0]) : 0;
+
+            assertEquals(Integer.parseInt(parts[1]), expected, "the comments on " + parts[0] + " skip from "
+                + (expected - 1) + " to " + parts[1] + ", so one has gone missing from the dump");
+
+            next.put(parts[0], expected + 1);
+
+            comments++;
+        }
+
+        assertTrue(comments > 1500, "comments.txt holds " + comments + " comments, far fewer than the record");
     }
 
     // ---------------------------------------------------------------- the next round comes from the store (FR-136)

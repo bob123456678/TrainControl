@@ -356,6 +356,10 @@ The work:
   `docs/manual-tests/README.md`; RELEASE.md; FANOUT.md's records step; and the agent notes in the house rules and
   memory.
 
+**Done (2026-10-19, branch p1db):** `triage.db` is the record and `dump/` its text, one file per table; the markdown
+and the archive code are gone; `triagedb.py migrate` imported them, and `docs/tools/prove-tracker-migration.py` found
+nothing lost (772 entries, 1,957 comments, 861 verdicts, 889 `**Adam,` lines, 30 Inbox items, 491 receipts).
+
 **6. Coverage of what the user does and what comes of it.**  Adam: "This can be done in parallel, report, and fold
 later"; then "Sooner sounds better.  Don't limit this to UI interactions, it can also be state outcomes."
 - **When.**  The inventory is built during Phase 1b, which sets the rule each new claim must meet.  The tests are then

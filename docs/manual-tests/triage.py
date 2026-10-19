@@ -1,40 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TrainControl manual-test triage - a companion window for tests.md.
+TrainControl manual-test triage - a companion window for the manual tests and the Inbox.
 
 Run it beside TrainControl, work down the ledger, and answer one test at a time: what happened,
-anything else you noticed, submit or skip.  Everything you type lands in the markdown files that
-are already the source of truth, in the format README.md describes, appended and never overwritten.
+anything else you noticed, submit or skip.  Everything you type is written to triage.db, the store
+that holds the record (README.md), added and never overwritten.
 
     py -3 docs\\manual-tests\\triage.py
 
 Why this exists: the ledger is ninety entries long and the instruction for the one you are running
 is four hundred lines away from the row that told you to run it.  Alt-tabbing between a long
-markdown file and a live railway is where results get lost.
+document and a live railway is where results get lost.
 
-What it writes, and where:
+What it writes, and where - all of it through triagedb.py, the store's one door:
 
-  A test result             appended under that entry's "#### Comments" in tests.md, dated, signed,
-                            and stamped with the build it was run against.
-  A bug or feature request  an OB-### (bug) or FR-### (feature request) item in issues.md - one
-                            inbox for both, cross-referenced from the test's comments if it came
+  A test result             a comment on that entry, dated, signed, and stamped with the build it
+                            was run against.
+  A bug or feature request  an OB-### (bug) or FR-### (feature request) item in the Inbox - one
+                            inbox for both, cross-referenced from the test's comment if it came
                             from one.
 
 It also has a query API: run it with an argument (stats, tests, test TAG, issues, verify-ledger) and
 it prints JSON to stdout and exits, no window involved.  See --help.
 
-What it deliberately does NOT write: the **Disposition** line, and the ledger.  The ledger is
-generated - `triagedb.py regenerate-ledger` - and rule 4 in README.md
-says dispositions are Claude's to set and only Claude's, and that rule is the reason the file is
+What it deliberately does NOT write: the **Disposition** line.  Rule 4 in README.md says
+dispositions are Claude's to set and only Claude's, and that rule is the reason the record is
 worth anything - it is the difference between "Adam says it works" and "somebody marked it done".
 So this app records what you said and leaves the bookkeeping where it belongs.  Your rows keep
 their old disposition until the next round reads them.
 
-Safety.  Every write takes a timestamped copy of the file first, into .triage-backups/, and the
-write itself is atomic (temp file, then replace).  If tests.md changes on disk underneath the app -
-because Claude is editing it in another window - the app notices before writing and reloads instead
-of clobbering.  Nothing is ever deleted or reordered.
+Safety.  Every write is one short transaction, and a comment is added as a row of its own rather
+than by rewriting the entry, so the app and a script writing at the same time cannot undo each
+other.  When another process writes to the store the app sees it within two seconds and shows what
+is there now, keeping whatever you have typed.  Nothing is ever deleted or reordered.
 
 Single file, no dependencies beyond the standard library.
 """
@@ -63,8 +62,6 @@ from tkinter import ttk, messagebox, simpledialog
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir))
 
-TESTS_MD = os.path.join(HERE, "tests.md")
-ISSUES_MD = os.path.join(HERE, "issues.md")
 README_MD = os.path.join(HERE, "README.md")
 
 BACKUP_DIR = os.path.join(HERE, ".triage-backups")
@@ -98,9 +95,9 @@ DISPOSITION_COLORS = {
     "superseded": "#9a9a9a",           # wrong shape - tracked elsewhere, or replaced by a later entry
 }
 
-# issues.md's State column has one more word than tests.md's disposition ever needs: a REQUEST can
+# A receipt's State has one more word than a test's disposition ever needs: a REQUEST can
 # be declined, where a TEST - which by definition is already being worked - cannot.  Kept separate
-# from DISPOSITION_COLORS on purpose, so tests.md's three-word rule stays exactly three words.
+# from DISPOSITION_COLORS on purpose, so the tests' four-word rule stays exactly four words.
 ISSUE_STATE_COLORS = dict(DISPOSITION_COLORS)
 ISSUE_STATE_COLORS["declined"] = "#8a3a3a"         # closed, deliberately not built - not grey (=validated)
 # PICKED UP, NOT BUILT (Adam, 2026-09-14: "FR-002 should show as pending").  "needs test" said the
@@ -125,15 +122,15 @@ CLOSED_ISSUE_STATES = ("fixed validated",) + HIDDEN_ISSUE_STATES
 def derived_disposition(tags, by_tag):
     """The state of a promoted bug or feature request: the state of the tests it became.
 
-    A request promoted to tests.md has no State column of its own - exactly one of State or Became
+    A request promoted to a test has no State of its own - exactly one of State or Became
     is filled in - so its disposition is read from those tests rather than shown as a pointer.
     WORST OPEN STATE WINS: one test still needing a run keeps the request open however many of its
     siblings are validated.  A superseded test says nothing about the request, so it is set aside;
     a request whose every test was superseded answers "superseded", which reads as not done.
 
     :param tags: the MT-### tags the request became, in the order the row names them
-    :param by_tag: tests.md's entries, by tag
-    :return: the derived disposition, or None when none of the tags is in tests.md
+    :param by_tag: the tests, by tag
+    :return: the derived disposition, or None when none of the tags is in the store
     """
 
     states = [by_tag[tag].disposition.strip().lower() for tag in tags if tag in by_tag]
@@ -168,7 +165,7 @@ RESULTS = [
 
 
 # --------------------------------------------------------------------------------------------
-# Reading and writing the markdown, carefully
+# Reading and writing text files, carefully
 # --------------------------------------------------------------------------------------------
 
 def read_text(path):
@@ -186,8 +183,8 @@ def read_text(path):
 def write_text(path, text, crlf):
     """Back the file up, then replace it atomically.
 
-    The backup is not belt-and-braces.  These files hold months of Adam's answers and nothing else
-    holds them; a half-written tests.md would cost more than every feature in this app is worth.
+    Used for the reference documents whose quoted counts the store rewrites (triagedb.render_counts):
+    a half-written document would cost more than the count is worth.
     """
 
     if not os.path.isdir(BACKUP_DIR):
@@ -232,8 +229,8 @@ def prune_backups():
         by_file = {}
 
         for name in os.listdir(BACKUP_DIR):
-            # The file's whole name, less the stamp: "tests-archive-3.0.1.md.<stamp>.bak".  The first
-            # dot used to end it, which put every 3.0.x archive's backups in one pool of forty.
+            # The file's whole name, less the stamp: "open-questions.md.<stamp>.bak".  The first dot
+            # used to end it, which put files of one stem in one pool of forty.
             base = name[:-len(".bak")].rsplit(".", 1)[0] if name.endswith(".bak") else name
             by_file.setdefault(base, []).append(name)
 
@@ -253,11 +250,7 @@ FIELD_RE = r'^\*\*%s:?\*\*[ \t]*(.*?)[ \t]*$'
 
 
 class Entry(object):
-    """One MT-### test, as it stands in the file right now."""
-
-    # The file it is kept in: tests.md, or the archive of the release it shipped in (FR-136).  TestsDoc
-    # sets it from the store; an entry built anywhere else is in tests.md as far as it knows.
-    file = "tests.md"
+    """One MT-### test: its whole text as the store holds it, and the fields read out of that text."""
 
     def __init__(self, anchor, block):
         self.anchor = anchor
@@ -362,38 +355,10 @@ class Entry(object):
 
         return state != VALIDATED and state != SUPERSEDED
 
-    def with_comment(self, comment):
-        """This entry's block with a comment appended at the bottom of its Comments section.
-
-        Append only, and above the rule that closes the entry - which is the last '---' line in the
-        block, because the block runs anchor to anchor.
-        """
-
-        text = comment.strip() + "\n\n"
-
-        cut = self.block.rfind("\n---")
-
-        if cut < 0:
-            return self.block.rstrip() + "\n\n" + text
-
-        prefix = self.block[:cut + 1]
-
-        if not prefix.endswith("\n\n"):
-            # The rule that closes an entry does not always have a blank line before it - some
-            # entries were hand-written without one.  Splicing straight in at that single '\n'
-            # then glues the new comment onto the end of whatever paragraph precedes it, rather
-            # than starting its own - a verdict that reads as part of the text above it.
-            prefix += "\n"
-
-        return prefix + text + self.block[cut + 1:]
-
-
 def parse_tests_text(text):
-    """tests.md's text, split into the head and one Entry per anchor.
+    """A test file's text, split into the head and one Entry per anchor.
 
-    The one parse of this file in the project. It lived inside TestsDoc.load until the store needed it
-    too, and a second copy of it would have been two definitions of what an entry is - which agree
-    until the day they do not, silently.
+    The markdown is read once, by `triagedb.migrate`, and this is how.  Nothing else parses it.
 
     :param text: the whole file
     :return: (head, list of Entry)
@@ -413,119 +378,71 @@ def parse_tests_text(text):
 
 
 class TestsDoc(object):
-    """tests.md, read through the store."""
+    """Every test, read from the store (triagedb), with the one write this app makes to one: a comment."""
 
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, conn):
+        """
+        :param conn: an open connection to the store
+        """
+
+        self.conn = conn
         self.load()
 
     def load(self):
-        """Reloads from the STORE, which is built from the file.
-
-        The window used to parse the file here itself. It now goes through triagedb, so the
-        application and the API are looking at one set of rows rather than at two parses that have to
-        agree - and every write it makes comes back through the same door, re-parsed from the markdown
-        it just wrote.
-
-        The parsing still happens; `parse_tests_text` below is where, and the store calls the same
-        function. What is gone is the second copy of it.
+        """Reads every test from the store again.
 
         Imported inside the method rather than at the top of the file: triagedb imports this module,
-        and doing it the other way round at import time would be a cycle. By the time any of this runs
-        both modules are loaded.
+        and doing it the other way round at import time would be a cycle.
         """
 
         import triagedb
 
-        self.text, self.crlf = read_text(self.path)
-        self.stat = self._stat()
+        # What the store's write counter said when this was read: another process's commit moves it.
+        self.version = triagedb.data_version(self.conn)
 
-        conn = triagedb.connect(":memory:")
+        self.entries = triagedb.entries(self.conn)
 
-        # tests.md AND ITS ARCHIVES (FR-136): a released entry is kept in tests-archive-<release>.md, and is
-        # in the store, in this list under "everything", and answerable, like any other.
-        triagedb.build(conn, self.path, ISSUES_MD)
-
-        self.store = conn
-
-        self.head = conn.execute(
-            "SELECT head FROM doc WHERE name = 'tests'").fetchone()["head"]
-
-        placed = dict((r["tag"], r["file"]) for r in conn.execute("SELECT tag, file FROM placed"))
-
-        self.entries = []
-
-        for r in conn.execute("SELECT tag, anchor, block FROM test ORDER BY ordinal"):
-            entry = Entry(r["anchor"], r["block"])
-
-            # Which file it is kept in, for the line under its title.  Not part of the entry: the
-            # store works it out again whenever it writes.
-            entry.file = placed.get(r["tag"], "tests.md")
-
-            self.entries.append(entry)
-
-        # A duplicate MT-### is a real defect in the file, not something to paper over - two
-        # entries with the same iid used to crash the window at startup the moment both
-        # populate calls ran (tree.insert raises TclError on an existing iid).  Surfaced here so
-        # the caller can warn instead.
-        #
-        # Asked of the STORE, which records every tag read a second time - in tests.md or in an
-        # archive - and keeps the first copy.  It used to ask the test table, whose key is the tag,
-        # so the question could never be answered yes.
-        self.duplicate_tags = [r["tag"] for r in conn.execute(
-            "SELECT DISTINCT tag FROM duplicate ORDER BY tag")]
+        # The store's key is the tag, so one cannot be held twice.  Kept for the status line's check.
+        self.duplicate_tags = []
 
         self.by_tag = dict((e.tag, e) for e in self.entries)
 
-    def _stat(self):
-        """The size and time of every file the tests are kept in, so a write to any of them is seen."""
+    def changed_elsewhere(self):
+        """Whether another process has written to the store since this was read.
 
-        import triagedb
-
-        out = []
-
-        for path in triagedb.tests_paths(self.path):
-            st = os.stat(path)
-            out.append((os.path.basename(path), st.st_mtime, st.st_size))
-
-        return tuple(out)
-
-    def changed_on_disk(self):
-        try:
-            return self._stat() != self.stat
-        except OSError:
-            return True
-
-    def append_comment(self, tag, comment):
-        """Adds one comment to one entry, through the store.  Raises if the file moved.
-
-        The rewrite is the store's: it replaces that entry's block, re-parses every field out of the
-        result, and renders the files - tests.md and its archives, each entry where the archive rule puts
-        it, so an answer to an archived entry is kept with it and brings it back to tests.md (FR-136).
-        So the row and its markdown cannot drift apart, and a comment
-        written by this window is indistinguishable from one written by the API - which matters,
-        because Adam's verdicts arrive through this window and everything that reads them arrives
-        through the other door.
-
-        :param tag: MT-###
-        :param comment: the whole comment, already formatted
+        :return: true when it has
         """
 
         import triagedb
 
-        if self.changed_on_disk():
-            raise IOError(
-                "tests.md or one of its archives changed on disk since it was loaded.  Reload "
-                "(Ctrl+R) and try again - your draft is kept."
-            )
+        try:
+            return triagedb.data_version(self.conn) != self.version
+        except Exception:
+            return False
 
-        entry = self.by_tag[tag]
+    def append_comment(self, tag, comment):
+        """Adds one comment to one entry, in the store, and reads the store again.
 
-        triagedb.replace_block(self.store, tag, entry.with_comment(comment))
+        A comment is a row of its own: the entry is not read and written back, so a script writing to the
+        store at the same moment cannot be undone by this, or undo it.  A comment written by this window
+        is indistinguishable from one written by the API, which matters, because Adam's verdicts arrive
+        through this window and everything that reads them arrives through the other door.
 
-        triagedb.render_to_disk(self.store, self.path)
+        :param tag: MT-###
+        :param comment: the whole comment, already formatted
+        :return: None, or a warning when the comment is in the store and the text dump could not follow
+        """
 
-        self.load()
+        import triagedb
+
+        try:
+            triagedb.add_comment_text(self.conn, tag, comment)
+        except triagedb.DumpNotWritten as bad:
+            return str(bad)
+        finally:
+            self.load()
+
+        return None
 
 
 # A bug is OB-###; a feature request is FR-###.  Separate counters, because they used to share
@@ -537,12 +454,12 @@ ISSUE_PREFIXES = {"bug": "OB", "feature request": "FR"}
 
 
 def normalize_kind(raw):
-    """issues.md's Kind field, normalised - lowercase, and 'feature' folded into 'feature
+    """An Inbox item's Kind field, normalised - lowercase, and 'feature' folded into 'feature
     request' the way this file uses it everywhere else.
 
     Returns (kind, recognized).  A hand-written Kind reads fine to a person as 'Bug' or
     'feature', but compared with '==' against 'bug'/'feature request' - which is how the issue
-    tabs, cli_issues --kind, and next_ref_number()/format_ref() all read it - either one is
+    tabs, cli_issues --kind, and the numbering of a new item all read it - either one is
     exactly unequal, so the item was invisible in both tabs and in the API, and a feature
     request's ref got filed under the BUG counter (ISSUE_PREFIXES.get(kind, "OB") falls back to
     OB for anything that is not the exact string 'feature request').
@@ -564,123 +481,12 @@ def normalize_kind(raw):
     return "bug", False
 
 
-def next_ref_number(kind):
-    """The next free number for this kind, across the issue inbox, tests.md and its archives - a
-    plain int, so a caller filing several of the same kind in one go can increment it locally without
-    re-reading the files after every one.
-    """
-
-    import triagedb
-
-    prefix = ISSUE_PREFIXES.get(kind, "OB")
-
-    highest = 0
-
-    # The archives too (FR-136): a ref named only in an entry that has since been archived is still taken.
-    for path in [ISSUES_MD] + (triagedb.tests_paths(TESTS_MD) if os.path.exists(TESTS_MD) else []):
-        if not os.path.exists(path):
-            continue
-
-        text, _ = read_text(path)
-
-        for found in re.findall(r'\b%s-(\d+)\b' % prefix, text):
-            highest = max(highest, int(found))
-
-    return highest + 1
-
-
 def format_ref(kind, number):
     return "%s-%03d" % (ISSUE_PREFIXES.get(kind, "OB"), number)
 
 
-INBOX_EMPTY = "*(empty)*"
-
-# What inbox_span() treats as the end of the Inbox section - a '---' rule, or (its fallback) a
-# '## ' heading.  A detail body containing either, typed by hand, reads as that same boundary to
-# the parser: 'text.find("\n---")' can match a '---' inside the new item's OWN prose, and the
-# '^## ' fallback can match a heading typed into a detail body - either way splicing the new item
-# into the middle of an existing one instead of appending it.  Checked before a detail body can
-# reach append_to_inbox() at all - see ObservationDialog._ok().
-INBOX_BOUNDARY_LOOKALIKE_RE = re.compile(r'^(---|## )', re.M)
-
-
-def inbox_span(text):
-    """Where a file's '## Inbox' section runs: from just after the heading line to the '\\n---'
-    rule that closes it, or - when there is no such rule, the normal case in issues.md - to the
-    next '^## ' heading.  Never to end of file: that put every new item after the sections that
-    follow Inbox, outside the section it was meant to go in and below "Where the older backlog
-    is", which is where Adam went looking for one and did not find it.
-
-    The one function both append_to_inbox() and IssuesDoc._inbox_span() call, on purpose - they
-    used to each compute this themselves, and only one of the two got the '^## ' fallback when it
-    was added, so a hand-added item and the parser disagreed about where the section ended.
-    Returns None if there is no '## Inbox' heading at all.
-    """
-
-    start = text.find("\n## Inbox")
-
-    if start < 0:
-        return None
-
-    body_from = text.index("\n", start + 1)
-
-    end = text.find("\n---", body_from)
-
-    if end < 0:
-        heading = re.search(r'^## ', text[body_from:], re.M)
-
-        end = body_from + heading.start() if heading else len(text)
-
-    return body_from, end
-
-
-def append_to_inbox(path, block):
-    """Put an item at the bottom of a file's '## Inbox' section, above the rule that closes it.
-
-    The one door every filing goes through, so it also brings the Inbox count that open-questions.md quotes
-    up to date - for the repository's own issues.md, not for a copy.
-    """
-
-    text, crlf = read_text(path)
-
-    span = inbox_span(text)
-
-    if not span:
-        raise IOError("%s has no '## Inbox' section" % os.path.basename(path))
-
-    body_from, end = span
-
-    section = text[body_from:end]
-
-    if INBOX_EMPTY in section:
-        section = section.replace(INBOX_EMPTY, "").rstrip() + "\n"
-
-    section = section.rstrip("\n") + "\n\n" + block.strip() + "\n"
-
-    tail = text[end:]
-
-    if tail and not tail.startswith("\n"):
-        # end landed exactly on the next '## ' heading (no closing rule) - without this the new
-        # item is glued straight onto that heading with no blank line between them.  The '\n---'
-        # case needs nothing extra: tail already starts with its own leading '\n'.
-        section += "\n"
-
-    write_text(path, text[:body_from] + section + tail, crlf)
-
-    if os.path.abspath(path) == os.path.abspath(ISSUES_MD):
-        import triagedb  # imported here: triagedb imports this module
-
-        try:
-            triagedb.render_inbox_count(path)
-
-        except Exception as bad:
-            # The item IS filed.  Saying only what failed invites filing it again.
-            raise IOError("%s is in the Inbox, but its count in open-questions.md was not updated: %s"
-                          % (block.strip().splitlines()[0], bad))
-
-
 # --------------------------------------------------------------------------------------------
-# issues.md, parsed - the pending Inbox and the historical receipt table, both machine-readable
+# The Inbox and the receipt table, as the store holds them
 # --------------------------------------------------------------------------------------------
 
 ISSUE_ITEM_RE = re.compile(
@@ -694,8 +500,8 @@ FIELD_LINE_RE = re.compile(r'^\*\*[^*\n]+:\*\*')
 
 
 class IssueItem(object):
-    """One structured OB-### (bug) or FR-### (feature request) entry sitting in the Inbox, not
-    yet picked up.
+    """One OB-### (bug) or FR-### (feature request) filed into the Inbox: the fields read out of its
+    text as the store holds it.
     """
 
     def __init__(self, ref, filed_date, summary, block):
@@ -766,194 +572,66 @@ class IssueItem(object):
 
 
 class IssuesDoc(object):
-    """issues.md: the pending Inbox (structured items, plus whatever does not parse) and the
-    receipt table of items already picked up into tests.md.
+    """The Inbox and the receipt table of what has been picked up, read from the store (triagedb).
 
-    **Where the store fits.** This class is the parse, and `triagedb` builds its `issue` table from
-    exactly these objects - so there is one reading of this file, not two, and the window and the API
-    cannot come to different conclusions about what is in the Inbox. What the store adds here is the
-    ability to ASK ("every open bug", "everything filed since the 24th") without anybody writing a
-    regular expression for the occasion, which is what it was asked for.
+    `pending` is what is in the Inbox and has no receipt; `picked` is the receipt table, newest first,
+    as dicts keyed by its columns - filed, ref, kind, what, state, became, and `became_tags`, every
+    MT-### the row names.
 
-    The tests half went further and reads its rows back out of the store, because that is where the
-    verdicts live and the querying actually pays. Doing the same here would mean extracting this
-    class's Inbox parsing - which is intricate, has had two boundary defects of its own, and covers
-    six rows. The store would learn nothing it does not already have.
-
-    Writes DO go through one door: `file`, below. That is what keeps the store from describing an
-    Inbox that has since gained an item.
+    PENDING MEANS NOT YET PICKED UP (Adam: "Note that I don't see anything for the outstanding OB's").
+    An item with a receipt is its MT entry's business, not the Inbox's, whether or not it has been
+    cleared out of it yet.
     """
 
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, conn):
+        """
+        :param conn: an open connection to the store
+        """
+
+        self.conn = conn
         self.load()
 
     def load(self):
-        self.text, self.crlf = read_text(self.path)
+        import triagedb
 
-        self.pending, self.freeform = self._parse_inbox()
-        self.picked = self._parse_picked()
+        self.picked = triagedb.receipts(self.conn)
 
-        # PENDING MEANS NOT YET PICKED UP, which is what all three readers of this list say it means
-        # and what none of them was getting.
-        #
-        # Adam: "Note that I don't see anything for the outstanding OB's."  The Inbox is append-only -
-        # an item stays in it for life - so an item with a receipt in "What has been picked up" was
-        # still counted here, and the Bugs tab, `triage.py issues` and the count in `triage.py stats`
-        # all went on reporting nine finished bugs as outstanding.  With everything picked up the
-        # honest answer is none, and a list that can never empty is a list nobody can act on.
-        #
-        # The ENTRIES are untouched: this is about who is called pending, not about what the file
-        # holds.  A receipt is the moment an item stops being the Inbox's business and becomes its
-        # MT entry's, which is exactly what the receipt table's own preamble says.
-        receipted = set()
+        self.picked_up_refs = set(row["ref"] for row in self.picked)
 
-        for row in self.picked:
-            ref = (row.get("ref") or "").strip()
+        self.pending = [it for it in triagedb.inbox_items(self.conn) if it.ref not in self.picked_up_refs]
 
-            if ref:
-                receipted.add(ref)
+        # Anything once typed above the first item, by hand, with no structure: kept by the migration,
+        # and shown in the status line so it is not as good as lost.
+        self.freeform = triagedb.note(self.conn, "issues.inbox-lead").replace("## Inbox", "", 1).strip()
 
-        self.picked_up_refs = receipted
-
-        self.pending = [it for it in self.pending if it.ref not in receipted]
-
-        # Same duplicate-iid hazard TestsDoc.load guards against, on the pending items that feed
-        # the Feature requests / Bugs tabs (tree.insert(iid="pending:%s" % ref, ...)).
-        seen = set()
+        # The store's key is the ref, so one cannot be filed twice.  Kept for the status line's check.
         self.duplicate_pending_refs = []
 
-        for it in self.pending:
-            if it.ref in seen:
-                self.duplicate_pending_refs.append(it.ref)
-
-            seen.add(it.ref)
-
-        # normalize_kind() already keeps these visible (filed under 'bug', its own fallback)
-        # rather than invisible in both tabs - this is what lets the caller warn about them too,
-        # since a Kind that could not be recognised is worth a person's eyes even though it did
-        # not get dropped.
+        # normalize_kind() keeps these visible (filed under 'bug', its own fallback); this is what lets
+        # the caller warn about them too.
         self.unrecognized_kind_refs = [it.ref for it in self.pending if not it.kind_recognized]
 
-    def file(self, block):
-        """Puts one item at the bottom of the Inbox and re-reads.
+    def file(self, kind, summary, detail, raised_from, build):
+        """Files one item into the Inbox, through the store, and reads it again.
 
-        The single write path for this file, so that everything which follows an append - re-reading
-        it, and refreshing the store built from it - happens every time rather than at the call sites
-        that remembered to.
+        The number is taken inside the store's write, so a script filing at the same moment cannot be
+        handed the same one.
 
-        :param block: the item's whole markdown, heading included
+        :return: (the ref it was filed as, None or a warning when the text dump could not follow)
         """
 
-        append_to_inbox(self.path, block)
+        import triagedb
 
-        self.load()
+        warning = None
 
-    def _inbox_span(self):
-        return inbox_span(self.text)
+        try:
+            ref = triagedb.file_issue(self.conn, kind, summary, detail, raised_from=raised_from, build=build)
+        except triagedb.DumpNotWritten as bad:
+            ref, warning = bad.result, str(bad)
+        finally:
+            self.load()
 
-    def _parse_inbox(self):
-        span = self._inbox_span()
-
-        if not span:
-            return [], ""
-
-        section = self.text[span[0]:span[1]]
-
-        marks = list(ISSUE_ITEM_RE.finditer(section))
-
-        # Defence in depth alongside inbox_span()'s own boundary: a '## ' heading landing inside
-        # what would otherwise be the last item's block - typed into a detail body by hand, or a
-        # boundary bug like the one this file just had - must not let that item swallow
-        # everything after it.  This is exactly how the last real Inbox item once absorbed the
-        # receipt table and every section below it.
-        headings = [h.start() for h in re.finditer(r'^## ', section, re.M)]
-
-        items = []
-
-        for i, m in enumerate(marks):
-            block_end = marks[i + 1].start() if i + 1 < len(marks) else len(section)
-
-            for h in headings:
-                if m.start() < h < block_end:
-                    block_end = h
-                    break
-
-            block = section[m.start():block_end]
-
-            items.append(IssueItem(m.group(1), m.group(2), m.group(3), block))
-
-        # Whatever is left once every structured item is cut out - free-hand notes Adam dropped
-        # straight into the Inbox, which follow no format on purpose (see README.md).  Never
-        # discarded, only set aside, so an API caller sees it exists without having to parse it.
-        #
-        # Reuses the SAME boundaries the first loop computed, rather than re-searching for a
-        # literal "### OB-" - that string stopped being the only way a block starts the moment
-        # FR-### existed, and re-deriving boundaries from scratch is exactly how the two would
-        # drift.  Removed in reverse so each cut's positions, taken from the untouched 'section',
-        # stay valid regardless of earlier cuts (all of which are further to the right).
-        leftover = section
-
-        for i in range(len(marks) - 1, -1, -1):
-            start = marks[i].start()
-            end = marks[i + 1].start() if i + 1 < len(marks) else len(section)
-
-            leftover = leftover[:start] + leftover[end:]
-
-        leftover = leftover.replace(INBOX_EMPTY, "").strip()
-
-        return items, leftover
-
-    def _parse_picked(self):
-        """The receipt table, as dicts keyed by its own header - Filed/Ref/Kind/What/Became -
-        rather than fixed positions, so a column added later doesn't silently misalign every
-        reader of this method. 'became_tag' pulls the bare MT-### out of Became's markdown link,
-        for anything that wants to jump straight to that entry in tests.md.
-        """
-
-        marker = "## What has been picked up"
-        at = self.text.find(marker)
-
-        if at < 0:
-            return []
-
-        header = None
-        rows = []
-
-        for line in self.text[at:].splitlines():
-            line = line.strip()
-
-            if not line.startswith("|") or not line.endswith("|"):
-                continue
-
-            cells = [c.strip() for c in line.strip("|").split("|")]
-
-            if not cells:
-                continue
-
-            if set("".join(cells)) <= set("-: "):
-                continue
-
-            if header is None:
-                header = [c.lower() for c in cells]
-                continue
-
-            row = dict(zip(header, cells))
-
-            became = row.get("became", "")
-
-            # EVERY TAG, IN EITHER SPELLING (Adam, 2026-09-13).  Became is written two ways in the
-            # receipt table - a markdown link, `[MT-266](tests.md#mt-266)`, and a bare code span,
-            # `MT-378` in backticks - and this matched only the link.  Every row written the second
-            # way came through with no tag, was read as tracked directly, and showed its empty State
-            # column: the "-" on most of the feature requests.  A row can also name several tests,
-            # and the first alone is not the state of the request.
-            row["became_tags"] = re.findall(r'MT-\d+', became)
-            row["became_tag"] = row["became_tags"][0] if row["became_tags"] else None
-
-            rows.append(row)
-
-        return rows
+        return ref, warning
 
 
 # --------------------------------------------------------------------------------------------
@@ -1369,9 +1047,14 @@ FILTERS = [
 # order, so that nothing inside a code span is read as emphasis, and an asterisk inside a word is not italic.
 _INLINE = re.compile(
     r"(?P<code>`[^`\n]+`)"
-    r"|(?P<link>\[(?P<label>[^\]\n]+)\]\([^)\s]+\))"
+    r"|(?P<link>\[(?P<label>[^\]\n]+)\]\((?P<href>[^)\s]+)\))"
     r"|(?P<bold>\*\*(?=\S)(?P<btext>.+?)(?<=\S)\*\*)"
     r"|(?P<italic>(?<![*\w])\*(?=[^\s*])(?P<itext>[^*\n]+?)(?<=\S)\*(?![*\w]))")
+
+# An MT-### named in an entry's text, or in a link's address - `tests.md#mt-123`, which the text keeps as it was
+# written though the file has gone.  Either is drawn as a link that jumps to that entry.
+_TAG_IN_TEXT = re.compile(r"\bMT-(\d+)\b")
+_TAG_IN_HREF = re.compile(r"#mt-(\d+)\b", re.I)
 
 # Which layout a saved window size belongs to.  2 is the stacked one (2026-09-24); a size saved by the side-by-side
 # layout is 1024 pixels wide and is not restored into this one.
@@ -1487,8 +1170,11 @@ class Triage(tk.Tk):
 
         self.title("TrainControl - manual test triage")
 
+        import triagedb
+
         self.state_ = State()
-        self.doc = TestsDoc(TESTS_MD)
+        self.conn = triagedb.connect()
+        self.doc = TestsDoc(self.conn)
         self.build = git_build()
 
         self.process = None
@@ -1504,7 +1190,7 @@ class Triage(tk.Tk):
         # Set when a comment fails to write after its observations were already filed - (tag,
         # composed comment text) - so a retry reuses the exact text that names those observations'
         # refs instead of recomposing one that would show none filed, since self.observations is
-        # cleared the moment they are safely in issues.md.  See submit().
+        # cleared the moment they are safely in the Inbox.  See submit().
         self.pending_comment = None
 
         self.issues_doc = None
@@ -1537,6 +1223,10 @@ class Triage(tk.Tk):
         self.bind("<Control-n>", lambda e: self.free_observation())
 
         self.after(20000, self._autosave)
+
+        # ANOTHER PROCESS'S WRITE IS SHOWN, not written over: a round adding a comment while this is open
+        # is on screen within two seconds (see _reread).
+        self.after(2000, self._watch_store)
 
     # -- construction ------------------------------------------------------------------------
 
@@ -1595,11 +1285,12 @@ class Triage(tk.Tk):
         bar = tk.Menu(self)
 
         f = tk.Menu(bar, tearoff=0)
-        f.add_command(label="Reload from disk\tCtrl+R", command=self.reload)
+        f.add_command(label="Reload from the store\tCtrl+R", command=self.reload)
         f.add_separator()
-        f.add_command(label="Open tests.md", command=lambda: self._open(TESTS_MD))
-        f.add_command(label="Open issues.md", command=lambda: self._open(ISSUES_MD))
-        f.add_command(label="Open the backups folder", command=lambda: self._open(BACKUP_DIR))
+
+        # THE MARKDOWN HAS GONE (FR-136 Phase 1c), and with it "Open tests.md".  The text dump is the
+        # record written out as plain text on every write - for reading, never for editing.
+        f.add_command(label="Open the text dump folder", command=self._open_dump)
         f.add_separator()
         f.add_command(label="Quit", command=self._on_close)
         bar.add_cascade(label="File", menu=f)
@@ -1840,7 +1531,7 @@ class Triage(tk.Tk):
         return frame
 
     def _refresh_issue_tabs(self):
-        self.issues_doc = IssuesDoc(ISSUES_MD) if os.path.exists(ISSUES_MD) else None
+        self.issues_doc = IssuesDoc(self.conn)
 
         for kind in self.issue_widgets:
             self._populate_issue_tree(kind)
@@ -1907,7 +1598,7 @@ class Triage(tk.Tk):
                 slug = disposition_slug(state_text) if state_text else None
                 state_shown = "%s  (%s)" % (state_text or "tests not found", ", ".join(tags))
             else:
-                # Tracked directly: State IS the disposition, same words tests.md uses, Claude-set
+                # Tracked directly: State IS the disposition, same words the tests use, Claude-set
                 # the same way.  A bare "-" is an empty cell, not a word.
                 state_text = (row.get("state") or "").strip()
 
@@ -1968,7 +1659,7 @@ class Triage(tk.Tk):
 
                 each = "\n".join(
                     "  %s - %s" % (t, self.doc.by_tag[t].disposition if t in self.doc.by_tag
-                                   else "not found in tests.md")
+                                   else "not in the store")
                     for t in tags)
 
                 text = "Picked up as %s - state: %s.\n\n%s\n\nRef: %s\nFiled: %s\n\n%s" % (
@@ -1992,7 +1683,7 @@ class Triage(tk.Tk):
         if not it:
             return
 
-        text = ("Pending - not yet picked up into tests.md.\n\n"
+        text = ("Pending - not yet picked up.\n\n"
                "Kind: %s\nRaised from: %s\nFiled: %s\nBuild: %s\n\n%s") % (
                    it.kind, it.raised_from, it.filed_at, it.build, it.detail)
 
@@ -2028,7 +1719,7 @@ class Triage(tk.Tk):
             summary = row.get("what", "") if row else ref
             # The receipt table's Kind column is free text too - normalised for the same reason
             # IssueItem.kind is: an exact-match 'feature request' here decides which counter
-            # format_ref()/next_ref_number() file the cancellation request's own ref under, and a
+            # counter the cancellation request's own ref is taken from, and a
             # cased or shortened Kind used to fall through to OB regardless of which one it named.
             target_kind = normalize_kind(row.get("kind"))[0] if row else kind
 
@@ -2042,39 +1733,20 @@ class Triage(tk.Tk):
         if reason is None:
             return
 
-        new_ref = format_ref(target_kind, next_ref_number(target_kind))
-
-        block = (
-            "### %s - %s - Cancel %s\n\n"
-            "**Kind:** %s  \n"
-            "**Raised from:** cancellation request for %s - %s  \n"
-            "**Filed:** %s  \n"
-            "**Build:** %s\n\n"
-            "%s"
-        ) % (
-            new_ref,
-            datetime.date.today().isoformat(),
-            ref,
-            target_kind,
-            ref,
-            summary,
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-            self._build_note(),
-            reason.strip() or "(no reason given)",
-        )
-
         try:
-            # Through the document, not straight at the file: it re-reads afterwards, so the store
-            # built from it never describes an Inbox that has since gained an item.
-            self._issues().file(block)
+            new_ref, warning = self._issues().file(
+                target_kind, "Cancel %s" % ref, reason.strip() or "(no reason given)",
+                "cancellation request for %s - %s" % (ref, summary), self._build_note())
 
         except Exception as bad:
-            # Same failure modes as free_observation(): a missing '## Inbox' heading, or
-            # OneDrive holding the file so os.replace raises PermissionError.  Left unhandled,
+            # The store refused, or could not be written - busy past its wait, say.  Left unhandled,
             # this callback would just stop - no dialog, nothing printed under pythonw - and the
             # cancellation request would look like it never happened.
             messagebox.showerror("Could not file the cancellation request", str(bad), parent=self)
             return
+
+        if warning:
+            messagebox.showwarning("Filed, with a warning", warning, parent=self)
 
         self._refresh_issue_tabs()
 
@@ -2085,7 +1757,7 @@ class Triage(tk.Tk):
             return
 
         if tag not in self.doc.by_tag:
-            messagebox.showinfo("Not found", "%s is not in tests.md (yet)." % tag, parent=self)
+            messagebox.showinfo("Not found", "%s is not in the store." % tag, parent=self)
             return
 
         self.left_book.select(0)
@@ -2450,7 +2122,7 @@ class Triage(tk.Tk):
             # IssuesDoc.freeform is real content - a free-hand note Adam dropped straight into
             # the Inbox with no structure - and used to be computed and then never shown
             # anywhere in the window, which is as good as dropped for anyone who only looks at
-            # the app.  A preview here is not a substitute for reading it in issues.md, but it is
+            # the app.  A preview here is not a substitute for reading it whole, but it is
             # the difference between knowing it exists and not.
             preview = self.issues_doc.freeform.strip().replace("\n", " ")
 
@@ -2458,7 +2130,7 @@ class Triage(tk.Tk):
                 preview = preview[:77] + "..."
 
             bits.append("FREEFORM note(s) in the Inbox, not shown in either tab - see "
-                       "issues.md: \"%s\"" % preview)
+                       "`triagedb.py notes issues.inbox-lead`: \"%s\"" % preview)
 
         return ("  " + "  |  ".join(bits) + ".") if bits else ""
 
@@ -2498,9 +2170,7 @@ class Triage(tk.Tk):
 
         self.head_label.config(text="%s  \u2014  %s" % (entry.tag, entry.title))
 
-        # Where it is kept, when that is an archive (FR-136): an answer is written there, and brings it back.
-        self.meta_written.config(text="written %s%s" % (
-            entry.written, "  -  in %s" % entry.file if entry.file != "tests.md" else ""))
+        self.meta_written.config(text="written %s" % entry.written)
         self.meta_disposition.config(text="disposition: %s" % entry.disposition)
         self.meta_from.config(text="from: %s" % entry.origin)
 
@@ -2590,12 +2260,20 @@ class Triage(tk.Tk):
 
         for match in _INLINE.finditer(text):
             if match.start() > position:
-                widget.insert(tk.END, text[position:match.start()], self._style(widget, styles))
+                self._plain(widget, text[position:match.start()], styles)
 
             if match.group("code"):
                 widget.insert(tk.END, match.group("code")[1:-1], self._style(widget, styles + ("code",)))
             elif match.group("link"):
-                self._inline(widget, match.group("label"), styles)
+                # A link to an entry - `[MT-123](tests.md#mt-123)` - jumps to it.  Its address names a file that
+                # has gone, and stays as written; the tag it names is in the store.
+                named = _TAG_IN_HREF.search(match.group("href")) or _TAG_IN_TEXT.search(match.group("label"))
+
+                if named:
+                    widget.insert(tk.END, match.group("label"),
+                                  self._style(widget, styles) + (self._jump_tag(widget, int(named.group(1))),))
+                else:
+                    self._inline(widget, match.group("label"), styles)
             elif match.group("bold"):
                 self._inline(widget, match.group("btext"), styles + ("bold",))
             else:
@@ -2604,7 +2282,44 @@ class Triage(tk.Tk):
             position = match.end()
 
         if position < len(text):
+            self._plain(widget, text[position:], styles)
+
+    def _plain(self, widget, text, styles):
+        """Text with no markdown in it, with every MT-### it names made a link to that entry."""
+
+        position = 0
+
+        for match in _TAG_IN_TEXT.finditer(text):
+            if match.start() > position:
+                widget.insert(tk.END, text[position:match.start()], self._style(widget, styles))
+
+            widget.insert(tk.END, match.group(0),
+                          self._style(widget, styles) + (self._jump_tag(widget, int(match.group(1))),))
+
+            position = match.end()
+
+        if position < len(text):
             widget.insert(tk.END, text[position:], self._style(widget, styles))
+
+    def _jump_tag(self, widget, number):
+        """The Text tag that draws a link to MT-number and jumps to it on a click, made the first time it is asked for.
+
+        :param widget: the read-only pane
+        :param number: the entry's number
+        :return: the tag's name
+        """
+
+        tag = "MT-%03d" % number
+
+        name = "jump-" + tag
+
+        if name not in widget.tag_names():
+            widget.tag_configure(name, foreground="#1a5fb4", underline=True)
+            widget.tag_bind(name, "<Button-1>", lambda _e, t=tag: self._jump_to_test(t))
+            widget.tag_bind(name, "<Enter>", lambda _e: widget.config(cursor="hand2"))
+            widget.tag_bind(name, "<Leave>", lambda _e: widget.config(cursor=""))
+
+        return name
 
     @staticmethod
     def _style(widget, styles):
@@ -2697,64 +2412,51 @@ class Triage(tk.Tk):
         if not got:
             return
 
-        ref = format_ref(got["kind"], next_ref_number(got["kind"]))
-
         try:
-            self._file_observation(got, ref, None)
+            ref, warning = self._file_observation(got, None)
 
         except Exception as bad:
-            # append_to_inbox raises IOError with no '## Inbox' heading; write_text's os.replace
-            # raises PermissionError when OneDrive still holds the file open.  Unhandled, either
-            # one unwinds out of this Tk callback - no confirmation dialog, and under pythonw
-            # nothing printed either, so from Adam's side the button just did nothing.  That is
-            # what led to an item being filed twice: he clicked again because it looked like the
-            # first click had not worked.
+            # The store refused, or could not be written - busy past its wait, say.  Unhandled, it
+            # unwinds out of this Tk callback - no confirmation dialog, and under pythonw nothing
+            # printed either, so from Adam's side the button just did nothing.  That is what led to an
+            # item being filed twice: he clicked again because it looked like the first click had not
+            # worked.
             messagebox.showerror("Could not file the issue", str(bad), parent=self)
             return
 
-        messagebox.showinfo("Filed", "Filed as %s in issues.md." % ref, parent=self)
+        if warning:
+            messagebox.showwarning("Filed, with a warning", warning, parent=self)
+
+        messagebox.showinfo("Filed", "Filed as %s, in the Inbox." % ref, parent=self)
 
         self._say("%s filed." % ref)
 
-    def _file_observation(self, ob, ref, from_entry):
+    def _file_observation(self, ob, from_entry):
+        """Files one bug or feature request into the Inbox.
+
+        :param ob: the dialog's answer - kind, summary, detail
+        :param from_entry: the test it was noticed on, or None
+        :return: (the ref it was filed as, None or a warning)
+        """
+
         raised = ("%s (%s)" % (from_entry.tag, from_entry.title)) if from_entry else \
                  "noticed while testing - not from a particular test"
 
-        block = (
-            "### %s - %s - %s\n\n"
-            "**Kind:** %s  \n"
-            "**Raised from:** %s  \n"
-            "**Filed:** %s  \n"
-            "**Build:** %s\n\n"
-            "%s"
-        ) % (
-            ref,
-            datetime.date.today().isoformat(),
-            ob["summary"],
-            ob["kind"],
-            raised,
-            datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-            self._build_note(),
-            ob["detail"].strip() or "(no further detail)",
-        )
-
-        self._issues().file(block)
+        filed = self._issues().file(ob["kind"], ob["summary"], ob["detail"].strip() or "(no further detail)",
+                                    raised, self._build_note())
 
         self._refresh_issue_tabs()
 
-    def _issues(self):
-        """The Inbox document, made if the window started without one.
+        return filed
 
-        `issues_doc` is None when issues.md was missing at startup - which is a real state, and the
-        two filing paths would otherwise have to each decide what to do about it. Filing an item into
-        a file that is not there is what `append_to_inbox` already refuses, with a message the caller
-        shows; this just makes sure there is something to refuse it.
+    def _issues(self):
+        """The Inbox, read if the window has not read it yet.
 
         :return: an IssuesDoc
         """
 
         if self.issues_doc is None:
-            self.issues_doc = IssuesDoc(ISSUES_MD)
+            self.issues_doc = IssuesDoc(self.conn)
 
         return self.issues_doc
 
@@ -2794,44 +2496,50 @@ class Triage(tk.Tk):
                     parent=self):
                 return
 
-        # Observations first: if tests.md turns out to have moved underneath us, the item is
-        # already filed and the comment can be re-submitted, which is the harmless order of the two.
+        # Observations first: if the comment then cannot be written, the items are already filed and
+        # the comment can be re-submitted, which is the harmless order of the two.
         receipts = []
+        warnings = []
 
         try:
-            counters = {}       # kind -> next free number, so two of the same kind in one
-                                # submit don't collide without re-scanning the files each time
+            # Each takes its number inside the store's write, so two in one submit cannot collide.
+            for ob in list(self.observations):
+                ref, warning = self._file_observation(ob, entry)
 
-            for ob in self.observations:
-                kind = ob["kind"]
-
-                if kind not in counters:
-                    counters[kind] = next_ref_number(kind)
-
-                ref = format_ref(kind, counters[kind])
-                counters[kind] += 1
-
-                self._file_observation(ob, ref, entry)
                 receipts.append((ref, ob))
 
+                # Filed: it leaves this submit at once, so a failure further down cannot file it twice.
+                self.observations.remove(ob)
+
+                if warning:
+                    warnings.append(warning)
+
         except Exception as bad:
-            messagebox.showerror("Could not file an observation", str(bad), parent=self)
+            self._refresh_observations()
+            self._stash_draft()
+
+            messagebox.showerror("Could not file an observation", "%s%s" % (bad, (
+                "\n\n%d filed before it: %s.  They are no longer in this submit." % (
+                    len(receipts), ", ".join(ref for ref, _ in receipts))) if receipts else ""), parent=self)
             return
 
         # A retry of a previously-failed submit reuses the exact comment text composed last
         # time, receipts and all, rather than recomposing one - self.observations was cleared
         # the moment those observations were safely filed, so a fresh _compose() here would
-        # produce a comment that names none of them, even though they are sitting in issues.md.
+        # produce a comment that names none of them, even though they are sitting in the Inbox.
         if self.pending_comment and self.pending_comment[0] == entry.tag:
             comment = self.pending_comment[1]
         else:
             comment = self._compose(result, feedback, receipts)
 
         try:
-            self.doc.append_comment(entry.tag, comment)
+            warning = self.doc.append_comment(entry.tag, comment)
+
+            if warning:
+                warnings.append(warning)
 
         except Exception as bad:
-            # The observations, if any, are already safely in issues.md - clearing them here
+            # The observations, if any, are already safely in the Inbox - clearing them here
             # stops a retry from filing them a second time under new refs, which is the failure
             # this file itself records happening once already ("filed twice because the app
             # appeared not to have filed it the first time").  The comment stays in the boxes,
@@ -2843,7 +2551,7 @@ class Triage(tk.Tk):
             self._stash_draft()
 
             messagebox.showerror(
-                "Could not write tests.md",
+                "Could not write the comment",
                 "%s\n\nYour observations were filed and removed from this submit - retrying "
                 "will not file them again.  The comment itself was not written; it is still in "
                 "the boxes, and Submit will try the exact same text again." % bad, parent=self)
@@ -2867,6 +2575,9 @@ class Triage(tk.Tk):
         self._say("%s answered%s." % (
             entry.tag, " and %d observation(s) filed" % len(receipts) if receipts else ""))
 
+        if warnings:
+            messagebox.showwarning("Written, with a warning", "\n\n".join(warnings), parent=self)
+
         self._advance()
 
     def _compose(self, result, feedback, receipts):
@@ -2889,7 +2600,7 @@ class Triage(tk.Tk):
             listed = ", ".join(
                 "%s (%s - %s)" % (ref, ob["kind"], ob["summary"]) for ref, ob in receipts)
 
-            lines.append("Filed from this test: %s.  They are in `issues.md` until they are picked up."
+            lines.append("Filed from this test: %s.  They are in the Inbox until they are picked up."
                          % listed)
 
         lines.append("")
@@ -3165,9 +2876,9 @@ class Triage(tk.Tk):
         self._stash_draft()
 
         try:
-            self.doc = TestsDoc(TESTS_MD)
+            self.doc.load()
         except Exception as bad:
-            messagebox.showerror("Could not read tests.md", str(bad), parent=self)
+            messagebox.showerror("Could not read the store", str(bad), parent=self)
             return
 
         self.current = None
@@ -3175,11 +2886,45 @@ class Triage(tk.Tk):
         self._refresh_issue_tabs()
         self._say("Reloaded.")
 
+    def _watch_store(self):
+        """Every two seconds: has another process written to the store?  If so, show what it holds now."""
+
+        try:
+            if self.doc.changed_elsewhere():
+                self._reread()
+        except Exception:
+            pass
+
+        self.after(2000, self._watch_store)
+
+    def _reread(self):
+        """Shows what the store holds now, after another process wrote to it - keeping the entry on screen and
+        whatever has been typed into the answer, which is stashed as a draft and put back.
+        """
+
+        self._stash_draft()
+
+        keep = self.current.tag if self.current else None
+
+        self.doc.load()
+
+        self.current = None
+
+        self._refresh_list()
+
+        if keep and keep in self.doc.by_tag and keep in self.tree.get_children():
+            self.tree.selection_set(keep)
+            self._show(self.doc.by_tag[keep])
+
+        self._refresh_issue_tabs()
+
+        self._say_counts()
+
     def clear_marks(self):
         if messagebox.askyesno(
                 "Clear session marks",
                 "This forgets which entries you have answered or skipped IN THIS APP.  Nothing "
-                "written to the markdown files is touched.", parent=self):
+                "in the store is touched.", parent=self):
 
             # A draft left behind on a tag already marked "done" is a stale echo of the answer
             # already submitted for it - see submit()'s own clearing.  Marks are being wiped
@@ -3198,21 +2943,28 @@ class Triage(tk.Tk):
             "How this works",
             "Work down the list.  For each test: say whether it works, write what happened, add "
             "anything else you noticed, then Submit.\n\n"
-            "Submit appends your words under that test's Comments in tests.md, dated and stamped "
-            "with the build.  Bugs go to issues.md as OB-### items, feature requests as FR-###, "
+            "Submit adds your words to that test's comments in the store, dated and stamped with the "
+            "build.  Bugs go to the Inbox as OB-### items, feature requests as FR-###, "
             "cross-referenced from the test.\n\n"
             "New issue files something that has nothing to do with the entry on screen - it goes to "
-            "issues.md the same way, without a test to reference.\n\n"
+            "the Inbox the same way, without a test to reference.\n\n"
             "Skip writes nothing at all - it just marks the row so you can find it again, and stays "
             "in the list rather than disappearing.  The same button becomes Unskip when you're back "
             "on a skipped row.\n\n"
-            "This app never changes a Disposition or the ledger - Claude sets those from what you "
-            "wrote, which is the rule that makes the file mean anything.\n\n"
+            "This app never changes a Disposition - Claude sets those from what you wrote, which is "
+            "the rule that makes the record mean anything.  An MT-### in an entry's text is a link: "
+            "click it to go there.\n\n"
             "View > Fill the right third of the screen puts this window beside TrainControl, top to bottom.  The "
             "dividers between the list, the steps and your answer can be dragged, and are remembered.\n\n"
-            "Every write backs the file up first, into .triage-backups.  From a terminal, run this "
-            "script with an argument (stats, tests, issues, verify-ledger, --help) for the same data "
-            "as JSON, no window needed.", parent=self)
+            "Everything is kept in triage.db, and written out as plain text in the dump folder after "
+            "every write (File > Open the text dump folder).  From a terminal, run this script with "
+            "an argument (stats, tests, issues, verify-ledger, --help) for the same data as JSON, no "
+            "window needed.", parent=self)
+
+    def _open_dump(self):
+        import triagedb
+
+        self._open(triagedb.DUMP_DIR)
 
     def _open(self, path):
         try:
@@ -3323,19 +3075,6 @@ class ObservationDialog(tk.Toplevel):
 
         detail = self.detail.get("1.0", tk.END).strip()
 
-        boundary = INBOX_BOUNDARY_LOOKALIKE_RE.search(detail)
-
-        if boundary:
-            messagebox.showinfo(
-                "A line looks like a section boundary",
-                "A line starting with \"%s\" reads as the end of the Inbox section to this "
-                "file's own parser - that is how a '---' or a '## heading' typed into a detail "
-                "body ends up splicing this item into the middle of an existing one instead of "
-                "adding a new one.\n\n"
-                "Indent that line (a leading space is enough) or reword it, then Add again."
-                % boundary.group(1), parent=self)
-            return
-
         self.result = {
             "kind": self.kind.get(),
             "summary": summary,
@@ -3422,10 +3161,10 @@ class LogWindow(tk.Toplevel):
 #
 #   0   found / fine
 #   1   an unexpected error (an exception - see the try/except in run_cli)
-#   2   not found (tests.md itself missing, issues.md missing, or a --tag that doesn't exist)
-#   3   verify-ledger only: it ran fine, but the ledger is not clean - distinct from 1 so a
-#       script can tell "verify-ledger says the FILE needs a hand edit" apart from "verify-ledger
-#       itself broke", which used to be the same exit code either way.
+#   2   not found (the store not migrated yet, or a --tag that doesn't exist)
+#   3   verify-ledger only: it ran fine, but the record is not clean - distinct from 1 so a
+#       script can tell "verify-ledger found something to fix" apart from "verify-ledger itself
+#       broke", which used to be the same exit code either way.
 
 def entry_dict(e, full=True):
     d = {
@@ -3445,9 +3184,22 @@ def entry_dict(e, full=True):
     return d
 
 
+def _store():
+    """The store, for one command: migrated, or the command is refused before it reads anything."""
+
+    import triagedb
+
+    conn = triagedb.connect()
+
+    triagedb.require_record(conn)
+
+    return conn
+
+
 def cli_stats(_args):
-    doc = TestsDoc(TESTS_MD)
-    issues = IssuesDoc(ISSUES_MD) if os.path.exists(ISSUES_MD) else None
+    conn = _store()
+    doc = TestsDoc(conn)
+    issues = IssuesDoc(conn)
 
     by_disposition = {}
 
@@ -3477,7 +3229,7 @@ def cli_stats(_args):
 
 
 def cli_tests(args):
-    doc = TestsDoc(TESTS_MD)
+    doc = TestsDoc(_store())
 
     if args.tag:
         e = doc.by_tag.get(args.tag.upper())
@@ -3496,10 +3248,7 @@ def cli_tests(args):
 
 
 def cli_issues(args):
-    if not os.path.exists(ISSUES_MD):
-        return {"error": "issues.md not found"}, 2
-
-    doc = IssuesDoc(ISSUES_MD)
+    doc = IssuesDoc(_store())
 
     pending = doc.pending
 
@@ -3515,73 +3264,7 @@ def cli_issues(args):
     return out, 0
 
 
-LEDGER_CELL_SPLIT_RE = re.compile(r'(?<!\\)\|')
-LEDGER_TAG_CELL_RE = re.compile(r'^\[(MT-\d+)\]\(([^)]*)\)$')
-
-
-def _ledger_row_cells(line):
-    """A markdown table row's cells - tolerant of an escaped '\\|' inside one.
-
-    The five-group regex this replaced (five '[^|]*' groups) went blind the moment a cell
-    contained a '|' at all, escaped or not: that one character made the whole row fail to match,
-    so the row was reported as simply missing from the ledger rather than as a row with an
-    unusual What column.  Splitting on '|' and counting cells sees the row either way.
-
-    Returns None for a line that is not a '| ... | ... |' row at all (ordinary prose, or a
-    blank line between rows).
-    """
-
-    line = line.strip()
-
-    if not line.startswith("|") or not line.endswith("|"):
-        return None
-
-    parts = LEDGER_CELL_SPLIT_RE.split(line)
-
-    if len(parts) < 2 or parts[0].strip() or parts[-1].strip():
-        return None
-
-    return [p.strip() for p in parts[1:-1]]
-
-
-def entries_without_a_separator(tests_text):
-    """Test entries whose section does not end with the rule that closes it.
-
-    Every entry runs from its own anchor to the next one and closes with a line of three dashes. An
-    entry missing that runs on into the next one - so the next entry's anchor sits inside its body,
-    and anything reading the file by section gets one entry where there are two.
-
-    Adam, 2026-08-25: "MT-177 works but I cannot submit it in the triage app for some reason."
-
-    It was not about MT-177. Moving the picked-up OB entries into the MTs their receipts name
-    inserted at the end of the captured section, which is AFTER the closing rule - so the rule ended
-    up mid-entry and three sections ran together. This is cheap to check and was not being checked,
-    which is why an editing script could do it silently and the first sign was an application
-    refusing a submission.
-    """
-
-    import re as _re
-
-    anchors = [m for m in _re.finditer(r'^<a id="(mt-\d+)"></a>$', tests_text, _re.M)]
-
-    out = []
-
-    for at, anchor in enumerate(anchors):
-        start = anchor.end()
-        end = anchors[at + 1].start() if at + 1 < len(anchors) else len(tests_text)
-
-        body = [line.strip() for line in tests_text[start:end].split("\n") if line.strip()]
-
-        if not body:
-            continue
-
-        if body[-1] != "---":
-            out.append({"ref": anchor.group(1).upper(), "ends_with": body[-1][:60]})
-
-    return out
-
-
-def entries_without_kind(issues_text):
+def entries_without_kind(items):
     """Inbox entries with no **Kind:** line.
 
     The triage app defaults a missing Kind to "bug".  That is harmless for an OB, which is a bug
@@ -3592,28 +3275,14 @@ def entries_without_kind(issues_text):
     Six of the ten open entries were in this state.  Only the FR was visible, because for the other
     five the wrong default happened to be the right answer - which is exactly the kind of fault that
     sits there until the one case where it matters.
+
+    :param items: [(ref, text)] - each Inbox item's text as the store holds it
     """
 
-    import re as _re
-
-    inbox_at = issues_text.find("## Inbox")
-
-    if inbox_at < 0:
-        return []
-
-    end = issues_text.find("\n## ", inbox_at + 1)
-    inbox = issues_text[inbox_at:end if end > 0 else len(issues_text)]
-
-    out = []
-
-    for entry in _re.finditer(r"### ((?:OB|FR)-\d+) - .*?(?=\n### (?:OB|FR)-|\Z)", inbox, _re.S):
-        if "**Kind:**" not in entry.group(0):
-            out.append({"ref": entry.group(1)})
-
-    return out
+    return [{"ref": ref} for ref, text in items if "**Kind:**" not in text]
 
 
-def undated_followups(issues_text):
+def undated_followups(items):
     """Inbox entries whose later additions do not say who wrote them and when.
 
     Adam, 2026-08-24: "once there is a follow up, we need to clearly demarcate old comments (such as
@@ -3626,215 +3295,65 @@ def undated_followups(issues_text):
 
     Deliberately blind to the metadata the triage app stamps - Kind, Raised from, Filed, Build - which
     open in bold on their own line and belong to the original filing.
+
+    :param items: [(ref, text)] - each Inbox item's text, with its comments, as the store holds it
     """
-
-    import re as _re
-
-    inbox_at = issues_text.find("## Inbox")
-
-    if inbox_at < 0:
-        return []
-
-    end = issues_text.find("\n## ", inbox_at + 1)
-    inbox = issues_text[inbox_at:end if end > 0 else len(issues_text)]
 
     authors = ("Claude", "Adam")
 
     out = []
 
-    for entry in _re.finditer(r"### ((?:OB|FR)-\d+) - .*?(?=\n### (?:OB|FR)-|\Z)", inbox, _re.S):
-        ref = entry.group(1)
-
-        for run in _re.finditer(r"\*\*([^*]{2,90}?)\*\*", entry.group(0)):
+    for ref, text in items:
+        for run in re.finditer(r"\*\*([^*]{2,90}?)\*\*", text):
             label = run.group(1).strip()
 
             if not any(label.startswith(a) for a in authors):
                 continue
 
-            if not _re.search(r"20\d\d-\d\d-\d\d", label):
+            if not re.search(r"20\d\d-\d\d-\d\d", label):
                 out.append({"ref": ref, "attribution": label[:70]})
 
     return out
 
 
 def cli_verify_ledger(_args):
-    """Compare the ledger table in tests.md against what the entries themselves say.
+    """Checks the record, as this command checked tests.md before the store held it.
 
-    Read-only on purpose - the ledger allows hand notes on a row (README.md: "crossing something
-    out or adding a note to it is fine"), and a wholesale rewrite here would erase them without
-    knowing which rows carried one.  This reports exactly what a human edit needs to fix.
+    The ledger was a table in tests.md, copied from the entries and liable to drift from them; it is a
+    query now (`triagedb.py ledger`), and cannot.  What is left to check is the record itself: a
+    disposition that is not one of rule 4's four words, an Inbox item with no Kind, an addition to an
+    Inbox item that does not say who wrote it and when, and anything `triagedb.verify_record` finds -
+    a field that is not what its entry's text says, an entry that does not end with its rule, or a
+    comment on nothing the store holds.  Read-only.
     """
-
-    text, _ = read_text(TESTS_MD)
-
-    doc = TestsDoc(TESTS_MD)
 
     import triagedb
 
-    ledger_start = text.find("\n## Ledger")
+    conn = _store()
 
-    # Up to the archives section, which follows it since FR-136, or "## The tests" in a file without one.
-    ledger_end = triagedb.ledger_end(text) if ledger_start >= 0 else -1
+    doc = TestsDoc(conn)
 
-    if ledger_start < 0 or ledger_end < 0:
-        return {"error": "could not find the '## Ledger' section in tests.md"}, 2
+    items = [(it.ref, triagedb.issue_text(conn, it.ref)) for it in triagedb.inbox_items(conn)]
 
-    section = text[ledger_start:ledger_end]
-
-    ledger_rows = {}
-    duplicate_ledger_rows = []
-    malformed_ledger_rows = []
-    bad_href = []
-
-    for line in section.splitlines():
-        cells = _ledger_row_cells(line)
-
-        if not cells:
-            continue
-
-        tag_match = LEDGER_TAG_CELL_RE.match(cells[0])
-
-        if not tag_match:
-            continue    # the header row, the '|---|...' rule row, or not a tag cell at all
-
-        tag, href = tag_match.group(1), tag_match.group(2)
-
-        if len(cells) != 5:
-            # A tag cell that parsed but the row still doesn't have five cells - a stray '|'
-            # that could not be told apart from a column break, most likely.  Recorded rather
-            # than silently skipped, and not folded into ledger_rows since which of its cells is
-            # Date/What/Disposition/From is not knowable.
-            malformed_ledger_rows.append({"tag": tag, "cells": len(cells)})
-            continue
-
-        if tag in ledger_rows:
-            # Two ledger rows sharing one iid used to collapse into a dict silently, keeping
-            # whichever came last and reporting a ledger that looked entirely fine.
-            duplicate_ledger_rows.append(tag)
-            continue
-
-        if href != "#" + tag.lower():
-            # [MT-084](#mt-048) - a mistyped link - used to verify clean, because the href was
-            # matched (`[^)]*`) and then thrown away without being looked at again.
-            bad_href.append({"tag": tag, "href": href})
-
-        ledger_rows[tag] = {
-            "date": cells[1],
-            "what": cells[2],
-            "disposition": cells[3],
-            "from": cells[4],
-        }
-
-    should_be_open = dict((e.tag, e) for e in doc.entries if e.is_open)
-
-    missing = sorted(tag for tag in should_be_open if tag not in ledger_rows)
-    stale = sorted(tag for tag in ledger_rows if tag not in should_be_open)
-
-    # Disposition drift is unambiguous: the two either say the same word or they don't, and if they
-    # don't the ledger is simply wrong.  Date is the same - it is copied from the entry, not
-    # composed, so any difference at all is drift.
-    #
-    # "What" allows a little more: README.md calls it "one line about it", not a verbatim copy of
-    # the title, so this only flags a pair where NEITHER side is contained in the other
-    # (case-insensitively) - the same tolerance "from" already used, for the same reason: it
-    # still catches a ledger that was never updated after a title changed, without flagging every
-    # ledger row that legitimately shortens its ONE LINE version of a long title.
-    #
-    # "From" is judged the same way as What, for the same reason - the ledger's column is a
-    # deliberately short label ("Tier 1", "AR-20") while the entry's own From field is sometimes
-    # the long sentence it was filed under, so equality would flag that shorthand as broken on
-    # nearly every Tier 1-6 row, which is noise, not a finding.  It still catches a ledger citing
-    # a tag the entry does not mention at all (MT-036: ledger says AR-20, the entry says
-    # "hands-on testing" - not a shorthand of it) and a ledger missing a tag the entry has gained
-    # since (MT-030 the other way round).
-    disposition_drift = []
-    date_drift = []
-    what_notes = []
-    from_notes = []
-
-    def _neither_contains(a, b):
-        a, b = a.lower(), b.lower()
-        return a not in b and b not in a
-
-    for tag, row in ledger_rows.items():
-        e = should_be_open.get(tag)
-
-        if not e:
-            continue
-
-        if row["disposition"] != e.disposition:
-            disposition_drift.append({
-                "tag": tag, "ledger": row["disposition"], "actual": e.disposition,
-            })
-
-        if row["date"] != e.date:
-            date_drift.append({"tag": tag, "ledger": row["date"], "actual": e.date})
-
-        if _neither_contains(row["what"], e.title):
-            what_notes.append({"tag": tag, "ledger_what": row["what"], "actual_title": e.title})
-
-        if _neither_contains(row["from"], e.origin):
-            from_notes.append({"tag": tag, "ledger_from": row["from"], "actual_from": e.origin})
-
-    # README.md rule 4: exactly four words, and no others.  Checked against every entry, not just
-    # the open ones - a validated or superseded entry can still be misspelled or hand-typed wrong,
-    # and would otherwise never be looked at again once it drops off the "should be open" list.
+    # README.md rule 4: exactly four words, and no others - every entry, not just the open ones.
     invalid_disposition = [
         {"tag": e.tag, "disposition": e.disposition}
         for e in doc.entries
         if e.disposition.strip().lower() not in VALID_DISPOSITIONS
     ]
 
-    # Two items sharing one ref, which is the failure this check was added for: a feature request
-    # filed through the app and a second one written by hand both took FR-014, and the list showed
-    # two rows under one identifier.  Cheap to detect, and impossible to notice by eye in a file this
-    # size.
-    duplicate_refs = []
+    undated = undated_followups(items)
+    no_kind = entries_without_kind(items)
 
-    if os.path.exists(ISSUES_MD):
-        issues_text, _ = read_text(ISSUES_MD)
-
-        seen = {}
-
-        for ref in re.findall(r'^### ((?:OB|FR)-\d+) - ', issues_text, re.M):
-            seen[ref] = seen.get(ref, 0) + 1
-
-            if seen[ref] == 2:
-                duplicate_refs.append(ref)
-
-    undated = undated_followups(read_text(ISSUES_MD)[0])
-    no_kind = entries_without_kind(read_text(ISSUES_MD)[0])
-    # In every file an entry is kept in (FR-136): an archived entry missing its rule runs into the next
-    # one just the same.
-    no_rule = []
-
-    for path in triagedb.tests_paths(TESTS_MD):
-        for found in entries_without_a_separator(read_text(path)[0]):
-            found["file"] = os.path.basename(path)
-            no_rule.append(found)
+    _, problems = triagedb.verify_record(conn)
 
     out = {
-        "duplicate_tags": doc.duplicate_tags,
-        "duplicate_refs": duplicate_refs,
-        "duplicate_ledger_rows": duplicate_ledger_rows,
-        "malformed_ledger_rows": malformed_ledger_rows,
-        "bad_href": bad_href,
-        "ledger_rows": len(ledger_rows),
-        "should_be_open": len(should_be_open),
-        "missing_from_ledger": missing,
-        "stale_in_ledger": stale,
-        "disposition_drift": disposition_drift,
-        "date_drift": date_drift,
-        "what_notes": what_notes,
-        "from_notes": from_notes,
+        "should_be_open": sum(1 for e in doc.entries if e.is_open),
         "invalid_disposition": invalid_disposition,
         "undated_followups": undated,
         "entries_without_kind": no_kind,
-        "entries_without_a_separator": no_rule,
-        "clean": not (missing or stale or disposition_drift or date_drift or duplicate_refs
-                      or doc.duplicate_tags or duplicate_ledger_rows or malformed_ledger_rows
-                      or bad_href or invalid_disposition or undated
-                      or no_kind or no_rule),
+        "record_problems": problems,
+        "clean": not (invalid_disposition or undated or no_kind or problems),
     }
 
     return out, (0 if out["clean"] else 3)
@@ -3846,7 +3365,7 @@ CLI_COMMANDS = {
     "tests": (cli_tests, "List entries. Default: open only. --all for everything, a TAG "
                         "argument (positional, not --tag) for one."),
     "issues": (cli_issues, "List Inbox items not yet picked up. --kind bug|feature, --all adds picked-up."),
-    "verify-ledger": (cli_verify_ledger, "Diff the ledger table against the entries. Read-only."),
+    "verify-ledger": (cli_verify_ledger, "Check the record: dispositions, Inbox items, fields. Read-only."),
 }
 
 
@@ -3855,8 +3374,8 @@ def build_arg_parser():
 
     parser = argparse.ArgumentParser(
         prog="triage.py",
-        description="Query tests.md / issues.md as JSON.  Run with no arguments to open the window "
-                    "instead.")
+        description="Query the manual tests and the Inbox (triage.db) as JSON.  Run with no "
+                    "arguments to open the window instead.")
 
     sub = parser.add_subparsers(dest="command")
 
@@ -3894,8 +3413,12 @@ def run_cli(argv):
     if not args.command:
         return None       # no subcommand - caller opens the GUI instead
 
-    if not os.path.exists(TESTS_MD):
-        print(json.dumps({"error": "tests.md not found next to this script"}), file=sys.stderr)
+    import triagedb
+
+    try:
+        _store().close()
+    except triagedb.NotMigrated as bad:
+        print(json.dumps({"error": str(bad)}), file=sys.stderr)
         return 2
 
     try:
@@ -3945,8 +3468,12 @@ def main():
         if code is not None:
             return code
 
-    if not os.path.exists(TESTS_MD):
-        print("tests.md not found next to this script (%s)" % HERE)
+    import triagedb
+
+    try:
+        _store().close()
+    except triagedb.NotMigrated as bad:
+        print(str(bad))
         return 1
 
     Triage().mainloop()

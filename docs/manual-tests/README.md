@@ -1,35 +1,40 @@
 # Manual test discipline
 
-How hands-on testing is recorded. [tests.md](tests.md) is the single source of truth: every test that
-needs the real railway or a display lives there and nowhere else - or, once it is closed and released,
-in that release's archive beside it (see "The archives" below).
+How hands-on testing is recorded.  **`triage.db` is the single source of truth** (FR-136, 2026-10-19): every
+test that needs the real railway or a display, every verdict and comment on one, every bug and feature request
+in the Inbox, every receipt, and every review finding is a row in it, and nothing else holds them.
 
-**Agents: never Read `tests.md`, its `tests-archive-*.md` files or `issues.md`.  Ask the CLI.**
-`py -3 docs\manual-tests\triage.py test MT-089` prints one entry with its Comments, `tests --open` the
-open ones, `stats` the counts, and `triagedb.py show MT-089` its history; see "The query API" below.  The
-archives alone are 1.9 MB, and the CLI answers from all of them for the price of the entry you asked about.
+**Agents: ask the CLI.**  `py -3 docs\manual-tests\triagedb.py show MT-089` prints an entry in full, exactly as it
+was written, with its comments; `ledger` what is open, `issues` the Inbox, `check` any query; see "The query API"
+below.  The text dump in `dump/` can be grepped, but it is 5 MB and is not where to read an entry.
 
-Set 2026-08-22, at Adam's request, after the tests had spread across three documents and their results
-had to be pieced together from comments interleaved with the instructions.
+Adam, 2026-10-19: *"why aren't we storing all tests in a database, why have md files at all?  I made this ask
+before."*  He had - 2026-08-25, *"for the triage app, lets convert it to use a database and then add apis to check,
+update, and file dispositions/cases"* - and the first version put a database in front of `tests.md` and `issues.md`
+while leaving them the record.  Every reader then had to sync first, and on 2026-09-15 a stale copy written back
+erased nine of his comments.  He chose "DB only, plus a text dump".  The markdown files, `tests.md`, `issues.md` and
+the four `tests-archive-*.md`, were imported by `triagedb.py migrate` and deleted; their history is in git.
+
+The rules below were set 2026-08-22, at Adam's request, after the tests had spread across three documents and
+their results had to be pieced together from comments interleaved with the instructions.
 
 This changes nothing about how findings are recorded - severities and dispositions carry on exactly as
 [docs/reviews/README.md](../reviews/README.md) describes, and since 2026-09-21 that file is the
 convention rather than a folder of documents: a round's reviews are catalogued into
-`docs/manual-tests/triage.db` and deleted in the round that wrote them. What changes here is where the
-HANDS-ON half is written down.
+the same store and deleted in the round that wrote them. What changes here is where the HANDS-ON half is
+written down.
 
 ---
 
-## The file
+## The record
 
-One file, [tests.md](tests.md), holding every manual test ever written, in one format - the closed
-and released ones in its archives, one file per release beside it, which the store and every tool read
-as part of it.
+Every manual test ever written is a row in `triage.db`, in one format, open or closed, and stays there under
+its tag for life.
 
 ### Six rules
 
-**1. Sorted by date.** Entries appear in the order they were written, oldest first, and the date is on
-the entry. A test written today goes at the bottom whatever it is about.
+**1. In the order written.** Entries are listed in the order they were written, oldest first, and the date
+is on the entry.  A new one - `triagedb.py add-test` - takes the next tag whatever it is about.
 
 **2. Every entry has a tag, and keeps it for life.** `MT-001`, `MT-002`, and so on, never reused and
 never renumbered. Commits, reviews and other entries refer to tests by tag, and a renumbering breaks
@@ -46,14 +51,14 @@ makes a test traceable back to the defect that earned it.
 | **needs test** | Nobody has run it since it was written, or it was run and deferred, or it is waiting on something that does not exist yet. |
 | **fixed unvalidated** | The code changed after the last run, so the previous result no longer stands. Claude believes it is right; nobody has confirmed it on the railway. |
 | **fixed validated** | Run by Adam AFTER the change, and correct. This is the only state that means anything is finished. |
-| **superseded** | This should never have been an entry, or another entry has replaced it. It is not run, not counted, and not on the ledger - but it stays in the file, because its tag is cited elsewhere. |
+| **superseded** | This should never have been an entry, or another entry has replaced it. It is not run, not counted, and not on the ledger - but it stays in the record, because its tag is cited elsewhere. |
 
 A test moves to **fixed validated** only on Adam's word in the Comments. Claude never promotes its own
 work to validated, however sure it is - that is the whole point of the state existing.
 
 **superseded** was added 2026-08-22, after MT-094 had nowhere to go twice. It was a feature request
-promoted to a test entry by a rule that has since been retired; the live tracking moved to a receipt in
-[issues.md](issues.md) with its own State, and the test entry stayed on the ledger asking Adam to run
+promoted to a test entry by a rule that has since been retired; the live tracking moved to a receipt
+with its own State, and the test entry stayed on the ledger asking Adam to run
 something nobody would ever run. The three states above had no honest answer: it is not waiting to be
 tested, it is not fixed, and calling it validated would have been a lie to get it off a list.
 
@@ -86,109 +91,94 @@ outcome, that is one entry; where several outcomes can be judged apart, that is 
 for Adam to rule on is an entry too, and says so at the top.
 
 Splitting an existing bundle does not rewrite it: it goes to **superseded** with a note naming its
-replacements, exactly as rule 4 provides for, and the replacements are appended at the bottom with new
+replacements, exactly as rule 4 provides for, and the replacements are written as new entries with new
 tags.
 
 **5. Append only.** Entries are never deleted, never reordered, and their instructions are never
-rewritten. Two things may change on an existing entry: its **Disposition** line, and its **Comments**
-section, which is added to at the bottom. Everything else is history.
+rewritten. Two things may change on an existing entry: its **Disposition** line (`triagedb.py set`), and
+its comments, which are added to at the bottom (`triagedb.py comment`). Everything else is history, and
+the store has no command that changes it.
 
 If a test turns out to be wrong or obsolete, write that in its Comments and leave the entry where it
 is. If it needs to be done differently, write a new entry and reference the old tag.
 
-**6. Every entry has a Comments section, demarcated.** Under `#### Comments`, below the instruction.
-Adam writes there. Claude reads there and never edits what is already in it - a reply goes underneath,
-dated, not over the top.
+**6. Every comment is signed, dated, and added - never edited.** Each one opens with `**Adam,
+YYYY-MM-DD.**` or `**Claude, YYYY-MM-DD.**` and is a row of its own, under the entry, in the order said.
+Adam writes them through the triage app; Claude reads them and never edits one - a reply is a new
+comment, not a change to the last.  (Older entries carry a `#### Comments` heading, and some an unsigned
+paragraph under it; both are kept as written.)
 
 ### The ledger
 
-At the top of the file, a table of every entry NOT in **fixed validated** and not **superseded**: tag, date, one line about
-it, its disposition and where it came from. That is the whole of the outstanding work in one place,
-and it is where to start.
+Every entry NOT in **fixed validated** and not **superseded**: tag, date, one line about it, its disposition and
+where it came from.  That is the whole of the outstanding work in one place, and it is where to start.
 
-**It is GENERATED, from the store, and it is no longer editable** (Adam, 2026-09-09: *"regenerate it
-based on authoritative data."*). `py -3 docs\manual-tests\triagedb.py regenerate-ledger` writes it,
-and every column is copied from the entry itself.
+**It is a query, and nothing can drift from it** (Adam, 2026-09-09: *"regenerate it based on authoritative data."*).
+`py -3 docs\manual-tests\triagedb.py ledger` prints it, and the triage app's **Show > open** filters are the same
+list.  It used to be a table at the top of tests.md, copied from the entries, which had to be regenerated by hand and
+by 2026-09-09 carried 31 rows that were no longer open and 8 whose disposition had drifted.  A note you want kept
+against an entry goes in that entry's comments.
 
-It used to say "Claude regenerates the ledger whenever a disposition changes. It is editable -
-crossing something out or adding a note to it is fine, and Claude will not overwrite a note it did
-not write." Both halves failed together: because a note might be there, `verify-ledger` was read-only
-and the regeneration was somebody's discipline rather than a command — and by 2026-09-09 the table
-carried **31 rows that were no longer open and 8 whose disposition had drifted**, which is a list of
-what needs your attention that had stopped being one.
+### The store, and its text dump
 
-A note you want kept against an entry goes in that entry's **Comments**, which is where
-`verify-ledger` reads the truth from in any case.
+**`triage.db` is the record, and every reader and writer goes through `triagedb.py`.**  A test is kept as it was
+written: its text up to its first comment, each comment as a row of its own, and the rule that closes it.  Joined, they
+are the entry exactly as written, which is what `show` prints; the date, title, disposition, From and "reopened" are
+read out of that text whenever it changes, never set on their own, so a field cannot disagree with the text.  An Inbox
+item is its text as filed, and a receipt is a row of the old receipt table.  The prose `issues.md` carried around them
+is kept too, word for word (`triagedb.py notes`).
 
-### The archives
+**Every write is one short transaction**, begun with `BEGIN IMMEDIATE`, so the triage app and a script writing at the
+same moment queue for the lock instead of overwriting each other; a busy store is waited on for 30 seconds.  A comment
+is added as a row, never by reading the entry and writing it back, so there is no copy to go stale.  The app re-reads
+the store within two seconds of another process writing to it.
 
-**A closed entry leaves tests.md once the release it was closed in has shipped** (FR-136, 2026-10-19).
-By then the file was 1.86 MB and 770 of its 772 entries were closed, and every reader paid for all of
-them.  Each release has its own file beside it - `tests-archive-pre-3.0.0.md`, `tests-archive-3.0.0.md`,
-`tests-archive-3.0.1.md`, `tests-archive-3.0.2.md` - and an entry moves into one whole: anchor, text,
-Disposition and Comments, byte for byte, under the tag it always had.  Nothing about rule 5 changes; an
-archive is where an entry is kept, not something done to it.
+**After every write the store is written out as plain text, in `dump/`** - and nothing reads it back, except the Java
+tests, which have no SQLite driver.  It is there for git: a history and a diff a person can read, which a binary
+database cannot give.  The format was chosen for small diffs:
 
-**The rule** is `triagedb.home_for`, and it is a function of the store, so nobody moves an entry by hand:
+- one file per table (`tests.txt`, `comments.txt`, `issues.txt`, `receipts.txt`, `notes.txt`, `findings.txt`,
+  `dead-citations.txt`, `meta.txt`), records sorted by tag, so a record never moves when another is added;
+- one field per line, so a changed disposition is one changed line, not a rewritten paragraph;
+- every line of a text written on a line of its own behind `| `, exactly as written (trailing spaces kept), so a new
+  comment is a few added lines in `comments.txt` and nothing else moves, and no line of text can be mistaken for a
+  field;
+- comments in their own file rather than inside their entry, so answering a test touches its record at most on
+  its `reopened:` line.
 
-- an entry that is not **fixed validated** or **superseded** is in tests.md;
-- a closed one goes to the first release in `triagedb.ARCHIVES` whose day is on or after the last day
-  anything was said on it - the latest of its heading date and its dated `**Adam, ...**` and
-  `**Claude, ...**` markers.  A release's own day counts in it, and "pre-3.0.0" ends on 2026-09-26, the
-  day 2.8.2 was released;
-- a closed one whose last word is newer than the last release stays in tests.md: it has not shipped.
+It is not markdown, and it is never edited: a hand edit is overwritten by the next write and changes nothing in the
+store.  `triagedb.py verify` says whether it is the store's own rows.
 
-So **an entry that is reopened, or answered, comes back to tests.md by itself** - the newest comment is
-dated after the last release - the next time the store is written, and leaves again once the next release
-is in `ARCHIVES`.  An answer Adam writes in the triage app to an archived entry is never lost or left
-where nobody looks: it is written into the entry, and the entry comes back with it.
+**A merge conflict in `triage.db`** is never resolved by picking a side blind.  Take one side's store, read what the
+other side wrote from its dump diff (`git diff` of `dump/comments.txt` and the rest), and write those again through the
+CLI - a comment, a disposition, a filing - which rewrites the dump.  Then `triagedb.py verify`.
 
-**When a release ships**, add its row to `ARCHIVES` in triagedb.py - its name and the day - and run
-`py -3 docs\manual-tests\triagedb.py archive`.  That moves every entry to where the rule puts it,
-regenerates the ledger, and proves the record is the same afterwards: a second store is built from the files
-it has written and compared with the first, entry by entry and comment by comment, and then every file is
-compared byte for byte with what that store renders.  Run it again and it writes nothing.
-
-**Every entry keeps its address.**  `tests.md#mt-NNN` is how every link to an entry was written, and some of
-those are quotations nobody may edit - findings.tsv's, and links inside other entries.  So tests.md has a
-section, "The archives", with an anchor for every archived tag on a line linking to where it is now, and an
-archive's header carries one for each entry its own entries link to as `#mt-NNN` that is kept elsewhere.
-Both are written with the files, so a line never names a file the entry has left.  Links are therefore
-never rewritten, in issues.md or anywhere else: they would have to chase an entry each time it moved.
-
-**Every other write does the same as a side effect.**  `set_disposition`, `add_comment`,
-`regenerate_ledger` and the triage app's Submit render all five files, each entry where the rule says, and
-write only the ones whose bytes change.  A hand edit can leave an entry in the wrong file - a comment
-typed straight into an archive, say - and loses nothing: `triagedb.py sync` says what `archive` would
-move, and `verify` fails until it has.  The headers of the archives and the archives section of tests.md
-are generated: an edit to them is overwritten.  Edit an entry, never the text around it.
-
-**What the store refuses.**  A tag in two files with different text - which copy has the newer comment is
-not something a parser can know - is reported by `sync`, and every write refuses until the wrong copy is
-deleted by hand.  A file named like an archive that `ARCHIVES` does not list is still read, so nothing in
-it drops out of the record, and `verify` names it.
+**The migration** (`triagedb.py migrate`, 2026-10-19) read `tests.md`, its archives and `issues.md` once.  It is
+re-runnable - run again on the same markdown it changes nothing - refuses once the store has been written since, and
+refuses once the markdown has gone.  `docs/tools/prove-tracker-migration.py` proved it lost nothing: every entry,
+comment, verdict, `**Adam,` line, Inbox item and receipt counted in the markdown, the store and the dump; every entry's
+text as `show` prints it equal to its markdown block; and the findings unchanged.
 
 ---
 
 ## Asking for something new
 
-[issues.md](issues.md) is the inbox, for a bug and a feature request alike - the two are the same
-mechanism with one Kind field between them, in one file so a bug filed while looking for a feature (or
-the reverse) has a single place to land. Adam writes what he wants there, in whatever form suits him,
-or files it through [triage.py](triage.py)'s **New issue** button; Claude empties it at the start of
-the next round.
+The Inbox is where a bug and a feature request alike are filed - the two are the same mechanism with
+one Kind field between them, in one list so a bug filed while looking for a feature (or the reverse) has
+a single place to land. Adam files what he wants through [triage.py](triage.py)'s **New issue** button,
+or asks for it to be filed (`triagedb.py file`); Claude empties it at the start of the next round.
 
-**Emptying it means a one-line receipt in the table at the bottom of the inbox, and the item leaves
-the Inbox section - but where it goes from there depends on what it is.**
+**Emptying it means a one-line receipt (`triagedb.py receipt`), and the item leaves the Inbox
+(`triagedb.py clear`, which keeps it and its text) - but where it goes from there depends on what it is.**
 
 A **bug** becomes a finding under the round's prefix - in the round's own review document while it is
 being worked, and in the `finding` table of `triage.db` once the round is catalogued and its documents
-deleted - gets fixed, and gets an entry in `tests.md` with a new `MT-###` tag and the disposition
+deleted - gets fixed, and gets a new `MT-###` entry (`triagedb.py add-test`) with the disposition
 **needs test**: a bug fix needs a repeatable hands-on check that the regression stays fixed, which is
-exactly what `tests.md` is for.
+exactly what the tests are for.
 
-A **feature request** is tracked directly in the receipt table instead: a **State** column, in
-three of the four words `tests.md`'s disposition uses (not **superseded**, which has no meaning
+A **feature request** is tracked directly by its receipt instead: a **State**, in
+three of the four words a test's disposition uses (not **superseded**, which has no meaning
 for a request nobody has coded yet), plus two of its own - **pending**, picked up and not built yet,
 and **declined**, see cancelling, below - set by Claude the same way.
 
@@ -206,7 +196,7 @@ retirement.
 **An entry that has been added to since it was filed says so, per addition.** The original filing
 stands as written and is never edited. Everything after it opens with who and when - `**Claude,
 2026-08-24.**`, `**Adam, 2026-08-24.**` - in the order it was written, oldest first. That is the same
-rule `tests.md` has had as rule 6, and it is here because `issues.md` did not have it: an item picked
+rule the tests have as rule 6, and it is here because the Inbox did not have it: an item picked
 up, deferred, partly done and then re-scoped over four days read as one voice speaking at one moment,
 and the reader had no way to tell the sentence written before the work from the one written after it.
 
@@ -236,7 +226,7 @@ why (optional). Nothing changes immediately - the target's State (or, for an alr
 its `MT-###` entry) is only set to **declined** once Claude reads the request at the start of the next
 round, the same rule as every other write to either file's authoritative fields.
 
-**The same check applies to `tests.md`, and it was missed there first.** Before writing a new `MT-###`
+**The same check applies to the tests, and it was missed there first.** Before writing a new `MT-###`
 for a bug being picked up, look for an entry that already asks the question. MT-125 was filed from
 OB-039 for the caption's direction arrow, which MT-077 had been asking since 2026-08-18 - so Adam was
 handed the same test twice and said so: "i got two MT tickets for the same test. please avoid
@@ -247,20 +237,19 @@ one thing, the later one wins and the earlier is marked **superseded** naming it
 
 **Before filing anything - by hand, through the app, or as an automated round working through the
 tracker on its own - check whether it is already there.** `py -3 docs\manual-tests\triage.py issues`
-lists every pending item; read it, or read the Inbox section of `issues.md` directly, before adding to
-it. This is not a courtesy - it is how two `OB-###` entries for one idea happen: a round reads the
+lists every pending item; read it before adding to it. This is not a courtesy - it is how two `OB-###` entries for one idea happen: a round reads the
 tracker, decides something is missing, files it, and a later round (or the same one, run again) reads
 the tracker again and reaches the same conclusion, because nothing recorded that the first round had
 already acted. Filing is cheap and irreversible-by-convention (Inbox items are append-only, same as
-`tests.md`), so the check has to happen before the write, not after. If two items turn out to describe
+the tests), so the check has to happen before the write, not after. If two items turn out to describe
 the same thing anyway, say so in whichever is read second rather than leaving both to look independent.
 
 ---
 
 ## The triage app
 
-[triage.py](triage.py) is a companion window for this file, for running down the ledger without
-alt-tabbing between a long markdown document and the running railway. `py -3 docs\manual-tests\triage.py`
+[triage.py](triage.py) is a companion window for the record, for running down the ledger without
+alt-tabbing between a long document and the running railway. `py -3 docs\manual-tests\triage.py`
 - no build step, no dependency beyond the Python standard library.
 
 **Laid out for a third of the screen, full height (2026-09-24).** Adam runs it beside TrainControl in
@@ -287,7 +276,7 @@ Added 2026-08-23, when 41 of the 63 open entries were in that state and nothing 
 **Three tabs over the list: Tests, Feature requests, Bugs.** A feature request used to be reachable only
 by finding the `MT-###` row it got picked up into, indistinguishable there from an actual hands-on
 test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
-are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
+are different questions with different owners. Feature requests and Bugs list the Inbox
 items of that kind: pending ones, and picked-up ones tracked directly by their own **State** -
 colored the same way the Tests tab colors a disposition, three of its four words (not
 **superseded**) plus **pending** and **declined**.
@@ -296,7 +285,7 @@ colored the same way the Tests tab colors a disposition, three of its four words
 `everything, validated included`.** While it's active work its home is the Tests tab, not here - the
 `open` filters enforce that regardless of the item's own disposition, so an in-progress bug never
 shows up twice. But a bug or feature request should still be traceable from filing to close from its
-own tab, not only by knowing to go look in `tests.md`, so the broad `everything` view brings it back,
+own tab, not only by knowing to go look among the tests, so the broad `everything` view brings it back,
 colored by its linked test's actual disposition, with an **Open in Tests tab** button to jump
 straight there.
 
@@ -314,99 +303,88 @@ windows can sit side by side - in the language chosen beside it, or from **Tools
 in**, which launches straight away. The language is set on Java's command line (`-Duser.language`), is
 remembered, and is named at the start of the build stamp on every result submitted from that run.
 
-**What it writes, and to where.** A result is appended under that entry's `#### Comments` in
-`tests.md` - dated, signed, and stamped with the commit it was run against - the same shape a comment
-typed by hand would take. Anything else noticed, and everything from **New issue**, becomes a
-structured `OB-###` (bug) or `FR-###` (feature request) item in [issues.md](issues.md),
-cross-referenced back to the test it came from if it came from one.
+**What it writes, and to where.** A result is a comment on that entry in the store - dated, signed,
+and stamped with the commit it was run against - the same shape as one written with `triagedb.py
+comment`. Anything else noticed, and everything from **New issue**, becomes an `OB-###` (bug) or
+`FR-###` (feature request) item in the Inbox, cross-referenced back to the test it came from if it
+came from one.
 
-**Archived entries are in it too** (FR-136).  The list reads tests.md and every archive, so
-**Show > everything, validated included** has all of them, and the line under an archived entry's
-title says which archive it is kept in.  An answer to one is written into it like any other, and the
-entry comes back to tests.md with it (see "The archives" above).
+**Every entry is in it**, whenever it was closed: **Show > everything, validated included** lists them all.  An
+`MT-###` in an entry's text is a link: a click goes to that entry.  That holds for the links written when the tests
+were a file, `[MT-123](tests.md#mt-123)`, which stay as they were written.
 
-**What it deliberately never writes: the Disposition line, or the ledger.** The ledger is generated
-by `triagedb.py regenerate-ledger`; rule 4 above says the
-disposition is Claude's to set, and that stays true whether the comment arrived by hand or through the
-app - the app records what Adam said, nothing more, and the next round reads it the same way it reads
-anything typed directly into the file.
+**What it deliberately never writes: the Disposition line.** Rule 4 above says the disposition is
+Claude's to set, and that stays true whether the comment arrived through the app or the CLI - the app
+records what Adam said, nothing more, and the next round reads it.
 
-Every write backs the target file up first and replaces it atomically, and the app checks the file has
-not changed on disk since it was loaded before writing to it, so a round running in one window and
-triage.py open in another cannot silently overwrite each other.
+Every write is one short transaction, and a comment is a row of its own, so a round writing in one window and
+triage.py open in another cannot overwrite each other; when another process writes to the store, the app shows what it
+holds within two seconds, keeping what has been typed.  **File > Open the text dump folder** shows the record as plain
+text.
 
-**The store is tracked, and it is a binary (since 2026-09-08).** The `finding` table is the only place the review
-items and their dispositions live together, so `triage.db` is committed; `tests.md` and `issues.md` are rendered from
-it.  Expect a diff from any triage action, and never resolve a merge conflict in it: rebuild instead, with
-`triagedb.py build` for the tests and issues and `docs/tools/catalog-findings.py` for the findings.  Both read files
-git can merge.
+**The store is tracked, and it is a binary.**  Expect `triage.db` and `dump/` to change with any triage action, and
+commit them together.  Never resolve a merge conflict in the store by picking a side blind: see "The store, and its text
+dump" above.
 
 ### The query API
 
-Everything triage.py can show on screen it can also print as JSON, from a terminal, with no GUI
-involved - this is what a round should call instead of re-reading `tests.md` or `issues.md` by hand:
+Everything the window shows, the command line prints - this is what a round should call instead of reading anything
+by eye.  `triagedb.py` reads and writes the store; `triage.py` with an argument prints the same data as the window, as
+JSON:
 
 ```bash
-py -3 docs\manual-tests\triage.py stats                 # counts: tests by disposition, issues pending
-py -3 docs\manual-tests\triage.py tests --open          # every entry not fixed validated
-py -3 docs\manual-tests\triage.py tests --all           # every entry, validated included
-py -3 docs\manual-tests\triage.py tests --reopened      # ... only those changed since you judged them
-py -3 docs\manual-tests\triage.py test MT-089           # one entry in full, including its Comments
-py -3 docs\manual-tests\triage.py issues                # every Inbox item not yet picked up
-py -3 docs\manual-tests\triage.py issues --kind bug     # ... just the bugs (or --kind feature)
-py -3 docs\manual-tests\triage.py verify-ledger          # ledger table vs. actual open entries - a diff
-py -3 docs\manual-tests\triagedb.py verify               # every file is what the store writes, byte for byte
-py -3 docs\manual-tests\triagedb.py archive              # put every entry where the archive rule says
+py -3 docs\manual-tests\triagedb.py show MT-089          # one entry, exactly as written, then its comments
+py -3 docs\manual-tests\triagedb.py show OB-324          # an Inbox item, or a receipt, likewise
+py -3 docs\manual-tests\triagedb.py ledger               # every entry still asking Adam for something
+py -3 docs\manual-tests\triagedb.py check --disposition "needs test" --json   # any query of the tests
+py -3 docs\manual-tests\triagedb.py issues               # the Inbox items not yet picked up (--all: every one, and every receipt)
+py -3 docs\manual-tests\triagedb.py comment MT-089 "Fixed in abc123." --who Claude
+py -3 docs\manual-tests\triagedb.py set MT-089 "fixed unvalidated"
+py -3 docs\manual-tests\triagedb.py add-test "What it is about" --from OB-324 --steps steps.md
+py -3 docs\manual-tests\triagedb.py file bug "One line" "The detail." --raised-from MT-089
+py -3 docs\manual-tests\triagedb.py receipt OB-324 "What was done." --became MT-773
+py -3 docs\manual-tests\triagedb.py update-receipt FR-131 --state "fixed unvalidated"
+py -3 docs\manual-tests\triagedb.py clear OB-324         # out of the Inbox, once it has a receipt; it is kept
+py -3 docs\manual-tests\triagedb.py verify               # the record holds together; the dump and findings.tsv are its own
+py -3 docs\manual-tests\triagedb.py selftest             # exercises the store on copies
+py -3 docs\manual-tests\triage.py stats                  # counts: tests by disposition, issues pending
+py -3 docs\manual-tests\triage.py tests --open           # every entry not fixed validated, as JSON
+py -3 docs\manual-tests\triage.py tests --reopened       # ... only those changed since Adam judged them
+py -3 docs\manual-tests\triage.py test MT-089            # one entry, as JSON
+py -3 docs\manual-tests\triage.py verify-ledger          # the record's own checks
 ```
 
-Every one of them reads tests.md and all its archives: `tests --all` and `test MT-089` answer for an
-archived entry exactly as for one in tests.md.
+`add-test` takes its steps and expected result from a file (or `-` for stdin), and writes the anchor, heading,
+Disposition, From and Written lines itself, numbered after the last entry.
 
-Structured entries parse in full - tag, dates, disposition, from, the instruction, the comments, and
-for an issue, its kind and what it was raised from. Anything hand-written that does not match the
-structured shape (a freeform note dropped straight into the Inbox, say) is still returned, under
-`"freeform_pending"` (with `"has_freeform_pending"` as a quick boolean check), rather than silently
-dropped - the parser is exhaustive, not lossy, even where it cannot be exact.
+`triage.py issues` returns every pending item in full - tag, kind, what it was raised from, its detail - and
+`--all` adds the receipt table.
 
-`verify-ledger` is read-only: it reports which open entries are missing from the ledger table, which
-ledger rows no longer belong there, and where a row's Disposition, Date, What or From has drifted from
-the entry itself - plus a duplicate `MT-###`/issue ref anywhere in either file, a duplicate ledger row,
-a ledger link whose href doesn't point at the tag it names, a Disposition that isn't one of rule 4's
-four words, a malformed ledger row, an Inbox entry with no Kind, and a `tests.md` entry with no rule-3
-separator. It does not rewrite the table; `triagedb.py regenerate-ledger` is what does that, and it
-verifies the store still renders `tests.md` byte for byte before it reports success. Use `verify-ledger`
-to know whether the table is clean, and `regenerate-ledger` to make it so. Exits 3, not 1, when the
-ledger merely isn't clean - kept apart from 1 (an actual error running the check) so a script can tell
-the two apart.
-
-(It was read-only *because* a ledger row was allowed to carry a hand note. It is still read-only, and
-the note convention is gone: see "The ledger" above for why both halves failed together.)
-
-Also undocumented above: `tests` takes an optional `TAG` positional to look up one entry (same as
-`test TAG`, from the CLI's `tests --open`/`--all` list), `tests --full`/`--brief` toggles whether body
-text comes back with it, and `issues --all` also returns the picked-up receipt table, not just the
-pending Inbox.
+`verify-ledger` is read-only.  The ledger table it used to compare is a query now and cannot drift, so it checks the
+record instead: a disposition that is not one of rule 4's four words, an Inbox item with no Kind, an addition to an
+Inbox item that does not say who wrote it and when, a field that is not what its entry's text says, an entry that
+does not end with its rule, and a comment on nothing the store holds.  Exits 3, not 1, when the record is merely not
+clean - kept apart from 1 (an actual error running the check) so a script can tell the two apart.
 
 ---
 
 ## Working from it
 
-**For Adam.** Read the ledger. Work down it. Write what happened under the entry's Comments - "OK",
+**For Adam.** Read the ledger - the triage app's open list. Work down it. Say what happened - "OK",
 or what went wrong, or a change you want instead. There is no need to update the disposition; Claude
 does that from what you wrote.
 
-**For Claude, or any automated round working from this file, at the start of a round:**
+**For Claude, or any automated round working from the record, at the start of a round:**
 
-1. Run `triage.py stats` and `triage.py tests --open` rather than reading the ledger table by eye -
-   the table is for Adam; the command is the same information without a chance of a mis-scan.
-2. Read the Comments on every entry that is not validated.
+1. Run `triage.py stats` and `triagedb.py ledger`.
+2. Read the comments on every entry that is not validated (`triagedb.py show MT-###`).
 3. A comment saying the test passed moves that entry to **fixed validated**.
 4. A comment describing something wrong becomes a finding under the round's prefix - catalogued into
    `triage.db` like every other, whether or not a document survives to hold it - is fixed, and the
-   entry moves to **fixed unvalidated** with the new finding tag added to its **From** line.
+   entry moves to **fixed unvalidated**, with a comment naming the new finding.
 5. **Before a comment asking for something new becomes a new entry, run `triage.py issues` and check
-   the existing ledger for one that already covers it.** Only if nothing does, add a NEW entry at the
-   bottom, referencing the tag it came from. This is the step that goes missing when a round is in a
+   the existing ledger for one that already covers it.** Only if nothing does, add a NEW entry
+   (`triagedb.py add-test`), referencing the tag it came from. This is the step that goes missing when a round is in a
    hurry to file rather than to check first, and it is exactly how one idea gets two tags: a round
    reads a comment, doesn't find a matching entry because it never looked, and files a duplicate that
    the NEXT round then also has to notice and merge.
@@ -422,13 +400,12 @@ does that from what you wrote.
 7. Watch for a cancellation request among the items step 6 surfaces - filed from **Request cancel…**,
    it names what it is cancelling. Set that target's State to **declined** (or record the decision in
    its `MT-###` entry, for a bug already promoted), then close out both the request and the target.
-8. Run `triage.py verify-ledger` after the ledger is updated, to catch a row that was missed.
-9. Never mark anything validated. Never edit an instruction. Never reorder. Never write into
-   `tests.md` or `issues.md` by any path that skips these files' own rules - a script, a bulk edit, or
-   a hand-patch that "just adds the row" is exactly how the append-only guarantee and the ledger's
-   accuracy both quietly stop being true. If a tool other than `triage.py` needs to touch either file,
-   it must follow the same shapes: **6.** for `tests.md`, and the Inbox format in `issues.md` for a new
-   item - not a shortcut that happens to parse.
+8. Run `triage.py verify-ledger` and `triagedb.py verify` at the end, to catch anything that does not
+   hold together.
+9. Never mark anything validated. Never edit an instruction. Never reorder. Never write to the store
+   except through `triagedb.py` - not with SQL, not by editing the dump (which nothing reads back) -
+   because its writes are what keep the fields true to the text, the dump current, and two writers
+   from crossing.
 
 **When a fix lands that changes behaviour a validated test covered**, move that test back to
 **fixed unvalidated** and say why in its Comments. A test validated against code that has since changed

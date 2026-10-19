@@ -61,8 +61,8 @@ round finds nothing new above C.
    dispositions (commit hashes, claim hashes, "red first"), catalogue with
    `python docs/tools/catalog-findings.py --add <the working folder>`, set each new
    row's status in the store (Closed / Open / "Open - Adam's decision"), render the mirror, update the counts in
-   behaviour.md and open-questions.md. Tracker entries for anything Adam has to see on the railway: appended to
-   `tests.md` with their anchors, proved with `triagedb.py check --tag MT-###` (not `show`, which prints only verdicts).
+   behaviour.md and open-questions.md. Tracker entries for anything Adam has to see on the railway: written with
+   `triagedb.py add-test`, proved with `triagedb.py show MT-###`, which prints the entry as the store holds it.
 6. **The next round's validators** each get their lane's documents so far and the round's fix commits, and are asked
    two things: is each disposition true (verify, don't trust), and what did the fixes break or leave behind. Same rules
    as the reviewers.
@@ -99,7 +99,7 @@ away: what needs him, what was decided without him, what is left. The example is
   reversed.
 - **Left for a later session:** a table - the id and what is left, and why it waits.  Adam, 2026-09-24: *"work the
   'for a later session' items listed, or file them if deferral makes more sense."*  So the next session starts there:
-  each item is worked - claim first, as any fix - or filed in `issues.md` with the reason it waits, and the next report
+  each item is worked - claim first, as any fix - or filed into the Inbox (`triagedb.py file`) with the reason it waits, and the next report
   says which.
 - **Waiting on the railway:** the manual tests he has to run, with anything he must do first (note which routes are
   armed; the file to import is provided).

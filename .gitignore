@@ -40,6 +40,9 @@ TrackDiagramEditor.exe
 /docs/manual-tests/.triage-backups/
 /docs/manual-tests/.triage-runs/
 /docs/manual-tests/__pycache__/
+# SQLite's rollback journal, there only while a write is under way, and a dump file being replaced
+/docs/manual-tests/triage.db-journal
+/docs/manual-tests/dump/*.tmp
 
 # JVM crash dumps, left by a test JVM that is stopped
 hs_err_pid*.log
