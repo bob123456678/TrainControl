@@ -92,16 +92,28 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
         return popup;
     }
 
-    /** Place All Trains at Their Homes, the second item of the popup the last right-click opened. */
+    /** Place All Trains at Their Homes, with the count of homes, in the popup the last right-click opened. */
     private static JMenuItem theItem(TrainControlUI ui) throws Exception
     {
-        return (JMenuItem) theMenu(ui).getComponent(1);
+        return itemSaying(theMenu(ui), I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome",
+            ui.getAutonomySession().homesToPlace().size()));
     }
 
-    /** Run Trains to Their Homes, the first item of the popup the last right-click opened. */
+    /** Run Trains to Their Homes, in the popup the last right-click opened. */
     private static JMenuItem theRunItem(TrainControlUI ui) throws Exception
     {
-        return (JMenuItem) theMenu(ui).getComponent(0);
+        return itemSaying(theMenu(ui), I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"));
+    }
+
+    /** The item of a menu that says this, found by its words rather than its place (FR-136 Phase 6). */
+    private static JMenuItem itemSaying(JPopupMenu menu, final String text)
+    {
+        JMenuItem item = support.Components.find(menu, JMenuItem.class, i -> text.equals(i.getText()));
+
+        assertNotNull(item, "the Return Home menu has no item saying \"" + text + "\": " + support.Components.all(menu,
+            JMenuItem.class, null).stream().map(JMenuItem::getText).collect(java.util.stream.Collectors.toList()));
+
+        return item;
     }
 
     /** A tooltip's words, without the markup that wraps it. */
