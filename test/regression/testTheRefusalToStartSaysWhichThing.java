@@ -1,14 +1,12 @@
 package regression;
 
-import java.io.File;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * The three doors that refuse to start autonomy say the same thing, and it names the count (MT-263).
@@ -89,16 +87,25 @@ public class testTheRefusalToStartSaysWhichThing
     @Test
     public void testNoDoorWordsItItself() throws Exception
     {
-        String ui = read("src/org/traincontrol/gui/TrainControlUI.java");
-        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
+        // The program's code, comments blanked (FNL-C2's lesson, one day old): two of the three mentions of the
+        // singular sentence in the main window are comments describing where the choosing USED to be, and a count
+        // that reads those is counting history rather than code.
+        String ui = SourceOf.allCode();
+
+        // The diagram menu's file, whole; the autonomy page has a sentence of its own, so it is left out of the counts
+        // that are about the main window.
+        String menu = SourceOf.withoutComments(SourceOf.fileDeclaring("final class LayoutRightclickAutonomyMenu extends"));
+
+        String page = SourceOf.withoutComments(SourceOf.fileDeclaring("public class AutonomyViewerPanel extends"));
 
         assertTrue(ui.contains("whyAutonomyWillNotStart(int errors, int blocking, boolean broken)"),
             "the one rule has gone, so there is nothing for the three doors to agree through");
 
-        // The wait-for-trains sentence may be named ONCE - inside the rule - and nowhere else here.
-        assertEquals(count(ui, "errorUnableToStartAutonomyWaitForTrains"), 1,
-            "the wait-for-trains sentence is chosen in " + count(ui,
-            "errorUnableToStartAutonomyWaitForTrains") + " places in the main window, so a door can send"
+        // The wait-for-trains sentence may be named ONCE - inside the rule - and nowhere else.
+        int waits = SourceOf.occurrences("errorUnableToStartAutonomyWaitForTrains");
+
+        assertEquals(waits, 1,
+            "the wait-for-trains sentence is chosen in " + waits + " places, so a door can send"
             + " the operator to the trains again without the rule saying so");
 
         assertEquals(count(menu, "errorUnableToStartAutonomyWaitForTrains"), 0,
@@ -110,9 +117,11 @@ public class testTheRefusalToStartSaysWhichThing
             && ui.contains("whyAutonomyWillNotStart(errors, blocking, broken)")),
             "the greyed Start item's tooltip does not come from the rule");
 
-        assertEquals(count(ui, "errorCannotBuildDetailOne"), 1,
-            "the singular sentence is chosen in " + count(ui, "errorCannotBuildDetailOne") + " places in"
-            + " the main window; it belongs to the rule alone");
+        int singular = SourceOf.occurrences("errorCannotBuildDetailOne") - count(page, "errorCannotBuildDetailOne");
+
+        assertEquals(singular, 1,
+            "the singular sentence is chosen in " + singular + " places outside the autonomy page"
+            + " (which words its own); it belongs to the rule alone");
     }
 
     /**
@@ -148,27 +157,5 @@ public class testTheRefusalToStartSaysWhichThing
         for (int at = source.indexOf(what); at >= 0; at = source.indexOf(what, at + 1)) seen++;
 
         return seen;
-    }
-
-    /**
-     * One source file.
-     *
-     * @param path where it is
-     * @return its text
-     * @throws Exception from the file
-     */
-    private static String read(String path) throws Exception
-    {
-        File f = new File(path);
-
-        assertTrue(f.isFile(), "cannot find " + f.getAbsolutePath() + " - a test that reads the source"
-            + " cannot pass by not finding it");
-
-        // COMMENTS STRIPPED (FNL-C2's lesson, one day old): two of the three mentions of the singular
-        // sentence in the main window are comments describing where the choosing USED to be, and a count
-        // that reads those is counting history rather than code.
-        String raw = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
-
-        return raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
     }
 }
