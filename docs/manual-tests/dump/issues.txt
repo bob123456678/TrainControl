@@ -666,3 +666,35 @@ text:
 |
 | The claim is written and held out of the battery: `ui.testOpenLayoutLeavesTheOldTrainsBehind.testNoTrainOfTheOldRailwayStillStandsOrClaims` (`@Test(enabled = false)`).  Not fixed: 3.0.3 is refactor-only.
 |
+
+[issue OB-364]
+ordinal: 31
+inbox: yes
+kind: bug
+title: The track editor's Text Labels box opens ticked while the page's text is hidden (after the autonomy editor hid it)
+filed: 2026-10-19
+filed_at: 2026-10-19 13:36
+raised_from: FR-136 Phase 6 (layout editor coverage), 2026-10-19
+build: -
+text:
+| ### OB-364 - 2026-10-19 - The track editor's Text Labels box opens ticked while the page's text is hidden (after the autonomy editor hid it)
+|
+| **Kind:** bug  
+| **Raised from:** FR-136 Phase 6 (layout editor coverage), 2026-10-19  
+| **Filed:** 2026-10-19 13:36
+|
+| Found by FR-136 Phase 6 (the track editor driven by hand).
+|
+| **Steps:**
+| 1. Open the autonomy editor with its own Text Labels box unticked (the default; it hides the page's text, FR-133).
+| 2. Close it.
+| 3. Open the track editor on the same page.
+|
+| **What happens:** the track editor's Text Labels box is ticked, but the page's text is hidden.  The first press of the box, or Ctrl+L, only shows the text, and the box stays ticked.
+|
+| **What should happen:** the box says what the page shows when the editor opens.
+|
+| **Why:** `showTextCheckbox.setSelected(true)` is fixed in the track editor's `initComponents`, while `LayoutDiagram.editHideText` stays true on the page object the autonomy editor shares, and nothing reloads it when that editor closes.
+|
+| The claim is written and held out of the battery: `ui.testTheTrackEditorByHand.testTheTextLabelsBoxAgreesWithThePageAfterTheAutonomyEditor` (`@Test(enabled = false)`, seen red).  Not fixed: 3.0.3 is refactor-only.
+|
