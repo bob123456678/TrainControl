@@ -3258,9 +3258,8 @@ public class AutonomySession
     /**
      * Every station that some square of some page is showing the name of.
      *
-     * Squares, not names.  A caption points at the sensor it is about, so asking "is this station
-     * labelled" no longer means matching text against text - which is what made it possible for a
-     * caption to look live while naming a Point that had been renamed out from under it.
+     * Squares, not names: a caption points at the sensor it is about, so asking whether a station is labelled is not a
+     * matching of text against text.
      *
      * All pages, including excluded ones: exclusion says autonomy will not route over a page, not that
      * the page has stopped being drawn, and a caption there is still on the user's screen.
@@ -3551,9 +3550,9 @@ public class AutonomySession
 
     /**
      * Follows a locomotive's new name - or its deletion, `to` null - into the trains the edit session's folds noted (OB-343).
-     * The store has repaired the setup, its snapshot and the pre-edit note by then, and a name left here would be applied
-     * to a list that no longer holds it: a train set going by its card came out paused after Cancel, and one the card paused
-     * was lost, or a deleted locomotive's name was written back.
+     * The store has repaired the setup, its snapshot and the pre-edit note by then, and a name left here would be applied to
+     * a list that no longer holds it (a train would come out paused after Cancel, or a deleted locomotive's name be written
+     * back).
      *
      * @param from the name as it was
      * @param to the new name, or null when the locomotive was deleted
@@ -4516,11 +4515,10 @@ public class AutonomySession
      * One piece of track to measure: the squares of a leg between two fixed points - a sensor or a switch - with neither
      * switch in it (Mass Assign Lengths).
      *
-     * **Every leg, cut at switches** - Adam's ruling on review MAL-B1, 2026-09-16.  The first version asked only for the
-     * track past the last switch, because the room rule stops there; but the FR-087 allowance adds whole legs back until
-     * a reversal, and the tail and berth walks spend the switch square and the track before it, so on his railway every
-     * leg is read.  Cutting at switches keeps every rule exact: an even share of a piece never lands on the far side of a
-     * switch, where the room rule would not count it.
+     * **Every leg, cut at switches** - Adam's ruling on review MAL-B1, 2026-09-16.  The room rule stops at the last switch,
+     * but the FR-087 allowance adds whole legs back until a reversal, and the tail and berth walks spend the switch square
+     * and the track before it, so every leg is read.  Cutting at switches keeps every rule exact: an even share of a piece
+     * never lands on the far side of a switch, where the room rule would not count it.
      *
      * **Each square is in exactly one piece.**  A sensor square that ends several legs belongs to the first piece that
      * reaches it, so no answer can be overwritten by a later one (MAL-C2).
@@ -4574,8 +4572,8 @@ public class AutonomySession
      *
      * **WHY EVERY LEG** (MAL-B1).  `Layout.measuredRouteIn` - the FR-087 allowance - adds each leg's whole length back from
      * a station until a reversal or a wholly unmeasured leg; `Layout.walkOneTail` and `Layout.whyABerthCannotHoldIt`
-     * spend a train's length over every square of a leg, the switch included.  Measured on Adam's railway, that reach is
-     * every one of its 75 legs, so the question was only how to cut them, and he ruled: at switches.
+     * spend a train's length over every square of a leg, the switch included, so every leg is read and the ruling is to cut
+     * them at switches.
      *
      * **NOT the question `reversalsWithoutLength` asks, deliberately.**  That notice is said unprompted and asks less -
      * how loud the findings list may be is Adam's call (MT-305).  This is a tool somebody opens to measure everything.
@@ -6153,10 +6151,8 @@ public class AutonomySession
     /**
      * The translation between squares and the Points derived from them.
      *
-     * Derived once and held until the setup changes, because it is asked for constantly - once per
-     * Point on every feedback event, in places - and because deriving it twice is how the answers
-     * started disagreeing.  Everything that used to build its own AutonomyBuilder to answer half of
-     * this question now asks here instead.
+     * Derived once and held until the setup changes, because it is asked for constantly - once per Point on every feedback
+     * event, in places - and because deriving it twice is how the answers came to disagree.
      *
      * @return the index, never null
      */
@@ -10627,7 +10623,7 @@ public class AutonomySession
      * Records which side a train standing here came in by, so its tail can be found.
      *
      * Kept beside the placement and the facing, in the same point properties, so it travels with them
-     * through a save and a load - the round trip that had no test at all until this week.
+     * through a save and a load.
      *
      * @param tile the square
      * @param side the compass side, or null to forget
