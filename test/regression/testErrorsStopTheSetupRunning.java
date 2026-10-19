@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * An error stops the setup running, and everything that offers to run it asks the same question.
@@ -200,13 +201,7 @@ public class testErrorsStopTheSetupRunning
     @Test
     public void testTheAffordancesAskTheGuardsOwnQuestion() throws Exception
     {
-        String ui = read("src/org/traincontrol/gui/TrainControlUI.java");
-        String toggle = read("src/org/traincontrol/gui/AutonomyOverlayToggle.java");
-        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
-
-        String canStart = withoutComments(bodyOf(ui, "public boolean canStartAutonomy()"));
-
-        assertFalse(canStart.isEmpty(), "canStartAutonomy() has moved or been renamed");
+        String canStart = code("public boolean canStartAutonomy()");
 
         // THE GUARD'S QUESTION AND THE AFFORDANCE'S, PINNED AS A PAIR (TS3-B6, corrected by V33-C12).
         //
@@ -222,9 +217,7 @@ public class testErrorsStopTheSetupRunning
         // What it does is name both halves in one place, so that widening one and not the other fails
         // here rather than on Adam's railway.  If the guard's question changes, both assertions below
         // have to change together, and that is the point: they are the pair.
-        String guard = withoutComments(bodyOf(ui, "private String whyAutonomyStartIsRefused()"));
-
-        assertFalse(guard.isEmpty(), "whyAutonomyStartIsRefused() has moved or been renamed");
+        String guard = code("private String whyAutonomyStartIsRefused()");
 
         assertTrue(guard.contains("hasErrors()"),
             "the guard no longer asks hasErrors().  If that is deliberate the affordance below has to "
@@ -246,9 +239,7 @@ public class testErrorsStopTheSetupRunning
         // and the affordance's `autonomyHasErrors()` was knowledge held by a person rather than by the
         // test: gut the wrapper to `return false;` and all of them still passed, with every affordance
         // then offering Start over a setup that refuses each press.
-        String wrapper = withoutComments(bodyOf(ui, "public boolean autonomyHasErrors()"));
-
-        assertFalse(wrapper.isEmpty(), "autonomyHasErrors() has moved or been renamed");
+        String wrapper = code("public boolean autonomyHasErrors()");
 
         assertTrue(wrapper.contains("hasErrors()"),
             "autonomyHasErrors() no longer asks the session's own question, so the affordances and the "
@@ -275,9 +266,7 @@ public class testErrorsStopTheSetupRunning
         //
         // Worth having anyway: its sibling assertion above extracts the body and strips comments, this
         // one is now the strip's only rule, and the class already holds both helpers.
-        String sync = withoutComments(bodyOf(toggle, "public final void syncRun()"));
-
-        assertFalse(sync.isEmpty(), "syncRun has moved or been renamed");
+        String sync = code("public final void syncRun()");
 
         assertTrue(sync.contains("autonomyHasErrors()"),
             "the diagram strip decides Start-versus-Fix without asking the guard's own question, so "
@@ -318,12 +307,9 @@ public class testErrorsStopTheSetupRunning
         // the item's ENABLED state comes from the guard's own question, its REASON comes from the one
         // rule, and the one rule is what reaches the number.
         //
-        // WITHOUT COMMENTS, over the whole file rather than one body: the item is built in the
-        // constructor, whose signature spans three lines and cannot be named by `bodyOf`.  Stripping
-        // the comments is what a whole-file grep needs to be worth anything - this file's own prose
-        // mentions `autonomyErrorCount` twice, which is how the old rule could have gone on passing
-        // after the call had gone.
-        String menuCode = withoutComments(menu);
+        // WITHOUT COMMENTS, over the constructor that builds the item: its prose mentions
+        // `autonomyErrorCount` twice, which is how the old rule could have gone on passing after the call had gone.
+        String menuCode = code("private LayoutRightclickAutonomyMenu(");
 
         assertTrue(menuCode.contains("canStartAutonomy()"),
             "the right-click Start item no longer takes its enabled state from the guard's own "
@@ -339,7 +325,7 @@ public class testErrorsStopTheSetupRunning
             + "whyAutonomyWillNotStart(), and one of the two has to be present or the operator meets a "
             + "dead item and no reason");
 
-        String both = withoutComments(bodyOf(ui, "public String[] whyStartAndAHandSendAreRefused()"));
+        String both = code("public String[] whyStartAndAHandSendAreRefused()");
 
         assertTrue(both.contains("whyAutonomyWillNotStart(errors, blocking, broken)")
             && both.contains("errorCount()") && both.contains("blockingProblemCount()"),
@@ -349,9 +335,7 @@ public class testErrorsStopTheSetupRunning
         // AND THE ONE RULE HAS TO REACH THE NUMBER, which is the correspondence the assertion above
         // cannot see: a `whyAutonomyWillNotStart` that stopped counting would leave every affordance
         // asking it and saying nothing about how many problems there are (V32-C2's lesson, one rule on).
-        String why = withoutComments(bodyOf(ui, "public String whyAutonomyWillNotStart()"));
-
-        assertFalse(why.isEmpty(), "whyAutonomyWillNotStart() has moved or been renamed");
+        String why = code("public String whyAutonomyWillNotStart()");
 
         assertTrue(why.contains("autonomyErrorCount()"),
             "whyAutonomyWillNotStart() no longer asks how many errors there are, so every affordance "
@@ -360,71 +344,12 @@ public class testErrorsStopTheSetupRunning
     }
 
     /**
-     * A source file, whole.
+     * One declaration's code, found wherever the program keeps it, with its comments taken out so a check does not
+     * pass on the strength of prose describing code that has gone.
      */
-    private static String read(String path) throws java.io.IOException
+    private static String code(String signature)
     {
-        return new String(java.nio.file.Files.readAllBytes(new File(path).toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
-    }
-
-    /**
-     * A line with any comment - `//` or `/* *&#47;` - removed, so a check does not pass on the
-     * strength of prose describing code that has gone. Copied rather than shared with the other tests
-     * that do this: a test helper reaching into another test class is a dependency between things that
-     * are supposed to fail independently.
-     */
-    private static String withoutComments(String body)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < body.length(); i++)
-        {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
-    }
-
-    /**
-     * The body of one method, braces included, or empty when the declaration cannot be found.
-     */
-    private static String bodyOf(String source, String declaration)
-    {
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        return "";
+        return SourceOf.withoutComments(SourceOf.declaration(signature));
     }
 
     /**
@@ -588,15 +513,7 @@ public class testErrorsStopTheSetupRunning
     @Test
     public void testTheStripAsksThatQuestion() throws Exception
     {
-        String strip = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyOverlayToggle.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        int from = strip.indexOf("public final void syncRun()");
-
-        assertTrue(from >= 0, "syncRun has moved or been renamed - this test is reading nothing");
-
-        String body = withoutComments(strip.substring(from));
+        String body = code("public final void syncRun()");
 
         assertTrue(body.contains("runButtonFor("),
             "syncRun no longer asks runButtonFor, so the rule above is not the one the strip follows "
@@ -627,15 +544,13 @@ public class testErrorsStopTheSetupRunning
     @Test
     public void testTheStripIsNotTheScrollPanesColumnHeader() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String ui = SourceOf.declaration("private void ensureDiagramStrip()");
 
         int from = ui.indexOf("autonomyDiagramStrip = new javax.swing.JPanel");
 
         assertTrue(from >= 0, "the strip is no longer built where this test can see it");
 
-        String body = withoutComments(ui.substring(from, from + 4000));
+        String body = SourceOf.withoutComments(ui.substring(from, Math.min(ui.length(), from + 4000)));
 
         assertTrue(body.contains(".replace(this.LayoutArea, stacked)"),
             "the strip is no longer moved out of the scroll pane with GroupLayout.replace, so it is "
@@ -675,19 +590,12 @@ public class testErrorsStopTheSetupRunning
     @Test
     public void testEveryRefusalNamesTheReasonACountCannotSee() throws Exception
     {
-        String ui = read("src/org/traincontrol/gui/TrainControlUI.java");
-        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
-
         String[][] sites =
         {
-            {"the guard itself", withoutComments(bodyOf(ui,
-                "private String whyAutonomyStartIsRefused()"))},
-            {"the API's exception", withoutComments(bodyOf(ui,
-                "public void requestStartAutonomy() throws Exception"))},
-            // THE FILE for this one, and deliberately: the tooltip is built inside the menu's
-            // constructor, whose signature spans three lines, and `bodyOf` reads a declaration on one.
-            // The file is short and this wording appears nowhere else in it.
-            {"the greyed Start item's tooltip", withoutComments(menu)},
+            {"the guard itself", code("private String whyAutonomyStartIsRefused()")},
+            {"the API's exception", code("public void requestStartAutonomy() throws Exception")},
+            // THE CONSTRUCTOR for this one: the tooltip is built inside the menu's constructor.
+            {"the greyed Start item's tooltip", code("private LayoutRightclickAutonomyMenu(")},
         };
 
         // ASKED, AND COUNTED (VD12-T1).
@@ -740,9 +648,7 @@ public class testErrorsStopTheSetupRunning
         // three answers: the error count, the blocking count, and whether the setup is broken at all.
         // Nothing asserted that, so the third arm could be deleted - which is OB-090 for the third
         // time - with this class green.
-        String wrapper = withoutComments(bodyOf(ui, "public String whyAutonomyWillNotStart()"));
-
-        assertFalse(wrapper.isEmpty(), "whyAutonomyWillNotStart() has moved or been renamed");
+        String wrapper = code("public String whyAutonomyWillNotStart()");
 
         assertTrue(wrapper.contains("autonomyErrorCount()"),
             "the rule every refusal delegates to no longer counts the errors, so all three report a "
@@ -758,10 +664,7 @@ public class testErrorsStopTheSetupRunning
             + "never run.  That is OB-090 at the one site all three refusals now share.  Body: "
             + wrapper);
 
-        String rule = withoutComments(bodyOf(ui,
-            "static String whyAutonomyWillNotStart(int errors, int blocking, boolean broken)"));
-
-        assertFalse(rule.isEmpty(), "whyAutonomyWillNotStart(int, int, boolean) has moved or been renamed");
+        String rule = code("static String whyAutonomyWillNotStart(int errors, int blocking, boolean broken)");
 
         assertTrue(rule.contains("errorCannotStartWithErrors"),
             "the one rule no longer words the error-count refusal, so the three doors that delegate to"
