@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.udp.CSDetect;
+import support.SourceOf;
 
 /**
  * MT-060: a Central Station that answers slowly once is still found.
@@ -135,16 +136,13 @@ public class testCentralStationDetection
     @Test
     public void testEverythingThatLooksForAStationRetries() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/marklin/udp/CSDetect.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(source.contains("return checkWebServer(host, path, WEB_RETRY);"),
+        assertTrue(SourceOf.declaration("public static boolean checkWebServer(String host, String path)")
+            .contains("return checkWebServer(host, path, WEB_RETRY);"),
             "the two-argument checkWebServer no longer retries, so both of its callers are back to "
             + "one attempt and MT-060 is back");
 
         // askWebServer is the single shot, and nothing outside this class may call it.
-        assertTrue(source.contains("private static boolean askWebServer("),
+        assertTrue(SourceOf.occurrences("private static boolean askWebServer(") == 1,
             "the one-shot request is no longer private, so a caller can take the un-retried path "
             + "without meaning to");
     }

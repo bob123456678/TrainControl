@@ -15,6 +15,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.udp.CS2Message;
+import support.SourceOf;
 
 /**
  * Use testng 6.14.3
@@ -76,9 +77,7 @@ public class testAccessory
     @Test
     public void testTheEdgeConfigurationUsesThatOrdering() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private boolean configureEdge(");
 
         assertTrue(source.replaceAll("\\s+", " ").contains(
             "return releasesBeforeThrows(aThrows, bThrows, a, b);"),

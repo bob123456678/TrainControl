@@ -30,6 +30,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.SourceOf;
 
 /**
  * The contraction from tiles to the autonomy graph: which Points exist, what connects them, and which
@@ -572,17 +573,16 @@ public class testAutonomyDiagramReducer
     @Test
     public void testTheSessionPublishesAReducerOnlyOnceReduced() throws IOException
     {
-        String session = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automationui/AutonomySession.java")), java.nio.charset.StandardCharsets.UTF_8);
+        String session = SourceOf.declaration("public final void rebuild()");
 
         int made = session.indexOf("GraphReducer fresh = new GraphReducer(graph, store.asAuthored());");
         int reduced = session.indexOf("fresh.reduce();", made);
         int published = session.indexOf("reducer = fresh;", made);
 
-        assertTrue(made > 0 && reduced > made && published > reduced, "the session's reducer is handed out before it is"
+        assertTrue(made >= 0 && reduced > made && published > reduced, "the session's reducer is handed out before it is"
             + " reduced, so a reader in between walks lists being filled (ADA-C2)");
 
-        assertFalse(session.contains("reducer = new GraphReducer("), "the session still assigns a reducer it has not"
+        assertFalse(SourceOf.allCode().contains("reducer = new GraphReducer("), "the session still assigns a reducer it has not"
             + " reduced yet (ADA-C2)");
     }
 
