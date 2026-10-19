@@ -30,6 +30,9 @@ import support.SourceOf;
  *
  * MUTATION: leave the checkbox out of the flag, or mount the menu whatever the mode, and a claim fails.
  *
+ * And what a Central Station sends shows in that window (FR-136 Phase 6): the power cut at the station, a turnout thrown
+ * there, a sensor made, each sent as the station sends it (`support.Packets`) and read off the window and the diagram.
+ *
  * @author Adam
  */
 public class testTheDebugMenuSwitchesTheEcho
@@ -129,6 +132,157 @@ public class testTheDebugMenuSwitchesTheEcho
 
         assertTrue(body.contains("ECHO_COMMANDS_PREF"), "the stored choice is not read when the menu is mounted, so it"
             + " has to be made again on every launch - \"so we don't need to recompile every time\"");
+    }
+
+    /**
+     * The power cut at the station shows in the window: Power Off greyed and Power On offered; restored, the other way
+     * round.
+     *
+     * MUTATION: in `MarklinControlStation.receiveMessage`, take out the STOP branch's
+     * `if (this.view != null) this.view.updatePowerState();`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAPowerCutAtTheStationShowsInTheWindow() throws Exception
+    {
+        final javax.swing.AbstractButton off = (javax.swing.AbstractButton) windowField("PowerOff");
+        final javax.swing.AbstractButton on = (javax.swing.AbstractButton) windowField("OnButton");
+
+        try
+        {
+            model.receiveMessage(support.Packets.powerGo());
+
+            assertTrue(model.waitForPowerState(true, 10000), "precondition: the power is not on");
+
+            assertTrue(support.Components.waitFor(() -> enabled(off) && !enabled(on), 10000), "precondition: the window"
+                + " does not show the power on");
+
+            model.receiveMessage(support.Packets.powerStop());
+
+            assertTrue(model.waitForPowerState(false, 10000), "precondition: the station's stop did not cut the power");
+
+            assertTrue(support.Components.waitFor(() -> !enabled(off) && enabled(on), 10000), "the station cut the power"
+                + " and the window still offers Power Off, not Power On");
+
+            model.receiveMessage(support.Packets.powerGo());
+
+            assertTrue(support.Components.waitFor(() -> enabled(off) && !enabled(on), 10000), "the station restored the"
+                + " power and the window still offers Power On");
+        }
+        finally
+        {
+            model.receiveMessage(support.Packets.powerGo());
+        }
+    }
+
+    /**
+     * A turnout thrown at the station shows on its key of the keyboard, and put straight again shows straight.
+     *
+     * MUTATION: in `MarklinControlStation.receiveMessage`, take out
+     * `this.view.repaintSwitch(accessory.getAddress() + 1, accessory.getDecoderType());`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testATurnoutThrownAtTheStationShowsOnItsKey() throws Exception
+    {
+        final org.traincontrol.marklin.MarklinAccessory turnout = model.getAccessoryByAddressIfPresent(1,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2);
+
+        assertNotNull(turnout, "precondition: the scenario's turnout, accessory 1, is not in the model");
+
+        final javax.swing.AbstractButton key = (javax.swing.AbstractButton) windowField("SwitchButton1");
+
+        assertEquals(support.Components.onTheEventThread(key::getText), "1", "precondition: the keyboard does not show"
+            + " accessory 1 on its first key");
+
+        try
+        {
+            model.receiveMessage(support.Packets.accessoryEcho(turnout, false));
+
+            assertTrue(support.Components.waitFor(() -> !selected(key), 10000), "precondition: the key does not show the"
+                + " turnout straight");
+
+            model.receiveMessage(support.Packets.accessoryEcho(turnout, true));
+
+            assertTrue(support.Components.waitFor(() -> selected(key), 10000), "the station threw the turnout and its key"
+                + " still shows it straight");
+
+            model.receiveMessage(support.Packets.accessoryEcho(turnout, false));
+
+            assertTrue(support.Components.waitFor(() -> !selected(key), 10000), "the station put the turnout straight and"
+                + " its key still shows it thrown");
+        }
+        finally
+        {
+            model.receiveMessage(support.Packets.accessoryEcho(turnout, false));
+        }
+    }
+
+    /**
+     * A sensor made at the station is drawn made on the track diagram.
+     *
+     * MUTATION: in `MarklinFeedback.parseMessage`, take out `this.updateTiles();`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testASensorMadeAtTheStationIsDrawnOnTheDiagram() throws Exception
+    {
+        // WestEnd's sensor, 10, at 1,3 of the scenario's one page
+        final int sensor = 10;
+
+        support.Rendered view = support.Rendered.open(model.getLayout(model.getLayoutList().get(0)), ui);
+
+        model.receiveMessage(support.Packets.s88(sensor, false));
+
+        assertTrue(support.Components.waitFor(() -> !model.getFeedbackState(Integer.toString(sensor)), 10000),
+            "precondition: the sensor is not clear");
+
+        java.awt.image.BufferedImage clear = support.Rendered.tile(view.snapshot(), 1, 3);
+
+        model.receiveMessage(support.Packets.s88(sensor, true));
+
+        assertTrue(support.Components.waitFor(() -> model.getFeedbackState(Integer.toString(sensor)), 10000),
+            "precondition: the station's report did not make the sensor");
+
+        assertTrue(support.Components.waitFor(() -> differs(view, clear), 10000), "the station made sensor " + sensor
+            + " and its square on the diagram is drawn as before");
+
+        model.receiveMessage(support.Packets.s88(sensor, false));
+    }
+
+    private static Object windowField(String name) throws Exception
+    {
+        Field field = TrainControlUI.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return field.get(ui);
+    }
+
+    private static boolean enabled(javax.swing.AbstractButton button)
+    {
+        return support.Components.onTheEventThread(button::isEnabled);
+    }
+
+    private static boolean selected(javax.swing.AbstractButton button)
+    {
+        return support.Components.onTheEventThread(button::isSelected);
+    }
+
+    /** Whether the sensor's square is drawn otherwise than in this picture. */
+    private static boolean differs(support.Rendered view, java.awt.image.BufferedImage before)
+    {
+        try
+        {
+            return !support.Rendered.same(support.Rendered.tile(view.snapshot(), 1, 3), before);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static JMenu debugMenu() throws Exception
