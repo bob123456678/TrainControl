@@ -27,12 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-768](#mt-768) | 2026-10-18 | FR-140: with the power off, a click on a route opens its editor | fixed unvalidated | FR-140 |
-| [MT-769](#mt-769) | 2026-10-18 | OB-362: a station's maximum train length is logged once, by its name | fixed unvalidated | OB-362 |
-| [MT-770](#mt-770) | 2026-10-18 | FR-141: Autonomy: Train At / Not At A Sensor, and its sensor address | fixed unvalidated | FR-141 |
 
-Everything else - 767 of 770 - needs nothing from you unless the area changes again:
-612 **fixed validated** and 155 **superseded**.
+
+Everything else - 770 of 770 - needs nothing from you unless the area changes again:
+615 **fixed validated** and 155 **superseded**.
 
 ---
 
@@ -35910,7 +35908,7 @@ Taken up: clicking a setup check notice copies its text to the clipboard, as wel
 <a id="mt-768"></a>
 ### MT-768 - 2026-10-18 - FR-140: with the power off, a click on a route opens its editor
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-140
 
 **Written:** 2026-10-18
@@ -35930,12 +35928,16 @@ Taken up: clicking a setup check notice copies its text to the clipboard, as wel
 *What this is:* FR-140 (`2af8b119`): with the power off, the row's click opens the route's editor (`editRoute`); the play button and
 the click with the power on are unchanged.  Claim `ui.testTheRouteListShowsWhatRuns.testWithThePowerOffARowClickOpensTheRoutesEditor`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 08b38bac, in English - build\classes, compiled 18 Oct 20:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-769"></a>
 ### MT-769 - 2026-10-18 - OB-362: a station's maximum train length is logged once, by its name
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-362
 
 **Written:** 2026-10-18
@@ -35953,12 +35955,16 @@ the click with the power on are unchanged.  Claim `ui.testTheRouteListShowsWhatR
 *What this is:* OB-362 (`e7391740`): the copies a square builds into all carry its maximum; the load logs it once per station, by the
 place's name (`Layout.placeNameOf`).  Claim `core.testAPausedTrainStaysPaused.testAStationsMaximumIsSaidOnceByItsName`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 08b38bac, in English - build\classes, compiled 18 Oct 20:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-770"></a>
 ### MT-770 - 2026-10-18 - FR-141: Autonomy: Train At / Not At A Sensor, and its sensor address
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-141
 
 **Written:** 2026-10-18
@@ -35986,5 +35992,9 @@ place's name (`Layout.placeNameOf`).  Claim `core.testAPausedTrainStaysPaused.te
 *What this is:* FR-141 (`b0a06204`): one stored command for both (a "not at" carries SETTING false, so routes saved before read as
 "at"); two kinds in the editor; the Setting cell names the sensor address.  Claims in `core.testRoutes`,
 `core.testRouteRoundTrip`, `core.testLoadData`, `core.testCommandRow`, `ui.testRouteEditorValidation`.
+
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 08b38bac, in English - build\classes, compiled 18 Oct 20:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
