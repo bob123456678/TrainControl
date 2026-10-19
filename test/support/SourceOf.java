@@ -151,6 +151,37 @@ public final class SourceOf
     }
 
     /**
+     * The code of every `.java` file under one folder of `src/`, its subfolders included, comments blanked and joined
+     * as {@link #allCode()} joins the whole program: for a claim about a layer rather than a class - "nothing in the
+     * automation package names the dialog" - which a class split out of the layer's biggest file cannot escape.
+     *
+     * @param folder the folder from the project root, e.g. `"src/org/traincontrol/automation/"`; a missing trailing
+     *     `/` is added, so `automation` never takes in `automationui`
+     * @return the code of every source file under it, in path order
+     */
+    public static String codeUnder(String folder)
+    {
+        String prefix = folder.replace('\\', '/');
+
+        if (!prefix.endsWith("/")) prefix += "/";
+
+        List<String> under = new ArrayList<>();
+
+        for (Map.Entry<String, String> each : code().entrySet())
+        {
+            if (each.getKey().startsWith(prefix)) under.add(each.getValue());
+        }
+
+        if (under.isEmpty())
+        {
+            throw new AssertionError("there is no .java file under " + prefix + " - moved or renamed, so the claim"
+                + " that reads it needs the new folder rather than passing over nothing");
+        }
+
+        return String.join("\n", under);
+    }
+
+    /**
      * How many times this text is in the program's code (comments blanked), counted without overlaps - for a claim
      * such as "exactly one door calls it" or "nothing calls it any more".
      *

@@ -140,6 +140,30 @@ public class testSourceOfFindsADeclarationAnywhere
         assertEquals(SourceOf.occurrences("private void noSuchDeclarationAnywhere("), 0);
     }
 
+    /**
+     * One folder's code, for a claim about a layer: every file under it and nothing beside it, comments blanked, and
+     * a folder that is not there fails rather than handing a negative claim nothing to read.
+     */
+    @Test
+    public void testAFolderIsReadWholeAndAlone()
+    {
+        String automation = SourceOf.codeUnder("src/org/traincontrol/automation/");
+
+        assertTrue(automation.contains("public class Layout\n")
+                && automation.contains("public final class HomeStaging"),
+            "a file of the automation package was left out");
+        assertFalse(automation.contains("public class AutonomySession"),
+            "automationui, the folder beside it, was taken in because its name starts the same way");
+        assertFalse(automation.contains("/**"), "the comments were not blanked");
+        assertEquals(SourceOf.codeUnder("src/org/traincontrol/automation"), automation,
+            "the folder without its trailing / is read differently");
+        assertEquals(SourceOf.codeUnder("src/"), SourceOf.allCode(), "the whole tree is not the whole program");
+
+        AssertionError missed = expectFailure(() -> SourceOf.codeUnder("src/org/traincontrol/noSuchFolder/"));
+
+        assertTrue(missed.getMessage().contains("no .java file"), missed.getMessage());
+    }
+
     private static AssertionError expectFailure(Runnable claim)
     {
         try
