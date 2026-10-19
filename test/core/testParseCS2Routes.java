@@ -292,17 +292,27 @@ public class testParseCS2Routes
     {
         MarklinRoute r = this.getRoute("D1 dcc tst", routes_mags);
 
+        int mm = 0;
+        int dcc = 0;
+
         for (RouteCommand rc: r.getRoute())
         {
             if (rc.getAddress() == 119)
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
+
+                mm++;
             }
             else if (rc.getAddress() == 121)
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.DCC);
+
+                dcc++;
             }
         }
+
+        assertTrue(mm > 0 && dcc > 0, "the route has no command for address 119 (" + mm + ") or 121 (" + dcc
+            + "), so the protocols were not asked: " + r.getRoute());
     }
     
     @Test
@@ -320,18 +330,28 @@ public class testParseCS2Routes
     public void testMM2RouteMags()
     {
         MarklinRoute r = this.getRoute("D1 dcc tst", routes_mags);
-        
+
+        int mm = 0;
+        int dcc = 0;
+
         for (RouteCommand rc: r.getRoute())
         {
             if (rc.getAddress() == 121)
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.DCC);
+
+                dcc++;
             }
             else
             {
                 assertEquals(rc.getProtocol(), Accessory.accessoryDecoderType.MM2);
+
+                mm++;
             }
         }
+
+        assertTrue(mm > 0 && dcc > 0, "the route has no MM2 command (" + mm + ") or none for address 121 (" + dcc
+            + "), so the protocols were not asked: " + r.getRoute());
     }
     
     @Test
