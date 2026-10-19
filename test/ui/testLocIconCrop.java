@@ -134,7 +134,7 @@ public class testLocIconCrop
                     "a crop is saved without noting where it came from, so re-cropping it can never pan "
                     + "back out to anything the crop discarded");
 
-                String recrop = SourceOf.declaration("public void recropLocIcon(");
+                String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"), "void recropLocIcon(");
 
                 assertTrue(recrop.contains("cropSourceOf("),
                     "re-crop no longer looks for the original picture, so it always crops the crop");
@@ -204,7 +204,8 @@ public class testLocIconCrop
     @Test
     public void testAnUnreadablePictureIsRefusedWithoutCropping() throws Exception
     {
-        String source = SourceOf.declaration("public void setLocIcon(Locomotive l, MouseEvent evt)");
+        String source = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"),
+            "void setLocIcon(Locomotive l, MouseEvent evt)");
 
         int asks = source.indexOf("pictureCanBeRead(f, source)");
         int ticked = source.indexOf("if (crop.isSelected())");
@@ -340,7 +341,8 @@ public class testLocIconCrop
                     assertEquals(readSix[i], six[i], 1e-9, "the six-number view came back changed at position " + i);
                 }
 
-                java.lang.reflect.Method toOpenOn = TrainControlUI.class.getDeclaredMethod("viewToOpenOn", double[].class);
+                java.lang.reflect.Method toOpenOn = Class.forName("org.traincontrol.gui.LocIconActions")
+                    .getDeclaredMethod("viewToOpenOn", double[].class);
 
                 toOpenOn.setAccessible(true);
 
@@ -527,7 +529,7 @@ public class testLocIconCrop
     @Test
     public void testTheViewOnlyTravelsWithItsOwnPicture() throws Exception
     {
-        String recrop = SourceOf.declaration("public void recropLocIcon(");
+        String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"), "void recropLocIcon(");
 
         assertTrue(recrop.contains("fromOriginal ? cropViewOf(l.getLocalImageURL()) : null)"),
             "re-crop no longer asks for the stored view, or asks for it whatever it is cropping - "
@@ -1149,7 +1151,7 @@ public class testLocIconCrop
     @Test
     public void testTheWrenchHasAJawAtEachEnd() throws Exception
     {
-        java.lang.reflect.Constructor<?> made = Class.forName("org.traincontrol.gui.TrainControlUI$WrenchMark")
+        java.lang.reflect.Constructor<?> made = Class.forName("org.traincontrol.gui.LocIconActions$WrenchMark")
             .getDeclaredConstructor();
 
         made.setAccessible(true);
@@ -1412,7 +1414,7 @@ public class testLocIconCrop
     @Test
     public void testTheRevertHasASolidArrowhead() throws Exception
     {
-        Class<?> mark = Class.forName("org.traincontrol.gui.TrainControlUI$RevertMark");
+        Class<?> mark = Class.forName("org.traincontrol.gui.LocIconActions$RevertMark");
 
         java.lang.reflect.Constructor<?> made = mark.getDeclaredConstructor();
 
