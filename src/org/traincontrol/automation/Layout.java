@@ -12838,25 +12838,16 @@ public class Layout
     /**
      * Why this train does not fit anywhere this path would put it, or null when it does (MT-262).
      *
-     * **Where the train comes to rest: the destination, and any square it turns round at** (Adam, MT-333,
-     * 2026-09-14) - not a square it only drives past.  A train already standing still blocks other roads by
-     * its tail (`walkStandingTrains`), which is a different mechanism and not asked here.  From 2026-09-10 to
-     * 2026-09-14 this also judged squares a train only passes, reading the ruling of 2026-09-09 more widely
-     * than it was meant (WK7-C1).
+     * **Where the train comes to rest: the destination, and any square it turns round at** (Adam, MT-333) - not a square
+     * it only drives past.  A train already standing still blocks other roads by its tail (`walkStandingTrains`), which is
+     * a different mechanism and not asked here.
      *
-     * **ONE predicate for "it does not fit", so that no door writes a second copy.**  Adam, on being
-     * able to send a four-unit train into two units of track: *"there is no notice that can help
-     * state/debug this."*  A door that means to say why cannot ask half a rule, and there are two
-     * halves - the capacity somebody typed on the station, and the track actually leading into it.
-     * A train can clear the approach and not the platform, or the other way about, and either
-     * refuses.
+     * **ONE predicate for "it does not fit", so that no door writes a second copy** (Adam: *"there is no notice that can
+     * help state/debug this."*).  There are two halves, the capacity somebody typed on the station and the track actually
+     * leading into it, and a train can clear one and not the other.  `isPathClear` asks this; the manual send doors and the
+     * why-not-moving window ask it directly because they want the SENTENCE, not the yes-or-no.
      *
-     * `isPathClear` asks this, so every tier is covered by asking it once; the manual send doors and
-     * the why-not-moving window ask it directly, because they want the SENTENCE rather than the
-     * yes-or-no, and a second copy of the arithmetic in a menu is how the two would come to disagree.
-     *
-     * **The message carries both numbers**, which is the whole of what Adam asked for: the room found
-     * and the length of the train.  A refusal that says only "too long" leaves nothing to measure.
+     * **The message carries both numbers**, the room found and the length of the train.
      *
      * @param path the route, in order
      * @param loc the train
@@ -12871,42 +12862,27 @@ public class Layout
 
         if (ending == null) return null;
 
-        // THE STATION'S STATED CAPACITY.  `Point.validateTrainLength` is the rule and answers true for
-        // anything that is not a destination - there is no capacity to exceed on a square nobody calls
-        // a station - and true for a limit of zero, which is how every square starts.
+        // THE STATION'S STATED CAPACITY.  `Point.validateTrainLength` is the rule; it answers true for anything that is not a
+        // destination and for a limit of zero, which is how every square starts.
         if (!ending.validateTrainLength(loc))
         {
             return I18n.f("autolayout.errorTrainLengthTooLong", placeNameOf(ending));
         }
 
-        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (Adam, MT-333, 2026-09-14; the loop below skips a
-        // square it only passes).  What follows is the ruling of 2026-09-09 this walk was written for; its
-        // "every square" was the standing-train mechanic, which only exists where a train stands.
+        // AND THE TRACK, WHERE THE TRAIN COMES TO REST (Adam, MT-333; the loop below skips a square it only passes).  Asked
+        // whether "will the train fit" means at the destination or everywhere on the way, Adam said: **"For 1, it's b.  This
+        // should only apply if lengths are specified - and edges are already locked as trains pass through in non-dynamic
+        // mode.  So it's really about implementing the same mechanic."**
         //
-        // He was asked whether "will the train fit" means at the destination or everywhere on the way,
-        // with the cost of the second stated - it refuses through moves that a berth-only rule allows.
-        // **"For 1, it's b.  This should only apply if lengths are specified - and edges are already
-        // locked as trains pass through in non-dynamic mode.  So it's really about implementing the
-        // same mechanic."**  What he reported it against was a nine-unit train being offered RampDown:
-        // *"technically incorrect to say there is a path since we pass the track of length 1 at 22,7
-        // to get there."*
+        // ONE WALK, ASKED OF EVERY PREFIX: `measuredRoomAtTheEndOf` answers about the square a path ENDS at, so asking it of
+        // path[0..i] answers "if the train stood here, would its tail be clear of the switch behind it".  The destination is
+        // the last iteration rather than a second rule, so the two cannot disagree.
         //
-        // ONE WALK, ASKED OF EVERY PREFIX.  `measuredRoomAtTheEndOf` answers about the square a path
-        // ENDS at, so asking it of path[0..i] answers "if the train stood here, would its tail be
-        // clear of the switch behind it".  The destination is the last iteration rather than a second
-        // rule, which is the only shape in which the two cannot come to disagree - and it is the
-        // "same mechanic" his ruling asks for rather than a new one.
+        // NULL IS STILL NOT A REFUSAL: an unmeasured stretch answers "I cannot judge this" and is passed over (*"only apply if
+        // lengths are specified"*); the measured stretches still bind.  THE MESSAGE NAMES THE SQUARE THAT IS SHORT, with a
+        // different message for a square on the way than for the berth, so the operator measures the right stretch.
         //
-        // NULL IS STILL NOT A REFUSAL.  An unmeasured stretch answers "I cannot judge this" and is
-        // passed over, which is the other half of the ruling - *"only apply if lengths are
-        // specified"*, and before it *"generally, allow it"*.  The measured stretches still bind.
-        //
-        // THE MESSAGE NAMES THE SQUARE THAT IS SHORT, and a different message for a square on the way
-        // than for the berth.  A refusal that names the destination when the destination has room
-        // sends the operator to measure the one stretch that was already long enough.
-        //
-        // Copied into an ArrayList because `subList` is asked for `path.size()` times and the callers
-        // hand in linked lists, where every index costs a walk.
+        // Copied into an ArrayList because `subList` is asked for `path.size()` times and callers hand in linked lists.
         if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
         List<Edge> ordered = new java.util.ArrayList<>(path);
@@ -12917,75 +12893,38 @@ public class Layout
 
             Point here = ordered.get(i).getEnd();
 
-            // A SQUARE THE TRAIN TURNS AT IS JUDGED LIKE A BERTH (Adam, 2026-09-11).
-            //
-            // *"Refused both because of the berth (3<4) and the track length that potentially couldn't
-            // fit the train while reversing"* - his four-unit train, three-unit berth, two-unit
-            // approach.  The berth half is the walk's own reversal stop.  This is the other half: the
-            // train stands still at the reversing point with its body stretched back over the approach,
-            // and if the approach is shorter than the train it is hanging off the end of the measured
-            // track while it waits to change direction.
-            //
-            // A reversing square is not one the train rolls over - it is one the train STOPS on - so the
-            // route behind it is what the train lies back across, which is exactly the condition that
-            // makes the question answerable at the destination.
-            //
-            // So `berth` became `comesToRest`, and the two cases ask the identical question of their
-            // own prefix.  `measuredRoomAtTheEndOf(ordered, loc)` and
-            // `measuredRoomAtTheEndOf(ordered.subList(0, size), loc)` are the same call, so the
-            // destination is still the last iteration rather than a second rule.
+            // A SQUARE THE TRAIN TURNS AT IS JUDGED LIKE A BERTH (Adam: *"Refused both because of the berth (3<4) and the
+            // track length that potentially couldn't fit the train while reversing"*).  The train stands still at the
+            // reversing point with its body stretched back over the approach, so if the approach is shorter than the train it
+            // hangs off the measured track while it waits to change direction.  Both cases ask the identical question of
+            // their own prefix, so the destination is still the last iteration rather than a second rule.
             boolean comesToRest = berth || (here != null && here.isReversing());
 
-            // A SQUARE THE TRAIN ONLY PASSES IS NOT JUDGED (Adam, MT-333, 2026-09-14: "75 407 DB (len 2) can
-            // no longer go from tunnel to bottommaina ... this SHOULD be allowed per the standing rule that
-            // this switch blocking should only affect berthes").  The room rule asks whether a train would be
-            // left standing across the points, and a train passing a square does not stand there.  From
-            // 2026-09-10 until this ruling a passed square was judged wherever a switch lay behind it (the
-            // ruling of 2026-09-09), and the relaxation of 2026-09-12 was built at the destination only - so
-            // a two-unit train was refused at BottomMainAPre, which it never stops at, once one unit was
-            // measured on the run before it.  What is still judged is where a train comes to rest: the
-            // destination, and a square it turns round at.
+            // A SQUARE THE TRAIN ONLY PASSES IS NOT JUDGED (Adam, MT-333: "this SHOULD be allowed per the standing rule that
+            // this switch blocking should only affect berthes").  The room rule asks whether a train would be left standing
+            // across the points, and a train passing a square does not stand there.  What is judged is where a train comes to
+            // rest: the destination, and a square it turns round at.
             if (!comesToRest) continue;
 
             Integer room = measuredRoomAtTheEndOf(ordered.subList(0, i + 1), loc);
 
             if (room == null || loc.getTrainLength() <= room) continue;
 
-            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN ITS MEASURED ROUTE IN HOLDS (FR-087; ITS WHOLE
-            // APPROACH BEFORE 2026-09-15).
+            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN ITS MEASURED ROUTE IN HOLDS (FR-087).  Adam, on a platform whose
+            // approach measures 6 with a switch in the middle and 3 on either side: *"it would not fit just past 14,12.
+            // 14,12 would be blocked and the 6 units would be between bottommainapre and bottommaina.  so we need a clear
+            // rule to govern that this is OK, or simply make a rule that parking berths cant block any other edges, but not
+            // make that check for active stations."*
             //
-            // Adam, 2026-09-12, on a platform whose approach measures 6 with a switch in the middle and
-            // 3 on either side: *"it would not fit just past 14,12.  14,12 would be blocked and the 6
-            // units would be between bottommainapre and bottommaina.  so we need a clear rule to govern
-            // that this is OK, or simply make a rule that parking berths cant block any other edges,
-            // but not make that check for active stations."*
+            // The kind of square decides, because of how long the train stays: at a station autonomy may choose a train is
+            // PASSING, standing across the points only until it is given its next route, a cost accepted at a platform and
+            // refused at a parking berth, where a train is STAYING.  `whyABerthCannotHoldIt` is the other half.
             //
-            // **So the kind of square decides, and it decides because of how long the train stays.**  At
-            // a station autonomy may choose a train is PASSING: it stands across the points for as long
-            // as it takes to be given its next route, and the cost of that is measured - on his railway
-            // it closes the roads to the lower level while it is there.  He accepts that cost at a
-            // platform and refuses it at a parking berth, where a train is STAYING and the road would be
-            // shut all evening.  `whyABerthCannotHoldIt` is the other half.
-            //
-            // **Safety is not what changed.**  Since OB-207 a standing train's tail claims the places it
-            // lies on and `isPathClear` refuses any route over them, so nothing can be sent into the
-            // overhang.  What this relaxation spends is the ability of OTHER trains to get past, which
-            // is a stranding question rather than a collision one - and stranding is what he is ruling
-            // on.
-            //
-            // **It only ever ALLOWS.**  The room rule above has already refused, and this hands back the
-            // one case his ruling names; nothing that was accepted before is now refused.  The bound is
-            // the measured route in, never back past a turn, so a train longer than that is still refused -
-            // the tail would lie back over track this has measured nothing of.
-            //
-            // A train that turns round at the destination is deliberately NOT excluded.  It is standing
-            // there for the same reason and for the same length of time; what it does on departure is
-            // another journey, which is the rule `measuredRoomAtTheEndOf` already applies to the last
-            // edge of any path.
-            //
-            // `isAutoDestination` is the flag his words name - "Can Be Chosen In Full Autonomy".
-            // Whether the square is switched on at all is a different question and is asked long before
-            // anything reaches here.
+            // Safety is not what changed: a standing train's tail claims the places it lies on and `isPathClear` refuses any
+            // route over them (OB-207), so this spends only the ability of OTHER trains to get past.  It only ever ALLOWS: the
+            // room rule above has already refused, and the bound is the measured route in, never back past a turn.  A train
+            // that turns round at the destination is deliberately not excluded.  `isAutoDestination` is the flag his words
+            // name, "Can Be Chosen In Full Autonomy".
             if (berth && theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc))
             {
                 continue;
@@ -13012,34 +12951,21 @@ public class Layout
     /**
      * The measured room a train has to stand in at the end of this path (TCX-A2, MT-262).
      *
-     * **Asked of PREFIXES as well as of whole routes** (Adam, 2026-09-09).  "The end of this path" is
-     * meant literally: hand it the first three edges of a nine-edge route and it answers about the
-     * square those three arrive at.  That is how `whyTooLongForThisRoute` asks the question at a square the
-     * train turns round at as well as at the destination without a second walk existing to disagree with this
-     * one, and it is
-     * why the method is no longer called `measuredRoomAtTheBerth` - nothing here knows or cares
-     * whether the square it lands on is where the train was going to stop.
+     * **Asked of PREFIXES as well as of whole routes** (Adam, 2026-09-09): "the end of this path" is meant literally, so the
+     * first three edges of a nine-edge route answer about the square those three arrive at.  That is how
+     * `whyTooLongForThisRoute` asks at a square the train turns round at as well as at the destination, with no second
+     * walk to disagree with this one.
      *
-     * **Pure**, which is what lets the staging planner ask it.  Every other rule in `isPathClear`
-     * reads live feedback, so `HomeStaging` has to re-implement them for hypothetical futures - and
-     * every time one was mis-copied the result was a plan the runtime then refused.  This one reads
-     * only the path and the locomotive, so there is nothing to copy.
+     * **Pure**, which is what lets the staging planner ask it: every other rule in `isPathClear` reads live feedback, and
+     * `HomeStaging` has to re-implement them for hypothetical futures, but this one reads only the path and the locomotive.
      *
-     * **It is not fenced on terminus, and used to be** (MT-262).  It was called
-     * `measuredRoomToReverseInto` and answered null unless the path ended somewhere the train would
-     * turn round, so a plain through platform was never judged on the track leading into it.  A train
-     * comes to rest with its head at the destination sensor whatever kind of station it is, and its
-     * tail lies back over the run in either way - which is exactly what
-     * `edgesCoveredByStandingTrains` has always assumed, on Adam's own through-platform example.  The
-     * call site in `isPathClear` carries his report and the measurement that found it.
+     * **Not fenced on terminus** (MT-262): a train comes to rest with its head at the destination sensor whatever kind of
+     * station it is, and its tail lies back over the run either way.
      *
-     * Null rather than a number in the two cases where the question does not arise: the train has no
-     * recorded length, or nothing on the run in is measured.  **Unmeasured is unknown, not zero** -
-     * answering "I do not know how long this is" with "it is nothing" refuses trains that fit, which
-     * is the failure the guard's own comment says was removed once already.
-     *
-     * The two known unsoundnesses in what it counts are recorded at the call site in `isPathClear` and
-     * are Adam's to settle; they are about WHICH segments, not about who may ask.
+     * Null rather than a number where the question does not arise: the train has no recorded length, or nothing on the
+     * run in is measured.  **Unmeasured is unknown, not zero**: answering "I do not know" with "it is nothing" refuses
+     * trains that fit.  The two known unsoundnesses in what it counts are recorded at the call site in `isPathClear`; they
+     * are about WHICH segments, not about who may ask.
      *
      * @param path the route, in order
      * @param loc the train
@@ -13050,71 +12976,40 @@ public class Layout
         if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
         if (path == null || path.isEmpty()) return null;
-        // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE (Adam, 2026-09-02).
+        // FROM THE LAST SWITCH, NOT FROM THE START OF THE ROUTE (Adam: "If the train crosses the fork through the base, then
+        // the track after the switch has to be long enough to accommodate it.  In other words, between the switch and the
+        // station, the length must be >= length of the train" - and, for the direction over the points, "for the switches,
+        // for simplicity, let's use any direction, that way we are guaranteed to be safe.").
         //
-        // "If the train crosses the fork through the base, then the track after the switch has to be
-        // long enough to accommodate it.  In other words, between the switch and the station, the
-        // length must be >= length of the train" - and, on whether the direction over the points
-        // changes that, "for the switches, for simplicity, let's use any direction, that way we are
-        // guaranteed to be safe."
-        //
-        // So this walks the route BACKWARDS and stops at the first edge that crosses a switch, adding
-        // only the part of that edge which lies after it.  The last switch is the binding one: a train
-        // that fits between it and the station fits between any earlier switch and the station too,
-        // because those are further away.
-        //
-        // What this replaces summed every segment of the route, which was too permissive by exactly
-        // the track before that switch - and a train longer than the remainder comes to rest standing
-        // on the points, where it blocks every route through them while the model records it only at
-        // the berth.
-        //
-        // An unmeasured edge still answers null, as it always has: this guard acts on measurements and
-        // declines to act on their absence.  Only the edges it actually counts are asked, so a route
-        // whose earlier half is unmeasured is now judgeable where it was not.
+        // So this walks the route BACKWARDS and stops at the first edge that crosses a switch, adding only the part of that
+        // edge which lies after it.  The last switch is the binding one: a train that fits between it and the station fits
+        // between any earlier switch and the station too.  An unmeasured edge still answers null (this guard acts on
+        // measurements, not their absence); only the edges it actually counts are asked.
         int room = 0;
 
-        // WHETHER ANY MEASURED TRACK WAS COUNTED - a room of 0 answered on purpose is a room, not an unknown (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
-        // Until then `room > 0` stood for it, which was the same thing while only a length measured anything.
+        // WHETHER ANY MEASURED TRACK WAS COUNTED - a room of 0 answered on purpose is a room, not an unknown (Adam: *"we can't
+        // possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to
+        // allow trains in atomic mode in as well if the total track lengths allow"*).
         boolean counted = false;
 
         for (int i = path.size() - 1; i >= 0; i--)
         {
             Edge segment = path.get(i);
 
-            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does (Adam, 2026-09-11).
+            // AND A REVERSAL STOPS THE COUNT, exactly as a switch does.  Asked whether *"the track segments leading up to it"*
+            // means up to the berth or up to the reversal, Adam said **"it can be either the reversal or the berth, depending
+            // on where switches are.  both need to be long enough."**, and gave a worked example: *"four-unit train in a
+            // three-unit berth with a two-unit approach: refused both because of the berth (3<4) and the track length that
+            // potentially couldn't fit the train while reversing.  if the train isn't reversing, then it should be accepted
+            // as long as the berth is long enough."*
             //
-            // Asked whether *"the track segments leading up to it"* means up to the berth or up to the
-            // reversal: **"it can be either the reversal or the berth, depending on where switches
-            // are.  both need to be long enough."**  Put to him again with a worked example, because
-            // the first reading of that sentence was built and two tests refused it:
-            //
-            //     "four-unit train in a three-unit berth with a two-unit approach: refused both
-            //      because of the berth (3<4) and the track length that potentially couldn't fit the
-            //      train while reversing.  if the train isn't reversing, then it should be accepted as
-            //      long as the berth is long enough."
-            //
-            // So the answer is BOTH bounds, each over its own stretch, and this is the first of them:
-            // a train that turns part way along comes to rest on the track after the turn only.  The
-            // second is at the turn itself and lives in `whyTooLongForThisRoute`, which judges a
-            // reversing square the way it judges a berth.
-            //
-            // **The case it was reverted over, and why the revert was wrong.**  His three-unit berth
-            // with a two-unit approach fits a four-unit train end to end, so `core.testNonReversibleTrains`
-            // asserted it was accepted, and that assertion looked like evidence.  It was a guess about
-            // a rule nobody had stated: he refuses it, because the tail would lie back across the
-            // square where the train turned.  Both tests there now carry his figures and his verdict.
-            //
-            // The END of this segment, not its start: that point is where the train turned, so the
-            // segments before it are behind the turn.  The last edge of whatever list is handed in is
-            // exempt, because its end is the square being asked about - a train arriving at a
-            // reversing platform comes to rest there, and what it does on departure is another journey.
-            // That holds for a prefix as well as for a whole route, which is how the reversal square
-            // gets judged on its own approach.
-            //
-            // ANY reversing point, whether or not this train would turn at it - the same
-            // simplification Adam gave for switches on 2026-09-02: *"for the switches, for simplicity,
-            // let's use any direction, that way we are guaranteed to be safe."*  A reversing point
-            // turns every locomotive, reversible or not, so in practice there is nothing to exempt.
+            // So BOTH bounds apply, each over its own stretch, and this is the first: a train that turns part way along comes
+            // to rest on the track after the turn only.  The second is at the turn itself, in `whyTooLongForThisRoute`, which
+            // judges a reversing square as it judges a berth (`core.testNonReversibleTrains` carries his figures and verdict).
+            // The END of this segment, not its start, is where the train turned.  The last edge of whatever list is handed in
+            // is exempt, because its end is the square being asked about (a train arriving at a reversing platform comes to
+            // rest there); that holds for a prefix as well as a whole route.  ANY reversing point counts, whether or not
+            // this train would turn at it: a reversing point turns every locomotive, so there is nothing to exempt.
             if (i < path.size() - 1 && segment.getEnd() != null && segment.getEnd().isReversing())
             {
                 return counted ? room : null;
@@ -13122,39 +13017,19 @@ public class Layout
 
             if (segment.crossesASwitch())
             {
-                // -1 is bounded-but-unmeasured, which is the same answer as an unmeasured edge.
-                // BOUNDED BUT UNMEASURED, and what has already been counted still stands.
-                //
-                // Adam, 2026-09-06: **"Generally, allow it.  But: the example I gave you from
-                // bottommainpost to tunnellongpark has measured segments before (that prevent it),
-                // but none after (which would allow it had that prevention not been there).  Make
-                // sure you are actually enforcing this."**
-                //
-                // This returned null - "I cannot judge" - and threw away every measured unit counted
-                // on the way here.  Two units of measured berth already prove a four-unit train does
-                // not fit; an unmeasured stretch behind them cannot unprove it.
-                //
-                // `room > 0` is the difference between the two halves of his ruling.  Nothing
-                // measured at all means no evidence either way, and that is still not judged, because
-                // refusing on absence of information would make every unmeasured layout unusable.
+                // BOUNDED BUT UNMEASURED (-1), and what has already been counted still stands.  Adam: **"Generally, allow it.
+                // But: the example I gave you from bottommainpost to tunnellongpark has measured segments before (that prevent
+                // it), but none after (which would allow it had that prevention not been there).  Make sure you are actually
+                // enforcing this."**  Two units of measured berth already prove a four-unit train does not fit; an unmeasured
+                // stretch behind them cannot unprove it.  `room > 0` separates the halves of the ruling: nothing measured at
+                // all is no evidence either way, and is not judged.
                 if (segment.getRoomAtTheEnd() < 0)
                 {
-                    // THE SEGMENT BOUNDS THE STRETCH INSIDE IT.
-                    //
-                    // Adam: **"I can still send the 75 407 DB from BottomMainPost to TunnelLongPark,
-                    // the option is there and the path runs, despite [the] track lengths of 1."**  He
-                    // was right, and this is why: the room that matters is the track after the last
-                    // switch, nobody has measured it, and declining to judge let a four-unit train
-                    // into it.  Meanwhile the segment it lies in is measured at ONE.
-                    //
-                    // The stretch after the switch is part of that segment, so it cannot be longer
-                    // than it.  One unit of segment cannot contain four units of train, whatever the
-                    // unmeasured part turns out to be, and that is a proof rather than a guess.
-                    //
-                    // It only ever REFUSES more than before: the bound is an over-statement of the
-                    // real room, so a train that clears it may still not fit - which is the state
-                    // every one of these paths was already in.  Nothing new is admitted, and the
-                    // definite cases are now caught.
+                    // THE SEGMENT BOUNDS THE STRETCH INSIDE IT.  Adam: **"I can still send the 75 407 DB from BottomMainPost
+                    // to TunnelLongPark, the option is there and the path runs, despite [the] track lengths of 1."**  The room
+                    // that matters is the track after the last switch, which is part of this segment and so cannot be longer
+                    // than it: one unit of segment cannot contain four units of train, whatever the unmeasured part is.  The
+                    // bound over-states the real room, so it only ever REFUSES more and never admits anything new.
                     int bound = room + segment.getLength();
 
                     return bound > 0 ? bound : null;
@@ -13163,12 +13038,9 @@ public class Layout
                 return room + segment.getRoomAtTheEnd();
             }
 
-            // AN UNMEASURED SEGMENT ENDS THE COUNT, it does not cancel it - the same ruling as the
-            // switch case above, and the same doctrine Adam gave for the protrusion walk on the same
-            // day: "only segments with a positive length are determinate".  Unmeasured track
-            // contributes no room.  It does not follow that it contributes no answer.
-            //
-            // A SEGMENT ANSWERED 0 ON PURPOSE IS MEASURED (Adam, 2026-09-25): it adds nothing and the count walks on.
+            // AN UNMEASURED SEGMENT ENDS THE COUNT, it does not cancel it: unmeasured track contributes no room, but it
+            // still contributes no answer ("only segments with a positive length are determinate", Adam).  A SEGMENT ANSWERED
+            // 0 ON PURPOSE IS MEASURED: it adds nothing and the count walks on.
             if (segment.getLength() <= 0 && !segment.isMeasured()) return counted ? room : null;
 
             room += Math.max(0, segment.getLength());
@@ -13191,46 +13063,18 @@ public class Layout
         new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
-     * Brings every protecting signal into line with where the trains actually are.
+     * Brings every protecting signal into line with where the trains actually are: clears the `signalAspects` memo and asks
+     * every signal again from current occupancy.
      *
-     * **NOTHING IN THE APPLICATION CALLS THIS, AND NOTHING SHOULD (Adam, OB-166, 2026-09-01).**
+     * **NOTHING IN THE APPLICATION CALLS THIS, AND NOTHING SHOULD (Adam, OB-166):** "Signals should only be touched when a
+     * route activates."  The tests that drive it directly (`testAutoLayout`, `testBothProtectingSignalsAreThrown`) exist to
+     * prove that no production door calls it; putting one back fails them.  It stays public for them, and because a railway
+     * whose signals have drifted may one day want a button.  Signals are otherwise refreshed one at a time, as occupancy
+     * changes.
      *
-     * "Signals should only be touched when a route activates."  All three production call sites -
-     * runLocomotives, the timetable, and executePath - were removed on that ruling, and the only
-     * callers left are the tests that exist to prove they stay removed; one of them says outright that
-     * putting any of the three back fails it.  It is kept public because those tests drive it directly,
-     * and because a railway whose signals have drifted is a thing somebody may one day want a button
-     * for - but it is not wired to anything, and wiring it back is the defect Adam saw on his own
-     * layout.
-     *
-     * Everything below this line is the reasoning for the calls that USED to exist, kept because it
-     * explains what the method does and what it would cost to reintroduce.  Read it as history: the
-     * paragraph beginning "Called when a run begins" described three call sites that are gone.
-     *
-     * Called when a run begins, and forgetting the memo is not enough on its own.  While nothing is
-     * running the refresh is silent - trains are placed and taken off by hand then, and driving real
-     * signals from a setup gesture is what that silence exists to prevent - so two things are true at
-     * the moment a run starts: what the signals were last told describes a railway that has since been
-     * rearranged, and no occupancy CHANGE is coming for a train that was already put on its platform.
-     *
-     * Only clearing the memo leaves that second train unprotected for the whole run: nothing calls the
-     * refresh for a square whose occupancy has not changed, so its signal simply stays as it was.  So
-     * the memo is dropped AND every signal is asked again from current occupancy.
-     *
-     * The cost is one command per signal at the start of a run.  Set against a platform standing green
-     * with a train in it, that is nothing.
-     *
-     * **NO PRODUCTION CALLER, since `OB-166` took it off all three doors** (SVN-C2, 2026-09-03).
-     * What calls it is `testAutoLayout` and `testBothProtectingSignalsAreThrown`, the second of which
-     * records the mutation "putting any of the three refreshAllProtectingSignals() calls back fails
-     * this" - so a reader could reasonably think the sweep still happens.  It does not: signals are
-     * refreshed one at a time, as occupancy changes.
-     *
-     * **And it was the only thing that cleared `signalAspects`**, so that memo now lives for the
-     * session.  Harmless because the skip test asks `acc.isRed() == claimed` as well, which is a fact
-     * about the accessory rather than about the memo; the memo's own half can only ever be stale.
-     * Left rather than fixed here, because removing either the memo or this method is a change to how
-     * signals are driven, and that is not a release-candidate change.
+     * A sweep costs one command per signal.  It is also the only thing that clears `signalAspects`, so the memo otherwise
+     * lives for the session; harmless, because the skip test also asks `acc.isRed() == claimed`, a fact about the accessory
+     * rather than the memo.
      */
     public void refreshAllProtectingSignals()
     {
@@ -13281,36 +13125,12 @@ public class Layout
     }
 
     /**
-     * Takes a locomotive off every Point except the one that is claiming it.
+     * Whether this point is somewhere autonomy may send a train at all: a destination, in service, one autonomy is allowed
+     * to choose, and a plain copy rather than a turning one (DR-B3).
      *
-     * The other half of the rule Point.setLocomotive enforces.  Here rather than there because only the
-     * layout knows what the other Points are, and every copy is cleared rather than the first: a square
-     * is several Points now, so a train that was "somewhere else" may have been in several somewhere
-     * elses at once - which is the state this exists to make unrepresentable.
-     *
-     * Not synchronized: setLocomotive holds the Point's own monitor, and taking the layout's here would
-     * order the two locks against every other path that takes them the other way round.  The map it
-     * walks is only structurally changed by graph construction.
-     *
-     * @param l the locomotive being placed
-     * @param claiming the Point placing it, which keeps it
-     */
-    /**
-     * Whether this point is somewhere autonomy may send a train at all.
-     *
-     * **DR-B3: the same four clauses were written out at three sites, and they had already drifted.**
-     * `canReachAnyDestination` was missing the two the others carry, which is not a copy-paste slip -
-     * it takes no locomotive, so the terminus-and-reversible question and the excluded-locomotives
-     * question cannot be asked there. The drift was in the FOUR that should have matched, and nothing
-     * held them together but somebody remembering.
-     *
-     * So this is the part that is genuinely one question: is this a destination, is it in service, is
-     * it one autonomy is allowed to choose, and is it a plain copy rather than a turning one.
-     * Everything per-locomotive stays at the call, because it cannot be asked here.
-     *
-     * Deliberately NOT included: occupancy and locking. `canReachAnyDestination` asks what the railway
-     * allows rather than what is free this second, and folding a "right now" clause into a "can ever"
-     * question is how that method got its original fault.
+     * This is the part that is genuinely one question, written once because the clauses had drifted when they were written
+     * out at three sites.  Everything per-locomotive stays at the call.  Occupancy and locking are deliberately NOT
+     * included: `canReachAnyDestination` asks what the railway allows, not what is free this second.
      *
      * @param end the point being considered
      * @return true when autonomy may end a journey there
@@ -13323,16 +13143,10 @@ public class Layout
     /**
      * Whether a train standing here could be sent anywhere at all.
      *
-     * Not "does this point have an outgoing edge" - that is the question that produced the fault this
-     * exists to fix.  A copy of a split square can have somewhere to go and still have nowhere to be
-     * SENT: every square it reaches is a plain point, a reversing point or parking, and autonomy only
-     * ever dispatches a train to a destination.  A train placed there never moves, and nothing says
-     * why.
-     *
-     * A plain walk of the edges rather than a path search per candidate: the question is reachability
-     * over the track, and running the full path finder against every destination to answer "any?" is
-     * work nobody needs.  Occupancy and locking are deliberately NOT considered - this asks what the
-     * railway allows, not what is free this second.
+     * Not "does this point have an outgoing edge": a copy of a split square can have somewhere to go and still have nowhere
+     * to be SENT, because autonomy only ever dispatches a train to a destination, and a train placed there never moves with
+     * nothing to say why.  A plain walk of the edges, not a path search per candidate; occupancy and locking are
+     * deliberately NOT considered.
      *
      * @param from where the train would stand
      * @return true when some destination is reachable from there
@@ -13361,11 +13175,8 @@ public class Layout
 
                 if (end == null || !seen.add(end)) continue;
 
-                // Somewhere a train can actually be sent, and not the square it started on
-                // The shared clauses only: this method takes no locomotive, so the terminus and
-                // exclusion questions cannot be asked here.  That is a real difference from the
-                // candidate filter above and is why it is written down rather than left to be
-                // rediscovered as a bug (DR-B3).
+                // Somewhere a train can actually be sent, and not the square it started on.  The shared clauses only: this
+                // method takes no locomotive, so the terminus and exclusion questions cannot be asked here (DR-B3).
                 if (!end.equals(from) && isSendableDestination(end))
                 {
                     return true;
@@ -13379,15 +13190,13 @@ public class Layout
     }
 
     /**
-     * Takes every OTHER locomotive off the square this Point belongs to.
+     * Takes every OTHER locomotive off the square this Point belongs to: the companion of clearLocomotiveExcept, which keeps
+     * a train from being in two places while this keeps two trains from being in one.  A square emitted as several Points
+     * is one piece of rail.
      *
-     * The companion of clearLocomotiveExcept, and the other invariant: that one keeps a train from
-     * being in two places, this keeps two trains from being in one.  A square emitted as several Points
-     * is one piece of rail, so a train on any copy of it is on the platform.
-     *
-     * Called only from hand placement.  Autonomy never needs it - a route onto a platform whose sibling
-     * copy holds a train is refused by the block check long before anything is placed - and calling it
-     * from the shared setter would sweep away the reservations a locked path has made.
+     * Called from hand placement and the file load only: autonomy never needs it (a route onto a platform whose sibling
+     * copy holds a train is refused by the block check), and calling it from the shared setter would sweep away the
+     * reservations a locked path has made.
      *
      * @param claiming the Point being placed on, which keeps whatever is put there
      */
@@ -13411,18 +13220,26 @@ public class Layout
 
             other.setLocomotive(null);
 
-            // Said out loud, as sanitizeMultiUnits says its own evictions.
-            //
-            // A train taken off here may now be nowhere on the graph at all - it keeps its place in
-            // the run list and its home claim, but staging skips it and pickPath will never dispatch
-            // it, so it is simply out of the session.  That is the right outcome when somebody has
-            // just said a different train is standing there, and the wrong thing to do in silence:
-            // the copy that gets written to is not always the copy the user was looking at.
+            // Said out loud, as sanitizeMultiUnits says its own evictions: a train taken off here may now be nowhere on the
+            // graph (it keeps its run-list place and home claim, but staging skips it and pickPath never dispatches it), which
+            // must not happen in silence, since the copy written to is not always the copy the user was looking at.
             this.control.logf("autolayout.infoLocomotiveDisplacedFromSquare",
                 displaced.getName(), claiming.getName());
         }
     }
 
+    /**
+     * Takes a locomotive off every Point except the one that is claiming it: the other half of the rule
+     * `Point.setLocomotive` enforces.  Here because only the layout knows the other Points, and every copy is cleared, since
+     * a square is several Points and the train may have been on several at once.
+     *
+     * Not synchronized: setLocomotive holds the Point's own monitor, and taking the layout's here would order the two locks
+     * against every other path that takes them the other way round.  The map it walks only changes structurally in graph
+     * construction.
+     *
+     * @param l the locomotive being placed
+     * @param claiming the Point placing it, which keeps it
+     */
     void clearLocomotiveExcept(Locomotive l, Point claiming)
     {
         if (l == null) return;
@@ -13557,21 +13374,16 @@ public class Layout
     /**
      * Turns the early release of passed track on or off.
      *
-     * **A run that the setting changes under is unlocked by what it did** (GUI-A1).  A path releases its
-     * edges under one setting and `unlockPath` finishes under the other; `unlockPath` decides how to give
-     * track back by whether that run gave any back early - the edges `releasedEarly` records - and, where it
-     * gave none, by the setting at its end (DCN4-C1).  So neither direction gives an edge back twice: false-to-true
-     * mid-run (the Atomic Routes gate's write, reached while trains run) stops further early releases and
-     * the unlock skips the ones already made; true-to-false starts them, and the same record covers them.
-     * That is about giving back twice.  True-to-false can still leave one edge held (GUI2-C1): one the tail
-     * cleared while the run was atomic is dropped from the wait list unreleased, and if another train then
-     * takes its end Point the unlock's careful road leaves it - the cost `SVN-C17` describes, unreachable
-     * while the checkbox refuses a change mid-run.
+     * **A run that the setting changes under is unlocked by what it did** (GUI-A1): `unlockPath` gives track back by
+     * whether the run gave any back early (the edges `releasedEarly` records) and, where it gave none, by the setting at its
+     * end (DCN4-C1), so neither direction gives an edge back twice.  True-to-false can still leave one edge held (GUI2-C1):
+     * one the tail cleared while the run was atomic is dropped from the wait list unreleased, and if another train then
+     * takes its end Point the unlock's careful road leaves it - the cost `SVN-C17` describes, unreachable while the
+     * checkbox refuses a change mid-run.
      *
-     * The interface still refuses the checkbox while `isAutoLayoutRunning()` (SVN-C17), which is a
-     * statement about what an operator should be able to do mid-run rather than about safety.  Written
-     * down rather than locked: taking the layout monitor here would put a click behind a whole route
-     * being thrown, which is the freeze this class has twice been repaired for.
+     * The interface refuses the checkbox while `isAutoLayoutRunning()` (SVN-C17) as a statement about what an operator
+     * should be able to do mid-run, not about safety.  Not locked here: taking the layout monitor would put a click behind a
+     * whole route being thrown, the freeze this class has twice been repaired for.
      *
      * @param atomicRoutes whether a route holds all its track until it finishes
      */
@@ -13659,11 +13471,9 @@ public class Layout
     {
         HomeStaging staging = HomeStaging.snapshot(this);
 
-        // Debug only.  A mismatch here is the single most likely reason a staging run does something
-        // inexplicable, so the check is worth keeping - but it asks the runtime for every path every
-        // locomotive could take, and the runtime logs each one it rejects.  Left on, an ordinary press
-        // of the button spends that work and buries the operator's log under thousands of lines about
-        // paths nobody asked for.
+        // Debug only.  A mismatch here is the single most likely reason a staging run does something inexplicable, but the
+        // audit asks the runtime for every path every locomotive could take and the runtime logs each one it rejects, which
+        // would bury the operator's log under thousands of lines.
         if (this.control.isDebug())
         {
             this.control.logf("autolayout.infoStagingAudit", staging.auditAgainstRuntime());
@@ -13671,9 +13481,8 @@ public class Layout
 
         HomeStaging.Plan plan = staging.plan();
 
-        // Always logged.  "Nothing happened" is the one outcome that tells the operator nothing, and
-        // it is reachable several different ways - no homes recorded, everything already home, no
-        // route, no arrangement found - which look identical from outside.
+        // Always logged: "nothing happened" is reachable several ways (no homes recorded, everything already home, no route,
+        // no arrangement found), which look identical from outside.
         this.control.logf(
             "autolayout.infoReturnToHomePlan",
             plan.getOutcome().toString(),
@@ -13763,10 +13572,8 @@ public class Layout
      * needs.  That is what turns a sequential plan into as much parallelism as the layout allows,
      * without a scheduler - and it is why the order matters and must not be rearranged.
      *
-     * Capture is NOT touched here, and this paragraph used to say it was forced off (S14-C3).  Nothing
-     * in this method reads or writes `timetableCapture`; the moves are kept out of the timetable during
-     * the RUN instead, by `addTimetableEntry`, which refuses while `timetableExecuting` is set - see the
-     * comment in the body, and that flag's own reason where it is declared.
+     * Capture is NOT touched here: nothing in this method reads or writes `timetableCapture`.  The moves are kept out of the
+     * timetable during the RUN by `addTimetableEntry`, which refuses while `timetableExecuting` is set (S14-C3).
      *
      * @return the plan, whether or not it could be loaded - check isPossible()
      */
@@ -13783,13 +13590,8 @@ public class Layout
                 new LinkedList<>(), new LinkedList<>());
         }
 
-        // Capture is left exactly as the operator set it.  Turning it off around the load covered the
-        // load only, and the moves are appended during the RUN - addTimetableEntry excludes them for as
-        // long as timetableExecuting is set, which is the whole duration.
-        //
-        // The flag name here said `timetableSequential`, which is the one this replaced (S14-C3).  The
-        // guard is on `timetableExecuting` and is STRONGER than the old comment claimed, so the
-        // behaviour was right and only the explanation was about a flag that had moved on.
+        // Capture is left exactly as the operator set it: the moves are appended during the RUN, and addTimetableEntry
+        // excludes them for as long as timetableExecuting is set, which is the whole duration (S14-C3).
         List<TimetablePath> staged = new LinkedList<>();
 
         for (HomeStaging.Move move : plan.getMoves())
@@ -13808,14 +13610,10 @@ public class Layout
 
         this.setTimetable(staged);
 
-        // Must be after setTimetable, which clears it.
-        //
-        // The plan is built on a model in which nothing is moving - see HomeStaging - so the moves are
-        // only safe run one at a time.  executeTimetable normally dispatches an entry as soon as the
-        // one before it has STARTED, and executePath locks a whole path up front, so two staging moves
-        // overlapping can contend for an edge the planner never considered: the second retries forever
-        // on a route it cannot abandon, while a free alternative exists that only live path selection
-        // would find.  Observed in exactly that form before this flag existed.
+        // Must be after setTimetable, which clears it.  The plan is built on a model in which nothing is moving (see
+        // HomeStaging), so the moves are only safe run one at a time: executeTimetable normally dispatches an entry once the
+        // one before it has STARTED, and two overlapping staging moves can contend for an edge the planner never considered,
+        // the second retrying forever on a route it cannot abandon.
         this.timetableSequential = true;
 
         // And so is this
@@ -13829,10 +13627,9 @@ public class Layout
     /**
      * Says whether the timetable's entries must run one at a time.
      *
-     * Public because setTimetable clears it and only the staging planner sets it, which left no way
-     * to state the flag directly.  Nothing in the application calls it now - `fromJSON` sets the field
-     * itself, and a fold no longer writes a plan (RLV9-B1) - so what it states is a file written before
-     * that, which tests state by hand (RLV10-C4).
+     * Public because setTimetable clears it and only the staging planner sets it.  Nothing in the application calls it now
+     * (`fromJSON` sets the field itself, and a fold no longer writes a plan, RLV9-B1); tests use it to state the flag by
+     * hand for a file written before that (RLV10-C4).
      *
      * @param sequential true to wait for each entry to arrive before starting the next
      */
@@ -13901,9 +13698,8 @@ public class Layout
 
     public void setActivateRouteIDs(List<Integer> activateRouteIDs)
     {
-        // Copied, not adopted: deleteRoute mutates this list, and one caller passes
-        // Collections.singletonList - immutable, so the delete died with
-        // UnsupportedOperationException partway, leaving the route in the database.
+          // Copied, not adopted: deleteRoute mutates this list, and one caller passes an immutable
+          // Collections.singletonList.
         this.activateRouteIDs =
             activateRouteIDs == null ? new LinkedList<>() : new LinkedList<>(activateRouteIDs);
     }
@@ -14002,11 +13798,10 @@ public class Layout
      * The same, with each train under way written on the one point it is kept at (RLV8-B1): `getLastPointsReached`'s.
      *
      * A locked path holds every point on it for its train, so written point by point a train under way stands in several
-     * places, which a configuration refuses.  A fold of a railway holding a path writes it here instead - on the kept
-     * point, and on no other point it holds.  A kept point a released path no longer records it on is written with it,
-     * while the railway still shows the train somewhere and the database has it, as 2.8.2 writes a kept graph; and a
-     * point another train only passes through gives way to the train kept there (RLV8-C4).
-     *
+     * places, which a configuration refuses.  A fold of a railway holding a path writes it on the kept point and no other
+     * point it holds; a kept point a released path no longer records it on is written with it while the railway still shows
+     * the train and the database has it, and a point another train only passes through gives way to the train kept there
+     * (RLV8-C4).
      * @param keptAt each train under way against the point it is kept at; empty for a railway at rest
      * @return the railway
      * @throws IllegalArgumentException from the JSON
@@ -14071,10 +13866,11 @@ public class Layout
             edgeJson.add(e.toJSON());
         }
         
-        // THE OWNER'S TIMETABLE, not a staging plan that borrows it (RLV9-B1).  Return Home puts its plan in the timetable
-        // while it runs and hands the original back when it ends; a fold in between - a reload confirmed during the run,
-        // or Unload - wrote the plan into the configuration as its timetable, marked to run one train at a time, and saved
-        // it.  "A plan that was never saved cannot outlive the session" is what Return Home is written on.
+          // THE OWNER'S TIMETABLE, not a staging plan that borrows it (RLV9-B1).  Return Home puts its plan in the timetable
+          // while it runs and hands the original back when it ends; a fold in between (a reload confirmed during the run, or
+          // Unload) must not save the plan as the timetable.  "A plan that was never saved cannot outlive the session" is
+          // what Return Home is written on.
+
         List<TimetablePath> owners = this.timetableOnLoan;
 
         for (TimetablePath p : owners != null ? owners : this.timetable)
