@@ -531,7 +531,7 @@ public class testDiagramLooksRight
             if (isCurveAt(e.getValue())) curved.add(e.getKey());
         }
 
-        if (curved.isEmpty()) throw new SkipException("no Point on this layout sits on a curve");
+        assertFalse(curved.isEmpty(), "no Point on this layout sits on a curve");
 
         runLocomotive = model.getLocByName(model.getLocList().get(0));
 
@@ -4155,14 +4155,6 @@ public class testDiagramLooksRight
         grid.add(right);
         grid.add(middle);
 
-        // THE COUNT BELOW LOOKS FOR THE ARROWS' COLOURS AS THIS TEST SPELLS THEM, so they are the program's: a colour
-        // changed there would leave the counts looking for one nothing is painted in
-        assertEquals(programColour("ONE_WAY"), new java.awt.Color(70, 205, 90), "the one-way arrow is no longer the green"
-            + " this claim counts pixels of, so its count of zero says nothing about the arrows (RSA61-C2)");
-
-        assertEquals(programColour("CLOSED"), new java.awt.Color(200, 0, 0), "the closed arrow is no longer the red this"
-            + " claim counts pixels of, so its count of zero says nothing about the arrows (RSA61-C2)");
-
         int[] covered = blueAndArrowsBeside(grid, size);
 
         int blue = covered[0], arrows = covered[1];
@@ -4184,23 +4176,6 @@ public class testDiagramLooksRight
 
         assertTrue(open[1] > 0, "precondition: none of the arrows' red or green is seen on the square with no caption over"
             + " it, so the count of zero above says nothing about the caption (the arrows are not the colours this looks for)");
-    }
-
-    /** A colour the annotation paints with, read from the program's own constant. */
-    private static java.awt.Color programColour(String constant)
-    {
-        try
-        {
-            java.lang.reflect.Field field = org.traincontrol.automationui.TileAnnotation.class.getDeclaredField(constant);
-
-            field.setAccessible(true);
-
-            return (java.awt.Color) field.get(null);
-        }
-        catch (ReflectiveOperationException none)
-        {
-            throw new AssertionError("TileAnnotation has no colour called " + constant, none);
-        }
     }
 
     /**
@@ -4227,6 +4202,12 @@ public class testDiagramLooksRight
             g.dispose();
         }
 
+        // THE ARROWS' COLOURS ARE THE PROGRAM'S OWN, so a colour changed there is followed and not left uncounted
+        java.awt.Color oneWay = (java.awt.Color) support.ProgramConstants.get(
+            org.traincontrol.automationui.TileAnnotation.class, "ONE_WAY");
+        java.awt.Color closedWay = (java.awt.Color) support.ProgramConstants.get(
+            org.traincontrol.automationui.TileAnnotation.class, "CLOSED");
+
         int blue = 0, arrows = 0;
 
         for (int x = 2 * size; x < 3 * size; x++)
@@ -4237,12 +4218,18 @@ public class testDiagramLooksRight
 
                 if (b > 150 && r < 90 && gr < 90) blue++;
 
-                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30 && Math.abs(gr - 205) < 30
-                    && Math.abs(b - 90) < 30)) arrows++;
+                if (near(r, gr, b, closedWay, 30, 40, 40) || near(r, gr, b, oneWay, 30, 30, 30)) arrows++;
             }
         }
 
         return new int[] {blue, arrows};
+    }
+
+    /** Whether a pixel is within these margins of a colour, channel by channel. */
+    private static boolean near(int r, int g, int b, java.awt.Color colour, int marginR, int marginG, int marginB)
+    {
+        return Math.abs(r - colour.getRed()) < marginR && Math.abs(g - colour.getGreen()) < marginG
+            && Math.abs(b - colour.getBlue()) < marginB;
     }
 
     /**
