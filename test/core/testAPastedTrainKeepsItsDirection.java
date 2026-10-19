@@ -22,6 +22,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -282,9 +283,7 @@ public class testAPastedTrainKeepsItsDirection
     @Test
     public void testTheDoorWalksToTheLandingBeforeItMovesTheTrain() throws Exception
     {
-        String door = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String door = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(");
 
         int walk = door.indexOf("facingAtTheLanding = getAutonomySession() == null");
 

@@ -18,6 +18,7 @@ import org.traincontrol.gui.ManualReversalPrompt;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -191,37 +192,18 @@ public class testACompulsoryTurnIsNotAQuestion
         // writing: the behavioural assertion above knows only about squares whose copies carry no
         // flag, and would report clean about every railway where they do - which is every railway the
         // defect could actually hurt.
-        String prompt = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/ManualReversalPrompt.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
         // The one inside forOperator, which is the policy both manual doors hand over. Found by the
         // method it sits in rather than by position, so reordering the file does not silently move
         // this check onto a different asksAbout.
-        int door = prompt.indexOf("public static org.traincontrol.automation.Layout.ReversalPolicy"
+        String forOperator = SourceOf.declaration("public static org.traincontrol.automation.Layout.ReversalPolicy"
             + " forOperator(");
-
-        assertTrue(door > 0, "forOperator has been renamed and this check now guards nothing");
-
-        int asks = prompt.indexOf("public boolean asksAbout(Point at)", door);
-
-        assertTrue(asks > 0, "forOperator no longer answers asksAbout at all");
-
-        int endOfMethod = prompt.indexOf("            }", asks);
 
         // COMMENTS STRIPPED FIRST. The first version of this check read the prose as though it were
         // code and failed on the paragraph explaining the very defect it guards - a guard that cannot
         // tell an explanation from an instruction is not reporting on the program at all.
-        StringBuilder code = new StringBuilder();
+        String code = SourceOf.withoutComments(SourceOf.declarationIn(forOperator, "public boolean asksAbout(Point at)"));
 
-        for (String line : prompt.substring(asks, endOfMethod).split("\\r?\\n"))
-        {
-            String trimmed = line.trim();
-
-            if (!trimmed.startsWith("//")) code.append(trimmed).append(" ");
-        }
-
-        assertFalse(code.toString().contains("isReversing()"),
+        assertFalse(code.contains("isReversing()"),
             "REG6-A1 is back: asksAbout consults isReversing(), which is true for every copy of a"
             + " COMPULSORY turn as well as for a may-reverse one. The setup is the only thing that"
             + " can tell them apart, because canReverse is never emitted to parseAuto at all."

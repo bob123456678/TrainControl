@@ -26,6 +26,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.file.CS2File;
+import support.SourceOf;
 
 /**
  * A train put down on a square is standing where the drive would leave it, not turned round.
@@ -635,11 +636,7 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " buttons on it");
 
         // THE PASTE ASKS IT, and asks it before anything moves (SVX-C4's guard, one block on).
-        String source = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String flat = source.replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains("if (mayTurnHere(aimed) && getAutonomySession() != null)"),
             "the paste no longer asks the facing question at may-reverse squares (Adam, 2026-09-13)");
@@ -650,8 +647,10 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " as if no paste had been done\"");
 
         // READ BEFORE THE TAIL QUESTION WAITS (TDU-B2), and written from there.
-        assertTrue(flat.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
-            + " facingChosenAtTheLanding;") && flat.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
+        String placement = SourceOf.declaration("private void rememberPlacement(").replaceAll("\\s+", " ");
+
+        assertTrue(placement.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
+            + " facingChosenAtTheLanding;") && placement.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
             "the operator's answer is no longer what gets written, so the question is asked and then"
             + " overruled by the walk it exists to replace");
     }
@@ -730,11 +729,7 @@ public class testAPasteDoesNotTurnTheTrainRound
         }
 
         // THE SHAPE, in the file.
-        String source = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String flat = source.replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("private boolean locomotiveGestureOnDiagram(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains(
             "boolean stillLifted = this.model == null || this.model.getAutoLayout() == null"

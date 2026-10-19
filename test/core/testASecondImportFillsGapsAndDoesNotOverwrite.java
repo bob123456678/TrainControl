@@ -13,6 +13,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Importing the same 2.7.4c file twice fills what is missing and leaves what is there (MT-298).
@@ -307,16 +308,14 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
             + " the file's placements");
 
         // AND THE DOOR CHOOSES BEFORE THE IMPORT WRITES: the rule above is only as good as the one call that asks it.
-        String door = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyViewerPanel.java")), java.nio.charset.StandardCharsets.UTF_8);
+        String door = SourceOf.declaration("private void importLegacyGraph(");
 
-        int start = door.indexOf("private void importLegacyGraph(");
-        int chosen = door.indexOf("activateTheConfigurationNamed(session().getStore(), name", start);
-        int writes = door.indexOf("session().importLegacy(", start);
+        int chosen = door.indexOf("activateTheConfigurationNamed(session().getStore(), name");
+        int writes = door.indexOf("session().importLegacy(");
 
-        assertTrue(start > 0 && writes > start, "precondition: the old-file import door is not where it was");
+        assertTrue(writes > 0, "precondition: the old-file import door no longer writes the old file");
 
-        assertTrue(chosen > start && chosen < writes, "the Import door writes the old file before choosing the"
+        assertTrue(chosen > 0 && chosen < writes, "the Import door writes the old file before choosing the"
             + " configuration named at the prompt, or never asks");
     }
 
