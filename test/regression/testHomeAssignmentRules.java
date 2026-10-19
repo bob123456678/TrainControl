@@ -1,14 +1,12 @@
 package regression;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.AutonomyEditorPanel;
+import support.SourceOf;
 
 /**
  * The three rules about a station's home locomotive.
@@ -29,9 +27,6 @@ import org.traincontrol.gui.AutonomyEditorPanel;
  */
 public class testHomeAssignmentRules
 {
-    private static final File PANEL =
-        new File("src/org/traincontrol/gui/AutonomyEditorPanel.java");
-
     /**
      * Rule 1: the list keeps a home naming a locomotive autonomy no longer runs.
      *
@@ -136,10 +131,8 @@ public class testHomeAssignmentRules
     @Test
     public void testEachRuleIsStillWiredToSomething() throws Exception
     {
-        assertTrue(PANEL.isFile(),
-            "cannot find " + PANEL.getAbsolutePath() + " - a test that reads the source cannot pass by not finding it. This returned quietly, so renaming or moving that file would have taken this rule with it and said nothing");
-
-        String source = new String(Files.readAllBytes(PANEL.toPath()), StandardCharsets.UTF_8);
+        // The program's code, wherever the panel keeps these calls: a comment naming one is not a caller.
+        String source = SourceOf.allCode();
 
         assertTrue(source.contains("homeChoices(I18n.t("),
             "the home dialog no longer builds its list with homeChoices, so the rule about keeping a "
