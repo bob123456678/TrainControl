@@ -285,15 +285,8 @@ public class testACompulsoryTurnIsNotAQuestion
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squares =
             session.tilesCoveredByStandingTrains(built);
 
-        // MEASURED, AND THE MEASUREMENT IS THE FINDING.
-        //
-        // With four fifty-unit trains standing on Adam's railway, NOTHING is covered.  The walk stops
-        // at the first segment without a positive length, and almost nothing on this layout carries
-        // one - so the protrusion rule is correct and inert here until more tile lengths are recorded.
-        //
-        // Said out loud rather than asserted away: a reader meeting this test needs to know that a
-        // green tick here does not mean track is being blocked on his railway today.  The day lengths
-        // are recorded, the branch below starts running and the join is checked for real.
+        // MEASURED: on the snapshot three edges are covered by the standing trains (2026-10-19, FR-136 1b, H0004), so the join
+        // below runs for real.  The empty branch stays for a layout with no recorded lengths, where nothing can be covered.
         if (edges.isEmpty())
         {
             assertTrue(squares.isEmpty(),
