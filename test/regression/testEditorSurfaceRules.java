@@ -1913,7 +1913,9 @@ public class testEditorSurfaceRules
         assertTrue(pass.substring(loop).startsWith("session.staticAnnotations(marked, arrows, allowedToo)"), "the marks"
             + " are asked for without the options, so they are read again for each square");
 
-        String all = codeOf("public Map<TileKey, TileAnnotation> staticAnnotations(");
+        // The session's pass is SessionRuns' (FR-136); AutonomySession's is a one-line call to it
+        String all = SourceOf.withoutComments(memberOf("final class SessionRuns",
+            "Map<TileKey, TileAnnotation> staticAnnotations("));
 
         assertFalse(all.contains("diagramShowsRestrictionArrows()") || all.contains("diagramShowsAllowedDirections()")
             || all.contains("staticAnnotationFor(tile)"), "the session's pass asks an option for itself though it was"

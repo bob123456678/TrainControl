@@ -251,7 +251,7 @@ public class testNoSelfRecursiveWrappers
         List<String> lines = java.util.Arrays.asList(
             support.SourceOf.declaration("public class AutonomySession\n").split("\n"));
 
-        String[] collaborators = {"sessionImport.", "SessionImport."};
+        String[] collaborators = {"sessionImport.", "SessionImport.", "sessionRuns."};
 
         int checked = 0;
 
@@ -298,7 +298,7 @@ public class testNoSelfRecursiveWrappers
             }
         }
 
-        assertTrue(checked >= 3, "only " + checked + " of the session's delegators were found, so this checked almost"
+        assertTrue(checked >= 8, "only " + checked + " of the session's delegators were found, so this checked almost"
             + " nothing - the shape it looks for has probably changed");
     }
 
