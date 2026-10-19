@@ -325,6 +325,8 @@ public class testNoSelfRecursiveWrappers
     private static final String[][] LAYOUT_HELPERS = {
         { "layoutExplanations", "src/org/traincontrol/automation/LayoutExplanations.java", "LayoutExplanations" },
         { "standingTrains", "src/org/traincontrol/automation/StandingTrains.java", "StandingTrains" },
+        // All static, so no field: the railway hands to it as `TrainFit.`
+        { "TrainFit", "src/org/traincontrol/automation/TrainFit.java", "TrainFit" },
     };
 
     /**

@@ -4629,6 +4629,11 @@ public class testEditorSurfaceRules
             + " terminus a train that cannot reverse would be stranded at is kept out of the menu only where autonomy"
             + " may choose it, since a square it never chooses is a berth the operator puts trains away in (OB-205)");
 
+        excused.put("automation/TrainFit.java",
+            "the bodies of Layout's length rules (FR-136), which ask a DIFFERENT question of the clause: whether a train"
+            + " stays (a berth, refused across another road) or passes (a station autonomy may choose, which its"
+            + " measured route in may hold) - FR-087");
+
         excused.put("automation/Point.java", "the accessor");
 
         excused.put("automationui/AutonomyChecks.java",
