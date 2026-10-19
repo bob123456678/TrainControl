@@ -7,6 +7,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.SourceOf;
 
 /**
  * In autonomy mode the editor knows which square the pointer is over, and the naming shortcut asks it.
@@ -176,40 +177,6 @@ public class testTheAutonomyEditorKnowsWhichSquare
         }
     }
 
-    /**
-     * Java source with its comments removed - `//` and block alike, in the order the compiler reads
-     * them.
-     *
-     * @param source the file's text
-     * @return the same text with every comment gone
-     */
-    private static String withoutComments(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
-    }
-
     /** A private field of the editor, by name. */
     private static Object field(org.traincontrol.gui.LayoutEditor of, String name) throws Exception
     {
@@ -329,19 +296,16 @@ public class testTheAutonomyEditorKnowsWhichSquare
     @Test
     public void testTheNamingShortcutAsksTheSquareAutonomyModeTracks() throws Exception
     {
-        java.io.File source = new java.io.File("src/org/traincontrol/gui/LayoutEditor.java");
-
-        assertTrue(source.exists(), "cannot find " + source.getAbsolutePath()
-            + " - this test reads the editor's source, so it has to run from the project root");
-
         // WITHOUT ITS COMMENTS, and this is not a precaution.
         //
         // The branch's own comment names both the field and the method it asks, which are sentences
         // about the fix and were read as the defect - the first run of this test failed against
         // correct code because of it.  `testTheWindowAttachesItsRefreshCallback` strips comments for
         // the same reason and says so at more length.
-        String body = withoutComments(new String(java.nio.file.Files.readAllBytes(source.toPath()),
-            java.nio.charset.StandardCharsets.UTF_8));
+        // formKeyPressed is every window's key handler, so it is cut out of the editor's own file.
+        String body = SourceOf.withoutComments(SourceOf.declarationIn(
+            SourceOf.fileDeclaring("public class LayoutEditor extends"),
+            "private void formKeyPressed(java.awt.event.KeyEvent evt)"));
 
         int at = body.indexOf("evt.getKeyCode() == KeyEvent.VK_S");
 
