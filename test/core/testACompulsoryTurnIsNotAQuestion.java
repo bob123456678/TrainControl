@@ -302,7 +302,7 @@ public class testACompulsoryTurnIsNotAQuestion
             + " to TileKey is not finding the reduced edges");
     }
 
-    // ---------------------------------------------------------------- fixtures
+    // Fixtures
 
     /**
      * A named station that is not already a terminus or a turn, so the marks below mean something.
@@ -339,13 +339,16 @@ public class testACompulsoryTurnIsNotAQuestion
         return null;
     }
 
-    // ------------------------------------------------------------------------------------------------ RSA50, built lines
+    // RSA50, built lines
 
     /**
      * A line of three stations - Alpha, Beta, Gamma - set up as an operator would and built into the running layout by the
      * setup's own builder (RSA50-A1: a claim whose railway is assembled by hand can give a Point a block the build never
      * emits, and pass on a shape no user has).  Alpha is a compulsory turn; Gamma is one too, or a may-turn square at the
      * end of the line; Beta may be a may-turn square.
+     *
+     * Built unpaced (`support.FastSimulation`): the claims are about where a train stands and which way it faces, and each
+     * turn waited out the builder's 1 to 5 seconds.  The railway goes with the line's folder, so the pace is not put back.
      *
      * @param folder where the setup is kept
      * @param tag what every name starts with
@@ -412,6 +415,8 @@ public class testACompulsoryTurnIsNotAQuestion
         model.parseAuto(line.buildConfiguration());
 
         assertNotNull(model.getAutoLayout(), "precondition: the line did not build");
+
+        support.FastSimulation.unpace(model.getAutoLayout());
 
         return line;
     }

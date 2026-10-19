@@ -216,6 +216,8 @@ public class testTheAutoTabWaitsForTheTrains
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
+        support.FastSimulation unpaced = null;
+
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -234,6 +236,9 @@ public class testTheAutoTabWaitsForTheTrains
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            // UNPACED: the claim is about the click and the arrival, not the seconds the simulation waits at each sensor
+            unpaced = support.FastSimulation.unpace(railway);
 
             // THE LONGEST PATH ANY TRAIN MAY TAKE, so its route takes a while to set
             final java.lang.reflect.Method mayTake = TrainControlUI.class.getDeclaredMethod("whyThisPathCannotBeTaken",
@@ -331,6 +336,8 @@ public class testTheAutoTabWaitsForTheTrains
         finally
         {
             if (ui[0] != null && ui[0].getModel().hasAutoLayout()) ui[0].getModel().getAutoLayout().stopLocomotives();
+
+            if (unpaced != null) unpaced.close();
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
