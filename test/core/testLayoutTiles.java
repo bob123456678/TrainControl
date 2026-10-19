@@ -27,6 +27,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinFeedback;
+import support.SourceOf;
 
 /**
  * Track diagram tile refreshing, across the two threads that drive it.
@@ -266,11 +267,31 @@ public class testLayoutTiles
     }
 
     /**
-     * How long an accessory highlight is held for, as `LayoutLabel` holds it.
+     * How long an accessory highlight is held for, as `LayoutLabel` holds it: asked of its private
+     * `HIGHLIGHT_DURATION` rather than restated, so the bounds below follow a change to the hold.
      *
      * Named here because the test below turns on the second drive landing inside it (OP2-C6).
      */
-    private static final long HIGHLIGHT_HOLD_MS = 2250;
+    private static final long HIGHLIGHT_HOLD_MS = highlightHold();
+
+    /**
+     * @return LayoutLabel's HIGHLIGHT_DURATION, in milliseconds
+     */
+    private static long highlightHold()
+    {
+        try
+        {
+            java.lang.reflect.Field hold = LayoutLabel.class.getDeclaredField("HIGHLIGHT_DURATION");
+
+            hold.setAccessible(true);
+
+            return hold.getInt(null);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException("LayoutLabel has no HIGHLIGHT_DURATION to ask", e);
+        }
+    }
 
     /**
      * A second accessory highlight stops the first, so only one restore ever fires (VC2-C3).
@@ -295,7 +316,7 @@ public class testLayoutTiles
 
         // THE SECOND DRIVE HAS TO LAND INSIDE THE FIRST HIGHLIGHT (OP2-C6).
         //
-        // The hold is 2250 ms.  If getting here takes longer than that - `awaitHighlight` plus two
+        // The hold is HIGHLIGHT_HOLD_MS (2250 ms today).  If getting here takes longer than that - `awaitHighlight` plus two
         // `invokeAndWait` hops, on a machine running the whole battery - the first timer has already
         // fired and been counted, and the assertion below sees two restores with the fix in place.
         // That is a flake, and a flake in a class about timers is the worst kind: it reads as the
@@ -319,8 +340,9 @@ public class testLayoutTiles
                 + " and there is no superseded timer left to ask about");
         }
 
-        // Long enough for BOTH timers to have fired, if both were still armed.
-        Thread.sleep(3200);
+        // Long enough for BOTH timers to have fired, if both were still armed: the first hold, the 350 ms the second
+        // drive came after it, and a margin.
+        Thread.sleep(HIGHLIGHT_HOLD_MS + 950);
 
         SwingUtilities.invokeAndWait(() -> { });
 
@@ -464,12 +486,12 @@ public class testLayoutTiles
         assertFalse(label.isAccessoryHighlightOutstanding(),
             "precondition: this square took the accessory-highlight branch, so it is not the path this is for");
 
-        // BOUNDED WELL INSIDE THE FLASH'S OWN HOLD, which is HIGHLIGHT_DURATION - 2250 ms (VB2-B2, corrected by
+        // BOUNDED WELL INSIDE THE FLASH'S OWN HOLD, which is HIGHLIGHT_DURATION - 2250 ms today (VB2-B2, corrected by
         // VC2-C1).  A flash that merely timed out cannot pass this, and the elapsed time is asserted below so that
         // a slow machine says so rather than passing for the wrong reason.
         long waitingFrom = System.currentTimeMillis();
 
-        long armed = waitingFrom + 1200;
+        long armed = waitingFrom + HIGHLIGHT_HOLD_MS / 2;
 
         while (label.isFlashOutstanding() && System.currentTimeMillis() < armed)
         {
@@ -482,8 +504,9 @@ public class testLayoutTiles
             "the flash is still armed after this square was redrawn, so it will put the old picture back - a sensor"
             + " drawn clear under a standing train, or a switch drawn in the position it was thrown out of");
 
-        assertTrue(waited < 2000,
-            "the flash went quiet after " + waited + " ms, which is long enough to be its own 2250 ms hold running"
+        assertTrue(waited < HIGHLIGHT_HOLD_MS - 250,
+            "the flash went quiet after " + waited + " ms, which is long enough to be its own " + HIGHLIGHT_HOLD_MS
+            + " ms hold running"
             + " out rather than the redraw giving it up");
     }
 
@@ -802,11 +825,7 @@ public class testLayoutTiles
 
             // AND THE CALL SITE USES IT, so pinning the rule does not leave the one place that was wrong
             // as the only thing nothing checks.
-            String source = new String(java.nio.file.Files.readAllBytes(
-                java.nio.file.Paths.get("src/org/traincontrol/gui/RouteEditorFrame.java")),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            assertTrue(source.contains("editRoute(nowCalled, saveAs,"),
+            assertTrue(SourceOf.declaration("private void onSave()").contains("editRoute(nowCalled, saveAs,"),
                 "the renamed-route branch no longer saves under the name nameToSaveAs chose");
 
             // AND THE OLD NAME COMING BACK ON A DIFFERENT ROUTE IS NOT THIS ROUTE (FNL-C5).
