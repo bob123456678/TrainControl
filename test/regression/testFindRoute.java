@@ -1,14 +1,12 @@
 package regression;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.SourceOf;
 
 /**
  * Find Route lands on the route the user meant, or says it cannot (FR-044).
@@ -159,14 +157,14 @@ public class testFindRoute
     @Test
     public void testTheMenuItemIsMountedByHand() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), StandardCharsets.UTF_8);
+        // mountFindRoute is declared once or this fails by itself, naming it
+        SourceOf.declaration("private void mountFindRoute()");
 
-        assertTrue(ui.contains("private void mountFindRoute()"),
-            "mountFindRoute has gone, so nothing puts Find Route on the routes menu");
-
-        assertTrue(ui.contains("mountFindRoute();"),
+        assertTrue(SourceOf.allCode().contains("mountFindRoute();"),
             "mountFindRoute is never called, so the menu item is built and never mounted");
+
+        // The file holding the field is the point: the question is where in it the field stands.
+        String ui = SourceOf.fileDeclaring("private javax.swing.JMenuItem findRouteMenuItem;");
 
         int declared = ui.indexOf("private javax.swing.JMenuItem findRouteMenuItem;");
 
