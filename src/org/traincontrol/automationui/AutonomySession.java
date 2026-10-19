@@ -12580,18 +12580,12 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            // THE SAME SKIP AS `pagesSafeToJudge` AND `open`, AND IT HAS TO BE HERE TOO (FV3-A3).
-            //
-            // This is the third copy of this loop, and the first repair for FV3-A1 reached the other
-            // two.  The consequence of missing this one is worse than missing all three, because the
-            // two halves then disagree: `incomplete` comes back true from pagesSafeToJudge, so the
-            // prune is correctly declined - but `absent` comes back EMPTY, because the placeholder
-            // still supplies its name here, and `Reconciliation.declined(absent)` reports
-            // `wasDeclined()` as false when the list is empty.
-            //
-            // So the save refuses to judge the page, which is right, and then tells every caller it
-            // did nothing of the sort.  Three of the four doors that reach this save discard the
-            // report, so the refusal would be silent in exactly the case the report exists for.
+            // THE SAME SKIP AS `pagesSafeToJudge` AND `open`, AND IT HAS TO BE HERE TOO (FV3-A3): were it missing, the two
+            // halves would disagree - `incomplete` comes back true from pagesSafeToJudge, so the prune is correctly declined,
+            // but `absent` comes back EMPTY because the placeholder still supplies its name here, and
+            // `Reconciliation.declined(absent)` reports `wasDeclined()` as false when the list is empty.  Three of the four
+            // doors that reach this save discard the report, so the refusal would be silent in exactly the case the report
+            // exists for.
             if (page.isUnreadable()) continue;
 
             loadedNames.add(page.getName());
@@ -12601,22 +12595,16 @@ public class AutonomySession
 
         boolean incomplete = !pagesSafeToJudge();
 
-        // Not logged from here: this class has no logger, deliberately - it is the model half of the
-        // setup and every message about it belongs to a window. Callers are told through the
-        // Reconciliation this returns, which now carries the names (DR-B10); the important half is
-        // that nothing is destroyed while the answer is non-empty.
+        // Not logged from here: this class has no logger, deliberately - it is the model half of the setup and every message
+        // about it belongs to a window.  Callers are told through the Reconciliation (DR-B10); nothing is destroyed while the
+        // answer is non-empty.
 
         AutonomyCompanionStore.Reconciliation report = incomplete
             ? AutonomyCompanionStore.Reconciliation.declined(absent)
             : store.reconcile(existing);
 
-        // Pruned only once the guard above has agreed the picture is complete (DR-B10).
-        //
-        // This ran as the FIRST statement of this method, before `incomplete` was computed at all. It
-        // was protected by two accidents rather than by the rule it is built around - held entries
-        // never reach the live map, and it skips squares whose station index does not know them - and
-        // nothing at the call said so. Every pruner ever added to this class will need this guard, so
-        // it is inside it now rather than beside it.
+        // Pruned only once the guard above has agreed the picture is complete (DR-B10): every pruner added to this class needs
+        // the guard, so it is inside it, not beside it.
         if (!incomplete) forgetArrivalsThatNoLongerExist();
 
         store.save();
@@ -12631,18 +12619,14 @@ public class AutonomySession
     /**
      * Writes the setup out WITHOUT reconciling it against the diagram.
      *
-     * For the paths that save because the diagram is being replaced underneath them, rather than
-     * because a user pressed Save.  Reconciling compares the setup against the pages this session
-     * holds - and on those paths the pages are the ones an editor mutated in place, which the user may
-     * have just discarded with Cancel.  The editor works on the live LayoutDiagram objects and Cancel
-     * reverts by re-reading from disk into NEW ones, so the session is left holding the edited
-     * version: reconciling against it deleted the names, lengths, directions and arrival restrictions
-     * of every square the user had deleted and then thought better of, permanently, with the track
-     * itself coming back.
+     * For the paths that save because the diagram is being replaced underneath them, rather than because a user pressed
+     * Save.  Reconciling compares the setup against the pages this session holds, and on those paths the pages are the ones
+     * an editor mutated in place, which the user may have just discarded with Cancel (Cancel reverts by re-reading from
+     * disk into NEW ones), so reconciling against them would delete the names, lengths, directions and arrival restrictions
+     * of every square the user had deleted and then thought better of.
      *
-     * Nothing is lost by waiting.  Reconciliation tidies a setup whose diagram has genuinely changed,
-     * and the next explicit save does it with pages that are actually current - which is the moment
-     * its report can be shown to somebody anyway.
+     * Nothing is lost by waiting: the next explicit save reconciles with pages that are actually current, which is the
+     * moment its report can be shown to somebody anyway.
      *
      * @throws IOException
      */
@@ -12779,24 +12763,15 @@ public class AutonomySession
     /**
      * The station squares that will take a train of any length.
      *
-     * Stations only. A maximum on somewhere trains cannot stop decides nothing, which is the same
-     * reason the setting itself moved into the station submenu (FR-046).
+     * Stations only: a maximum on somewhere trains cannot stop decides nothing (FR-046).
      *
-     * **Gated on the railway modelling lengths at all** (SVN-C3, corrected by REL-C2).  Adam set that
-     * condition for `reversalsWithoutLength` - *"a railway that measures nothing has decided not to
-     * model lengths"* - and this check, six days older, never got it: every station on a layout that
-     * models no lengths was listed, thirty of them on his own railway, on the list this file's javadoc
-     * twice says is made useless by ordinary things standing beside real problems.
-     *
-     * **But not on TRACK lengths, which was the first version of this gate.**  `maxTrainLength` is
-     * compared against the locomotive's own authored length - `Point.validateTrainLength` - and no tile
-     * length enters into it, so the feature works perfectly on a railway with nothing measured.
-     * Gating it on `measuresAnyTrack()` took a precondition that was true where it was written and
-     * dropped its subject on the way over: somebody who authors train lengths and station maxima and
-     * has never measured track got no notices at all, about the feature they are actively using.
-     *
-     * So the question is "does this railway model lengths": any track measured, any station with a
-     * maximum, or any locomotive with a train length.
+     * **Gated on the railway modelling lengths at all** (SVN-C3, REL-C2).  Adam set that condition for
+     * `reversalsWithoutLength` - *"a railway that measures nothing has decided not to model lengths"* - and without it
+     * every station on a layout that models no lengths would be listed.  **But not on TRACK lengths:** `maxTrainLength` is
+     * compared against the locomotive's own authored length (`Point.validateTrainLength`) and no tile length enters into
+     * it, so somebody who authors train lengths and station maxima and has never measured track must still get the
+     * notices.  The question is "does this railway model lengths": any track measured, any station with a maximum, or any
+     * locomotive with a train length.
      *
      * @return the squares, empty when the layout models no lengths anywhere
      */
@@ -12893,23 +12868,21 @@ public class AutonomySession
     /**
      * Stations whose approach is measured in part and not in whole - the state that refuses a berth trains that fit.
      *
-     * Adam, 2026-09-19, shown RTX-C2: *"as long as lengths are specified on the berth, it will work, right?  We want
-     * clear warnings to the user if so, then it's fine."*  It does work: with the whole approach measured, the berth
-     * walk spends real lengths and admits a train that fits.  Half measured is the trap.
+     * Adam, 2026-09-19, shown RTX-C2: *"as long as lengths are specified on the berth, it will work, right?  We want clear
+     * warnings to the user if so, then it's fine."*  It does work with the whole approach measured; half measured is the
+     * trap.
      *
-     * **Why half measured refuses trains that fit.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING
-     * is measured, the berth's own square included (PRW-B1, and since OB-278 the berth's square counts).  One measured
-     * square is enough to make it
-     * judge, and it then walks backwards CLAIMING each place before spending the train's length on it - so an
-     * unmeasured square, worth 0, is claimed for nothing, and a train whose length is not spent on the measured squares
-     * before the switch or crossing reaches it and is refused, quoting the road rather than the hole in the measurements.  Since
-     * OB-278 the berth's own square is spent first, so a train short enough to be spent there is not refused - which is
-     * why the count below asks about the station's longest train (OB-288, MT-552).  It is the refusing direction of a
-     * ruled rounding, so it is right; it is just not something anybody would guess at from the outside.
+     * **Why half measured refuses trains that fit.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING is
+     * measured, the berth's own square included (PRW-B1, OB-278).  One measured square is enough to make it judge, and it
+     * then walks backwards CLAIMING each place before spending the train's length on it, so an unmeasured square (worth 0)
+     * is claimed for nothing, and a train whose length is not spent on the measured squares before the switch or crossing
+     * is refused, quoting the road rather than the hole in the measurements.  Since the berth's own square is spent first,
+     * a train short enough to be spent there is not refused, which is why the count asks about the station's longest train
+     * (OB-288, MT-552).  It is the refusing direction of a ruled rounding, so it is right.
      *
-     * **Which state is ordinary.**  Mass Assign Lengths gives every switch on a page one length in a step of its
-     * own, and MT-454's steps reach it by skipping pieces - so "switches measured, some pieces still at 0" is what
-     * the tool leaves behind between sittings.  That is exactly this.
+     * **Which state is ordinary.**  Mass Assign Lengths gives every switch on a page one length in a step of its own, and
+     * MT-454's steps reach it by skipping pieces, so "switches measured, some pieces still at 0" is what the tool leaves
+     * behind between sittings.
      *
      * Asked of the legs that ARRIVE at each station, which is what the berth walk reads.
      *
@@ -12926,10 +12899,9 @@ public class AutonomySession
         {
             if (!store.isStation(square)) continue;
 
-            // THE RULE EXEMPTS A STATION AUTONOMY CHOOSES (OP2-B2).  `whyABerthCannotHoldIt` returns at once for a
-            // berth that `isAutoDestination` - Adam's ruling, and the default for a station - so a warning about
-            // ordinary platforms would be about a refusal that never happens there.  What is left is the parking
-            // berths, which is what the rule is for.
+            // THE RULE EXEMPTS A STATION AUTONOMY CHOOSES (OP2-B2): `whyABerthCannotHoldIt` returns at once for a berth that
+            // `isAutoDestination` (Adam's ruling, and the default for a station), so a warning about ordinary platforms would
+            // be about a refusal that never happens.  What is left is the parking berths.
             if (isAutoDestination(square)) continue;
 
             // THE LONGEST TRAIN IT TAKES, where it has one (OB-288).
@@ -12953,11 +12925,9 @@ public class AutonomySession
 
                 boolean anyMeasured = false;
 
-                // THE PATH AND THE BERTH ITSELF.  The path is the squares between the leg's two ends, endpoints
-                // excluded: the start is where a train would be coming FROM, and the end - the berth - is rail the walk
-                // spends first (OB-278), which `Layout.whyABerthCannotHoldIt` counts among the measured places.  Left
-                // out, a berth measured with nothing behind it - judged by the rule, and closed to every longer train
-                // - was not warned about, and an unmeasured berth was one square fewer than the rule's count (TDY-B2).
+                // THE PATH AND THE BERTH ITSELF.  The path is the squares between the leg's two ends, endpoints excluded; the
+                // end - the berth - is rail the walk spends first (OB-278), which `Layout.whyABerthCannotHoldIt` counts among
+                // the measured places, so a berth measured with nothing behind it must be warned about (TDY-B2).
                 java.util.List<TileKey> squares = new java.util.ArrayList<>();
 
                 for (GraphReducer.TileStep step : arriving.getPath()) squares.add(step.getTile());
@@ -12971,20 +12941,18 @@ public class AutonomySession
 
                 if (!anyMeasured) continue;
 
-                // NOT WHERE THE BERTH'S MEASURED TRACK BEFORE THE STOP HOLDS ITS LONGEST TRAIN (OB-288; corrected on
-                // MT-552).  `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first
-                // (OB-278), passes a square with no length for nothing, and refuses the train only when its spending
-                // reaches track another road runs over - a switch, a permanent turnout or a crossing (TDA-C7).  So a
-                // berth whose measured track before the stop holds its longest train refuses none for the holes in it,
-                // and is not warned about.  Counted the walk's way, in `berthTrackBeforeTheStop`: a square that takes no
-                // length is passed over, a square with no length - answered 0 or not answered at all - is worth nothing
-                // and passed, and the stop ends the count.  The first version of this ended it at the first unanswered
-                // square, which the walk does not: Adam, 2026-09-24, of BottomMainPost - 1 on its own square, nothing on
-                // 22,7, 1 each on 22,8 and 22,9 - *"trains of length 3 can hold there"*.  With no longest train set, any
-                // train could reach the stop.
+                // NOT WHERE THE BERTH'S MEASURED TRACK BEFORE THE STOP HOLDS ITS LONGEST TRAIN (OB-288, MT-552).
+                // `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first (OB-278), passes
+                // a square with no length for nothing, and refuses the train only when its spending reaches track another road
+                // runs over - a switch, a permanent turnout or a crossing (TDA-C7).  So a berth whose measured track before the
+                // stop holds its longest train refuses none for the holes in it, and is not warned about.  Counted the walk's
+                // way, in `berthTrackBeforeTheStop`: a square that takes no length is passed over, a square with no length
+                // (answered 0 or not at all) is worth nothing and passed, and the stop ends the count (Adam, 2026-09-24, of
+                // BottomMainPost - 1 on its own square, nothing on 22,7, 1 each on 22,8 and 22,9 - *"trains of length 3 can
+                // hold there"*).  With no longest train set, any train could reach the stop.
                 //
-                // AND ONLY THE HOLES BEFORE THE STOP ARE COUNTED (TDA2-C6): the rule has refused by the time it gets past
-                // it, so a square beyond is one the operator would measure for nothing.
+                // AND ONLY THE HOLES BEFORE THE STOP ARE COUNTED (TDA2-C6): the rule has refused by the time it gets past it,
+                // so a square beyond is one the operator would measure for nothing.
                 int[] before = berthTrackBeforeTheStop(squares);
 
                 if (longest > 0 && before[0] >= longest) continue;
@@ -13001,40 +12969,34 @@ public class AutonomySession
     /**
      * Stations told they hold more train than their track measures (Adam, 2026-09-11).
      *
-     * *"Let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth
-     * length, that way they can decide if it makes sense or not.  for example, a station of length 4 may
-     * have two segments of tracks on either side of a switch, of length 2.  that is acceptable and its
-     * limitations are understood."*
+     * *"Let's add an autonomy editor notice that alerts the user if a run-in is shorter than the berth length, that way they
+     * can decide if it makes sense or not.  for example, a station of length 4 may have two segments of tracks on either
+     * side of a switch, of length 2.  that is acceptable and its limitations are understood."*
      *
-     * **The measured room is the guard's own number, not a second opinion.**  It is
-     * `ReducedEdge.getRoomAtTheEnd()` - the track from the last switch on the arriving edge to the
-     * platform, which is exactly what `Layout.measuredRoomAtTheEndOf` counts when that edge crosses a
-     * switch.  A notice quoting a number the refusal would not quote is worse than no notice: the reader
-     * measures the wrong stretch.  For a parking berth the number is the berth rule's where that stops first - at a
-     * switch or a crossing between the berth and the room walk's end, or on a leg with no switch at all (TDA2-C6,
-     * TDA3-C2) - and only where the rule refuses there: something on the leg is measured, and another road runs over
-     * the square (TDA5-C1).  Where nothing before that stop is measured and its squares were answered 0, the
-     * berth takes no train that way, and that is a warning of its own (`runInFigures`, TDA4-C2), not this notice;
-     * unanswered, they are the half-measured notice's to name, and this says nothing (TDA3-C1).
+     * **The measured room is the guard's own number, not a second opinion**: `ReducedEdge.getRoomAtTheEnd()`, the track
+     * from the last switch on the arriving edge to the platform, which is what `Layout.measuredRoomAtTheEndOf` counts when
+     * that edge crosses a switch.  A notice quoting a number the refusal would not quote makes the reader measure the wrong
+     * stretch.  For a parking berth the number is the berth rule's where that stops first - at a switch or a crossing
+     * between the berth and the room walk's end, or on a leg with no switch at all (TDA2-C6, TDA3-C2) - and only where the
+     * rule refuses there: something on the leg is measured, and another road runs over the square (TDA5-C1).  Where nothing
+     * before that stop is measured and its squares were answered 0, the berth takes no train that way, which is a warning
+     * of its own (`runInFigures`, TDA4-C2); unanswered, they are the half-measured notice's to name, and this says nothing
+     * (TDA3-C1).
      *
      * **And at a platform, the figure a train is refused above, where there is one** (Adam, 2026-09-24, TDA-C10: *"Add the
-     * refusing figure where there is one."*).  A train longer than the room stands across the switch as far as the
-     * measured route in holds it (FR-087), so one longer than the shortest way in - from the station or turn nearest
-     * behind - is refused (`refusingFigures`).  Given only where it is under the stated maximum.
+     * refusing figure where there is one."*).  A train longer than the room stands across the switch as far as the measured
+     * route in holds it (FR-087), so one longer than the shortest way in - from the station or turn nearest behind - is
+     * refused (`refusingFigures`).  Given only where it is under the stated maximum.
      *
-     * **An edge crossing no switch is skipped unless the train turns at its far end** - or, for a parking berth, a
-     * crossing on it ends the berth rule's room (above).  There the guard
-     * carries on backwards through earlier edges, so this edge alone bounds nothing and any number taken
-     * from it would be too small - except where the edge begins at a square trains turn round on, which
-     * is where the walk stops under his other ruling of the same day.  `unmeasuredAfterTheLastSwitch`
-     * makes the same choice and for the same reason, written out in its javadoc: asking about a whole
-     * route is a nag rather than a notice.
+     * **An edge crossing no switch is skipped unless the train turns at its far end** - or, for a parking berth, a crossing
+     * on it ends the berth rule's room (above).  There the guard carries on backwards through earlier edges, so this edge
+     * alone bounds nothing and any number taken from it would be too small, except where the edge begins at a square trains
+     * turn round on, which is where the walk stops.  `unmeasuredAfterTheLastSwitch` makes the same choice.
      *
-     * **Silent where either side is missing**, which is three separate cases and all three are somebody
-     * else's notice or nobody's business: no stated maximum is `NO_MAX_TRAIN_LENGTH`, an unmeasured
-     * stretch is `REVERSAL_NEEDS_LENGTH` where it matters most, and a railway that measures no track at
-     * all has decided not to model lengths - Adam's own condition, *"a railway that measures nothing has
-     * decided not to model them"*.
+     * **Silent where either side is missing**, which is somebody else's notice or nobody's business: no stated maximum is
+     * `NO_MAX_TRAIN_LENGTH`, an unmeasured stretch is `REVERSAL_NEEDS_LENGTH` where it matters most, and a railway that
+     * measures no track at all has decided not to model lengths - Adam's own condition, *"a railway that measures nothing
+     * has decided not to model them"*.
      *
      * @return the station squares, each mapped to {the stated maximum, the smallest measured room} - and at a platform
      *         with a refusing figure under its maximum, that figure third
@@ -13091,17 +13053,15 @@ public class AutonomySession
 
                 int room = arriving.getRoomAtTheEnd();
 
-                // A PARKING BERTH'S ROOM ENDS WHERE THE BERTH RULE STOPS (TDA2-C6): at a crossing as well as a switch, and
-                // a crossing between the berth and its switch is nearer.  The room walk runs on past a crossing
-                // (`boundsTheRoom`), so this quoted room the berth rule does not give, and a berth refusing its own
-                // maximum at the crossing was warned about by neither notice.  A platform autonomy may choose is not
-                // judged by the berth rule, and keeps the room walk's number.
+                // A PARKING BERTH'S ROOM ENDS WHERE THE BERTH RULE STOPS (TDA2-C6): at a crossing as well as a switch.  The room
+                // walk runs on past a crossing (`boundsTheRoom`), so quoting it would give room the berth rule does not give.  A
+                // platform autonomy may choose is not judged by the berth rule, and keeps the room walk's number.
                 //
                 // AND WITH NOTHING SPENT BEFORE THE STOP (TDA3-C1), every train is refused there - once anything on the
-                // approach is measured, which the rule asks first (PRW-B1), and only where the stop is one the berth
-                // rule refuses on: another road runs over it (TDA5-C1) - so the room walk's figure is not quoted
-                // either.  Squares nobody has answered are the half-measured notice's to name, and this one says nothing;
-                // answered 0 on purpose, they are the berth's own warning's (TDA4-C2), and this one says nothing either.
+                // approach is measured, which the rule asks first (PRW-B1), and only where the stop is one the berth rule
+                // refuses on: another road runs over it (TDA5-C1) - so the room walk's figure is not quoted either.  Squares
+                // nobody has answered are the half-measured notice's to name; answered 0 on purpose, they are the berth's own
+                // warning's (TDA4-C2); this notice says nothing for either.
                 boolean theBerthRulesFigure = false;
 
                 if (!isAutoDestination(square))
@@ -13171,22 +13131,19 @@ public class AutonomySession
      * over the notice's own ways in, of what `Layout.whyTooLongForThisRoute` refuses above on each - the larger of the
      * room past the switch and the measured route in (`Layout.measuredRouteIn`, FR-087).
      *
-     * **Off the built railway, not the squares.**  A square's copies are its directions, and which of them a train is
-     * started at is the build's answer: a square that is a station can have a copy heading this way that trains may not
-     * arrive at, and nobody is started there.  Read off the squares, Tunnel's notice said 3 from BottomInnerOtherside,
-     * where no route the railway runs into Tunnel measures under 6.
+     * **Off the built railway, not the squares.**  A square's copies are its directions, and which of them a train is started
+     * at is the build's answer: a square that is a station can have a copy heading this way that trains may not arrive at,
+     * and nobody is started there.
      *
-     * **The notice's own ways in, and only where the railway refuses on them** (ADA2-C1, ADA2-C2): a leg over a switch
-     * with something measured past it, or a leg with a length straight from a copy trains turn at - the ways `{3}` is
-     * taken over (`roomTheNoticeQuotes`), so the figure is never less than `{3}`.  A way in with nothing measured past its
-     * switch is the half-measured notice's; one with no length at all is not judged by the room rule and refuses no
-     * train, so it gives no figure and hides none.
+     * **The notice's own ways in, and only where the railway refuses on them** (ADA2-C1, ADA2-C2): a leg over a switch with
+     * something measured past it, or a leg with a length straight from a copy trains turn at - the ways `{3}` is taken over
+     * (`roomTheNoticeQuotes`), so the figure is never less than `{3}`.  A way in with nothing measured past its switch is
+     * the half-measured notice's; one with no length at all is not judged by the room rule and refuses no train.
      *
-     * **The route in, walked back as the railway runs it** (`routesIn`): over sensors nobody is started at, to a copy a
-     * train is started at or turns at; stopped at a leg nobody measured, and on past one answered 0 throughout, adding
-     * nothing (Adam, 2026-09-25); never through or into a point that is
-     * switched off, though from a station switched off round a train standing there; and never from or through another
-     * copy of the platform's own square (ADA2-C3).
+     * **The route in, walked back as the railway runs it** (`routesIn`): over sensors nobody is started at, to a copy a train
+     * is started at or turns at; stopped at a leg nobody measured, and on past one answered 0 throughout, adding nothing
+     * (Adam, 2026-09-25); never through or into a point that is switched off, though from a station switched off round a
+     * train standing there; and never from or through another copy of the platform's own square (ADA2-C3).
      *
      * @param built the built railway, or null
      * @param named its point names to squares, or null to ask the builder
@@ -13215,9 +13172,8 @@ public class AutonomySession
             String name = point.getString("name");
 
             // SWITCHED OFF, NOTHING PASSES OR ARRIVES (ADA2-C3): `isPathClear` refuses a route through a point that is not
-            // active, or into one - and not out of one (Adam, 2026-09-06: *"Just not inactive start points.  Inactive
-            // really means nothing can pass."*).  On his railway ParkingTrack12 is switched off, and a train standing
-            // there is sent into LowerFront by hand and refused above 4.
+            // active, or into one - and not out of one (Adam, 2026-09-06: *"Just not inactive start points.  Inactive really
+            // means nothing can pass."*).
             if (!point.optBoolean("active", true)) off.add(name);
 
             if (point.optBoolean("station", false))
@@ -13317,9 +13273,8 @@ public class AutonomySession
      * The least the route in counts for a train coming along each built leg towards this platform -
      * `Layout.measuredRouteIn` over every way the railway can run it - for the legs a train can come along (TDA-C10).
      *
-     * **Worked out for every leg together, and lowered until nothing changes**, so a loop of sensors is walked whole.
-     * Walked one leg at a time and remembered, a leg first reached inside a loop was stored as having no way in, and a
-     * platform whose way in ran back through it lost its figure or took a larger one (ADA2-C3).
+     * **Worked out for every leg together, and lowered until nothing changes**, so a loop of sensors is walked whole: walked
+     * one leg at a time and remembered, a leg first reached inside a loop would be stored as having no way in (ADA2-C3).
      *
      * - From a copy a train is started at or turns at, the leg alone: the route in stops there.
      * - A leg nobody measured ends the route in, so nothing behind it counts: 0.  One answered 0 throughout is measured
@@ -13444,7 +13399,7 @@ public class AutonomySession
      *     message names, so a side already barred must not go on being counted.
      *
      * Counted as SIDES rather than as arriving edges: two edges can reach one square by the same side.
-     * (This also said an arrival through a portal has no side on the grid; it arrives by a real one - AMG-C2.)
+     * (An arrival through a portal arrives by a real side - AMG-C2.)
      *
      * @return the squares, mapped to how many unbarred sides reach them, empty when none do
      */
@@ -13559,15 +13514,13 @@ public class AutonomySession
      */
     private Map<TileKey, String> repeatedSensorPages()
     {
-        // KEYED BY THE SQUARE, so the finding can take the user to it (MT-223).  This was a list of
-        // sentences and nothing else, which was enough while the message only named a page.
+        // KEYED BY THE SQUARE, so the finding can take the user to it (MT-223).
         Map<TileKey, String> repeats = new LinkedHashMap<>();
 
         if (pages == null) return repeats;
 
-        // WHICH sensor, and where it was first seen (MT-223).  Adam: "the error about a duplicate
-        // s88 does not specify which one is the duplicate."  The addresses were known here and thrown
-        // away, leaving a page name and a hunt through forty sensors.
+        // WHICH sensor, and where it was first seen (MT-223; Adam: "the error about a duplicate s88 does not specify which one
+        // is the duplicate").
         Map<Integer, String> seen = new LinkedHashMap<>();
 
         for (LayoutDiagram page : pages)
@@ -13588,28 +13541,19 @@ public class AutonomySession
 
                 if (seen.containsKey(sensor))
                 {
-                    // One per repeated sensor: three repeats on one page are three things to fix, and
-                    // rolled into one line, fixing two of them changes nothing about the message.
-                    // The square on the REPEATING page - the copy the user is being asked to do
-                    // something about.  The one that had the address first is innocent, and is named
-                    // in the message rather than jumped to.
+                    // One per repeated sensor: three repeats on one page are three things to fix, and rolled into one line,
+                    // fixing two of them changes nothing about the message.  The square on the REPEATING page is the copy the
+                    // user is being asked to do something about; the one that had the address first is innocent, and is named in
+                    // the message rather than jumped to.
                     repeats.put(new TileKey(page.getName(), component.getX(), component.getY()),
                         I18n.f("autosetup.ui.duplicateSensorSubject",
                             sensor, page.getName(), seen.get(sensor)));
 
-                    // AND THE PAGE STOPS COUNTING, which is what excludeRepeatedSensorPages does and
-                    // what this claimed to do (LE2-B8).  There a repeating page is shut and
-                    // contributes nothing further; here it went on feeding its OTHER sensors into
-                    // `seen`, so a third page sharing one of those was reported too - named against
-                    // the very page the automatic rule would have switched off.  That is an ERROR, so
-                    // it refused the whole setup over a page nothing was wrong with.
-                    // FLAGGED, NOT BROKEN OUT OF (MT-223).
-                    //
-                    // The flag is the whole of what LE2-B8 asked for: a page that repeats anything
-                    // contributes NOTHING to `seen` below, so a third page sharing one of its other
-                    // sensors is not blamed against it. Stopping the scan was my own addition and it
-                    // cost the rest of the page - Adam's page 3 is a zoomed view of page 1 and clashes
-                    // on many sensors, and one was reported.
+                    // AND THE PAGE STOPS COUNTING, as `excludeRepeatedSensorPages` does (LE2-B8, MT-223): a repeating page is
+                    // shut there and contributes nothing further, so a third page sharing one of its other sensors is not
+                    // blamed against it - that is an ERROR, and it would refuse the whole setup over a page nothing was wrong
+                    // with.  FLAGGED, NOT BROKEN OUT OF: stopping the scan would cost the rest of the page (Adam's page 3 is a
+                    // zoomed view of page 1 and clashes on many sensors, and each is reported).
                     repeated = true;
                 }
 
