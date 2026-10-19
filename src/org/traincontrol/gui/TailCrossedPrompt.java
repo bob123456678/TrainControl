@@ -1417,15 +1417,6 @@ public class TailCrossedPrompt
     }
 
     /**
-     * @param point a Point
-     * @return whether it is a turning copy, for a test that has to say which of two copies was kept
-     */
-    public static boolean isATurningCopyForTests(Point point)
-    {
-        return isATurningCopy(point);
-    }
-
-    /**
      * One road's end: the square AND the lane (TLW-B1).
      *
      * A square's turning copy runs on the lane of the copy it turns (the builder names it "X (eastbound, reverse)"
