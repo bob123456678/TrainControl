@@ -9343,24 +9343,15 @@ public class Layout
             // refusing side `whyABerthCannotHoldIt` takes on the same approach.
             if (segment.getLength() <= 0 && !segment.isMeasured()) break;
 
-            // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
-            //
-            // Two reviewers found this independently and a test confirmed it: the graph writes one
-            // piece of rail as two `Edge` objects, one per direction, because facing IS one-way
-            // edges here.  `isPathClear` looks the covered set up by Edge identity, so covering
-            // A -> B left B -> A clear and a train routed the other way over the same metal was
-            // cleared to run into the one standing on it.
-            //
-            // `behaviour.md` 5c already says a tail fouls the rail whichever way traffic runs, and
-            // the GREYING was symmetric while the routing guard was not - the picture protected
-            // more than the railway did, which is the worst way round for the two to disagree.
-            //
-            // Every fixture in the tail tests was a one-way chain, which is why this went unseen.
-            //
-            // ON A BUILT GRAPH THIS LOOP SELDOM MATCHES (AUT2-C3): the two directions of a rail there usually run between
-            // different COPIES of its squares, because facing is one-way edges, so no edge ends where this one starts and
-            // starts where it ends.  The reverse rail is refused by place instead - `anotherTailOn` (AUT-B1).  This loop
-            // covers it where both directions join the same two Points, as on a hand-written graph.
+              // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3): the graph writes one piece of rail as two `Edge` objects, one
+              // per direction, and `isPathClear` looks the covered set up by Edge identity, so covering A -> B alone left B -> A
+              // clear and a train routed the other way over the same metal was cleared to run into the one standing on it.
+              // `behaviour.md` 5c says a tail fouls the rail whichever way traffic runs.
+              //
+              // ON A BUILT GRAPH THIS LOOP SELDOM MATCHES (AUT2-C3): the two directions of a rail there usually run between
+              // different COPIES of its squares, because facing is one-way edges, so no edge ends where this one starts and
+              // starts where it ends.  The reverse rail is refused by place instead - `anotherTailOn` (AUT-B1).  This loop
+              // covers it where both directions join the same two Points, as on a hand-written graph.
             covered.put(segment, loc);
 
             for (Edge sameRail : this.edges.values())
@@ -9374,22 +9365,16 @@ public class Layout
                 }
             }
 
-            // AND HOW FAR ALONG IT THE TAIL ACTUALLY REACHES (OB-207).
-            //
-            // The line above records the whole segment, which is all this could say until the build
-            // began emitting each edge's places.  Spend the train's remaining length across them
-            // from the end the tail comes in by - the places are ordered from the edge's start, and
-            // their lengths sum to its length, so this is the same arithmetic at a finer grain.
-            //
-            // A place is claimed BEFORE its length is spent, so a tail that just reaches into one
-            // claims it, and an unmeasured place the train lies over for nothing is claimed too.
+              // AND HOW FAR ALONG IT THE TAIL ACTUALLY REACHES (OB-207): spend the train's remaining length across the edge's places
+              // from the end the tail comes in by (the places are ordered from the edge's start and their lengths sum to its
+              // length).  A place is claimed BEFORE its length is spent, so a tail that just reaches into one claims it, and an
+              // unmeasured place the train lies over for nothing is claimed too.
             List<String> ids = segment.getPlaceIds();
 
             List<Integer> spans = segment.getPlaceLengths();
 
-            // What the places walk actually charged, which is what this hop costs (PRW-C3).
-            // Negative until the places are walked at all, so the edge's own length can stand in
-            // for a configuration that does not carry them.
+              // What the places walk actually charged, which is what this hop costs (PRW-C3).  Negative until the places are walked
+              // at all, so the edge's own length can stand in for a configuration that does not carry them.
             int chargedHere = -1;
 
             if (!ids.isEmpty() && ids.size() == spans.size())
@@ -9408,18 +9393,13 @@ public class Layout
 
                     places.put(ids.get(at), loc);
 
-                    // THE SQUARE THE TRAIN STANDS ON IS SPENT FIRST, like every square behind it
-                    // (Adam, 2026-09-23, OB-278: *"the 2 length tile with the s88 consumes 2 units
-                    // of the train"*, and asked where: *"Everywhere"*).  The station's SIZE - the
-                    // maximum train length typed on it - is the allowance his ruling of 2026-09-13
-                    // names, and `whyTooLongForThisRoute` asks it; the length measured on the square
-                    // is rail.  From 2026-09-13 to 2026-09-23 this left that square unspent, which
-                    // put the whole of every standing train behind its own square: on his measured
-                    // railway, over the switch behind nearly every berth.
-                    //
-                    // AND NOT TWICE (PRW-C3).  The square the walk turned at is the end of the
-                    // last edge and a place on this one; charging it again shortens the tail by
-                    // its length and leaves the track under the train's back end unclaimed.
+                      // THE SQUARE THE TRAIN STANDS ON IS SPENT FIRST, like every square behind it (OB-278; Adam: *"the 2 length
+                      // tile with the s88 consumes 2 units of the train"*, and asked where: *"Everywhere"*).  The station's SIZE, the
+                      // maximum train length typed on it, is the allowance `whyTooLongForThisRoute` asks; the length measured on the
+                      // square is rail.
+                      //
+                      // AND NOT TWICE (PRW-C3): the square the walk turned at is the end of the last edge and a place on this one;
+                      // charging it again shortens the tail by its length and leaves the track under the train's back end unclaimed.
                     if (!spent.add(ids.get(at))) continue;
 
                     left -= Math.max(0, spans.get(at));
@@ -9430,17 +9410,10 @@ public class Layout
                 }
             }
 
-            // ONE BUDGET, NOT TWO (PRW-C3, and the two rounds that found the same seam).
-            //
-            // This read `remaining -= segment.getLength() - allowance`, which is a second
-            // arithmetic over the same train: the places walk spends span by span and this spent
-            // the whole edge.  They agreed only while every square on the edge was measured, the
-            // standing square was treated alike by both, and no square belonged to two hops - and
-            // each of those three assumptions failed in turn (SEV-B3, SVX-B1, PRW-C3).
-            //
-            // What the finer walk charged IS what the hop costs.  The edge's own length is kept
-            // for a configuration that carries no places, where there is nothing finer to spend -
-            // an old file behaves as it always did.
+              // ONE BUDGET, NOT TWO (PRW-C3): what the finer places walk charged IS what the hop costs.  A second arithmetic over
+              // the same train (spending the whole edge) agreed with it only while every square was measured, the standing square
+              // was treated alike by both, and no square belonged to two hops, and each of those failed in turn (SEV-B3, SVX-B1,
+              // PRW-C3).  The edge's own length is kept for a configuration that carries no places, where there is nothing finer.
             remaining -= chargedHere >= 0 ? chargedHere : segment.getLength();
 
             Point next = segment.getStart() == here ? segment.getEnd() : segment.getStart();
@@ -9503,31 +9476,20 @@ public class Layout
     /**
      * Whether this square is a PARKING BERTH: somewhere a train is meant to sit rather than pass.
      *
-     * Adam, 2026-09-13, ruling on FR-060: **"For now, we consider anything with autodestination=false
-     * and only one way in/out as a parking square.  We can revisit dedicated marking if this doesn't
-     * work out with clean logic, or if it gets too confusing to the user to manage."**
+     * Adam's ruling on FR-060: **"For now, we consider anything with autodestination=false and only one way in/out as a parking
+     * square.  We can revisit dedicated marking if this doesn't work out with clean logic, or if it gets too confusing to the
+     * user to manage."**
      *
-     * **Two facts, and neither is enough alone.**  `autoDestination` off says the OPERATOR does not
-     * want autonomy choosing this station - which is true of a parking berth and also of a platform
-     * they are keeping for themselves.  One way in and out says the TRACK is a dead end - which is
-     * true of a berth and also of a headshunt nobody parks on.  Together they are the thing FR-060
-     * asked for a new designation for, and they are already in the file, which is why he ruled that a
-     * fourth flag can wait.
+     * **Two facts, and neither is enough alone.**  `autoDestination` off says the OPERATOR does not want autonomy choosing this
+     * station (true of a parking berth and also of a platform they keep for themselves); one way in and out says the TRACK is a
+     * dead end (true of a berth and also of a headshunt nobody parks on).
      *
-     * **Counted in SQUARES, not copies.**  A square split into a northbound and a southbound Point is
-     * still one place with one way out, and counting the copies would make every split berth look like
-     * a junction.  `Point.isSamePlaceAs` is what knows two Points are one piece of track - the same
-     * relation `whyABerthCannotHoldIt` uses to let a berth off its own approach.
+     * **Counted in SQUARES, not copies**: a square split into a northbound and a southbound Point is one place with one way
+     * out.  `Point.isSamePlaceAs` knows two Points are one piece of track, the relation `whyABerthCannotHoldIt` uses too.
      *
-     * **What this does NOT decide.**  It is not the berth rule's gate: `whyABerthCannotHoldIt` applies
-     * wherever autonomy will not choose the square, which is wider than this on purpose - Adam's own
-     * example for that rule is TunnelLongPark, which has three ways in and is not a parking square by
-     * this test.  Narrowing the guard to this set would drop the case he validated it with.
-     *
-     * Measured on his railway on 2026-09-13: 20 stations carry `autoDestination: false` and 12 of them
-     * answer true here.  The other eight - BottomMainPost, RampDown, TunnelLongPark, ParkingTrack11,
-     * TunnelRightPark, LowerParkingOuter, TunnelCenterPark, TunnelLeftPark - are places he keeps for
-     * himself with track running through or past them.
+     * **What this does NOT decide.**  It is not the berth rule's gate: `whyABerthCannotHoldIt` applies wherever autonomy will
+     * not choose the square, which is wider on purpose (Adam's own example for that rule is TunnelLongPark, which has three
+     * ways in and is not a parking square by this test).
      *
      * @param square any copy of the square
      * @return whether this is somewhere trains are put away
@@ -9604,15 +9566,9 @@ public class Layout
         return false;
     }
     /**
-     * Which compass side of `from` the point `to` lies on.
-     *
-     * The diagram is a grid, so this is the sign of the larger coordinate difference - the same way
-     * the editor names sides, and the same vocabulary `arrivedFrom` is recorded in.  A diagonal
-     * neighbour resolves to whichever axis it differs by more, and a tie to the horizontal, which is
-     * how the drawing reads: track runs along rows.
-     *
-     * Returns null when either point has no coordinates, which is a station built from something the
-     * diagram never placed - nothing can be said about where its neighbours lie.
+     * Which compass side of `from` the point `to` lies on: the sign of the larger coordinate difference, a tie to the
+     * horizontal, as the editor names sides and as `arrivedFrom` is recorded.  Null when either point has no coordinates (a
+     * station built from something the diagram never placed).
      *
      * @param from the point being stood on
      * @param to a neighbour
@@ -9629,18 +9585,16 @@ public class Layout
 
         if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? "E" : "W";
 
-        // Y GROWS DOWNWARDS on the diagram, as it does in every grid drawn from the top left, so a
-        // larger y is SOUTH.  Getting this the wrong way round would put every tail on the wrong side
-        // of its train and block the opposite switch.
+          // Y GROWS DOWNWARDS on the diagram, as in every grid drawn from the top left, so a larger y is SOUTH; the wrong way round
+          // would put every tail on the wrong side of its train.
         return dy > 0 ? "S" : "N";
     }
     /**
-     * Whether a point's square is a station - any copy of it a destination - which is what a locomotive list is read by:
-     * on a station it names the locomotives that may not stop there, and they may still pass; on any other square, the
-     * ones that may not pass at all (`514071ee`).  Not the copy's own flag: a station with an arrival side barred is built
-     * with that side's copy as no destination (`AutonomyBuilder`: "A station, unless a train arriving THIS way is not
-     * allowed to stop"), and read as "not a station", its list stopped the trains it keeps out from driving through it
-     * that way - with an allow-only list, every train it does not name (RSA65-B1).
+     * Whether a point's square is a station - any copy of it a destination - which is what a locomotive list is read by: on a
+     * station it names the locomotives that may not stop there, and they may still pass; on any other square, the ones that may
+     * not pass at all (`514071ee`).  Not the copy's own flag: a station with an arrival side barred is built with that side's
+     * copy as no destination (`AutonomyBuilder`: "A station, unless a train arriving THIS way is not allowed to stop"), and read
+     * as "not a station" its list would stop the trains it keeps out from driving through it that way (RSA65-B1).
      *
      * @param point any copy
      * @return whether its square is a station
@@ -9697,19 +9651,16 @@ public class Layout
     /**
      * What autonomy uses, and what every caller used before there was a choice.
      *
-     * **Which callers get it, and why that was decided rather than defaulted (DIR-C9).**  Four places
-     * call `executePath`.  The two hand-driven doors pass a prompt.  The other two take the
-     * four-argument overload and land here:
+     * **Which callers get it, and why that was decided rather than defaulted (DIR-C9).**  Four places call `executePath`.  The
+     * two hand-driven doors pass a prompt.  The other two take the four-argument overload and land here:
      *
-     * - autonomy's own dispatch loop, which chose the path itself and whose `pickPath` already refuses
-     *   any path that reverses along the way, so the only reversal it can reach is one it meant;
-     * - the timetable, which `Return Home` loads.  `executeTimetableInternal` sets `running`, so a
-     *   staging run IS an autonomous run by every other test in this file, and `HomeStaging` plans the
-     *   reversals it needs - `connected` reasons about them explicitly.  Asking the operator about a
-     *   turn the planner chose on their behalf would be asking about a decision they already made.
+     * - autonomy's own dispatch loop, which chose the path itself and whose `pickPath` already refuses any path that reverses
+     *   along the way, so the only reversal it can reach is one it meant;
+     * - the timetable, which `Return Home` loads.  `executeTimetableInternal` sets `running`, so a staging run IS an autonomous
+     *   run, and `HomeStaging` plans the reversals it needs; asking the operator about a turn the planner chose on their behalf
+     *   would be asking about a decision they already made.
      *
-     * A new caller inherits this by writing four arguments, which is easy to do without meaning it -
-     * hence this list.
+     * A new caller inherits this by writing four arguments, which is easy to do without meaning it - hence this list.
      */
     public static final ReversalPolicy ALWAYS_REVERSE = (loc, at) -> true;
 
@@ -9717,11 +9668,9 @@ public class Layout
      * The policy a timetable entry is played back with (RSA49-B1): autonomy's, for an entry recorded from autonomy or
      * before the answer was kept; for one recorded by hand, the answer its arrival was given, at its destination only - the
      * shape `ManualReversalPrompt.forJourney` hands in - so the train ends turned or kept, and stood, as it was recorded.
-     * Played back as autonomy, a train kept at a turning copy was turned, and the next entry, recorded from the copy it
-     * had been stood on, could not start.
      *
-     * **Only where a turn is still the railway's to make** (RSA52-C1; Adam, 2026-10-07: *"The path should organically
-     * fail in the direction no longer allowed."*): a square with a turning copy.  Where the station has since lost
+     * **Only where a turn is still the railway's to make** (RSA52-C1; Adam: *"The path should organically fail in the
+     * direction no longer allowed."*): a square with a turning copy.  Where the station has since lost
      * "Trains May Change Direction Here", the recorded turn is not made, and an entry that needs the train the other way
      * fails as any journey would.
      *
@@ -9775,7 +9724,7 @@ public class Layout
     }
 
     /**
-     * The same, with a say in whether an intermediate reversal happens (Adam, 2026-09-06).
+     * The same, with a say in whether an intermediate reversal happens.
      *
      * @param path the route
      * @param loc the train
@@ -9847,38 +9796,20 @@ public class Layout
             if (from != null) path = from;
         }
 
-        // A dispatch is a train under way, however it was asked for.
-        //
-        // runLocomotive counts autonomy's driving threads so that a locomotive between one path and the
-        // next is never invisible to isRunning().  A train dispatched BY HAND was invisible for a
-        // different reason: the diagram's right-click menu is a bare thread straight into this method,
-        // so nothing counted it, and activeLocomotives is not written until configureAndLockPath has
-        // already reserved every point on the route.  For the whole locking phase isRunning() was
-        // false, and everything built on it stood down - including the protection that should have
-        // thrown the destination's signal the moment its platform was reserved.  The signal stayed
-        // green for the entire approach and only went red once the train was standing at the platform.
-        //
-        // Adam's rule, 2026-08-23: "The same thing should happen in manual operation vs auto - the same
-        // switches and signals set, and guards applied."  So the same guards apply for the length of a
-        // hand dispatch: the editors refuse to open, the simulation cannot be toggled, and locomotives
-        // cannot be edited or deleted, exactly as while autonomy runs.
-        //
-        // Nested under autonomy, which has already counted its own thread, so this can only reach zero
-        // when the LAST thing finishes - and reaching zero announces the end of the run, which is how
-        // the interface learns to re-enable what it disabled.
-        // Captured HERE, at the increment, not re-read later (a review of the relocation below).
-        //
-        // The signal sweep asks "am I the first thing running".  It used to be able to: the test was
-        // the increment itself.  Moving the sweep past the eight validations - which was right, they
-        // can refuse - left the increment here and the question down there, and two near-simultaneous
-        // first dispatches can both increment before either reads.  Both then see two, NEITHER sweeps,
-        // and a hand-placed train's platform signal stays green for the whole run: AU-B7 again, in a
-        // window a few instructions wide.
-        // COUNTED, not read (SVN-C1).  The flag this used to derive - "was mine the increment that
-        // took the count from zero to one" - had exactly one reader, the protecting-signal sweep
-        // `OB-166` removed, and it was carried through a lambda and two signatures for a week after
-        // that.  The count itself is still needed: `locomotiveThreads` is what tells the rest of this
-        // class whether anything is running.
+          // A dispatch is a train under way, however it was asked for.  runLocomotive counts autonomy's driving threads so that a
+          // locomotive between one path and the next is never invisible to isRunning(); a train dispatched BY HAND (the diagram's
+          // right-click menu is a bare thread straight into this method) was invisible because activeLocomotives is not written
+          // until configureAndLockPath has reserved every point, so for the whole locking phase isRunning() was false and
+          // everything built on it stood down, including the protection that should throw the destination's signal.
+          //
+          // Adam's rule: "The same thing should happen in manual operation vs auto - the same switches and signals set, and guards
+          // applied."  So the same guards apply for the length of a hand dispatch: the editors refuse to open, the simulation
+          // cannot be toggled, and locomotives cannot be edited or deleted, exactly as while autonomy runs.
+          //
+          // Nested under autonomy, which has already counted its own thread, so this can only reach zero when the LAST thing
+          // finishes - and reaching zero announces the end of the run, which is how the interface learns to re-enable what it
+          // disabled.  COUNTED, not read (SVN-C1): `locomotiveThreads` is what tells the rest of this class whether anything is
+          // running.
         this.locomotiveThreads.incrementAndGet();
 
         try
@@ -9889,47 +9820,20 @@ public class Layout
             }
             catch (RuntimeException e)
             {
-                // An unexpected failure part way through a path used to leave the locomotive registered in
-                // activeLocomotives for the rest of the session.  Nothing else clears that map, so
-                // isRunning() - which is "running || !activeLocomotives.isEmpty()" - stayed true forever,
-                // and with it every guard built on it: autonomy could not be started, simulation could not
-                // be toggled, and locomotives could not be edited or deleted.  Only reloading the graph, or
-                // restarting, recovered.
+                // An unexpected failure part way through a path must not leave the locomotive registered in activeLocomotives:
+                // nothing else clears that map, so isRunning() stays true forever and every guard built on it with it (autonomy
+                // cannot start, simulation cannot be toggled, locomotives cannot be edited) until the graph is reloaded.
+                // This deliberately does NOT use finally (the version fence returns normally when a path is abandoned after the
+                // layout is replaced, and that entry stays on purpose), and does NOT swallow the exception (executeTimetable
+                // catches around executePath and stops the run; returning false would feed its retry loop on a permanent fault).
+                // releasedEarly (and clearedEdges) is cleared after the release below, not here (VD10-A1): `unlockPath` reads it to
+                // know which edges the tail already gave up (GUI-A1, DCN4-C1), and emptying it first would release each of them a
+                // SECOND time with its lock edges, taking away a claim somebody else made in between.  `atomicRoutes` is false on
+                // the operator's own configuration, so this is the live case.
                 //
-                // Three things this deliberately does NOT do:
-                //
-                //  - It does not use finally.  The version fence returns normally when a path is abandoned
-                //    after the layout is replaced, and that path leaves the entry in place on purpose - it
-                //    belongs to a Layout that is being discarded.  A finally would fire there too.
-                //  - It does not swallow the exception.  executeTimetable catches around executePath and
-                //    responds by stopping the run; returning false instead would feed its retry loop, which
-                //    would spin on a permanent fault rather than halting.
-                //  - It does not swallow the path's own locks either, but it no longer LEAVES them - see
-                //    the release below, which is Adam's ruling of 2026-09-03 and replaces the argument
-                //    that used to stand here.
-                // releasedEarly (and clearedEdges beside it) is NOT cleared here - it is cleared after the
-                // release below, which is where the ordinary path clears it and where it has to be (VD10-A1).
-                //
-                // `unlockPath` reads `releasedEarly` to know which edges the tail already gave up as it
-                // passed them - on both of its roads, which it chooses by whether there are any and, where
-                // there are none, by the setting (GUI-A1, DCN4-C1).
-                // Emptying it first makes that lookup null, so every one of those edges is released a
-                // SECOND time and its lock edges with it - and the cost is written out at the lookup
-                // itself: "the second release would take away a claim somebody else made in between".
-                // `atomicRoutes` is false on the operator's own configuration, so this is the live case
-                // rather than the theoretical one.  (`clearedEdges` is what `getActiveAccs` reads.)
-                // WHETHER THIS LOCOMOTIVE EVER GOT ITS PATH, read BEFORE the removal below (ACC-A1).
-                //
-                // A locomotive joins `activeLocomotives` only after `configureAndLockPath` has
-                // returned - at the `activeLocomotives.put` in `executePathInternal` - so its
-                // membership is exactly the question "did the lock phase
-                // succeed" - and the release further down needs the answer.  Asked after the removal
-                // it is always false, which is how the first version of this gate stopped the release
-                // happening at all: `testAFailedPathStopsTheRunAndGivesTheTrackBack` caught it.
-                //
-                // The same shape as `stopLocomotives()` clearing `running` before anything can ask
-                // whether a run was going.  A fact a recovery destroys has to be captured before the
-                // recovery starts.
+                // WHETHER THIS LOCOMOTIVE EVER GOT ITS PATH, read BEFORE the removal below (ACC-A1): it joins `activeLocomotives`
+                // only after `configureAndLockPath` has returned, so membership is exactly "did the lock phase succeed", and asked
+                // after the removal it is always false.  A fact a recovery destroys must be captured before the recovery starts.
                 final boolean hadItsPath;
 
                 synchronized (this.activeLocomotives)
@@ -9944,82 +9848,42 @@ public class Layout
                 // one left behind lowers the cap for good.
                 this.takingPath.remove(loc);
 
-                // AND THE RUN STOPS ITSELF, GRACEFULLY (RC-A11).
-                //
-                // Adam: "we need a way to alert the operator so they can park the trains and restart
-                // them.  Autonomy gracefully stopping itself so that it can be resumed is the right
-                // approach."
-                //
-                // Everything above is about the locomotive that failed.  Its path is deliberately left
-                // LOCKED - it may be standing on those edges - so there is now a stretch of track held
-                // by nobody, with no thread watching it, and every other train still running.  Nothing
-                // said so.
-                //
-                // This is the same graceful stop the button performs: `running` goes false, so no new
-                // path is dispatched, and each train already underway finishes its current path and
-                // stops at a station.  Start puts the railway back afterwards, which is the point -
-                // the run is stopped, not abandoned.  The end-of-run callback still fires from the
-                // finally below, so the interface learns about it exactly as it does for any ending.
-                // Read BEFORE the stop, which clears it.
+                // AND THE RUN STOPS ITSELF, GRACEFULLY (RC-A11; Adam: "we need a way to alert the operator so they can park the
+                // trains and restart them.  Autonomy gracefully stopping itself so that it can be resumed is the right approach."):
+                // the failed locomotive may be standing on its path's edges and every other train is still running, so nothing
+                // watches that stretch of track.  This is the graceful stop the button performs: `running` goes false, so no new
+                // path is dispatched, and each train already underway finishes its current path and stops at a station; Start puts
+                // the railway back.  The end-of-run callback still fires from the finally below.  Read BEFORE the stop, which
+                // clears it.
                 final boolean wasRunning = this.running;
 
                 stopLocomotives();
 
-                // THE RIGHT SENTENCE FOR WHICHEVER IT WAS (DAY-C3).
-                //
-                // `executePath` has two other callers and both are manual - the commands panel and
-                // the diagram's right-click menu - and both work with autonomy stopped.  This message
-                // says "Autonomy has stopped itself so the railway can be parked and started again",
-                // which on those doors is a sentence about something that was never running: it sends
-                // the operator to press Start over a hand dispatch that failed.
-                //
-                // `wasRunning` is read before `stopLocomotives()` clears it, for the same reason
-                // `hadItsPath` is read before the removal that consumes it - a fact a recovery
-                // destroys has to be captured before the recovery starts.
+                // THE RIGHT SENTENCE FOR WHICHEVER IT WAS (DAY-C3): `executePath` has two other callers, both manual (the commands
+                // panel and the diagram's right-click menu), which work with autonomy stopped, and "Autonomy has stopped itself so
+                // the railway can be parked and started again" would send the operator to press Start over a failed hand dispatch.
+                // `wasRunning` is read before `stopLocomotives()` clears it, as `hadItsPath` is read before the removal.
                 this.control.logf(wasRunning
                     ? "autolayout.errorRunStoppedByFailure"
                     : "autolayout.errorHandDispatchFailed", loc.getName());
 
-                // AND THEN THE TRACK GOES BACK (Adam, 2026-09-03).
+                // AND THEN THE TRACK GOES BACK (Adam: "Force a graceful stop, alert the user, then unlock."), in that order, which
+                // is what makes the third safe.  Keeping the path locked would not have protected it: the handler above has already
+                // given up `activeLocomotives`, `locomotiveMilestones` and `clearedEdges`, which `getActiveAccs` reads to know which
+                // accessories a route must not throw, so it was held and unprotected.  `stopLocomotives()` closes the gap that
+                // mattered: `running` is false, so autonomy dispatches no new path over this track.  A person still can, from the
+                // right-click menu, which is why they are told, and why the message says to look at where that locomotive is
+                // standing.
                 //
-                // "Force a graceful stop, alert the user, then unlock."  Those three, in that order,
-                // and the order is what makes the third one safe.
+                // Released the same way a finished path is released, and in the same ORDER (VD10-A1): `unlockPath` consults
+                // `releasedEarly` for the edges the tail gave up early (GUI-A1), so it runs while that map still has them, and the
+                // clear follows it.
                 //
-                // This used to keep the path locked, and the argument for it was sound as far as it
-                // went: the locomotive may be physically standing on those edges, so releasing them
-                // could let another train be routed into occupied track.  What it missed is that the
-                // handler above has ALREADY given up the protection - `activeLocomotives`,
-                // `locomotiveMilestones` and `clearedEdges` are exactly what `getActiveAccs` reads to
-                // know which accessories a route must not throw.  So the old behaviour was not "held
-                // and protected"; it was held and unprotected, which is the worst of both, and only a
-                // graph reload ever undid it.
-                //
-                // `stopLocomotives()` above is what closes the gap the old argument was about:
-                // `running` is false, so autonomy dispatches no new path over this track.  A person
-                // still can, from the right-click menu - which is why they are told, and why the
-                // message says to look at where that locomotive is standing before starting again.
-                //
-                // Released the same way a finished path is released: same lock, and now the same
-                // ORDER, which is the half the first version of this got wrong (VD10-A1).
-                //
-                // `unlockPath` consults `releasedEarly` for the edges the tail gave up early (GUI-A1), so it
-                // has to run while that map still has them - exactly as `executePathInternal`'s ordinary
-                // ending does.  The clear follows it here for the same reason it follows it there.
-                //
-                // THE TRAIN ITSELF IS STOPPED FIRST (VD10-B1).
-                //
-                // Adam's ruling is "force a graceful stop, alert the user, then unlock", and this used
-                // to do the first two for AUTONOMY and leave the failed locomotive under power until
-                // after the release.  `stopLocomotives()` above sets `running = false` and nothing
-                // else; the only thing that stops THIS train is the line below.
-                //
-                // It matters because the release is not instantaneous: `unlockPath` is synchronized on
-                // the layout monitor, and `configureAndLockPath` holds that monitor "for seconds on a
-                // long path" - so a hand dispatch happening at the same moment could keep this train
-                // running on track the model had just declared free.
-                //
-                // Guarded so that a second failure here cannot replace the exception that actually
-                // explains what went wrong.
+                // THE TRAIN ITSELF IS STOPPED FIRST (VD10-B1): `stopLocomotives()` sets `running = false` and nothing else, the line
+                // below is the only thing that stops THIS train, and the release is not instantaneous (`unlockPath` is synchronized
+                // on the layout monitor, which `configureAndLockPath` holds "for seconds on a long path"), so a hand dispatch at the
+                // same moment could keep this train running on track the model had just declared free.  Guarded so that a second
+                // failure here cannot replace the exception that explains what went wrong.
                 try
                 {
                     loc.setSpeed(0);
@@ -10030,29 +9894,15 @@ public class Layout
                 }
                 synchronized (this.activeLocomotives)
                 {
-                    // ONLY A PATH THIS LOCOMOTIVE ACTUALLY GOT (ACC-A1).
-                    //
-                    // Adam's ruling of 2026-09-03 - "force a graceful stop, alert the user, then
-                    // unlock" - was made about a failure MID-RUN, and this handler also catches a
-                    // failure from the LOCK PHASE, which is a different thing wearing the same
-                    // exception.
-                    //
-                    // `configureAndLockPath` already recovers that case completely: it releases the
-                    // prefix it took, and `handleMisconfiguredPath` re-reserves the locomotive on the
-                    // point it never left (`handleMisconfiguredPath`, "Provably at its start").  Then it rethrows, and
-                    // this handler used to unlock the WHOLE path over the top of that recovery -
-                    // clearing the start reservation at `unlockPath`'s `i == 0` clause, so the train
-                    // stood on a square the model believed empty and `pickPath` could route another
-                    // train into it; and releasing edges that were never taken, each cascading to its
-                    // lock edges, whose occupancy is a COUNT shared with other running dispatches.
-                    //
-                    // `activeLocomotives` is the discriminator already in hand: a locomotive joins it
-                    // only after `configureAndLockPath` has returned - at the `activeLocomotives.put` in `executePathInternal`, so its absence here
-                    // means the lock phase is what threw and has already cleaned up after itself.
-                    //
-                    // The comment in `configureAndLockPath` promised this - "it went straight out to executePath's
-                    // handler, which deliberately does not unlock" - and stopped being true on
-                    // 2026-09-03.  It is true again.
+                      // ONLY A PATH THIS LOCOMOTIVE ACTUALLY GOT (ACC-A1).  This handler also catches a failure from the LOCK PHASE,
+                      // which `configureAndLockPath` already recovers completely: it releases the prefix it took, and
+                      // `handleMisconfiguredPath` re-reserves the locomotive on the point it never left, then rethrows.  Unlocking
+                      // the WHOLE path over that would clear the start reservation at `unlockPath`'s `i == 0` clause (the train
+                      // stands on a square the model believes empty, so `pickPath` could route another train into it) and release
+                      // edges never taken, each cascading to lock edges whose occupancy is a COUNT shared with other running
+                      // dispatches.  `activeLocomotives` is the discriminator: a locomotive joins it only after
+                      // `configureAndLockPath` has returned (the `activeLocomotives.put` in `executePathInternal`), so its absence
+                      // means the lock phase is what threw and has cleaned up after itself.
                     if (hadItsPath)
                     {
                         this.unlockPath(path, loc);
@@ -10062,11 +9912,9 @@ public class Layout
                     this.releasedEarly.remove(loc);
                 }
 
-                // And the sensor this locomotive was said to be heading for.  A route condition asking
-                // "has it reached that sensor yet" waits on this entry, and an entry left behind by a
-                // failure is one nothing will ever clear: the thread evaluating that route parks until
-                // the locomotive happens to be dispatched again, which after a timetable failure is
-                // never.  notifyAll inside releases anyone already waiting.
+                // And the sensor this locomotive was said to be heading for: a route condition asking "has it reached that sensor
+                // yet" waits on this entry, and an entry left behind by a failure is one nothing will ever clear.  notifyAll
+                // inside releases anyone already waiting.
                 updatePendingS88(loc, null);
 
 
@@ -10077,9 +9925,8 @@ public class Layout
         }
         finally
         {
-            // In a finally for the reason runLocomotive's is: a thread killed by anything at all still
-            // stops being counted.  One left behind reports the layout as running for the rest of the
-            // session, and nothing can be edited again without a restart.
+              // In a finally for the reason runLocomotive's is: a thread killed by anything at all still stops being counted, or the
+              // layout reads as running for the rest of the session and nothing can be edited again without a restart.
             if (this.locomotiveThreads.decrementAndGet() == 0)
             {
                 announceRunFinished();
@@ -10103,9 +9950,8 @@ public class Layout
         // wait seconds behind another train's switches.  A stop ordered since is one this journey obeys.
         final int stopsAtDispatch = stopsAtChoice < 0 ? this.stopsOrdered.get() : stopsAtChoice;
 
-        // AND THE POWER'S EPOCH, here, before the route's first switch (RSA62-C2): one read, which says whether the power is
-        // off now - odd - and, asked again once the route is set, whether it went off in between.  It was the state and
-        // then a count of cuts, and a STOP landing between the two reads passed as on (RSA63-C1).
+          // AND THE POWER'S EPOCH, here, before the route's first switch (RSA62-C2): one read, which says whether the power is off
+          // now (odd) and, asked again once the route is set, whether it went off in between (RSA63-C1).
         final int powerAtDispatch = this.control.getPowerEpoch();
 
         // AND ONE ORDERED ALREADY SENDS NOTHING, and says so (RSA2-C2, RSA2-C8)
@@ -10131,24 +9977,19 @@ public class Layout
             return false;
         }
 
-        // Retired graph: refuse before anything is commanded.  The speed writes further down are each
-        // fenced, so no train moved - but configureAndLockPath and the departure function ran first,
-        // throwing every switch and signal on a path belonging to a layout that has been replaced.
+          // Retired graph: refuse before anything is commanded.  The speed writes below are each fenced, but configureAndLockPath
+          // and the departure function would run first, throwing every switch and signal on a path belonging to a replaced layout.
         if (!this.isCurrentLayout())
         {
             return false;
         }
 
-        // A speed of 0 is not a dispatch.  Two semi-autonomous paths pass the locomotive's preferred
-        // speed, which is 0 for one placed on a node without the speed dialog ever being opened - and
-        // the path was then locked, the departure functions fired, setSpeed(0) issued, and the thread
-        // parked forever in waitForOccupiedFeedback on a sensor a stationary train can never reach.
-        // activeLocomotives never emptied, so isRunning() stayed true and autonomy, the simulation
-        // toggle and locomotive editing were all blocked until the graph was reloaded.
-        //
-        // runLocomotive already refused this, by throwing - but its caller turns the throw into "the
-        // configuration is invalid, reload it", so one 0-speed locomotive disabled the whole layout.
-        // Refusing here is both earlier and narrower.
+          // A speed of 0 is not a dispatch.  Two semi-autonomous paths pass the locomotive's preferred speed, which is 0 for one
+          // placed on a node without the speed dialog ever being opened; the path would be locked, the departure functions fired,
+          // and the thread parked forever in waitForOccupiedFeedback on a sensor a stationary train can never reach, so isRunning()
+          // stayed true and autonomy, the simulation toggle and locomotive editing were blocked until the graph was reloaded.
+          // runLocomotive refuses by throwing, which its caller turns into "the configuration is invalid, reload it"; refusing
+          // here is both earlier and narrower.
         if (speed < 1 || speed > 100)
         {
             this.control.logf("autolayout.errorInvalidSpeedSpecified");
@@ -10167,12 +10008,8 @@ public class Layout
             return false;
         }
 
-        // ALREADY OUT, in either of the two senses (REG9-A2, REG9V-B2, 2026-09-11).
-        //
-        // This was two guards, nine lines apart, each with its own `containsKey` and BOTH logging
-        // `autolayout.errorLocomotiveBusy` - so from outside this method they were one rule with two
-        // spellings and nothing downstream could tell which had spoken. Asked once now, through
-        // `isAlreadyUnderway`, which is also what a test can ask.
+          // ALREADY OUT, in either of the two senses (REG9-A2, REG9V-B2): asked once, through `isAlreadyUnderway`, which a test
+          // can also ask.
         if (this.isAlreadyUnderway(loc))
         {
             this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
@@ -10197,46 +10034,11 @@ public class Layout
             return false;
         }
         
-        // THE SWEEP THAT STOOD HERE IS GONE (OB-166), and what follows is why it was here (D24-C3).
-        //
-        // Read in the present tense this block argues for something the next paragraph then says was
-        // removed, which is the one thing a design record cannot afford to do.  Kept in the past tense
-        // because the removal only makes sense beside the case for it.
-        //
-        // The signals WERE swept, exactly as the other two doors into a run sweep them (AU-B7).
-        //
-        // runLocomotives and executeTimetableInternal both do this the moment they set running, for a
-        // reason that applies here word for word: while nothing is running the refresh is deliberately
-        // silent, so a train PLACED BY HAND produces no occupancy change, and nothing will ever command
-        // its platform's signal. Start autonomy and it goes red; hand-dispatch a different train and it
-        // stayed green for the whole dispatch, with a train standing at it.
-        //
-        // This door became a run in the MT-139 work - it counts its thread, engages every guard and
-        // throws its own destination's signal - and did not inherit the sweep. Adam's rule: "The same
-        // thing should happen in manual operation vs auto - the same switches and signals set."
-        //
-        // **Here, and not at the top of executePath, which is where it first went.** Up there it ran
-        // before all eight of the checks above, so a dispatch that was TURNED AWAY - bad speed, empty
-        // path, train not at the start, already running - had by then commanded every protecting signal
-        // on the layout. The thread count then fell back to zero, isRunning() went false, and the
-        // per-occupancy refresh that would have corrected them went silent again: the aspects stood
-        // wrong until something else started a run. Found by review, which reproduced it with a speed
-        // of zero.
-        //
-        // Refusing to command the railway while the operator is still deciding what it should look like
-        // is the same rule refreshProtectingSignal states for itself a few hundred lines below.
-        //
-        // Only when this is the first thing running, and only outside autonomy: autonomy swept at its
-        // own start, and sweeping per dispatch would command every signal on the layout each time a
-        // path begins.
-        //
-        // The fact is CARRIED DOWN from the increment rather than asked of the counter again.  Asked
-        // here, two dispatches starting together could both increment before either read, both see two,
-        // and neither sweep - which is the very defect the sweep was added for, restored by the move
-        // that fixed a different one.
-        // The sweep that stood here is gone (OB-166).  See runLocomotives for the whole reason; the
-        // short of it is that it released as well as protected, so a hand dispatch drove every empty
-        // protected platform green - including signals a route had set.
+          // NO SIGNAL SWEEP HERE (OB-166; D24-C3, AU-B7): the sweep that stood here released as well as protected, so a hand
+          // dispatch drove every empty protected platform green, including signals a route had set.  See runLocomotives for the
+          // whole reason.  Adam's rule stands: "The same thing should happen in manual operation vs auto - the same switches and
+          // signals set."  Refusing to command the railway while the operator is still deciding what it should look like is the
+          // same rule refreshProtectingSignal states for itself.
 
         boolean result;
         
@@ -10244,16 +10046,14 @@ public class Layout
 
         if (!result)
         {
-            // configureAndLockPath has already logged the reason (path occupied, or a validation failure
-            // that stopped the loco and released its locks) - do not run the locomotive.
+            // configureAndLockPath has already logged the reason (path occupied, or a validation failure that stopped the loco and
+            // released its locks) - do not run the locomotive.
             //
-            // NOTHING TO DROP HERE (AUT-C1, AUT2-C1).  Every refusal inside `configureAndLockPath` either took nothing -
-            // the train already under way, the path not clear - or drops its own claim before it returns, so a claim
-            // cannot outlive its path through this door.  This used to remove the claim too, and that could only ever
-            // remove ANOTHER dispatch's: a duplicate refused because the train was already claiming a route removed the
-            // winner's, leaving the train in neither map while it was still locking - a third dispatch let through, the cap
-            // undercounted.  Removing only "its own" by `remove(loc, path)` did not help, because two dispatches of the
-            // same route carry equal paths.
+            // NOTHING TO DROP HERE (AUT-C1, AUT2-C1).  Every refusal inside `configureAndLockPath` either took nothing - the train
+            // already under way, the path not clear - or drops its own claim before it returns.  Removing the claim here could
+            // only ever remove ANOTHER dispatch's (two dispatches of the same route carry equal paths, so `remove(loc, path)` does
+            // not help), leaving the train in neither map while it was still locking: a third dispatch let through, the cap
+            // undercounted.
             return false;
         }
         else
@@ -10268,15 +10068,11 @@ public class Layout
                 return false;
             }
 
-            // NOR IF THE TRACK POWER WENT OFF WHILE ITS ROUTE WAS SET (RSA61-C1, GST-B1).  The loop asks the power before it
-            // chooses, and setting a long route takes a second and more - a switch every `CONFIGURE_SLEEP` - so a cut in that
-            // window left the train to be given its speed, to take effect the moment the power came back.  Given back unrun,
-            // as a stop ordered in the same window is; autonomy's loop and the timetable's wait for the power and go on.
-            //
-            // A CUT THAT CAME AND WENT TOO (RSA62-C2): asked only whether the power was on now, one begun and ended while the
-            // route was set went unseen - the switches commanded during it had not moved, nothing commanded them again, and
-            // the train was given its speed over them.  So the power's epoch is compared with the one at dispatch: any cut or
-            // return since moved it, and a power off throughout reads off now.
+              // NOR IF THE TRACK POWER WENT OFF WHILE ITS ROUTE WAS SET (RSA61-C1, GST-B1): setting a long route takes a second and
+              // more, so a cut in that window would leave the train to be given its speed, to take effect the moment the power came
+              // back.  Given back unrun, as a stop ordered in the same window is; autonomy's loop and the timetable's wait for the
+              // power and go on.  A CUT THAT CAME AND WENT TOO (RSA62-C2): asked only whether the power was on now, a cut begun and
+              // ended while the route was set went unseen, so the power's epoch is compared with the one at dispatch.
             if (!this.control.getPowerState() || this.control.getPowerEpoch() != powerAtDispatch)
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
@@ -10286,9 +10082,8 @@ public class Layout
 
             synchronized (this.activeLocomotives)
             {                
-                // CopyOnWriteArrayList: this list is only ever appended to (below) and read by the UI
-                // (getReachedMilestones/getLatestMilestoneS88).  COW makes those reads iterate a snapshot
-                // with no lock and no ConcurrentModificationException, so the getters need no locking.
+                  // CopyOnWriteArrayList: this list is only ever appended to (below) and read by the UI
+                  // (getReachedMilestones/getLatestMilestoneS88), so those reads iterate a snapshot with no lock.
                 this.locomotiveMilestones.put(loc, new CopyOnWriteArrayList<>());
                 this.locomotiveMilestones.get(loc).add(start);
                 this.clearedEdges.put(loc, ConcurrentHashMap.<Edge>newKeySet());
@@ -10341,25 +10136,17 @@ public class Layout
         }
 
         // When !this.atomicRoutes: track edges to unlock based on length of train
-        // Edges waiting to be released, each with how far the HEAD has travelled since the end of it.
-        //
-        // Two numbers per edge, not one running total. The total was the sum of the edges WAITING, and
-        // the newest of those is one edge behind the locomotive - so the moment the batch added up to
-        // the train's length, everything in it was released, including track the train was standing
-        // on. Any edge shorter than the train reached that state, which on a real railway - block
-        // sensors a metre or two apart, a long consist - is the ordinary case and not the corner one.
-        //
-        // The distance from an edge's END to the head is the only thing that answers "has the tail
-        // gone by", because the tail is exactly the train's length behind the head.
-        //
-        //   { index into path, how far the head has gone since that edge ended }
+          // Edges waiting to be released, each with how far the HEAD has travelled since the end of it.  Two numbers per edge, not
+          // one running total: the total was the sum of the edges WAITING, and the newest of those is one edge behind the
+          // locomotive, so the moment the batch added up to the train's length everything in it was released, including track the
+          // train was standing on.  The distance from an edge's END to the head is the only thing that answers "has the tail gone
+          // by", because the tail is exactly the train's length behind the head.
+          //
+          //   { index into path, how far the head has gone since that edge ended }
         List<int[]> waitingToClear = new LinkedList<>();
 
-        // Asked of the WHOLE path, once, before anything is handed back (VAL-A1).
-        //
-        // The escape below means "nothing on this path has a length, so distance can never accumulate
-        // and holding would hold until the route ended". That is a fact about the path. Asking a
-        // running total instead answered "not yet" for every step before the first measured edge.
+          // Asked of the WHOLE path, once, before anything is handed back (VAL-A1): the escape below means "nothing on this path has
+          // a length, so distance can never accumulate", a fact about the path, not about a running total.
         boolean pathIsUnmeasured = pathIsUnmeasured(path);
 
         // THE TRAIN'S LENGTH AS IT WAS DISPATCHED (RSA-A1): what this journey hands back behind the train is measured
@@ -10421,13 +10208,10 @@ public class Layout
                     
                     this.updatePendingS88(loc, current.getS88());
 
-                    // With an advisory, because THIS is the wait that means "a train was sent and
-                    // has not got there".  Nothing acts on it and the wait itself is unchanged - it
-                    // only stops the operator having to notice for themselves that a train has gone
-                    // quiet.  Asked for HERE rather than inside the wait, because "this train was
-                    // dispatched" is a fact the dispatch loop has and the wait does not: a route's
-                    // trigger monitor uses the same wait and is supposed to sit on its sensor for as
-                    // long as the layout runs.
+                      // With an advisory, because THIS is the wait that means "a train was sent and has not got there".  Nothing acts
+                      // on it; it only stops the operator having to notice that a train has gone quiet.  Asked for HERE rather than
+                      // inside the wait, because "this train was dispatched" is a fact the dispatch loop has and the wait does not
+                      // (a route's trigger monitor uses the same wait and sits on its sensor as long as the layout runs).
                     loc.waitForOccupiedFeedback(current.getS88(),
                         Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS, this.retiredRailway);
 
@@ -10448,9 +10232,8 @@ public class Layout
                     }
                 }    
 
-                // REACHED, AND RECORDED AS SOON AS ITS SENSOR ANSWERS (RSA30-C4) - before a turn here, which is where it
-                // mattered.  Recorded only at the end of the step, a train stopped to turn here was placed a square back for
-                // the length of the turn, and the track diagram drew it standing there.
+                // REACHED, AND RECORDED AS SOON AS ITS SENSOR ANSWERS (RSA30-C4), before a turn here: recorded only at the end of the
+                // step, a train stopped to turn was placed a square back for the length of the turn.
                 synchronized (this.activeLocomotives)
                 {
                     List<Point> reached = this.locomotiveMilestones.get(loc);
@@ -10460,62 +10243,29 @@ public class Layout
 
                 recordedAlready = true;
                 
-                // Reverse the locomotive if this is a reversing station - IF THE CALLER SAYS SO.
+                // Reverse the locomotive if this is a reversing station - IF THE CALLER SAYS SO.  A terminus is not a question: the
+                // train has run out of track, so it turns whatever the policy thinks.  Everywhere else the policy decides, which is
+                // how a hand-driven send comes to ask the operator and autonomy does not.
                 //
-                // A terminus is not a question: the train has run out of track, so it turns whatever
-                // the policy thinks.  Everywhere else the policy decides, which is how a hand-driven
-                // send comes to ask the operator and autonomy does not (Adam, 2026-09-06).
-                // STOPPED FIRST, THEN ASKED (DIR-A1).
+                // STOPPED FIRST, THEN ASKED (DIR-A1), and the stop IS the gate's answer (CONF-A2): a train is brought to a stand
+                // exactly when it is about to be turned, and never otherwise.  The question is put to a person through a modal
+                // dialog with no time limit, so the stop must not sit inside the branch that answer decides, or the train ran past
+                // a headshunt for as long as the dialog stood open; a train standing at the point is also the only state in which
+                // either answer is right.  Nothing in the call blocks now (`df584d0b` moved the question to departure), so
+                // evaluating before stopping is safe, and a journey nobody is turning never enters the branch.
                 //
-                // The question is put to a person through a modal dialog with no time limit, and
-                // everything that stopped the train used to be INSIDE the branch that answer decides.
-                // Measured: `speedAtTheMomentTheOperatorIsAsked=30`, and still 30 five seconds later -
-                // the train ran past a headshunt for as long as it took somebody to notice a window.
-                //
-                // A train standing at the point is also the only state in which either answer is
-                // right: turning it needs it stopped, and carrying on from a stand is a delay rather
-                // than a hazard.  Autonomy is unaffected in substance - it stopped here anyway as the
-                // first act of turning.
-                // The same question the rule asks, so the train is stopped exactly where somebody may
-                // be asked something - and nowhere else (DIR-A1).
-                //
-                // SPEC-A2 / REG6-B3: THIS ASKED `mayReverseAt` AND THAT IS A SQUARE-WIDE TEST.
-                // `AutonomyBuilder.build`'s block emission gives every copy of a multi-copy square the same block, so
-                // `mayReverseAt` is true at the PLAIN copy as well as the turning one - and autonomy,
-                // which reaches this line through `ALWAYS_REVERSE`, began stopping dead and
-                // re-accelerating at plain copies it used to pass at line speed.  The comment above
-                // said "autonomy is unaffected in substance"; it was false for exactly the copy
-                // `mayReverseAt` had been widened to cover.
-                //
-                // `current.isReversing()` is what it said before, and it is the right question for
-                // the runtime half: a turning copy stops because turning is what it is for.  The
-                // operator half is the second clause, and it is asked of the DOOR - which is the only
-                // thing that knows a square is may-reverse, since `canReverse` never reaches
-                // `parseAuto` at all.
-                // ONE QUESTION, ASKED ONCE (CONF-A2).
-                //
-                // The stop and the gate were two expressions meant to agree.  They were then one
-                // shared predicate, `stopsToDecideAt`, which agreed by construction but still had to
-                // be kept in step by hand as the gate grew clauses.  This is the version that cannot
-                // drift: the stop IS the gate's answer.  A train is brought to a stand exactly when it
-                // is about to be turned, and never otherwise.
-                //
-                // Safe to evaluate before stopping only because `df584d0b` moved the question to
-                // departure.  While the policy could put a modal dialog up from in here, asking first
-                // was what DIR-A1 forbade - the train ran past the headshunt for as long as the dialog
-                // stood open.  Nothing in this call blocks now.
-                //
-                // It also settles REG6-B4 without the trick that caused CONF-A1: a journey nobody is
-                // turning simply never enters the branch, so `asksAbout` does not have to lie about
-                // which squares are may-reverse in order to skip the stop.
+                // THE STOP IS NOT `mayReverseAt` (SPEC-A2, REG6-B3), which is a SQUARE-WIDE test: `AutonomyBuilder.build` gives
+                // every copy of a multi-copy square the same block, so it is true at the PLAIN copy as well as the turning one,
+                // and autonomy (through `ALWAYS_REVERSE`) would stop dead at plain copies it passes at line speed.  A turning copy
+                // stops because turning is what it is for (`current.isReversing()`); the operator half is asked of the DOOR, the
+                // only thing that knows a square is may-reverse, since `canReverse` never reaches `parseAuto`.
                 if (isCurrentLayout()
                     && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))
                 {
                     loc.setSpeed(0).waitForSpeedBelow(1);
 
-                    // AND SAID SO (RSA31-C2): the track diagram is redrawn when these fire, and the next fire is the
-                    // step's end, after the turn - so a train turning with nothing else moving was drawn at the sensor
-                    // before, running, for the whole of its turn.  Now it is drawn standing where it turns.
+                    // AND SAID SO (RSA31-C2): the track diagram is redrawn when these fire, and the next fire is the step's end,
+                    // after the turn, so without this a train turning with nothing else moving was drawn running at the sensor before.
                     synchronized (this.activeLocomotives)
                     {
                         for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
@@ -10532,13 +10282,9 @@ public class Layout
                     loc.switchDirection()
                     .delay(this.getMinDelay(), this.getMaxDelay()); // a more realistic appearance
 
-                    // AT THIS POINT'S OWN SPEED, not the journey's (REG6-B3).
-                    //
-                    // This restored the raw `speed`, discarding the multiplier that the block forty
-                    // lines above applies for exactly this square - so a train that stopped to turn
-                    // resumed at full line speed on a stretch its owner had set to run slow, and
-                    // stayed there until the next point recalculated.  The stop was added for the
-                    // reversal question; giving back a speed limit was not part of the bargain.
+                    // AT THIS POINT'S OWN SPEED, not the journey's (REG6-B3): restoring the raw `speed` would discard the multiplier
+                    // applied for this square, so a train that stopped to turn resumed at full line speed on a stretch its owner
+                    // had set to run slow.
                     int resume = Math.min((int) Math.ceil(
                         (double) speed * current.getSpeedMultiplier()), 100);
 
@@ -10557,54 +10303,38 @@ public class Layout
                 // Therefore, we use setLockedEdgeUnoccupied and unlock 1 edge prior to the current one
                 // path.get(i).setUnoccupied();
                 //
-                // The condition below used to be `!this.atomicRoutes && isCurrentLayout()`, so with
-                // atomic routes on - which is what Adam's own configuration uses - none of this ran
-                // and nothing anywhere knew where the train's tail was.  It now runs in both modes;
-                // what atomicRoutes still decides is whether the edge is UNLOCKED, which is a
-                // different question and stays exactly as it was.
+                // This runs in both atomic and non-atomic modes, so something always knows where the train's tail is; what
+                // atomicRoutes decides is whether the edge is UNLOCKED, a different question.
                 //
                 //   cleared  - "the train is no longer on top of this".  Both modes.
-                //   unlocked - "another train may be routed here".  Non-atomic only, as before.
+                //   unlocked - "another train may be routed here".  Non-atomic only.
                 //
-                // Two questions, one answer to when the tail has gone by, computed once.  Adam,
-                // 2026-08-25: "once a train passes, signals on the route, but behind the train,
-                // should still be allowed to be changed by auto routes."
+                // Two questions, one answer to when the tail has gone by, computed once.  Adam: "once a train passes, signals on
+                // the route, but behind the train, should still be allowed to be changed by auto routes."
                 if (isCurrentLayout())
                 {
                     if (i > 0)
                     {       
-                        // THE HEAD HAS FINISHED EDGE i, NOT EDGE i-1 (GS-B3; Adam, 2026-10-10, asked: into 3.0.0).
-                        //
-                        // `current` is `path.get(i).getEnd()`: once its sensor has answered, the head is at the far end
-                        // of edge i, so edge i-1 - which ended where edge i begins - is edge i's length behind it, and
-                        // every edge before that is further back by the same.  This used to add edge i-1's length and
-                        // queue edge i-1 with nothing behind it, where the head stood one sensor earlier: every edge was
-                        // short by the edge just driven, and on a path of three edges or fewer the first edge was held to
-                        // the end of the route whatever the train's length - late, never early, but holding the track and
-                        // turnouts behind the train against every other route.  The claims' worked examples already read
-                        // it this way (`core.testTrainTailClearsEdges`: edges of 100, 100 and 0 and a train of 250, "edge
-                        // 0 has 100 behind it" when the head finishes the third).
-                        //
-                        // BUT NOT THE SENSOR'S OWN SQUARE.  A sensor answers when the head ENTERS its square, so all that
-                        // is known to be behind the head is the edge up to that square: the square is credited when the
-                        // next sensor answers (`arrivingSquare`).  Crediting it at once - the head at the square's far end,
-                        // as the walk that claims a running train's body reads a milestone - could hand an edge back with
-                        // the tail still on it by up to that square's length; a release must never be early (the fix
-                        // was put to Adam as releasing track "earlier, never unsafe", and he chose it).  The walk's reading
-                        // is the generous one for a claim; this one is the safe one for a release.
-                        //
-                        // ONLY AS FAR AS A SENSOR HAS SEEN THE HEAD.  A Point with no sensor - a hand-written configuration
-                        // may have one; every Point the builder makes carries one - is passed without waiting, and nothing
-                        // says the head is there: `headSeenAt` moves only where a sensor answered, and the track to a Point
-                        // nobody saw is counted when the next sensor answers.  So too a sensor that already read occupied
-                        // when its wait began - one two Points in a row share, or one another train stands on - whose answer
-                        // came before the head did (RSA61-A1).  Counting it at once, as the one-line fix
-                        // first filed for this did, hands an edge back with the tail on it.  The edge still joins the
-                        // queue here, so the unmeasured escape and a train with no length hand it back as they always did.
-                        //
-                        // Distance behind the head: where it was seen less where the edge ends, both from the path's
-                        // start - the third slot.  (VAL-C1 dropped an earlier third slot, how many edges ago each entry
-                        // was queued, once nothing read it; this one is read on the next lines.)
+                          // THE HEAD HAS FINISHED EDGE i, NOT EDGE i-1 (GS-B3).  `current` is `path.get(i).getEnd()`: once its sensor
+                          // has answered, the head is at the far end of edge i, so edge i-1, which ended where edge i begins, is edge
+                          // i's length behind it, and every edge before that is further back by the same (see
+                          // `core.testTrainTailClearsEdges`: edges of 100, 100 and 0 and a train of 250, "edge 0 has 100 behind it"
+                          // when the head finishes the third).
+                          //
+                          // BUT NOT THE SENSOR'S OWN SQUARE.  A sensor answers when the head ENTERS its square, so all that is known
+                          // to be behind the head is the edge up to that square; the square is credited when the next sensor answers
+                          // (`arrivingSquare`).  Crediting it at once could hand an edge back with the tail still on it by up to that
+                          // square's length, and a release must never be early (Adam chose releasing track "earlier, never unsafe").
+                          // The walk that claims a running train's body reads a milestone generously; this reading is the safe one.
+                          //
+                          // ONLY AS FAR AS A SENSOR HAS SEEN THE HEAD.  A Point with no sensor (a hand-written configuration may have
+                          // one; every Point the builder makes carries one) is passed without waiting and nothing says the head is
+                          // there: `headSeenAt` moves only where a sensor answered, and the track to a Point nobody saw is counted when
+                          // the next sensor answers.  So too a sensor that already read occupied when its wait began (one two Points in
+                          // a row share, or one another train stands on), whose answer came before the head did (RSA61-A1).  The edge
+                          // still joins the queue here, so the unmeasured escape and a train with no length hand it back as always.
+                          //
+                          // Distance behind the head: where it was seen less where the edge ends, both from the path's start.
                         int edgeLeftEndsAt = pathRunTo;
 
                         pathRunTo += path.get(i).getLength();
@@ -10623,36 +10353,18 @@ public class Layout
                         {
                             int[] waiting = pending.next();
 
-                            // The tail is the train's length behind the head.
-                            //
-                            // Unless this path has no lengths on it at all, which is the ordinary case
-                            // on a railway where nobody has measured anything: then no distance can
-                            // ever accumulate, holding would hold forever, and the railway falls back
-                            // to "clear the moment the front passes" - the same trade it has always
-                            // made where lengths are not set.
-                            //
-                            // The first version of this rewrite dropped that fallback, and the suite
-                            // said so at once: a turnout the train had gone past stayed refused, and in
-                            // non-atomic mode every edge of every run would have been held for the
-                            // whole run. The old code expressed the same escape as "the batch sums to
-                            // zero"; this expresses it as "nothing on this path has a length".
-                            // ONE STANDARD OF PROOF, because both answers are safety-relevant
-                            // (WK-B1).
-                            //
-                            // This used to ask a looser rule than the unlock below, on the reasoning
-                            // that reporting an edge clear early only moves a signal. It does not:
-                            // `clearedEdges` is read by `getActiveAccs`, which `MarklinRoute
-                            // .heldReason` consults to refuse a route that would set an accessory on
-                            // an active path - and with atomicRoutes ON the lock is held for the whole
-                            // run by design, so being in this set is the ONLY thing that drops an edge's
-                            // protection.  An early clear lets a route throw a turnout on track the
-                            // train is still standing on.
-                            //
-                            // NOT "with atomicRoutes on, which is what Adam runs", which this said
-                            // (VD10-C15, repaired by VD11-C1): his active configuration carries
-                            // `"atomicRoutes": false`, so early releases - which `unlockPath` reads back out
-                            // of `releasedEarly`, recorded beside this set (GUI-A1) - are what his railway
-                            // actually does.  That is the premise `VD10-A1` turned on.
+                              // The tail is the train's length behind the head.  Unless this path has no lengths on it at all (the
+                              // ordinary case where nobody has measured anything): then no distance can ever accumulate and holding
+                              // would hold forever, so the railway falls back to "clear the moment the front passes".
+                              //
+                              // ONE STANDARD OF PROOF, because both answers are safety-relevant (WK-B1): `clearedEdges` is read by
+                              // `getActiveAccs`, which `MarklinRoute.heldReason` consults to refuse a route that would set an accessory
+                              // on an active path, and with atomicRoutes ON the lock is held for the whole run by design, so being in
+                              // this set is the ONLY thing that drops an edge's protection.  An early clear lets a route throw a turnout
+                              // on track the train is still standing on, so this asks the same rule as the unlock below.
+                              //
+                              // Adam's active configuration carries `"atomicRoutes": false` (VD10-C15, VD11-C1), so early releases,
+                              // which `unlockPath` reads back out of `releasedEarly` (GUI-A1), are what his railway does.
                             if (!tailHasProvablyPassed(pathIsUnmeasured, waiting[1],
                                 lengthAtDispatch))
                             {
@@ -10688,23 +10400,13 @@ public class Layout
 
                             synchronized (this.activeLocomotives)
                             {
-                                // EVERYTHING THIS EDGE TOOK, including its lock edges (OB-164).
-                                //
-                                // Adam: "in non atomic mode, locks aren't getting released ... no
-                                // movement is allowed at all."  This used to call
-                                // setLockedEdgeUnoccupied, which gives up the edge and keeps every
-                                // throat it had locked until the whole path finished - so the edges
-                                // came free and the crossings did not, and on a railway where routes
-                                // cross, every throat the train had been through refused every route
-                                // over it for the rest of the run.  Non-atomic mode gave back the
-                                // half nobody was waiting on.
-                                //
-                                // The proof is the one this release already stands on:
-                                // tailHasProvablyPassed.  If the train is clear of the edge it is
-                                // clear of the throat that edge needed, and there is nothing left for
-                                // the lock to protect.  setUnoccupied passes exactly one release to
-                                // each lock edge, matching the one setOccupied took - which is why
-                                // unlockPath must not do it again below.
+                                  // EVERYTHING THIS EDGE TOOK, including its lock edges (OB-164; Adam: "in non atomic mode, locks aren't
+                                  // getting released ... no movement is allowed at all."): releasing only the edge kept every throat it
+                                  // had locked until the whole path finished, so on a railway where routes cross, every throat the train
+                                  // had been through refused every route over it for the rest of the run.  The proof is
+                                  // tailHasProvablyPassed: a train clear of the edge is clear of the throat that edge needed.
+                                  // setUnoccupied passes exactly one release to each lock edge, matching the one setOccupied took, which
+                                  // is why unlockPath must not do it again below.
                                 path.get(waiting[0]).setUnoccupied();
                                 path.get(waiting[0]).getStart().setLocomotive(null);
                                 // the far end is not cleared: that unlocks the next edge early
@@ -10795,14 +10497,11 @@ public class Layout
             // Since we cannot interrupt the Locomotive thread, abort the route here if we need to
             if (!isCurrentLayout())
             {
-                // Stop before abandoning the path.  The layout that owned this run has been retired,
-                // and stopLocomotives() only clears the dispatch flag - it never commands anything, so
-                // returning here would leave a locomotive running between stations with nothing left
-                // that will ever stop it, and a new graph that knows nothing about it.  Two ways in (RSA2-C8):
-                // a wait given up at the retirement (RSA-B1) - the usual one, the train stopped between two
-                // sensors by the reload's or Unload's Yes, which the stop below repeats - and a sensor reached
-                // after the retirement, the train standing at a known milestone point, as a graceful stop
-                // would have put it.
+                // Stop before abandoning the path: the layout that owned this run has been retired, and stopLocomotives() only
+                // clears the dispatch flag and never commands anything, so returning here would leave a locomotive running between
+                // stations with nothing left that will ever stop it.  Two ways in (RSA2-C8): a wait given up at the retirement
+                // (RSA-B1), the usual one, where the train is stopped between two sensors by the reload's or Unload's Yes, which
+                // the stop below repeats; and a sensor reached after the retirement, the train standing at a known milestone.
                 loc.setSpeed(0);
 
                 if (control.isDebug())
@@ -10863,57 +10562,35 @@ public class Layout
         this.lastArrival.put(recencyKeyOf(path.get(path.size() - 1).getEnd()),
             System.currentTimeMillis());
 
-        // Reverse at terminus station - AND ASK FIRST WHEN IT IS ONLY A MAY-REVERSE (DIR-A2).
-        //
-        // The policy was consulted from one place, and that place is inside `if (i != path.size() -
-        // 1)`.  The last point is turned here instead, and this statement asked nobody - so a
-        // hand-driven send whose DESTINATION is a reversing point turned the train without a word,
-        // which is the literal case Adam described: *"if the user decides to send a train to a 'may
-        // reverse' point, explicitly ask the user if the train should change direction."*
-        //
-        // Measured before the fix: destination IS the may-reverse point gave `policyAsked=0
-        // turned=true`, while the same policy at an intermediate point gave `policyAsked=1
-        // turned=false`.  The mechanism worked exactly where it was wired and was not wired to the
-        // case it was built for.
-        //
-        // A TERMINUS IS STILL NOT A QUESTION.  The message key has named both cases all along -
-        // `...TerminusOrFinalReversingStation` - so the code knew the difference and turned both
-        // regardless.
+          // Reverse at terminus station - AND ASK FIRST WHEN IT IS ONLY A MAY-REVERSE (DIR-A2): the last point is turned here, so
+          // the policy must be consulted here too, or a hand-driven send whose DESTINATION is a reversing point turns the train
+          // without a word (Adam: *"if the user decides to send a train to a 'may reverse' point, explicitly ask the user if the
+          // train should change direction."*).  A TERMINUS IS STILL NOT A QUESTION; the message key
+          // `...TerminusOrFinalReversingStation` names both cases.
         final Point arrived = path.get(path.size() - 1).getEnd();
 
-        // AND THE RAILWAY REMEMBERS WHICH WAY IT CAME IN (Adam, 2026-09-07: "yes, auto write it").
-        //
-        // This is the only moment anything knows it for certain.  A train's tail lies along the track
-        // it arrived by, and once it has come to rest nothing about the train says which side that
-        // was - facing points the way it will LEAVE, and after a reversal the two agree while the tail
-        // is on the opposite side.  Written here, the answer is a fact rather than an inference.
-        //
-        // Recorded BEFORE any reversal below, deliberately.  Turning the train round at the platform
-        // does not move its tail: the carriages stay where they stopped.  Writing it after would
-        // record the side it is about to depart by, which is exactly the mistake this property was
-        // added to end.
-        //
-        // The square it came FROM is the far end of the last edge, and `sideTowards` turns that into
-        // the compass side the operator sees in the menu.
-        // THE SAME RULE THE WALK READS BACK (OB-182).  The last leg of the path is the
-                // one it came in on, so the side it entered by is that edge’s - which the build
-                // knows exactly and the geometry only approximates.
+          // AND THE RAILWAY REMEMBERS WHICH WAY IT CAME IN.  This is the only moment anything knows it for certain: a train's
+          // tail lies along the track it arrived by, and once it has come to rest nothing about the train says which side that
+          // was (facing points the way it will LEAVE, and after a reversal the two agree while the tail is on the opposite
+          // side).  Recorded BEFORE any reversal below, deliberately, since turning the train round at the platform does not
+          // move its tail.  The square it came FROM is the far end of the last edge, and `sideTowards` turns that into the
+          // compass side the operator sees in the menu.
+          // THE SAME RULE THE WALK READS BACK (OB-182): the last leg is the one it came in on, so the side it entered by is
+          // that edge's, which the build knows exactly and the geometry only approximates.
                 arrived.setArrivedFrom(entrySideOf(path.get(path.size() - 1), arrived));
 
-                // AND THE ROUTE ITSELF, so the tail can be followed past a junction (Adam, MT-335,
-                // 2026-09-13: "keep claiming along the road it actually arrived on").
+          // AND THE ROUTE ITSELF, so the tail can be followed past a junction (Adam, MT-335: "keep claiming along the road it
+          // actually arrived on").
                 arrived.setArrivedAlong(path);
 
-        // AND ITS ENTRY GUARD GOES RED (Adam, 2026-09-23, FR-096): *"a signal that turns red after arrival at the
-        // final designation."*  Here, where the journey's END is recorded - the path's last Point, reached by every
-        // tier's run: autonomy, a hand dispatch and Return Home all come through this method.  A square the train
-        // only passed is never `arrived`, so it throws nothing.  Nothing turns it green: *"The next route sets it
-        // green, so that is out of scope."*
+          // AND ITS ENTRY GUARD GOES RED (FR-096; Adam: *"a signal that turns red after arrival at the final designation."*), here
+          // where the journey's END is recorded: the path's last Point, reached by every tier's run (autonomy, a hand dispatch,
+          // Return Home).  A square the train only passed is never `arrived`.  Nothing turns it green (*"The next route sets it
+          // green, so that is out of scope."*).
         throwEntryGuard(arrived);
 
-        // AND THE SQUARE IT LEFT NO LONGER HAS A TAIL ON IT.  Without this the track behind an empty
-        // platform stays blocked by a train that drove away from it - which is worse than never
-        // having blocked anything, because it takes a rebuild to clear.
+          // AND THE SQUARE IT LEFT NO LONGER HAS A TAIL ON IT: otherwise the track behind an empty platform stays blocked by a
+          // train that drove away, until a rebuild.
         if (!path.isEmpty() && path.get(0).getStart() != null
             && path.get(0).getStart() != arrived)
         {
@@ -10928,14 +10605,10 @@ public class Layout
         // (RSA50-A3, RSA50-B1)
         boolean restandAfterTheTurn = false;
 
-        // The same rule as the intermediate points, asked of the arrival (DIR-A2, and Adam's
-        // may-reverse ruling of 2026-09-06).
-        //
-        // ASKED ONCE, in one expression, and the `else` below is how the record says the same thing
-        // this branch did.  Not hoisted into a local: `testNonReversibleTrains.testTheRunAsksThatRule`
-        // reads this file as a string and asserts this exact statement, which is a fair guard - the
-        // defect it pins is the arrival deciding a reversal WITHOUT the policy - and a shape it does
-        // not recognise reads to it as the rule having gone.
+          // The same rule as the intermediate points, asked of the arrival (DIR-A2).  ASKED ONCE, in one expression, and the
+          // `else` below records the same thing this branch did.  Not hoisted into a local: `testNonReversibleTrains.testTheRunAsksThatRule`
+          // reads this file as a string and asserts this exact statement, a guard against the arrival deciding a reversal
+          // WITHOUT the policy.
         if (turnsOnArrival(arrived, loc, reversals))
         {
             this.control.logf(
@@ -10957,73 +10630,42 @@ public class Layout
             // until the railway is idle, as it always did; standing it on the drain's copy at once refused that leg
             restandAfterTheTurn = stillThisRailway && reversals != null && reversals != ALWAYS_REVERSE;
 
-            // AND THE GRAPH IS TOLD, at the destination, which is the only place that knows (Adam,
-            // 2026-09-07).  See `reversedOnArrival` for why neither of the two paths that follow a
-            // direction change can pick this one up.
-            //
-            // AND WHERE, NOT JUST WHO (REV9-A1).  This used to toggle the name into a set, on the
-            // reasoning that what is pending is a NET flip and two turns cancel.  That reasoning
-            // belongs to a window that applies the record by FLIPPING the facing the setup has stored,
-            // and the setup's facing is stale at exactly the moment the drain reads it - so the flip
-            // lost the turn where nothing was recorded and reversed it where something was.
-            //
-            // The Point is the whole repair.  A train that has just turned faces the way it came in,
-            // and the line above wrote that side onto this Point before the turn - so the window can
-            // write the answer ABSOLUTELY and does not care how many times the train turned on the
-            // way here.  Two turns no longer need to cancel, because applying an absolute answer twice
-            // says the same thing twice.
-            //
-            // One locomotive's arrivals all happen on its own driver thread, so nothing races for a
-            // given key.
+              // AND THE GRAPH IS TOLD, at the destination, which is the only place that knows.  See `reversedOnArrival` for why
+              // neither of the two paths that follow a direction change can pick this one up.
+              //
+              // AND WHERE, NOT JUST WHO (REV9-A1): the Point records the side the train came in by (written above, before the
+              // turn), so the window can write the answer ABSOLUTELY and does not care how many times the train turned on the way
+              // here.  A net-flip record would lose the turn where nothing was recorded, since the setup's facing is stale at
+              // exactly the moment the drain reads it.  One locomotive's arrivals all happen on its own driver thread, so nothing
+              // races for a given key.
             if (stillThisRailway && loc.getName() != null) this.reversedOnArrival.put(loc.getName(), arrived.getName());
         }
         else
         {
             if (loc.getName() != null)
             {
-                // AND AN ARRIVAL THAT DID NOT TURN CLEARS IT.  The record means "this train is
-                // standing where it turned and the graph has not been told"; once it has run on, this
-                // arrival has placed it on the copy its journey ended at and the graph is already
-                // right about it.  Left behind, a turn made earlier in an autonomy session would be
-                // applied to the square the train has since left - or worse, to the square it is
-                // standing on now, as though it had turned there.
+                  // AND AN ARRIVAL THAT DID NOT TURN CLEARS IT: the record means "this train is standing where it turned and the
+                  // graph has not been told"; once it has run on, the graph is already right about it, and a stale record would be
+                  // applied to the square the train has since left or is standing on.
                 this.reversedOnArrival.remove(loc.getName());
             }
 
-            // AND IT MUST NOT BE LEFT STANDING ON THE COPY THAT EXPECTED IT TO TURN (PRW-A1).
-            //
-            // A square trains MAY turn at is two Points per arrival side: the plain copy, facing the
-            // way a train that drove in is pointing, and the turning copy, facing the other way.  Both
-            // are reached by the same edge, so a path to that square can legitimately end on either -
-            // and the menu routinely offers the turning one.  Measured on the frozen snapshot: the
-            // path offered to BottomMainC ends on `BottomMainC (eastbound, reverse)` for both of
-            // Adam's reversible trains, five runs out of five, because `distinctDestinations` keeps
-            // the first path per square and the enumeration behind it walks the shuffling
-            // `getNeighbors`.
-            //
-            // So a train that arrives there and declines the turn faces one way while the Point it
-            // stands on says the other.  Nothing on the railway is wrong - the train is exactly where
-            // it should be - but the graph is, and the next dispatch reads this Point's outgoing
-            // edges, which are the edges for a train pointing the other way.  It drives off its route.
-            //
-            // **This became reachable when the answer started being honoured** (MT-368).  The arrival
-            // used to turn every train at a may-turn square whatever the operator said, and a turned
-            // train agrees with the turning copy - so the copy was right for the wrong reason.
-            //
-            // The mirror case has had its repair since 2026-09-06: a train that DOES turn is re-stood
-            // by `AutonomySession.faceTheWayItCameIn`, which writes the side it came in by and calls
-            // `moveOntoFacingCopy`.  This is that repair for the other answer, done here rather than
-            // in the drain because the harm is the NEXT dispatch and the drain runs when the railway
-            // next goes idle - which is after it.
-            //
-            // The setup's own record still belongs to the drain and to `captureFromLayout`: this moves
-            // the train on the running graph only, which is the half that decides where it can go.
-            //
-            // NOT HERE, THOUGH - after the path is unlocked (PRV-B2).  `Point.setLocomotive` sweeps
-            // the train off every other Point, and until `unlockPath` has run those Points are this
-            // run's remaining reservations; moving the train first gives them up early, which is the
-            // hazard this method writes down twice elsewhere.  The flag is set and the move is made
-            // below.
+              // AND IT MUST NOT BE LEFT STANDING ON THE COPY THAT EXPECTED IT TO TURN (PRW-A1).  A square trains MAY turn at is two
+              // Points per arrival side: the plain copy, facing the way a train that drove in is pointing, and the turning copy,
+              // facing the other way.  Both are reached by the same edge, so a path to that square can end on either (the menu
+              // routinely offers the turning one).  A train that arrives there and declines the turn faces one way while the Point
+              // it stands on says the other, and the next dispatch reads that Point's outgoing edges, which are for a train
+              // pointing the other way: it drives off its route.  This became reachable when the answer started being honoured
+              // (MT-368).
+              //
+              // The mirror case, a train that DOES turn, is re-stood by `AutonomySession.faceTheWayItCameIn`, which writes the
+              // side it came in by and calls `moveOntoFacingCopy`.  This is that repair for the other answer, done here rather
+              // than in the drain because the harm is the NEXT dispatch.  The setup's own record still belongs to the drain and
+              // to `captureFromLayout`: this moves the train on the running graph only.
+              //
+              // NOT HERE, THOUGH - after the path is unlocked (PRV-B2).  `Point.setLocomotive` sweeps the train off every other
+              // Point, and until `unlockPath` has run those are this run's remaining reservations; moving the train first gives
+              // them up early.  The flag is set and the move is made below.
             restandAfterUnlocking = true;
         }
         
@@ -11041,16 +10683,13 @@ public class Layout
             this.clearedEdges.remove(loc);
             this.releasedEarly.remove(loc);
 
-            // AND NOW THE TRAIN MAY BE MOVED ONTO THE COPY IT FACES (PRW-A1, placed here by PRV-B2).
-            //
-            // After the unlock, because `Point.setLocomotive` sweeps the locomotive off every other
-            // Point and before this line those Points are still this run's reservations.  Inside the
-            // monitor, because everything else that rearranges the railway at the end of a path is.
+              // AND NOW THE TRAIN MAY BE MOVED ONTO THE COPY IT FACES (PRW-A1, PRV-B2): after the unlock, because
+              // `Point.setLocomotive` sweeps the locomotive off every other Point and before this line those are still this run's
+              // reservations; inside the monitor, because everything else that rearranges the railway at the end of a path is.
             if (restandAfterUnlocking) standOnTheCopyItDidNotTurnOn(arrived, loc, path);
 
-            // AND A TRAIN THAT TURNED, ONTO THE COPY IT NOW FACES ON FROM (RSA50-A3, RSA50-B1) - at the arrival rather than
-            // at the window's idle drain, which is the only thing that moved it before: while another train was out it
-            // stood on the copy for its old heading, and a timetable played back is never idle
+              // AND A TRAIN THAT TURNED, ONTO THE COPY IT NOW FACES ON FROM (RSA50-A3, RSA50-B1), at the arrival rather than at
+              // the window's idle drain, which a timetable played back never reaches.
             else if (restandAfterTheTurn) standOnTheCopyItFacesAfterTheTurn(arrived, loc);
                                   
             // Fire callbacks
@@ -11085,25 +10724,18 @@ public class Layout
     }
         
     /**
-     * Takes off the graph whatever an edit to this locomotive - its name, its address, its consist, changed from the
-     * window or by the Central Station sync - has made conflict with it, through the train itself where it stands and
-     * every standing multi-unit that drives it (BPV-A1, RLA-B1).
-     *
-     * An edit can only make a conflict ON THE GRAPH through a train that stands there and drives the edited one: the
-     * edited train itself where it stands, and every standing multi-unit it is a member of.  A train that neither stands
-     * nor is driven by one that stands clashes with nothing that stands.
-     *
-     * Swept regardless, a rename of a MEMBER of a multi-unit whose head stands on a station asked the head whether it
-     * was compatible with its own member - never, `isLinkedTo` - and took the head off its station: the platform read as
-     * empty with the train on it, the loss MT-149 filed critical, by the one rename the self-skip below does not reach.
-     * Found by the validator of the 2.8.2 backports, 2026-09-25, on both branches.  So the head is swept as itself, and
-     * its own member, standing nowhere, is not a conflict.
-     *
-     * Swept only where the edited train stands, a member given the address of another standing train took nothing off:
-     * every command to its head then reached that train's decoder, while autonomy ran it as a train of its own (RLA-B1).
-     * Sweeping the head asks exactly what putting the head down again would.
-     *
-     * Placing a train asks the sweep itself, before the train is put down, through `clearMultiUnitConflictsWith`.
+       * Takes off the graph whatever an edit to this locomotive - its name, its address, its consist, changed from the
+       * window or by the Central Station sync - has made conflict with it, through the train itself where it stands and
+       * every standing multi-unit that drives it (BPV-A1, RLA-B1).
+       *
+       * An edit can only make a conflict ON THE GRAPH through a train that stands there and drives the edited one: the
+       * edited train itself where it stands, and every standing multi-unit it is a member of.  The head is swept as itself,
+       * which asks exactly what putting the head down again would: a member given the address of another standing train
+       * would otherwise take nothing off, while every command to its head reached that train's decoder and autonomy ran it
+       * as a train of its own (RLA-B1).  The head is never asked whether it is compatible with its own member (`isLinkedTo`),
+       * which took the head off its station on a rename of the member (MT-149); that member, standing nowhere, is no conflict.
+       *
+       * Placing a train asks the sweep itself, before the train is put down, through `clearMultiUnitConflictsWith`.
      *
      * @param l the locomotive edited
      */
