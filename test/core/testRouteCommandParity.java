@@ -182,6 +182,7 @@ public class testRouteCommandParity
             { "AUTONOMY_LIGHTS_ON",  "isAutonomyLightsOn()"   },
             { "ROUTE",               "isRoute()"              },
             { "AUTO_LOCOMOTIVE",     "isAutoLocomotive()"     },
+            { "AUTO_LOCOMOTIVE_NOT_AT", "isAutoLocomotive()"  },
         };
 
         assertEquals(handledBy.length, org.traincontrol.base.CommandRow.Kind.values().length,

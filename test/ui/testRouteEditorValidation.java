@@ -1062,6 +1062,121 @@ public class testRouteEditorValidation
         return "x";
     }
 
+    /**
+     * The two train-at-a-sensor kinds say they are autonomy's, and the reading says which way round each one is (FR-141).
+     *
+     * Adam: *also, this is referring to autonomy, correct?  Prefix with "Autonomy: " if so.*  It is: `Route.evaluate`
+     * asks autonomy's record of where the train is, not the sensor.  The labels are read from the English bundle, so the
+     * claim is about the words Adam reads rather than about a key.
+     *
+     * MUTATION: read a not-at command as AUTO_LOCOMOTIVE in `CommandRow.of` and the reading says "at" for both lines.
+     */
+    @Test
+    public void testTheTrainAtASensorKindsSayAutonomyAndWhichWayRound() throws Exception
+    {
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        assertEquals(english.getProperty("route.kind." + CommandRow.Kind.AUTO_LOCOMOTIVE.name()),
+            "Autonomy: Train At A Sensor", "the at kind does not say it is autonomy's");
+
+        assertEquals(english.getProperty("route.kind." + CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT.name()),
+            "Autonomy: Train Not At A Sensor", "the not-at kind does not say it is autonomy's, or not which way round");
+
+        assertEquals(english.getProperty("route.reads.trainNotAt"), "{0} not at S88 #{1}",
+            "the reading of a not-at line does not say not");
+
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.joining(0, org.traincontrol.base.ConditionOutline.Joiner.AND));
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 212", 22, false)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            final String[] text = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> text[0] = frame.readsAsForTest());
+
+            assertTrue(text[0].contains(I18n.f("route.reads.trainAt", "BR 218", "21")),
+                "\"Reads as\" does not say the first train is at its sensor: " + text[0]);
+
+            assertTrue(text[0].contains(I18n.f("route.reads.trainNotAt", "BR 212", "22")),
+                "\"Reads as\" does not say the second train is NOT at its sensor: " + text[0]);
+
+            assertFalse(text[0].contains(I18n.f("route.reads.trainAt", "BR 212", "22")),
+                "\"Reads as\" says the not-at train is at its sensor: " + text[0]);
+
+            final String[] kind = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> kind[0] = frame.conditionCellForTest(2).getText());
+
+            assertEquals(kind[0], CommandRow.labelFor(CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT),
+                "the not-at line's Kind cell does not show the not-at kind");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * Choosing Not At on an At line, or the other way, keeps its train and its sensor (FR-141).
+     *
+     * One condition asked either way round, so choosing the other kind turns the question round and changes nothing
+     * else - the way Switch and Signal keep their address.  Without a layout there is no first locomotive to start a
+     * new line on, so a reset would leave the line unbuildable and the choice would not take at all.
+     *
+     * MUTATION: drop the at-or-not-at arm in the condition table's `setValueAt` and the kind does not change.
+     */
+    @Test
+    public void testSwitchingBetweenAtAndNotAtKeepsTheTrainAndTheSensor() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> rows = new java.util.ArrayList<>();
+
+            rows.add(org.traincontrol.base.ConditionOutline.Row.condition(0,
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionKindForTest(0, CommandRow.Kind.AUTO_LOCOMOTIVE_NOT_AT));
+
+            assertEquals(frame.conditionRowsForTest().get(0).getCommand(),
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, false),
+                "choosing Not At did not make the same train and sensor a not-at condition");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.setConditionKindForTest(0, CommandRow.Kind.AUTO_LOCOMOTIVE));
+
+            assertEquals(frame.conditionRowsForTest().get(0).getCommand(),
+                RouteCommand.RouteCommandAutoLocomotive("BR 218", 21, true),
+                "choosing At again did not turn it back");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
     /** A feedback condition on one sensor. */
     private static org.traincontrol.base.RouteCommand feedback(int address)
     {

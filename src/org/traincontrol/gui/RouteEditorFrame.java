@@ -2532,6 +2532,10 @@ public class RouteEditorFrame extends JFrame
             case AUTO_LOCOMOTIVE: return I18n.f("route.reads.trainAt",
                 marked(row.getTarget()), marked(row.getSetting()));
 
+            // And the same fact denied (FR-141)
+            case AUTO_LOCOMOTIVE_NOT_AT: return I18n.f("route.reads.trainNotAt",
+                marked(row.getTarget()), marked(row.getSetting()));
+
             // Stop, all functions off, lights on: nothing to name and nothing to set, so the kind's
             // own label already says the whole thing.
             default: return marked(CommandRow.labelFor(row.getKind()));
@@ -2843,6 +2847,7 @@ public class RouteEditorFrame extends JFrame
             case LOCOMOTIVE_DIRECTION:
             case FUNCTION:
             case AUTO_LOCOMOTIVE:
+            case AUTO_LOCOMOTIVE_NOT_AT:
                 if (parent.getModel().getLocByName(target) == null)
                 {
                     wrong.add(I18n.f("route.ui.frameNoSuchLocomotive", target));
@@ -2861,7 +2866,7 @@ public class RouteEditorFrame extends JFrame
 
                 // AND THE SENSOR an "is at" condition watches, its setting (GSR-C1): saved as 0 or nothing, the condition
                 // can never be true and the route never fires - FEEDBACK's own check, below
-                if (row.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE && numberOr(row.getSetting(), 0) <= 0)
+                if (CommandRow.asksWhereATrainIs(row.getKind()) && numberOr(row.getSetting(), 0) <= 0)
                 {
                     wrong.add(I18n.f("route.ui.frameNotASensor", row.getSetting() == null ? "" : row.getSetting()));
                 }
@@ -4103,7 +4108,7 @@ public class RouteEditorFrame extends JFrame
                 if (kind == CommandRow.Kind.LOCOMOTIVE_SPEED
                     || kind == CommandRow.Kind.LOCOMOTIVE_DIRECTION
                     || kind == CommandRow.Kind.FUNCTION
-                    || kind == CommandRow.Kind.AUTO_LOCOMOTIVE)
+                    || CommandRow.asksWhereATrainIs(kind))
                 {
                     return chooseFrom(withTheCellsOwn(parent.getModel().getLocList(),
                         rows.get(row).getRow().getTarget()));
@@ -4430,14 +4435,21 @@ public class RouteEditorFrame extends JFrame
                     // whatever - the dropdown offered the kind, the row threw on rebuild, and the
                     // cell snapped back with no message.  The first locomotive on the roster is a
                     // starting point somebody can then change, which is what every other kind gets.
-                    String starting = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+                    String starting = CommandRow.asksWhereATrainIs(became)
                         ? firstLocomotive() : (CommandRow.hasTarget(became) ? "1" : "");
 
-                    String settingFor = became == CommandRow.Kind.AUTO_LOCOMOTIVE
+                    String settingFor = CommandRow.asksWhereATrainIs(became)
                         ? "1" : CommandRow.defaultSettingFor(became);
 
                     edited = new CommandRow(became, starting, settingFor,
                         null, CommandRow.defaultDelayFor(became));
+
+                    // AND BETWEEN AT AND NOT AT (FR-141), which are one condition asked either way round: the line keeps
+                    // its train and its sensor, and only the question turns round.
+                    if (CommandRow.asksWhereATrainIs(became) && CommandRow.asksWhereATrainIs(term.getKind()))
+                    {
+                        edited = new CommandRow(became, term.getTarget(), term.getSetting());
+                    }
 
                     // EXCEPT BETWEEN SWITCH AND SIGNAL, which are one command in two vocabularies (2026-09-14):
                     // the line keeps its address and says the same setting in the other words - turn is red,
@@ -4636,12 +4648,12 @@ public class RouteEditorFrame extends JFrame
 
                 if (words != null) return chooseFrom(words);
 
-                if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE) return digitsOnly();
+                if (CommandRow.asksWhereATrainIs(term.getKind())) return digitsOnly();
             }
 
             if (column == 5)
             {
-                if (term.getKind() == CommandRow.Kind.AUTO_LOCOMOTIVE)
+                if (CommandRow.asksWhereATrainIs(term.getKind()))
                 {
                     return chooseFrom(withTheCellsOwn(parent.getModel().getLocList(), term.getTarget()));
                 }
