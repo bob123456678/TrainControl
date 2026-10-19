@@ -323,8 +323,8 @@ public class testEditorSurfaceRules
                 // assignment made there reverted at the next configuration load.  It redraws through
                 // its callers, both of which repaint immediately after calling it.
                 "GraphLocAssign.java", "LayoutRightclickAutonomyMenu.java",
-                // SessionImport is the session's legacy import (FR-136): the session's own migration, before
-                // anything is on screen.
+                // SessionImport is the legacy import's facings (FR-136), written behind
+                // AutonomyViewerPanel.importLegacyGraph, which reloads the railway after.
                 "SessionImport.java",
                 "TrainControlUI.java"),
             "a facing is written to the setup from a file this rule has not been told about. Each of "
@@ -1913,9 +1913,9 @@ public class testEditorSurfaceRules
         assertTrue(pass.substring(loop).startsWith("session.staticAnnotations(marked, arrows, allowedToo)"), "the marks"
             + " are asked for without the options, so they are read again for each square");
 
-        // The session's pass is SessionRuns' (FR-136); AutonomySession's is a one-line call to it
-        String all = SourceOf.withoutComments(memberOf("final class SessionRuns",
-            "Map<TileKey, TileAnnotation> staticAnnotations("));
+        // The session's pass is SessionRuns' (FR-136); AutonomySession's is a one-line call to it, and both are read
+        String all = codeOf("public Map<TileKey, TileAnnotation> staticAnnotations(")
+            + SourceOf.withoutComments(memberOf("final class SessionRuns", "Map<TileKey, TileAnnotation> staticAnnotations("));
 
         assertFalse(all.contains("diagramShowsRestrictionArrows()") || all.contains("diagramShowsAllowedDirections()")
             || all.contains("staticAnnotationFor(tile)"), "the session's pass asks an option for itself though it was"
@@ -1925,6 +1925,50 @@ public class testEditorSurfaceRules
 
         assertFalse(square.contains("diagramShowsRestrictionArrows()"), "a square's annotation asks the arrows option for"
             + " itself though it was handed it");
+    }
+
+    /**
+     * Only the session, and its import for one flag, write the session's state (FR-136).
+     *
+     * `AutonomySession`'s `store`, `graph`, `reducer` and `dirty`, and `CARRIED_SETTINGS`, are package-private so the
+     * classes extracted from it can reach them, which leaves them open to the whole package.  `reducer` is handed out
+     * only once reduced (OB-298) and `rebuild` alone publishes it; `graph` and `store` are the session's to replace;
+     * `CARRIED_SETTINGS` is one list every import shares.  So no code outside the class assigns the first three through
+     * another object, the import's `owner.dirty = true` is the only assignment of `dirty` from outside, and nothing
+     * calls `CARRIED_SETTINGS.set(`.
+     *
+     * MUTATION: have any other class assign `owner.graph`, `owner.reducer` or `owner.store`, assign `owner.dirty` from
+     * anywhere but SessionImport, or call `CARRIED_SETTINGS.set(`, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testOnlyTheSessionAndItsImportWriteItsState() throws Exception
+    {
+        String code = SourceOf.allCode();
+
+        // An assignment through another object (`owner.graph = `, `session.dirty |= `), not `==`; `this.` is a class
+        // writing its own field.
+        java.util.regex.Pattern held = java.util.regex.Pattern.compile("(?<!this)\\.\\s*(reducer|graph|store)\\s*[-+*/|&^]?=(?!=)");
+        java.util.regex.Pattern flag = java.util.regex.Pattern.compile("(?<!this)\\.\\s*dirty\\s*[-+*/|&^]?=(?!=)");
+
+        java.util.regex.Matcher each = held.matcher(code);
+
+        boolean found = each.find();
+
+        assertFalse(found, "something assigns the session's " + (found ? each.group(1) : "state") + " through another"
+            + " object, near: " + (found ? code.substring(Math.max(0, each.start() - 60), each.end() + 30).replace('\n', ' ') : ""));
+
+        int writes = count(flag, code);
+        int ours = count(flag, codeOf("final class SessionImport"));
+
+        assertTrue(ours > 0, "the import no longer sets the session's dirty flag, so this checked nothing");
+
+        assertEquals(writes, ours, "something other than SessionImport assigns the session's dirty flag through another"
+            + " object: " + writes + " in the program, " + ours + " of them in the import");
+
+        assertEquals(SourceOf.occurrences("CARRIED_SETTINGS.set("), 0, "something rewrites CARRIED_SETTINGS, the list"
+            + " every import shares");
     }
 
     /**
