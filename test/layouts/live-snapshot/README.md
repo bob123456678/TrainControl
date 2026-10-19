@@ -166,3 +166,6 @@ not fix it. Name the square.
 - `ui.testTheActiveTickPausesATrain`
 - `regression.testTheOrangeRunsOverTheSwitchesBehindTheTrain`
 - `ui.testATrainWithNoWayOutFacesAlongItsTrack`
+- `ui.testTheTimetableAnswersItsMenu`
+- `ui.testARestartKeepsTheRailway`
+- `ui.testOpenLayoutLeavesTheOldTrainsBehind`

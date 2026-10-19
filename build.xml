@@ -564,6 +564,11 @@
         <test-one-class class="testTheOrangeRunsOverTheSwitchesBehindTheTrain"/>
         <test-one-class class="testATrainWithNoWayOutFacesAlongItsTrack"/>
         <test-one-class class="testTheRouteListShowsWhatRuns"/>
+        <test-one-class class="testWhatTheStationSendsIsHeard"/>
+        <test-one-class class="testTheTimetableAnswersItsMenu"/>
+        <test-one-class class="testARestartKeepsTheRailway"/>
+        <test-one-class class="testReturnHomeSetsTheSwitchesOnTheWayHome"/>
+        <test-one-class class="testOpenLayoutLeavesTheOldTrainsBehind"/>
         <test-one-class class="testTheRouteHighlightAsksWhatATileIs"/>
         <test-one-class class="testTheRouteEditorAsksHowManyFunctionsALocomotiveHas"/>
         <test-one-class class="testNonAtomicRoutesNeedTheirLengths"/>
