@@ -277,7 +277,7 @@ public class testTheFunctionButtonsFollowTheConsist
             // The railway graph exists, so the guard gets as far as asking about the session.
             model.getAutoLayout();
 
-            if (!model.hasAutoLayout()) throw new org.testng.SkipException("no autonomy layout to follow directions on");
+            if (!model.hasAutoLayout()) throw new AssertionError("no autonomy layout to follow directions on");
 
             // A session the getter can give here - the window built one when it was set up - so the claim below is
             // not about a fixture that has none to build.  The window keeps it; it is put back at the end.
@@ -297,7 +297,7 @@ public class testTheFunctionButtonsFollowTheConsist
                 }
             });
 
-            if (built[0] == null) throw new org.testng.SkipException("this sandbox builds no autonomy session at all");
+            if (built[0] == null) throw new AssertionError("this sandbox builds no autonomy session at all");
 
             // The session gone and the railway graph still there - the moment between a reset and the event
             // thread's rebuild, which is when a message used to build one itself.
@@ -497,7 +497,7 @@ public class testTheFunctionButtonsFollowTheConsist
 
         JToggleButton button = buttons.get(fNumber);
 
-        if (button == null) throw new SkipException("this window has no button for f" + fNumber);
+        if (button == null) throw new AssertionError("this window has no button for f" + fNumber);
 
         return button;
     }

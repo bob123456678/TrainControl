@@ -577,7 +577,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (!pages.getItemAt(i).equals(first)) other = pages.getItemAt(i);
         }
 
-        if (other == null) throw new SkipException("the frozen railway has one page, so no other page can be cached");
+        if (other == null) throw new AssertionError("the frozen railway has one page, so no other page can be cached");
 
         final Object second = other;
 
@@ -735,7 +735,7 @@ public class testAPendingTurnSurvivesTheRebuild
         for (int i = 0; i < pages.getItemCount(); i++) if (!pages.getItemAt(i).equals(page)) otherPage = pages.getItemAt(i);
         for (int i = 0; i < sizes.getItemCount(); i++) if (!sizes.getItemAt(i).equals(size)) otherSize = sizes.getItemAt(i);
 
-        if (otherPage == null || otherSize == null) throw new SkipException("the window has one page or one size");
+        if (otherPage == null || otherSize == null) throw new AssertionError("the window has one page or one size");
 
         final Object away = otherPage;
         final Object bigger = otherSize;
@@ -801,7 +801,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (String.valueOf(pages.getItemAt(i)).startsWith("2 - ")) out = pages.getItemAt(i);
         }
 
-        if (out == null || out.equals(page)) throw new SkipException("the frozen railway has no page 2 to leave out");
+        if (out == null || out.equals(page)) throw new AssertionError("the frozen railway has no page 2 to leave out");
 
         final Object leftOut = out;
 
@@ -836,7 +836,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             if (model.getAutoLayout() != railway)
             {
-                throw new SkipException("leaving " + leftOut + " out did not stop the build here, so the door the build"
+                throw new AssertionError("leaving " + leftOut + " out did not stop the build here, so the door the build"
                     + " refuses is not reached");
             }
 
@@ -1051,7 +1051,7 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
 
         final org.traincontrol.automationui.TileGraph.TileKey station = found;
         final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
@@ -1134,7 +1134,7 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        if (found == null) throw new SkipException("no station on page " + shownPage + " drawn exactly once");
+        if (found == null) throw new AssertionError("no station on page " + shownPage + " drawn exactly once");
 
         final org.traincontrol.automationui.TileGraph.TileKey station = found;
         final org.traincontrol.automationui.TileGraph.TileKey square = drawnAt;
@@ -1355,7 +1355,7 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        throw new SkipException("no captioned station on page " + shownPage);
+        throw new AssertionError("no captioned station on page " + shownPage);
     }
 
     /**
@@ -1384,7 +1384,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (String.valueOf(pages.getItemAt(i)).startsWith("2 - ")) out = pages.getItemAt(i);
         }
 
-        if (out == null || String.valueOf(out).equals(shownPage)) throw new SkipException("no page 2 to leave out");
+        if (out == null || String.valueOf(out).equals(shownPage)) throw new AssertionError("no page 2 to leave out");
 
         // A STATION ON THE PAGE SHOWN WITH A TRAIN STANDING AT IT
         org.traincontrol.automationui.TileGraph.TileKey station = null;
@@ -1404,7 +1404,7 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
 
-        if (station == null) throw new SkipException("no train stands at a captioned station on page " + shownPage);
+        if (station == null) throw new AssertionError("no train stands at a captioned station on page " + shownPage);
 
         final org.traincontrol.automationui.TileGraph.TileKey at = station;
 
@@ -1442,7 +1442,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             settle();
 
-            if (model.getAutoLayout() != railway) throw new SkipException("leaving " + out + " out did not stop the build");
+            if (model.getAutoLayout() != railway) throw new AssertionError("leaving " + out + " out did not stop the build");
 
             captionsSettled();
 

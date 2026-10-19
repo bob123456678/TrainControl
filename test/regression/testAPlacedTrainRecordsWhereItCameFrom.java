@@ -71,6 +71,15 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     private static Integer speedBefore;
     private static Integer lengthBefore;
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -106,7 +115,11 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         java.util.Set<Locomotive> running = model.getAutoLayout().getLocomotivesToRun();
 
-        if (running.isEmpty()) throw new SkipException("no locomotive is in autonomy on this fixture");
+        if (running.isEmpty())
+        {
+            unbuilt = "no locomotive is in autonomy on this fixture";
+            return;
+        }
 
         train = running.iterator().next();
 
@@ -137,7 +150,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
      * **The control is the other half**, and it is what makes this a measurement: asked with the RAW
      * geometric sides - what the doors used to be handed - the two facings give different answers. If
      * they ever stop doing so, this fixture can no longer show the defect and the claim above is
-     * vacuous, which the skip says out loud.
+     * vacuous, which fails out loud.
      *
      * Searched rather than named, like everything else in this class: a station named here is a station
      * somebody re-plumbs.
@@ -145,6 +158,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     @Test
     public void testABarredSideIsNotASideATrainArrivedBy() throws Exception
     {
+        assertBuilt();
+
         Layout layout = model.getAutoLayout();
 
         Point narrowed = null;
@@ -186,7 +201,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         if (narrowed == null)
         {
-            throw new SkipException("no square on this fixture has a barred arrival where the raw sides tell the"
+            throw new AssertionError("no square on this fixture has a barred arrival where the raw sides tell the"
                 + " two facings apart (tried " + tried + "), so there is nothing here that the barred list changes");
         }
 
@@ -223,7 +238,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         if (java.util.Objects.equals(rawOne, rawOther))
         {
-            throw new SkipException("the raw geometric sides give one answer for both facings at "
+            throw new AssertionError("the raw geometric sides give one answer for both facings at "
                 + square + ", so this fixture cannot show the defect and the claim above passes"
                 + " whatever the code does");
         }
@@ -303,7 +318,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     @Test
     public void testAcceptingTheDialogRecordsTheArrivalSide() throws Exception
     {
-        if (junction == null) throw new SkipException("no square here has two ways in");
+        assertBuilt();
+
+        if (junction == null) throw new AssertionError("no square here has two ways in");
 
         Point point = putTheTrainOn(junctionPoint);
 
@@ -348,7 +365,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     @Test
     public void testARecordedSideSurvivesAVisitToTheDialog() throws Exception
     {
-        if (junction == null) throw new SkipException("no square here has two ways in");
+        assertBuilt();
+
+        if (junction == null) throw new AssertionError("no square here has two ways in");
 
         Point point = putTheTrainOn(junctionPoint);
 
@@ -396,7 +415,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     @Test
     public void testTheChoiceIsOfferedOnlyWhereThereIsOne() throws Exception
     {
-        if (terminus == null) throw new SkipException("every square on this fixture has two ways in");
+        assertBuilt();
+
+        if (terminus == null) throw new AssertionError("every square on this fixture has two ways in");
 
         Point single = putTheTrainOn(terminusPoint);
 
@@ -413,7 +434,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
             "the dialog showed no combo AND answered nothing, so a train placed at a terminus - where "
             + "the side is not in doubt at all - records no tail");
 
-        if (junction == null) throw new SkipException("no square here has two ways in");
+        if (junction == null) throw new AssertionError("no square here has two ways in");
 
         GraphLocAssign asked = dialogOn(putTheTrainOn(junctionPoint));
 
@@ -445,7 +466,9 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     @Test
     public void testTheComboOffersSidesAndNothingElse() throws Exception
     {
-        if (junction == null) throw new SkipException("no square here has two ways in");
+        assertBuilt();
+
+        if (junction == null) throw new AssertionError("no square here has two ways in");
 
         Point point = putTheTrainOn(junctionPoint);
 
@@ -492,10 +515,12 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     @Test
     public void testTheEditViewOffersEveryLengthTheMenuDoes() throws Exception
     {
+        assertBuilt();
+
         assertEquals(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX, 40, "the longest train the length lists offer is not forty -"
             + " Adam, OB-294: \"increase choosable train lengths up to 40 in the dropdown\"");
 
-        if (junction == null) throw new SkipException("no square here has two ways in");
+        if (junction == null) throw new AssertionError("no square here has two ways in");
 
         Point point = putTheTrainOn(junctionPoint);
 
@@ -593,6 +618,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     @Test
     public void testARefusedPlacementLeavesTheTrainAsItWas() throws Exception
     {
+        assertBuilt();
+
         final Point nowhere = new Point("GST-B2 not on this railway", false, null);
 
         assertNull(model.getAutoLayout().getPoint(nowhere.getName()), "precondition: the railway has a point called "

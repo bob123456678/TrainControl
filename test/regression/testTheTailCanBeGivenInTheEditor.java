@@ -71,7 +71,7 @@ public class testTheTailCanBeGivenInTheEditor
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration on the snapshot");
+            throw new AssertionError("no autonomy configuration on the snapshot");
         }
 
         if (ui.getActiveDiagramConfiguration() == null)
@@ -553,7 +553,7 @@ public class testTheTailCanBeGivenInTheEditor
          * The same fixture for a claim that needs only a square with a train standing on it (FXV-C14).
          *
          * `open()` searches for a train whose tail can have crossed a sensor past a junction, which is what the
-         * tail-crossing claims are about - and a snapshot without one skips, which reads as green.  The
+         * tail-crossing claims are about - and a snapshot without one fails.  The
          * arrival-side gate has nothing to do with junctions, so it asked for far more than it needed.
          *
          * @return the fixture
@@ -612,7 +612,7 @@ public class testTheTailCanBeGivenInTheEditor
             {
                 session.restoreSetup(asFound);
 
-                throw new SkipException(needsAJunction
+                throw new AssertionError(needsAJunction
                     ? "no standing train on the snapshot, measured at one unit, has a tail of " + LONG
                         + " units that can have crossed a sensor past a junction"
                     : "no train is standing anywhere on the snapshot at all");

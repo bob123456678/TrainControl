@@ -114,6 +114,15 @@ public class testTheGreyDoesNotRebuildTheDiagram
     private static Set<JComponent> onStart;
     private static Set<JComponent> onStop;
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -148,7 +157,11 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null)
+        {
+            unbuilt = "no autonomy setup on this railway";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
 
@@ -158,7 +171,11 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         oneTrainThatCoversSomething();
 
-        if (train == null) throw new SkipException("no standing train covers any track here");
+        if (train == null)
+        {
+            unbuilt = "no standing train covers any track here";
+            return;
+        }
 
         assertFalse(layout.isRunning(),
             "the frozen railway came up with autonomy running, and this class is about the gesture"
@@ -171,12 +188,17 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         if (blocked.isEmpty())
         {
-            throw new SkipException("the standing train blocks no square, so there is no wash to add");
+            unbuilt = "the standing train blocks no square, so there is no wash to add";
+            return;
         }
 
         page = model.getLayout(blocked.iterator().next().getPage());
 
-        if (page == null) throw new SkipException("the blocked squares are on no page this model has");
+        if (page == null)
+        {
+            unbuilt = "the blocked squares are on no page this model has";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -192,8 +214,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         if (tilesBefore.size() < 10)
         {
-            throw new SkipException("the page drew " + tilesBefore.size() + " tiles - too few to say"
-                + " anything about a full-page redraw");
+            unbuilt = "the page drew " + tilesBefore.size() + " tiles - too few to say"
+                + " anything about a full-page redraw";
+            return;
         }
 
         Counting counter = new Counting();
@@ -280,6 +303,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testMeasuringTheTrainDoesNotRebuildThePage()
     {
+        assertBuilt();
+
         assertEquals(tilesAfterStart.size(), tilesBefore.size(),
             "the page has a different number of tiles after the train was measured");
 
@@ -295,6 +320,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testMeasuringTheTrainRedrawsOnlyTheSquaresThatChanged()
     {
+        assertBuilt();
+
         Set<JComponent> allowed = tilesOfTheChangedSquares();
 
         assertFalse(onStart.isEmpty(),
@@ -323,6 +350,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testUnmeasuringTheTrainTakesTheWashOffAgain()
     {
+        assertBuilt();
+
         assertEquals(replaced(tilesBefore, tilesAfterStop), 0,
             "the page was rebuilt when the train was unmeasured");
 
@@ -366,6 +395,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testATileThatChangesRedrawsItsNeighbourhoodOnly() throws Exception
     {
+        assertBuilt();
+
         // A PAGE UNDER A TAB, as the main window builds one: the grid's master is what a tile calls its parent
         final JPanel tab = new JPanel();
 
@@ -466,6 +497,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test
     public void testACaptionRefreshThatChangesNothingLaysNothingOut() throws Exception
     {
+        assertBuilt();
+
         Counting counter = new Counting();
 
         RepaintManager was = RepaintManager.currentManager(HOST);
@@ -492,7 +525,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
                 if (c instanceof org.traincontrol.gui.StationCaption) captions.add(c);
             }
 
-            if (captions.isEmpty()) throw new SkipException("no station caption on the window's page was refreshed");
+            if (captions.isEmpty()) throw new AssertionError("no station caption on the window's page was refreshed");
 
             Set<java.awt.Container> pages = new LinkedHashSet<>();
 
@@ -535,6 +568,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @Test(priority = 1)
     public void testAStaticLayerThatChangesNothingRedrawsNothing() throws Exception
     {
+        assertBuilt();
+
         Counting counter = new Counting();
 
         RepaintManager was = RepaintManager.currentManager(HOST);
@@ -563,7 +598,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
                 for (Object label : (java.util.Collection<?>) labels) if (markField.get(label) != null) marked++;
             }
 
-            if (marked == 0) throw new SkipException("no square of the window's page wears a mark of the static layer");
+            if (marked == 0) throw new AssertionError("no square of the window's page wears a mark of the static layer");
 
             counter.clear();
 
