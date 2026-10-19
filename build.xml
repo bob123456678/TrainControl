@@ -582,6 +582,8 @@
         <test-one-class class="testABackupHoldsTheWholeRailway"/>
         <test-one-class class="testDownloadUpdateFetchesTheNewVersion"/>
         <test-one-class class="testThePageMenuEditsTheLayoutFolder"/>
+        <test-one-class class="testDrivingFromTheKeyboard"/>
+        <test-one-class class="testMappingPagesAndLocomotiveDoors"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
