@@ -1085,9 +1085,13 @@ public class testRoutes
             assertTrue(found, "the exported file does not contain the route this test made");
 
             // And back in through the real parser.
+            int cameBack = 0;
+
             for (MarklinRoute back : model.parseRoutesFromJson(json))
             {
                 if (!"MT352 active route".equals(back.getName())) continue;
+
+                cameBack++;
 
                 assertFalse(back.isEnabled(),
                     "a route exported as active came back armed.  Constructing a route parks a thread on "
@@ -1099,6 +1103,9 @@ public class testRoutes
 
                 assertEquals(back.getRoute().size(), 1, "control: the command survived it too");
             }
+
+            assertEquals(cameBack, 1, "the route that was exported did not come back from the parser, so what it came"
+                + " back as was never asked");
         }
         finally
         {
