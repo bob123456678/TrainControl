@@ -175,6 +175,10 @@ Commit an audit script under docs/tools. A prototype is in the scratchpad (refla
 
 Run it before and after each step. Any name whose declaring file changed must have its test edited in the same commit.
 
+**Scans still read by class after Phase 0** (they fail by name when code moves, or they would miss moved code, so they are rebuilt before the class they read is split):
+- `regression.testEditorSurfaceRules`: `testEveryDoorThatWritesTheSetupAnnouncesItWiderSweep` and its `writers()` read the AutonomyEditorPanel and AutonomySession class declarations.  Writes moved into a new class would not be scanned; only the `checked >= 7` floor would notice a wholesale move.  Rebuild it before any AutonomyEditorPanel or AutonomySession extraction.
+- File-keyed lists that go red by name, not silent: `filesWriting`, the sendable-destination excuse list and the AutonomySession save skip (testEditorSurfaceRules), and testMessageBundles' `I18n.java` skips.  Each is updated in the commit that moves the file's code.
+
 ## 3. Dead code
 
 **Before anything is removed:** a candidate first written before 2.7.0 (Adam's code) is listed for his approval and kept until he gives it; public methods on the API classes are kept (rulings above).
