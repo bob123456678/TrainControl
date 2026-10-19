@@ -2624,7 +2624,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (existing.exists())
                 {
-                    File kept = new File(Util.getBackupPath("unreadable"
+                    File kept = new File(Util.getBackupPath(Util.UNREADABLE_BACKUP_PREFIX
                         + org.traincontrol.util.Conversion.convertSecondsToDatetime(
                             System.currentTimeMillis()).replace(':', '-').replace(' ', '_')
                         + TrainControlUI.DATA_FILE_NAME));

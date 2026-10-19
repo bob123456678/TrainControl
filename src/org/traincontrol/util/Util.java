@@ -68,6 +68,13 @@ public class Util
     public static final String BACKUP_FOLDER = "tc_backup";
 
     /**
+     * What a data file's backup is named when the file would not read and is about to be written over: this, then
+     * the time, then the file's own name.  The user interface state and the locomotive database both keep such a
+     * copy.
+     */
+    public static final String UNREADABLE_BACKUP_PREFIX = "unreadable";
+
+    /**
      * Folder (relative to the working directory) that cropped locomotive icons are written to.
      *
      * Local locomotive icons had no storage of their own before FR-022: setLocIcon simply remembered

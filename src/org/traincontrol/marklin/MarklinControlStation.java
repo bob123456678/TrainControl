@@ -2219,7 +2219,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                 if (existing.exists())
                 {
-                    File kept = new File(Util.getBackupPath("unreadable"
+                    File kept = new File(Util.getBackupPath(Util.UNREADABLE_BACKUP_PREFIX
                         + Conversion.convertSecondsToDatetime(System.currentTimeMillis())
                             .replace(':', '-').replace(' ', '_')
                         + MarklinControlStation.DATA_FILE_NAME));
