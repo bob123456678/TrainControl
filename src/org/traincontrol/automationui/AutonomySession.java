@@ -4463,11 +4463,10 @@ public class AutonomySession
 
             java.util.Set<TileKey> missing = new java.util.LinkedHashSet<>();
 
-            // THE REVERSAL SQUARE IS PART OF THE STRETCH, not a separate thing to ask for (MT-364; Adam, 2026-09-12: *"I set
-            // the track at 10,10 to length 2, so now we know that the track to TunnelLongPark is 2.  But it is still asking
-            // for the tile at 10,9 (TunnelLongPark) to get a length."*).  The walk already includes the end tile, as
-            // `roomAfterTheLastSwitch` does, so the square is asked for only where no edge arrives, which the walk cannot
-            // speak for: a square with no approach has no stretch to measure.
+            // THE REVERSAL SQUARE IS PART OF THE STRETCH, not a separate thing to ask for (MT-364): measuring the track behind it
+            // must silence the notice.  The walk already includes the end tile, as `roomAfterTheLastSwitch` does, so the square
+            // is asked for only where no edge arrives, which the walk cannot speak for: a square with no approach has no
+            // stretch to measure.
             boolean anApproachExists = false;
 
             // AND THE TRACK BEHIND IT, BACK TO THE SWITCH (Adam's ruling 2, 2026-09-02): the guard needs the stretch that
@@ -6656,7 +6655,7 @@ public class AutonomySession
         // configuration, keyed by tile, and works out those keys from THIS session's naming, which a rename has just made
         // stale: the store was rekeyed to the new page name, the graph, the reducer and the page objects still carry the
         // old one.  So every placement would be written a second time under the old name, and a locomotive in two places
-        // at once fails the whole setup (Adam, MT-135: "autonomy refuses the whole setup while it is in two").
+        // at once fails the whole setup (MT-135).
         //
         // Refused rather than repaired, and nothing is lost: the rename has already written the store through
         // saveWithoutReconciling, and a rename is refused while autonomy is running, so the running layout knows nothing
@@ -7522,7 +7521,7 @@ public class AutonomySession
      * split square that faces that way.  When no copy does, the builder falls back to the first copy trains may arrive at
      * (`startableCopy`), which may point the other way, so the train quietly turns round.  Squares stop being able to hold
      * a facing when the track around them changes (move a tile so that it is entered from different sides) while the
-     * recorded one stays as it was - Adam met it as "the locomotive direction suddenly changed".
+     * recorded one stays as it was.
      *
      * Reported rather than corrected: the train is physically pointing whichever way it is pointing, and only the
      * operator knows.  A square with NO facings is left out - that is a disconnected square, which has its own findings.
@@ -8317,9 +8316,8 @@ public class AutonomySession
                         || !nonNull(store.getProtectingSignals().get(leaving)).contains(signal)) comingIn.add(i);
                 }
 
-                // NO ROUTE AT ALL is noticed only away from the station's own track: a signal there - past a terminus's
-                // sensor, at its buffers (Adam's Signal 94 at BottomMainC) - shows whether the station is occupied, and that
-                // is what it is for
+                // NO ROUTE AT ALL is noticed only away from the station's own track: a signal there - past a terminus's sensor, at
+                // its buffers - shows whether the station is occupied, and that is what it is for
                 Map<TileKey, Map<TileKey, String>> notice = commandedBy(accessory, comingIn, commands) ? out.exitOnTheWayIn
                     : commandedBy(accessory, elsewhere, commands) ? out.exitCrossed
                     : !commandedBy(accessory, outOf, commands) && !onItsOwnTrack(station, signal) ? out.exitOnNoRoute
@@ -9526,13 +9524,12 @@ public class AutonomySession
      * The endpoint squares are NOT included: a train standing at a sensor already shows as standing there.  Adam's ruling
      * is about the track between: *"edges, because the points are technically unoccupied"*.
      *
-     * **AS FAR BACK AS THE TRAIN REACHES, AND NO FURTHER (MT-309).**  Adam, 2026-09-08: *"after the parking completed, all
-     * of bottommaina stayed shaded, which it shouldn't as I set the length of EN57-203 to 1."*  The railway's answer is
-     * per EDGE (a train lying across any part of a segment makes the whole segment impassable), but an edge can be a dozen
-     * squares long, so the squares are walked one at a time from where the train stands, each paying its own length, and
-     * the walk stops when the train has been used up.  What comes back is a SUBSET of what the railway holds covered,
-     * which is the safe direction: a picture claiming more blocked track than the railway holds is the failure
-     * `Layout.edgesCoveredByStandingTrains` was widened to avoid.  Nothing here changes what the railway blocks.
+     * **AS FAR BACK AS THE TRAIN REACHES, AND NO FURTHER (MT-309).**  The railway's answer is per EDGE (a train lying across
+     * any part of a segment makes the whole segment impassable), but an edge can be a dozen squares long, so the squares are
+     * walked one at a time from where the train stands, each paying its own length, and the walk stops when the train has
+     * been used up.  What comes back is a SUBSET of what the railway holds covered, which is the safe direction: a picture
+     * claiming more blocked track than the railway holds is the failure `Layout.edgesCoveredByStandingTrains` was widened
+     * to avoid.  Nothing here changes what the railway blocks.
      *
      * That is the indicator saying WHERE THE TRAIN IS (Adam: *"we need to draw a line ... to show that the train is
      * there."*), not what is unavailable, which has its own answer, `tilesBlockedByStandingTrains` below, greyed while
@@ -10683,11 +10680,9 @@ public class AutonomySession
      * **A square that splits is several Points, and which one a train is on IS its direction**, so this is a reading of
      * where the train is, not a lookup of something somebody typed.
      *
-     * Adam, OB-181: **"moving a train in the track diagram editor from tunnelleftpark to bottommaina showed its direction as
-     * eastbound in its station label, but westbound in the right click menu."**  The station label reads the copy
-     * (`TrainControlUI.facingArrowOf`), because the stored value is written only when somebody places a train BY HAND, so
-     * it would vanish for a train autonomy had driven there; the facing MENU must read the same thing, or the two agree
-     * only while a hand-placed train has not moved.
+     * The station label reads the copy (`TrainControlUI.facingArrowOf`), because the stored value is written only when
+     * somebody places a train BY HAND, so it would vanish for a train autonomy had driven there; the facing MENU must read
+     * the same thing (OB-181), or the two agree only while a hand-placed train has not moved.
      *
      * Null when no copy of the square holds a train, and the caller falls back to what the setup records.
      *
@@ -10706,10 +10701,9 @@ public class AutonomySession
 
             if (copy == null || copy.getCurrentLocomotive() == null) continue;
 
-            // ON ITS WAY, THE COPY IT WILL STAND ON (OB-314; Adam, 2026-10-03: "the label at bottommainb shows arrival
-            // arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed").  A train
-            // sent to a square it may turn at holds the turning copy its path ends on until it arrives, and is stood
-            // on the plain copy only then - so this read it the wrong way round for the whole journey.
+            // ON ITS WAY, THE COPY IT WILL STAND ON (OB-314): a train sent to a square it may turn at holds the turning copy its
+            // path ends on until it arrives, and is stood on the plain copy only then, so the label must not read it the wrong
+            // way round for the whole journey.
             org.traincontrol.automation.Point standing = running.copyItWillStandOn(copy.getCurrentLocomotive());
 
             if (standing != null && standing != copy && standing.isSamePlaceAs(copy))
@@ -10752,10 +10746,9 @@ public class AutonomySession
      * or where it offers none its first way, which is north or south on track that runs north to south, east or west on
      * track that runs across, and along the curve on a curve.  Null where the square has no track to ask.
      *
-     * Adam, 2026-10-14: *"on tunnelleftpark, if there is no way out (both arrows at 8,7 red), the icon is rotated to the
-     * east, even though the only allowed directions are n/s."*  A square no track leads out of is emitted whole, with no
-     * facing, and an icon given none is drawn as its picture is: east.  And on the guess: *"The icon can guess in that
-     * case, but it must be N/S or a N/S track, or E/W on E/W, or angled on a curved track."*
+     * A square no track leads out of is emitted whole, with no facing, and an icon given none is drawn as its picture is
+     * (east).  Adam, 2026-10-14: *"The icon can guess in that case, but it must be N/S or a N/S track, or E/W on E/W, or
+     * angled on a curved track."*
      *
      * @param square the diagram square
      * @return a side its track runs to, or null
@@ -11959,10 +11952,8 @@ public class AutonomySession
      * draws no arrows of its own, in the editor and on the track diagram alike (OB-321, OB-361).
      *
      * A run's direction is stored on every square of it, and the track diagram drew every square that said otherwise
-     * than the first: on the sample layout, five red arrows east of MainLine that the editor did not draw (Adam, OB-361:
-     * *"in the viewer, there are excessive red arrows shown to the east of feedback 4, even though these aren't visible
-     * in the editor."*).  What a run that disagrees with itself does to a train is drawn at its first square instead
-     * (`runsAs`), so nothing is hidden.
+     * than the first (OB-361), which the editor does not draw.  What a run that disagrees with itself does to a train is drawn
+     * at its first square instead (`runsAs`), so nothing is hidden.
      *
      * @param tile a square
      * @return true for a square of a run that is not its first
@@ -12060,12 +12051,10 @@ public class AutonomySession
     /**
      * What the ordinary track diagram draws on each of these squares, decided in one pass (OB-321, FR-110).
      *
-     * A run of plain track is one decision, stored on every square of it, so drawing each square's arrows put a red
-     * arrow on every square of a one-way straight (OB-321; Adam, 2026-10-04: *"after import, redundant arrows can shown
-     * in the viewer, on a single straight segment with multiple straight tracks that only allows travel in one direction.
-     * The editor correctly collapses then"*).  A square that follows its run draws no arrows, as in the editor, and the
-     * run's first square draws the run (`followsItsRun`, `runsAs`; OB-361).  With `allowedToo`
-     * the directions trains may run are drawn in green as well (FR-110) - or on their own, since the two are chosen apart (MT-675; Adam,
+     * A run of plain track is one decision, stored on every square of it, so drawing each square's arrows would put a red
+     * arrow on every square of a one-way straight (OB-321).  A square that follows its run draws no arrows, as in the
+     * editor, and the run's first square draws the run (`followsItsRun`, `runsAs`; OB-361).  With `allowedToo` the directions
+     * trains may run are drawn in green as well (FR-110) - or on their own, since the two are chosen apart (MT-675; Adam,
      * 2026-10-04: *"allow the user to choose: restrictions, allowances, or both.  don't make them mutually exclusive."*).
      *
      * The options are the caller's, read once a pass - see the overload of `staticAnnotationFor` that takes them.
@@ -12402,8 +12391,7 @@ public class AutonomySession
     /**
      * Whether a square's track is a curve or a double curve, with a sensor or without: the squares whose arrows lie along
      * their chords (`TileAnnotation.heading`).  A double curve's other road's arrows were aimed from the middle of the
-     * badge's road, across their own rails (MT-712; Adam, 2026-10-10: *"They are not parallel with the track on one
-     * side."*); on a single curve the angle is the same either way.
+     * badge's road, across their own rails (MT-712); on a single curve the angle is the same either way.
      *
      * @param tile the square
      * @return true for the four curved types
@@ -12824,9 +12812,8 @@ public class AutonomySession
     /**
      * Stations whose approach is measured in part and not in whole - the state that refuses a berth trains that fit.
      *
-     * Adam, 2026-09-19, shown RTX-C2: *"as long as lengths are specified on the berth, it will work, right?  We want clear
-     * warnings to the user if so, then it's fine."*  It does work with the whole approach measured; half measured is the
-     * trap.
+     * Adam, 2026-09-19, RTX-C2: *"We want clear warnings to the user"*.  With the whole approach measured the berth works;
+     * half measured is the trap.
      *
      * **Why half measured refuses trains that fit.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING is
      * measured, the berth's own square included (PRW-B1, OB-278).  One measured square is enough to make it judge, and it
@@ -12874,9 +12861,8 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN STOPS FROM (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
-                // accept arrivals from one side"*).  A train may come in that way and turn (TDA-C8), but none stops there,
-                // so nothing about its track can refuse one - and the walk the rule stands for never starts from it.
+                // NOT A SIDE NO TRAIN STOPS FROM (MT-552): a train may come in that way and turn (TDA-C8), but none stops there, so
+                // nothing about its track can refuse one - and the walk the rule stands for never starts from it.
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 boolean anyMeasured = false;
@@ -13002,9 +12988,8 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN STOPS FROM (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
-                // accept arrivals from one side"*).  A train may come in that way and turn (TDA-C8), but none stops there,
-                // so nothing about its track can refuse one - and the walk the rule stands for never starts from it.
+                // NOT A SIDE NO TRAIN STOPS FROM (MT-552): a train may come in that way and turn (TDA-C8), but none stops there, so
+                // nothing about its track can refuse one - and the walk the rule stands for never starts from it.
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 int room = arriving.getRoomAtTheEnd();
