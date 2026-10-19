@@ -106,7 +106,7 @@ public class testARunSurvivesAPageRename
     @Test
     public void testTheWindowCallsThemInThatOrder() throws Exception
     {
-        String body = SourceOf.declaration("private void duplicateOrRenameCurrentLayout(");
+        String body = SourceOf.declaration("    void duplicateOrRenameCurrentLayout(");
 
         int captured = body.indexOf("captureRunningLayout();");
         int renamed = body.indexOf("renameOrDuplicate(");

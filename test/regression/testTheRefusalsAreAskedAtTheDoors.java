@@ -87,7 +87,7 @@ public class testTheRefusalsAreAskedAtTheDoors
     @Test
     public void testEveryPageDoorAsksWhoseFileTheNameIs() throws Exception
     {
-        for (String door : new String[] {"private void duplicateOrRenameCurrentLayout(", "private void combineLinkedPages(",
+        for (String door : new String[] {"    void duplicateOrRenameCurrentLayout(", "    void combineLinkedPages(",
             "private void duplicateLayoutMenuItemActionPerformed("})
         {
             String body = SourceOf.declaration(door);
@@ -150,7 +150,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "moving, the stop controls go, and runLocomotives keeps driving"},
         {"private void chooseLocalDataFolderMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "swapping the layout folder replaces the diagram, for the same reason"},
-        {"private void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
+        {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
             "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
 
         // AND THE REST, which were longhand at four doors before the two methods collected them.
@@ -170,9 +170,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             "a full sync rewrites the locomotive database under a running railway"},
         {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
-        {"private void duplicateOrRenameCurrentLayout(", SETUP + "|" + EDITOR,
+        {"    void duplicateOrRenameCurrentLayout(", SETUP + "|" + EDITOR,
             "renaming a page moves what the setup and the editor both point at"},
-        {"private void combineLinkedPages(", SETUP + "|" + EDITOR,
+        {"    void combineLinkedPages(", SETUP + "|" + EDITOR,
             "combining rewrites several pages into one"},
         {"private void AddRouteButtonActionPerformed(", EDITOR,
             "a route is part of the diagram the editor holds"},

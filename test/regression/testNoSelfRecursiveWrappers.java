@@ -86,6 +86,7 @@ public class testNoSelfRecursiveWrappers
         { "backupAction", "src/org/traincontrol/gui/BackupAction.java" },
         { "updateFlow", "src/org/traincontrol/gui/UpdateFlow.java" },
         { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java" },
+        { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java" },
     };
 
     /**

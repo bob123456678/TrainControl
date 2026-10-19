@@ -2030,7 +2030,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @return the highest page id the autonomy setup has ever recorded, or 0
      */
-    private int pageIdFloor()
+    int pageIdFloor()
     {
         try
         {
@@ -4632,7 +4632,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * change the answer as well as from the setter, because switching to the CS layout changes it without any editor opening or
      * closing.
      */
-    private void applyLayoutEditingAvailability()
+    void applyLayoutEditingAvailability()
     {
         // AND NO EDITOR WINDOW THERE (RSA28-B1): a switch's hand-over says no editor is open while its window still is
         boolean live = this.noEditorOpen && !isLayoutEditorOpen() && layoutCanBeEdited();
@@ -5856,7 +5856,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param source what to hang the dialog off, usually the menu item pressed
      * @return true when the caller must not proceed
      */
-    private boolean refuseWhileARunHoldsTheSetup(Component source)
+    boolean refuseWhileARunHoldsTheSetup(Component source)
     {
         return refuseWhile(source, true);
     }
@@ -6975,7 +6975,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * in between ran the railway built before the door, the reset then forgot it mid-run, and where the run left the
      * trains was never written.  A count, because Combine Linked Pages holds one of its own across the worker it writes on.
      */
-    private final java.util.concurrent.atomic.AtomicInteger refreshesUnderWay = new java.util.concurrent.atomic.AtomicInteger();
+    final java.util.concurrent.atomic.AtomicInteger refreshesUnderWay = new java.util.concurrent.atomic.AtomicInteger();
 
     /**
      * An editor asked for and not yet shown - from the request until its posted build has shown the window, or refused, or
@@ -19481,42 +19481,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void writeIndexAndKeepLinksAimed(List<String> layoutList, Map<String, String> renamed,
         java.util.Collection<String> keepAbsent) throws java.io.IOException
     {
-        // The rule itself is in LayoutDiagram, because LayoutPageEdit writes this index too - see that
-        // method.  What is here is collecting the pages, saving the ones that moved, and the logging.
-        for (LayoutDiagram changed : LayoutDiagram.writeIndexAndKeepLinksAimed(
-            this.getLocalLayoutPath(), layoutList, renamed, pageIdFloor(), keepAbsent,
-            this.everyLoadedPage()))
-        {
-            try
-            {
-                changed.saveChanges(null, false);
-            }
-            catch (Exception cannotSave)
-            {
-                // The arrows are right in memory either way, and the page list has already been
-                // written; refusing here would leave the index and the pages disagreeing.
-                this.model.log(cannotSave);
-            }
-        }
-    }
-
-    /**
-     * Every page of the local layout, as objects.
-     *
-     * @return the loaded pages, in the order the window lists them
-     */
-    private List<LayoutDiagram> everyLoadedPage()
-    {
-        List<LayoutDiagram> pages = new ArrayList<>();
-
-        for (String name : this.model.getLayoutList())
-        {
-            LayoutDiagram page = this.model.getLayout(name);
-
-            if (page != null) pages.add(page);
-        }
-
-        return pages;
+        this.layoutFileActions.writeIndexAndKeepLinksAimed(layoutList, renamed, keepAbsent);
     }
 
     /**
@@ -21486,131 +21451,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private String initializeEmptyLayout(String folderName)
     {
-        try
-        {
-            String from = RESOURCE_PATH + DEMO_LAYOUT_ZIP;
-            File to = new File(DEMO_LAYOUT_ZIP);
-
-            copyResource(from, to);
-
-            this.model.logf(
-                "layout.ui.infoAttemptingExtractDemoLayout",
-                to.getAbsolutePath()
-            );
-
-            File outputFolder = new File(folderName);
-            this.unzipFile(Paths.get(to.getPath()), outputFolder.getAbsolutePath());
-            to.delete();
-
-            return outputFolder.getAbsolutePath();
-        }
-        catch (IOException ex)
-        {
-            this.model.logf(
-                "layout.ui.errorDemoLayoutExtraction",
-                ex.getMessage()
-            );
-
-            this.model.log(ex);
-        }
-        
-        return null;
+        return this.layoutFileActions.initializeEmptyLayout(folderName);
     }
     
-    /**
-     * Copies a JAR resource file to the specified path
-     * @param resource
-     * @param output
-     * @throws IOException 
-     */
-    private void copyResource(String resource, File output) throws IOException
-    {
-        InputStream is = TrainControlUI.class.getResource(resource).openStream();
-        OutputStream os = new FileOutputStream(output.getPath());
-
-        byte[] b = new byte[2048];
-        int length;
-
-        while ((length = is.read(b)) != -1)
-        {
-            os.write(b, 0, length);
-        }
-
-        is.close();
-        os.close();
-    }
     
-    /**
-     * Unzips a file
-     * https://howtodoinjava.com/java/io/unzip-file-with-subdirectories/
-     * @param filePathToUnzip
-     * @throws java.io.IOException
-     */
-    private void unzipFile(Path filePathToUnzip, String folderName)
-    {
-        Path parentDir = filePathToUnzip.getParent();
-        String fileName = filePathToUnzip.toFile().getName();
-        Path targetDir = Paths.get(folderName);
-
-        //Open the file
-        try (ZipFile zip = new ZipFile(filePathToUnzip.toFile()))
-        {
-            FileSystem fileSystem = FileSystems.getDefault();
-            Enumeration<? extends ZipEntry> entries = zip.entries();
-
-            //We will unzip files in this folder
-            if (!targetDir.toFile().isDirectory() && !targetDir.toFile().mkdirs()) 
-            {
-                throw new IOException(
-                    I18n.f("error.failedToCreateDirectory", targetDir)
-                );
-            }
-
-            //Iterate over entries
-            while (entries.hasMoreElements())
-            {
-                ZipEntry entry = entries.nextElement();
-
-                File f = new File(targetDir.resolve(Paths.get(entry.getName())).toString());
-
-                // If directory then create a new directory in uncompressed folder
-                if (entry.isDirectory())
-                {
-                    if (!f.isDirectory() && !f.mkdirs())
-                    {
-                        throw new IOException(
-                            I18n.f("error.failedToCreateDirectory", f)
-                        );
-                    }
-                }
-
-                // Else create the file
-                else
-                {
-                    File parent = f.getParentFile();
-                    if (!parent.isDirectory() && !parent.mkdirs())
-                    {
-                        throw new IOException(
-                            I18n.f("error.failedToCreateDirectory", parent)
-                        );
-                    }
-
-                    try(InputStream in = zip.getInputStream(entry))
-                    {
-                        Files.copy(in, f.toPath());
-                    }
-                    catch (Exception e)
-                    {
-                        this.model.log(e);
-                    }
-                }
-            }
-        } 
-        catch (IOException e)
-        {
-            this.model.log(e);
-        }
-    }
     
     /**
      * Restores layout popups
@@ -22069,37 +21913,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_switchCSLayoutMenuItemActionPerformed
 
     private void initializeLocalLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initializeLocalLayoutMenuItemActionPerformed
-        // NOT WHILE AUTONOMY RUNS, before its folder window (RSA13-B2), as every other Layout menu door that changes the
-        // diagram is not (MT-141): a folder chosen switched the layout, synced with the Central Station and reset the
-        // autonomy session under the moving trains
-        if (refuseWhileARunHoldsTheSetup(this)) return;
-
-        javax.swing.SwingUtilities.invokeLater(() -> 
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.t("layout.ui.infoSelectFolderForNewLayout")
-            );
-
-            // BESIDE THE LAST LAYOUT FOLDER (OB-308), where a new one is likely to go
-            JFileChooser fc = layoutFolderChooser(false);
-            int i = fc.showOpenDialog(this);
-            if (i == JFileChooser.APPROVE_OPTION)
-            {
-                File f = fc.getSelectedFile();
-                String filepath = f.getPath();
-
-                layoutFolderIs(filepath);
-
-                // The editing controls answer differently now (OB-126): this is what decides whether
-                // there is a layout of his own to edit.
-                applyLayoutEditingAvailability();
-                
-                this.initializeLocalLayoutMenuItem.setEnabled(false);
-
-                this.createAndApplyEmptyLayout(filepath, false);
-            }
-        });
+        this.layoutFileActions.initializeLocalLayoutMenuItemActionPerformed();
     }//GEN-LAST:event_initializeLocalLayoutMenuItemActionPerformed
 
     private void chooseLocalDataFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseLocalDataFolderMenuItemActionPerformed
@@ -25268,378 +25082,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void combineLinkedPages()
     {
-        // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
-        if (refuseWhileARunHoldsTheSetup(this)) return;
-
-        if (refuseWhileEditorOpen()) return;
-
-        if (!this.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.t("layout.ui.errorCannotManipulateRemoteLayouts"));
-            return;
-        }
-
-        final String from = this.LayoutList.getSelectedItem().toString();
-
-        final List<String> pages = pagesLinkedFrom(from);
-
-        if (pages.size() < 2)
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.infoNothingLinkedFromHere"));
-            return;
-        }
-
-        String name = JOptionPane.showInputDialog(this,
-            I18n.t("layout.ui.promptCombinedPageName"),
-            I18n.f("layout.ui.combinedPageName", from));
-
-        if (name == null || name.trim().isEmpty()) return;
-
-        final String combined = name.trim();
-
-        // AND NO OTHER PAGE'S FILE (BCR-A2): this name is typed freely, so a character a file name cannot hold comes to the
-        // same file as the page whose name has an underscore there
-        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(),
-            combined, null);
-
-        if (usesThatFile != null)
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
-
-            return;
-        }
-
-        if (this.model.getLayoutList().contains(combined))
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", combined));
-            return;
-        }
-
-        // The ceiling, asked before anything is made (N8-C1, FV3-C4): the check must not live in `fillCombinedPage`, which runs after the page
-        // has been written, entered in the index, excluded and the layouts refreshed, so refusing would leave an unfilled copy of the page combined
-        // from.  The size is the same arithmetic `fillCombinedPage` does: the widest source page, and every source page's height plus a blank
-        // row between them.
-        int wouldBeWide = 0;
-        int wouldBeHigh = 0;
-
-        for (String each : pages)
-        {
-            LayoutDiagram page = this.model.getLayout(each);
-
-            if (page == null) continue;
-
-            wouldBeWide = Math.max(wouldBeWide, page.getSx());
-            wouldBeHigh += page.getSy() + 1;
-        }
-
-        if (wouldBeHigh > LayoutEditor.MAX_SIZE || wouldBeWide > LayoutEditor.MAX_SIZE)
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
-            return;
-        }
-
-        // On a worker, because it parses every page of the layout twice over.  AND A REFRESH UNDER WAY FROM HERE (RSA23-B1):
-        // the worker writes the page, the index and the setup before it hands over to `layoutEditingComplete`, and a run
-        // started meanwhile ran the railway from before and was forgotten by the reset at the end
-        refreshesUnderWay.incrementAndGet();
-
-        new Thread(() ->
-        {
-            try
-            {
-                // Asked BEFORE the new page is written (FR-018), as the delete path does: a Cancel offered at the index write would come after a page
-                // file had appeared on disk, leaving a page nothing references.  Nothing is being removed here, so every absence is a surprise.
-                java.util.Collection<String> keepAbsent = settleAbsentPages(
-                    this.model.getLayoutList(), null, null);
-
-                if (keepAbsent == null) return;
-
-                // Made the way every other page is made, by saving an existing one under a new name: a LayoutDiagram built by hand cannot save itself,
-                // since it writes by resolving its new filename against the path it was constructed with, and only a page read from disk carries the
-                // path of a FILE.  So the page is created by the call the Duplicate Page menu item uses, and then filled in.
-                this.model.getLayout(from).saveChanges(combined, true);
-
-                List<String> layoutList = this.model.getLayoutList();
-
-                layoutList.add(combined);
-
-                writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
-
-                // Excluded BEFORE the pages are re-read, so no build ever sees it as a page to walk: included for even one build, every sensor on it
-                // becomes a second Point for a sensor that already has one.  The session ALREADY BUILT, and only a setup that is already there: the
-                // lazy getter builds a session (opening every page and running the caption migration) and saveQuietly then writes setup.json
-                // unconditionally, so combining two pages on a layout that never had autonomy created one out of a drawing gesture.  Nothing is lost
-                // by declining: excludeRepeatedSensorPages shuts a combined page automatically the first time a setup IS created.
-                org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-                if (session != null)
-                {
-                    session.setPageExcluded(combined, true);
-
-                    // And the answer is read here too (ACC-C6's sweep, found by OV2-C3): a failed write here means the combined page is excluded in
-                    // memory and not on disk, so the next load offers it to autonomy.
-                    if (session.exists() && !session.saveQuietly() && this.model != null)
-                    {
-                        this.model.logf("autosetup.log.saveFailedAfterCombine");
-                    }
-                }
-
-                // Re-read, so the new page exists as an object with its own file behind it
-                this.model.refreshLayouts();
-
-                fillCombinedPage(combined, pages);
-
-                javax.swing.SwingUtilities.invokeLater(() -> this.layoutEditingComplete(() ->
-                {
-                    this.LayoutList.setSelectedItem(combined);
-                    this.repaintLayout();
-                }));
-            }
-            catch (Exception ex)
-            {
-                this.model.log(ex);
-
-                javax.swing.SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(this,
-                        I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())));
-            }
-            finally
-            {
-                // Posted after the hand-over above, so `layoutEditingComplete` has counted its own before this one goes
-                javax.swing.SwingUtilities.invokeLater(() -> refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1)));
-            }
-        }).start();
-    }
-
-    /**
-     * The page itself, then every page its links lead to, without repeats.  A link carries the INDEX of the page it jumps to (the number
-     * goToLayoutPage takes), so the answer is read off the tiles rather than out of the autonomy setup, and works whether or not autonomy
-     * has ever been set up on this layout.
-     *
-     * @param from the page to start at
-     * @return that page first, then the pages it reaches
-     */
-    private List<String> pagesLinkedFrom(String from)
-    {
-        List<String> out = new java.util.ArrayList<>();
-
-        out.add(from);
-
-        LayoutDiagram page = this.model.getLayout(from);
-
-        if (page == null) return out;
-
-        List<String> all = this.model.getLayoutList();
-
-        // Left to right, top to bottom, so the same diagram always produces the same page
-        for (int y = 0; y < page.getSy(); y++)
-        {
-            for (int x = 0; x < page.getSx(); x++)
-            {
-                org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
-
-                if (tile == null || !tile.isLink()) continue;
-
-                int index = tile.getRawAddress();
-
-                if (index < 0 || index >= all.size()) continue;
-
-                String target = all.get(index);
-
-                if (!out.contains(target)) out.add(target);
-            }
-        }
-
-        return out;
-    }
-
-    /**
-     * Fills the new page in: each source page's squares, stacked with a blank row between.  The page already exists (made as a copy of the
-     * one being combined), so this empties it, grows it to fit, and writes the squares in square by square rather than by reference,
-     * because a LayoutDiagramComponent carries its own coordinates.
-     *
-     * **A LINK ON A COMBINED PAGE DOES KEEP ITS DESTINATION, AND THE SEQUENCE IS WHY** (T10-C2, TWV): the copy is written from the source
-     * page BEFORE the arrows are re-aimed, so the file on disk is briefly stale; `refreshLayouts` then re-reads every page, including the
-     * corrected sources; and this method clears the copy and refills it from those sources through `LayoutDiagramComponent`'s copy
-     * constructor, which carries `rawAddress` across, so the squares written here are the corrected ones and the save at the end commits
-     * them.  The stale intermediate write makes this look broken to anybody who reads only the first step.
-     *
-     * @param name the page just created
-     * @param pages the source pages, the one being combined first
-     */
-    private void fillCombinedPage(String name, List<String> pages) throws Exception
-    {
-        LayoutDiagram made = this.model.getLayout(name);
-
-        if (made == null) throw new Exception(I18n.f("layout.ui.errorLayoutPageDoesNotExist", name));
-
-        int width = 0;
-        int height = 0;
-
-        for (String each : pages)
-        {
-            LayoutDiagram page = this.model.getLayout(each);
-
-            if (page == null) continue;
-
-            width = Math.max(width, page.getSx());
-            height += page.getSy() + 1;
-        }
-
-        // The ceiling every other growing gesture asks (N8-C1): this goes straight to LayoutDiagram.addRowsAndColumns, which has no ceiling
-        // (the door X8-C5 found shiftDown going through), and it can grow a page MOST (combining the three pages that 1 - Main links to comes
-        // out 24 x 51 against a ceiling of 60).  Refused BEFORE the page is emptied: `made.clear()` below throws away the page this was
-        // copied from, and a page above the ceiling can never be grown again (Increase Size is greyed on it).
-        if (height > LayoutEditor.MAX_SIZE || width > LayoutEditor.MAX_SIZE)
-        {
-            throw new Exception(I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
-        }
-
-        made.clear();
-
-        // Grown rather than built to size: the copy started as whichever page was being combined, and
-        // a page can only be made bigger from here
-        made.addRowsAndColumns(Math.max(0, height - made.getSy()), Math.max(0, width - made.getSx()));
-
-        int top = 0;
-
-        for (String each : pages)
-        {
-            LayoutDiagram page = this.model.getLayout(each);
-
-            if (page == null) continue;
-
-            for (int y = 0; y < page.getSy(); y++)
-            {
-                for (int x = 0; x < page.getSx(); x++)
-                {
-                    org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
-
-                    if (tile == null) continue;
-
-                    org.traincontrol.base.LayoutDiagramComponent copy =
-                        new org.traincontrol.base.LayoutDiagramComponent(tile);
-
-                    copy.setX(x);
-                    copy.setY(y + top);
-
-                    // Nothing autonomy has written comes across: this page is a picture, excluded from autonomy for good, so a station label copied onto
-                    // it names a station that is nowhere on this page, and a "Point:" label (the OLD way of storing a caption) would be picked up by the
-                    // migration and written into the setup for squares on an excluded page.  The user's own text stays: a yard name or a note is part of
-                    // the drawing.
-                    if (copy.getLabel() != null && copy.getLabel().startsWith(
-                        org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX))
-                    {
-                        copy.setLabel("");
-                    }
-
-                    made.addComponent(copy, x, y + top);
-                }
-            }
-
-            top += page.getSy() + 1;
-        }
-
-        // In place, under its own name
-        made.saveChanges(null, false);
+        this.layoutFileActions.combineLinkedPages();
     }
 
     private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
     {
-        // Not while an editor holds the diagram: both of these finish by calling layoutEditingComplete, which re-enables the Edit button and
-        // rebuilds the autonomy session from pages it has just replaced, so under an open editor it is the AD-B8 failure exactly (a second
-        // editor opens on the same diagram, and closing either unsets the other's edit flag).  Refused at the entry rather than guarded at
-        // the end, because by the end the page has already been written.
-        if (refuseWhileEditorOpen()) return;
-
-        // And not while trains are running (MT-141): an editor being closed does not mean the railway is standing still, and renaming a page
-        // still rebuilds the session underneath whatever is moving.
-        if (refuseWhileARunHoldsTheSetup(this)) return;
-
-        if (!this.isLocalLayout())
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.t("layout.ui.errorCannotManipulateRemoteLayouts")
-            );
-            return;
-        }
-
-        if (this.model.getLayoutList().contains(newLayoutName))
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.f(
-                    "layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst",
-                    newLayoutName
-                )
-            );
-            return;
-        }
-
-        // NOR ONE WHOSE FILE ANOTHER PAGE USES (BCR-A2): a name differing only in case, or in a character a file name cannot
-        // hold, is written to that page's file.  A page renamed to its own name in another case keeps its own file.
-        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(),
-            newLayoutName, rename ? this.LayoutList.getSelectedItem().toString() : null);
-
-        if (usesThatFile != null)
-        {
-            JOptionPane.showMessageDialog(this, I18n.f("layout.ui.errorPageAlreadyExistsDeleteOrRenameFirst", usesThatFile));
-
-            return;
-        }
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            try
-            {
-                // The sequence itself lives in LayoutPageEdit, and this hands it the session it has ALREADY BUILT (SV-B2) rather than letting it reach
-                // for the lazy getter.  Everything above this line is about whether to ask at all (an open editor, running trains, a remote layout, a
-                // name already taken) and stays here because it puts dialogs on screen; everything below it was the ORDER in which a rename has to
-                // happen, where every rename defect has lived, and which could not be reached by a test while it was in here (Adam: "trigger a rename
-                // via the same function that the UI calls... This is the only way to catch bugs across these complex types of features.").
-                String currentLayout = this.LayoutList.getSelectedItem().toString();
-
-                // What the last run did, folded in while the naming still agrees with the store (DW-A1): after the rename below the store is rekeyed
-                // and the pages this session holds are not, which is why the capture that follows is refused.  Doing it here means the run's
-                // placements are IN the configuration by the time renamePage rekeys it.
-                captureRunningLayout();
-
-                // A rename makes the old name absent by construction, so it is told about that and
-                // asks only about the rest (FR-018).
-                java.util.Map<String, String> renaming = new java.util.LinkedHashMap<>();
-
-                if (rename) renaming.put(currentLayout, newLayoutName);
-
-                java.util.Collection<String> keepAbsent = settleAbsentPages(
-                    this.model.getLayoutList(), renaming, null);
-
-                if (keepAbsent == null) return;
-
-                org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
-                    this.model.getLayoutList(), this.model.getLayout(currentLayout),
-                    this.getLocalLayoutPath(), currentLayout, newLayoutName,
-                    rename, duplicate, blank, this.autonomySession, this.model, keepAbsent);
-
-                this.layoutEditingComplete(() ->
-                {
-                    this.LayoutList.setSelectedItem(newLayoutName);
-                    this.repaintLayout();
-                });
-            }
-            catch (Exception ex)
-            {
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
-                );
-                this.model.log(ex);
-            }
-        });    
+        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank);
     }
     
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
@@ -25796,68 +25244,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_DCCActionPerformed
 
     private void downloadCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_downloadCSLayoutMenuItemActionPerformed
-
-        if (!isLocalLayout() && !this.model.getLayoutList().isEmpty())
-        {
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("layout.ui.infoChooseFolderForCentralStationDownload")
-                );
-
-                try
-                {
-                    // Prompt the user to choose a folder
-                    JFileChooser fc = new QuickFileChooser(
-                        prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())
-                    );
-
-                    fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-                    int i = fc.showOpenDialog(this);
-
-                    if (i == JFileChooser.APPROVE_OPTION)
-                    {
-                        File path = fc.getSelectedFile();
-
-                        this.model.downloadLayout(path);
-
-                        // Load the layout - the source a later switch of source compares with, too (RLV9-C8)
-                        useTheDownloadedLayout(path);
-
-                        // The editing controls answer differently now (OB-126): this is what decides whether
-                        // there is a layout of his own to edit.
-                        applyLayoutEditingAvailability();
-                        this.syncWithCS2();
-                        this.repaintLayout();
-                        showLayoutTab();
-
-                        JOptionPane.showMessageDialog(
-                            this,
-                            I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", path.getAbsolutePath())
-                        );
-                    }
-                }
-                catch (Exception e)
-                {
-                    this.model.logf("layout.errorDownloadingCentralStationLayout");
-                    this.model.log(e);
-
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.f("layout.ui.errorDownloadFailedWithMessage", e.getMessage())
-                    );
-                }
-            });
-        } 
-        else
-        {
-            JOptionPane.showMessageDialog(
-                this,
-                I18n.t("layout.ui.errorNoCentralStationLayoutAvailable")
-            );
-        }
+        this.layoutFileActions.downloadCSLayoutMenuItemActionPerformed();
     }//GEN-LAST:event_downloadCSLayoutMenuItemActionPerformed
 
     /**
@@ -27404,6 +26791,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Choosing, cropping and deleting locomotive icons (FR-022, FR-032, FR-104).
      */
     private final LocIconActions locIconActions = new LocIconActions(this);
+
+    /**
+     * The layout's folder and its pages (Duplicate, Rename, Add Blank Page, Combine, Create New Layout, Download).
+     */
+    private final LayoutFileActions layoutFileActions = new LayoutFileActions(this);
+
+    /**
+     * @return the page list over the track diagram
+     */
+    javax.swing.JComboBox layoutList()
+    {
+        return this.LayoutList;
+    }
+
+    /**
+     * @return Layouts > Create New Layout
+     */
+    javax.swing.JMenuItem initializeLocalLayoutMenuItem()
+    {
+        return this.initializeLocalLayoutMenuItem;
+    }
+
+    /**
+     * @return the autonomy session, as the field holds it now (null until one is built)
+     */
+    org.traincontrol.automationui.AutonomySession autonomySession()
+    {
+        return this.autonomySession;
+    }
+
+    /**
+     * `settleAbsentPages`, for the window's collaborators in this package.
+     *
+     * @param layoutList the pages that are actually loaded
+     * @param renamedFromTo old name -&gt; new name, whose old names are not absences
+     * @param deliberatelyRemoved names being removed on purpose, which are not absences either
+     * @return the names to keep in the index, or null when the index must not be written
+     */
+    java.util.Collection<String> settleTheAbsentPages(java.util.List<String> layoutList,
+        java.util.Map<String, String> renamedFromTo, java.util.Collection<String> deliberatelyRemoved)
+    {
+        return settleAbsentPages(layoutList, renamedFromTo, deliberatelyRemoved);
+    }
 
     /**
      * Whether the picture's tools - the wrench and the crop mark - are offered at all: over a locomotive, and only with the power off
@@ -29741,7 +29171,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param path the folder, or "" for the Central Station's layout
      */
-    private static void layoutFolderIs(String path)
+    static void layoutFolderIs(String path)
     {
         prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
 
@@ -29757,7 +29187,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param selectIt whether the last folder is selected - Open Layout's case; Create New Layout wants a new one
      * @return the chooser, for folders only
      */
-    private JFileChooser layoutFolderChooser(boolean selectIt)
+    JFileChooser layoutFolderChooser(boolean selectIt)
     {
         String last = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
 
@@ -29808,7 +29238,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Checks if layout files are being loaded from the local filesystem
      * @return 
      */
-    private boolean isLocalLayout()
+    boolean isLocalLayout()
     {
         return !"".equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
     }
