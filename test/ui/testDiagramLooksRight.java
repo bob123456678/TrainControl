@@ -2743,8 +2743,12 @@ public class testDiagramLooksRight
         // one place that calls the factory and every pixel above is unchanged - the defect moves to
         // the call, which is exactly what happened to testDiagramExport.
         // The FACTORY is what matters, not what the variable is called - this named the local and
-        // would have failed a rename that broke nothing.  The definition and at least one call.
-        assertTrue(SourceOf.occurrences("newDiagramContainer(") >= 2,
+        // would have failed a rename that broke nothing.  Called by the grid's own constructor, which is the one
+        // place the application builds its diagram: a call anywhere else is not the container shown (FR-136).
+        String gridBuilt = SourceOf.withoutComments(SourceOf.body("public LayoutGrid(LayoutDiagram layout, int size,"
+            + " JPanel parent, Container master, boolean popup, TrainControlUI ui)"));
+
+        assertTrue(gridBuilt.contains("newDiagramContainer()"),
             "the diagram is no longer built from newDiagramContainer(), so the third painting pass "
             + "that draws trains over captions is not in the container the application shows - and "
             + "every pixel this test compares came from a container it made itself");
