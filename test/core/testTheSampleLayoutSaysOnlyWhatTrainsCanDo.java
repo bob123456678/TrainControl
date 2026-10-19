@@ -330,6 +330,81 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         assertTrue(clicked >= 5, "precondition: only " + clicked + " arrows were clicked on the sample");
     }
 
+    /**
+     * The One-Way tool sets the runs of the two squares clicked, as well as the track between them, and leaves nothing for
+     * the correction to bring into line (OB-361).  It used to set only the squares between: clicked from 10,3 to 5,1 on
+     * the sample with no directions, it left 10,3 both ways in a run one way - the shipped sample exactly - and 5,1's run,
+     * west of MainLine, both ways from end to end.
+     *
+     * MUTATION: leave the clicked squares' runs out again, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheOneWayToolSetsTheRunsOfTheSquaresClicked() throws Exception
+    {
+        File folder = unpackTheSample();
+
+        File setup = new File(folder, "config/autonomy/setup.json");
+
+        org.json.JSONObject written = new org.json.JSONObject(new String(Files.readAllBytes(setup.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        written.put("tileDirections", new org.json.JSONObject());
+
+        Files.write(setup.toPath(), written.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        AutonomySession fresh = openOn(folder);
+
+        fresh.takeSquaresBroughtToTheirArrows();
+
+        assertTrue(fresh.setOneWayRun(square(10, 3), square(5, 1)) > 0, "precondition: no track from 10,3 to 5,1");
+
+        for (TileKey clicked : new TileKey[] {square(10, 3), square(5, 1)})
+        {
+            TileKey leader = fresh.runLeaders().get(clicked);
+
+            assertNotNull(leader, "precondition: " + clicked + " is no plain track");
+
+            for (TileKey square : fresh.runs().get(leader).getTiles())
+            {
+                assertNotNull(fresh.getStore().getTileDirection(square, new RouteId(0, 0)), square + ", on the run of "
+                    + clicked + " clicked with the One-Way tool, was left both ways");
+            }
+        }
+
+        assertTrue(fresh.takeSquaresBroughtToTheirArrows().isEmpty(), "the One-Way tool left a run for the correction to"
+            + " bring into line");
+    }
+
+    /**
+     * A square of a run built over in the track diagram editor - a straight dropped on it, as the sample's 10,3 was -
+     * keeps its run's direction, and nothing is said: it is the edit, not a setup that disagreed (OB-361).  The editor's
+     * drop clears what was set on the square with `forgetTiles`, after the tile is placed and turned (OB-360).
+     *
+     * MUTATION: say it as a correction, or leave the square both ways, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testASquareBuiltOverKeepsItsRunsDirection() throws Exception
+    {
+        AutonomySession fresh = openOn(unpackTheSample());
+
+        fresh.takeSquaresBroughtToTheirArrows();
+
+        assertEquals(fresh.getStore().getTileDirection(square(10, 3), new RouteId(0, 0)), Direction.TOWARD_A,
+            "precondition: 10,3 is not one way as the sample opens");
+
+        fresh.forgetTiles(Collections.singletonList(square(10, 3)));
+
+        assertEquals(fresh.getStore().getTileDirection(square(10, 3), new RouteId(0, 0)), Direction.TOWARD_A, "10,3,"
+            + " built over, did not keep the direction of the run it is part of");
+
+        assertTrue(fresh.takeSquaresBroughtToTheirArrows().isEmpty(), "a square built over taking its run's direction"
+            + " was said as a correction");
+    }
+
     /** Each square's stored directions and the marks it draws on the track diagram and in the editor, in one line. */
     private static java.util.Map<TileKey, String> everyArrow(AutonomySession on,
         org.traincontrol.gui.AutonomyEditorPanel panel)

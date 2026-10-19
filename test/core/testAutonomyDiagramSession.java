@@ -2373,6 +2373,50 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A click on a run whose track simply stops sets every square of it, the last one too (OB-361): it was left out, as
+     * a boundary, and the run said two things.
+     *
+     * MUTATION: leave the square beside the end of the track out again, and this fails.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testARunToTheEndOfTheTrackIsSetToItsEnd() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 6, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+
+        for (int x = 2; x <= 4; x++) page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("OB-361 end of the track");
+        session.setStation(new TileKey("main", 1, 1), true);
+
+        TileKey leader = session.runLeaders().get(new TileKey("main", 3, 1));
+
+        assertNotNull(leader, "precondition: the straights are not a run");
+
+        assertEquals(session.runs().get(leader).getTiles().size(), 3, "precondition: the three straights are not one run");
+
+        session.takeSquaresBroughtToTheirArrows();
+
+        assertTrue(session.setRunDirection(leader, new RouteId(0, 0), Direction.TOWARD_A) > 0, "precondition: the run"
+            + " could not be made one way");
+
+        for (TileKey square : session.runs().get(leader).getTiles())
+        {
+            assertNotNull(session.getStore().getTileDirection(square, new RouteId(0, 0)), square + " of the run clicked one"
+                + " way was left both ways");
+        }
+
+        assertTrue(session.takeSquaresBroughtToTheirArrows().isEmpty(), "the click left its run for the correction to"
+            + " bring into line");
+    }
+
+    /**
      * A run whose squares point opposite ways - no train can pass it - is left as it is and is a warning, about the run,
      * naming its squares (OB-361); a click on its arrow sets one way for all of it, and the warning goes.  Closing it in
      * the correction would hide which way was meant behind a setting that looks chosen.

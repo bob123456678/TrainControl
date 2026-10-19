@@ -452,8 +452,13 @@ public class AutonomySession
     {
         Map<TileKey, String> out = sentencesFor(graph.getNormalizedToArms().keySet());
 
-        for (TileKey leader : graph.getNormalizedRuns().keySet())
+        for (Map.Entry<TileKey, Map<TileKey, Map<RouteId, Direction>>> brought : graph.getNormalizedRuns().entrySet())
         {
+            TileKey leader = brought.getKey();
+
+            // NOT A SQUARE JUST BUILT OVER taking its run's direction: that is the edit, said by nothing (OB-361)
+            if (joiningTheirRuns.containsAll(brought.getValue().keySet())) continue;
+
             Run run = graph.runs().get(leader);
 
             Direction now = graph.runsAs(leader);
@@ -4357,10 +4362,24 @@ public class AutonomySession
         // And the gesture that made even the rebuild expensive asks once now: `deleteSelection` used to
         // call this per picked square, so a rubber-band delete paid for a fresh TileGraph over every
         // page once per square.
-        touched();
+        // A SQUARE BUILT OVER KEEPS THE DIRECTION OF THE RUN IT JOINS (OB-361): the rebuild gives it the run's, as it gives
+        // any square of a run, and says nothing - it is the edit, not a setup that disagreed
+        joiningTheirRuns = builtOver == null ? Collections.<TileKey>emptySet() : new LinkedHashSet<>(builtOver);
+
+        try
+        {
+            touched();
+        }
+        finally
+        {
+            joiningTheirRuns = Collections.emptySet();
+        }
 
         return changed;
     }
+
+    /** The squares just built over, which take their runs' direction without its being said (OB-361). */
+    private Set<TileKey> joiningTheirRuns = Collections.emptySet();
 
     /**
      * Squares whose track has been replaced by other track.
@@ -12528,11 +12547,84 @@ public class AutonomySession
 
         if (path == null) return -1;
 
-        return applyOneWay(path);
+        Set<TileKey> changed = recordAlong(path, 1, path.size() - 2);
+
+        // AND THE RUNS OF THE TWO SQUARES CLICKED (OB-361): a square of plain track is part of a run, which is one
+        // decision, and left out it left its run saying two things - the sample's 10,3.  A sensor or a switch clicked is
+        // still left as it is: closing a road there would block traffic that never enters the run.
+        TileKey first = path.get(0);
+        TileKey last = path.get(path.size() - 1);
+
+        changed.addAll(recordTheRunOf(first, graph.sideTowardNeighbour(first, path.get(1))));
+
+        Route lastRoad = firstRoute(last);
+        Side cameBy = graph.sideTowardNeighbour(last, path.get(path.size() - 2));
+
+        if (lastRoad != null && cameBy != null) changed.addAll(recordTheRunOf(last, lastRoad.other(cameBy)));
+
+        return directionsTouched() ? changed.size() : 0;
     }
 
     /**
-     * Sets one direction along a path that is already known, tile by tile.
+     * Records one way along the run a square of plain track belongs to, the way a train leaving that square by this side
+     * goes, without re-deriving (OB-361).
+     *
+     * @param square the square
+     * @param toward the side trains leave it by
+     * @return the squares recorded, none where the square is no plain track
+     */
+    private Set<TileKey> recordTheRunOf(TileKey square, Side toward)
+    {
+        TileGraph.Run run = graph.runOf(square);
+
+        if (run == null || toward == null) return new LinkedHashSet<>();
+
+        List<TileKey> path = new ArrayList<>();
+
+        if (run.getStart() != null) path.add(run.getStart());
+
+        int first = path.size();
+
+        path.addAll(run.getTiles());
+
+        int last = path.size() - 1;
+
+        if (run.getEnd() != null) path.add(run.getEnd());
+
+        int at = first + run.getTiles().indexOf(square);
+
+        // ALONG THE PATH when the side leads to the square after it, or where nothing is before it to lead back to
+        boolean along = at + 1 < path.size() ? toward == graph.sideTowardNeighbour(square, path.get(at + 1))
+            : !(at > 0 && toward == graph.sideTowardNeighbour(square, path.get(at - 1)));
+
+        if (!along)
+        {
+            Collections.reverse(path);
+
+            int was = first;
+
+            first = path.size() - 1 - last;
+            last = path.size() - 1 - was;
+        }
+
+        return recordAlong(path, first, last);
+    }
+
+    /**
+     * Sets one direction along a path that is already known, tile by tile, the track between its two ends.
+     *
+     * @param path the squares in order, boundaries included
+     * @return how many tiles were changed
+     */
+    private int applyOneWay(List<TileKey> path)
+    {
+        int changed = recordAlong(path, 1, path.size() - 2).size();
+
+        return directionsTouched() ? changed : 0;
+    }
+
+    /**
+     * Records one direction along a path that is already known, tile by tile, without re-deriving.
      *
      * Separate from the two-argument form because a RUN knows its own tiles, and re-deriving them from
      * its two ends with a shortest-path search is wrong wherever two chains join the same pair: on a
@@ -12540,21 +12632,36 @@ public class AutonomySession
      * other chain and one-wayed track the user had not touched - while the run they clicked kept its
      * old direction and its cycle stuck.
      *
-     * @param path the squares in order, boundaries included
-     * @return how many tiles were changed
+     * The squares from `first` to `last` are recorded; the others are only neighbours, to say which way the path goes.  A
+     * square at the very end of the path - track that simply stops, OB-361 - takes its way from its one neighbour and its
+     * road.
+     *
+     * @param path the squares in order
+     * @param first the first square recorded
+     * @param last the last square recorded
+     * @return the squares recorded
      */
-    private int applyOneWay(List<TileKey> path)
+    private Set<TileKey> recordAlong(List<TileKey> path, int first, int last)
     {
-        int changed = 0;
+        Set<TileKey> changed = new LinkedHashSet<>();
 
-        // Only the track BETWEEN the two ends is restricted.  The ends themselves are the squares the
-        // user picked out; closing a route on them would also block traffic that never enters the run.
-        for (int i = 1; i < path.size() - 1; i++)
+        for (int i = Math.max(first, 0); i <= last && i < path.size(); i++)
         {
             TileKey tile = path.get(i);
 
-            Side cameFrom = graph.sideTowardNeighbour(tile, path.get(i - 1));
-            Side goingTo = graph.sideTowardNeighbour(tile, path.get(i + 1));
+            Side cameFrom = i > 0 ? graph.sideTowardNeighbour(tile, path.get(i - 1)) : null;
+            Side goingTo = i + 1 < path.size() ? graph.sideTowardNeighbour(tile, path.get(i + 1)) : null;
+
+            // THE PATH'S OWN END, on a square of one road with two sides: the road's other side.  Not a square beside a
+            // link's jump, which is no end and was never recorded.
+            Route only = graph.getRoutes(tile).size() == 1 ? firstRoute(tile) : null;
+
+            if (only != null && only.getA() == only.getB()) only = null;
+
+            boolean firstOfAll = i == 0, lastOfAll = i == path.size() - 1;
+
+            if (firstOfAll && cameFrom == null && goingTo != null && only != null) cameFrom = only.other(goingTo);
+            if (lastOfAll && goingTo == null && cameFrom != null && only != null) goingTo = only.other(cameFrom);
 
             if (cameFrom == null || goingTo == null) continue;
 
@@ -12572,10 +12679,10 @@ public class AutonomySession
             // ON A SWITCH, BY ITS ARMS (OB-351): the arm the run may not leave by is shut for every road through it
             recordSquare(tile, ways);
 
-            changed += ways.size();
+            if (!ways.isEmpty()) changed.add(tile);
         }
 
-        return directionsTouched() ? changed : 0;
+        return changed;
     }
 
     public void setTileLength(TileKey tile, int length)
@@ -12842,23 +12949,38 @@ public class AutonomySession
         Landing landing = graph.landing(leader, toward);
 
         // Which way along the run the user pointed.  The run's OWN tiles are walked, not a path
-        // re-derived from its two ends - see applyOneWay.  The boundaries are included so the first and
-        // last tiles of the run get a direction like the rest; a null boundary (track that simply stops)
-        // is left out rather than making the whole thing impossible.
+        // re-derived from its two ends - see applyOneWay.  The boundaries are included to say which way
+        // the first and last tiles of the run go; a null boundary (track that simply stops) is left out,
+        // and the tile beside it is still recorded, from its road (OB-361: left out, it left the run
+        // saying two things).
         List<TileKey> path = new ArrayList<>();
 
         if (run.getStart() != null) path.add(run.getStart());
 
+        int first = path.size();
+
         path.addAll(run.getTiles());
+
+        int last = path.size() - 1;
 
         if (run.getEnd() != null) path.add(run.getEnd());
 
         boolean towardEnd = landing == null
             || !run.getTiles().isEmpty() && landing.getTile().equals(nextAfter(run, leader));
 
-        if (!towardEnd) Collections.reverse(path);
+        if (!towardEnd)
+        {
+            Collections.reverse(path);
 
-        return applyOneWay(path);
+            int was = first;
+
+            first = path.size() - 1 - last;
+            last = path.size() - 1 - was;
+        }
+
+        int changed = recordAlong(path, first, last).size();
+
+        return directionsTouched() ? changed : 0;
     }
 
     /**
