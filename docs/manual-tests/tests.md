@@ -28,8 +28,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-771](#mt-771) | 2026-10-18 | Route editor: the conditions warn they are only checked with Automatically Fire on | fixed unvalidated | Adam, 2026-10-18 (route conditions) |
+| [MT-772](#mt-772) | 2026-10-18 | FR-130: the autonomy locomotive icon is ten per cent clear | fixed unvalidated | FR-130 |
 
-Everything else - 770 of 771 - needs nothing from you unless the area changes again:
+Everything else - 770 of 772 - needs nothing from you unless the area changes again:
 615 **fixed validated** and 155 **superseded**.
 
 ---
@@ -36031,5 +36032,31 @@ Changed before it was run, on Adam's word ("Get rid of the triangle icon- it doe
 **Adam, 2026-10-18 (triage).** Works.
 
 *Run against commit b6f3dfcb, in English - build\classes, compiled 18 Oct 21:11 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-772"></a>
+### MT-772 - 2026-10-18 - FR-130: the autonomy locomotive icon is ten per cent clear
+
+**Disposition:** fixed unvalidated
+**From:** FR-130
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Load autonomy with a train standing on a station whose caption or a text label lies under the train's icon.  Look at
+   the Track Diagram at Small and Large, a pop-up, and the autonomy editor's diagram.
+2. Look at a train on a curve.
+
+**Expected**
+
+- Step 1: the black engine is slightly see-through, so the label or caption under it can be faintly made out; the
+  icon is otherwise drawn as before, with its white edge, everywhere it appears.
+- Step 2: the icon on a curve is turned as before and looks as crisp.
+
+*What this is:* FR-130 (`ec7925d4`): `TileOverlay.paintTrain` draws the icon and its halo into one picture and that picture at 90%
+opacity; no glow was needed, as every label that can lie under it already has a light surround.  Claim
+`ui.testDiagramLooksRight.testTheLocomotiveIsTenPerCentClear`.  FR-136's yardstick, timed before the refactor.
 
 ---
