@@ -16,6 +16,7 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinRoute;
+import support.SourceOf;
 
 /**
  * A route will not switch an accessory that autonomy has locked.
@@ -126,16 +127,18 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     @Test
     public void testBothDoorsCarveOutTheEmergencyStop() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/marklin/MarklinRoute.java")),
-            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+        String screen = SourceOf.declaration("public String[] conflictingAccessoryAndReason()")
+            .replaceAll("\\s+", " ");
 
-        assertTrue(source.contains("if (this.hasEmergencyStop()) return null;"),
+        String midway = SourceOf.declaration("private void execRoute(boolean auto, int recursionLimit, boolean overrideConflicts)")
+            .replaceAll("\\s+", " ");
+
+        assertTrue(screen.contains("if (this.hasEmergencyStop()) return null;"),
             "the PRE-ROUTE screen no longer excuses a route that cuts the power, so such a route is "
             + "now screened before it starts - which is a change to Adam's 2026-09-01 ruling made "
             + "without saying so");
 
-        assertTrue(source.contains("final boolean askable = !auto && !this.hasEmergencyStop()"),
+        assertTrue(midway.contains("final boolean askable = !auto && !this.hasEmergencyStop()"),
             "the MIDWAY question no longer excuses a route that cuts the power.  The pre-route screen "
             + "still does, so such a route is waved past it and asked here instead - and a Cancel "
             + "then discards a power cut the dialog never mentioned (DIR-A3)");
@@ -205,9 +208,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     @Test
     public void testTheRouteAsksThatRule() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/marklin/MarklinRoute.java")),
-            java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
+        String source = SourceOf.declaration("private void execRoute(boolean auto, int recursionLimit, boolean overrideConflicts)")
+            .replaceAll("\\s+", " ");
 
         assertTrue(source.contains("final ConflictResponse response = respondToConflict(askable,"),
             "execRoute no longer decides through respondToConflict, so the ruling is tested here and "
@@ -1809,9 +1811,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     @Test
     public void testTheDeleteDialogNamesTheRoutesThatWillLoseCommands() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("public void deleteLoc(String value, MouseEvent evt)");
 
         assertTrue(source.contains("r.commandsDrive(value)"),
             "the delete flow no longer counts the routes that drive this locomotive, so the "
