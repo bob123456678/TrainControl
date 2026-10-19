@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
@@ -320,64 +321,16 @@ public class testEveryCitationResolves
             new File("docs/manual-tests/findings.tsv").toPath()),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        java.util.regex.Pattern sublettered =
-            java.util.regex.Pattern.compile("\\b([A-Z][A-Z0-9]{1,7}-[A-D]\\d{1,3}[a-z])\\b");
+        // The reading is in `subLetteredIn`, so a made-up mirror and made-up documents can drive the same code
+        // (`testTheSubLetterCheckSeesADocumentThatDoesNotWriteIt`) - with every review document deleted, this
+        // arm has nothing to read.
+        SubLetters read = subLetteredIn(mirror, new File("docs"));
 
-        List<String> unwritten = new ArrayList<>();
+        List<String> unwritten = read.unwritten;
 
-        int seen = 0;
+        int seen = read.seen;
 
-        // HOW MANY ROWS COULD ACTUALLY BE CHECKED (FV3).
-        //
-        // Without this the guard was vacuous as shipped: both surviving sub-lettered rows name documents
-        // that no longer exist, so every row was skipped, nothing was compared, and it reported success.
-        // A guard that examines nothing is the thing this class exists to catch.
-        int resolvable = 0;
-
-        for (String row : mirror.split("\n"))
-        {
-            String[] cells = row.split("\t");
-
-            if (cells.length < 2) continue;
-
-            // COUNTED OVER EVERY ROW, not only the sub-lettered ones (FV3).  The floor asks whether the
-            // resolution works at all, and sub-lettered refs are legitimately rare - scoping the count
-            // inside the filter below made the floor as vacuous as the check it was added to guard.
-            // COUNTED AND REPORTED, not asserted on.  It is zero today - no review document is left
-            // in the tree - and the failure below names it, because "2 rows, 0 of them checkable"
-            // and "2 rows, all checked and clean" are two different states and the reader has to be
-            // told which one held.
-            if (documentExists(cells[1].trim())) resolvable++;
-
-            java.util.regex.Matcher m = sublettered.matcher(cells[0].trim());
-
-            if (!m.matches()) continue;
-
-            seen++;
-
-            // The document is the second column by the mirror's own layout.  A sub-lettered ref is only
-            // legitimate if the document writes it out, which is what the fifteen did not.
-            File document = null;
-
-            for (File candidate : filesUnder(new File("docs"), ".md"))
-            {
-                if (candidate.getName().equals(cells[1].trim()))
-                {
-                    document = candidate;
-
-                    break;
-                }
-            }
-
-            // A document that has been deleted cannot be checked, and most of them have been - the
-            // folder was retired on 2026-09-08.  Those rows are the catalogue's whole purpose.
-            if (document == null) continue;
-
-            String body = new String(java.nio.file.Files.readAllBytes(document.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8);
-
-            if (!body.contains(cells[0].trim())) unwritten.add(cells[0].trim() + " in " + cells[1].trim());
-        }
+        int resolvable = read.resolvable;
 
         // THE FLOOR, AND WHAT REPLACED IT.
         //
@@ -407,6 +360,140 @@ public class testEveryCitationResolves
             + "rows cannot be acted on by anybody, while one of them outranked a real disposition "
             + "(NSV-B1).  Re-run `python docs/tools/catalog-findings.py --add <folder>`, which is "
             + "authoritative for the documents in it.  Found:\n  " + String.join("\n  ", unwritten));
+    }
+
+    /** What reading the mirror's sub-lettered rows came to: how many there were, how many could be compared, and the bad ones. */
+    private static final class SubLetters
+    {
+        int seen;
+        int resolvable;
+        final List<String> unwritten = new ArrayList<>();
+    }
+
+    /**
+     * Reads the mirror's sub-lettered rows against the documents under a folder.
+     *
+     * @param mirror the text of `findings.tsv`
+     * @param docs the folder the documents are looked for under
+     * @return the counts and the rows whose document never writes their ref
+     * @throws Exception on a failure to read a document
+     */
+    private static SubLetters subLetteredIn(String mirror, File docs) throws Exception
+    {
+        SubLetters out = new SubLetters();
+
+        java.util.regex.Pattern sublettered =
+            java.util.regex.Pattern.compile("\\b([A-Z][A-Z0-9]{1,7}-[A-D]\\d{1,3}[a-z])\\b");
+
+        List<String> unwritten = out.unwritten;
+
+        int seen = 0;
+
+        // HOW MANY ROWS COULD ACTUALLY BE CHECKED (FV3).
+        //
+        // Without this the guard was vacuous as shipped: both surviving sub-lettered rows name documents
+        // that no longer exist, so every row was skipped, nothing was compared, and it reported success.
+        // A guard that examines nothing is the thing this class exists to catch.
+        int resolvable = 0;
+
+        for (String row : mirror.split("\n"))
+        {
+            String[] cells = row.split("\t");
+
+            if (cells.length < 2) continue;
+
+            // COUNTED OVER EVERY ROW, not only the sub-lettered ones (FV3).  The floor asks whether the
+            // resolution works at all, and sub-lettered refs are legitimately rare - scoping the count
+            // inside the filter below made the floor as vacuous as the check it was added to guard.
+            // COUNTED AND REPORTED, not asserted on.  It is zero today - no review document is left
+            // in the tree - and the failure below names it, because "2 rows, 0 of them checkable"
+            // and "2 rows, all checked and clean" are two different states and the reader has to be
+            // told which one held.
+            if (documentExists(cells[1].trim(), docs)) resolvable++;
+
+            java.util.regex.Matcher m = sublettered.matcher(cells[0].trim());
+
+            if (!m.matches()) continue;
+
+            seen++;
+
+            // The document is the second column by the mirror's own layout.  A sub-lettered ref is only
+            // legitimate if the document writes it out, which is what the fifteen did not.
+            File document = null;
+
+            for (File candidate : filesUnder(docs, ".md"))
+            {
+                if (candidate.getName().equals(cells[1].trim()))
+                {
+                    document = candidate;
+
+                    break;
+                }
+            }
+
+            // A document that has been deleted cannot be checked, and most of them have been - the
+            // folder was retired on 2026-09-08.  Those rows are the catalogue's whole purpose.
+            if (document == null) continue;
+
+            String body = new String(java.nio.file.Files.readAllBytes(document.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            if (!body.contains(cells[0].trim())) unwritten.add(cells[0].trim() + " in " + cells[1].trim());
+        }
+
+        out.seen = seen;
+        out.resolvable = resolvable;
+
+        return out;
+    }
+
+    /**
+     * The sub-letter check can still see a document that does not write a ref, driven with made-up documents.
+     *
+     * The real arm above compares nothing while every review document is deleted (`resolvable` is zero), so its
+     * `unwritten` assertion cannot fail and a break in the comparison would never show.  This runs the same
+     * `subLetteredIn` over a folder of documents made here: one that writes its ref, one that does not, one row
+     * whose document is gone, and a row with no sub-letter.
+     *
+     * MUTATION: break the `body.contains` comparison in `subLetteredIn`, and this fails while the arm above stays green.
+     *
+     * @throws Exception on a failure to make or read the documents
+     */
+    @Test
+    public void testTheSubLetterCheckSeesADocumentThatDoesNotWriteIt() throws Exception
+    {
+        File docs = java.nio.file.Files.createTempDirectory("tc-citations").toFile();
+
+        try
+        {
+            java.nio.file.Files.write(new File(docs, "ZZ-writes.md").toPath(),
+                "# ZZ\n\nZZ-A1a is written out here.\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            java.nio.file.Files.write(new File(docs, "ZZ-silent.md").toPath(),
+                "# ZZ\n\nA Method table whose first column is B2b, never the full ref.\n"
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            String mirror = "ZZ-A1a\tZZ-writes.md\n"
+                + "ZZ-B2b\tZZ-silent.md\n"
+                + "ZZ-C3c\tZZ-gone.md\n"
+                + "ZZ-A5\tZZ-silent.md\n";
+
+            SubLetters read = subLetteredIn(mirror, docs);
+
+            assertEquals(read.seen, 3, "three of the four rows carry a sub-letter");
+
+            assertEquals(read.resolvable, 3, "three of the four rows name a document that exists");
+
+            assertEquals(read.unwritten, java.util.Arrays.asList("ZZ-B2b in ZZ-silent.md"),
+                "the check did not name the one sub-lettered row whose document never writes its ref - and it let the rows "
+                + "whose document does write it, or is gone, through");
+        }
+        finally
+        {
+            for (File each : docs.listFiles()) each.delete();
+
+            docs.delete();
+        }
     }
 
     /**
@@ -480,13 +567,14 @@ public class testEveryCitationResolves
      * silently matching nothing.
      *
      * @param named the document cell from the mirror
-     * @return true when a file of that name exists under docs/
+     * @param docs the folder to look under
+     * @return true when a file of that name exists under it
      */
-    private static boolean documentExists(String named)
+    private static boolean documentExists(String named, File docs)
     {
         if (named == null || named.isEmpty()) return false;
 
-        for (File candidate : filesUnder(new File("docs"), ".md"))
+        for (File candidate : filesUnder(docs, ".md"))
         {
             if (candidate.getName().equals(named)) return true;
         }
