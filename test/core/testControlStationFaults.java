@@ -10,6 +10,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CS2Message;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -117,11 +118,15 @@ public class testControlStationFaults
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
         MarklinControlStation.DEBUG_LOG_NETWORK = true;
 
+        // The retry window is the railway's own, asked: a wait of a tenth of a second past it, and an outage reading at
+        // least as long as the window.
+        long retryMs = millisOf("PING_RETRY_NS");
+
         model.sendPing(true);
 
-        Thread.sleep(2100);
+        Thread.sleep(retryMs + 100);
 
-        assertTrue(model.getTimeSinceLastPing() >= 2000,
+        assertTrue(model.getTimeSinceLastPing() >= retryMs,
             "with no answer, the time since the last ping must keep growing - that reading is what "
             + "the lost-connection warning is made of");
 
@@ -132,14 +137,14 @@ public class testControlStationFaults
         // which is exactly the distinction the warning exists to draw.
         model.sendPing(false);
 
-        assertTrue(model.getTimeSinceLastPing() >= 2000,
+        assertTrue(model.getTimeSinceLastPing() >= retryMs,
             "the retry reset the outage clock, so the connection reads as healthy for five seconds "
             + "out of every five while the station says nothing at all");
 
         // Past the retry window again.  The retry above reset the in-flight clock, which is what it
         // is supposed to do - so asking for another one immediately would be refused as a ping
         // already in flight, and the recovery below would have nothing to answer.
-        Thread.sleep(2100);
+        Thread.sleep(retryMs + 100);
 
         // Now the station answers again, as it would when the network came back
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
@@ -407,7 +412,7 @@ public class testControlStationFaults
             + "them is news");
 
         // Past the window a double-send could possibly span
-        Thread.sleep(400);
+        Thread.sleep(millisOf("DUPLICATE_WINDOW_NS") + 150);
 
         model.receiveMessage(accessoryPacket());
 
@@ -1017,17 +1022,20 @@ public class testControlStationFaults
     @Test
     public void testTheFirstSyncOfAStartGoesThroughTheQuestion() throws Exception
     {
-        String code = codeOf("src/org/traincontrol/marklin/MarklinControlStation.java");
+        // The whole program, flat: no code anywhere syncs once and takes the result as it comes, and every station built
+        // is told whether it is a simulation
+        String code = codeOf(SourceOf.allCode());
 
-        int from = code.indexOf("public MarklinControlStation(NetworkProxy network, View view, boolean autoPowerOn,"
-            + " boolean debug, boolean simulate)");
-        int to = code.indexOf("this.logf(\"log.csDataImported\"", from);
+        String restore = codeOf(SourceOf.declaration("public MarklinControlStation(NetworkProxy network, View view,"
+            + " boolean autoPowerOn, boolean debug, boolean simulate)"));
 
-        assertTrue(from >= 0 && to > from, "precondition: the constructor's restore path was not found in the source");
+        int to = restore.indexOf("this.logf(\"log.csDataImported\"");
 
-        String restore = code.substring(from, to);
+        assertTrue(to > 0, "precondition: the constructor's restore path was not found in the source");
 
-        assertFalse(restore.contains("if (syncWithCS2()"), "the restore path syncs once and takes the result as it comes,"
+        restore = restore.substring(0, to);
+
+        assertFalse(code.contains("if (syncWithCS2()"), "the restore path syncs once and takes the result as it comes,"
             + " so a failed first sync is never asked about");
         assertTrue(restore.contains("syncUntilConnected(this::syncWithCS2, this::getLastSyncError, asker,"),
             "the restore path does not sync through the question, with the reason of the sync that just failed");
@@ -1160,7 +1168,7 @@ public class testControlStationFaults
     @Test
     public void testExitUnconnectedForgetsTheRealAddressAndEndsWithCodeOne() throws Exception
     {
-        String code = codeOf("src/org/traincontrol/marklin/MarklinControlStation.java");
+        String code = codeOf(SourceOf.allCode());
 
         assertTrue(code.contains("asker, MarklinControlStation::exitUnconnected)"),
             "an Exit answer is not wired to the method that forgets the saved address");
@@ -1344,14 +1352,24 @@ public class testControlStationFaults
     }
 
     /**
-     * A source file as code: the comments taken out and every run of white space made one space.
+     * Source as code: the comments taken out and every run of white space made one space.
      */
-    private static String codeOf(String path) throws Exception
+    private static String codeOf(String text)
     {
-        String text = new String(java.nio.file.Files.readAllBytes(new java.io.File(path).toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
+        return SourceOf.withoutComments(text).replaceAll("\\s+", " ");
+    }
 
-        return text.replaceAll("(?s)/\\*.*?\\*/|//[^\\n]*", " ").replaceAll("\\s+", " ");
+    /**
+     * A private nanosecond window of the station, as milliseconds, read by reflection so a claim waits for the
+     * station's own rule instead of a number of its own.
+     */
+    private static long millisOf(String nanosConstant) throws Exception
+    {
+        java.lang.reflect.Field window = MarklinControlStation.class.getDeclaredField(nanosConstant);
+
+        window.setAccessible(true);
+
+        return window.getLong(null) / 1000000L;
     }
 
     /**
@@ -1450,9 +1468,8 @@ public class testControlStationFaults
         for (long t = first; t <= now + 60000; t += 1000)
         {
             // Named exactly as the saves name the copy
-            java.io.File folder = new java.io.File(org.traincontrol.util.Util.getBackupPath("unreadable"
-                + org.traincontrol.util.Conversion.convertSecondsToDatetime(t).replace(':', '-').replace(' ', '_')
-                + fileName));
+            java.io.File folder = new java.io.File(org.traincontrol.util.Util.getBackupPath(
+                org.traincontrol.util.Util.unreadableCopyName(t, fileName)));
 
             if (folder.exists()) continue;
 

@@ -2219,10 +2219,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                 if (existing.exists())
                 {
-                    File kept = new File(Util.getBackupPath(Util.UNREADABLE_BACKUP_PREFIX
-                        + Conversion.convertSecondsToDatetime(System.currentTimeMillis())
-                            .replace(':', '-').replace(' ', '_')
-                        + MarklinControlStation.DATA_FILE_NAME));
+                    File kept = new File(Util.getBackupPath(Util.unreadableCopyName(System.currentTimeMillis(),
+                        MarklinControlStation.DATA_FILE_NAME)));
 
                     java.nio.file.Files.copy(existing.toPath(), kept.toPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);

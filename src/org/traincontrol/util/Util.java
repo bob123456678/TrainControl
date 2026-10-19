@@ -199,6 +199,19 @@ public class Util
     }
 
     /**
+     * The name an unreadable data file is kept under, beside the backups, before a save writes over it: {@link #UNREADABLE_BACKUP_PREFIX},
+     * the time to the second (colons and the space made safe for a file name), then the file's own name.
+     * @param timeMillis the time the copy is made
+     * @param fileName the data file's own name
+     * @return the name to hand {@link #getBackupPath}
+     */
+    public static String unreadableCopyName(long timeMillis, String fileName)
+    {
+        return UNREADABLE_BACKUP_PREFIX + Conversion.convertSecondsToDatetime(timeMillis).replace(':', '-').replace(' ', '_')
+            + fileName;
+    }
+
+    /**
      * Returns the file a cropped locomotive icon should be written to, creating
      * {@link #LOC_ICON_FOLDER} if it is not there yet.
      *
