@@ -139,7 +139,7 @@ public class testEditorSurfaceRules
         final String[][] doors =
         {
             {"private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)", "the Add Locomotive dialog"},
-            {"public void changeLocAddress(Locomotive l, MouseEvent evt)", "the rename dialog"},
+            {"    void changeLocAddress(Locomotive l, MouseEvent evt)", "the rename dialog"},
             {"private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt)",
                 "the Central Station name"},
             {"private List<String> problemsWith(CommandRow row)", "the route editor"},

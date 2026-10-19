@@ -495,7 +495,7 @@ public class testMappingPagesAndLocomotiveDoors
      * Control+R changes the shown train's name and address: the database answers to the new name, the train has the
      * new address, and the key still holds it.
      *
-     * MUTATION: drop `this.model.renameLoc(...)` from `changeLocAddress`, and this fails.
+     * MUTATION: drop `this.ui.getModel().renameLoc(...)` from `LocomotiveActions.changeLocAddress`, and this fails.
      *
      * @throws Exception from the window
      */

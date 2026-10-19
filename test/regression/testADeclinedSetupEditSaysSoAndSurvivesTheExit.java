@@ -1561,7 +1561,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     @Test
     public void testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn() throws Exception
     {
-        final String body = SourceOf.declaration("public void changeLocAddress(Locomotive l, MouseEvent evt)")
+        final String body = SourceOf.declaration("    void changeLocAddress(Locomotive l, MouseEvent evt)")
             .replaceAll("//[^\n]*", "");
 
         final int refresh = body.indexOf("refreshLocSelectorList()");

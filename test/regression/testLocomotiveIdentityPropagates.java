@@ -747,18 +747,18 @@ public class testLocomotiveIdentityPropagates
     public void testDeletingALocomotiveRewritesTheStationLabelsToo() throws Exception
     {
         // Asked of the whole program: one delete door, wherever it is.
-        assertEquals(SourceOf.occurrences("this.model.deleteLoc("), 1,
+        assertEquals(SourceOf.occurrences("this.model.deleteLoc(") + SourceOf.occurrences("getModel().deleteLoc("), 1,
             "the delete door is not found exactly once - there is more than one now, or none.  This rule reads the"
             + " block after the first and would report the pair as covered after fixing one of them, which is this"
             + " codebase's most frequent defect and not one a guard against it should commit");
 
         // The block that follows, bounded by the door's own method so the rule cannot read the rest of the file
         // and pass whatever the code does - which is how the rename rule above was once green over nothing.
-        String door = withoutComments(SourceOf.declaration("public void deleteLoc(String value, MouseEvent evt)"));
+        String door = withoutComments(SourceOf.declaration("    void deleteLoc(String value, MouseEvent evt)"));
 
-        int at = door.indexOf("this.model.deleteLoc(");
+        int at = door.indexOf("this.ui.getModel().deleteLoc(");
 
-        assertTrue(at >= 0, "the delete door no longer calls this.model.deleteLoc( itself");
+        assertTrue(at >= 0, "the delete door no longer calls the model's deleteLoc( itself");
 
         String block = door.substring(at);
 
@@ -800,7 +800,7 @@ public class testLocomotiveIdentityPropagates
         // fixing one of them. That is this codebase's most frequent defect, and a guard against it
         // should not be able to commit it.
         // Asked of the whole program: two calls of the model's rename, and the doors that make them are named here.
-        int found = SourceOf.occurrences("model.renameLoc(");
+        int found = SourceOf.occurrences("model.renameLoc(") + SourceOf.occurrences("getModel().renameLoc(");
 
         assertEquals(found, 2,
             "expected two renameLoc call sites in the window - the edit dialog and the Central "
@@ -809,12 +809,12 @@ public class testLocomotiveIdentityPropagates
 
         List<String> doors = new ArrayList<>();
 
-        doors.add(withoutComments(SourceOf.declaration("public void changeLocAddress(Locomotive l, MouseEvent evt)")));
+        doors.add(withoutComments(SourceOf.declaration("    void changeLocAddress(Locomotive l, MouseEvent evt)")));
         doors.add(withoutComments(SourceOf.declaration("private void checkForRenameMenuItemActionPerformed(")));
 
         int counted = 0;
 
-        for (String door : doors) counted += door.split("model\\.renameLoc\\(", -1).length - 1;
+        for (String door : doors) counted += door.split("(?:model|getModel\\(\\))\\.renameLoc\\(", -1).length - 1;
 
         assertEquals(counted, 2, "the two doors named here no longer hold both of the program's renameLoc calls");
 
@@ -833,7 +833,7 @@ public class testLocomotiveIdentityPropagates
 
         for (String body : doors)
         {
-            int at = body.indexOf("model.renameLoc(");
+            int at = Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc("));
 
             // The refresh block that follows, bounded by the catch that closes the method.
             //

@@ -111,6 +111,8 @@ public class testNoSelfRecursiveWrappers
             "LayoutEditor", "editor." },
         { "autonomySettingsTab", "src/org/traincontrol/gui/AutonomySettingsTab.java", "AutonomySettingsTab", WINDOW,
             "TrainControlUI", "ui." },
+        { "locomotiveActions", "src/org/traincontrol/gui/LocomotiveActions.java", "LocomotiveActions", WINDOW,
+            "TrainControlUI", "ui." },
     };
 
     /**

@@ -286,7 +286,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD: the put-back's own step (RSA17-A1), over the layout the rebuild has just built and"
             + " nothing else holds yet, as putTheTrainsBack");
 
-        ALLOWED.put("TrainControlUI.java#deleteLoc",
+        ALLOWED.put("LocomotiveActions.java#deleteLoc",
             "ON THE EVENT THREAD: a locomotive leaving the database, from a confirmed dialog");
 
         ALLOWED.put("TrainControlUI.java#saveState",

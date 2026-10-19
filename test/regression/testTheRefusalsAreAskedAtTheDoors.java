@@ -295,10 +295,10 @@ public class testTheRefusalsAreAskedAtTheDoors
         // The door, what it is for, and what it writes
         String[][] doors =
         {
-            {"public void changeLocAddress(Locomotive l, MouseEvent evt)", "renaming or re-addressing a locomotive",
-                "this.model.changeLocAddress(", "this.model.renameLoc("},
-            {"public void deleteLoc(String value, MouseEvent evt)", "deleting a locomotive",
-                "this.activeLoc = null;", "this.cutLocomotive = null;", "this.model.deleteLoc("},
+            {"    void changeLocAddress(Locomotive l, MouseEvent evt)", "renaming or re-addressing a locomotive",
+                "this.ui.getModel().changeLocAddress(", "this.ui.getModel().renameLoc("},
+            {"    void deleteLoc(String value, MouseEvent evt)", "deleting a locomotive",
+                "this.ui.activeLoc = null;", "this.ui.cutLocomotive = null;", "this.ui.getModel().deleteLoc("},
         };
 
         List<String> wrong = new ArrayList<>();
