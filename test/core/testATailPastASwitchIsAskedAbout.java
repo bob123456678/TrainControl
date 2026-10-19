@@ -172,6 +172,8 @@ public class testATailPastASwitchIsAskedAbout
 
     /**
      * At four units RampDown is reached and BottomCrossover is not: both are offered, so the list no longer has one entry.
+     *
+     * MUTATION: offer no rail the tail lies on short of its sensor (MT-477), and this fails.
      */
     @Test
     public void testAtFourUnitsBothRailsAreOffered()
