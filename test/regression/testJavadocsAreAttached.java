@@ -64,7 +64,9 @@ public class testJavadocsAreAttached
     // 66 -> 57 on 2026-10-19: FR-136 Phase 2, the comment trim of AutonomySession.java.  Its nine stacked javadocs moved onto the
     // members they describe (importLegacy, barredArrivals, reversibleTiles, pointNamesFor, pointNameForTile, signalsThatAreGone,
     // isTurnAround, mandatoryTurnTiles, setPointProperty).
-    private static final int ALLOWED = 57;
+    // 57 -> 46 on 2026-10-19: FR-136 Phase 2, the comment trim of TrainControlUI.java.  Eleven stacked or stale javadocs merged into
+    // the member they described or deleted (getAutonomySession, updateStationLabels and setAutoTabEnabled re-attached).
+    private static final int ALLOWED = 46;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -107,7 +109,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "RouteEditorFrame.java (3)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "TrainControlUI.java (23)",
+            + "gui" + File.separator + "TrainControlUI.java (12)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "marklin" + File.separator + "MarklinControlStation.java (1)",
     };
