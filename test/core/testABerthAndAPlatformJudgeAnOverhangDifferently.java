@@ -82,6 +82,15 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     private static Edge toThePlatform;
     private static Edge toTheBerth;
 
+    /** Why the set-up found no fixture for these claims, or null; asked by each claim, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -108,7 +117,11 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         layout = model.getAutoLayout();
 
-        if (layout == null) throw new AssertionError("the snapshot did not build");
+        if (layout == null)
+        {
+            unbuilt = "the snapshot did not build";
+            return;
+        }
 
         // NAMED, not searched for.  Several runs reach TunnelLongPark and BottomMainA, and only one of
         // each is the piece of railway this class is about - picking "the longest" once got an
@@ -116,9 +129,15 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         toThePlatform = approachFrom("TunnelPre", "Tunnel (southbound)");
         toTheBerth = approachFrom("BottomMainA (westbound)", "TunnelLongPark");
 
+        if (unbuilt != null) return;
+
         List<String> names = model.getLocList();
 
-        if (names.isEmpty()) throw new AssertionError("this fixture has no locomotives");
+        if (names.isEmpty())
+        {
+            unbuilt = "this fixture has no locomotives";
+            return;
+        }
 
         train = model.getLocByName(names.get(0));
 
@@ -151,6 +170,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testTheFixtureIsTheShapeTheRuleIsAbout() throws Exception
     {
+        assertBuilt();
+
         assertTrue(toThePlatform.getEnd().isDestination() && toThePlatform.getEnd().isAutoDestination(),
             toThePlatform.getEnd().getName() + " is not a station autonomy may choose, so the"
             + " relaxation this class is about does not apply to it");
@@ -213,6 +234,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAPlatformTakesATrainAsLongAsItsWholeApproach() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toThePlatform.getLength());
 
         assertNull(Layout.whyTooLongForThisRoute(justTheApproach(toThePlatform), train),
@@ -235,6 +258,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAPlatformStillRefusesATrainLongerThanItsApproach() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toThePlatform.getLength() + 1);
 
         assertNotNull(Layout.whyTooLongForThisRoute(justTheApproach(toThePlatform), train),
@@ -251,6 +276,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAParkingBerthStillRefusesAnOverhang() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toTheBerth.getRoomAtTheEnd() + 1);
 
         assertNotNull(Layout.whyTooLongForThisRoute(justTheApproach(toTheBerth), train),
@@ -269,6 +296,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAParkingBerthStillTakesATrainThatFits() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(toTheBerth.getRoomAtTheEnd());
 
         assertNull(Layout.whyTooLongForThisRoute(justTheApproach(toTheBerth), train),
@@ -291,6 +320,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testTheBerthRuleNamesTheRoadItWouldFoul() throws Exception
     {
+        assertBuilt();
+
         int room = toTheBerth.getRoomAtTheEnd();
 
         train.setTrainLength(room + 1);
@@ -357,6 +388,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAMeasuredSquareBehindAnUnmeasuredPieceSaysWhyItRefuses() throws Exception
     {
+        assertBuilt();
+
         Edge approach = toTheBerth;
 
         List<Integer> was = new ArrayList<>(approach.getPlaceLengths());
@@ -415,6 +448,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAnUnmeasuredApproachRefusesNothing() throws Exception
     {
+        assertBuilt();
+
         Edge approach = toTheBerth;
 
         List<Integer> spans = approach.getPlaceLengths();
@@ -515,16 +550,15 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * The one approach this class's figures are about, by name.
+     * The one approach this class's figures are about, by name; one the railway does not run is what `unbuilt` says.
      */
     private static Edge approachFrom(String from, String to)
     {
         Edge found = layout.getEdge(from, to);
 
-        if (found == null)
+        if (found == null && unbuilt == null)
         {
-            throw new AssertionError("the snapshot no longer runs " + from + " -> " + to
-                + ", so it is about a railway that has moved");
+            unbuilt = "the snapshot no longer runs " + from + " -> " + to + ", so it is about a railway that has moved";
         }
 
         return found;
