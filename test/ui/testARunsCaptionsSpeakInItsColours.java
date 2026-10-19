@@ -59,9 +59,13 @@ public class testARunsCaptionsSpeakInItsColours
     private static final Color LABEL_BLUE =
         support.ProgramConstants.colour(org.traincontrol.gui.AutonomyViewerPanel.class, "HEADING_COLOUR");
 
+    /** The train the run is staged with, from TopMainR2Inter to TopMainR1. */
+    private static final String MOVER = "2-8-4 3505 SP";
+
     /**
-     * Staged on the frozen railway: the placed train with the longest offered route, past its first sensor, then held
-     * there - simulation switched off once the run is waiting for that sensor, so the next never comes.
+     * Staged on the frozen railway: 2-8-4 3505 SP from TopMainR2Inter to TopMainR1, with 75 407 DB standing at BottomMainA,
+     * past its first sensor, then held there - simulation switched off once the run is waiting for that sensor, so the next
+     * never comes.
      *
      * MUTATION: put the old yellow back on a destination, or the old red on a station not yet reached, or the navy on
      * the Auto tab's badge, and this fails.
@@ -82,6 +86,13 @@ public class testARunsCaptionsSpeakInItsColours
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            // ITS TRAINS, NAMED (FR-136): where his trains stand is working state.  The run, and one train standing by.
+            sandbox.withNoTrains()
+                .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 0, 11), MOVER, "E", "N")
+                .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
 
             model = support.TestStationAddress.withNoStation(
                 () -> MarklinControlStation.init(null, true, true, false, true));
@@ -111,10 +122,12 @@ public class testARunsCaptionsSpeakInItsColours
             {
                 Locomotive l = p.getCurrentLocomotive();
 
-                if (l == null) continue;
+                if (l == null || !MOVER.equals(l.getName())) continue;
 
                 for (List<Edge> candidate : layout.getPossiblePaths(l, false))
                 {
+                    if (!"TopMainR1".equals(candidate.get(candidate.size() - 1).getEnd().getName())) continue;
+
                     if (candidate.size() >= 3 && (path == null || candidate.size() > path.size()))
                     {
                         train = l;
@@ -123,7 +136,7 @@ public class testARunsCaptionsSpeakInItsColours
                 }
             }
 
-            assertNotNull(path, "precondition: no train on the frozen railway has a route of three legs");
+            assertNotNull(path, "precondition: " + MOVER + " has no route of three legs from TopMainR2Inter to TopMainR1");
 
             final Locomotive mover = train;
             final List<Edge> road = path;
@@ -308,6 +321,8 @@ public class testARunsCaptionsSpeakInItsColours
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             model = support.TestStationAddress.withNoStation(
                 () -> MarklinControlStation.init(null, true, true, false, true));

@@ -300,6 +300,12 @@ public class testTheRoomRuleCensusOnTheRealLayout
         System.out.println("  journeys newly refused  : " + census.newlyRefused);
         System.out.println("  arriving at             : " + census.berths);
 
+        // WHAT A REFRESH OF THE SNAPSHOT CHANGES (FR-136): the figures, all of them, in one sentence a failure ends with.
+        String refresh = "  If live-snapshot was refreshed on purpose, set in this class ORDERED_PAIRS = "
+            + census.orderedPairs + ", PAIRS_WITH_A_PATH = " + census.pairsWithAPath + ", NEWLY_REFUSED = "
+            + census.newlyRefused + " and BERTHS = " + new TreeSet<>(census.berths.keySet())
+            + ", and NEWLY_REFUSED in docs/reference/behaviour.md section 5c";
+
         assertEquals(census.lengths, java.util.Arrays.asList(LENGTHS),
             "the census ran over " + census.lengths + " rather than " + java.util.Arrays.asList(LENGTHS)
             + ".  These are this class's OWN trains now, not a reading of Adam's database, so this is"
@@ -308,19 +314,19 @@ public class testTheRoomRuleCensusOnTheRealLayout
 
         assertEquals(census.orderedPairs, ORDERED_PAIRS,
             "this railway now has " + census.orderedPairs + " ordered station pairs on it rather than "
-            + ORDERED_PAIRS + ", so every number below is over a different population");
+            + ORDERED_PAIRS + ", so every number below is over a different population." + refresh);
 
         assertEquals(census.pairsWithAPath, PAIRS_WITH_A_PATH,
             census.pairsWithAPath + " of those pairs can be routed, against " + PAIRS_WITH_A_PATH
             + " when this was measured.  A large drop is a railway that has come apart rather than a"
-            + " rule that has changed");
+            + " rule that has changed." + refresh);
 
         assertEquals(census.newlyRefused, NEWLY_REFUSED,
             census.newlyRefused + " journeys are newly refused by the widened room rule, against "
             + NEWLY_REFUSED + " when behaviour.md section 5c was written.  That section states this"
             + " number and reasons from it - that the widening refuses the journeys Adam asked to have"
             + " refused, at the squares he was looking at, and not a wider set - so update it there"
-            + " and here together, or the document is describing a railway that no longer exists");
+            + " and here together, or the document is describing a railway that no longer exists." + refresh);
 
         assertEquals(new TreeSet<>(census.berths.keySet()),
             new TreeSet<>(java.util.Arrays.asList(BERTHS)),
@@ -328,7 +334,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + java.util.Arrays.asList(BERTHS) + ".  This is the load-bearing half of section 5c: every"
             + " refusal the widening adds lands on one of the four berths Adam named himself, each"
             + " with ONE measured unit of room behind it.  A fifth berth appearing means the rule has"
-            + " started refusing somewhere he was not looking at");
+            + " started refusing somewhere he was not looking at." + refresh);
 
         for (Map.Entry<String, Integer> berth : census.berths.entrySet())
         {

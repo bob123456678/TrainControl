@@ -47,10 +47,10 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
     /** A name no fixture database holds. */
     private static final String GONE = "OB-349 Gone";
 
-    /** Where the frozen railway stands 75 407 DB, and homes it. */
+    /** BottomMainA, where these claims stand 75 407 DB, and home it. */
     private static final TileKey STANDS = new TileKey("1 - Main", 20, 12);
 
-    /** Where it stands 2-8-4 3505 SP, a train the database does hold, and homes it. */
+    /** Where they stand 2-8-4 3505 SP, a train the database does hold, and home it. */
     private static final TileKey KEPT = new TileKey("1 - Main", 0, 11);
 
     /** A station with a list of locomotives kept out. */
@@ -84,6 +84,9 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            // THE TWO TRAINS IT IS ABOUT, PUT THERE (FR-136): where his trains stand and are homed is working state
+            sandbox.withNoTrains().standing(STANDS, "75 407 DB", "E", "W").standing(KEPT, "2-8-4 3505 SP", "E", "N");
+
             File file = new File(sandbox.getFolder(), "config/autonomy/configuration-Main.json");
 
             org.json.JSONObject configuration = read(file);
@@ -92,11 +95,7 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
 
             org.json.JSONObject stands = points.getJSONObject(STANDS.toString());
 
-            assertEquals(stands.getJSONObject("loc").getString("name"), "75 407 DB", "precondition: the frozen railway no"
-                + " longer stands 75 407 DB at " + STANDS);
-            assertEquals(stands.getString("home"), "75 407 DB", "precondition: the frozen railway no longer homes 75 407 DB"
-                + " at " + STANDS);
-            assertNotNull(stands.opt("arrivedFrom"), "precondition: the frozen railway records no arrival at " + STANDS);
+            points.getJSONObject(KEPT.toString()).put("home", "2-8-4 3505 SP");
 
             // RENAMED, as a locomotive sold since the file was written: standing, homed and on another station's list
             stands.getJSONObject("loc").put("name", GONE);
@@ -272,6 +271,8 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.withNoTrains().standing(STANDS, "75 407 DB", "E", "W").standing(KEPT, "2-8-4 3505 SP", "E", "N");
 
             ui[0] = openTheWindow();
 

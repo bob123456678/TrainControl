@@ -91,6 +91,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession opened = ui[0].getAutonomySession();
@@ -191,6 +193,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -357,6 +361,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -478,6 +484,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
@@ -563,6 +571,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -626,6 +636,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -778,6 +790,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -973,6 +987,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -1119,6 +1135,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1288,6 +1306,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -1397,6 +1417,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui = openTheWindow();
 
             final String editorsWords = I18n.t("autosetup.ui.menuEditorOpen");
@@ -1468,6 +1490,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1589,6 +1613,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -1689,6 +1715,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1794,6 +1822,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2104,6 +2134,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui = openTheWindow();
 
             railway = ui.getModel().getAutoLayout();
@@ -2202,6 +2234,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2303,6 +2337,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2433,6 +2469,8 @@ public class testNoSetupEditDuringARun
             });
 
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2578,6 +2616,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2863,6 +2903,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             assertTrue(ui[0].getModel().isSimulation(), "precondition: the window is not a simulation");
@@ -3079,6 +3121,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             assertTrue(ui[0].getModel().isSimulation() && ui[0].getModel().isDebug(), "precondition: the window is not a"
@@ -3178,6 +3222,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3362,6 +3408,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // DURING A RUN
@@ -3484,6 +3532,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -3584,6 +3634,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             java.util.Set<String> live = new java.util.HashSet<>(java.util.Arrays.asList(
@@ -3682,6 +3734,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3830,6 +3884,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             assertNotNull(ui[0].getActiveDiagramConfiguration(), "precondition: no configuration runs");
@@ -3951,6 +4007,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // THE POWER ON, so the gate lets the press through to its own refusal
@@ -4061,6 +4119,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
@@ -4157,6 +4217,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // A RUN UNDER WAY
@@ -4245,6 +4307,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             javax.swing.JMenuItem manage = autonomyMenuItems(ui[0]).get(I18n.t("autosetup.ui.btnManage"));
@@ -4307,6 +4371,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4431,6 +4497,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4599,6 +4667,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // THE POWER ON, which the gate asks
@@ -4691,6 +4761,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4938,6 +5010,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
@@ -5069,6 +5143,8 @@ public class testNoSetupEditDuringARun
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
@@ -5199,6 +5275,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -5400,6 +5478,8 @@ public class testNoSetupEditDuringARun
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 

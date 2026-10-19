@@ -394,12 +394,23 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         List<Integer> was = new ArrayList<>(approach.getPlaceLengths());
 
+        // AND NOTHING ON IT ANSWERED 0 (FR-136): an answered square is not counted as missing, and which of his he has
+        // answered is his working state.  This claim is about squares nobody has measured.
+        List<String> answered = new ArrayList<>();
+
+        for (String id : approach.getPlaceIds())
+        {
+            if (approach.isPlaceAnswered(id)) answered.add(id);
+        }
+
         assertTrue(was.size() >= 3,
             "precondition: this approach has fewer than three places, so there is no room for a measured"
             + " square with an unmeasured piece behind it");
 
         try
         {
+            approach.setAnsweredPlaces(null);
+
             // ONE SQUARE MEASURED, the rest at zero - switches measured, pieces skipped.
             List<Integer> spans = new ArrayList<>();
 
@@ -441,6 +452,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         finally
         {
             approach.setPlaces(approach.getPlaceIds(), was);
+            approach.setAnsweredPlaces(answered);
             train.setTrainLength(0);
         }
     }

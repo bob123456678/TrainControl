@@ -76,6 +76,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -228,6 +230,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -426,6 +430,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             importFromTheMenu(ui[0], MT298, "MT-298 import");
@@ -559,6 +565,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -640,6 +648,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -720,6 +730,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -814,6 +826,12 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
+            // ONE TRAIN STANDING, AND NONE OF THE FILE'S (FR-136): a train the configuration already stands is "already
+            // placed" rather than not placed, so the file's four are kept off the railway here and the train moved is named
+            sandbox.withNoTrains().standing(new TileKey("1 - Main", 20, 12), "75 407 DB", "E", "W");
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -851,10 +869,14 @@ public class testTheImportDoorReadsAnOldFile
 
             for (org.traincontrol.automation.Point point : railway.getPoints())
             {
-                if (point.getCurrentLocomotive() != null && from == null) from = point;
+                if (from == null && point.getCurrentLocomotive() != null
+                    && "75 407 DB".equals(point.getCurrentLocomotive().getName()))
+                {
+                    from = point;
+                }
             }
 
-            assertNotNull(from, "precondition: no train stands on his railway");
+            assertNotNull(from, "precondition: 75 407 DB does not stand on his railway");
 
             for (org.traincontrol.automation.Point point : railway.getPoints())
             {
@@ -971,6 +993,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             importFromTheMenu(ui[0], MT298, "MT-298 run");
@@ -1061,6 +1085,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1158,6 +1184,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1238,6 +1266,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1334,6 +1364,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1443,6 +1475,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1522,6 +1556,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1622,6 +1658,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -1701,6 +1739,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1792,6 +1832,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1945,6 +1987,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2107,6 +2151,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -2214,6 +2260,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2353,6 +2401,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2507,6 +2557,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final Object[] dispatched = dispatchATrain(ui[0], null);
@@ -2589,6 +2641,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             declined.set(ui[0], true);
@@ -2651,6 +2705,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -2799,6 +2855,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -2897,6 +2955,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3002,6 +3062,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final String folder = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
@@ -3093,6 +3155,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3188,6 +3252,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             if (!unload) addAConfigurationLikeTheOneInUse("Other");
 
@@ -3334,6 +3400,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             AutonomySession session = ui[0].getAutonomySession();
@@ -3418,6 +3486,8 @@ public class testTheImportDoorReadsAnOldFile
             viewPrefs.putBoolean("autonomyEditorTrains", true);
 
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3662,6 +3732,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -3782,6 +3854,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -3941,6 +4015,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
@@ -4018,6 +4094,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4116,6 +4194,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -4610,6 +4690,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             importFromTheMenu(ui[0], MT491, "MT-491 facings");
@@ -4745,6 +4827,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -5406,6 +5490,8 @@ public class testTheImportDoorReadsAnOldFile
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final AutonomySession session = ui[0].getAutonomySession();
@@ -5484,6 +5570,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -5638,6 +5726,8 @@ public class testTheImportDoorReadsAnOldFile
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 

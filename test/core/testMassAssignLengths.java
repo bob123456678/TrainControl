@@ -2249,8 +2249,11 @@ public class testMassAssignLengths
     /**
      * Opening Adam's own railway folds his five route tiles, and no other square (Adam, 2026-09-23: *"Fold them"*).
      *
-     * On the frozen snapshot of his measured layout.  The five held a length of 1 each; nothing else on it is a route
-     * tile with a length, so the list is exact.
+     * On his railway as frozen before the fold first ran on it (`unfolded-route-tiles`): the fold rewrites the file it
+     * reads, so any snapshot taken since has nothing left to fold.  The five held a length of 1 each; nothing else on it
+     * is a route tile with a length, so the list is exact.
+     *
+     * MUTATION: dropping the fold from `open` folds nothing, and this fails.
      *
      * @throws Exception from the sandbox
      */
@@ -2261,7 +2264,7 @@ public class testMassAssignLengths
 
         try
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("unfolded-route-tiles"));
 
             org.traincontrol.marklin.MarklinControlStation model =
                 support.TestStationAddress.withNoStation(

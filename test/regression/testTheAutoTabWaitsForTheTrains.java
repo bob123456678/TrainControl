@@ -67,6 +67,8 @@ public class testTheAutoTabWaitsForTheTrains
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // THE POWER ON, which the gate asks
@@ -221,6 +223,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -377,6 +381,8 @@ public class testTheAutoTabWaitsForTheTrains
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             // THE TRACK EDITOR, USED LAST
@@ -462,6 +468,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -669,6 +677,8 @@ public class testTheAutoTabWaitsForTheTrains
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
@@ -801,6 +811,8 @@ public class testTheAutoTabWaitsForTheTrains
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui[0], "LayoutList");
@@ -902,6 +914,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1035,6 +1049,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            sandbox.simulated();
+
             ui[0] = openTheWindow();
 
             pages = thePages(ui[0]);
@@ -1147,6 +1163,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1272,6 +1290,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1455,6 +1475,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 
@@ -1656,6 +1678,8 @@ public class testTheAutoTabWaitsForTheTrains
         try
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
 
             ui[0] = openTheWindow();
 

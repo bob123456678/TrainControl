@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -98,6 +99,9 @@ public class testTheLengthGuardsOnTheRealLayout
      * for, and the one square whose measured approach the snapshot actually carries a length on.
      */
     private static final TileKey BOTTOM_MAIN_B = new TileKey(MAIN, 20, 13);
+
+    /** BottomMainA, where the claim about his two one-unit segments stands 75 407 DB. */
+    private static final TileKey BOTTOM_MAIN_A = new TileKey(MAIN, 20, 12);
 
     /**
      * The tile the whole of Adam's 2026-09-09 ruling turns on.
@@ -1005,6 +1009,14 @@ public class testTheLengthGuardsOnTheRealLayout
         // PUT BACK, like the other two sites that borrow this engine.  This one kept the length.
         Integer was = train.getTrainLength();
 
+        // ALONE, AND STANDING WHERE THIS CLAIM SAYS (FR-136): at BottomMainA, facing east, in from the west.  Where his
+        // trains stand is working state, and a train standing on its way blocks a route this claim needs.  Put back after.
+        Map<TileKey, Object[]> standing = liftEveryTrain();
+
+        session.placeLocomotive(BOTTOM_MAIN_A, "75 407 DB");
+        session.setPointProperty(BOTTOM_MAIN_A, "facing", "E");
+        session.setPointProperty(BOTTOM_MAIN_A, "arrivedFrom", "W");
+
         try
         {
             train.setTrainLength(4);
@@ -1069,6 +1081,8 @@ public class testTheLengthGuardsOnTheRealLayout
         finally
         {
             train.setTrainLength(was == null ? 0 : was);
+
+            putTheTrainsBack(standing);
         }
     }
 
@@ -1338,6 +1352,40 @@ public class testTheLengthGuardsOnTheRealLayout
         }
 
         return null;
+    }
+
+    /**
+     * Takes every train off the setup, and hands back where each stood, for `putTheTrainsBack`.
+     */
+    private static Map<TileKey, Object[]> liftEveryTrain()
+    {
+        Map<TileKey, Object[]> standing = new java.util.LinkedHashMap<>();
+
+        for (TileKey tile : session.tilesWithALocomotive())
+        {
+            standing.put(tile, new Object[] {session.getPointProperty(tile, "loc"), session.getPointProperty(tile, "facing"),
+                session.getPointProperty(tile, "arrivedFrom"), session.getPointProperty(tile, "arrivedAlong")});
+        }
+
+        session.clearEveryPlacement();
+
+        return standing;
+    }
+
+    /**
+     * Takes every train off the setup and stands again those `liftEveryTrain` took off, as they stood.
+     */
+    private static void putTheTrainsBack(Map<TileKey, Object[]> standing)
+    {
+        session.clearEveryPlacement();
+
+        for (Map.Entry<TileKey, Object[]> at : standing.entrySet())
+        {
+            session.setPointProperty(at.getKey(), "loc", at.getValue()[0]);
+            session.setPointProperty(at.getKey(), "facing", at.getValue()[1]);
+            session.setPointProperty(at.getKey(), "arrivedFrom", at.getValue()[2]);
+            session.setPointProperty(at.getKey(), "arrivedAlong", at.getValue()[3]);
+        }
     }
 
     private Layout rebuild() throws Exception

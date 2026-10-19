@@ -54,6 +54,30 @@ public class testATailPastASwitchIsAskedAbout
     /** Where Adam met a list with one entry (MT-437). */
     private static final String TUNNEL = "Tunnel (southbound)";
 
+    /**
+     * Every square of the four rails, as he measured them on 2026-09-23: RampDown's 4 and BottomCrossover's 5 into
+     * BottomSecondary, sharing three units up to switch 51 at 18,11; TunnelPre's 4 and 12,7's 5 into Tunnel.
+     */
+    private static final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, Integer> DISTANCES =
+        new java.util.LinkedHashMap<>();
+
+    static
+    {
+        int[][] main = {
+            // RampDown -> BottomSecondary, then BottomCrossover's own squares
+            {21, 7, 0}, {21, 8, 0}, {21, 9, 0}, {21, 10, 0}, {20, 10, 0}, {20, 11, 0}, {19, 11, 1}, {18, 11, 1}, {17, 11, 0},
+            {16, 11, 2}, {15, 11, 0}, {14, 11, 0}, {13, 11, 0}, {18, 8, 1}, {18, 9, 1}, {18, 10, 0},
+            // TunnelPre -> Tunnel, then 12,7's own squares
+            {11, 6, 0}, {11, 5, 0}, {11, 4, 1}, {11, 3, 0}, {10, 3, 1}, {9, 3, 0}, {8, 3, 0}, {7, 3, 0}, {7, 4, 1}, {7, 5, 1},
+            {7, 6, 0}, {7, 7, 0}, {12, 6, 1}, {12, 5, 0},
+        };
+
+        for (int[] square : main)
+        {
+            DISTANCES.put(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", square[0], square[1]), square[2]);
+        }
+    }
+
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static Layout layout;
@@ -75,6 +99,11 @@ public class testATailPastASwitchIsAskedAbout
         AutonomySession session = new AutonomySession(sandbox.getFolder());
 
         session.open(pages);
+
+        // THE DISTANCES THESE CLAIMS ARE ABOUT, SET HERE (FR-136): his measurements of 2026-09-23 on the two rails into
+        // BottomSecondary from the east and the two into Tunnel from the north, nothing answered 0.  Re-measured since, the
+        // RampDown rail is 6 and no longer the four-units-against-five every claim below turns on.
+        session.setTileLengths(DISTANCES);
 
         model.parseAuto(session.buildConfiguration());
 

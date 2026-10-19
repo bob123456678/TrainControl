@@ -1673,6 +1673,12 @@ public class testNoSetupEditWhileARouteRuns
         {
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
+            // A TIMETABLE WHOSE TRAIN IS AT ITS START (FR-136), so Execute Timetable gets as far as the question: his own
+            // timetable and where his trains stand are working state
+            sandbox.withNoTrains().standing(new TileKey("1 - Main", 13, 9), "EN57-947", "W", "S").withATimetableOf("EN57-947",
+                "BottomInner (northbound)", "1 - Main 12,7", "Tunnel (southbound)", "BottomMainBCPre (eastbound)",
+                "BottomMainB (eastbound)");
+
             ui = openTheWindow();
 
             final TrainControlUI window = ui;

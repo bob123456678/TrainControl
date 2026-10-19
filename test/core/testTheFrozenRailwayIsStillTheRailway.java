@@ -96,17 +96,24 @@ public class testTheFrozenRailwayIsStillTheRailway
         // built 96 Points and 149 edges; his one-way marks, compulsory turn at BottomMainC and barred arrivals of that
         // day take arrival sides away, and an arrival side that is gone is an edge and a copy that are not built.  The
         // five pages are byte-identical to the first freeze, so this is the setup moving, not the diagram.
-        assertEquals(scenario.getSession().getReducer().getEdges().size(), 122,
-            "the frozen railway reduced to " + scenario.getSession().getReducer().getEdges().size()
+        int reduced = scenario.getSession().getReducer().getEdges().size();
+
+        // WHAT A REFRESH OF THE SNAPSHOT CHANGES (FR-136): all three figures, here and in its README.
+        String refresh = "  If live-snapshot was refreshed on purpose, set " + reduced + " reduced edges, "
+            + built.getPoints().size() + " Points and " + built.getEdges().size() + " edges here and in the README's"
+            + " \"What it builds to\"";
+
+        assertEquals(reduced, 122,
+            "the frozen railway reduced to " + reduced
             + " edges rather than the 122 it was frozen with. Below about fifty this is the five-edge"
             + " skeleton LayoutSandbox.wiredPages describes - a railway whose switches have no"
-            + " accessories, which TileGraph refuses to trace through.");
+            + " accessories, which TileGraph refuses to trace through." + refresh);
 
         assertEquals(built.getPoints().size(), 87,
-            "the frozen railway built to " + built.getPoints().size() + " Points rather than 87");
+            "the frozen railway built to " + built.getPoints().size() + " Points rather than 87." + refresh);
 
         assertEquals(built.getEdges().size(), 125,
-            "the frozen railway built to " + built.getEdges().size() + " edges rather than 125");
+            "the frozen railway built to " + built.getEdges().size() + " edges rather than 125." + refresh);
     }
 
     /**
