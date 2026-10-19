@@ -185,6 +185,125 @@ public class testTheRouteListShowsWhatRuns
     // ---------------------------------------------------------------------------------------------
 
     /**
+     * With the power off, a click on a route's row - not its play button - opens the route's editor and asks nothing
+     * (FR-140).  Adam: "when the power is off, clicking on routes in the route tab should open the editor rather than ask
+     * for execution".
+     *
+     * The click is posted rather than waited for, so that the question it asked before - a modal dialog - cannot hold
+     * the run; any dialog left open is closed at the end.
+     *
+     * MUTATION: take the power question out of `RouteListMouseClicked`, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testWithThePowerOffARowClickOpensTheRoutesEditor() throws Exception
+    {
+        final String route = aSlowRoute(PREFIX + "edit", 1);
+
+        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        final boolean was = power.getBoolean(model);
+
+        try
+        {
+            power.setBoolean(model, false);
+
+            final java.awt.event.MouseEvent[] click = new java.awt.event.MouseEvent[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("RouteList");
+
+                    field.setAccessible(true);
+
+                    JTable table = (JTable) field.get(ui);
+
+                    for (int row = 0; row < table.getRowCount() && click[0] == null; row++)
+                    {
+                        for (int column = 0; column < table.getColumnCount(); column++)
+                        {
+                            Object value = table.getValueAt(row, column);
+
+                            if (!(value instanceof org.traincontrol.base.Route)
+                                || !route.equals(((org.traincontrol.base.Route) value).getName())) continue;
+
+                            Rectangle cell = table.getCellRect(row, column, false);
+
+                            // the left of the cell, on the route's name and away from the play button at its right
+                            click[0] = new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_CLICKED,
+                                System.currentTimeMillis(), 0, cell.x + 6, cell.y + cell.height / 2, 1, false,
+                                java.awt.event.MouseEvent.BUTTON1);
+
+                            break;
+                        }
+                    }
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertNotNull(click[0], "precondition: the route " + route + " is not in the route list");
+
+            final java.lang.reflect.Method clicked = TrainControlUI.class.getDeclaredMethod("RouteListMouseClicked",
+                java.awt.event.MouseEvent.class);
+
+            clicked.setAccessible(true);
+
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    clicked.invoke(ui, click[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(waitFor(() -> routeEditorShowing(), 8000), "with the power off, a click on the route's row did not"
+                + " open its editor.  Adam, FR-140: \"when the power is off, clicking on routes in the route tab should open"
+                + " the editor rather than ask for execution\"");
+
+            assertFalse(model.getRoute(route).isExecuting(), "a click on the row ran the route with the power off");
+        }
+        finally
+        {
+            power.setBoolean(model, was);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window instanceof javax.swing.JDialog
+                        || "RouteEditorFrame".equals(window.getClass().getSimpleName()))
+                    {
+                        window.dispose();
+                    }
+                }
+            });
+        }
+    }
+
+    /** Whether a route editor window is showing. */
+    private static boolean routeEditorShowing()
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * A route of this many commands with half a second between them, put in the list.
      */
     private static String aSlowRoute(String name, int commands) throws Exception

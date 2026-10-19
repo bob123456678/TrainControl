@@ -25711,6 +25711,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // WITH THE POWER OFF, THE ROW OPENS THE ROUTE'S EDITOR (FR-140): nothing could run, so the click is taken as
+        // wanting to see or change the route.  The play button still runs it, as it always does.
+        if (this.model != null && !this.model.getPowerState())
+        {
+            editRoute(route.getName());
+
+            return;
+        }
+
         // We need to set this in case there are popup windows
         this.setAlwaysOnTop(true);
 
