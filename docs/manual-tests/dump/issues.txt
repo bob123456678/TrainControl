@@ -639,3 +639,30 @@ text:
 |
 | Deferred to 3.1.0 when the 3.0.1 release was cut on RSA70's convergence (0 A, 0 B; Adam, 2026-10-13: "run a full battery, then a validator, iterate on the validator, merge with main, update the docs for release today").
 |
+
+[issue OB-363]
+ordinal: 30
+inbox: yes
+kind: bug
+title: File > Open Layout leaves the old railway's trains and claims in the model (needs a ruling: intended or not)
+filed: 2026-10-19
+filed_at: 2026-10-19 13:30
+raised_from: FR-136 Phase 6 (routes and events coverage), 2026-10-19
+build: -
+text:
+| ### OB-363 - 2026-10-19 - File > Open Layout leaves the old railway's trains and claims in the model (needs a ruling: intended or not)
+|
+| **Kind:** bug  
+| **Raised from:** FR-136 Phase 6 (routes and events coverage), 2026-10-19  
+| **Filed:** 2026-10-19 13:30
+|
+| Found by FR-136 Phase 6 (a test that opens another layout through File > Open Layout..., answered with a real chooser).
+|
+| **Steps:** start on a layout with its autonomy setup loaded and trains standing (the frozen live snapshot: four trains).  File > Open Layout..., and pick another railway's folder (the single-switch fixture).
+|
+| **What happens:** the window shows the new railway's pages, and no autonomy configuration is loaded (`getActiveDiagramConfiguration()` is null).  But the model still holds the OLD railway's autonomy layout: `getAutoLayoutIfLoaded()` answers its 87 points, all four trains standing, and one edge covered by a train's tail.
+|
+| **What may be expected:** after switching to another railway, nothing of the old one stands or claims track.  Unload clears it (`clearAutoLayout`); the switch only forgets the configuration's name (`forgetTheRailway`).  The RLV7-C2 comments near that code suggest it may be deliberate, hence a ruling first.
+|
+| The claim is written and held out of the battery: `ui.testOpenLayoutLeavesTheOldTrainsBehind.testNoTrainOfTheOldRailwayStillStandsOrClaims` (`@Test(enabled = false)`).  Not fixed: 3.0.3 is refactor-only.
+|
