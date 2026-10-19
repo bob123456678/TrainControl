@@ -2,7 +2,6 @@ package regression;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -25,6 +24,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * Autonomy needs a layout stored on this computer: the old JSON tab and its file are gone (OB-254), and a Central
@@ -432,10 +432,7 @@ public class testTheOldAutonomyTabIsGone
         // AND A FOLDER CHOSEN SINCE IS THE ONE REMEMBERED.  Every door that names a layout folder - Open Layout, Create
         // New Layout, the download, the demo layout - writes it through the one method that remembers it, so that
         // method is asked here and the doors are counted.
-        String code = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8);
-
-        assertEquals(code.split("prefs\\.put\\(LAYOUT_OVERRIDE_PATH_PREF", -1).length - 1, 1, "a door writes the layout"
+        assertEquals(SourceOf.occurrences("prefs.put(LAYOUT_OVERRIDE_PATH_PREF"), 1, "a door writes the layout"
             + " folder without going through `layoutFolderIs`, so the folder it names is not remembered (OB-308)");
 
         final java.lang.reflect.Method folderIs = TrainControlUI.class.getDeclaredMethod("layoutFolderIs", String.class);
@@ -594,8 +591,8 @@ public class testTheOldAutonomyTabIsGone
     @Test
     public void testNothingLoadsTheOldGraphAtStart() throws Exception
     {
-        String code = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            StandardCharsets.UTF_8).replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+        // Asked of the whole program's code: neither is anywhere.
+        String code = SourceOf.allCode();
 
         assertFalse(code.contains("resumesFromJsonAtStart"), "the start-up still has a way to load the old JSON graph"
             + " (resumesFromJsonAtStart)");
