@@ -1584,7 +1584,7 @@ public class TileAnnotation
         // two lines down the same piece of track wherever a route worked both ways, which is the
         // commonest case - so the picture was mostly duplicates, and the duplicate said nothing the
         // single line did not.
-        g.setStroke(new BasicStroke(Math.max(3f, span / 7f),
+        g.setStroke(new BasicStroke(Math.max(3f, span / TRACE_STROKE_PARTS),
             BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         // Which legs cross this square.  Where a route works both ways over the SAME track the two
@@ -1645,7 +1645,7 @@ public class TileAnnotation
             String rail = String.valueOf(trace.from).compareTo(String.valueOf(trace.to)) <= 0
                 ? trace.from + ":" + trace.to : trace.to + ":" + trace.from;
 
-            double nudge = rails.add(rail) ? 0 : span / 18.0;
+            double nudge = rails.add(rail) ? 0 : span / TRACE_NUDGE_PARTS;
 
             double dx = b[0] - a[0];
             double dy = b[1] - a[1];
@@ -1933,6 +1933,17 @@ public class TileAnnotation
      * here" on the running diagram, and one nothing else in this editor uses.
      */
     private static final Color TRACE = new Color(255, 214, 0);
+
+    /**
+     * The tested route's line is this fraction of the square wide: one part in this many of its shorter side.
+     */
+    private static final float TRACE_STROKE_PARTS = 7f;
+
+    /**
+     * Where the same rail is passed a second time the line is moved aside by one part in this many of the
+     * square's shorter side, so the two passes read as two (OB-216).
+     */
+    private static final double TRACE_NUDGE_PARTS = 18.0;
 
     /**
      * The way back, where it does not share track with the way out.

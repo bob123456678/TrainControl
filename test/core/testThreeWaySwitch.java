@@ -35,13 +35,13 @@ public class testThreeWaySwitch
     @Test
     public void testTheThreeShapesAreTheOnesThatWereSpecified()
     {
-        assertEquals(lines(ThreeWaySwitch.Position.LEFT), "2 straight 300 | 1 turn 0",
+        assertEquals(lines(ThreeWaySwitch.Position.LEFT), "2 straight " + ThreeWaySwitch.SETTLE + " | 1 turn 0",
             "left settles the SECOND address and then turns the first");
 
-        assertEquals(lines(ThreeWaySwitch.Position.STRAIGHT), "1 straight 300 | 2 straight 0",
+        assertEquals(lines(ThreeWaySwitch.Position.STRAIGHT), "1 straight " + ThreeWaySwitch.SETTLE + " | 2 straight 0",
             "straight settles the first and then straightens the second");
 
-        assertEquals(lines(ThreeWaySwitch.Position.RIGHT), "1 straight 300 | 2 turn 0",
+        assertEquals(lines(ThreeWaySwitch.Position.RIGHT), "1 straight " + ThreeWaySwitch.SETTLE + " | 2 turn 0",
             "right settles the first and then turns the second");
     }
 

@@ -25,6 +25,7 @@ import org.traincontrol.gui.AutonomyEditorPanel;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.ProgramConstants;
 
 /**
  * A simulated path to a station autonomy will never choose is drawn in a colour of its own.
@@ -54,14 +55,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  */
 public class testManualOnlyPathsAreADifferentColour
 {
-    /** The tested route's outbound leg, from TileAnnotation.TRACE. */
-    private static final Color FORWARD = new Color(255, 214, 0);
+    /** The tested route's outbound leg, asked of TileAnnotation.TRACE. */
+    private static final Color FORWARD = ProgramConstants.colour(TileAnnotation.class, "TRACE");
 
-    /** And the way back, from TileAnnotation.TRACE_RETURN. */
-    private static final Color RETURN = new Color(255, 150, 40);
+    /** And the way back, asked of TileAnnotation.TRACE_RETURN. */
+    private static final Color RETURN = ProgramConstants.colour(TileAnnotation.class, "TRACE_RETURN");
 
-    /** The arrowheads drawn on top of whichever line it is, from TileAnnotation.TRACE_CHEVRON. */
-    private static final Color CHEVRON = new Color(120, 80, 0);
+    /** The arrowheads drawn on top of whichever line it is, asked of TileAnnotation.TRACE_CHEVRON. */
+    private static final Color CHEVRON = ProgramConstants.colour(TileAnnotation.class, "TRACE_CHEVRON");
 
     private static MarklinControlStation model;
     private static AutonomySession session;
@@ -143,6 +144,16 @@ public class testManualOnlyPathsAreADifferentColour
     @Test
     public void testTheThreeLegsArePaintedInThreeColours()
     {
+        // The shades themselves are the program's to choose; what Adam named is the hue: "yellow is
+        // currently forward, and orange is backwards".  Kept as a rough band, so the constant can move
+        // within yellow and within orange without this claim following it, and cannot swap them.
+        assertTrue(FORWARD.getRed() > 200 && FORWARD.getGreen() > 190 && FORWARD.getBlue() < 60,
+            "the outbound leg is no longer yellow, which is what Adam named it.  Got: " + FORWARD);
+
+        assertTrue(RETURN.getRed() > 200 && RETURN.getGreen() > 120 && RETURN.getGreen() < 180
+            && RETURN.getBlue() < 80,
+            "the way back is no longer orange, which is what Adam named it.  Got: " + RETURN);
+
         Color forward = lineColour(false, true);
         Color back = lineColour(false, false);
         Color manual = lineColour(true, true);
