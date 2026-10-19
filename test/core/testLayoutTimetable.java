@@ -312,8 +312,45 @@ public class testLayoutTimetable
         layout.invalidate();
 
         assertFalse(layout.isValid());
-        assertFalse(layout.executePath(path(layout), dummyLoc(), 50, null),
-            "an invalidated layout can never execute a path, no matter how often it is retried");
+
+        // WHICH REFUSAL SPOKE (FR-136).  This layout's locomotive stands nowhere, so executePath also refuses at "not
+        // at the start of the path" with the validity check deleted; the log says which of the two it was.
+        java.util.List<String> logged = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        logger.addHandler(tap);
+
+        try
+        {
+            // The log drops a message that repeats the last one, so the last one is made to be something else.
+            model.log("before the refused path");
+
+            assertFalse(layout.executePath(path(layout), dummyLoc(), 50, null),
+                "an invalidated layout can never execute a path, no matter how often it is retried");
+        }
+        finally
+        {
+            logger.removeHandler(tap);
+        }
+
+        assertTrue(logged.contains(org.traincontrol.util.I18n.f("autolayout.errorConfigurationInvalidMustReload")),
+            "the path was refused, but not because the layout is invalid: " + logged);
     }
 
     /**
