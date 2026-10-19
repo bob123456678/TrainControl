@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.AutonomyEditorPanel;
 import org.traincontrol.gui.LoadingSpinner;
+import support.SourceOf;
 
 /**
  * What the "still drawing" mark actually draws, and where the signal window actually goes.
@@ -58,8 +59,33 @@ public class testTheWaitMarkIsAnHourglass
             org.traincontrol.gui.TrainControlUI.installLookAndFeel();
         }
     }
-    /** Frames in one drain-and-turn cycle - LoadingSpinner draws two of them per loop. */
-    private static final int CYCLE = 62;
+    /** Frames in one drain-and-turn cycle - LoadingSpinner draws two of them per loop: asked of the spinner. */
+    private static final int CYCLE = spinnerConstant("CYCLE_FRAMES");
+
+    /** Milliseconds one frame lasts: asked of the spinner. */
+    private static final int FRAME_MS = spinnerConstant("FRAME_MS");
+
+    /**
+     * One of LoadingSpinner's private constants, read by reflection so a claim follows the spinner's own rule.
+     *
+     * @param name the constant's name
+     * @return its value
+     */
+    private static int spinnerConstant(String name)
+    {
+        try
+        {
+            java.lang.reflect.Field field = LoadingSpinner.class.getDeclaredField(name);
+
+            field.setAccessible(true);
+
+            return field.getInt(null);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException("LoadingSpinner has no " + name + " to ask", e);
+        }
+    }
 
     /** Big enough that a few pixels of antialiasing either way cannot change a count materially. */
     private static final int SIZE = 240;
@@ -325,28 +351,10 @@ public class testTheWaitMarkIsAnHourglass
                 "precondition: a panel inside the frame does not report it, so the fixture is wrong");
 
             // And what the panel's own helper must answer for each.
-            String panelSource = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/org/traincontrol/gui/AutonomyEditorPanel.java")),
-                java.nio.charset.StandardCharsets.UTF_8);
-
             // CODE ONLY. The first version of this read the whole file and matched the sentence in
             // the fix's own javadoc describing the mistake - so the test failed against the corrected
-            // code, on the strength of prose explaining the correction.
-            StringBuilder code = new StringBuilder();
-
-            for (String line : panelSource.split("\n"))
-            {
-                String trimmed = line.trim();
-
-                if (trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*"))
-                {
-                    continue;
-                }
-
-                code.append(line).append('\n');
-            }
-
-            panelSource = code.toString();
+            // code, on the strength of prose explaining the correction.  Asked of the whole program's code.
+            String panelSource = SourceOf.allCode();
 
             assertTrue(panelSource.contains("if (anchor instanceof java.awt.Window) return"),
                 "the panel asks getWindowAncestor for something that may already BE the window, so "
@@ -432,12 +440,12 @@ public class testTheWaitMarkIsAnHourglass
     {
         assertEquals(LoadingSpinner.frameAt(0), 0, "the animation does not start at the beginning");
 
-        assertEquals(LoadingSpinner.frameAt(60), 1,
+        assertEquals(LoadingSpinner.frameAt(FRAME_MS), 1,
             "one frame period does not advance exactly one frame");
 
         // THE CASE THAT MATTERS. Ten frames' worth of time passes while the event thread is busy and
         // the timer manages a single tick; that tick must land on frame 10, not frame 1.
-        assertEquals(LoadingSpinner.frameAt(600), 10,
+        assertEquals(LoadingSpinner.frameAt(10L * FRAME_MS), 10,
             "600ms after the last frame the animation is still one frame along, so a busy event "
             + "thread - which is exactly when this component is shown - freezes the sand");
 
@@ -552,10 +560,7 @@ public class testTheWaitMarkIsAnHourglass
     @Test
     public void testTheSpinnerCoversTheDiagramArea() throws Exception
     {
-        String grid = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LayoutGrid.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(grid.contains("spinner.setPreferredSize(new Dimension(maxWidth, maxHeight))"),
+        assertTrue(SourceOf.allCode().contains("spinner.setPreferredSize(new Dimension(maxWidth, maxHeight))"),
             "the wait mark is no longer sized to the whole area the diagram will take, so on a page "
             + "bigger than it, the FlowLayout parent leaves it sitting at the top instead of over "
             + "the middle (OB-129)");
@@ -610,7 +615,7 @@ public class testTheWaitMarkIsAnHourglass
 
             javax.swing.SwingUtilities.invokeAndWait(() -> after[0] = mark.currentFrame());
 
-            int moved = Math.floorMod(after[0] - before[0], 124);
+            int moved = Math.floorMod(after[0] - before[0], CYCLE * 2);
 
             // 500ms is a little over eight frames at 60ms. A counter would manage one or two.
             assertTrue(moved >= 5,
@@ -745,8 +750,8 @@ public class testTheWaitMarkIsAnHourglass
     public void testTheStartupNoticeIsNotAWindow() throws Exception
     {
         // NOTHING IN THE CLASS OPENS ANYTHING.
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/StartupSplash.java")), java.nio.charset.StandardCharsets.UTF_8);
+        // The class itself is the claim: found by its declaration, comments kept as they always were.
+        String source = SourceOf.fileDeclaring("public final class StartupSplash");
 
         // What a window costs to OPEN, which is the thing that must not come back.  Written as the
         // code that would do it rather than as the type names, because the class javadoc names the
