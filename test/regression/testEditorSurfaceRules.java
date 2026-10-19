@@ -182,8 +182,10 @@ public class testEditorSurfaceRules
         // the moment it was renamed. A guard that a rename walks out of is not guarding.
         //
         // COUNTED OVER THE PROGRAM (FR-136).  Counted over AutonomyEditorPanel's file, a write moved out of it
-        // left the count; over every file, each write is one of the doors the message below names.
-        int writes = SourceOf.occurrences("session.setFacing");
+        // left the count; over every file, each write is one of the doors the message below names.  And by any
+        // handle a door holds the session by - `session`, `session()`, `getSession()`, `getAutonomySession()` - so a
+        // write moved out behind an accessor is still counted.
+        int writes = count(FACING_WRITE, SourceOf.allCode());
 
         // The redraw lives in radio(), the helper every one of these answers is built with -
         // not beside this particular write. It was beside this one once, which is exactly how
@@ -247,6 +249,38 @@ public class testEditorSurfaceRules
             + "other keeps the bug - or the edit-or-assign door writing its own facing again instead "
             + "of going through GraphLocAssign.commitAndRecord, which is how it and the diagram's "
             + "copy of the same item came a week apart (REG8-B2)");
+
+        // AND EACH OF THE FIVE IS WHERE IT IS SAID TO BE (FR-136).  A total lets one door stop writing the facing
+        // while a second copy of the menu starts, and stays five; named place by place, either one is reported.
+        final String[] facingWriters =
+        {
+            "public javax.swing.JMenu buildFacingMenu(final TileKey target)",
+            "private void placeLocomotive(TileKey tile)",
+            "public static void commitAndRecord(GraphLocAssign edit)",
+            "private void placeFacing(String locName, String pointName,",
+            "private void rememberPlacement(org.traincontrol.automation.Point point,",
+        };
+
+        final List<String> misplaced = new ArrayList<>();
+
+        int named = 0;
+
+        for (String writer : facingWriters)
+        {
+            int here = count(FACING_WRITE, codeOf(writer));
+
+            named += here;
+
+            if (here != 1) misplaced.add(writer + " writes it " + here + " times");
+        }
+
+        if (writes != named) misplaced.add((writes - named) + " writes outside those five");
+
+        assertEquals(misplaced, new ArrayList<String>(),
+            "the facing is not written once by each of the five doors known to write it: " + misplaced + ".  A door"
+            + " that stopped is a placement recorded without which way, and a write somewhere new is a second copy of"
+            + " the menu - how OB-039 survived being fixed - or a door writing its own facing again instead of going"
+            + " through GraphLocAssign.commitAndRecord (REG8-B2)");
 
         // AND BOTH ASSIGNMENT DOORS GO THROUGH THE ONE THAT RECORDS.
         //
@@ -362,6 +396,10 @@ public class testEditorSurfaceRules
         //
         // EVERY CLEAR IN THE PROGRAM, each INSIDE a finally block (FR-136): the 400 characters before it were a
         // proxy for that, and a block that had closed before the clear satisfied it as well.
+        //
+        // Inside means the finally's OWN brace has not closed when the clear is reached.  Counting every brace
+        // between the two let a clear in a later method's `if` pass: the finally and its method close, two more
+        // open, and the sum still says "inside".
         String source = SourceOf.allCode();
 
         int clears = 0;
@@ -373,9 +411,19 @@ public class testEditorSurfaceRules
 
             int block = source.lastIndexOf("finally", at);
 
-            String inside = block < 0 ? "" : source.substring(block, at);
+            int open = block < 0 ? -1 : source.indexOf('{', block);
 
-            assertTrue(block >= 0 && count(inside, "{") > count(inside, "}"),
+            int reached = open;
+
+            for (int depth = 0; open >= 0 && reached < at; reached++)
+            {
+                char c = source.charAt(reached);
+
+                if (c == '{') depth++;
+                else if (c == '}' && --depth == 0) break;
+            }
+
+            assertTrue(block >= 0 && open >= 0 && reached == at,
                 "the signal focus is turned off somewhere other than the finally block. The window has four "
                 + "ways out and only the finally sees all of them; anywhere else leaves the editor grey and "
                 + "arrowless with nothing on screen saying why");
@@ -410,6 +458,20 @@ public class testEditorSurfaceRules
             "the signal focus is used at " + uses + " places in annotationFor, not the three it "
             + "has to reach - the greying, the arrows and the lengths. A de-clutter that is on for one "
             + "of them and off for the others looks half-dressed rather than focused");
+
+        // AND NOTHING ELSE ASKS IT (FR-136).  Counted in annotationFor alone, a de-clutter of its own in another
+        // method was not seen, whether it asks the panel's question or reads the flag under it.
+        assertEquals(outside("isFocusedOnSignals()",
+                "public org.traincontrol.automationui.TileAnnotation annotationFor(TileKey tile)",
+                "public boolean isFocusedOnSignals()"), 0,
+            "the signal focus is asked somewhere besides annotationFor, so the de-clutter is decided twice - and two "
+            + "decisions that have to agree are the shape that produced OB-037");
+
+        assertEquals(outside("signalWindowOpen", "private boolean signalWindowOpen;",
+                "private void pairGuardSignals(Guard guard, TileKey station)",
+                "public boolean isFocusedOnSignals()"), 0,
+            "the flag under the signal focus is read somewhere besides isFocusedOnSignals, so a de-clutter is decided"
+            + " there without asking the one question annotationFor asks");
     }
     /**
      * The autonomy editor shows the railway, not a grid over it.
@@ -663,6 +725,28 @@ public class testEditorSurfaceRules
         for (String signature : allowed) inside += count(codeOf(signature), needle);
 
         return SourceOf.occurrences(needle) - inside;
+    }
+
+    /**
+     * A write of a locomotive's facing through the setup, by whatever the door calls its handle on the session.
+     */
+    private static final java.util.regex.Pattern FACING_WRITE =
+        java.util.regex.Pattern.compile("(?i:session)(?:\\(\\))?\\.setFacing");
+
+    /**
+     * How many times a pattern matches in a text.
+     *
+     * @param pattern the pattern
+     * @param text the text to look in
+     * @return the count
+     */
+    private static int count(java.util.regex.Pattern pattern, String text)
+    {
+        int found = 0;
+
+        for (java.util.regex.Matcher m = pattern.matcher(text); m.find(); ) found++;
+
+        return found;
     }
 
     /**
