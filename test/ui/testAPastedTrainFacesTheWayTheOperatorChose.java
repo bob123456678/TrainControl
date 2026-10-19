@@ -93,18 +93,13 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         if (square == null) throw new SkipException("this railway has no " + SQUARE_NAME);
 
-        if (!session.mayTurnTiles().contains(square))
-        {
-            throw new SkipException(SQUARE_NAME + " is not a may-reverse square on this railway, so no"
-                + " facing question is put there");
-        }
+        assertTrue(session.mayTurnTiles().contains(square), SQUARE_NAME + " is not a may-reverse square on this railway,"
+            + " so no facing question is put there");
 
         Map<String, Side> copies = session.facingsFor(square);
 
-        if (!copies.containsValue(Side.E) || !copies.containsValue(Side.W))
-        {
-            throw new SkipException(SQUARE_NAME + " does not hold both east and west here: " + copies);
-        }
+        assertTrue(copies.containsValue(Side.E) && copies.containsValue(Side.W), SQUARE_NAME
+            + " does not hold both east and west here: " + copies);
 
         train = model.getLocByName("75 407 DB");
 
