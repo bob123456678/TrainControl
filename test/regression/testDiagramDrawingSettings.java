@@ -1,10 +1,8 @@
 package regression;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
@@ -75,8 +73,8 @@ public class testDiagramDrawingSettings
     @Test
     public void testTheMenuAgreesWithTheDrawingAboutTheDefault() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
+        // The program's code, wherever it holds the two reads.
+        String ui = SourceOf.allCode();
 
         int defaults = 0;
 
@@ -111,12 +109,7 @@ public class testDiagramDrawingSettings
     @Test
     public void testNoArrowsWithoutASetupToDrawThemFrom() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
-
-        String layer = bodyOf(ui, "public void showStaticAutonomyLayer(boolean show)");
-
-        assertFalse(layer.isEmpty(), "cannot find showStaticAutonomyLayer - has it been renamed?");
+        String layer = SourceOf.declaration("public void showStaticAutonomyLayer(boolean show)");
 
         int cleared = layer.indexOf("clearAnnotations()");
 
@@ -163,13 +156,7 @@ public class testDiagramDrawingSettings
     @Test
     public void testTheDrawingSettingsAreOneGroupUnderAutonomy() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
-
-        String group = bodyOf(ui, "private void buildDiagramDrawingMenu()");
-
-        assertFalse(group.isEmpty(), "cannot find the group - has buildDiagramDrawingMenu been "
-            + "renamed?");
+        String group = SourceOf.declaration("private void buildDiagramDrawingMenu()");
 
         assertTrue(group.contains("autonomyToolbarMenu.addSeparator()"),
             "the divider above the group is gone, so the three settings run on from whatever is "
@@ -183,11 +170,11 @@ public class testDiagramDrawingSettings
                 + "on the diagram are not together");
         }
 
-        assertFalse(ui.contains("layoutMenuItem.add(this.greyStationLabelsMenuItem)"),
+        assertFalse(SourceOf.allCode().contains("layoutMenuItem.add(this.greyStationLabelsMenuItem)"),
             "Grey Station Labels is back in the Layout menu, which is where the diagram is "
             + "configured rather than where what autonomy draws on it is");
 
-        assertFalse(ui.contains("layoutMenuItem.add(this.restrictionArrowsMenuItem)"),
+        assertFalse(SourceOf.allCode().contains("layoutMenuItem.add(this.restrictionArrowsMenuItem)"),
             "the one-way arrows setting is in the Layout menu rather than with the group it belongs "
             + "to");
 
@@ -210,10 +197,7 @@ public class testDiagramDrawingSettings
     @Test
     public void testTurningTheArrowsOnRefreshesWhatIsActuallyShown() throws Exception
     {
-        String ui = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
-
-        String group = bodyOf(ui, "private void buildDiagramDrawingMenu()");
+        String group = SourceOf.declaration("private void buildDiagramDrawingMenu()");
 
         assertTrue(group.contains("autonomyOverlayToggle != null && autonomyOverlayToggle.isOverlayShown()"),
             "the arrows setting refreshes the autonomy layer without asking whether that layer is "
@@ -238,50 +222,26 @@ public class testDiagramDrawingSettings
     @Test
     public void testTheEditorsArrivalsAreNotCoupledToTheViewersSetting() throws Exception
     {
-        String panel = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/AutonomyEditorPanel.java")), StandardCharsets.UTF_8);
-
-        assertTrue(panel.contains("session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS)"),
+        assertTrue(SourceOf.allCode().contains("session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS)"),
             "the editor no longer asks its own directions control about arrivals, so the mode whose "
             + "whole purpose is showing every side of every station has lost its answer");
 
-        assertFalse(panel.contains("diagramShowsRestrictionArrows"),
-            "the autonomy editor now reads the ordinary diagram's preference, which is exactly what "
-            + "Adam asked not to happen - the editor is where these are being decided, and it has its "
+        // The editor's code is not one file, so the claim asks the whole program: the accessor is named by its
+        // declaration, the drawing's own read in TrainControlUI and the session's static annotation, and nothing else.
+        // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting.
+        assertEquals(SourceOf.occurrences("diagramShowsRestrictionArrows"), 3,
+            "something else now reads the ordinary diagram's preference besides its accessor, the window's drawing and"
+            + " the session's static annotation - if it is the autonomy editor, that is exactly what "
+            + "Adam asked not to happen: the editor is where these are being decided, and it has its "
             + "own control for them");
 
         // The METHOD NAME is not the coupling; the STORED PREFERENCE is (TST-C16). Reading
         // DIAGRAM_RESTRICTION_ARROWS out of Preferences directly - skipping the accessor entirely -
         // would couple the two windows exactly as before while leaving the check above satisfied.
-        assertFalse(panel.contains("DIAGRAM_RESTRICTION_ARROWS"),
-            "the autonomy editor now reads the viewer's stored preference key directly, bypassing "
-            + "diagramShowsRestrictionArrows() rather than calling it - the coupling Adam asked to "
+        assertEquals(SourceOf.occurrences("DIAGRAM_RESTRICTION_ARROWS"), 4,
+            "the stored preference key is now named somewhere beyond its declaration, the accessor, and the menu's tick"
+            + " and write - if it is the autonomy editor reading it directly, bypassing "
+            + "diagramShowsRestrictionArrows() rather than calling it, that is the coupling Adam asked to "
             + "avoid, reached by a different door");
-    }
-
-    /**
-     * A method, from its declaration to its closing brace.
-     */
-    private String bodyOf(String source, String declaration)
-    {
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        return "";
     }
 }
