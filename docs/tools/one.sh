@@ -401,7 +401,17 @@ do
     # NOT THE LAST RUN'S RESULTS, which the check of the methods asked for reads below (RLV12-C8)
     rm -f "$S/oneout/testng-results.xml"
 
-    "$JAVA" $JAVA_FLAGS -Dtraincontrol.batteryRun="$RUN_ID" \
+    # EXTRA JVM ARGUMENTS (FR-136 Phase 6): TC_JVM_ARGS adds arguments to every test JVM, for a coverage agent.  Unset, nothing
+    # changes.  A "%s" in it becomes the class's label, so each JVM can write a file of its own; the JVM and its arguments split on
+    # spaces, so no argument may hold one.
+    EXTRA=""
+
+    if [ -n "${TC_JVM_ARGS:-}" ]
+    then
+        EXTRA=$(printf '%s' "$TC_JVM_ARGS" | sed "s/%s/$(printf '%s' "${T%%:*}" | tr -c 'A-Za-z0-9._-' '_')/g")
+    fi
+
+    "$JAVA" $JAVA_FLAGS $EXTRA -Dtraincontrol.batteryRun="$RUN_ID" \
         -cp "$BUILD;$CP" org.testng.TestNG $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
 
     JVM=$!

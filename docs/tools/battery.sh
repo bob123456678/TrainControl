@@ -558,7 +558,17 @@ run_class()
 
     mkdir -p "$S/tng-run"
 
-    "$JAVA" $2 -cp "$CP" org.testng.TestNG -testclass "$cls" -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
+    # EXTRA JVM ARGUMENTS (FR-136 Phase 6): TC_JVM_ARGS adds arguments to every test JVM, for a coverage agent.  Unset, nothing
+    # changes.  A "%s" in it becomes the class's name, so each JVM can write a file of its own; the JVM and its arguments split on
+    # spaces, so no argument may hold one.
+    local extra=""
+
+    if [ -n "${TC_JVM_ARGS:-}" ]
+    then
+        extra=$(printf '%s' "$TC_JVM_ARGS" | sed "s/%s/$(printf '%s' "$cls" | tr -c 'A-Za-z0-9._-' '_')/g")
+    fi
+
+    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -testclass "$cls" -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
 
     local JVM=$!
 
