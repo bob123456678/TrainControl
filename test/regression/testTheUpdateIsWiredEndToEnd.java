@@ -312,7 +312,7 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testOneBackupAtATime() throws Exception
     {
-        String backup = bodyOf("private BackupOutcome backupData()");
+        String backup = bodyOf("BackupAction.BackupOutcome backupData()");
 
         assertTrue(backup.contains("synchronized (this.oneBackupAtATime)") && backup.contains("writeTheBackup()"),
             "backupData no longer holds one backup at a time");
@@ -322,7 +322,7 @@ public class testTheUpdateIsWiredEndToEnd
 
         assertEquals(writes, 2, "something other than backupData writes a backup, around its lock");
 
-        assertTrue(bodyOf("private void backupDataMenuItemActionPerformed(").contains("backupData()"),
+        assertTrue(bodyOf("void backupDataMenuItemActionPerformed()").contains("backupData()"),
             "File > Backup does not go through backupData");
     }
 

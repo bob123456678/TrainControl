@@ -80,6 +80,136 @@ public class testNoSelfRecursiveWrappers
     }
 
     /**
+     * The window's collaborators (FR-136): each field of TrainControlUI that holds one, and the file it is declared in.
+     */
+    private static final String[][] COLLABORATORS = {
+        { "backupAction", "src/org/traincontrol/gui/BackupAction.java" },
+    };
+
+    /**
+     * A delegator and the collaborator it hands to do not call each other for ever (FR-136).
+     *
+     * The extractions leave a one-line delegator on the window wherever something outside a moved cluster calls it,
+     * and the moved code calls back into the window through `ui`.  The same mechanical edit that made `syncWithCS2`
+     * call itself can make a delegator call its own name instead of the collaborator's, or make the moved body call
+     * the window's delegator that leads straight back to it.  Either is a StackOverflowError the compiler accepts.
+     *
+     * MUTATION: in BackupAction, make `writeTheBackup` call `this.ui.backupData()`, and this fails.
+     */
+    @Test
+    public void testADelegatorAndItsCollaboratorDoNotCallEachOtherForEver() throws Exception
+    {
+        List<String> window = Files.readAllLines(
+            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath(), StandardCharsets.UTF_8);
+
+        for (String[] each : COLLABORATORS)
+        {
+            File source = new File(each[1]);
+
+            assertTrue(source.isFile(), "cannot find " + source.getAbsolutePath());
+
+            List<String> helper = Files.readAllLines(source.toPath(), StandardCharsets.UTF_8);
+
+            // What each side calls on the other: the window through `this.<field>.`, the collaborator through `ui.`.
+            java.util.Map<String, java.util.Set<String>> windowCalls = callsThrough(window, "this." + each[0] + ".");
+            java.util.Map<String, java.util.Set<String>> helperCalls = callsThrough(helper, "ui.");
+
+            int checked = 0;
+
+            for (java.util.Map.Entry<String, java.util.Set<String>> delegator : windowCalls.entrySet())
+            {
+                for (String handedTo : delegator.getValue())
+                {
+                    checked++;
+
+                    java.util.Set<String> back = helperCalls.get(handedTo);
+
+                    assertFalse(back != null && back.contains(delegator.getKey()),
+                        "TrainControlUI." + delegator.getKey() + " hands to " + each[0] + "." + handedTo
+                        + ", which calls ui." + delegator.getKey() + " - a loop the compiler accepts");
+                }
+            }
+
+            assertTrue(checked > 0, "TrainControlUI hands nothing to " + each[0] + ", so this checks nothing");
+
+            // And a delegator that calls its own name, bare, beside the collaborator's.
+            for (int i = 0; i < window.size(); i++)
+            {
+                String name = methodDeclaredAt(window.get(i));
+
+                if (name == null) continue;
+
+                String declaration = window.get(i).trim();
+
+                // A declaration whose parameters run onto the next lines
+                for (int k = i + 1; declaration.lastIndexOf(')') < declaration.indexOf('(') && k < window.size(); k++)
+                {
+                    declaration += " " + window.get(k).trim();
+                }
+
+                int arity = argumentCount(declaration.substring(declaration.indexOf('(') + 1,
+                    declaration.lastIndexOf(')')));
+
+                List<String> body = bodyOf(window, i);
+
+                if (body.stream().noneMatch(line -> line.contains("this." + each[0] + "." + name + "("))) continue;
+
+                for (String line : body)
+                {
+                    assertFalse(callsItself(line, name, arity), name + " calls itself instead of " + each[0]
+                        + "." + name + ".  Line: " + line.trim());
+                }
+            }
+        }
+    }
+
+    /**
+     * For each method declared at the class's top level, the names it calls through a prefix.
+     */
+    private static java.util.Map<String, java.util.Set<String>> callsThrough(List<String> lines, String prefix)
+    {
+        java.util.Map<String, java.util.Set<String>> calls = new java.util.HashMap<>();
+
+        java.util.regex.Pattern call = java.util.regex.Pattern.compile(
+            "(?<!\\w)" + java.util.regex.Pattern.quote(prefix) + "(\\w+)\\s*\\(");
+
+        for (int i = 0; i < lines.size(); i++)
+        {
+            String name = methodDeclaredAt(lines.get(i));
+
+            if (name == null) continue;
+
+            for (String line : bodyOf(lines, i))
+            {
+                java.util.regex.Matcher m = call.matcher(withoutComments(line));
+
+                while (m.find())
+                {
+                    calls.computeIfAbsent(name, k -> new java.util.HashSet<>()).add(m.group(1));
+                }
+            }
+        }
+
+        return calls;
+    }
+
+    /**
+     * The name of the method a line declares at a class's top level (four spaces in), or null.
+     */
+    private static String methodDeclaredAt(String line)
+    {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+            "^    (?:(?:public|private|protected|static|final|synchronized)\\s+)*[\\w<>\\[\\],.?]+(?:<[^=]*>)?\\s+(\\w+)\\s*\\([^=;]*$")
+            .matcher(line);
+
+        if (!m.find()) return null;
+
+        String name = m.group(1);
+
+        return "new".equals(name) || "return".equals(name) ? null : name;
+    }
+
+    /**
      * Whether a line calls the wrapper's own name from inside its own body - qualified or not.
      *
      * The bug this file was written for was `this.syncWithCS2()`, and `this.` + name + `(` is what
