@@ -5,6 +5,7 @@ import java.util.*;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.LayoutDiagram;
+import support.SourceOf;
 
 /**
  * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded.
@@ -73,15 +74,7 @@ public class testSwitchingToACentralStationLayout
     @Test
     public void testTheLayoutPathReadersAgreeAboutEmpty() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        int accessor = ui.indexOf("private String getLocalLayoutPath()");
-
-        assertTrue(accessor >= 0, "getLocalLayoutPath is gone, so this test reads nothing");
-
-        String body = ui.substring(accessor, ui.indexOf("}", ui.indexOf("{", accessor)) + 1);
+        String body = SourceOf.declaration("private String getLocalLayoutPath()");
 
         assertTrue(body.contains("isEmpty()"),
             "getLocalLayoutPath hands the stored value back without asking whether it is empty. "
@@ -90,11 +83,9 @@ public class testSwitchingToACentralStationLayout
             + "is lying in it (OB-127)");
 
         // The gate all three page writers come through refuses when there is no local layout.
-        int settle = ui.indexOf("private java.util.Collection<String> settleAbsentPages(");
+        String settle = SourceOf.declaration("private java.util.Collection<String> settleAbsentPages(");
 
-        assertTrue(settle >= 0, "settleAbsentPages is gone");
-
-        String gate = ui.substring(settle, ui.indexOf("final java.util.List<String> absent", settle));
+        String gate = settle.substring(0, settle.indexOf("final java.util.List<String> absent"));
 
         assertTrue(gate.contains("!isLocalLayout()"),
             "settleAbsentPages no longer refuses when the layout is not a local one, so a failed "
@@ -185,15 +176,7 @@ public class testSwitchingToACentralStationLayout
     @Test
     public void testTheLayoutMenuAndPanelAreDeactivatedTogether() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        int guard = ui.indexOf("private void guardLayoutMenu()");
-
-        assertTrue(guard >= 0, "guardLayoutMenu is gone, so nothing checks the menu when it opens");
-
-        String body = ui.substring(guard, ui.indexOf("\n    }", guard));
+        String body = SourceOf.declaration("private void guardLayoutMenu()");
 
         // MANAGE PAGES IS NOT NAMED HERE ANY MORE (UXR-B2).
         //
@@ -216,18 +199,18 @@ public class testSwitchingToACentralStationLayout
             + "about, arrived at from the other side");
 
         // Every door goes through the guarded helper rather than picking the tab by index.
-        assertEquals(count(ui, "KeyboardTab.setSelectedIndex(1)"), 0,
+        assertEquals(SourceOf.occurrences("KeyboardTab.setSelectedIndex(1)"), 0,
             "something selects the track diagram tab by index again, so it reaches straight past "
             + "the greying - and assumes the diagram is tab 1 while it is at it");
 
         // Seven since OB-359 took the legacy editor and Edit Current Page off the menu: two of the nine
         // converted doors went with them.
-        assertTrue(count(ui, "showLayoutTab()") >= 7,
+        assertTrue(SourceOf.occurrences("showLayoutTab()") >= 7,
             "fewer doors go through showLayoutTab than the seven left of the nine that were converted, "
             + "so one has found another way to open the tab");
 
         // And the panel is emptied, not merely greyed.
-        assertTrue(ui.contains("clearLayoutPanel();"),
+        assertTrue(SourceOf.allCode().contains("clearLayoutPanel();"),
             "nothing empties the track diagram panel when the layout list is emptied, so the tab "
             + "keeps the previous railway mounted and it looks entirely live");
     }
@@ -317,19 +300,6 @@ public class testSwitchingToACentralStationLayout
     private static String stripComments(String source)
     {
         return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
-    }
-
-    private static int count(String haystack, String needle)
-    {
-        int n = 0;
-
-        for (int at = haystack.indexOf(needle); at >= 0;
-            at = haystack.indexOf(needle, at + needle.length()))
-        {
-            n++;
-        }
-
-        return n;
     }
 
     private static Object field(Object target, String name) throws Exception
@@ -450,26 +420,22 @@ public class testSwitchingToACentralStationLayout
     @Test
     public void testWhetherALayoutIsLoadedHasOneWriter() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertEquals(count(ui, "this.layoutLoaded ="), 1,
+        assertEquals(SourceOf.occurrences("this.layoutLoaded ="), 1,
             "the layout-loaded flag is assigned in more than one place, so two answers can be stored "
             + "and the window is back to disagreeing with itself - only updateLayoutLoaded may write "
             + "it");
 
-        assertEquals(count(ui, "layoutLoaded ="), 2,
+        assertEquals(SourceOf.occurrences("layoutLoaded ="), 2,
             "expected the declaration and the single assignment and found something else - a writer "
             + "has been added or the field has been renamed");
 
-        assertTrue(count(ui, "updateLayoutLoaded();") >= 4,
+        assertTrue(SourceOf.occurrences("updateLayoutLoaded();") >= 4,
             "fewer places refresh the flag than the moments the layout set can change - start-up, "
             + "the diagram rebuild, and the clear a Central Station switch performs. A flag that is "
             + "not refreshed where the truth moves is staler than the inference it replaced");
 
         // And the properties that used to have two writers have one.
-        assertEquals(count(ui, "popUpAllMenuItem.setEnabled("), 1,
+        assertEquals(SourceOf.occurrences("popUpAllMenuItem.setEnabled("), 1,
             "All Layouts is set from more than one place again. repaintPathLabel used to set it TRUE "
             + "unconditionally for a local layout and re-enable it moments after the menu guard had "
             + "greyed it - the same two-writers fault a reviewer already fixed for Manage Pages");
@@ -1234,11 +1200,7 @@ public class testSwitchingToACentralStationLayout
             + "run here before and is being treated as though it had not");
 
         // AND THE CALL SITE, which is where the rule stops being an opinion.
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(ui.contains("DEMO_LAYOUT_OUTPUT_PATH, !isFirstLaunch())"),
+        assertTrue(SourceOf.allCode().contains("DEMO_LAYOUT_OUTPUT_PATH, !isFirstLaunch())"),
             "the start-up offer no longer asks whether this is a first launch, so either every new "
             + "user is asked a question they cannot answer, or every existing one has a track "
             + "diagram created without being asked");
@@ -1269,9 +1231,8 @@ public class testSwitchingToACentralStationLayout
     @Test
     public void testTheStartupNoticeGoesOnTheWindowAndStaysThere() throws Exception
     {
-        String init = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/marklin/MarklinControlStation.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String init = SourceOf.declaration("public static MarklinControlStation init(String initIP, boolean simulate,"
+            + " boolean showUI, boolean autoPowerOn, boolean debug)");
 
         // NO SECOND WINDOW, WHICH IS OB-170 (2026-09-03).
         //
@@ -1280,7 +1241,7 @@ public class testSwitchingToACentralStationLayout
         // main window arrived into the foreground of whatever launched us and the keyboard was dead.
         // Seven passes went at that from the window's end; Adam's own experiment settled it in one
         // run, by suppressing the splash.
-        assertFalse(init.contains("StartupSplash.show("),
+        assertEquals(SourceOf.occurrences("StartupSplash.show("), 0,
             "start-up shows a second window again, which is OB-170: it spends the one chance this "
             + "process gets at the foreground, and the main window then arrives into somebody else's");
 
