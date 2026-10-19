@@ -15,6 +15,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import support.SourceOf;
 
 /**
  * When an edge behind a train may be handed back, at several train lengths.
@@ -198,9 +199,7 @@ public class testTrainTailClearsEdges
     @Test
     public void testTheClearingLoopAsksTheRule() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private boolean executePathInternal(");
 
         assertTrue(source.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1],"),
             "the clearing loop no longer asks tailHasProvablyPassed with the path total and the "
@@ -248,9 +247,7 @@ public class testTrainTailClearsEdges
     @Test
     public void testTheClearAndTheUnlockAskTheSameQuestion() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private boolean executePathInternal(");
 
         int clears = source.indexOf("if (cleared != null) cleared.add(path.get(waiting[0]));");
         // setUnoccupied, not setLockedEdgeUnoccupied (OB-164).
@@ -274,13 +271,7 @@ public class testTrainTailClearsEdges
         // The line above pins where one statement sits. A mutation that ADDS a second write to
         // clearedEdges in front of the gate - which is exactly the shape WK-B1 describes - leaves that
         // statement where it was and passes. Exactly one edge is ever added to that set.
-        int adds = 0;
-
-        for (int at = source.indexOf(".add(path.get(waiting[0]))"); at >= 0;
-            at = source.indexOf(".add(path.get(waiting[0]))", at + 1))
-        {
-            adds++;
-        }
+        int adds = SourceOf.occurrences(".add(path.get(waiting[0]))");
 
         assertEquals(adds, 1,
             "expected exactly one place where an edge is reported clear, and found " + adds
@@ -288,19 +279,13 @@ public class testTrainTailClearsEdges
             + "whole of WK-B1");
 
         // Exactly one gate, not two. Two is how the looser rule got back in last time.
-        int gates = 0;
-
-        for (int at = source.indexOf("tailHasProvablyPassed("); at >= 0;
-            at = source.indexOf("tailHasProvablyPassed(", at + 1))
-        {
-            gates++;
-        }
+        int gates = SourceOf.occurrences("tailHasProvablyPassed(");
 
         assertEquals(gates, 2,
             "expected the rule's definition and exactly one call, and found " + gates
             + " - a second predicate deciding one half of this is what WK-B1 was about");
 
-        assertFalse(source.contains("tailMayStillBeOn"),
+        assertFalse(SourceOf.allCode().contains("tailMayStillBeOn"),
             "the looser companion rule is back. It may not decide whether an edge is reported clear: "
             + "with atomicRoutes on that is the only thing protecting the turnouts under a train");
     }

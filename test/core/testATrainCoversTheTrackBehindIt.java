@@ -14,6 +14,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -362,11 +363,7 @@ public class testATrainCoversTheTrackBehindIt
     @Test
     public void testTheArrivalRecordsWhichWayTheTrainCameIn() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/automation/Layout.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String flat = source.replaceAll("\\s+", " ");
+        String flat = SourceOf.declaration("private boolean executePathInternal(").replaceAll("\\s+", " ");
 
         assertTrue(flat.contains(
             "arrived.setArrivedFrom(entrySideOf(path.get(path.size() - 1), arrived));"),
@@ -379,7 +376,7 @@ public class testATrainCoversTheTrackBehindIt
         // reduced run turns corners, so on a curve that is not the side the track comes in by - and
         // the operator doors were offering the other answer. Correcting the doors alone made the walk
         // match nothing and block no track at all, so the two now share `entrySideOf`.
-        assertTrue(flat.contains("String cameInBy = entrySideOf(candidate, here);"),
+        assertTrue(SourceOf.allCode().replaceAll("\\s+", " ").contains("String cameInBy = entrySideOf(candidate, here);"),
             "the tail walk works out the arrival side its own way again, so it can disagree with what"
             + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
 
@@ -1034,13 +1031,12 @@ public class testATrainCoversTheTrackBehindIt
     @Test
     public void testTheRefreshRedrawsWhatChanged() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(ui.contains("repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack)"),
+        assertTrue(SourceOf.declaration("private void workOutCoveredTrack()")
+            .contains("repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack)"),
             "the covered set is recomputed and nothing is redrawn, so a train that moves leaves the"
             + " track behind where it used to be greyed until an unrelated repaint clears it (OB-180)");
+
+        String ui = SourceOf.declaration("private void repaintTheWashWhereItChanged(");
 
         // THE UNION, THEN WHAT DID NOT CHANGE TAKEN BACK OUT (MT-309).
         //
@@ -1080,11 +1076,7 @@ public class testATrainCoversTheTrackBehindIt
         assertTrue(ui.contains("label.refreshCoveredMark()"),
             "nothing asks the tiles to re-apply the wash, so the set changed and the screen did not");
 
-        String label = new String(java.nio.file.Files.readAllBytes(
-            java.nio.file.Paths.get("src/org/traincontrol/gui/LayoutLabel.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(label.contains("public void refreshCoveredMark()"),
+        assertTrue(SourceOf.occurrences("public void refreshCoveredMark()") == 1,
             "the label cannot re-apply its wash without a full rebuild - and a full rebuild through"
             + " updateImage(true) would flash every signal and switch it touched");
     }
