@@ -194,6 +194,9 @@ public class testTheRefusalsAreAskedAtTheDoors
 
     /**
      * Each door still asks.
+     *
+     * MUTATION: make the window's `initializeLocalLayoutMenuItemActionPerformed` do the work itself instead of handing to
+     * `layoutFileActions`, and this fails.
      */
     @Test
     public void testEveryDoorStillAsksBeforeItActs() throws Exception
@@ -213,6 +216,16 @@ public class testTheRefusalsAreAskedAtTheDoors
                     silent.add(door[0] + " no longer asks " + needed + " - " + door[2]);
                 }
             }
+        }
+
+        // The window's own one-line handler for Create New Layout hands to the door above (FR-136).  A handler that
+        // does the work itself would act without the refusal, and the list above would still read the clean copy.
+        String handler = code("private void initializeLocalLayoutMenuItemActionPerformed(");
+
+        if (!handler.contains("layoutFileActions.initializeLocalLayoutMenuItemActionPerformed()"))
+        {
+            silent.add("the window's Create New Layout handler no longer hands to layoutFileActions, so the refusal "
+                + "that door asks is not the one it runs under");
         }
 
         assertEquals(silent.toString(), "[]",

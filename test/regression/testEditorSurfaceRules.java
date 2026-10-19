@@ -780,7 +780,7 @@ public class testEditorSurfaceRules
      * the other two came to be missing.
      *
      * MUTATION: moving the check back out of `executeRoute` and into the play-button branch fails
-     * both halves of this.
+     * both halves of this; putting `routesExecuting` into the window's own `RouteListMouseClicked` fails the last one.
      */
     @Test
     public void testEveryDoorThatRunsARouteAsksIfItIsAlreadyRunning() throws Exception
@@ -816,6 +816,15 @@ public class testEditorSurfaceRules
             "the route row's own click handler asks whether the route is already running instead of "
             + "leaving it to executeRoute.  One door asking for itself is how the other two came to "
             + "be missing it.  Body: " + door);
+
+        // AND THE WINDOW'S OWN HANDLER.  The one-line GEN handler in TrainControlUI hands the click to the route list
+        // (FR-136); it must not take the question back, or the door asks for itself from the window while the panel's
+        // copy stays clean.
+        String handler = codeOf("private void RouteListMouseClicked(java.awt.event.MouseEvent evt)");
+
+        assertFalse(handler.contains("routesExecuting"),
+            "the window's own route-row click handler asks whether the route is already running instead of handing the "
+            + "click to the route list and leaving the question to executeRoute.  Body: " + handler);
     }
 
     /**
