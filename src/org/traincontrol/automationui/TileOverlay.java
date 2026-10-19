@@ -1017,30 +1017,42 @@ public class TileOverlay
 
                     // HALO AND ICON AS ONE PICTURE, AT 90 PER CENT (FR-130; Adam: "Give it 10% transparency so that labels
                     // under it can be faintly seen still").  Each drawn through the alpha on its own, the icon would lie
-                    // over the halo's white and let only a hundredth of the label through.
-                    java.awt.image.BufferedImage locomotive =
-                        new java.awt.image.BufferedImage(whole, whole, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    // over the halo's white and let only a hundredth of the label through.  The picture is made in the
+                    // screen's own pixels, already turned: made upright and turned afterwards, the icon is scaled and
+                    // turned in two steps and comes out ragged on a curve (MT-642).
+                    java.awt.geom.AffineTransform turned = g.getTransform();
+
+                    java.awt.Rectangle box = turned.createTransformedShape(
+                        new java.awt.Rectangle(-side / 2 - out, -side / 2 - out, whole, whole)).getBounds();
+
+                    java.awt.image.BufferedImage locomotive = new java.awt.image.BufferedImage(box.width, box.height,
+                        java.awt.image.BufferedImage.TYPE_INT_ARGB);
 
                     java.awt.Graphics2D lg = locomotive.createGraphics();
 
                     try
                     {
-                        lg.drawImage(haloOf(picture), 0, 0, whole, whole, null);
-                        lg.drawImage(picture, out, out, side, side, null);
+                        lg.setRenderingHints(g.getRenderingHints());
+                        lg.translate(-box.x, -box.y);
+                        lg.transform(turned);
+                        lg.drawImage(haloOf(picture), -side / 2 - out, -side / 2 - out, whole, whole, null);
+                        lg.drawImage(picture, -side / 2, -side / 2, side, side, null);
                     }
                     finally
                     {
                         lg.dispose();
                     }
 
+                    g.setTransform(new java.awt.geom.AffineTransform());
                     g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, ICON_ALPHA));
-                    g.drawImage(locomotive, -side / 2 - out, -side / 2 - out, null);
+                    g.drawImage(locomotive, box.x, box.y, null);
                 }
                 finally
                 {
                     // Restored rather than undone step by step: the caller handed over a Graphics
-                    // it goes on using, and a transform left on it moves everything drawn after.
+                    // it goes on using, and a transform or alpha left on it changes everything drawn after.
                     g.setTransform(wasAt);
+                    g.setComposite(java.awt.AlphaComposite.SrcOver);
                 }
             }
             else

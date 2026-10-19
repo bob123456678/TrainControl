@@ -60,6 +60,20 @@ time taken before 3.0.3 ... FR-130, ... which we would then release concurrently
 - **Before, measured 2026-10-18** (dev `acaaf3fc`, Sonnet, commit `9e55fb8f`, merged as `ec7925d4`): 372 s of agent time
   (about 7 minutes from launch to report), 32 tool calls, 107,349 tokens, 30 s waiting for the test lock.  Two files
   changed (`TileOverlay`, `ui.testDiagramLooksRight`); no glow needed.
+- **And the quality of the result, not only its cost (Adam, 2026-10-18: "let's also compare the quality of the result in
+  addition to the efficiency (cost and time) of the build").**  Each build is judged the same way:
+  - Regressions: every test class that reads the touched source files is run on the build, not only the classes the
+    worker ran; the reds it caused are counted.
+  - A blind review: one Opus reviewer grades both diffs against the brief, labelled X and Y in a random order, with the
+    validator's A/B/C grades (wrong behaviour, missing or weak claim, comment or style), and states which it would ship.
+  - Its claims: whether each test it added turns red when its change is reverted, and whether it pins anything the brief
+    did not ask for.
+  - The fit: lines changed, files touched, and whether the comments follow the comment rule.
+  - The after build also passes the before build's tests, and Adam's MT-772 steps are walked on it.
+- **Before, quality so far:** one regression, found after the merge. `core.testAutonomyDiagramMonitor`'s
+  `testTheIconRunsAlongEveryCurveAndDoubleCurveOnItsOwnRoad` (MT-642) went red. The icon, drawn as one upright picture
+  and then turned, came out 86% like the drawing it is held to, against a 98% bar. The worker ran only
+  `ui.testDiagramLooksRight`; the Monitor class also reads `TileOverlay`.
 
 ## Summary
 
