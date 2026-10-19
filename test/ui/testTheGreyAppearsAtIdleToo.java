@@ -92,7 +92,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * MUTATION, both measured rather than reasoned:
  *
- * - Put the `isAutonomyBusy()` fence back on the blocked set in `TrainControlUI.workOutCoveredTrack`
+ * - Put the `isAutonomyBusy()` fence back on the blocked set in `CoveredTrackView.workOutCoveredTrack`
  *   and five of the seven fail - everything except the two controls, `testFreeTrackIsNotTouchedAtIdle`
  *   and the wash-shape claim that depends on the first.
  * - Take `blockedTrackChanged()` out of `TrainControlUI.applyTrainLength` and three fail:

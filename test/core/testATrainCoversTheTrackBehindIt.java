@@ -1039,12 +1039,12 @@ public class testATrainCoversTheTrackBehindIt
     @Test
     public void testTheRefreshRedrawsWhatChanged() throws Exception
     {
-        assertTrue(SourceOf.declaration("private void workOutCoveredTrack()")
-            .contains("repaintTheWashWhereItChanged(was, coveredTrack, wasBlocked, blockedTrack)"),
+        assertTrue(SourceOf.declaration("    void workOutCoveredTrack()")
+            .contains("repaintTheWashWhereItChanged(was, this.ui.coveredTrack, wasBlocked, this.ui.blockedTrack)"),
             "the covered set is recomputed and nothing is redrawn, so a train that moves leaves the"
             + " track behind where it used to be greyed until an unrelated repaint clears it (OB-180)");
 
-        String ui = SourceOf.declaration("private void repaintTheWashWhereItChanged(");
+        String ui = SourceOf.declaration("    void repaintTheWashWhereItChanged(");
 
         // THE UNION, THEN WHAT DID NOT CHANGE TAKEN BACK OUT (MT-309).
         //

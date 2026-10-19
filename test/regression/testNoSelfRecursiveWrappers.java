@@ -115,6 +115,10 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "timetableTab", "src/org/traincontrol/gui/TimetableTab.java", "TimetableTab", WINDOW,
             "TrainControlUI", "ui." },
+        { "coveredTrackView", "src/org/traincontrol/gui/CoveredTrackView.java", "CoveredTrackView", WINDOW,
+            "TrainControlUI", "ui." },
+        { "captionVisibility", "src/org/traincontrol/gui/CaptionVisibility.java", "CaptionVisibility", WINDOW,
+            "TrainControlUI", "ui." },
     };
 
     /**

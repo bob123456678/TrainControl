@@ -179,7 +179,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: the worker showFor starts before it builds the menu, which is the"
             + " whole reason that method exists");
 
-        ALLOWED.put("TrainControlUI.java#workOutCaptionVisibility",
+        ALLOWED.put("CaptionVisibility.java#workOutCaptionVisibility",
             "OFF THE EVENT THREAD: CoveredTrackRenderer, and the answer is painted by an invokeLater");
 
         ALLOWED.put("TrainControlUI.java#workOutReturnHomeTriage",
