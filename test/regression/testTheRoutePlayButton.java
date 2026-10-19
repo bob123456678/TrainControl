@@ -264,7 +264,24 @@ public class testTheRoutePlayButton
         assertTrue(renderer >= 0 && rendererEnds > renderer,
             "precondition: the route cell renderer could not be found, so nothing below looks at it");
 
-        assertFalse(cell.substring(renderer, rendererEnds).contains("drawArc("),
+        // AN ARC IS DRAWN TWO WAYS in this program: `drawArc(`, and an `Arc2D` shape - the Return Home spinner is the
+        // second, because whole-pixel `drawArc` was rejected for its jitter.  Both are refused in this cell.
+        assertTrue(drawsAnArc(code),
+            "precondition: no arc is drawn anywhere in the program's code by `drawArc(` or `Arc2D`, so the search for one"
+            + " in the route cell looks for a shape this program no longer draws arcs with");
+
+        assertFalse(drawsAnArc(cell.substring(renderer, rendererEnds)),
             "the spinner arc is back; the button greys now instead");
+    }
+
+    /**
+     * Whether code draws an arc, either way this program does it.
+     *
+     * @param code program code, comments blanked
+     * @return true when it calls `drawArc(` or builds an `Arc2D`
+     */
+    private static boolean drawsAnArc(String code)
+    {
+        return code.contains("drawArc(") || code.contains("Arc2D");
     }
 }
