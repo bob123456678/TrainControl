@@ -40,15 +40,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * @author Adam
  *
- * <p><b>A missing input is a SKIP, not a pass (TS-C3).</b> Three of the bundles below live in
- * {@code tc_backup/}, which is <i>gitignored</i> - zero files tracked - so on every machine but the
- * owner's these tests were reading nothing and reporting green. A pass that means "did not run" is the
- * one result a suite cannot afford, because it is indistinguishable from the thing it was written to
- * prove.
- *
- * <p>{@code SkipException} is what the neighbours use and what this project counts: the bar is
- * <b>Failures: 0 AND Skips: 0</b>, so a skipped test is visible in the same line that reports a
- * failure. A bare {@code return} is invisible in exactly that line.
+ * <p><b>A missing input is a failure, not a pass or a skip (TS-C3).</b> The three bundles are copies of Adam's, kept in
+ * {@code test/layouts/autonomy-bundles}; they were read from his gitignored {@code tc_backup/}, so on every other
+ * machine these claims skipped and checked nothing.
  */
 public class testRouteInventory
 {
@@ -133,46 +127,31 @@ public class testRouteInventory
     @Test
     public void testStuckBundleRoutes() throws Exception
     {
-        File bundle = new File("tc_backup/Autonomy 1b.json");
-
-        if (!bundle.isFile())
-        {
-            throw new org.testng.SkipException("no tc_backup/Autonomy 1b.json to read");
-        }
+        File bundle = bundle("Autonomy 1b.json");
 
         RouteInventoryResult result = report("2-stuck-1b", build(bundle));
 
-        assertTrue(result.valid, "tc_backup/Autonomy 1b.json must build into a valid layout");
+        assertTrue(result.valid, bundle + " must build into a valid layout");
     }
 
     @Test
     public void testLaterBundleRoutes() throws Exception
     {
-        File bundle = new File("tc_backup/Autonomy 1d.json");
-
-        if (!bundle.isFile())
-        {
-            throw new org.testng.SkipException("no tc_backup/Autonomy 1d.json to read");
-        }
+        File bundle = bundle("Autonomy 1d.json");
 
         RouteInventoryResult result = report("4-bundle-1d", build(bundle));
 
-        assertTrue(result.valid, "tc_backup/Autonomy 1d.json must build into a valid layout");
+        assertTrue(result.valid, bundle + " must build into a valid layout");
     }
 
     @Test
     public void testLatestBundleRoutes() throws Exception
     {
-        File bundle = new File("tc_backup/Autonomy 1e.json");
-
-        if (!bundle.isFile())
-        {
-            throw new org.testng.SkipException("no tc_backup/Autonomy 1e.json to read");
-        }
+        File bundle = bundle("Autonomy 1e.json");
 
         RouteInventoryResult result = report("5-bundle-1e", build(bundle));
 
-        assertTrue(result.valid, "tc_backup/Autonomy 1e.json must build into a valid layout");
+        assertTrue(result.valid, bundle + " must build into a valid layout");
     }
 
     @Test
@@ -182,7 +161,7 @@ public class testRouteInventory
 
         if (!hand.isFile())
         {
-            throw new org.testng.SkipException("no test/test_layout/config/autorun/autonomy.json to read");
+            throw new AssertionError("no test/test_layout/config/autorun/autonomy.json to read");
         }
 
         RouteInventoryResult result = report("3-hand-authored-2.8.1",
@@ -190,6 +169,18 @@ public class testRouteInventory
 
         assertTrue(result.valid,
             "test/test_layout/config/autorun/autonomy.json must build into a valid layout");
+    }
+
+    /**
+     * One of Adam's exported setups, as a fixture; failed rather than skipped when it is not there.
+     */
+    private static File bundle(String name)
+    {
+        File bundle = new File(support.Scenario.folderFor("autonomy-bundles"), name);
+
+        assertTrue(bundle.isFile(), "no " + bundle + " to read");
+
+        return bundle;
     }
 
     /**

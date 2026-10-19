@@ -8,10 +8,10 @@ Four folders, by what a test is FOR rather than by what it happens to import.
 | `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 54 |
 | `regression/` | Written for one named defect, to stop it coming back. | 140 |
 | `support/` | Not tests. Fixtures the others use. | 13 |
-| `layouts/` | Not tests either. Checked-in **railways**, one folder per shape - see below. | 4 |
+| `layouts/` | Not tests either. Checked-in **railways**, one folder per shape - see below. | 5 |
 
 **Counted 2026-10-19.**  The 2026-09-09 figures (88/31/70/5/3) had gone stale: core 147, ui 54, regression 140,
-support 13 files, layouts 4 folders.  Before 2026-09-09 they read 81/29/54/4 the day before, and 63/16/45/3 before
+support 13 files, layouts 5 folders (`autonomy-bundles` added the same day).  Before 2026-09-09 they read 81/29/54/4 the day before, and 63/16/45/3 before
 that - stale by
 thirty-four classes at one point (MON-C20).  A table that has to be recounted to be believed, in the
 document that exists to say where a new test goes.  If you add a class, the number here is the one to
@@ -148,6 +148,7 @@ in one call by `support.Scenario`:
 | `curve-into-platform/` | A station approached round a curve, with a straight station beside it as the control | The side a rail LEAVES by differs from the compass direction of the neighbour.  Its first use found REV9-B3 on the day it was written |
 | `live-snapshot/` | Adam's whole railway, taken from `git show HEAD:` and frozen | Complex pathing and random movement, against ground truth that cannot move.  The base for mutations |
 | `one-page/` | The sample layout cut down to its first page, with nothing set up | The setup moving onto a one-page layout (`testASetupMovesToAOnePageLayout`) |
+| `autonomy-bundles/` | Not a railway: three setups Adam exported, imported over another fixture's pages | `testRouteInventory`'s bundle claims, which read his gitignored `tc_backup/` and skipped everywhere else |
 
 **Lengths, train placements and locomotive properties are never in a scenario.**  That is the half Adam
 asked to be able to vary freely, so a test sets them itself and no two tests inherit one author's
