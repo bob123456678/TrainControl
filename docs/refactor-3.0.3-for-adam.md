@@ -44,6 +44,8 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 5 | 1b | Twelve core claims whose feature, when broken, turns them into a skip rather than a red were counted as not hollow (the brief's rule).  The battery lists any class with a skip as "tested nothing", so such a defect is visible, but not as a failure. | Not filed. |
 | 6 | 1b (H0845) | The facing-menu claim (greyed, not hidden, where a train cannot leave) now runs on a made-up case: a square the build has no copy of, with a free locomotive placed on it.  Your snapshot has no real station trains cannot leave. | Not filed. |
 | 7 | 1b | Regression's loud-skip claims (H0562-H0566, H0569-H0578, H0862, H0871, H0873, H0883, H0961) were left as skips: a defect there reads "tested nothing", not a failure.  Converting them is ready (the worker wrote and reverted it); an assert in `@BeforeClass` reports as skips, so each needs a per-test fixture check. | Not filed; your call whether skips should fail. |
+| 8 | 6 (JaCoCo) | `TrainControlUI.initComponents` (the NetBeans form, about 5,750 lines) is close to Java's 64 KB limit for one method: JaCoCo's probes push it over, and the coverage run had to split it in a scratch copy.  A few more components in the form and javac itself will refuse it. | Not filed; the form is yours to edit in the GUI Builder.  Splitting the main window's form into panels (Phase 4-5) would move it away from the limit. |
+| 9 | 6 (JaCoCo) | Two test classes lost their log handler whenever a garbage collection came early (a weakly held logger), which JaCoCo made happen every run. | Fixed in the tests. |
 
 ## Adam's answers (2026-10-19)
 
