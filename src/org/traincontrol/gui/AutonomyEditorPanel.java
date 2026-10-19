@@ -7697,9 +7697,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Turns a set of open arms into a direction for each route, and applies them together.
      *
-     * The arms are what the drawing shows and what the user is choosing between; the per-route
-     * directions are what the model stores.  One translation, used by the click and by the checkboxes,
-     * so the two cannot come to different conclusions about the same square.
+     * The arms are what the drawing shows and what the user is choosing between; the per-route directions are what the
+     * model stores.  One translation, used by the click and by the checkboxes, so the two cannot come to different
+     * conclusions about the same square.
      */
     private void applyArmMask(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
@@ -7716,17 +7716,8 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
 
-        // THE ARROWS, NOT THE DIAGRAM (MT-334).
-        //
-        // Adam, after OB-185's fix: "it still flickers, but less", and the whole diagram still
-        // redraws.  Less, because the light door was wired to the One-Way tool alone and this is one
-        // of the four ordinary ways a direction is changed.  A restriction changes no tile art - what
-        // moves is the arrow drawn over the tile - and rebuilding every label on the page to show it
-        // is the flash he is reporting; measured, 384 of 384.
-        //
-        // The running layout is still rebuilt: annotationsChanged does that half exactly as
-        // setupChanged does, which is what the note this replaces was about.
-        // Directions are edges in the running graph (VD11-A1).
+        // THE ARROWS, NOT THE DIAGRAM (MT-334), as in `cycle`.  A direction is an edge in the running graph (VD11-A1),
+        // which annotationsChanged rebuilds as setupChanged does.
         annotationsChanged();
     }
 
@@ -7812,25 +7803,20 @@ public class AutonomyEditorPanel extends JPanel
 
         states.add(0);
 
-        // Then everything else.  The four above are the answers somebody wants most of the time, so
-        // they come first and are reached in at most four clicks; the rest follow, so clicking does
-        // eventually reach every combination rather than declaring some of them unavailable.
-        //
-        // This is what both earlier attempts were missing.  A four-state cycle could not express
-        // "north and west open, east shut"; a sixteen-state counter could, and put all-open fifteen
-        // clicks from all-shut.  Ordering the same sixteen answers by how often they are wanted costs
-        // nothing and gives both.
+        // Then everything else.  The four above are the answers wanted most, so they come first and are reached in at
+        // most four clicks; the rest follow, so clicking eventually reaches every combination rather than declaring some
+        // unavailable (a four-state cycle could not express "north and west open, east shut", and a sixteen-state counter
+        // put all-open fifteen clicks from all-shut).
         for (int mask = 1; mask < all; mask++)
         {
             if (!states.contains(mask)) states.add(mask);
         }
 
-        // ONLY THE STATES THE CLICK STORES AS IT MEANS THEM (VD18-C2).  On a permanent turnout every route is directed
-        // at the toe, so a combination opening any other arm stores `BOTH` or the way toward the fork - answers
-        // `TileGraph.directionIsPossible` says the editor must not offer, and which read back in force as the toe-ward
-        // way or as closed: the click stored answers the menus refuse, and read in force it could step from closed to
-        // closed for ever.  Every combination on an ordinary switch or a crossing is possible, so this takes nothing
-        // from them; and everything shut always is, so the list is never empty.
+        // ONLY THE STATES THE CLICK STORES AS IT MEANS THEM (VD18-C2).  On a permanent turnout every route is directed at
+        // the toe, so a combination opening any other arm stores `BOTH` or the way toward the fork: answers
+        // `TileGraph.directionIsPossible` says the editor must not offer, and which read back in force as the toe-ward way
+        // or as closed (the click could step from closed to closed for ever).  Every combination on an ordinary switch or
+        // a crossing is possible, and everything shut always is, so the list is never empty.
         states.removeIf(state -> !everyAnswerIsPossible(routes, sides, state));
 
         return states;
@@ -7853,8 +7839,7 @@ public class AutonomyEditorPanel extends JPanel
      * so the number the counter advances from, and the boxes the menu ticks, are the state the user can see.
      *
      * In force rather than stored (`inForce`): a permanent turnout's routes are all directed at its toe, and its
-     * untouched default `BOTH` read raw opened every arm - the boxes ticked arms no train leaves by, while the branch
-     * submenus beside them ticked the one way there is.
+     * untouched default `BOTH` read raw opened every arm.
      */
     private int armMask(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
@@ -7931,47 +7916,27 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks whether a train could get from one sensor to another, and shows the route.
-     *
-     * Two clicks, like portal pairing.  The answer comes from the same reduction everything else uses,
-     * so what this says is what a running train would find - not a second opinion.
-     */
-    /**
      * Says why the train on this square is not going anywhere, and draws where it could go.
      *
-     * The other test asks a question about the TRACK - could anything get from here to there - and
-     * answers it from the reduction. This one asks the question users actually ask, which is about a
-     * locomotive and about now: every station it might be sent to, and for each one the reason it was
-     * refused. Occupancy, exclusions, switched-off squares and parking rules are all in the answer,
-     * because all of them are in the decision.
+     * The other test asks a question about the TRACK; this asks about a locomotive and about now: every station it might
+     * be sent to, and for each one the reason it was refused (occupancy, exclusions, switched-off squares and parking
+     * rules are all in the decision).  The list says why and the traces say where: a train with nowhere to go draws none,
+     * which is visible from across the room.
      *
-     * Both halves matter. The list says why, and the traces say where: a train with somewhere to go
-     * draws lines, and a train with nowhere draws none - which is the same answer read two ways, and
-     * the second one is visible from across the room.
+     * Against the layout as last LOADED, which while this editor is open is the last saved configuration; the hint says
+     * unsaved edits are not in it, because an explanation that quietly describes a different railway is worse than none.
      *
-     * Against the layout as last LOADED, which while this editor is open is the last saved
-     * configuration. Unsaved edits are not in it, and the hint says so rather than letting the user
-     * assume otherwise - an explanation that quietly describes a different railway is worse than none.
+     * **NOT ON THE EVENT THREAD** (D3-C1; Adam: *"I would rather take it off EDT.  It's not critical now, but we want to
+     * avoid these pitfalls."*).  The answer comes from `Layout.explainDestinations`, which is `synchronized` on the
+     * `Layout` (the monitor a dispatch holds for the whole of `configureAndLockPath`), and asking for it here parked the
+     * event thread on that monitor (OB-192, the last exception in
+     * `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor`).  A rule with one exception is a rule with a way
+     * in.
      *
-     * **NOT ON THE EVENT THREAD ANY MORE** (D3-C1, Adam 2026-09-09: *"I would rather take it off EDT.
-     * It's not critical now, but we want to avoid these pitfalls."*).  The answer comes from
-     * `Layout.explainDestinations`, which is `synchronized` on the `Layout` - the monitor a dispatch
-     * holds for the whole of `configureAndLockPath`, and the one `AutoLocomotiveStatus.findPaths`
-     * holds for a whole-graph search with nothing running at all.  Asking for it here parked the
-     * event thread on that monitor, which is OB-192, and it was the last standing exception in
-     * `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor`.
-     *
-     * It was never a live freeze - the editor cannot be open while autonomy runs (OB-047) - and it is
-     * moved anyway, because a rule with one exception is a rule with a way in.  The sibling question
-     * in `AutoLocomotiveStatus` was moved off the event thread twice, for OB-079; this is that sweep
-     * reaching the copy it missed.
-     *
-     * **WHAT STAYS HERE IS WHAT MUST.**  `getStationIndex` DERIVES the square-to-Point translation when
-     * nothing has yet, and `layoutSource.get()` was `getModel().getAutoLayout()`, which BUILDS a
-     * `Layout` when there is none - it asks `getAutoLayoutIfLoaded` since RLV8-C2, and may answer
-     * null - the same reason `refreshCoveredTrack` captures its railway and its session on the
-     * caller's thread rather than letting the worker ask for them.  So both are captured here and
-     * handed over, and the worker asks nothing that can build anything.
+     * **WHAT STAYS HERE IS WHAT MUST.**  `getStationIndex` DERIVES the square-to-Point translation when nothing has yet,
+     * and `layoutSource.get()` can build a `Layout` (it asks `getAutoLayoutIfLoaded` and may answer null), so both are
+     * captured here, on the caller's thread as `refreshCoveredTrack` does, and handed over: the worker asks nothing
+     * that can build anything.
      *
      * @param tile the square that was clicked
      * @param component what is drawn on it
@@ -7993,33 +7958,28 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // Captured on the event thread, for the reason the javadoc gives: this derives when nothing
-        // has yet, and the session's own comment says that derivation belongs to the thread holding
-        // the setup rather than to whichever reader asks first.
+        // Captured on the event thread, for the reason the javadoc gives: this derives when nothing has yet, and that
+        // derivation belongs to the thread holding the setup.
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
         // AND WHAT THE SETUP SAYS ABOUT TURNING, ARRIVALS AND CLOSED SQUARES, captured here for the index's reason
-        // (GSE-C3).  They are the setup's live collections, which the event thread edits; read by the worker as it
-        // went, a click on the diagram while the answer was being worked out changed them under a walk that was
-        // iterating them.
+        // (GSE-C3): they are the setup's live collections, which the event thread edits, and a click on the diagram while
+        // the answer was worked out changed them under a walk that was iterating them.
         final WhySetup setup = new WhySetup(session);
 
         // WHICH TIER IT ANSWERS FOR (MT-434), read with the radio here on the event thread, and the square remembered so
-        // switching Path Type can ask it again.  Adam, 2026-09-15: *"in manual mode, I still get reasons like
-        // 'tunnellongpark will never be chosen in autonomy'"*.
+        // switching Path Type can ask it again (a manual-mode answer must not say "will never be chosen in autonomy").
         final boolean byHand = pathTypeAuto != null && !pathTypeAuto.isSelected();
 
         lastWhyTile = tile;
 
-        // SAID NOW, because the answer lands a beat later and a tool that goes quiet on a click reads
-        // as a tool that did nothing.  The key is the locomotive panel's - the same question, asked
-        // there, and moved off the event thread before this one.
+        // SAID NOW, because the answer lands a beat later and a tool that goes quiet on a click reads as one that did
+        // nothing.  The key is the locomotive panel's: the same question, asked there.
         say(hint, I18n.t("autolayout.ui.whyWorking"));
 
-        // WHICH ASK THIS IS.  Two clicks in a row are two searches, and the first one to be started is
-        // not necessarily the first one to finish - so the answer carries the number of the ask it is
-        // about and `paintWhy` throws away anything that is not the latest.  Without it a slow answer
-        // to an abandoned question paints over the one the user is waiting for.
+        // WHICH ASK THIS IS: two clicks in a row are two searches and the first started is not necessarily the first to
+        // finish, so the answer carries the number of its ask and `paintWhy` throws away anything that is not the
+        // latest.
         long asked = whyAsked.incrementAndGet();
 
         whyWorking.incrementAndGet();
@@ -8030,9 +7990,8 @@ public class AutonomyEditorPanel extends JPanel
         }
         catch (RuntimeException refused)
         {
-            // Counted down before it is thrown on, so a refusal cannot leave `awaitWhy` waiting for an
-            // answer nobody is working on.  Thrown on because the caller catches it and puts it in a
-            // dialog, which is what happened to every failure of this tool before it had a worker.
+            // Counted down before it is thrown on, so a refusal cannot leave `awaitWhy` waiting for an answer nobody is
+            // working on; thrown on because the caller puts it in a dialog.
             settleWhy();
 
             throw refused;
@@ -8041,10 +8000,8 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Works the answer out, off the event thread, and hands it to the event thread to paint.
-     *
-     * The shape `CoveredTrackRenderer` and `ReturnHomeTriageRenderer` use, and for their reason: the
-     * question takes the railway's monitor, the painting takes the event thread, and the two are done
-     * in that order by two threads rather than in one place by the thread that draws the window.
+     * The shape `CoveredTrackRenderer` and `ReturnHomeTriageRenderer` use: the question takes the railway's monitor and
+     * the painting takes the event thread, so the two are done in that order by two threads.
      *
      * @param asked which ask this is, so a stale answer can be discarded
      * @param layout the railway, captured on the event thread
@@ -8066,11 +8023,9 @@ public class AutonomyEditorPanel extends JPanel
             }
             catch (RuntimeException failed)
             {
-                // SAID, NOT SWALLOWED.  This ran inside the click dispatcher's own try/catch until it
-                // had a worker, and that catch put the message in a dialog; an exception on a worker
-                // reaches no catch at all, and what the user would be left looking at is "Working out
-                // the reasons..." for ever.  The layout being rebuilt underneath the pass is the way
-                // this happens, and saying so is the whole of what the dialog did.
+                // SAID, NOT SWALLOWED: an exception on a worker reaches no catch, and the user would be left looking at
+                // "Working out the reasons..." for ever.  The layout being rebuilt underneath the pass is the way this
+                // happens.
                 answer = new WhyAnswer(String.valueOf(failed.getMessage()), false, null);
             }
 
@@ -8085,15 +8040,12 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The old body of `applyWhy`, on a worker thread, composing an answer rather than painting one.
+     * Composes the answer on a worker thread rather than painting one: the stations autonomy could choose, then the
+     * ones it never will, each alphabetical, with the page named for a station that is not on the train's (FR-080).
      *
-     * NOTHING ABOUT THE ANSWER CHANGED when it moved - the same stations, the same reasons, the same
-     * traces, from one pass over the railway's answer.  The ORDER has changed since, on purpose (FR-080):
-     * the stations autonomy could choose, then the ones it never will, each alphabetical, with the page
-     * named for a station that is not on the train's.  What changes is that the report
-     * and the lines are built into a value object and handed over, instead of being written into the
-     * banner and into `traces` from here.  `traces` is read by the paint, so a worker writing into it
-     * would be drawing on the diagram from the wrong thread.
+     * The report and the lines are built into a value object and handed over instead of being written into the banner
+     * and into `traces` from here: `traces` is read by the paint, so a worker writing into it would be drawing on the
+     * diagram from the wrong thread.
      *
      * @param layout the railway
      * @param index the square-to-Point translation
@@ -8105,12 +8057,11 @@ public class AutonomyEditorPanel extends JPanel
     private WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
         org.traincontrol.automationui.StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
     {
-        // Which train is standing here.  Asked of the LAYOUT rather than of the setup, because it is
-        // the layout's opinion of where trains are that decides what runs.
+        // Which train is standing here, asked of the LAYOUT rather than of the setup, because the layout's opinion of
+        // where trains are decides what runs.
         org.traincontrol.base.Locomotive standing = null;
 
-        // Through StationIndex, which is the one place that knows a square is several Points and which
-        // ones.  Asking the builder again would be a second opinion about the same thing.
+        // Through StationIndex, the one place that knows a square is several Points and which ones.
         for (String pointName : index.pointNamesAt(tile))
         {
             org.traincontrol.automation.Point p = layout.getPoint(pointName);
@@ -8124,15 +8075,13 @@ public class AutonomyEditorPanel extends JPanel
 
         if (standing == null)
         {
-            // NOTHING DRAWN AND NOTHING CLEARED, which is what a null trace map means.  The three
-            // answers that are not about a train leave whatever was on the diagram alone, exactly as
-            // they did when this ran on the event thread and never reached `traces.clear()`.
+            // NOTHING DRAWN AND NOTHING CLEARED, which is what a null trace map means: the three answers that are not
+            // about a train leave whatever was on the diagram alone.
             return new WhyAnswer(I18n.t("autosetup.ui.whyNoTrainHere"), false, null);
         }
 
-        // The lines this answer draws, built here and installed by the paint.  Empty rather than null
-        // from this point on: every answer below is about a train, and an answer about a train that
-        // draws nothing has to TAKE the previous answer's lines off the diagram.
+        // The lines this answer draws, built here and installed by the paint.  Empty rather than null from here on: an
+        // answer about a train that draws nothing has to TAKE the previous answer's lines off the diagram.
         java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
             drawn = new java.util.LinkedHashMap<>();
 
@@ -8145,24 +8094,23 @@ public class AutonomyEditorPanel extends JPanel
                 escape(standing.getName()), escape(cannotStart)) + unsavedWarning(), true, drawn);
         }
 
-        // THE REASONS AND WHICH OF THEM AUTONOMY WOULD NEVER CHOOSE, taken under one lock (FBR-C6) so a
-        // station cannot be printed under the wrong heading - the question the locomotive panel's own
-        // why-window asks, and in the same call.
+        // THE REASONS AND WHICH OF THEM AUTONOMY WOULD NEVER CHOOSE, taken under one lock (FBR-C6) so a station cannot be
+        // printed under the wrong heading.
         org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
 
         java.util.Map<String, String> reasons = grouped.getReasons();
         java.util.Set<String> neverChosenPoints = grouped.getBarred();
 
-        // STATIONS FIRST, THEN BERTHS, EACH ALPHABETICAL (Adam, FR-080: "show all stations first, then
-        // show berths (non-autonomy stations), both in alphabetical order").  The railway reports them in
-        // its priority order, which is what `pickPath` walks and not how anybody reads a list.  Grouped as
-        // `AutoLocomotiveStatus.whyNotReport` groups its window - a station with any copy autonomy could
-        // choose is filed with the choosable ones - so the two answers to one question read alike.
-        // AND BY PAGE FIRST (Adam, MT-429: "Update sorting to be by page then station name, rather than
-        // station name only, with the current page being first, then others sequentially later").  The
-        // current page is the one this editor is showing - or, where the panel has no page, as on the track
-        // diagram's own menu, the page the train stands on.  The others follow in page-name order, which is
-        // the order the page list itself is in.  Each shown name's key is recorded before it is filed.
+        // STATIONS FIRST, THEN BERTHS, EACH ALPHABETICAL (FR-080: *"show all stations first, then show berths
+        // (non-autonomy stations), both in alphabetical order"*).  The railway reports them in its priority order, which
+        // is what `pickPath` walks and not how anybody reads a list.  Grouped as `AutoLocomotiveStatus.whyNotReport`
+        // groups its window (a station with any copy autonomy could choose is filed with the choosable ones), so the two
+        // answers to one question read alike.
+        //
+        // AND BY PAGE FIRST (MT-429: *"Update sorting to be by page then station name, rather than station name only, with
+        // the current page being first, then others sequentially later"*).  The current page is the one this editor is
+        // showing, or where the panel has no page (the track diagram's own menu) the page the train stands on; the others
+        // follow in page-name order.  Each shown name's key is recorded before it is filed.
         final String currentPage = page != null ? page : tile.getPage();
 
         final java.util.Map<String, String[]> sortKey = new java.util.HashMap<>();
@@ -8189,24 +8137,23 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Set<TileKey> mustTurn = setup.mustTurn;
         java.util.Set<TileKey> mayTurn = setup.mayTurn;
 
-        // The red arrows, so the routes drawn here are routes a train would actually be offered
-        // (OB-120).  This tool answers "where could it go"; drawing a run into a station that refuses
-        // arrivals from that side answers it wrongly, and in the direction that wastes the most time -
-        // the user goes looking for why the railway will not do something it was never going to do.
+        // The red arrows, so the routes drawn here are routes a train would actually be offered (OB-120): drawing a run
+        // into a station that refuses arrivals from that side answers wrongly, in the direction that wastes the most
+        // time.
         java.util.Map<TileKey, java.util.Set<org.traincontrol.automationui.TilePorts.Side>> barred = setup.barred;
 
-        // Collapsed to STATIONS, the way the locomotive panel's tooltip does.  The reasons come back
-        // keyed by the running graph's Points, and a square is several of those - so a derived-graph
-        // station appeared three times over, under generated names the user never chose.
+        // Collapsed to STATIONS, the way the locomotive panel's tooltip does: the reasons come back keyed by the running
+        // graph's Points, and a square is several of those, so a derived-graph station would appear three times over under
+        // generated names the user never chose.
         for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
         {
             TileKey where = index.squareOf(entry.getKey());
 
             String station = where == null ? entry.getKey() : describeTile(where);
 
-            // AND ITS PAGE, where that is not the current page (FR-080: "If a point is on another page, show
-            // it"; MT-429).  A setup can span several pages, and a name with no page is a name somebody has to
-            // go and look for - or two different squares that read as one.
+            // AND ITS PAGE, where that is not the current page (FR-080: *"If a point is on another page, show it"*;
+            // MT-429): a name with no page is a name somebody has to go and look for, or two different squares that read
+            // as one.
             String nameOnly = station;
 
             boolean elsewhere = where != null && where.getPage() != null && !where.getPage().equals(currentPage);
@@ -8250,15 +8197,10 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
-        // "Nowhere to go", with nothing after it, is not an answer.
-        //
-        // The list below names the stations that were considered and says why each was refused - so
-        // when it is empty as well, the report is the word "nowhere" and nothing else, and there is
-        // no way to tell "every station refused this train" from "there were no stations to refuse
-        // it".  Those need opposite things done about them, and Adam met the second one: a train
-        // sitting at a station the report said had nowhere to go, with no reason given for anywhere.
-        //
-        // So when nothing was considered, say what the setup actually holds.
+        // "Nowhere to go", with nothing after it, is not an answer: when no station was considered either, the report is
+        // the word "nowhere" and nothing else, and "every station refused this train" cannot be told from "there were no
+        // stations to refuse it", which need opposite things done.  So when nothing was considered, say what the setup
+        // actually holds.
         String going = available.isEmpty()
             ? I18n.t("autosetup.ui.whyNowhere")
             : I18n.f("autosetup.ui.whyCanGo", available.size(), escape(join(new java.util.ArrayList<>(available))));
@@ -8279,17 +8221,10 @@ public class AutonomyEditorPanel extends JPanel
                 escape(describeBlock(layout.getLocomotiveLocation(standing)))));
         }
 
-        // The reason behind the reason.
-        //
-        // "No track route leads there", said once per station, is what a SEVERED railway looks like
-        // from here - and it is the answer to the wrong question.  A switch or a signal drawn without
-        // an accessory address cannot be routed over, so every run through it is cut, and a setup with
-        // a few dozen of those has stations that are all perfectly fine and no way between any of them.
-        // The sample layout is exactly that: 79 blocking findings, seven edges, and a "why" report that
-        // named twenty-eight stations and blamed the track.
-        //
-        // So when nothing is available and the setup has blocking findings, say that first.  It is the
-        // one thing that has to be fixed before any of the rest can be true.
+        // The reason behind the reason: "No track route leads there", said once per station, is what a SEVERED railway
+        // looks like from here, and the answer to the wrong question.  A switch or a signal drawn without an accessory
+        // address cannot be routed over, so every run through it is cut.  So when nothing is available and the setup has
+        // blocking findings, say that first: it is the one thing that has to be fixed before any of the rest can be true.
         if (available.isEmpty())
         {
             int blockingFindings = countBlockingFindings();
@@ -8308,10 +8243,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Puts the worker's answer in the banner and its lines on the diagram, on the event thread.
      *
-     * ONLY THE LATEST ANSWER PAINTS.  A second click starts a second search, and an answer to a
-     * question the user has moved on from must not replace the one they are waiting for - which is
-     * `paintReturnHomeFromTheAnswer`'s rule about a Layout that has been replaced, arriving here as a
-     * rule about a question that has been.
+     * ONLY THE LATEST ANSWER PAINTS: an answer to a question the user has moved on from must not replace the one they
+     * are waiting for (`paintReturnHomeFromTheAnswer`'s rule about a Layout that has been replaced).
      *
      * @param asked which ask this answer is about
      * @param answer what to say and what to draw
@@ -8346,16 +8279,15 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Waits until every "why is this train not moving" ask already started has been worked out.
      *
-     * The answer is worked out on a worker now, so asking and reading it are two moments rather than
-     * one, and anything that wants to read what it said - which in practice is a test - has to wait in
-     * between.  `TrainControlUI.awaitCoveredTrack` is the same method for the same reason.
+     * Asking and reading the answer are two moments, so anything that reads what it said (in practice a test) has to
+     * wait in between; `TrainControlUI.awaitCoveredTrack` is the same method for the same reason.
      *
-     * IT WAITS FOR THE ANSWER, NOT FOR THE PAINT.  The paint is an `invokeLater` queued before the
-     * worker gives the job up, so a caller that wants to read the banner flushes the event queue after
-     * this - and one that calls this ON the event thread waits for a paint that cannot run.
+     * IT WAITS FOR THE ANSWER, NOT FOR THE PAINT.  The paint is an `invokeLater` queued before the worker gives the job
+     * up, so a caller that wants to read the banner flushes the event queue after this, and one that calls this ON the
+     * event thread waits for a paint that cannot run.
      *
-     * BOUNDED, and it says which it did: an unbounded wait here would turn a worker that has died into
-     * a hung window rather than a stale answer.
+     * BOUNDED, and it says which it did: an unbounded wait would turn a worker that has died into a hung window rather
+     * than a stale answer.
      *
      * @param millis how long to wait at most
      * @return true when nothing is outstanding, false when the wait ran out
@@ -8392,11 +8324,10 @@ public class AutonomyEditorPanel extends JPanel
      * What the setup says about turning, arrivals and closed squares, read for one "why is this train not moving" ask
      * on the event thread (GSE-C3).
      *
-     * The answer is composed on `WhyRenderer`, and these are the setup's live collections, which the event thread
-     * edits - so the worker is handed copies taken on the thread that owns them, as it is handed the railway and the
-     * station index.  The session's own methods build each of the four collections fresh, so holding them is holding
-     * copies.  The reduction is held by reference: a rebuild replaces it rather than editing it, so the one captured
-     * goes on describing the setup the copies came from.
+     * The answer is composed on `WhyRenderer`, and these are the setup's live collections, which the event thread edits,
+     * so the worker is handed copies taken on the thread that owns them.  The session's own methods build each of the
+     * four collections fresh.  The reduction is held by reference: a rebuild replaces it rather than editing it, so the
+     * one captured goes on describing the setup the copies came from.
      */
     private static final class WhySetup
     {
@@ -8447,10 +8378,8 @@ public class AutonomyEditorPanel extends JPanel
         /**
          * The lines to lay on the diagram, or null to leave whatever is drawn there alone.
          *
-         * Null is not the same as empty.  An answer about a train replaces the traces, and an answer
-         * that is not about one - no railway, not a station, no train standing here - leaves them,
-         * which is what this tool did when it ran on the event thread and returned before it reached
-         * `traces.clear()`.
+         * Null is not the same as empty.  An answer about a train replaces the traces; one that is not about a train (no
+         * railway, not a station, no train standing here) leaves them.
          */
         private final java.util.Map<TileKey,
             java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn;
@@ -8466,16 +8395,12 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * The one thread the "why is this train not moving" answer is worked out on.
+     * DAEMON, and it goes away when it is idle: this panel is built and thrown away every time the editor is opened, and
+     * every tile menu builds one, so a core thread held for the life of each would be a thread per editor opened
+     * (`allowCoreThreadTimeOut`).
      *
-     * DAEMON, and it goes away when it is idle.  `TrainControlUI`'s two renderers belong to the one
-     * window and live as long as it does; this panel is built and thrown away every time the editor is
-     * opened, and every tile menu builds one - so a core thread held for the life of each would be a
-     * thread per editor opened, for a tool most of them never use.  `allowCoreThreadTimeOut` means the
-     * pool costs nothing until somebody asks the question and nothing again a few seconds later.
-     *
-     * NOT COALESCED, unlike the window's renderers.  Those refresh on every railway event and their
-     * asks arrive faster than they can be served; this one is a click, and two clicks are two
-     * questions - the second of which must win, which is what `whyAsked` decides.
+     * NOT COALESCED, unlike the window's renderers, which refresh on every railway event: this one is a click, and two
+     * clicks are two questions, the second of which must win (`whyAsked`).
      */
     private final java.util.concurrent.ThreadPoolExecutor WhyRenderer = whyRenderer();
 
@@ -8498,8 +8423,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Builds the pool above.
      *
-     * A method rather than an initialiser, because `allowCoreThreadTimeOut` has to be called on the
-     * pool after it is constructed and a field initialiser has nowhere to put that line.
+     * A method rather than an initialiser, because `allowCoreThreadTimeOut` has to be called on the pool after it is
+     * constructed.
      *
      * @return the pool
      */
@@ -8568,13 +8493,8 @@ public class AutonomyEditorPanel extends JPanel
 
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
-            // THE RULE, ASKED, rather than spelled out again (MON-C2).
-            //
-            // This was `isDestination() && isActive() && isAutoDestination()` - the rule with
-            // `!isReversing()` missing - which is a THIRD copy of it, and it overcounted by every
-            // reversing station on the railway. The number feeds "why is nothing considered", so the
-            // one place an operator goes when no train moves was telling them there were more
-            // destinations than autonomy has.
+            // THE RULE, ASKED, rather than spelled out again (MON-C2): a third copy of it, without `!isReversing()`,
+            // overcounted every reversing station, and the number feeds "why is nothing considered".
             if (layout.isSendableDestination(point)) count++;
         }
 
@@ -8620,9 +8540,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * A line warning that this answer is about the SAVED setup, when there are edits that are not in it.
      *
-     * Only when there are.  A caveat printed every time is a caveat nobody reads, and on the ordinary
-     * path - open the editor, ask why, close it - there is nothing to caveat: the running layout and
-     * the setup on screen are the same thing.
+     * Only when there are: a caveat printed every time is a caveat nobody reads.
      *
      * @return the warning, or an empty string when the setup is saved
      */
@@ -8658,6 +8576,12 @@ public class AutonomyEditorPanel extends JPanel
         return out.toString();
     }
 
+    /**
+     * Asks whether a train could get from one sensor to another, and shows the route.
+     *
+     * Two clicks, like portal pairing.  The answer comes from the same reduction everything else uses, so what this says
+     * is what a running train would find - not a second opinion.
+     */
     private void applyTest(TileKey tile, LayoutDiagramComponent component)
     {
         if (component == null || !component.isFeedback())
@@ -8680,21 +8604,15 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // Both ways, always.  Asking the user to nominate a direction only makes them run the test
-        // twice to learn the thing they actually wanted to know - a one-way run looks identical to a
-        // broken one until you have tried it from the other end.
-        // The squares trains may turn round at are handed over, because everywhere else the run may not
-        // leave by the side it came in at.  Without that the test drew routes that doubled back on
-        // themselves at ordinary track - the reduction knows the track runs both ways, and knowing that
-        // is not the same as a train being able to use both in one journey.
+        // Both ways, always: asking the user to nominate a direction only makes them run the test twice, and a one-way
+        // run looks identical to a broken one until tried from the other end.
         //
-        // MAY, not must.  reversibleTiles() covers both, and a must-turn square is the opposite case:
-        // the build emits no straight-through copy for one, so a train reaching it is turned back and
-        // cannot pass.  Handing those over as well let the test draw a route straight through a square
-        // the running railway turns every train at - which is the test giving a second opinion instead
-        // of reporting what a train would find, the one thing it exists not to do.
-        // The same turn sets the reachability check uses, from the one place that computes them, so
-        // the path test and the findings panel cannot disagree about which way a train may go.
+        // The squares trains may turn round at are handed over, because everywhere else the run may not leave by the side
+        // it came in at (otherwise the test drew routes that doubled back on themselves at ordinary track).  MAY, not
+        // must: reversibleTiles() covers both, but the build emits no straight-through copy for a must-turn square, so a
+        // train reaching it is turned back and cannot pass, and handing those over would draw a route through a square the
+        // running railway turns every train at.  The same turn sets the reachability check uses, from the one place that
+        // computes them, so the path test and the findings panel cannot disagree about which way a train may go.
         java.util.Set<TileKey> mustTurn = session.mandatoryTurnTiles();
 
         java.util.Set<TileKey> mayTurn = session.mayTurnTiles();
@@ -8715,39 +8633,28 @@ public class AutonomyEditorPanel extends JPanel
 
         traces.clear();
 
-        // Both directions, each as its own line.  A direction with no path draws nothing, so the two
-        // questions the test answers - can it get there, can it get back - are read off the track
-        // rather than out of a sentence, and a one-way route is visibly one line.
-        // Each leg is told where it ENDS, which is what decides its colour: a run to a station
-        // autonomy will never choose is drawn in a third shade (Adam, 2026-09-09).  The two legs end
-        // at opposite squares, so on a route between an ordinary station and a parking berth they are
-        // deliberately not the same colour.
+        // Both directions, each as its own line: a direction with no path draws nothing, so "can it get there, can it get
+        // back" is read off the track, and a one-way route is visibly one line.  Each leg is told where it ENDS, which
+        // decides its colour: a run to a station autonomy will never choose is drawn in a third shade, so on a route
+        // between an ordinary station and a parking berth the two legs deliberately differ.
         trace(traces, there, testFrom, true, tile);
         trace(traces, back, tile, false, testFrom);
 
-        // AND WHETHER THE TIER IN THE RADIO WOULD ACTUALLY GO THERE.
+        // AND WHETHER THE TIER IN THE RADIO WOULD ACTUALLY GO THERE.  A path existing and a train being sent along it are
+        // different facts.  `stationsAutonomyWillNotChoose` is the runtime's rule asked of the diagram, in the two clauses
+        // a SQUARE can answer (`isAutoDestination`, the switch the menu calls Can Be Chosen in Full Autonomy, and
+        // `isActive`); `Layout.isSendableDestination` requires both, and its `!isReversing()` clause is about a COPY and
+        // cannot be asked here.
         //
-        // A path existing and a train being sent along it are different facts, and the check reported
-        // only the first.  `stationsAutonomyWillNotChoose` is the runtime's rule asked of the diagram,
-        // in the two clauses a SQUARE can answer - `isAutoDestination`, the switch the menu calls Can
-        // Be Chosen in Full Autonomy, and `isActive`.  `Layout.isSendableDestination` requires both
-        // before a destination is a candidate at all.  (Its other clause, `!isReversing()`, is about a
-        // COPY rather than a square and cannot be asked here.)
+        // TWO DIFFERENT SENTENCES (E8V-B1).  A manual-only station is a preference about what autonomy picks, and a
+        // person may still drive there.  A square switched OUT OF SERVICE is a fact about the railway that binds every
+        // tier (`isPathClear` refuses a closed final point in all of them, and `isOfferableToOperator` refuses it
+        // outright), so telling that operator to "switch Path Type to Manual" sends them to a shut door.  The shut
+        // sentence is said on BOTH tiers; the manual-only one on Auto alone, where every station is somewhere a person
+        // may send a train.
         //
-        // TWO DIFFERENT SENTENCES, because the set answers about two different things (E8V-B1).  A
-        // manual-only station is a preference about what autonomy picks and a person may still drive
-        // there.  A square switched OUT OF SERVICE is a fact about the railway that binds every tier:
-        // `isPathClear` refuses a closed final point in all of them since Adam's ruling of 2026-09-06,
-        // and `isOfferableToOperator` refuses it outright, so the right-click menu never offers it.
-        // Telling that operator to "switch Path Type to Manual" sends them to a door that is shut - in
-        // the panel they opened to find out why a train is not moving.
-        //
-        // Said as well as the route rather than instead of it.  The track is passable as far as the
-        // walk is concerned and that is worth knowing; what is added is who may use it.  Reporting "no
-        // path" here would be a lie about the railway to make a point about the settings.
-        //
-        // The shut sentence is said on BOTH tiers, because it is true of both.  The manual-only one is
-        // said on Auto alone, where every station is somewhere a person may send a train.
+        // Said as well as the route rather than instead of it: the track is passable as far as the walk is concerned, and
+        // "no path" would be a lie about the railway to make a point about the settings.
         String tierNote = "";
 
         if (session != null && session.shutTiles().contains(tile))
@@ -8762,10 +8669,9 @@ public class AutonomyEditorPanel extends JPanel
                 describeTile(tile)));
         }
 
-        // Named, not just counted.  "3 runs" says a route exists and nothing about which one, so a
-        // route the user believes impossible cannot be argued with - and the squares it crosses are
-        // spread over a page too big to follow a line across.  The sensors it calls at are the short
-        // way to say where it went.
+        // Named, not just counted: "3 runs" says a route exists and nothing about which one, and the squares it crosses are
+        // spread over a page too big to follow a line across; the sensors it calls at are the short way to say where it
+        // went.
         sayRich(hint, I18n.f("autosetup.ui.testBothWays",
             escape(describeTile(testFrom)), escape(describeTile(tile)),
             leg(there), escape(via(there)), leg(back)) + tierNote);
@@ -8784,8 +8690,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void retestForTheNewTier()
     {
-        // AND THE WHY ANSWER (MT-434).  Adam, 2026-09-15, asked which tool he had switched Path Type under: *"Why Not
-        // Moving?"* - and that it should follow Path Type.  The square last asked about is asked again through the door
+        // AND THE WHY ANSWER (MT-434) follows Path Type too: the square last asked about is asked again through the door
         // the click uses, so the answer on screen and the radio cannot disagree.
         if (tool == Tool.WHY && lastWhyTile != null)
         {
