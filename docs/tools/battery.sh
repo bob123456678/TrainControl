@@ -568,7 +568,9 @@ run_class()
         extra=$(printf '%s' "$TC_JVM_ARGS" | sed "s/%s/$(printf '%s' "$cls" | tr -c 'A-Za-z0-9._-' '_')/g")
     fi
 
-    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -testclass "$cls" -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
+    # NO UPDATE CHECK: support.NoUpdateCheck turns it off in the lane's preference node before any test (FR-136)
+    "$JAVA" $2 $extra -cp "$CP" org.testng.TestNG -listener support.NoUpdateCheck -testclass "$cls" \
+        -d "$S/tng-run/$cls" > "$RUN_OUT" 2>&1 &
 
     local JVM=$!
 
