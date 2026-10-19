@@ -5695,9 +5695,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The home assignment that excluding these locomotives from this square would contradict.
      *
-     * Read off the SETUP rather than the running layout, because that is where this editor's home
-     * assignments live - the running Point's getHomeLoc is only populated once a configuration has
-     * been built, and a setup being edited may never have been.
+     * Read off the SETUP rather than the running layout: that is where this editor's home assignments live, and the
+     * running Point's getHomeLoc is only populated once a configuration has been built.
      *
      * @param tile the square
      * @param chosen the locomotives the list names
@@ -5712,10 +5711,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The home this exclusion list would break, or null.
      *
-     * Static and public so the rule can be tested without a window (MT-112). Excluding a locomotive
-     * from the station it is homed at is not forbidden - somebody may mean it - but it is a
-     * contradiction the user should be shown rather than left to discover when a train has nowhere to
-     * go at the end of a run.
+     * Static and public so the rule can be tested without a window (MT-112).  Excluding a locomotive from the station
+     * it is homed at is not forbidden, but it is a contradiction the user should be shown rather than left to discover
+     * when a train has nowhere to go at the end of a run.
      *
      * @param home the locomotive homed at this station, or null
      * @param excluded the locomotives being shut out of it
@@ -5759,18 +5757,11 @@ public class AutonomyEditorPanel extends JPanel
      *
      * Static and public so the rule can be tested without a window (MT-112, from OB-022 / DD-A6).
      *
-     * "None" first, then the locomotives autonomy runs, and then - if it is not already among them -
-     * the home this station HAS. That last clause is the whole of the fix: an assignment may name a
-     * locomotive autonomy no longer runs, and it stays that way until somebody changes it. Leaving the
-     * name out made the existing assignment the one thing that could not be chosen, because a
-     * non-editable combo cannot preselect a value its model does not hold. The dialog opened showing
-     * "None", and pressing OK cleared the station's home without anyone asking for it.
-     *
-     * `HomeLocomotiveMenu` wrote that trap down in words - "opening this dialog and pressing OK would
-     * then quietly reassign the station" - and then lost the callers that ran the code.
-     *
-     * Second in the list rather than last: it is the current answer, so it belongs where the eye
-     * lands, next to the only other answer that is not a locomotive.
+     * "None" first, then the locomotives autonomy runs, and then - if it is not already among them - the home this
+     * station HAS: an assignment may name a locomotive autonomy no longer runs, and a non-editable combo cannot
+     * preselect a value its model does not hold, so without it the dialog opened showing "None" and pressing OK cleared
+     * the station's home without anyone asking.  It is second rather than last: it is the current answer, next to the
+     * only other answer that is not a locomotive.
      *
      * @param none the label for "no home"
      * @param placed the locomotives autonomy runs
@@ -5793,10 +5784,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Names a square, from somewhere other than its own right-click menu (MT-257 item 4).
      *
-     * The editor's Control+S needs this: `promptName` is private and the key handler lives in
-     * `LayoutEditor`, which owns this panel rather than being inside it.  One line rather than making
-     * the prompt itself public, so the panel keeps deciding what naming means and this only decides
-     * who may ask.
+     * The editor's Control+S needs this: `promptName` is private and the key handler lives in `LayoutEditor`, which owns
+     * this panel.  One line rather than making the prompt itself public, so the panel keeps deciding what naming means
+     * and this only decides who may ask.
      *
      * @param tile the square to name, ignored when null
      */
@@ -5874,29 +5864,22 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Sets the length of the square under the pointer, from outside this panel (FR-066).
      *
-     * Adam: *"a keyboard shortcut for setting a square's length"*, and on which key, **"let's do E"** -
-     * Control+D being taken twice over, by the editor's address toggle and the main window's
-     * locomotive adder.
+     * Adam: *"a keyboard shortcut for setting a square's length"*, and on which key, **"let's do E"** - Control+D
+     * being taken twice over, by the editor's address toggle and the main window's locomotive adder.
      *
-     * The same relationship Control+S has to Rename: `applyLength` is private and the key handler
-     * lives in `LayoutEditor`, which owns this panel rather than sitting inside it.  One line, so the
-     * panel keeps deciding what setting a length means and this only decides who may ask.
+     * The same relationship Control+S has to Rename: `applyLength` is private and the key handler lives in
+     * `LayoutEditor`, which owns this panel.  One line, so the panel keeps deciding what setting a length means and
+     * this only decides who may ask.
      *
-     * **It asks `offersALength`, which is the menu's own question**, and it writes where the menu
-     * writes.  The first cut asked `isIgnored` and wrote to the hovered tile, and a review found it
-     * doing exactly the thing the paragraph below says it was written to avoid, twice:
+     * **It asks `offersALength`, which is the menu's own question**, and it writes where the menu writes.  `isIgnored`
+     * is one of THREE things `buildTileMenu` asks before it reaches Set Length (the missing one sends a TEXT square to
+     * `buildTextMenu`, which has no length item), and the menu acts on `leaderOf(tile)`, the square that speaks for a
+     * run of plain track, so a key acting on the hovered square would measure a run through both doors and count it
+     * twice.
      *
-     *   - `isIgnored` is one of THREE things `buildTileMenu` asks before it reaches Set Length, and
-     *     the missing one sends a TEXT square to `buildTextMenu` - a menu with no length item on it -
-     *     so the key opened the length dialog on a square the menu offers no length for;
-     *   - the menu acts on `leaderOf(tile)`, the square that speaks for a run of plain track, and the
-     *     key acted on the hovered square.  Two doors, two places, and a run measured through both
-     *     counted twice.
-     *
-     * A key that acts where the menu offers nothing is the shape of MT-313, where Control+S named
-     * plain track because it asked only whether the tile was null.  And it says a sentence rather than
-     * doing nothing quietly: a shortcut that appears to be broken is worse than one that explains
-     * itself.
+     * A key that acts where the menu offers nothing is the shape of MT-313, where Control+S named plain track.  And it
+     * says a sentence rather than doing nothing quietly: a shortcut that appears to be broken is worse than one that
+     * explains itself.
      *
      * @param tile the square to measure, ignored when null
      */
@@ -5925,21 +5908,17 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The square a length typed for this one actually lands on, or null where none would be asked for.
      *
-     * **The menu's target, not the pointer's.**  A run of plain track has one tile that speaks for it
-     * and `buildTileMenu` hands every item on the menu that tile, so a length set by right-clicking
-     * anywhere in a run lands on the leader.  Control+E writing to the hovered square instead put the
-     * same number in two different places: the dialog opened showing 0 on a run that is measured, and
-     * `GraphReducer.sumLength` adds every tile of an edge, so a run measured through both doors was
-     * counted twice.
+     * **The menu's target, not the pointer's.**  A run of plain track has one tile that speaks for it and
+     * `buildTileMenu` hands every item on the menu that tile, so a length set by right-clicking anywhere in a run lands
+     * on the leader.  Writing to the hovered square instead would put the same number in two places, and
+     * `GraphReducer.sumLength` adds every tile of an edge, so a run measured through both doors would be counted twice.
      *
-     * Public because `promptLengthFor` opens a modal dialog and no test can call it and read the
-     * answer - so what a test compares is the two doors' targets.
-     * `regression.testControlEAsksTheMenusQuestion` is that test.
+     * Public because `promptLengthFor` opens a modal dialog and no test can read its answer, so a test compares the two
+     * doors' targets: `regression.testControlEAsksTheMenusQuestion`.
      *
-     * **It is the square, not necessarily the only square.**  `applyLength` writes to the whole
-     * SELECTION when there is one, and to this square when there is not - the menu behaves the same
-     * way, because both doors reach the same method, so the two still agree.  What this names is where
-     * a length lands with nothing selected, which is the case the two doors used to differ about.
+     * **It is the square, not necessarily the only square.**  `applyLength` writes to the whole SELECTION when there is
+     * one, and to this square when there is not; both doors reach the same method, so the two agree.  What this names
+     * is where a length lands with nothing selected.
      *
      * @param tile the square under the pointer
      * @return the square the length would be written to, or null when nothing would be asked
@@ -5950,14 +5929,11 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether **Set Length...** is on this square's right-click menu, and so whether Control+E means
-     * anything here.
+     * Whether **Set Length...** is on this square's right-click menu, and so whether Control+E means anything here.
      *
-     * **`buildTileMenu`'s three early returns, and the menu asks this rather than repeating them.**
-     * The item is added inside `if (offersALength(tile))` and bound to `squareTheLengthWouldGoOn`, so
-     * the guard and the affordance are one expression.  They were two, agreeing by being typed
-     * identically, until a review narrowed the menu's copy and watched the key go on answering the old
-     * way.  The three the menu reaches its length item by, and which the key asked one of:
+     * **`buildTileMenu`'s three early returns, and the menu asks this rather than repeating them.**  The item is added
+     * inside `if (offersALength(tile))` and bound to `squareTheLengthWouldGoOn`, so the guard and the affordance are one
+     * expression (two copies agreed only by being typed identically).  The three the menu reaches its length item by:
      *
      *   1. a square this panel can answer about at all - a page the session knows, a session with a
      *      graph;
@@ -5986,17 +5962,16 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The Control+B door: how long a train may be to stop at the station under the pointer.
      *
-     * Adam, 2026-09-12, having asked for Control+M and been told it toggles the menu bar: *"map it to
-     * the station maximum train length, and add a tooltip."*  He picked **B** off the free list, for
-     * the word this project uses for the platform the maximum belongs to - `behaviour.md` and
-     * `Layout.measuredRoomAtTheEndOf` both call it the berth.
+     * Adam, 2026-09-12: *"map it to the station maximum train length, and add a tooltip."*  He picked **B** off the free
+     * list, for the word this project uses for the platform the maximum belongs to: the berth (`behaviour.md`,
+     * `Layout.measuredRoomAtTheEndOf`).
      *
-     * **The same method the menu item calls, on the same square**, which is the rule Control+E and
-     * Control+S already follow here: two doors onto one action, so they cannot come to disagree about
-     * what it does or where it lands.  `offersAMaximumTrainLength` is the predicate both use.
+     * **The same method the menu item calls, on the same square**, as Control+E and Control+S follow: two doors onto
+     * one action cannot disagree about what it does or where it lands.  `offersAMaximumTrainLength` is the predicate
+     * both use.
      *
-     * The refusal says which of the two reasons it is, because "nothing happened" on a key press is
-     * indistinguishable from a key that is not bound at all.
+     * The refusal says which of the two reasons it is, because "nothing happened" on a key press is indistinguishable
+     * from a key that is not bound at all.
      *
      * @param tile the square under the pointer
      */
@@ -6026,14 +6001,12 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The square a maximum typed for this one actually lands on, or null where none would be asked for.
      *
-     * **The menu's target, not the pointer's** - the same reason `squareTheLengthWouldGoOn` exists. A
-     * run of plain track has one tile that speaks for it, `buildTileMenu` hands every item that tile,
-     * and a key that wrote to the hovered square instead would put the number somewhere the menu never
-     * shows it.
+     * **The menu's target, not the pointer's** - the same reason `squareTheLengthWouldGoOn` exists: a run of plain track
+     * has one tile that speaks for it, and a key that wrote to the hovered square would put the number somewhere the
+     * menu never shows it.
      *
-     * Public because `promptMaxTrainLengthFor` opens a modal dialog and no test can call it and read
-     * the answer, so what a test compares is the two doors' targets.
-     * `regression.testControlBAsksTheMenusQuestion` is that test.
+     * Public because `promptMaxTrainLengthFor` opens a modal dialog and no test can read its answer, so a test compares
+     * the two doors' targets: `regression.testControlBAsksTheMenusQuestion`.
      *
      * @param tile the square under the pointer
      * @return the square the maximum would be written to, or null when nothing would be asked
@@ -6044,12 +6017,11 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether **Maximum Train Length** is on this square's right-click menu, and so whether Control+B
-     * means anything here.
+     * Whether **Maximum Train Length** is on this square's right-click menu, and so whether Control+B means anything
+     * here.
      *
-     * The menu's own question rather than a second opinion, which is the lesson `MT-313` taught about
-     * Control+S: that key asked only whether the tile was null, so it renamed plain track that has
-     * nothing to hold a name. The three conditions the menu reaches the item by:
+     * The menu's own question rather than a second opinion (MT-313: Control+S asked only whether the tile was null, so
+     * it renamed plain track).  The three conditions the menu reaches the item by:
      *
      *   1. everything `offersALength` asks - a page the session knows, not a text label, not ignored -
      *      because those are `buildTileMenu`'s early returns and the station menu is behind them too;
@@ -6072,12 +6044,10 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Whether this square is one that can be named.
-     *
-     * **The right-click menu's own question**, so the key and the menu cannot disagree about it.
-     * The menu offers Rename only inside `if (isPoint)`; Control+S reached `promptNameFor`, which
-     * asked only whether the tile was null - so the key named plain track that has nothing to hold
-     * a name, and MT-313 is Adam finding it: *"it works on any tile in the autonomy editor, not
-     * just sensors."*
+     * **The right-click menu's own question**, so the key and the menu cannot disagree about it.  The menu offers Rename
+     * only inside `if (isPoint)`; Control+S reached `promptNameFor`, which asked only whether the tile was null, so the
+     * key named plain track that has nothing to hold a name (MT-313: *"it works on any tile in the autonomy editor, not
+     * just sensors."*).
      *
      * @param tile the square
      * @return whether naming it means anything
@@ -6113,50 +6083,31 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // Nothing can fail here any more.  A caption points at the station’s SQUARE, so renaming
-        // one is a change to the setup and to nothing else - it used to rewrite every page showing the
-        // old name, and could half-succeed.
+        // Nothing can fail here: a caption points at the station's SQUARE, so renaming one is a change to the setup and
+        // to nothing else.
         session.setPointName(tile, name.trim());
 
-        // The moment a station gets a name is the moment it has one worth writing on the diagram.
-        // Marking a square as a station cannot do it on its own: a new one has no name yet, only the
-        // coordinate the reducer invented, and nobody wants that on their track plan.
+        // The moment a station gets a name is the moment it has one worth writing on the diagram: marking a square as a
+        // station cannot do it on its own, since a new one has only the coordinate the reducer invented.
         //
-        // Only where it has NO caption yet (MT-116). Adam: "Weird - the label moves around to adjacent
-        // cells on rename."
-        //
-        // `placeCaption` MOVES a station's caption rather than refusing when it already has one, which
-        // is right when somebody has asked for the name to be shown here - "asking to show a name is
-        // asking for it to be here". It is wrong as a side effect of renaming: the label had a place
-        // somebody chose, the rename says nothing about where it should go, and the search picks
-        // whichever neighbouring square is free THIS time. So the label wandered.
-        //
-        // Nothing has to be re-placed for the text to change: a caption points at the station's SQUARE
-        // and looks its name up, so a rename is already visible wherever the label happens to be.
+        // Only where it has NO caption yet (MT-116: the label moved around to adjacent cells on rename).
+        // `placeCaption` MOVES a station's caption rather than refusing when it already has one, which is right when
+        // somebody asks for the name to be shown here and wrong as a side effect of renaming: the rename says nothing
+        // about where the label should go, and the search picks whichever neighbouring square is free THIS time.  Nothing
+        // has to be re-placed for the text to change, because a caption points at the station's SQUARE and looks its
+        // name up.
         if (session.getStore().isStation(tile)
             && !session.getLabelledStationTiles().contains(tile))
         {
             placeLabelFor(tile);
         }
 
-        // And the RUNNING layout is rebuilt, or the label goes blank (OB-034).
-        //
-        // A rename rebuilds the setup's own graph - touched() does that - so the station index now
-        // maps this square to the NEW name. The running layout was built from the configuration as it
-        // was, and still holds the old one. Everything that goes through those names then looks up a
-        // Point the running layout has never heard of, so the caption finds nothing and draws nothing.
-        // Rename it back and it works again, which is exactly what Adam saw.
-        //
-        // autonomyEditorClosed has done this rebuild all along, which is why the editor never showed
-        // it: closing was the only door to it, and a station can be renamed from the diagram's own
-        // menu without opening an editor at all.
-        //
-        // The failure is written down in that method's comment, in advance: "from that moment the
-        // running layout holds names the setup no longer knows ... The caption looks up its station
-        // and finds nothing, so the label goes blank."
-        //
-        // Through setupChanged now, which also persists it - a rename made from the diagram had the
-        // same half of MT-246 as the rest: it reached the running layout and never reached disk.
+        // And the RUNNING layout is rebuilt, or the label goes blank (OB-034).  A rename rebuilds the setup's own graph,
+        // so the station index maps this square to the NEW name, while the running layout still holds the old one;
+        // everything that goes through those names then looks up a Point the running layout has never heard of, and the
+        // caption finds nothing and draws nothing.  `autonomyEditorClosed` does this rebuild on closing, but a station can
+        // be renamed from the diagram's own menu without opening an editor at all.  Through setupChanged, which also
+        // persists it (MT-246).
         setupChanged();
     }
 
@@ -6178,22 +6129,18 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Pairs a link by choosing its partner from a list of every link on the layout.
      *
-     * A list rather than a second click, because a link almost always leads to ANOTHER PAGE - and the
-     * other page is not on screen, so there is nothing there to click. Two-click pairing only ever
-     * worked for the rare same-page case.
+     * A list rather than a second click, because a link almost always leads to ANOTHER PAGE, which is not on screen, so
+     * there is nothing there to click.
      */
     private void pairFromList(TileKey tile)
     {
         List<TileKey> candidates = new java.util.ArrayList<>();
         List<String> labels = new java.util.ArrayList<>();
 
-        // Like pairs with like: a link with a link, a tunnel with a tunnel.
-        //
-        // The two are the same thing to autonomy - both are portals, both are traversed the same way,
-        // both carry a stub route - and they differ only in what they may point at.  This list offered
-        // every portal of either kind whatever it was asked about, so a link could be paired to a
-        // tunnel: the jump then worked, and the diagram showed a train leaving through an arrow and
-        // arriving out of a tunnel mouth, which is not what either symbol says.
+        // Like pairs with like: a link with a link, a tunnel with a tunnel.  The two are the same thing to autonomy (both
+        // are portals, traversed the same way, carrying a stub route) and differ only in what they may point at.  Pairing
+        // a link to a tunnel works as a jump but draws a train leaving through an arrow and arriving out of a tunnel
+        // mouth, which is not what either symbol says.
         LayoutDiagramComponent from =
             session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
 
@@ -6208,14 +6155,10 @@ public class AutonomyEditorPanel extends JPanel
 
             if (component.getType() != from.getType()) continue;
 
-            // A TUNNEL pairs only within its own page (MT-047).
-            //
-            // The two portal kinds are the same thing to autonomy, and that is exactly why they need
-            // different rules about WHAT they may point at. A link is how a train leaves one page and
-            // arrives on another - crossing pages is its whole purpose. A tunnel is a piece of track
-            // that goes behind the scenery and comes out further along the SAME diagram; paired to
-            // another page it would draw a train entering a hillside on one page and emerging from a
-            // hillside on another, which is not what the symbol says and not what the track does.
+            // A TUNNEL pairs only within its own page (MT-047).  A link is how a train leaves one page and arrives on
+            // another; a tunnel is a piece of track that goes behind the scenery and comes out further along the SAME
+            // diagram, and paired to another page it would draw a train entering a hillside on one page and emerging from
+            // a hillside on another.
             if (from.getType() == LayoutDiagramComponent.componentType.TUNNEL
                 && !entry.getKey().getPage().equals(tile.getPage())) continue;
 
@@ -6233,15 +6176,10 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // The diagram follows the dropdown.
-        //
-        // It used to follow the OK button: pick a partner, watch the pair light up, and if it was the
-        // wrong one, undo it and open the list again.  The names in this list are the names of things
-        // on a diagram of two hundred squares, and a coordinate pair is not something anybody holds
-        // in their head - so the moment to be shown which square is meant is while the choice is
-        // being made, not after it has been committed.
-        //
-        // Built by hand rather than through showInputDialog, which gives no way at the combo box.
+        // The diagram follows the dropdown, not the OK button: the names in this list are names of things on a diagram of
+        // two hundred squares, and a coordinate pair is not something anybody holds in their head, so the moment to be
+        // shown which square is meant is while the choice is being made.  Built by hand rather than through
+        // showInputDialog, which gives no way at the combo box.
         final javax.swing.JComboBox<String> choice =
             new javax.swing.JComboBox<>(labels.toArray(new String[0]));
 
@@ -6283,9 +6221,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether a square is something a station can be told is its protecting signal.
      *
-     * A SIGNAL with an address, and nothing else.  isSignal() answers true for a lamp as well - the two
-     * share a drawing path - and a lamp is decoration with nothing behind it to throw.  No address means
-     * no way to command it, which is the whole point of the pairing.
+     * A SIGNAL with an address, and nothing else: isSignal() answers true for a lamp as well (the two share a drawing
+     * path), and a lamp is decoration with nothing behind it to throw.  No address means no way to command it.
      *
      * @param component what is drawn on the square, or null for an empty one
      */
@@ -6299,15 +6236,11 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Asks which signals protect a station, and how the user would like to say.
      *
-     * Two ways, because two quite different people ask this question.  Somebody looking at the diagram
-     * knows the signal by where it is and can point at it; somebody who set the layout up knows it by
-     * its address and would have to hunt for it on screen.  A list of every signal on the railway served
-     * neither: it named them by accessory and coordinate, which is the one description nobody holds in
-     * their head.
+     * Two ways, because two quite different people ask this question: somebody looking at the diagram knows the signal
+     * by where it is and can point at it; somebody who set the layout up knows it by its address.
      *
-     * Both ways ADD to a list rather than replace one answer, because a platform reachable from two
-     * directions needs a signal on each approach.  What is paired so far is on screen the whole time -
-     * that is the difference between a list and being asked the same question twice.
+     * Both ways ADD to a list rather than replace one answer, because a platform reachable from two directions needs a
+     * signal on each approach.  What is paired so far is on screen the whole time.
      *
      * @param station the station's square
      */
@@ -6333,11 +6266,9 @@ public class AutonomyEditorPanel extends JPanel
         }
         finally
         {
-            // Cleared HERE, in the finally, and not in the button handlers.
-            //
-            // The window has four ways out - Done, Escape, the close box, and "click it on the diagram"
-            // - and a flag that quietens the whole diagram is one that strands the editor grey and
-            // arrowless if any one of them forgets.  This is the only place all four pass through.
+            // Cleared HERE, in the finally, and not in the button handlers: the window has four ways out (Done, Escape,
+            // the close box, and "click it on the diagram"), and a flag that quietens the whole diagram strands the editor
+            // grey and arrowless if any one of them forgets.  This is the only place all four pass through.
             signalWindowOpen = false;
 
             highlightedSignals.clear();
@@ -6348,22 +6279,17 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The list itself, with the highlight held around it by the caller.
      *
-     * One window that stays open, because the answer is a LIST: adding a second signal, removing one
-     * that was paired by mistake and looking at what is there are all the same gesture repeated, and a
-     * window that closed and reopened between each of them hid the list at the moment it changed.  The
-     * one answer that does give the window back is "click it on the diagram", which has to, because
-     * the next click belongs to the diagram.
+     * One window that stays open, because the answer is a LIST: adding a second signal, removing one paired by mistake
+     * and looking at what is there are the same gesture repeated, and a window that closed and reopened between each
+     * hid the list at the moment it changed.  The one answer that gives the window back is "click it on the diagram",
+     * because the next click belongs to the diagram.
      *
      * @param station the station's square
      */
     private void askAboutSignals(final Guard guard, TileKey station)
     {
-        // A dialog of its own, held open while the list is worked on.
-        //
-        // It was an option pane re-shown in a loop, which is the same window closing and opening again
-        // on every change - so removing one signal of three made the whole thing blink, and the list
-        // somebody was reading jumped out from under them.  The list is the point of this window; it
-        // has to survive being edited.
+        // A dialog of its own, held open while the list is worked on: an option pane re-shown in a loop makes the whole
+        // window blink on every change and jumps the list out from under the reader.
         final javax.swing.JDialog dialog = new javax.swing.JDialog(
             ownerWindow(),
             I18n.t(guard.title),
@@ -6437,13 +6363,12 @@ public class AutonomyEditorPanel extends JPanel
 
         panel.add(buttons, java.awt.BorderLayout.SOUTH);
 
-        // THE SENTENCE ON TWO LINES, NOT ONE (Adam, 2026-09-23, MT-479: *"the editor window for entry/exit guards is
-        // much too wide.  make the sentence split over 2 lines so the window isn't too wide."*).  The heading was a plain
-        // label, so the window was as wide as its sentence - the entry guard's is a hundred and fifty characters before a
-        // signal is paired.  It wraps at half that first sentence now, never narrower than the row of buttons.  The
-        // sentence once signals are paired is longer again, and takes more lines at the same width rather than widening
-        // the window; the heading keeps the taller of the two heights, so pairing the first signal changes the words and
-        // not the window.
+        // THE SENTENCE ON TWO LINES, NOT ONE (MT-479: *"make the sentence split over 2 lines so the window isn't too wide."*).
+        // A plain label makes the window as wide as its sentence (the entry guard's is a hundred and fifty characters
+        // before a signal is paired), so the heading wraps at half that first sentence, never narrower than the row of
+        // buttons.  The longer sentence once signals are paired takes more lines at the same width rather than widening
+        // the window, and the heading keeps the taller of the two heights, so pairing the first signal changes the words
+        // and not the window.
         String[] sentences = { I18n.f(guard.how, describeTile(station)), I18n.f(guard.paired, describeTile(station)) };
 
         headingWidth[0] = twoLineWidth(heading.getFontMetrics(heading.getFont()), buttons.getPreferredSize().width,
@@ -6478,9 +6403,8 @@ public class AutonomyEditorPanel extends JPanel
             show.run();
         });
 
-        // The one answer that has to give the window back: the next click belongs to the diagram.
-        // The list returns by itself once the click lands - see the click handler - so a second signal
-        // is another click and a button rather than the whole menu again.
+        // The one answer that has to give the window back: the next click belongs to the diagram.  The list returns by
+        // itself once the click lands (see the click handler).
         byClick.addActionListener(e ->
         {
             if (needsTheGrid(station))
@@ -6514,23 +6438,14 @@ public class AutonomyEditorPanel extends JPanel
         dialog.setContentPane(panel);
         dialog.pack();
 
-        // Not smaller than it packed to (OB-107).
-        //
-        // Adam: "the window can be resized below its minimum height." pack() sizes a window to what
-        // its contents need and then says nothing about it, so dragging the edge up hid the buttons
-        // at the bottom - which are how the pairing is finished.
+        // Not smaller than it packed to (OB-107): dragging the edge up would hide the buttons at the bottom, which are how
+        // the pairing is finished.
         dialog.setMinimumSize(dialog.getSize());
 
-        // Beside the diagram rather than on top of it (OB-107).
-        //
-        // Adam: "the signal protecting this station pops up over the middle of the diagram.  see if
-        // you can offset it."  Centring is the usual right answer and is the wrong one here: this
-        // window's own text says the signals "are outlined on the diagram behind this window", so
-        // centring covers the very thing it is asking the reader to look at.
-        //
-        // Offset from centre rather than pinned to a corner, so it still reads as belonging to the
-        // window it came from, and clamped to the owner so it cannot land off-screen on a small
-        // display or a second monitor.
+        // Beside the diagram rather than on top of it (OB-107): this window's own text says the signals "are outlined on
+        // the diagram behind this window", so centring covers the very thing it asks the reader to look at.  Offset from
+        // centre rather than pinned to a corner, so it still reads as belonging to the window it came from, and clamped
+        // to the owner so it cannot land off-screen on a small display or a second monitor.
         placeBesideOwner(dialog);
 
         dialog.setVisible(true);
@@ -6538,14 +6453,11 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Puts a dialog beside the diagram rather than over the middle of it.
+     * For the windows that describe something drawn on the diagram behind them (the paired signals are outlined while
+     * this is open), where a window centred on them hides what it is describing (OB-107).
      *
-     * For the windows that describe something drawn on the diagram behind them - the paired signals
-     * are outlined while this is open, and a window centred on them hides what it is describing
-     * (OB-107).
-     *
-     * Offset from the owner's centre rather than pinned to a corner: a dialog that appears in the
-     * corner of the screen reads as belonging to nothing, and this one belongs to the editor it came
-     * from. Clamped so it stays within the owner, which keeps it on the same monitor.
+     * Offset from the owner's centre rather than pinned to a corner: a dialog in the corner of the screen reads as
+     * belonging to nothing.  Clamped so it stays within the owner, which keeps it on the same monitor.
      *
      * @param dialog a packed dialog, ready to show
      */
@@ -6566,14 +6478,11 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Where a dialog goes so that it does not sit on the middle of the window behind it.
      *
-     * Public and static, and taking rectangles rather than windows, so that the ONE thing worth
-     * checking about it can be checked without showing a modal dialog and driving it from a test - a
-     * dialog that blocks is not something a battery can open. Everything this decides is a function of
-     * the two rectangles, so there is nothing left in the caller to get wrong except which rectangles
-     * it passes.
+     * Public and static, and taking rectangles rather than windows, so that the one thing worth checking about it can be
+     * checked without a modal dialog: everything this decides is a function of the two rectangles.
      *
-     * Up and to the left of centre rather than pinned to a corner: a window that appears in the corner
-     * of the screen reads as belonging to nothing, and this one belongs to the editor it came from.
+     * Up and to the left of centre rather than pinned to a corner: a window in the corner of the screen reads as
+     * belonging to nothing.
      *
      * @param parent the bounds of the window the dialog belongs to, in screen coordinates
      * @param dialog the size the dialog packed to
@@ -6598,16 +6507,13 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Finds signals by the addresses written on them and adds them.
      *
-     * The LOGICAL address, which is the number the user sees everywhere - on the tile, in the switch
-     * panel, in the accessory list.  Taken off the diagram component, which holds exactly that number:
-     * the control station subtracts one from it to reach the accessory, because the protocol counts
-     * from zero.  Asking the accessory instead would mean asking the user to subtract that one
-     * themselves, from the label in front of them.
+     * The LOGICAL address, the number the user sees everywhere (on the tile, in the switch panel, in the accessory
+     * list), taken off the diagram component.  The control station subtracts one to reach the accessory, because the
+     * protocol counts from zero, and asking the accessory would mean asking the user to subtract that one themselves.
      *
-     * SEVERAL at once, separated by commas or spaces, because somebody who knows the addresses knows
-     * all of them and should not have to reopen this once per signal.  Every address that resolves is
-     * added, and the ones that do not are reported together at the end rather than one at a time -
-     * stopping at the first would throw away the good ones typed after it.
+     * SEVERAL at once, separated by commas or spaces, because somebody who knows the addresses knows all of them.  Every
+     * address that resolves is added, and the ones that do not are reported together at the end: stopping at the first
+     * would throw away the good ones typed after it.
      *
      * @param station the station's square
      */
@@ -6658,8 +6564,8 @@ public class AutonomyEditorPanel extends JPanel
 
         if (!found.isEmpty()) refresh();
 
-        // Said once, however many went wrong, and after the good ones have been taken.  A dialog per
-        // bad address would be a row of them to dismiss before seeing whether anything worked.
+        // Said once, however many went wrong, and after the good ones have been taken: a dialog per bad address would be
+        // a row of them to dismiss before seeing whether anything worked.
         if (!notNumbers.isEmpty() || !notFound.isEmpty() || !refused.isEmpty())
         {
             StringBuilder trouble = new StringBuilder();
@@ -6710,9 +6616,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * A guard signal refused, said in a popup as well as on the grey line (MT-505).
      *
-     * Adam, 2026-09-29: *"There may have been a gray message, but it wouldn't have been clear since the popup was in the
-     * foreground, so any rejection errors should trigger a popup."*  The guard window comes back the moment a click is
-     * answered and stands in front of the line; a popup stands in front of the window.
+     * Adam: *"any rejection errors should trigger a popup."*  The guard window comes back the moment a click is
+     * answered and stands in front of the grey line; a popup stands in front of the window.
      *
      * @param why the sentence
      */
@@ -6744,8 +6649,8 @@ public class AutonomyEditorPanel extends JPanel
             return I18n.f("autosetup.ui.signalAlreadyPaired", addressOf(signal));
         }
 
-        // NOT THE STATION'S OTHER GUARD (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be the same as
-        // the exit guard"*).  The store refuses it as well; this is where the operator is told why.
+        // NOT THE STATION'S OTHER GUARD (AUT-C2: *"make sure the entry guard can never be the same as the exit guard"*).
+        // The store refuses it as well; this is where the operator is told why.
         if (signalsOf(guard == Guard.ENTRY ? Guard.EXIT : Guard.ENTRY, station).contains(signal))
         {
             return I18n.f(guard == Guard.ENTRY ? "autosetup.ui.signalIsTheExitGuard"
@@ -6827,11 +6732,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * A text field that only lets digits be typed into it.
      *
-     * Nothing else is a length, and a filter is a better answer than validation after the fact: it
-     * cannot be got wrong, it needs no error message, and there is no moment where the field holds
-     * something the dialog will refuse.
-     *
-     * Empty stays reachable on purpose - clearing the field is how a length is removed.
+     * A filter cannot be got wrong, needs no error message, and never holds something the dialog will refuse.  Empty
+     * stays reachable on purpose: clearing the field is how a length is removed.
      *
      * @param initial what to show
      * @return the field
@@ -6840,11 +6742,8 @@ public class AutonomyEditorPanel extends JPanel
     {
         javax.swing.JTextField field = new javax.swing.JTextField(initial, 8);
 
-        // Three digits, 0 to 999 (OB-048).
-        //
-        // Refused as it is typed, like the non-digits: a length of 100000 is not a length anybody
-        // means, and the alternative - accepting it and complaining afterwards - is the shape this
-        // filter exists to avoid.
+        // Three digits, 0 to 999 (OB-048), refused as typed like the non-digits: a length of 100000 is not one anybody
+        // means.
 
         ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
             new javax.swing.text.DocumentFilter()
@@ -6895,16 +6794,13 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Asks again once this panel is in a window, which is when half of it can be answered (MT-292).
      *
-     * Adam, 2026-09-12: *"none is shown in the dropdown, but station names are still drawn."*  The
-     * remembered mode is restored during CONSTRUCTION and applied there, and the half of it that reaches the
-     * diagram goes through `owner()` - `SwingUtilities.getWindowAncestor(this)` - which is null until the panel has
-     * been added to the editor.  So the two tick boxes were set and the diagram's text switch - which under FR-061
-     * was what None meant, and is the Text Labels box's since FR-133 - was not: the dropdown said None over a diagram
-     * still drawing every station name, which is precisely the state exclusive options exist to make impossible.
+     * The remembered mode is restored during CONSTRUCTION and applied there, and the half of it that reaches the diagram
+     * goes through `owner()` - `SwingUtilities.getWindowAncestor(this)` - which is null until the panel has been added to
+     * the editor.  So the two tick boxes were set and the diagram's text switch was not, and the dropdown said None over a
+     * diagram still drawing every station name, the state exclusive options exist to make impossible.
      *
-     * Called by `LayoutEditor.setAutonomyMode` from the same posted block that redraws the grid, and
-     * for the same reason written there - *"the first draw happened before this window knew what it
-     * was"*.  Idempotent, like everything else on this path.
+     * Called by `LayoutEditor.setAutonomyMode` from the same posted block that redraws the grid, because the first draw
+     * happened before this window knew what it was.  Idempotent, like everything else on this path.
      *
      * The Text Labels box is applied here too (FR-133): it is remembered and the diagram's text switch is not.
      */
@@ -6917,15 +6813,13 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Makes the window agree with the caption choice (FR-061).
      *
-     * The two boxes are the internal representation - everything that draws a caption asks them, and
-     * that has not changed - so this sets them from the one control the operator sees. They are
-     * mutually exclusive here by construction, which is what retires OB-174: there is no longer a
+     * The two boxes are the internal representation (everything that draws a caption asks them), so this sets them from
+     * the one control the operator sees.  They are mutually exclusive by construction, which retires OB-174: there is no
      * state where somebody has asked for parked trains while the text is off.
      *
-     * **The text switch is not touched (OB-272, FR-133).** It is the writing on the diagram and nothing
-     * else: whether a caption is drawn is the dropdown's own answer, `isDrawingCaptions`, and the text
-     * is the Text Labels box's (`applyTextLabels`).  Under FR-061 the dropdown drove it, so choosing
-     * Station Names drew the labels as well.
+     * **The text switch is not touched (OB-272, FR-133).**  It is the writing on the diagram and nothing else: whether
+     * a caption is drawn is the dropdown's own answer, `isDrawingCaptions`, and the text is the Text Labels box's
+     * (`applyTextLabels`).
      */
     private void applyCaptionMode()
     {
@@ -7020,14 +6914,9 @@ public class AutonomyEditorPanel extends JPanel
     }
     /**
      * Turns the diagram's text labels on, if this panel is in an editor that has them - for a ticked Text Labels box
-     * (OB-174, FR-133).
+     * (FR-133).  Captions no longer depend on it: the grid asks `isDrawingCaptions` (OB-272).
      *
-     * Captions no longer depend on it: the grid asks `isDrawingCaptions`.  They did until OB-272, and
-     * with the switch off the caption choices were settings whose effect arrived at some unrelated
-     * moment - which reads as a switch that does not work, and is why this was written (OB-174).
-     *
-     * Quiet when there is no editor: this panel is also built with no window at all, only to make
-     * menus from, and a null there is not a fault.
+     * Quiet when there is no editor: this panel is also built with no window at all, only to make menus from.
      */
     private void turnTextLabelsOn()
     {
@@ -7039,9 +6928,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The grey a square autonomy will never choose is written in, in the blocker list (FR-074).
      *
-     * Light enough to read as a shade of the ordinary text rather than as a second colour - Adam asked
-     * for *"lightly grey"* - and dark enough to stay legible on the white this dialog uses.  It is not
-     * `Color.GRAY`, which at 50% on white reads as disabled, and these entries are not.
+     * Light enough to read as a shade of the ordinary text rather than as a second colour ("lightly grey"), and dark
+     * enough to stay legible on the white this dialog uses.  It is not `Color.GRAY`, which at 50% on white reads as
+     * disabled, and these entries are not.
      */
     private static final java.awt.Color NOT_CHOSEN_BY_AUTONOMY = new java.awt.Color(120, 120, 120);
 
@@ -7057,20 +6946,12 @@ public class AutonomyEditorPanel extends JPanel
         // necessarily among them, and prefilling from it would show a number the dialog will not touch
         TileKey sample = targets.iterator().next();
 
-        // A field that will not accept anything but digits, rather than an open one that complains
-        // afterwards (OB-043).  A number is the only answer this question has, so refusing the keystroke
-        // is kinder than accepting it and then throwing it away with an error box.
+        // A field that will not accept anything but digits (OB-043): a number is the only answer this question has, so
+        // refusing the keystroke is kinder than accepting it and throwing it away with an error box.
         final javax.swing.JTextField field = digitsOnly(segmentLengthPrefill(sample, selection.isEmpty()));
 
-        // SELECTED, so the number can be typed over rather than cleared first (OB-176).
-        //
-        // Adam: "when setting track length in the autonomy editor, the text box should be selected
-        // when the popup opens."  The field is prefilled with what the square measures now, and the
-        // gesture is almost always to replace it.
-        //
-        // On the event thread AFTER the dialog is up, because a component that is not showing cannot
-        // take focus - requesting it here and now would be dropped and the caret would land wherever
-        // the dialog put it.
+        // SELECTED, so the number can be typed over rather than cleared first (OB-176).  On the event thread AFTER the
+        // dialog is up, because a component that is not showing cannot take focus: requesting it now would be dropped.
         field.addAncestorListener(new javax.swing.event.AncestorListener()
         {
             @Override
@@ -7090,8 +6971,7 @@ public class AutonomyEditorPanel extends JPanel
             public void ancestorRemoved(javax.swing.event.AncestorEvent event) { }
         });
 
-        // OK, CLEAR, CANCEL (Adam, 2026-09-23: "no, add a clear button").  A 0 typed here is an answer now, so taking
-        // a length away needs a door of its own.
+        // OK, CLEAR, CANCEL: a 0 typed here is an answer now, so taking a length away needs a door of its own.
         Object ok = javax.swing.UIManager.getString("OptionPane.okButtonText");
         Object clear = I18n.t("autosetup.ui.optionClearLength");
         Object cancel = javax.swing.UIManager.getString("OptionPane.cancelButtonText");
@@ -7112,8 +6992,7 @@ public class AutonomyEditorPanel extends JPanel
 
         String entered = field.getText().trim();
 
-        // Emptied and submitted still means none (OB-043).  Adam: "if the segment length is cleared and submitted,
-        // treat it as 0" - which was "no length" when 0 was; it is the Clear button's answer now that 0 is kept.
+        // Emptied and submitted still means none (OB-043): the Clear button's answer, now that 0 is kept.
         applyLengthAnswer(tile, entered.isEmpty() ? null : Integer.valueOf(entered));
     }
 
@@ -7128,10 +7007,10 @@ public class AutonomyEditorPanel extends JPanel
     {
         int measured = wholeRun ? lengthShownFor(sample) : session.getStore().getTileLength(sample);
 
-        // EMPTY WHERE NOTHING HAS BEEN SAID (GUI-B2).  A 0 submitted here is an answer - kept, and taken off every list
-        // of what still needs measuring - so a box that opened on "0" made OK, the default, write a deliberate answer
-        // nobody gave.  Mass Assign Lengths' own prompt opens empty for the same reason.  A square answered 0 opens on
-        // its answer, as a measured one opens on its length.
+        // EMPTY WHERE NOTHING HAS BEEN SAID (GUI-B2).  A 0 submitted here is an answer (kept, and taken off every list of
+        // what still needs measuring), so a box that opened on "0" made OK, the default, write a deliberate answer nobody
+        // gave.  Mass Assign Lengths' own prompt opens empty for the same reason.  A square answered 0 opens on its
+        // answer.
         if (measured <= 0 && !session.getStore().isTileLengthAnswered(sample)) return "";
 
         return String.valueOf(measured);
@@ -7140,10 +7019,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What Segment Length does with an answer: a length for the run, or for each selected square; null clears it.
      *
-     * **0 is an answer, and clearing is null** (Adam, 2026-09-23: *"no, add a clear button"*).  A 0 typed here records
-     * the run - or each selected square - as answered 0, as Mass Assign Lengths does (OB-274): not offered again, and
-     * read by every length rule but the own-tail one (OB-300) as measured track of no length (TDU-C6; Adam, 2026-09-25).  Until then a 0 here
-     * cleared the length, which the Clear button does now.
+     * **0 is an answer, and clearing is null.**  A 0 typed here records the run - or each selected square - as answered
+     * 0, as Mass Assign Lengths does (OB-274): not offered again, and read by every length rule but the own-tail one
+     * (OB-300) as measured track of no length (TDU-C6).  The Clear button clears.
      *
      * The decision, apart from the dialog that asks for it, so it can be driven without a display.
      *
@@ -7189,18 +7067,17 @@ public class AutonomyEditorPanel extends JPanel
 
         selection.clear();
 
-        // Lengths are what the reversal guard measures with, and it asks the RUNNING layout
-        // (VD10-B2).  Typing one from the diagram and having the guard still blind is the same
-        // seam as MT-246, one setter over.
+        // Lengths are what the reversal guard measures with, and it asks the RUNNING layout (VD10-B2): the same seam as
+        // MT-246, one setter over.
         setupChanged();
     }
 
     /**
      * Whether Why Not Moving is waiting for its click and this square has a train on it to ask about (FR-102).
      *
-     * Adam, 2026-09-24: *"when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor
-     * diagram so it's clear what the user can click on"*.  The train as the running railway has it where there is one -
-     * a run moves trains the setup has not been told about - and as the setup places it otherwise.
+     * The editor highlights stations with trains, so it is clear what the user can click on.  The train as the running
+     * railway has it where there is one - a run moves trains the setup has not been told about - and as the setup
+     * places it otherwise.
      *
      * @param tile the square
      * @return whether to outline it
@@ -7329,15 +7206,11 @@ public class AutonomyEditorPanel extends JPanel
                 return;
             }
 
-            // WHICH WAY, asked rather than assumed (OB-006).
-            //
-            // Two squares describe a run; they do not describe a direction, and the direction is the
-            // entire content of the decision.  Picking the order the user happened to click in is a
-            // guess, and a wrong guess here closes a stretch of railway the wrong way round and leaves
-            // no trace on the diagram saying which way the user meant.
-            //
-            // Named by the squares themselves, in the same words the rest of this panel uses for a
-            // square, so the answer can be checked against what is on screen.
+            // WHICH WAY, asked rather than assumed (OB-006): two squares describe a run, not a direction, and the direction
+            // is the entire content of the decision.  Picking the order the user happened to click in is a guess, and a
+            // wrong guess closes a stretch of railway the wrong way round with no trace on the diagram saying which way was
+            // meant.  Named by the squares themselves, in the words this panel uses for a square, so the answer can be
+            // checked against what is on screen.
             String there = I18n.f("autosetup.ui.oneWayLeaving",
                 describeTile(from), describeTile(tile));
 
@@ -7370,13 +7243,12 @@ public class AutonomyEditorPanel extends JPanel
 
             if (changed >= 0) showRestrictionsIfHidden();
 
-            // THE ARROWS, NOT THE DIAGRAM (OB-185).  A restriction changes no tile art - what moves is
-            // the arrow drawn over the tile - so redrawing every label to show it is what Adam sees as
-            // "the whole screen flicker", once per click, on the one tool used many times in a row.
+            // THE ARROWS, NOT THE DIAGRAM (OB-185): a restriction changes no tile art, only the arrow drawn over the tile,
+            // so redrawing every label to show it flickered the whole screen once per click on the one tool used many times
+            // in a row.
             if (changed >= 0) annotationsChanged();
 
-            // Armed for the next one.  Closing a run is rarely a single act - a yard is several - and
-            // the alternative is pressing the button again between each.
+            // Armed for the next one: closing a run is rarely a single act (a yard is several).
             if (changed >= 0 && tool == Tool.ONE_WAY)
             {
                 say(hint, I18n.f("autosetup.ui.oneWayDoneAgain", changed));
@@ -7386,22 +7258,18 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // A station is waiting to be told which signal protects it, and this is that click.
-        //
-        // Answered BEFORE the ignored check below, because a signal is one of the squares that check
-        // greys out: autonomy routes no trains through a signal, so ordinarily there is nothing to set
-        // on one.  Here it is the only thing worth clicking.
+        // A station is waiting to be told which signal protects it, and this is that click.  Answered BEFORE the ignored
+        // check below, because a signal is one of the squares that check greys out (autonomy routes no trains through a
+        // signal); here it is the only thing worth clicking.
         if (signalFor != null)
         {
             if (heldByARun()) return;
 
             TileKey station = signalFor;
 
-            // IN A POPUP as well as on the line (MT-505) - see `refuseGuard` - AND BACK TO THE GUARD WINDOW (Adam,
-            // 2026-09-29, on MT-505: "if a non-signal is clicked during selection mode, the dialog goes away. it should
-            // send the user back to the existing popup so they can click on another square."  And on MT-588: "the
-            // dialog closes and we have to reopen everything again.")  The choice used to stay armed with no window, so
-            // the way on was the right-click menu again; the window has Click It on the Diagram for another square.
+            // IN A POPUP as well as on the line (MT-505) - see `refuseGuard` - AND BACK TO THE GUARD WINDOW (MT-505, MT-588:
+            // *"it should send the user back to the existing popup so they can click on another square."*).  The window has
+            // Click It on the Diagram for another square.
             if (!isPairableSignal(component))
             {
                 refuseGuard(I18n.t("autosetup.ui.errorNotASignal"));
@@ -7427,11 +7295,9 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // A station is waiting to be told which square holds it back, and this is that click (FR-025).
-        //
-        // Before the ignored check, for the same reason the signal gesture is: a gesture that asked for
-        // a particular square has to be able to answer about that square, and the check below is about
-        // what an ORDINARY click does. It refuses on its own terms a line later, naming what it wanted.
+        // A station is waiting to be told which square holds it back, and this is that click (FR-025).  Before the
+        // ignored check, for the same reason as the signal gesture: a gesture that asked for a particular square has to
+        // be able to answer about it, and the check below is about what an ORDINARY click does.
         if (blockingFor != null)
         {
             if (heldByARun()) return;
@@ -7442,9 +7308,9 @@ public class AutonomyEditorPanel extends JPanel
 
             if (refusal != null)
             {
-                // The gesture STAYS ARMED on a refusal, unlike the signal one, which drops it.  Missing
-                // a small square is the ordinary way to get this wrong, and re-arming costs the whole
-                // right-click menu again.  Escape or a right-click still cancels.
+                // The gesture STAYS ARMED on a refusal, unlike the signal one, which drops it: missing a small square is
+                // the ordinary way to get this wrong, and re-arming costs the whole right-click menu again.  Escape or a
+                // right-click still cancels.
                 say(hint, refusal);
                 return;
             }
@@ -7503,35 +7369,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Left-click: change which way trains may run through this piece of track.
+     * Turns the arrows back on when an edit would otherwise happen invisibly (OB-008): with the visibility control set
+     * to None, clicking a square changed its direction and nothing on screen moved, which reads as a broken control, and
+     * the natural response to a control that does nothing is to click it again, which cycles the square on to a state
+     * nobody asked for.
      *
-     * The obvious gesture, and the one the tools used to provide - click the track, watch it change.
-     * It cycles both ways -> one way -> the other way -> closed, and says in words what it just became,
-     * so nobody has to infer the order from the arrows.
-     *
-     * A tile with more than one branch is not cycled: a click cannot say WHICH branch is meant, and
-     * changing all of them at once is how a switch ends up set in a way nobody chose.  Those say so and
-     * point at the menu, where the branches are listed separately.
-     *
-     * Whatever is clicked, the change lands on the run - clicking any tile of a straight run sets the
-     * whole run, which is what makes one click enough.
-     */
-    /**
-     * Turns the arrows back on when an edit would otherwise happen invisibly.
-     *
-     * OB-008: with the visibility control set to None, clicking a square changed its direction and
-     * nothing on screen moved. The click worked, the hint line said so, and the diagram - which is
-     * where the user was looking - was identical before and after. That reads as a broken control, and
-     * the natural response to a control that does nothing is to click it again, which cycles the
-     * square on to a state nobody asked for.
-     *
-     * Restrictions rather than All, because it is the default for the same reason: open track is most
-     * of a layout and its arrows say what the reader can already assume. It shows the decision that
-     * has just been made without burying it.
-     *
-     * Only from None, and only on an edit. Somebody who has chosen All or Arrivals has chosen
-     * something that already shows their edit, and moving them off it would be the same rudeness in
-     * the other direction.
+     * Restrictions rather than All, because it is the default for the same reason: open track is most of a layout.
+     * Only from None, and only on an edit: somebody who has chosen All or Arrivals has chosen something that already
+     * shows their edit.
      */
     private void showRestrictionsIfHidden()
     {
@@ -7543,13 +7388,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether an ordinary left click on this square changes which way trains may run through it - what the diagram's pointer
-     * and tooltip offer (FR-112; Adam, 2026-10-05: *"it is not clear to the user that tiles with arrows can be clicked"*).
+     * Whether an ordinary left click on this square changes which way trains may run through it - what the diagram's
+     * pointer and tooltip offer (FR-112; Adam: *"it is not clear to the user that tiles with arrows can be clicked"*).
      *
-     * The questions `tileClicked` and `cycle` ask before a click changes anything, in their order: nothing armed - a tool
-     * or a gesture takes the click for itself - a square autonomy takes notice of, not a link, and track whose next state
-     * lands on something: a piece joined to nothing cannot be made one way, so its click says there is no path.  `regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree` clicks every kind of square and
-     * holds the two to one answer.
+     * The questions `tileClicked` and `cycle` ask before a click changes anything, in their order: nothing armed (a tool
+     * or a gesture takes the click for itself), a square autonomy takes notice of, not a link, and track whose next
+     * state lands on something (a piece joined to nothing cannot be made one way, so its click says there is no path).
+     * `regression.testTheEditorSaysWhatItsToolsDo.testTheClickAndItsPointerAgree` clicks every kind of square and holds
+     * the two to one answer.
      *
      * @param tile a square, or null
      * @return true where a click there changes a direction
@@ -7602,14 +7448,21 @@ public class AutonomyEditorPanel extends JPanel
         return here != null && org.traincontrol.automationui.TilePorts.hasPortal(here.getType());
     }
 
+    /**
+     * Left-click: change which way trains may run through this piece of track.
+     *
+     * It cycles both ways -> one way -> the other way -> closed, and says in words what it just became.  A switch, a
+     * crossing or a double curve steps through its arms instead (`cycleBranching`, `cycleCrossing`).
+     *
+     * Whatever is clicked, the change lands on the run: clicking any tile of a straight run sets the whole run.
+     */
     private void cycle(TileKey tile)
     {
         TileKey target = leaderOf(tile);
 
-        // A link has no direction of its own - the track either side of it governs - so a click on one
-        // has nothing to change.  Its route is a stub, the same side twice, and cycling that produced
-        // states that meant nothing and drew as nothing.  The menu already declines to offer them; the
-        // click has to decline too, or the two disagree about the same square.
+        // A link has no direction of its own - the track either side of it governs - so a click on one has nothing to
+        // change (its route is a stub, the same side twice).  The menu already declines to offer them, and the click has
+        // to decline too, or the two disagree about the same square.
         if (isALink(target))
         {
             say(hint, I18n.t("autosetup.ui.infoLinkHasNoDirection"));
@@ -7661,45 +7514,34 @@ public class AutonomyEditorPanel extends JPanel
         // is flashed as well as named - a message about a square nobody can find is half an answer.
         if (!target.equals(tile) && onReveal != null) onReveal.accept(target);
 
-        // Say what actually happened.  This used to announce a direction unconditionally, so a run that
-        // could not be set - a dead end, in the days when that was possible - reported success.
+        // Say what actually happened, not a direction announced unconditionally: a run that could not be set must not
+        // report success.
         say(hint, changed == 0 ? I18n.t("autosetup.ui.oneWayNoPath")
             : I18n.f("autosetup.ui.cycledTo", describeTile(target), describe(next, route)));
 
         if (changed != 0) showRestrictionsIfHidden();
 
-        // THE ARROWS, NOT THE DIAGRAM (MT-334).
-        //
-        // Adam, after OB-185's fix: "it still flickers, but less", and the whole diagram still
-        // redraws.  Less, because the light door was wired to the One-Way tool alone and this is one
-        // of the four ordinary ways a direction is changed.  A restriction changes no tile art - what
-        // moves is the arrow drawn over the tile - and rebuilding every label on the page to show it
-        // is the flash he is reporting; measured, 384 of 384.
-        //
-        // The running layout is still rebuilt: annotationsChanged does that half exactly as
-        // setupChanged does, which is what the note this replaces was about.
-        // A run's direction is an edge in the running graph (VD11-A1).
+        // THE ARROWS, NOT THE DIAGRAM (MT-334): a restriction changes no tile art, only the arrow drawn over the tile, so
+        // rebuilding every label on the page to show it flashes (measured, 384 of 384).  The running layout is still
+        // rebuilt: annotationsChanged does that half exactly as setupChanged does.  A run's direction is an edge in the
+        // running graph (VD11-A1).
         annotationsChanged();
     }
 
     /**
      * Left-click on a switch, a crossing or a double curve: the next combination of open and shut ARMS.
      *
-     * Not the next of four whole-tile states, which is what this did before and what kept being wrong.
-     * The states a junction has are not four; on a crossing they are sixteen, and the useful ones -
-     * north-south open while east-west is shut - are exactly the ones a whole-tile cycle cannot reach.
-     * Neither can they be enumerated as Direction constants: TOWARD_A names a route's own first side,
-     * and nothing makes those agree between branches, so "TOWARD_A everywhere" on a switch with its toe
-     * at S means toward N and toward S at once.
+     * Not the next of four whole-tile states: a junction's states are not four (on a crossing they are sixteen), and
+     * the useful ones, such as north-south open while east-west is shut, are exactly the ones a whole-tile cycle cannot
+     * reach.  Nor can they be enumerated as Direction constants: TOWARD_A names a route's own first side, and nothing
+     * makes those agree between branches.
      *
-     * So the state cycled is what the drawing already shows: one bit per ARM of the tile, saying
-     * whether a train may leave through it.  Every combination is reachable, and the click is a plain
-     * binary counter over them, which makes the order predictable without anybody having to learn it.
+     * So the state cycled is what the drawing already shows: one bit per ARM of the tile, saying whether a train may
+     * leave through it.  Every combination is reachable, and the click is a plain binary counter over them.
      *
-     * The bits translate back to routes exactly.  A route (A,B) reads its two arms: both open is both
-     * ways, one open is one way toward it, neither is closed.  An arm shared by two branches - a
-     * switch's toe - is one bit, so the two branches cannot end up disagreeing about it, which is the
-     * state that used to draw a green arrow on top of a red one.
+     * The bits translate back to routes exactly.  A route (A,B) reads its two arms: both open is both ways, one open is
+     * one way toward it, neither is closed.  An arm shared by two branches - a switch's toe - is one bit, so the two
+     * branches cannot disagree about it (which drew a green arrow on top of a red one).
      */
     private void cycleBranching(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes)
@@ -7714,11 +7556,10 @@ public class AutonomyEditorPanel extends JPanel
         // and a fifth click carries on into the combinations that are only occasionally wanted.
         java.util.List<Integer> states = cycleStates(routes, sides);
 
-        // COUNTED FROM WHAT IS IN FORCE (VD18-C2), the state the arrows and the boxes show.  Safe because every state
-        // the list holds stores answers the hardware allows (`cycleStates`), and each reads back in force as itself.
-        // Counted from what was stored, a closure an earlier build stored on a permanent turnout as an arm toward its
-        // fork matched no state, and the click went back to the list's first - closed - with nothing on screen
-        // changing.
+        // COUNTED FROM WHAT IS IN FORCE (VD18-C2), the state the arrows and the boxes show.  Safe because every state the
+        // list holds stores answers the hardware allows (`cycleStates`) and each reads back in force as itself; counted
+        // from what was stored, a closure stored on a permanent turnout as an arm toward its fork matched no state, and
+        // the click went back to the list's first, closed, with nothing on screen changing.
         int current = armMask(target, routes, sides);
 
         int at = states.indexOf(current);
@@ -7740,12 +7581,12 @@ public class AutonomyEditorPanel extends JPanel
      * both tracks both ways, each track one way with the other both ways, the four ways the two can each run one way, and
      * both closed.
      *
-     * Adam, 2026-10-04: *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible
-     * directions on both (4 combos)"* - both ways first and closed last, as a crossing's own first answers go; and on
-     * MT-688, 2026-10-05: *"when cycling, there is no option for red in one direction and green in the other 3"* - one
-     * track one way and the other open, the more often wanted, so straight after both ways.  Not the
-     * arms of `cycleBranching`: the two tracks share the side the squares meet at, and one bit for it cannot say that one
-     * track runs onto the other square while the other runs off it.
+     * Adam: *"Pretend these are two curved tracks on one tile, so we need to cycle through both possible directions on
+     * both (4 combos)"* - both ways first and closed last, as a crossing's own first answers go; and on MT-688: *"when
+     * cycling, there is no option for red in one direction and green in the other 3"* - one track one way and the
+     * other open, the more often wanted, so straight after both ways.  Not the arms of `cycleBranching`: the two tracks
+     * share the side the squares meet at, and one bit for it cannot say that one track runs onto the other square while
+     * the other runs off it.
      *
      * Counted on the crossing's north or west square whichever square is clicked, so a click on either carries on from the
      * same place; the session sets the other square's half of each track with it.
