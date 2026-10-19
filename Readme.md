@@ -414,6 +414,7 @@ Tab icons provided by Freepik.
     - Routes
         - The Routes tab now shows a turning mark beside each route while it is running.
         - When something has to wait for a route, the message now names the route that is running.
+        - With the track power off, clicking a route opens it for editing instead of asking whether to run it.
     - Track Diagram
         - The tunnel icons are easier to see, and the link and signal icons are sharper and meet the track cleanly.
         - In the layout editor, a new piece of track placed from the palette now turns to join the track beside it: straights, sensors, signals, curves, bumpers, tunnels, links and the base of a switch.
@@ -433,6 +434,7 @@ Tab icons provided by Freepik.
         - The setup check no longer warns about moves no train can make, such as a signal that trains only pass on their way out, or a point that is not a station.
         - The Track Diagram and the autonomy editor now draw the same direction arrows on every stretch of track, and a stretch whose squares disagreed is put right when the setup opens, with a line in the log.
         - A stretch of track whose squares point opposite ways is now a warning in the setup check, and the One-Way tool now sets the whole stretch you click.
+        - When autonomy loads, each station's maximum train length is now written to the log once, by the station's name.
 * v3.0.1 [10/13/2026]
     - Updates
         - Download Update can now also install the new version for you: it backs up your data, keeps your old version next to the new one, and restarts TrainControl

@@ -27,9 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-768](#mt-768) | 2026-10-18 | FR-140: with the power off, a click on a route opens its editor | fixed unvalidated | FR-140 |
+| [MT-769](#mt-769) | 2026-10-18 | OB-362: a station's maximum train length is logged once, by its name | fixed unvalidated | OB-362 |
 
-
-Everything else - 767 of 767 - needs nothing from you unless the area changes again:
+Everything else - 767 of 769 - needs nothing from you unless the area changes again:
 612 **fixed validated** and 155 **superseded**.
 
 ---
@@ -35902,5 +35903,53 @@ Works.  But when clicked, copy the warning to the clipboard for easy sharing.
 **Claude, 2026-10-18.**
 
 Taken up: clicking a setup check notice copies its text to the clipboard, as well as outlining its squares.  It gets its own test.
+
+---
+
+<a id="mt-768"></a>
+### MT-768 - 2026-10-18 - FR-140: with the power off, a click on a route opens its editor
+
+**Disposition:** fixed unvalidated
+**From:** FR-140
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Turn the track power off.  On the Routes tab, click a route's name (not its play button).
+2. Close the editor.  Click the route's play button.
+3. Turn the power on and click a route's name again.
+
+**Expected**
+
+- Step 1: the route's editor opens; nothing asks whether to run it, and nothing runs.
+- Step 2: the play button behaves as before.
+- Step 3: with the power on, a click on the name asks whether to run the route, as before.
+
+*What this is:* FR-140 (`2af8b119`): with the power off, the row's click opens the route's editor (`editRoute`); the play button and
+the click with the power on are unchanged.  Claim `ui.testTheRouteListShowsWhatRuns.testWithThePowerOffARowClickOpensTheRoutesEditor`.
+
+---
+
+<a id="mt-769"></a>
+### MT-769 - 2026-10-18 - OB-362: a station's maximum train length is logged once, by its name
+
+**Disposition:** fixed unvalidated
+**From:** OB-362
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. With an autonomy configuration whose stations have maximum train lengths, among them a station trains reach from
+   both directions, restart TrainControl (or load the configuration again) and read the log.
+
+**Expected**
+
+- Step 1: "Set max train length of N for X" appears once for each station, naming the station (for example "St60"),
+  not once for each direction ("St60 (eastbound)", "St60 (westbound)").
+
+*What this is:* OB-362 (`e7391740`): the copies a square builds into all carry its maximum; the load logs it once per station, by the
+place's name (`Layout.placeNameOf`).  Claim `core.testAPausedTrainStaysPaused.testAStationsMaximumIsSaidOnceByItsName`.
 
 ---
