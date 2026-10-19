@@ -1,10 +1,8 @@
 package regression;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * The track-diagram editor must tell the autonomy setup what it did to the track.
@@ -28,9 +26,6 @@ import org.testng.annotations.Test;
  */
 public class testTheEditorTellsAutonomy
 {
-    private static final String EDITOR = "src/org/traincontrol/gui/LayoutEditor.java";
-    private static final String MENU = "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java";
-
     /**
      * A group cut and paste has to carry the setup, the way every other move does (LE-A1).
      *
@@ -46,13 +41,13 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testAGroupCutCarriesItsSetupToWhereItIsPasted() throws Exception
     {
-        String paste = bodyOf(EDITOR, "public boolean pasteSelection(int atX, int atY)");
+        String paste = bodyOf("public boolean pasteSelection(int atX, int atY)");
 
         assertTrue(paste.contains("moveTiles("),
             "pasteSelection no longer calls moveTiles, so a group cut and paste leaves the autonomy "
             + "setup on the squares it emptied and the next reconciling save prunes it (LE-A1)");
 
-        String cut = bodyOf(EDITOR, "public boolean cutSelection()");
+        String cut = bodyOf("public boolean cutSelection()");
 
         // The ASSIGNMENT, not a mention of the name.  This asked only that the identifier appeared,
         // so setting the flag to false here - which is precisely "the paste cannot tell a move from a
@@ -94,7 +89,7 @@ public class testTheEditorTellsAutonomy
         // snapshotLayout had just cleared.  Every other assertion here asks whether a call is present;
         // this one asks that the decision is taken from the ARGUMENT, which is the only part of
         // reachability a source scan can actually see.
-        String moves = bodyOf(EDITOR, "> cutMoves(int atX, int atY, boolean wasCut,");
+        String moves = bodyOf("> cutMoves(int atX, int atY, boolean wasCut,");
 
         // Unqualified, because "clipboardWasCut" and "this.clipboardWasCut" are the same read and
         // Java requires neither spelling - pinning one let the other through (LE2-C12).  The method
@@ -125,7 +120,7 @@ public class testTheEditorTellsAutonomy
             + "is skipped and then forgotten as built over (RC-A6)");
 
         // WHERE THE QUESTION LIVES NOW.  Both halves of it, asked before anything is placed.
-        String vacated = bodyOf(EDITOR, "> emptyCutOrigins()");
+        String vacated = bodyOf("> emptyCutOrigins()");
 
         assertTrue(vacated.contains("getComponent(square.getX(), square.getY()) == null"),
             "emptyCutOrigins no longer checks that the square is still EMPTY, so a cut whose squares "
@@ -139,7 +134,7 @@ public class testTheEditorTellsAutonomy
 
         // A copy must NOT carry it: the original keeps everything, and moving its setup onto the copy
         // would take the station and its placed locomotive away from the squares still holding track.
-        String copy = bodyOf(EDITOR, "public boolean copySelection()");
+        String copy = bodyOf("public boolean copySelection()");
 
         assertTrue(copy.contains("clipboardWasCut = false"),
             "copySelection must clear the cut flag, or pasting a COPY would move the original's setup "
@@ -170,7 +165,7 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testShrinkingThePageDropsCaptionsOnTheEdgeItRemoves() throws Exception
     {
-        String body = bodyOf(EDITOR, "public void shrinkEdges()");
+        String body = bodyOf("public void shrinkEdges()");
 
         int forgotten = body.indexOf("forgetCaptionsOnTrimmedEdge");
         int trimmed = body.indexOf("trimEdges()");
@@ -196,7 +191,7 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testClearingThePageTellsTheSetup() throws Exception
     {
-        String body = bodyOf(EDITOR, "public void clear()");
+        String body = SourceOf.declarationIn(SourceOf.fileDeclaring("public class LayoutEditor extends"), "public void clear()");
 
         int forgotten = body.indexOf("forgetWholePage");
         int cleared = body.indexOf("layout.clear()");
@@ -224,7 +219,7 @@ public class testTheEditorTellsAutonomy
     {
         for (String method : new String[] {"public void shiftDown()", "public void shiftRight()"})
         {
-            String body = bodyOf(EDITOR, method);
+            String body = bodyOf(method);
 
             // Any refusal, not one spelling of it: LE-C2 replaced the inline comparison with a named
             // predicate, and a scan pinned to the old wording would have gone red for a change that
@@ -259,7 +254,9 @@ public class testTheEditorTellsAutonomy
     @Test
     public void testTheMenuAsksTheSamePredicateTheShiftUses() throws Exception
     {
-        String menu = read(MENU);
+        // The diagram submenu is built by the menu's constructor.
+        String menu = bodyOf("public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label,"
+            + " LayoutDiagramComponent component)");
 
         // EACH ITEM AGAINST ITS OWN PREDICATE (LE-C9).
         //
@@ -288,7 +285,7 @@ public class testTheEditorTellsAutonomy
         }
 
         // and the parameter has to reach setEnabled, or asking the predicate changes nothing
-        assertTrue(bodyOf(MENU, "private void addShift(").contains("setEnabled(enabled)"),
+        assertTrue(bodyOf("private void addShift(").contains("setEnabled(enabled)"),
             "addShift no longer wires its enabled parameter to setEnabled, so every item is offered "
             + "whatever its predicate says (LE-C1)");
 
@@ -299,53 +296,18 @@ public class testTheEditorTellsAutonomy
             String method = pair.split("\\|")[0];
             String predicate = pair.split("\\|")[1];
 
-            assertTrue(bodyOf(EDITOR, method).contains(predicate + "()"),
+            assertTrue(bodyOf(method).contains(predicate + "()"),
                 method + " no longer asks " + predicate + " - the menu and the method would then be "
                 + "two copies of one rule, which is how this finding happened (LE-C1)");
         }
     }
 
     /**
-     * One method's body, braces included, so a scan cannot wander into its neighbours.
+     * One declaration's text, braces included, so a scan cannot wander into its neighbours: found wherever the
+     * program keeps it, and a miss is a failure that names it.
      */
-    private static String bodyOf(String file, String declaration) throws Exception
+    private static String bodyOf(String declaration) throws Exception
     {
-        String source = read(file);
-
-        int at = source.indexOf(declaration);
-
-        assertTrue(at >= 0, declaration + " was not found in " + file
-            + " - it was renamed or removed, and this scan needs updating rather than deleting");
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        assertTrue(open >= 0, "no body found for " + declaration);
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        fail("the body of " + declaration + " does not close");
-
-        return "";
-    }
-
-    private static String read(String file) throws Exception
-    {
-        File found = new File(file);
-
-        // Run from the project root by the harness; the battery runs from one directory up in some
-        // configurations, so the parent is tried rather than failing on a path.
-        if (!found.isFile()) found = new File("../" + file);
-
-        assertTrue(found.isFile(), file + " was not found from " + new File(".").getAbsolutePath());
-
-        return new String(Files.readAllBytes(found.toPath()), StandardCharsets.UTF_8);
+        return SourceOf.declaration(declaration);
     }
 }
