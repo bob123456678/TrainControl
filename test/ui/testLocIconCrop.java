@@ -897,6 +897,131 @@ public class testLocIconCrop
         }
     }
 
+    /**
+     * A picture that cannot be read, picked with the wrench, is refused by name and leaves the locomotive's icon as it
+     * was: in the locomotive, and in the locomotive database once saved (FR-022, LD-6).  Crop is unticked, the case the
+     * guard once missed.
+     *
+     * MUTATION: take `pictureCanBeRead` out of `setLocIcon`, and this fails.
+     *
+     * @throws Exception from the event thread or the save
+     */
+    @Test
+    public void testAnUnreadablePictureLeavesTheIconAsItWas() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        // The locomotive database is saved, so only into a data folder of the run's own
+        if (System.getProperty(org.traincontrol.util.Util.DATA_DIR_PROPERTY, "").trim().isEmpty())
+        {
+            throw new org.testng.SkipException("this saves the locomotive database, and this run has no data folder of"
+                + " its own (one.sh and battery.sh give it one)");
+        }
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        boolean cropWas = prefs.getBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false);
+
+        org.traincontrol.base.Locomotive loc = null;
+        String iconWas = null;
+
+        File folder = java.nio.file.Files.createTempDirectory("p6icon").toFile();
+
+        File good = new File(folder, "p6-good.png");
+        File unreadable = new File(folder, "p6-unreadable-" + System.nanoTime() + ".png");
+
+        try
+        {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStationAddress.withNoStation(() ->
+                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
+
+            ui = windowOver(model);
+
+            javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(8, 8, java.awt.image.BufferedImage.TYPE_INT_RGB),
+                "png", good);
+
+            write(unreadable, "a png in name only");
+
+            assertFalse(model.getLocomotives().isEmpty(), "precondition: the locomotive database is empty");
+
+            loc = model.getLocomotives().get(0);
+            iconWas = loc.getLocalImageURL();
+
+            final String goodUrl = good.toPath().toUri().toString();
+
+            loc.setLocalImageURL(goodUrl);
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+            active.set(ui, loc);
+
+            // CROP UNTICKED, as the chooser opens
+            prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false);
+
+            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+
+            java.util.List<String> said;
+
+            try (support.Answering answering = support.Answering.start(message -> null).choosing(unreadable))
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                    java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(),
+                    java.awt.event.InputEvent.BUTTON1_MASK, 5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+                assertTrue(answering.awaitAsked(1, 10000), "an unreadable picture was taken without a word");
+
+                said = answering.asked();
+            }
+
+            assertEquals(said.get(0), org.traincontrol.util.I18n.f("loc.ui.errorPictureCouldNotBeRead",
+                unreadable.getName()), "the refusal does not name the picture");
+
+            settle();
+
+            assertEquals(loc.getLocalImageURL(), goodUrl, "an unreadable picture replaced the locomotive's icon");
+
+            model.saveState(false);
+
+            String saved = new String(java.nio.file.Files.readAllBytes(new File(org.traincontrol.util.Util.dataPath(
+                org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)).toPath()),
+                java.nio.charset.StandardCharsets.ISO_8859_1);
+
+            assertTrue(saved.contains(good.getName()), "precondition: the saved database does not hold the icon at all");
+
+            assertFalse(saved.contains(unreadable.getName()), "the saved locomotive database names the unreadable"
+                + " picture");
+        }
+        finally
+        {
+            prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, cropWas);
+
+            if (loc != null)
+            {
+                loc.setLocalImageURL(iconWas);
+
+                if (model != null) model.saveState(false);
+            }
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            good.delete();
+            unreadable.delete();
+            folder.delete();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
     /** The main window over a model, as the application builds it. */
     private static TrainControlUI windowOver(final org.traincontrol.marklin.MarklinControlStation model) throws Exception
     {
