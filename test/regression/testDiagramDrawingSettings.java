@@ -229,19 +229,60 @@ public class testDiagramDrawingSettings
         // The editor's code is not one file, so the claim asks the whole program: the accessor is named by its
         // declaration, the drawing's own read in TrainControlUI and the session's static annotation, and nothing else.
         // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting.
-        assertEquals(SourceOf.occurrences("diagramShowsRestrictionArrows"), 3,
-            "something else now reads the ordinary diagram's preference besides its accessor, the window's drawing and"
-            + " the session's static annotation - if it is the autonomy editor, that is exactly what "
-            + "Adam asked not to happen: the editor is where these are being decided, and it has its "
-            + "own control for them");
+        //
+        // AND PLACE BY PLACE (FR-136): a total of three holds when the session's read goes and the editor gains one
+        // in the same change, so each of the three is asked where it is.
+        String readers = "something else now reads the ordinary diagram's preference besides its accessor, the"
+            + " window's drawing and the session's static annotation - if it is the autonomy editor, that is exactly"
+            + " what Adam asked not to happen: the editor is where these are being decided, and it has its own control"
+            + " for them";
+
+        assertEquals(SourceOf.occurrences("diagramShowsRestrictionArrows"), 3, readers);
+
+        assertEquals(countsIn("diagramShowsRestrictionArrows",
+                "public static boolean diagramShowsRestrictionArrows()",
+                "public void showStaticAutonomyLayer(boolean show)",
+                "public TileAnnotation staticAnnotationFor(TileKey tile)"),
+            java.util.Arrays.asList(1, 1, 1), readers);
 
         // The METHOD NAME is not the coupling; the STORED PREFERENCE is (TST-C16). Reading
         // DIAGRAM_RESTRICTION_ARROWS out of Preferences directly - skipping the accessor entirely -
         // would couple the two windows exactly as before while leaving the check above satisfied.
-        assertEquals(SourceOf.occurrences("DIAGRAM_RESTRICTION_ARROWS"), 4,
-            "the stored preference key is now named somewhere beyond its declaration, the accessor, and the menu's tick"
-            + " and write - if it is the autonomy editor reading it directly, bypassing "
+        String keyNamed = "the stored preference key is now named somewhere beyond its declaration, the accessor, and"
+            + " the menu's tick and write - if it is the autonomy editor reading it directly, bypassing "
             + "diagramShowsRestrictionArrows() rather than calling it, that is the coupling Adam asked to "
-            + "avoid, reached by a different door");
+            + "avoid, reached by a different door";
+
+        assertEquals(SourceOf.occurrences("DIAGRAM_RESTRICTION_ARROWS"), 4, keyNamed);
+
+        // Place by place as well: the declaration, the accessor, and the menu's tick and write.
+        assertEquals(countsIn("DIAGRAM_RESTRICTION_ARROWS", "public static final String DIAGRAM_RESTRICTION_ARROWS",
+            "public static boolean diagramShowsRestrictionArrows()", "private void buildDiagramDrawingMenu()"),
+            java.util.Arrays.asList(1, 1, 2), keyNamed);
+    }
+
+    /**
+     * How many times a text is in the code of each of these declarations, found wherever the program keeps them.
+     *
+     * @param needle the text
+     * @param signatures the declarations, each named once in the program
+     * @return the count in each, in the order given
+     */
+    private static java.util.List<Integer> countsIn(String needle, String... signatures)
+    {
+        java.util.List<Integer> counts = new java.util.ArrayList<>();
+
+        for (String signature : signatures)
+        {
+            String code = SourceOf.withoutComments(SourceOf.declaration(signature));
+
+            int found = 0;
+
+            for (int at = code.indexOf(needle); at >= 0; at = code.indexOf(needle, at + needle.length())) found++;
+
+            counts.add(found);
+        }
+
+        return counts;
     }
 }
