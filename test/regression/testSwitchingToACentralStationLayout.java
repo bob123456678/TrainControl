@@ -198,16 +198,19 @@ public class testSwitchingToACentralStationLayout
             + "Manage Pages shows whatever it was left at - which is the staleness OB-128 was filed "
             + "about, arrived at from the other side");
 
-        // Every door goes through the guarded helper rather than picking the tab by index.
-        assertEquals(SourceOf.occurrences("KeyboardTab.setSelectedIndex(1)"), 0,
+        // Every door goes through the guarded helper rather than picking the tab by index - the field by name or
+        // through `getKeyboardTab()`, so a door moved out of the window and reaching the tabs by its accessor is seen.
+        assertFalse(java.util.regex.Pattern.compile("KeyboardTab(?:\\(\\))?\\.setSelectedIndex\\(1\\)")
+                .matcher(SourceOf.allCode()).find(),
             "something selects the track diagram tab by index again, so it reaches straight past "
             + "the greying - and assumes the diagram is tab 1 while it is at it");
 
         // Seven since OB-359 took the legacy editor and Edit Current Page off the menu: two of the nine
-        // converted doors went with them.
-        assertTrue(SourceOf.occurrences("showLayoutTab()") >= 7,
+        // converted doors went with them.  Counted as CALLS over the program, so the declaration is not one of them,
+        // and the eighth is the autonomy viewer's door (FR-136).
+        assertTrue(SourceOf.occurrences("showLayoutTab();") >= 8,
             "fewer doors go through showLayoutTab than the seven left of the nine that were converted, "
-            + "so one has found another way to open the tab");
+            + "and the autonomy viewer's, so one has found another way to open the tab");
 
         // And the panel is emptied, not merely greyed.
         assertTrue(SourceOf.allCode().contains("clearLayoutPanel();"),
