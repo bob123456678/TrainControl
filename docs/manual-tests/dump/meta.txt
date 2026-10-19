@@ -1,0 +1,10 @@
+# docs/manual-tests/dump/meta.txt - the `meta` table.
+# WRITTEN BY triagedb.py FROM triage.db ON EVERY WRITE.  Never edit it, and never read it back: ask the
+# store (py -3 docs/manual-tests/triagedb.py show MT-123).  Only the Java tests read it, having no SQLite.
+# A record is a [header] line and one field per line; every line of a text field is written behind "| ".
+
+[meta migrated]
+value: 2026-10-19 06:41
+
+[meta migrated from]
+value: tests.md sha256 efc8c5a9e2b716e3d8f6353ed490316045d2c99ff1bbb82753095f896286ea5d; tests-archive-3.0.0.md sha256 2a2d0a5a4eabeb22bb5226069d7e975757a13d5ef10d3b7019ef3b335f1123dc; tests-archive-3.0.1.md sha256 27380cdf138d3bde9e3904a8d5acd6b4cae95ad069e319bd9d5f6319d5e4ea05; tests-archive-3.0.2.md sha256 80e3f76d9186ff247ee18f2c8f15f2b487ef8b5a405eb861fe25cf053a0a45c7; tests-archive-pre-3.0.0.md sha256 bedcf4b1dddf4fd14fed0e879a6ab0fdad3fd39340d91ca57afa8f760557cb45; issues.md sha256 1e13a08724dc23ed01192ec74ecd310c04f9264f81adda98572d7b97d054a22e

@@ -1,0 +1,192 @@
+# docs/manual-tests/dump/notes.txt - the `note` table: the prose the markdown carried around its entries, by name.
+# WRITTEN BY triagedb.py FROM triage.db ON EVERY WRITE.  Never edit it, and never read it back: ask the
+# store (py -3 docs/manual-tests/triagedb.py show MT-123).  Only the Java tests read it, having no SQLite.
+# A record is a [header] line and one field per line; every line of a text field is written behind "| ".
+
+[note issues.backlog]
+text:
+| ## Where the older backlog is
+|
+| The deleted `2026-08-18-manual-test-plan.md` had a "Feature backlog (Adam, 18 August)" section -
+| things written down so they would not be lost, none of them scheduled. It has not been picked up into
+| this mechanism, deliberately: filing something here is a decision, and those were explicitly not
+| decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.
+
+[note issues.preamble]
+text:
+| # Issues
+|
+| Bugs and feature requests, in one inbox. Adam writes here - by hand, or through
+| [triage.py](triage.py)'s **New issue** button. Claude reads here, turns each item into a finding under
+| the round's prefix (for a bug) or works it directly (for a feature request), opens an `MT-###` entry in
+| [tests.md](tests.md) to cover a bug fix (a feature request only if the work turns out to need one), and
+| clears the item out of the Inbox. Findings live in the `finding` table of `triage.db`; the review
+| document that first wrote one is deleted with its round - see
+| [../reviews/README.md](../reviews/README.md).
+|
+| This replaces the separate `bug-reports.md` and `feature-requests.md` files from 2026-08-22 - the two
+| inboxes worked identically and existed only because bugs and features felt like different things when
+| this was hand-maintained. Now that [triage.py](triage.py) parses the file, one Kind field does the same
+| job as two files, and a bug filed while looking for a feature (or the reverse) has one place to land
+| regardless.
+|
+| **How to use it, by hand.** Put anything under **Inbox** below - a sentence, a paragraph, a sketch.
+| There is no format to follow. Say whether it is a bug or a feature request if you can; if you can't
+| tell yet, say so and Claude will sort it out.
+|
+| **How to use it, through triage.py.** The **New issue** button opens a small form: pick bug or feature
+| request, a one-line summary, and detail. It writes a structured entry here - `triage.py issues` can
+| then list every open one without anyone re-reading the file by hand.
+|
+| **A bug is `OB-###`; a feature request is `FR-###`.** Separate counters - a glance at the ref says
+| which lifecycle an item is on. `OB` kept counting from before the split existed; nothing already
+| filed was renumbered.
+|
+| **What happens next:** at the start of the next round, Claude picks up everything in the Inbox and
+| gives it a receipt row here. A **bug** also gets an `MT-###` tag in `tests.md`, disposition **needs
+| test** - a fix needs a repeatable hands-on check that the regression stays fixed, so that tag is
+| handed out immediately, not earned. A **feature request** is tracked directly instead, by default:
+| its receipt row gets a **State** in three of the four words `tests.md`'s disposition uses (not
+| **superseded**, which has no meaning for a request nobody has coded yet), plus two of its own,
+| **pending** for picked up and not built yet, and **declined** for something cancelled - see below -
+| set by Claude and only by Claude.  Once an `MT-###` tests it, the row names that tag in **Became**
+| instead, so its state follows the test. It
+| only gets promoted to an `MT-###` tag if the eventual work turns out to need a genuine hands-on
+| test the way a bug fix does.
+|
+| **Filing is not asking for it to be worked.** Filing puts it on the list; asking gets it built. That
+| split is deliberate - it lets you write something down the moment you think of it without deciding
+| then and there whether it is worth doing now. The exception is your own judgement: say a bug is urgent
+| in its own text and it is treated that way.
+|
+| **Cancelling something already filed works the same way filing does: you request it, Claude acts on
+| it.** The **Request cancel…** button in triage.py's Feature requests/Bugs tabs - on a pending item or
+| an already-picked-up one - opens a small prompt for an optional reason and files a new structured
+| item naming what it is cancelling. Nothing changes immediately: at the start of the next round,
+| Claude reads that request, sets the target's State to **declined** (or, for a bug already promoted,
+| records the decision in its `MT-###` entry instead, since a promoted bug's own Comments are where its
+| outcome lives), and closes both items out. Only Claude sets State, the same rule as everywhere else -
+| this is how you ask, not how you decide.
+|
+| **Before adding to the Inbox below - by hand, through the app, or as an automated round reading this
+| file to decide what to do - check whether it is already there.** `py -3 docs\manual-tests\triage.py
+| issues` lists every pending item in one command. OB-001 and OB-002 in the receipt table below are
+| what skipping this looks like: the same observation, filed twice, two minutes apart, because nothing
+| checked whether the first filing had already happened before the second one ran. A round that reads
+| this tracker to decide what needs doing has to read the Inbox and the ledger BEFORE writing to either,
+| not just before reporting back - "I looked, so I know what to build" is not the same claim as "I
+| looked, so I know this is not already here."
+|
+| ---
+|
+
+[note issues.receipts.after]
+text:
+|
+| **OB-008 to OB-012 are fixed, 2026-08-22.** Two of them share `MT-102`, because they are the same
+| test: read two labels and check they say the right thing. Splitting that into two entries would mean
+| two trips to the same screen.
+|
+| **One part of `OB-009` is answered rather than fixed, and it is called out in `MT-101`.** "Adding a
+| locomotive to the graph doesn't correctly place it at the station where it belongs" - I could not find
+| a placement going to the wrong square, and the likeliest explanation is the missing refresh that was
+| the third part of the same report: a placement that does not appear looks exactly like a placement that
+| went somewhere else. `MT-101` asks Adam to re-check that specific half now the labels update, and says
+| what to tell me if it still happens.
+|
+| **All five are fixed, 2026-08-22.** The three feature requests earned an `MT-###` after all, for the
+| same reason the two bugs did: each changed something only a person at the railway can confirm.
+|
+| `FR-005` was the interesting one - what it asked for was already built and had been for a while. The
+| star is drawn by `paintTrainMark`; `paint()` just never got that far, because `isBlank()` did not count
+| a train as content and a square with only a train on it was therefore "nothing to draw". It appeared on
+| stations, which carry a badge and so were never blank, and was missing on exactly the squares the
+| request was about.
+|
+| **`OB-003` and `OB-005` are fixed, 2026-08-22, on Adam's "fix all the bugs".** Both earned an
+| `MT-###` after all, which is the rule working rather than an exception to it: each one changed
+| behaviour that only a person at the railway can confirm, and `OB-005` in particular introduced three
+| new ways to lose work that no automated test can see the whole of. The three feature requests filed
+| alongside them - `FR-003`, `FR-004`, `FR-005` - are untouched and still have no tag.
+|
+| **On the five filed 2026-08-22, and the Kind field.** All five arrived as `bug`; two of them are, and
+| three are feature requests. `FR-003`, `FR-004` and `FR-005` do not describe anything behaving wrongly -
+| they ask for a control to be built differently, moved, or added. `OB-003` and `OB-005` are behaviour:
+| a window that comes up the wrong size, and a switch that visibly closes and reopens.
+|
+| Recorded by substance rather than by the dropdown, because the two routes differ - a bug earns an
+| `MT-###` regression check once it is fixed, a feature request does not by default. Nothing is lost
+| either way: the Kind as filed is above, and if I have called one wrong, say so and it moves.
+|
+| **None of the five has an `MT-###`, deliberately.** That is the `MT-094` lesson applied - a tag is
+| earned when the work turns out to need a repeatable hands-on check, not handed out at pick-up. `OB-003`
+| and `OB-005` are the two most likely to earn one when they are built.
+|
+| **`FR-005` may already be half-built.** `AutonomyEditorPanel` already calls `annotation.withTrain()`
+| for any square the setup puts a locomotive on, so the editor is already drawing *a* mark there. Worth
+| looking at what it currently draws before adding a second one - the request may be to change that mark
+| to a white `*` rather than to add one. Flagged rather than assumed.
+|
+| **`OB-005` is the cost of a decision, not an accident.** The F2 sidebar was specified as "switching
+| tabs or mode is the same as the old exit and reopen: prompt for save/discard, then regenerate", and
+| the flash is that regeneration being visible. Removing it means keeping the window and swapping its
+| contents, which is a different design from the one that was asked for - worth saying before it is
+| built, not after.
+|
+| **`FR-002` is retired-and-relit, not new.** It was promoted to `MT-094` on 2026-08-22, which turned
+| out to be the wrong call - a feature request that had not even been designed yet, sitting in the
+| Tests ledger looking like a hands-on regression test. `MT-094` stays in `tests.md`, superseded
+| rather than deleted (its tag is already cited by a commit), and this row is the live one now:
+| tracked here directly, with its own State, never promoted again unless the eventual work turns out
+| to need a genuine repeatable hands-on test the way a bug fix does.
+|
+| *OB-001 and OB-002 are the same request submitted twice, two minutes apart, against commits 3a2106ab
+| and cd27e285. Recorded as one entry - a duplicate is a duplicate, and two ledger rows for one decision
+| is exactly the noise the ledger exists to avoid. If the second was meant to say something the first did
+| not, put the difference back in the Inbox and it gets its own entry.*
+|
+| *`MT-064` is `FR-009` now - it was filed before any numbering existed at all, directly as a sentence
+| in what was then `feature-requests.md`, and its ref sat as `-` until 2026-08-22, when it got the
+| same real number everything else here has.*
+|
+| *`OB-001`/`OB-002`, `OB-004`, `OB-006` and `OB-007` are now `FR-002`, `FR-003`, `FR-004` and
+| `FR-005` - renamed 2026-08-22 once bugs and feature requests got separate counters, since all four
+| are feature requests that predate the split. The table above and the `MT-###` entries they link to
+| use the new refs; older prose in this file and in commit messages still names them by the OB number
+| they were filed under, and this mapping is how to trace one to the other.*
+|
+
+[note issues.receipts.before]
+text:
+| ## What has been picked up
+|
+| Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
+| `MT-###` tag, and its state lives there from then on. Something tracked directly instead - most
+| feature requests, going forward - has no `MT-###` tag to point at; **State** is its disposition,
+| in three of the four words `tests.md` uses (`needs test` / `fixed unvalidated` / `fixed
+| validated` - not `superseded`, which has no meaning for something nobody has coded yet), plus
+| **pending** for picked up and not built yet and **declined** for something cancelled, set by Claude
+| and only by Claude, the same rule as everywhere else it appears. Exactly one of
+| State or Became is filled in for any row - a feature request either gets its own tag, or it does
+| not, never both.
+|
+| **How the triage app shows these (Adam, 2026-09-13).** A row that Became a test has no State of its own, so the app shows the state of the tests it became - worst open state wins, so one test still waiting on a run keeps the request open however many of its siblings are validated, and a superseded test is set aside. Became is read in either spelling, a markdown link or a bare code span, and every tag in it counts: the code-span spelling used to be missed, which is why most feature requests showed "-". **Declined rows are hidden from every view** - they stay here, which is the record - and so is the undocumented word "cancelled", which reached the file twice and is now written as declined.
+|
+
+[note tests.preamble]
+text:
+| # Manual tests
+|
+| The single source of truth for everything that has to be checked on the real railway, or with a
+| display, or both. Nothing here can be settled from a unit test; that is what puts it here.
+|
+| **How this file works is in [README.md](README.md).** The short version: entries are append-only and
+| keep their tag for life, the ledger below lists everything not yet validated, and the disposition on
+| each entry is set by Claude, never by the reader.
+|
+| Consolidated 2026-08-22 from the `2026-08-20-tests-to-run.md` review, which held tests 1 to 59 and
+| every comment on them. Nothing was dropped: each entry below carries its original wording, and Adam's
+| replies are under **Comments** rather than mixed into the instruction.
+|
+| ---
+|

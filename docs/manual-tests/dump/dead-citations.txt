@@ -1,0 +1,136 @@
+# docs/manual-tests/dump/dead-citations.txt - the `dead_citation` table: refs cited from the code that are findings in no document.
+# WRITTEN BY triagedb.py FROM triage.db ON EVERY WRITE.  Never edit it, and never read it back: ask the
+# store (py -3 docs/manual-tests/triagedb.py show MT-123).  Only the Java tests read it, having no SQLite.
+# A record is a [header] line and one field per line; every line of a text field is written behind "| ".
+
+[dead FCR-B3]
+cited_by: MarklinControlStation.java
+
+[dead IND-M1]
+cited_by: testAdvancedRoutes.java
+
+[dead IND-M4]
+cited_by: Layout.java,testHomeStaging.java
+
+[dead INT-A1]
+cited_by: testAdvancedRoutes.java
+
+[dead INT-A2]
+cited_by: testAdvancedRoutes.java
+
+[dead LD-1]
+cited_by: testEditorSwitchClearsPageState.java
+
+[dead LD-11]
+cited_by: AutonomyCompanionStore.java,testStoreCollectionsAreHandledEverywhere.java
+
+[dead LD-4]
+cited_by: testCancelRestoresPlacements.java
+
+[dead LD-5]
+cited_by: testRenameRoundTripThroughTheUIPath.java
+
+[dead LD-6]
+cited_by: TrainControlUI.java
+
+[dead LD-7]
+cited_by: LayoutLabel.java
+
+[dead LD-8]
+cited_by: Layout.java,TrainControlUI.java,testHomeStaging.java
+
+[dead LD-9]
+cited_by: AutonomyEditorPanel.java,testHomeAssignmentRules.java
+
+[dead LE2-A8]
+cited_by: TrainControlUI.java
+
+[dead LE2-B20]
+cited_by: RouteEditorFrame.java
+
+[dead LE2-B21]
+cited_by: LocIconCropDialog.java
+
+[dead LE2-B7]
+cited_by: LayoutEditor.java,testTheEditorTellsAutonomy.java
+
+[dead LE2-B8]
+cited_by: AutonomySession.java,testAutonomyDiagramSession.java
+
+[dead LE2-B9]
+cited_by: Layout.java
+
+[dead LE2-C12]
+cited_by: testTheEditorTellsAutonomy.java
+
+[dead LE2-C13]
+cited_by: testTheEditorTellsAutonomy.java
+
+[dead LE2-C14]
+cited_by: testRoutePicking.java
+
+[dead LE2-C16]
+cited_by: TrainControlUI.java
+
+[dead NET-1]
+cited_by: testMockCentralStation.java
+
+[dead RA-A1]
+cited_by: testConfirmedGoodState.java,testEditorSurfaceRules.java
+
+[dead RC-A10]
+cited_by: Layout.java
+
+[dead RC-A11]
+cited_by: Layout.java,testAutoLayout.java
+
+[dead RC-A12]
+cited_by: testTheRoutingChoiceSurvivesTheUpgrade.java
+
+[dead RC-A6]
+cited_by: LayoutEditor.java,testLayoutEditorBulkEdits.java,testTheEditorTellsAutonomy.java
+
+[dead RC-A8]
+cited_by: TrainControlUI.java,testTheRoutingChoiceSurvivesTheUpgrade.java
+
+[dead RC-A9]
+cited_by: Edge.java,Layout.java,testAutonomyPathValidation.java
+
+[dead RC-B10]
+cited_by: testLayoutEditorBulkEdits.java,testStagingSkipsALegWithNoSpeed.java
+
+[dead RC-B11]
+cited_by: TrainControlUI.java,testTheRoutingChoiceSurvivesTheUpgrade.java
+
+[dead RC-B6]
+cited_by: RouteEditorFrame.java
+
+[dead RC-B7]
+cited_by: Layout.java
+
+[dead RC-B8]
+cited_by: Layout.java,testRoutePicking.java
+
+[dead RC-B9]
+cited_by: MarklinControlStation.java
+
+[dead SM31-108]
+cited_by: testAutonomyDiagramSession.java
+
+[dead VAL-D4]
+cited_by: testTheWaitMarkIsAnHourglass.java
+
+[dead VAL9-B3]
+cited_by: Util.java,testInvalidInput.java
+
+[dead VAL9-B4]
+cited_by: testATrainCoversTheTrackBehindIt.java
+
+[dead VAL9-B5]
+cited_by: testAutonomyDiagramSession.java
+
+[dead WP-C19]
+cited_by: testAdvancedRoutes.java
+
+[dead WP-C19d]
+cited_by: RouteCommand.java,testAdvancedRoutes.java
