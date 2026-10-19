@@ -27,16 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-761](#mt-761) | 2026-10-18 | OB-357: a train's icon on the Track Diagram turns with its label | fixed unvalidated | OB-357 |
-| [MT-762](#mt-762) | 2026-10-18 | FR-137: a spinner beside every running route on the Routes tab | fixed unvalidated | FR-137 |
-| [MT-763](#mt-763) | 2026-10-18 | MT-760's note: the wait-for-a-route message names the route | fixed unvalidated | MT-760 |
-| [MT-764](#mt-764) | 2026-10-18 | OB-358: the Layouts menu's tooltips have no padding at the end | fixed unvalidated | OB-358 |
-| [MT-765](#mt-765) | 2026-10-18 | OB-360: a new tile from the palette turns to join the track beside it | fixed unvalidated | OB-360 |
-| [MT-766](#mt-766) | 2026-10-18 | OB-361: the new sample layout says only what trains can do, and a run of track is stored as it is drawn | fixed unvalidated | OB-361 |
-| [MT-767](#mt-767) | 2026-10-18 | FR-139: a warning for one sensor address on two squares | fixed unvalidated | FR-139 |
 
-Everything else - 760 of 767 - needs nothing from you unless the area changes again:
-605 **fixed validated** and 155 **superseded**.
+
+Everything else - 767 of 767 - needs nothing from you unless the area changes again:
+612 **fixed validated** and 155 **superseded**.
 
 ---
 
@@ -35680,7 +35674,7 @@ Taken up: the message names the route or routes that are running, with a long li
 <a id="mt-761"></a>
 ### MT-761 - 2026-10-18 - OB-357: a train's icon on the Track Diagram turns with its label
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-357
 
 **Written:** 2026-10-18
@@ -35704,12 +35698,16 @@ Taken up: the message names the route or routes that are running, with a long li
 without the diagram being told, so the icon kept its old way until something else redrew it.  Claims in
 `regression.testAThrottleReversalIsFollowedFromItsEcho`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 8b852c25, in English - build\classes, compiled 18 Oct 16:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-762"></a>
 ### MT-762 - 2026-10-18 - FR-137: a spinner beside every running route on the Routes tab
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-137
 
 **Written:** 2026-10-18
@@ -35730,12 +35728,16 @@ without the diagram being told, so the icon kept its old way until something els
 *What this is:* FR-137 (`1f12c525`): the route list draws the autonomy spinner beside each route that is running; a route announces its
 start and its end.  Claims in `ui.testTheRouteListShowsWhatRuns`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 8b852c25, in English - build\classes, compiled 18 Oct 16:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-763"></a>
 ### MT-763 - 2026-10-18 - MT-760's note: the wait-for-a-route message names the route
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-760
 
 **Written:** 2026-10-18
@@ -35755,12 +35757,16 @@ start and its end.  Claims in `ui.testTheRouteListShowsWhatRuns`.
 one helper lists the running routes for every door that refuses.  Claims in
 `regression.testNoSetupEditWhileARouteRuns`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 8b852c25, in English - build\classes, compiled 18 Oct 16:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-764"></a>
 ### MT-764 - 2026-10-18 - OB-358: the Layouts menu's tooltips have no padding at the end
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-358
 
 **Written:** 2026-10-18
@@ -35778,12 +35784,16 @@ one helper lists the running routes for every door that refuses.  Claims in
 *What this is:* OB-358 (`13b5c6df`): on a display above 100% scaling, a tooltip of middling length was sent down the wrapping path and sat
 in a box wider than its one line.  Claim in `regression.testTheToolbarButtonsHonourTheirTooltips`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 8b852c25, in English - build\classes, compiled 18 Oct 16:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-765"></a>
 ### MT-765 - 2026-10-18 - OB-360: a new tile from the palette turns to join the track beside it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-360
 
 **Written:** 2026-10-18
@@ -35811,12 +35821,16 @@ in a box wider than its one line.  Claim in `regression.testTheToolbarButtonsHon
 any track type, so that most of its ends meet track, a switch's base first.  Claims in
 `regression.testANewStraightJoinsTheTrackBesideIt`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit 8b852c25, in English - build\classes, compiled 18 Oct 16:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-766"></a>
 ### MT-766 - 2026-10-18 - OB-361: the new sample layout says only what trains can do, and a run of track is stored as it is drawn
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-361
 
 **Written:** 2026-10-18
@@ -35847,12 +35861,16 @@ any track type, so that most of its ends meet track, a switch's base first.  Cla
 
 *What this is:* OB-361 (`25fcf33f`): an exit guard passed only by trains leaving its station is no longer read as guarding a way in; a trapped arrival is told only at a station a train can reach that way; every run of plain track stores its narrowest direction, what a train finds, on open (as OB-351 does for switches), so the editor and the Track Diagram draw what is stored; a run pointing opposite ways is a warning; the One-Way tool and a re-placed tile no longer leave a run disagreeing.  Claims in `core.testTheSampleLayoutSaysOnlyWhatTrainsCanDo` and `core.testAutonomyDiagramSession`.
 
+**Adam, 2026-10-18 (triage).** Works.
+
+*Run against commit d61f2971, in English - build\classes, compiled 18 Oct 17:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-767"></a>
 ### MT-767 - 2026-10-18 - FR-139: a warning for one sensor address on two squares
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-139
 
 **Written:** 2026-10-18
@@ -35874,5 +35892,15 @@ any track type, so that most of its ends meet track, a switch's base first.  Cla
 - Step 4: no such warning (its pages that share sensors with Main are left out of autonomy).
 
 *What this is:* FR-139 (`ae16f5d1`): a WARNING per sensor address that two squares share on a page of their own; a page left out of autonomy, or one OB-150 already reports, has no places in it.  Claims in `core.testAutonomyDiagramSession` and `core.testTheSampleLayoutSaysOnlyWhatTrainsCanDo`.
+
+**Adam, 2026-10-18 (triage).** Works, with notes.
+
+Works.  But when clicked, copy the warning to the clipboard for easy sharing.
+
+*Run against commit d61f2971, in English - build\classes, compiled 18 Oct 17:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-18.**
+
+Taken up: clicking a setup check notice copies its text to the clipboard, as well as outlining its squares.  It gets its own test.
 
 ---
