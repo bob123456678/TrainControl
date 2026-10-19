@@ -42,3 +42,18 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 5 | 1b | Twelve core claims whose feature, when broken, turns them into a skip rather than a red were counted as not hollow (the brief's rule).  The battery lists any class with a skip as "tested nothing", so such a defect is visible, but not as a failure. | Not filed. |
 | 6 | 1b (H0845) | The facing-menu claim (greyed, not hidden, where a train cannot leave) now runs on a made-up case: a square the build has no copy of, with a free locomotive placed on it.  Your snapshot has no real station trains cannot leave. | Not filed. |
 | 7 | 1b | Regression's loud-skip claims (H0562-H0566, H0569-H0578, H0862, H0871, H0873, H0883, H0961) were left as skips: a defect there reads "tested nothing", not a failure.  Converting them is ready (the worker wrote and reverted it); an assert in `@BeforeClass` reports as skips, so each needs a per-test fixture check. | Not filed; your call whether skips should fail. |
+
+## Adam's answers (2026-10-19)
+
+| Item | Adam | What is done |
+|---|---|---|
+| Skipped 1 (testRouteInventory's bundles) | "create made-up stand-ins shaped like them.  You can put in the autonomy files, but not my real locdb/uistate." | In progress: the autonomy bundles become fixtures under `test/`; LocDB and UIState stay out. |
+| Skipped 2 (production speed-ups for tests) | "yes, this is a great idea.  however, can we do it via reflection/programmatic edits in the test hardness rather than changing the code itself?" | In progress: the harness sets the pauses by reflection; a constant the compiler folds cannot be set that way, and those are listed. |
+| Skipped 3 (testACompulsoryTurnIsNotAQuestion's builder delays) | "measure it, reduce if OK.  also, this file has comments that are a long line of -, those can be trimmed for efficiency" | In progress. |
+| Skipped 4 (JaCoCo) | "approved, download it and run it, but don't add it to master" | In progress: the jar is kept outside the repository. |
+| Issue 1 (the mirror check and line endings) | "fix" | Done (`34f0d5c6`). |
+| Issue 2 (3 of the 11 pairs on the frozen snapshot) | "we may need to update the frozen layout with the current one, check what would happen if we did" | In progress: a trial refresh on a branch that is not merged, measured against the battery. |
+| Issue 3 (`getAutoLayout()` never null) | "seems minor, this makes the code edit-proof.  I would leave it" | Left. |
+| Issue 4 (`isATurningCopyForTests`) | "remove the now dead code if it has a suitable replacement" | Done (`3c2eb71a`); the tail-crossed test reads the builder's name instead. |
+| Issue 6 (the made-up facing-menu case) | "fine, tests that cover more than what my layout supports are encouraged" | Kept. |
+| Issue 7 (loud skips) | "figure out why they skip and fix them, generally skips should be inspected to understand why" | In progress: every skip in the suite is inspected, including issue 5's twelve. |
