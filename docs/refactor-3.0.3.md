@@ -259,13 +259,14 @@ Each phase can be released on its own and ends with a battery. Workers use separ
 | 1. Dead weight | Delete docs/reviews-2026-09-25 (and each later round's documents once catalogued), with `catalog-findings.py --next` and the full-rebuild guard first; the dead test branch.  (The dead methods and `CustomActionEvent` are already gone; the legacy editor's constants and keys went with OB-359.)  Fix README counts.  Archive released MTs out of tests.md (triagedb's render and testTheSuppliedManualTestFilesAreWhatTheySay change with it). | Haiku ×1, Sonnet ×1 for the MT archive, then an integrator | 1 session, 1 battery |
 | 1a. A faster battery | Adam (2026-10-19): "a phase of making the battery run faster".  See **1a** below the table. | Opus ×1 for the lanes; Sonnet ×2 for the slowest classes | 2-3 sessions, 2 batteries (before and after, compared claim by claim) |
 | 1b. Hollow tests | Adam (2026-10-19): "a sweep for tests that look like they are testing something but aren't".  See **1b** below the table. | Opus ×1 for the scan script; Sonnet ×3 (core/, regression/, ui/); Opus reviews every claim changed | 3-4 sessions, 1 battery |
+| 1c. The tracker becomes a database | Adam (2026-10-19): "why aren't we storing all tests in a database, why have md files at all?  I made this ask before."  He chose "DB only, plus a text dump", now.  See **1c** below the table. | Opus ×1; then an integrator cuts over with the triage app closed | 2-3 sessions, the bookkeeping classes |
 | 2. Comment trim | Comment-only, bytecode-verified, one file per worker: TrainControlUI, Layout, AutonomySession, AutonomyEditorPanel, then the next six. Expect a 30-40% cut of comment lines in the giants. | Sonnet ×4 in parallel; Haiku integrator for ratchets and orphan counts | 4-5 sessions, 1 battery |
 | 3. Low-risk extractions | TrainControlUI Tier 1 (five clusters, one commit each, **one worker in sequence**); AutonomySession `SessionImport` and `SessionRuns`; the testAutonomyDiagramSession split | Sonnet ×3, one per file group | 4-5 sessions, 2 batteries |
 | 4. Medium | TrainControlUI Tier 2; AutonomyEditorPanel menus, prompts and mass-assign; LayoutEditor selection and undo; Layout explanations, standing trains and fit (Opus) | Sonnet ×3 and Opus ×1 | 6-8 sessions, 2 batteries |
 | 5. Core (or 3.1.0) | TrainControlUI Tier 3; the `SettledQuestion` base class | Opus | 4-6 sessions, 2 batteries plus a fan-out round |
 | 6. Coverage of what the user does and what comes of it (beside Phases 2-5) | Adam (2026-10-19): "increase test coverage (meaningfully, through actions the user would take)"; "Sooner sounds better.  Don't limit this to UI interactions, it can also be state outcomes."  See **6** below the table. | Opus ×1 for the inventory; Sonnet ×4 in parallel, one area each; an integrator folds | 4-6 sessions, 1 battery |
 
-That is about 30-40 worker sessions and 13 batteries.  Phases 1a and 1b come before the comment trim and the
+That is about 32-43 worker sessions and 13 batteries.  Phases 1a and 1b come before the comment trim and the
 extractions on purpose: every later phase ends with one or two batteries, and every extraction leans on the tests
 being real.
 
@@ -323,6 +324,37 @@ and a new hollow shape found later is added to it. **Main risks:**
 - concurrency changes in Layout;
 - swallowed reflection failures;
 - line numbers in findings.tsv `file:line` evidence going stale (historical only, acceptable).
+
+**1c. The tracker becomes a database.**  Adam asked for this on 2026-08-25 (*"for the triage app, lets convert it to
+use a database and then add apis to check, update, and file dispositions/cases"*), and it was only half done.
+`triagedb.py` put a database and an API in front of the markdown, but the markdown stayed the record:
+- the triage app builds a throwaway store from `tests.md` and `issues.md` every time it loads, and writes Adam's
+  comments into the markdown;
+- `triage.db` is refreshed from the markdown by `sync`, and every write renders the store back over it.
+
+A stale copy erased nine of Adam's comments that way on 2026-09-15, which is why every tracker script must sync first.
+On 2026-10-19 Adam asked *"why aren't we storing all tests in a database, why have md files at all?"* and chose a
+database with a text dump.
+
+The work:
+- **One record.**  `triage.db` holds every test, verdict, comment, issue and finding, and is the only thing anything
+  reads.  The triage app and every script read and write it through the `triagedb` API.  Nothing is parsed from
+  markdown again, so there is no `sync` and no stale copy.
+- **A text dump for git, never read back.**  Each write also writes a plain-text export, deterministic and sorted, in
+  which a new comment is a small added hunk.  Git keeps the history readable and a merge stays possible, which a binary
+  `triage.db` cannot give.  Nothing reads the dump back, except the Java tests, which cannot open SQLite without a
+  driver.  `findings.tsv` folds into the same scheme or stays as it is.
+- **The markdown goes.**  `tests.md`, `issues.md` and the four `tests-archive-*.md` (Phase 1's archive, made obsolete
+  by this) are deleted, with the archive code and RELEASE.md's step 13.  Their history stays in git.  An `MT-###` or
+  `OB-###` cited anywhere resolves through the CLI and the app (`triagedb show MT-642`).
+- **The migration is a function.**  It imports the markdown into the database once and is re-runnable.  The
+  integrator runs it on the live files at cut-over, with the triage app closed, because Adam may add comments in the
+  meantime.  The proof: every entry, every comment and every `**Adam,` line is in the database and the dump, counted
+  before and after; and `show` gives back each entry's text exactly as written.
+- **What changes with it:** the triage app's reading and writing; every `triagedb` writer; the Java tests that read
+  the tracker files (`testTheSuppliedManualTestFilesAreWhatTheySay`, the citation and records guards);
+  `docs/manual-tests/README.md`; RELEASE.md; FANOUT.md's records step; and the agent notes in the house rules and
+  memory.
 
 **6. Coverage of what the user does and what comes of it.**  Adam: "This can be done in parallel, report, and fold
 later"; then "Sooner sounds better.  Don't limit this to UI interactions, it can also be state outcomes."
