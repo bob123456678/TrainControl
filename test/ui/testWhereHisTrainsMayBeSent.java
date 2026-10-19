@@ -23,6 +23,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -206,11 +207,11 @@ public class testWhereHisTrainsMayBeSent
         int messages = 0;
 
         // The panel is built and never shown, so a message parented on it belongs to the hidden frame as a menu's does
-        for (String path : new String[] {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
-            "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java", "src/org/traincontrol/gui/AutonomyViewerPanel.java"})
+        for (String path : new String[] {"final class LayoutRightclickAutonomyMenu extends JPopupMenu",
+            "final class LayoutEditorRightclickMenu extends JPopupMenu", "public class AutonomyViewerPanel extends JPanel"})
         {
-            String[] lines = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),
-                java.nio.charset.StandardCharsets.UTF_8).split("\n");
+            // Each class, found by its declaration
+            String[] lines = SourceOf.fileDeclaring(path).split("\n");
 
             for (int i = 0; i < lines.length; i++)
             {
@@ -236,10 +237,7 @@ public class testWhereHisTrainsMayBeSent
 
         // AND THE SETUP'S TIDY REPORT (IND9X-C4, RLU3-C3): the viewer panel is built and never shown, so a report
         // parented on it belonged to the hidden frame too.
-        String panel = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/AutonomyViewerPanel.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(panel.contains("AutonomyReport.show(ui, session().save())"), "the setup's tidy report is not parented on"
+        assertTrue(SourceOf.allCode().contains("AutonomyReport.show(ui, session().save())"), "the setup's tidy report is not parented on"
             + " the main window (IND9X-C4, RLU3-C3)");
 
         assertTrue(onAMenu.isEmpty(), "a message on a right-click menu belongs to the menu, which has left its window by"

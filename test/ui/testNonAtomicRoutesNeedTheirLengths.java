@@ -19,6 +19,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Atomic Routes cannot be switched off while the railway could release track under a train.
@@ -365,15 +366,13 @@ public class testNonAtomicRoutesNeedTheirLengths
     @Test
     public void testTheFileDoorLogsTheHalfItFound() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String whole = SourceOf.declaration("public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()");
 
-        int at = source.indexOf("public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()");
+        int cut = whole.indexOf("loadAutoLayoutSettings();");
 
-        assertTrue(at > 0, "the file door has been renamed or moved, so this rule is about nothing");
+        assertTrue(cut > 0, "the file door no longer ends in loadAutoLayoutSettings(), so this rule is about nothing");
 
-        String body = source.substring(at, source.indexOf("loadAutoLayoutSettings();", at));
+        String body = whole.substring(0, cut);
 
         // THE CLOSING QUOTE IS PART OF THE NEEDLE, so the track key is not found inside the train
         // one - built rather than written, because an escaped quote in a patch is one more thing
@@ -462,23 +461,17 @@ public class testNonAtomicRoutesNeedTheirLengths
     @Test
     public void testStartAsksBeforeItDispatchesAnything() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private void startAutonomyActionPerformed(");
 
-        int at = source.indexOf("private void startAutonomyActionPerformed(");
+        int dispatch = source.indexOf("runLocomotives();");
 
-        assertTrue(at > 0, "the Start handler has been renamed, so this rule is about nothing");
-
-        int dispatch = source.indexOf("runLocomotives();", at);
-
-        assertTrue(dispatch > at,
+        assertTrue(dispatch > 0,
             "the Start handler no longer calls runLocomotives, so what this rule is about has moved"
             + " and the question has to move with it");
 
-        int asks = source.indexOf("keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()", at);
+        int asks = source.indexOf("keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()");
 
-        assertTrue(asks > at && asks < dispatch,
+        assertTrue(asks > 0 && asks < dispatch,
             "Start does not ask whether the railway could release track under a train before it"
             + " dispatches.  A train length can be cleared on the live layout long after the checkbox"
             + " was unticked honestly - applyTrainLength takes 0, and GraphLocAssign defaults to it -"
@@ -509,39 +502,31 @@ public class testNonAtomicRoutesNeedTheirLengths
     {
         String gate = "keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()";
 
+        // Each door's own text, found by its declaration: its dispatch is looked for inside it, so a dispatch elsewhere
+        // cannot stand in for it.  Return Home's is `executeTimetable(` with the plan in hand.
         String[][] doors =
         {
-            {"src/org/traincontrol/gui/TrainControlUI.java",
-                "private void startAutonomyActionPerformed(", "runLocomotives();"},
-            {"src/org/traincontrol/gui/TrainControlUI.java",
-                "private void executeTimetableActionPerformed(", "executeTimetable();"},
-            {"src/org/traincontrol/gui/TrainControlUI.java",
-                "public void requestReturnToHome()", "executeTimetable();"},
+            {"TrainControlUI", "private void startAutonomyActionPerformed(", "runLocomotives();"},
+            {"TrainControlUI", "private void executeTimetableActionPerformed(", "executeTimetable();"},
+            {"TrainControlUI", "public void requestReturnToHome()", "executeTimetable("},
             // THE TWO HAND DOORS ARE ONE since 2026-09-29: both send through `sendATrainByHand`, which dispatches through
             // `executePathByHand` since round 61 (BCR-C1)
-            {"src/org/traincontrol/gui/TrainControlUI.java",
-                "void sendATrainByHand(", "executePathByHand("},
+            {"TrainControlUI", "void sendATrainByHand(", "executePathByHand("},
         };
 
         for (String[] door : doors)
         {
-            String source = new String(java.nio.file.Files.readAllBytes(
-                new java.io.File(door[0]).toPath()), java.nio.charset.StandardCharsets.UTF_8);
+            String source = SourceOf.declaration(door[1]);
 
-            int from = source.indexOf(door[1]);
+            int dispatch = source.indexOf(door[2]);
 
-            assertTrue(from > 0, door[0] + " no longer has " + door[1]
-                + ", so this rule is about nothing.  Point it at wherever that door went");
-
-            int dispatch = source.indexOf(door[2], from);
-
-            assertTrue(dispatch > from, door[0] + " reaches " + door[1]
+            assertTrue(dispatch > 0, door[0] + " reaches " + door[1]
                 + " and no longer dispatches with " + door[2]
                 + " - if the dispatch moved, this rule has to move with it");
 
-            int asks = source.indexOf(gate, from);
+            int asks = source.indexOf(gate);
 
-            assertTrue(asks > from && asks < dispatch,
+            assertTrue(asks > 0 && asks < dispatch,
                 door[0] + ": the door at " + door[1] + " dispatches a train without asking whether"
                 + " the railway could release track under one.  A train length can be cleared on the"
                 + " live layout long after Atomic Routes was unticked honestly, and then every edge"
@@ -563,15 +548,7 @@ public class testNonAtomicRoutesNeedTheirLengths
     @Test
     public void testExecuteTimetableAsksTheGateAfterItsRefusals() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), java.nio.charset.StandardCharsets.UTF_8);
-
-        int door = source.indexOf("private void executeTimetableActionPerformed(");
-        int end = source.indexOf("GEN-LAST:event_executeTimetableActionPerformed", door);
-
-        assertTrue(door > 0 && end > door, "precondition: Execute Timetable's handler is not where this looks for it");
-
-        String handler = source.substring(door, end);
+        String handler = SourceOf.declaration("private void executeTimetableActionPerformed(");
 
         int asks = handler.indexOf("keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()");
         int busy = handler.indexOf("autolayout.ui.errorWaitForActiveLocomotivesToStop");
@@ -610,17 +587,9 @@ public class testNonAtomicRoutesNeedTheirLengths
     @Test
     public void testStartAndReturnHomeAskTheGateAfterTheirRefusals() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), java.nio.charset.StandardCharsets.UTF_8);
-
         String gate = "keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()";
 
-        int home = source.indexOf("public void requestReturnToHome()");
-        int homeEnd = source.indexOf("\n    }", home);
-
-        assertTrue(home > 0 && homeEnd > home, "precondition: Return Home's door is not where this looks for it");
-
-        String returnHome = source.substring(home, homeEnd);
+        String returnHome = SourceOf.declaration("public void requestReturnToHome()");
 
         int homeBusy = returnHome.indexOf("HomeStaging.Outcome.LOCOMOTIVES_RUNNING");
 
@@ -642,12 +611,7 @@ public class testNonAtomicRoutesNeedTheirLengths
         assertTrue(homeGate > possible, "Return Home asks the Atomic Routes gate before it knows its plan is possible - a"
             + " press refused for having no plan still switches the setting (TDU2-C2)");
 
-        int start = source.indexOf("private void startAutonomyActionPerformed(");
-        int end = source.indexOf("GEN-LAST:event_startAutonomyActionPerformed", start);
-
-        assertTrue(start > 0 && end > start, "precondition: Start's handler is not where this looks for it");
-
-        String startDoor = source.substring(start, end);
+        String startDoor = SourceOf.declaration("private void startAutonomyActionPerformed(");
 
         int power = startDoor.indexOf("refusedToSendATrain(");
         int none = startDoor.indexOf("autolayout.ui.infoPleaseAddLocomotivesToGraph");
@@ -676,25 +640,16 @@ public class testNonAtomicRoutesNeedTheirLengths
     @Test
     public void testAGateThatFailsStopsEveryRunDoor() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(
-            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), java.nio.charset.StandardCharsets.UTF_8);
-
         String gate = "keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()";
 
         String[][] doors = {
-            {"Start", "private void startAutonomyActionPerformed(", "GEN-LAST:event_startAutonomyActionPerformed", null},
-            {"Return Home", "public void requestReturnToHome()", "\n    }", null},
-            {"Execute Timetable", "private void executeTimetableActionPerformed(",
-                "GEN-LAST:event_executeTimetableActionPerformed", "this.executeTimetable.setEnabled(true);"}};
+            {"Start", "private void startAutonomyActionPerformed(", null},
+            {"Return Home", "public void requestReturnToHome()", null},
+            {"Execute Timetable", "private void executeTimetableActionPerformed(", "this.executeTimetable.setEnabled(true);"}};
 
         for (String[] door : doors)
         {
-            int from = source.indexOf(door[1]);
-            int to = source.indexOf(door[2], from);
-
-            assertTrue(from > 0 && to > from, "precondition: " + door[0] + "'s door is not where this looks for it");
-
-            String region = source.substring(from, to);
+            String region = SourceOf.declaration(door[1]);
 
             int asks = region.indexOf(gate);
 
@@ -713,9 +668,9 @@ public class testNonAtomicRoutesNeedTheirLengths
             assertTrue(handler.contains("return;"), door[0] + " carries on when its Atomic Routes gate fails - the run goes"
                 + " on without the question answered (TDU2-C2)");
 
-            if (door[3] != null)
+            if (door[2] != null)
             {
-                assertTrue(handler.contains(door[3]), door[0] + " keeps its button greyed when its Atomic Routes gate fails"
+                assertTrue(handler.contains(door[2]), door[0] + " keeps its button greyed when its Atomic Routes gate fails"
                     + " (TDU3-C4)");
             }
         }

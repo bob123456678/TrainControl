@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * A reversal made while a train is running is not recorded as one already dealt with.
@@ -60,22 +61,7 @@ public class testADirectionChangeIsNotSwallowed
     @Test
     public void testTheRunningGuardComesBeforeTheRecording() throws Exception
     {
-        String source = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
-
-        int start = source.indexOf("private void followDirectionChanges(");
-
-        assertTrue(start > 0, "followDirectionChanges has been renamed; this check now guards nothing"
-            + " and needs rewriting rather than deleting");
-
-        // To the end of the method, taken as the next method declaration at the same indent.
-        int end = source.indexOf("\n    private ", start + 20);
-        int alt = source.indexOf("\n    public ", start + 20);
-
-        if (alt > 0 && (end < 0 || alt < end)) end = alt;
-        if (end < 0) end = source.length();
-
-        String body = source.substring(start, end);
+        String body = SourceOf.declaration("private void followDirectionChanges(");
 
         int guard = body.indexOf("isRunning()");
         int record = body.indexOf("lastSeenDirection.put(");
@@ -114,11 +100,7 @@ public class testADirectionChangeIsNotSwallowed
     @Test
     public void testTheBaselineIsLevelledWhenTheRailwayGoesIdle() throws Exception
     {
-        String ui = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
-
-        assertTrue(ui.contains("private void reconcileFacingWhenIdle()")
-            || ui.contains("public void reconcileFacingWhenIdle()"),
+        assertTrue(SourceOf.occurrences("void reconcileFacingWhenIdle()") == 1,
             "reconcileFacingWhenIdle has gone. The ordering guard above then passes while the backlog"
             + " it half-prevents is back: the pre-run direction stays in the baseline and the first"
             + " echo after the run re-follows a reversal the railway already made (REG8-C4)");
@@ -138,7 +120,7 @@ public class testADirectionChangeIsNotSwallowed
         //
         // Scoped the way `testTheRunningGuardComesBeforeTheRecording` below already scopes its own,
         // which is the idiom this class had and this method did not use.
-        String body = bodyOfReconcile(ui);
+        String body = SourceOf.declaration("void reconcileFacingWhenIdle()");
 
         int levels = body.indexOf("lastSeenDirection.put(loc.getName(), loc.goingForward())");
 
@@ -155,13 +137,7 @@ public class testADirectionChangeIsNotSwallowed
             + " really pinned by regression.testTheTurnAtTheDestinationReachesTheDiagram, which drives"
             + " it; this assertion only says the mechanism is still in the method it belongs to");
 
-        String source = ui.replace("\r\n", "\n");
-
-        int drain = source.indexOf("private void writeTheTurns(");
-
-        int drained = drain < 0 ? -1 : source.indexOf("takeReversalsOnArrival()", drain);
-
-        assertTrue(drain > 0 && drained > 0 && drained < source.indexOf("\n    }\n", drain),
+        assertTrue(SourceOf.declaration("private void writeTheTurns(").contains("takeReversalsOnArrival()"),
             "writeTheTurns, which reconcileFacingWhenIdle calls to drain the destination turns, drains nothing");
 
         assertTrue(writes < levels,
@@ -172,49 +148,13 @@ public class testADirectionChangeIsNotSwallowed
     }
 
     /**
-     * The body of `reconcileFacingWhenIdle`, so an offset in it means something.
-     *
-     * To the next declaration at the same indent, which is how the ordering check further down this
-     * class already bounds `followDirectionChanges`.
-     *
-     * @param ui the whole source of the window
-     * @return the method body
-     */
-    private static String bodyOfReconcile(String ui)
-    {
-        int start = ui.indexOf("private void reconcileFacingWhenIdle()");
-
-        if (start < 0) start = ui.indexOf("public void reconcileFacingWhenIdle()");
-
-        assertTrue(start > 0, "reconcileFacingWhenIdle has gone - see the assertion above, which says"
-            + " what that means");
-
-        int end = ui.indexOf("\n    private ", start + 20);
-        int alt = ui.indexOf("\n    public ", start + 20);
-
-        if (alt > 0 && (end < 0 || alt < end)) end = alt;
-
-        if (end < 0) end = ui.length();
-
-        return ui.substring(start, end);
-    }
-
-    /**
      * And a train first met mid-journey still gets a baseline, or the first echo after the run is
      * skipped as "never seen" and the same symptom comes back by another route.
      */
     @Test
     public void testATrainMetWhileRunningStillGetsABaseline() throws Exception
     {
-        String source = new String(Files.readAllBytes(
-            Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
-
-        int start = source.indexOf("private void followDirectionChanges(");
-        int end = source.indexOf("\n    private ", start + 20);
-
-        if (end < 0) end = source.length();
-
-        String body = source.substring(start, end);
+        String body = SourceOf.declaration("private void followDirectionChanges(");
 
         assertTrue(body.contains("lastSeenDirection.putIfAbsent("),
             "the guarded branch must still seed a locomotive it has never seen - without it a train"
