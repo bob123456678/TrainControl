@@ -464,15 +464,18 @@ public class testNonReversibleTrains
         // AND THE UNATTENDED ONES DO NOT, which is the other half: the timetable is what Return Home
         // runs, and asking a dialog about a turn the planner chose would be asking about a decision
         // the operator already made.
-        // The automation layer is the class that runs the journeys, found by the method every door ends in.
-        String layout = SourceOf.fileDeclaring(
-            "public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp)");
-
+        // The automation layer is its PACKAGE, every file of it (FR-136): read as the one file that declares
+        // executePath, a journey cluster split out of Layout could call the dialog and stay unseen.
+        //
         // COMMENTS STRIPPED FIRST.  This read the whole file and failed on a javadoc that names
         // `ManualReversalPrompt` while explaining why the automation layer must not call it - a guard
         // that cannot tell an explanation from an instruction reports on prose rather than on the
         // program, and this is the third one in this repository to do it.
-        String code = SourceOf.withoutComments(layout);
+        String code = SourceOf.codeUnder("src/org/traincontrol/automation/");
+
+        assertTrue(code.contains("public boolean executePath(List<Edge> path, Locomotive loc, int speed,"),
+            "precondition: the method every door ends in is no longer in the automation package, so this reads the"
+            + " wrong folder");
 
         assertFalse(code.contains("ManualReversalPrompt"),
             "the automation layer now reaches into the window for a dialog, so an unattended run can "
