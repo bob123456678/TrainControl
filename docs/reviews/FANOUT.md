@@ -24,9 +24,9 @@ finding's id says which lane and which round raised it: `AUT-C2` (autonomy, roun
 | Regression | `REG` | the same range, asking only what a user upgrading from the last release sees change |
 | Documentation | `DCN` | `docs/`, the root documents, comments, the manual tests and the catalogue, against the code |
 
-Check the prefixes are free before launching: `docs/tools/catalog-findings.py` owns the catalogue, and a prefix is
-free only if no row in `docs/manual-tests/findings.tsv` uses it (the folder is empty by design, so looking there
-proves nothing).
+Take each lane's round from the store before launching: `python docs/tools/catalog-findings.py --next AUT` prints the
+next unused round of that lane (AUT6 after AUT5) and refuses a prefix the store has never used (`--new` declares a
+new lane).  The finding store owns the numbers; the folder is empty by design, so looking there proves nothing.
 
 ## What every reviewer is told
 
@@ -57,8 +57,9 @@ round finds nothing new above C.
    another way is a control, not a claim - set the other inputs to disagree with it.
 4. **Run the classes the change touches**, gated (no `java.exe`/`javaw.exe` running - checked immediately before every
    run, not once per session). No edits to `src/`, `test/` or `docs/` while a battery runs.
-5. **Records.** Copy the round's documents into `docs/reviews-<date>/`, write the dispositions (commit hashes, claim
-   hashes, "red first"), catalogue with `python docs/tools/catalog-findings.py --add docs/reviews-<date>`, set each new
+5. **Records.** Keep the round's documents in a working folder in the scratch area, never in the repository, write the
+   dispositions (commit hashes, claim hashes, "red first"), catalogue with
+   `python docs/tools/catalog-findings.py --add <the working folder>`, set each new
    row's status in the store (Closed / Open / "Open - Adam's decision"), render the mirror, update the counts in
    behaviour.md and open-questions.md. Tracker entries for anything Adam has to see on the railway: appended to
    `tests.md` with their anchors, proved with `triagedb.py check --tag MT-###` (not `show`, which prints only verdicts).
@@ -79,9 +80,10 @@ round finds nothing new above C.
 
 1. Each document's `**Status:**` from the store: `closed` where every row is Closed, otherwise `open` with the open ids
    named under it.
-2. Commit the documents in that final state, then delete them in the commit that closes the round - the catalogue
-   carries every finding, and the parent commit carries the prose.
-3. Say in README.md that the round happened, without changing the counted totals of earlier deletions.
+2. Catalogue the documents in that final state (`--add <the working folder> --check` exits 0 when the store holds
+   every finding in them), then delete the working folder - the store carries every finding.
+3. Say in README.md that the round happened (the prefixes, the rounds and the date), without changing the counted
+   totals of earlier deletions.
 
 ## The report
 

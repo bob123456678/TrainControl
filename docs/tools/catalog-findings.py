@@ -24,8 +24,15 @@ everything a reader would otherwise have to open the document for:
 `finding` table in `docs/manual-tests/triage.db` and renders `docs/reviews/findings.md` from it.  The
 markdown is committed and greppable; the database is the thing to query.
 
-Run:  python docs/tools/catalog-findings.py            (load the table, render the markdown)
-      python docs/tools/catalog-findings.py --check    (report without writing anything)
+Run:  python docs/tools/catalog-findings.py --next PREFIX         (the next unused round number)
+      python docs/tools/catalog-findings.py --check-unused REF    (refuses a ref or round already in the store)
+      python docs/tools/catalog-findings.py --add FOLDER          (merge a round's documents into the store)
+      python docs/tools/catalog-findings.py --add FOLDER --check  (what --add would do; writes nothing)
+      python docs/tools/catalog-findings.py --check               (the full rebuild, reporting only)
+
+The full rebuild (no arguments) re-reads `docs/reviews/` and replaces the table.  It refuses unless that folder
+holds a document for EVERY document the store holds, which is never true once a round's documents are deleted,
+so it cannot be used to drop the rows of deleted rounds.  `--add` is how a round joins the store.
 
 Query it afterwards through `triagedb.findings(conn, ...)`, or in SQL:
 
@@ -39,6 +46,7 @@ catalogue that cannot be regenerated is the next thing to go stale.
 import io
 import os
 import re
+import sqlite3
 import sys
 
 REVIEWS = "docs/reviews"
@@ -738,16 +746,351 @@ def into_the_database(rows):
 # Below this many documents, the reviews folder is gone rather than shrunk. It held 120.
 ENOUGH_DOCUMENTS = 20
 
+# ---------------------------------------------------------------------------------------------------
+# ROUNDS: which number is next, and which are taken.  Read from the finding store, never from a folder -
+# the folders are deleted once a round is catalogued, so a folder can only say "the next number is 1".
+# ---------------------------------------------------------------------------------------------------
 
-def add_one_folder(folder):
+class Refusal(Exception):
+    """A request the store says no to; the command line prints it and exits 1."""
+
+
+# A ref's round: the prefix, the round's number, then the dash.  Round 1 carries no number (`RSA-A1`, then
+# `RSA2-A1`), so a ref with none belongs to round 1.
+ROUND_OF = re.compile(r"^([A-Z][A-Z0-9]*?)(\d*)-")
+
+# A prefix must not end in a digit: the digits at the end of `RSA75` are the round's number, not the prefix's.
+PREFIX_SHAPE = re.compile(r"^[A-Z](?:[A-Z0-9]{0,6}[A-Z])?$")
+
+# What `--check-unused` accepts: a finding's ref (`RSA76-A1`) or a round (`RSA76`, `RSA` for round 1).
+REF_OR_ROUND = re.compile(r"^([A-Z][A-Z0-9]*?)(\d*)(?:-(\S+))?$")
+
+
+def round_of(ref):
+    """The prefix and round number a ref belongs to.
+
+    :param ref: a finding's ref, e.g. RSA75-C1 or RSA-A1
+    :return: (prefix, number), or None for something that is not a ref
+    """
+    m = ROUND_OF.match(ref)
+
+    if not m:
+        return None
+
+    return m.group(1), int(m.group(2) or 1)
+
+
+def rounds_used(refs, prefix):
+    """The round numbers the store holds for a prefix.
+
+    :param refs: every ref in the store
+    :param prefix: e.g. RSA
+    :return: a set of ints
+    """
+    used = set()
+
+    for ref in refs:
+        found = round_of(ref)
+
+        if found and found[0] == prefix:
+            used.add(found[1])
+
+    return used
+
+
+def check_prefix(prefix, used, new):
+    """Whether a prefix may be asked about: well formed, not a ticket prefix, and used if and only if it is not new.
+
+    :param prefix: e.g. RSA
+    :param used: the rounds the store holds for it
+    :param new: whether the caller says it is a new prefix
+    """
+    if not PREFIX_SHAPE.match(prefix):
+        raise Refusal("%r is not a prefix: capital letters and digits, ending in a letter (the digits at the end of "
+                      "an id are the round's number)" % prefix)
+
+    if NOT_A_FINDING.match(prefix + "-"):
+        raise Refusal("%s- is a ticket or protocol prefix, which the citation guard does not read as a finding"
+                      % prefix)
+
+    if used and new:
+        raise Refusal("--new, but the store already uses %s (its latest round is %d): leave --new off"
+                      % (prefix, max(used)))
+
+    if not used and not new:
+        raise Refusal("the store has never used the prefix %s.  A prefix is declared by querying the store, and this "
+                      "one is not there: if it is a new lane, say so with --new" % prefix)
+
+
+def next_round(refs, prefix, new=False):
+    """The next unused round of a prefix: one past the highest the store holds.
+
+    :param refs: every ref in the store
+    :param prefix: e.g. RSA
+    :param new: allow a prefix the store has never used (its first round is the bare prefix)
+    :return: the round's id, e.g. RSA76
+    """
+    used = rounds_used(refs, prefix)
+
+    check_prefix(prefix, used, new)
+
+    return prefix + str(max(used) + 1) if used else prefix
+
+
+def check_unused(refs, ref, new=False):
+    """Refuses a ref, or a whole round, that is already in the store.
+
+    :param refs: every ref in the store
+    :param ref: a finding's ref (RSA76-A1) or a round (RSA76; RSA is round 1)
+    :param new: allow a prefix the store has never used
+    :return: the ref, if it is free
+    """
+    m = REF_OR_ROUND.match(ref)
+
+    if not m:
+        raise Refusal("%r is neither a finding's ref (RSA76-A1) nor a round (RSA76)" % ref)
+
+    prefix, digits, tail = m.group(1), m.group(2), m.group(3)
+
+    used = rounds_used(refs, prefix)
+
+    check_prefix(prefix, used, new)
+
+    if tail is None:
+        number = int(digits or 1)
+
+        if number in used:
+            held = sorted(r for r in refs if round_of(r) == (prefix, number))
+
+            raise Refusal("round %s is already in the store (%d refs, from %s): take the next number with --next %s"
+                          % (ref, len(held), held[0], prefix))
+    elif ref in refs:
+        raise Refusal("%s is already in the store: a ref is never reused (take a round's number with --next %s)"
+                      % (ref, prefix))
+
+    return ref
+
+
+def refs_in_the_mirror(path):
+    """The first column of the plain-text mirror: findings, and the dead citations below its marker.
+
+    :param path: findings.tsv
+    :return: a set of refs
+    """
+    refs = set()
+
+    for line in io.open(path, encoding="utf-8"):
+        if line.startswith("#") or not line.strip():
+            continue
+
+        refs.add(line.split(chr(9))[0].strip())
+
+    return refs
+
+
+def open_read_only(path):
+    """The store, opened so that nothing here can write to it.
+
+    :param path: triage.db
+    :return: a connection
+    """
+    uri = "file:" + os.path.abspath(path).replace(chr(92), "/").replace("file:", "") + "?mode=ro"
+
+    return sqlite3.connect(uri, uri=True)
+
+
+def triagedb_paths():
+    """Where the store and its mirror are, as triagedb says.
+
+    :return: (database file, mirror file)
+    """
+    here = os.path.join("docs", "manual-tests")
+
+    if here not in sys.path:
+        sys.path.insert(0, here)
+
+    import triagedb
+
+    return triagedb.DB_FILE, triagedb.FINDINGS_MIRROR
+
+
+def refs_in_the_store(db=None, mirror=None):
+    """Every ref the store holds - findings and the dead citations - checked against its mirror.
+
+    A number handed out from a store that disagrees with its mirror could be taken in the other, so the two must
+    agree on every ref or nothing is handed out.
+
+    :param db: the database, or None for the repository's
+    :param mirror: the mirror, or None for the repository's
+    :return: a set of refs
+    """
+    default_db, default_mirror = triagedb_paths()
+
+    db = db or default_db
+    mirror = mirror or default_mirror
+
+    if not os.path.isfile(db) or not os.path.isfile(mirror):
+        raise Refusal("the store (%s) or its mirror (%s) is not there, and a number cannot be handed out without "
+                      "them" % (db, mirror))
+
+    conn = open_read_only(db)
+
+    try:
+        held = set(r[0] for r in conn.execute("SELECT ref FROM finding"))
+        held |= set(r[0] for r in conn.execute("SELECT ref FROM dead_citation"))
+    finally:
+        conn.close()
+
+    mirrored = refs_in_the_mirror(mirror)
+
+    if not held:
+        raise Refusal("the store holds no findings at all: this is not the store (is triage.db the repository's?)")
+
+    if held != mirrored:
+        odd = sorted(held ^ mirrored)
+
+        raise Refusal("the store and its mirror disagree on %d refs (%s ...): render the mirror from the store "
+                      "(triagedb.render_findings) before taking a number" % (len(odd), ", ".join(odd[:3])))
+
+    return held
+
+
+def documents_in_the_store(db=None):
+    """The review documents the store holds findings for.
+
+    :param db: the database, or None for the repository's
+    :return: a set of file names; empty where the store has not been built
+    """
+    default_db, _ = triagedb_paths()
+
+    db = db or default_db
+
+    if not os.path.isfile(db):
+        return set()
+
+    conn = open_read_only(db)
+
+    try:
+        return set(r[0] for r in conn.execute("SELECT DISTINCT document FROM finding"))
+    finally:
+        conn.close()
+
+
+def rows_by_document(db=None):
+    """The refs the store holds, by the document that made them.
+
+    :param db: the database, or None for the repository's
+    :return: {document: set of refs}
+    """
+    default_db, _ = triagedb_paths()
+
+    db = db or default_db
+
+    held = {}
+
+    if not os.path.isfile(db):
+        return held
+
+    conn = open_read_only(db)
+
+    try:
+        for ref, document in conn.execute("SELECT ref, document FROM finding"):
+            held.setdefault(document, set()).add(ref)
+    finally:
+        conn.close()
+
+    return held
+
+
+def rebuild_would_drop(stored_documents, collected_documents):
+    """The stored documents a full rebuild would lose, because the folder it re-reads no longer holds them.
+
+    The full rebuild replaces the finding table with whatever `docs/reviews/` yields, so every document the store
+    holds that the folder does not is a deleted round whose rows would go.
+
+    :param stored_documents: the documents the store has rows for
+    :param collected_documents: the documents the rebuild just read
+    :return: the stored documents the folder lacks, sorted
+    """
+    return sorted(set(stored_documents) - set(collected_documents))
+
+
+def foreign_rounds(stored, rows):
+    """The stored rows `--add` would prune that belong to some other round than the one the new document makes.
+
+    `prune_findings` is authoritative for a document NAME, so a new round's document that shares its file name with
+    a deleted round's would delete that round's rows.  A re-added document makes the same rounds it made before; a
+    stored row of a round the document no longer makes at all is another round's.
+
+    :param stored: {document: refs} from `rows_by_document`
+    :param rows: the freshly parsed rows
+    :return: {document: sorted foreign refs}
+    """
+    made = {}
+
+    for r in rows:
+        made.setdefault(r["document"], set()).add(r["ref"])
+
+    out = {}
+
+    for document, refs in made.items():
+        rounds = set(round_of(ref) for ref in refs)
+
+        other = sorted(ref for ref in stored.get(document, set()) if round_of(ref) not in rounds)
+
+        if other:
+            out[document] = other
+
+    return out
+
+
+def round_command(flag):
+    """`--next PREFIX [--new]` and `--check-unused REF [--new]`.
+
+    :param flag: which
+    :return: 0 on an answer, 1 on a refusal
+    """
+    at = sys.argv.index(flag) + 1
+
+    if at >= len(sys.argv) or sys.argv[at].startswith("--"):
+        sys.stderr.write("%s needs a value, e.g. %s RSA\n" % (flag, flag))
+
+        return 2
+
+    value = sys.argv[at]
+
+    try:
+        refs = refs_in_the_store()
+
+        if flag == "--next":
+            print(next_round(refs, value, "--new" in sys.argv))
+        else:
+            check_unused(refs, value, "--new" in sys.argv)
+
+            print("%s is not in the store" % value)
+
+        return 0
+    except Refusal as no:
+        sys.stderr.write("REFUSED: %s\n" % no)
+
+        return 1
+
+
+def add_one_folder(folder, dry=False):
     """Scans one review folder and MERGES its findings into the store.
 
     For reviews written after the folder was retired. The full sweep replaces the table and refuses
     when it would collapse; this one only ever adds, so a new review joins the catalogue instead of
     replacing it. Re-running over the same folder updates its rows in place.
 
+    **It never deletes a row of a document that is not in the folder.**  Only the rows of a document IN the folder can
+    go, and only a row of a round that document still makes; a document whose name a deleted round already used is
+    refused (`foreign_rounds`).
+
     :param folder: the directory of review documents
-    :return: 0 on success, 1 if there was nothing to add
+    :param dry: report what would be added, updated and removed, and write nothing
+    :return: 0 on success, 1 if there was nothing to add, a document would take another round's rows, or (dry) the
+        folder holds findings the store does not
     """
     global REVIEWS
 
@@ -766,6 +1109,22 @@ def add_one_folder(folder):
         return 1
 
     disambiguate(rows)
+
+    stored = rows_by_document()
+
+    other = foreign_rounds(stored, rows)
+
+    if other:
+        for document, refs in sorted(other.items()):
+            print("REFUSING: the store already holds %d rows of %s that this %s does not make, of other rounds "
+                  "(%s ...)" % (len(refs), document, document, ", ".join(refs[:3])))
+
+        print("Adding would delete them.  A round's documents need names no earlier round used - rename them.")
+
+        return 1
+
+    if dry:
+        return compare_with_the_store(folder, rows, stored)
 
     used = citations_in_the_code()
 
@@ -793,13 +1152,58 @@ def add_one_folder(folder):
     return 0
 
 
+def compare_with_the_store(folder, rows, stored):
+    """`--add FOLDER --check`: what adding would do, per the store, without doing it.
+
+    :param folder: the directory of review documents
+    :param rows: its parsed findings
+    :param stored: {document: refs} from `rows_by_document`
+    :return: 0 when every finding in the folder is already in the store (the folder can be deleted), else 1
+    """
+    made = {}
+
+    for r in rows:
+        made.setdefault(r["document"], set()).add(r["ref"])
+
+    missing = 0
+    removed = 0
+
+    for document in sorted(made):
+        held = stored.get(document, set())
+
+        new = sorted(made[document] - held)
+        gone = sorted(held - made[document])
+
+        missing += len(new)
+        removed += len(gone)
+
+        if new:
+            print("  %s: %d not in the store (%s ...)" % (document, len(new), ", ".join(new[:3])))
+
+        if gone:
+            print("  %s: the store holds %d the document does not make (%s ...): adding would remove them"
+                  % (document, len(gone), ", ".join(gone[:3])))
+
+    print("%s: %d documents, %d findings; %d not in the store, %d would be removed from it"
+          % (folder, len(made), len(rows), missing, removed))
+
+    print("NOTHING WRITTEN.  " + ("Every finding is in the store." if not missing else "Add the folder first."))
+
+    return 1 if missing else 0
+
+
 def main():
+    # THE NEXT ROUND'S NUMBER, from the store.
+    for flag in ("--next", "--check-unused"):
+        if flag in sys.argv:
+            return round_command(flag)
+
     # ONE FOLDER, MERGED. `--add <dir>` is how a review written after 2026-09-08 joins the catalogue:
     # the full sweep below replaces the table, which is right for a sweep and fatal for three documents.
     if "--add" in sys.argv:
         where = sys.argv[sys.argv.index("--add") + 1]
 
-        return add_one_folder(where)
+        return add_one_folder(where, dry="--check" in sys.argv)
 
     rows = collect()
 
@@ -809,7 +1213,7 @@ def main():
     # The mirror and the database are the only two copies left. Stop before the first write, not after.
     seen = len(set(r["document"] for r in rows))
 
-    if seen < ENOUGH_DOCUMENTS and "--force" not in sys.argv:
+    if seen < ENOUGH_DOCUMENTS:
         print("Found %d findings in %d documents under %s." % (len(rows), seen, REVIEWS))
         print()
         print("REFUSING TO RUN. The review documents were deleted on 2026-09-08 and this scans them,")
@@ -824,8 +1228,20 @@ def main():
         print('  python -c "import sys; sys.path.insert(0, \'docs/manual-tests\'); import triagedb;'
               ' triagedb.render_findings(triagedb.connect())"')
         print()
-        print("To rebuild the catalogue, restore docs/reviews/ from git history first. Pass --force")
-        print("only if you have a reason to write an empty catalogue over a full one.")
+        print("A round joins the catalogue with --add <folder>.  The full rebuild has no override.")
+
+        return 1
+
+    # THE FULL REBUILD MAY NOT LOSE A ROUND.  It replaces the finding table with what this folder yields, so a
+    # document the store holds and the folder does not is a deleted round whose rows would go.  Every round is
+    # deleted once catalogued, so after the first one this cannot pass, and there is no flag to pass it.
+    dropped = rebuild_would_drop(documents_in_the_store(), set(r["document"] for r in rows))
+
+    if dropped:
+        print("REFUSING TO RUN.  The store holds findings from %d documents that %s does not, and a full rebuild"
+              % (len(dropped), REVIEWS))
+        print("would drop their rows (%s ...)." % ", ".join(dropped[:3]))
+        print("The store is the record of every deleted round.  A round joins it with --add <folder>.")
 
         return 1
 

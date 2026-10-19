@@ -11,8 +11,12 @@ what they found.  The five-lane review of 2026-09-23 wrote twenty more, in `docs
 rounds of fixes and validation, and they were deleted the same way in the commit that closed it; the counts below are
 of the two earlier deletions.  The validation of 2026-09-24 - OB-294 and the two days of commits before it, three
 lanes over five rounds - wrote fifteen more in `docs/reviews-2026-09-24/`, and they went the same way.  The validation of the work on Adam's answers of that night - three lanes over two rounds,
-on 2026-09-25 - wrote six more in `docs/reviews-2026-09-25/`, and they went the same way.  **How a multi-lane review like that one is run, closed and reported is in
-[FANOUT.md](FANOUT.md)**, with the report Adam reviewed at the end of it kept as the example
+on 2026-09-25 - opened `docs/reviews-2026-09-25/`, and the release review's rounds went into it until 2026-10-18.
+It held 101 files, and they were catalogued - 1,199 findings, each compared with the store document by document
+before the folder went - and deleted on 2026-10-19, the last kept folder: the RSA rounds 1 to 75 (`RSA.md`, then
+`RSA2.md` to `RSA75.md`), RLV6 to RLV13, RLA, RLD and RLU rounds 1 to 5 each, and BCR, BPV and E2E.  Those 101
+are counted apart from the two earlier deletions below.  **How a multi-lane review like that one is run, closed and
+reported is in [FANOUT.md](FANOUT.md)**, with the report Adam reviewed at the end of it kept as the example
 ([examples/session-report-2026-09-23.html](examples/session-report-2026-09-23.html)).
 
 **Where those numbers come from**, because a validation round re-derived them and got a different total
@@ -39,14 +43,28 @@ no reference will ever be stale or lost, but useless prose will go away. Then ev
 needs to be in prose, will live in behaviour.md."*  And on 2026-09-21: *"let's clean up all the stale
 code reviews in /docs/ ... I don't want more reviews living in the repo."*
 
-**So a round's documents are written, catalogued and deleted in the same round.** Write them - a review
-nobody can read while it is being acted on is no use - then run
+**So a round's documents are written, catalogued and deleted in the same round, and the store hands out the
+numbers.**  The finding store is the index (`docs/manual-tests/triage.db`, and `findings.tsv` as its mirror), so a
+round never looks in a folder to see what has been used:
 
-```
-python docs/tools/catalog-findings.py --add docs/<the round's folder>
-```
+1. **Take the round's number from the store.**  `python docs/tools/catalog-findings.py --next RSA` prints the next
+   unused round (RSA76 once RSA75 is in).  It refuses a prefix the store has never used - a prefix is declared by
+   querying the store - unless `--new` says it is a new one.  `--check-unused RSA76-A1` refuses a ref, or a whole
+   round (`--check-unused RSA76`), that is already there, so a number is never used twice.
+2. **Write the round's record in a working folder** - the scratch area, not the repository.  Write it - a review
+   nobody can read while it is being acted on is no use.
+3. **Catalogue it:** `python docs/tools/catalog-findings.py --add <the working folder>`.  `--add <folder> --check`
+   first says what that would do and writes nothing; it exits 0 only when every finding in the folder is already in
+   the store.
+4. **Delete the folder.**  The store carries every finding.
 
-which is authoritative for the documents in it, and delete them in the commit that closes the round.
+`--add` is authoritative for the documents in the folder and for nothing else: it adds and updates, and the only rows
+it removes are rows of a document IN the folder that the document no longer makes.  It refuses a document named as a
+deleted round's document that makes a different round, because that would remove the old round's rows.  The tool's
+full rebuild, which re-reads `docs/reviews/`, refuses to run unless the folder holds every document the store holds -
+which is never true once a round is deleted - and has no override, so no mode can rebuild the catalogue from the
+documents that remain and drop the rows of the rounds already deleted.  `regression.testTheRecordsCountTheStore` holds
+each of these.
 
 A document that outlives its round is a document whose status table stops being maintained, and every
 audit of these has found the same thing in the same direction: rows reading "open" for work finished

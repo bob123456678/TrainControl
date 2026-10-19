@@ -3,6 +3,10 @@ package regression;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import static org.testng.Assert.assertEquals;
@@ -42,6 +46,11 @@ import org.testng.annotations.Test;
  * together and the file total fails at 211 against 210; change `143` alone and the for-Adam
  * difference fails at 1 against the two notes it names.  The first version of this sentence named
  * exactly that unreachable mutation, which is VD15-T8 two files from where it was closed (VD16-T8).
+ *
+ * **THE STORE ALSO HANDS OUT THE NEXT ROUND (FR-136).**  With the review documents deleted the folder cannot say which
+ * round is next, so `catalog-findings.py --next PREFIX` reads it from the store, `--check-unused REF` refuses one
+ * already there, and no mode of the tool can rebuild the catalogue from the documents that remain.  The claims that
+ * run it need `python` on the path, as the tool does.
  *
  * @author Adam
  */
@@ -239,6 +248,472 @@ public class testTheRecordsCountTheStore
             "the README says " + reviews + " review documents were deleted on 2026-09-08 and " + second
             + " on 2026-09-21, which is " + (reviews + second) + " - so its spelled-out total has to"
             + " read \"" + words + " review documents\"");
+    }
+
+    // ---------------------------------------------------------------- the next round comes from the store (FR-136)
+
+    /**
+     * Loads `catalog-findings.py` and `triagedb` as modules, for the claims that call its functions.
+     */
+    private static final String LOAD = String.join("\n",
+        "import importlib.util, io, os, sys, tempfile",
+        "spec = importlib.util.spec_from_file_location('cf', 'docs/tools/catalog-findings.py')",
+        "cf = importlib.util.module_from_spec(spec)",
+        "spec.loader.exec_module(cf)",
+        "sys.path.insert(0, 'docs/manual-tests')",
+        "import triagedb",
+        "");
+
+    /**
+     * What a python process printed and returned.
+     */
+    private static final class Ran
+    {
+        final int exit;
+        final String out;
+        final String err;
+
+        /**
+         * @param exit the exit code
+         * @param out standard output
+         * @param err standard error
+         */
+        Ran(int exit, String out, String err)
+        {
+            this.exit = exit;
+            this.out = out;
+            this.err = err;
+        }
+    }
+
+    /**
+     * Runs python at the repository root, as `python args...`.
+     *
+     * @param args the script and its arguments
+     * @return what it did
+     * @throws Exception if python cannot be started or does not finish
+     */
+    private static Ran python(String... args) throws Exception
+    {
+        File out = File.createTempFile("catalog-out", ".txt");
+        File err = File.createTempFile("catalog-err", ".txt");
+
+        try
+        {
+            List<String> command = new ArrayList<>();
+
+            command.add("python");
+            command.addAll(Arrays.asList(args));
+
+            ProcessBuilder builder = new ProcessBuilder(command).redirectOutput(out).redirectError(err);
+
+            builder.environment().put("PYTHONIOENCODING", "utf-8");
+
+            Process process = builder.start();
+
+            process.getOutputStream().close();
+
+            if (!process.waitFor(180, TimeUnit.SECONDS))
+            {
+                process.destroyForcibly();
+
+                throw new AssertionError("python did not finish in three minutes: " + command);
+            }
+
+            return new Ran(process.exitValue(),
+                new String(Files.readAllBytes(out.toPath()), StandardCharsets.UTF_8).replace("\r\n", "\n"),
+                new String(Files.readAllBytes(err.toPath()), StandardCharsets.UTF_8).replace("\r\n", "\n"));
+        }
+        finally
+        {
+            out.delete();
+            err.delete();
+        }
+    }
+
+    /**
+     * The tool, as the command line runs it.
+     *
+     * @param args its arguments
+     * @return what it did
+     * @throws Exception if python cannot be run
+     */
+    private static Ran tool(String... args) throws Exception
+    {
+        List<String> all = new ArrayList<>();
+
+        all.add("docs/tools/catalog-findings.py");
+        all.addAll(Arrays.asList(args));
+
+        return python(all.toArray(new String[0]));
+    }
+
+    /**
+     * A python script that loads the tool, run to completion.
+     *
+     * @param body its statements after the loading ones
+     * @return what it printed
+     * @throws Exception if it fails to run, or python exits non-zero
+     */
+    private static String script(String... body) throws Exception
+    {
+        File file = File.createTempFile("catalog-claim", ".py");
+
+        try
+        {
+            Files.write(file.toPath(), (LOAD + String.join("\n", body) + "\n").getBytes(StandardCharsets.UTF_8));
+
+            Ran ran = python(file.getPath());
+
+            assertEquals(ran.exit, 0, "the script failed:\n" + ran.err + "\nafter printing:\n" + ran.out);
+
+            return ran.out;
+        }
+        finally
+        {
+            file.delete();
+        }
+    }
+
+    /**
+     * The refs in the mirror whose prefix is this one, with the round each belongs to (no number is round 1).
+     *
+     * @param prefix e.g. RSA
+     * @return ref to round
+     * @throws Exception on a failure to read
+     */
+    private static java.util.Map<String, Integer> roundsInTheMirror(String prefix) throws Exception
+    {
+        java.util.Map<String, Integer> out = new java.util.TreeMap<>();
+
+        Pattern mine = Pattern.compile("^" + prefix + "([0-9]*)-");
+
+        for (String line : read(MIRROR).split("\n"))
+        {
+            if (line.trim().isEmpty() || line.startsWith("#")) continue;
+
+            String ref = line.split(String.valueOf((char) 9), -1)[0].trim();
+
+            Matcher m = mine.matcher(ref);
+
+            if (m.find()) out.put(ref, m.group(1).isEmpty() ? 1 : Integer.parseInt(m.group(1)));
+        }
+
+        return out;
+    }
+
+    /**
+     * The highest round the mirror holds for a prefix.
+     *
+     * @param prefix e.g. RSA
+     * @return the number
+     * @throws Exception on a failure to read
+     */
+    private static int highestRound(String prefix) throws Exception
+    {
+        int highest = 0;
+
+        for (int round : roundsInTheMirror(prefix).values()) highest = Math.max(highest, round);
+
+        assertTrue(highest > 0, "the mirror holds no " + prefix + " refs, so nothing below is a check of the prefix");
+
+        return highest;
+    }
+
+    /**
+     * `--next` prints one past the highest round the store holds, for the prefixes that run to many rounds and for
+     * ones whose first round has no number.
+     *
+     * The expected value is counted here from the mirror, which `--next` cross-checks against the database before it
+     * answers, so a tool that read a folder (empty by design) or sorted the numbers as text would print another.
+     *
+     * @throws Exception on a failure to run the tool
+     */
+    @Test
+    public void testTheNextRoundIsOnePastTheHighestTheStoreHolds() throws Exception
+    {
+        assertTrue(highestRound("RSA") >= 75, "RSA is at round 75 or later, and only the store knows that");
+
+        for (String prefix : new String[] {"RSA", "VD", "TDY", "RLV"})
+        {
+            int highest = highestRound(prefix);
+
+            Ran ran = tool("--next", prefix);
+
+            assertEquals(ran.exit, 0, "--next " + prefix + " was refused: " + ran.err);
+
+            assertEquals(ran.out.trim(), prefix + (highest + 1),
+                "the store's highest " + prefix + " round is " + highest + ", so the next is " + prefix
+                + (highest + 1));
+        }
+    }
+
+    /**
+     * Round numbers are counted, not sorted as text, and a prefix is not a prefix of another prefix.
+     *
+     * @throws Exception on a failure to run python
+     */
+    @Test
+    public void testRoundNumbersAreCountedAndPrefixesAreWholeWords() throws Exception
+    {
+        String said = script(
+            "refs = ['RSA-A1', 'RSA2-A1', 'RSA9-B1', 'RSA10-C1', 'RSAX3-A1', 'VD11-D1']",
+            "print(cf.next_round(refs, 'RSA'))",
+            "print(cf.next_round(refs, 'VD'))",
+            "print(cf.next_round(['TDY-A1'], 'TDY'))",
+            "for bad in ('RS', 'RSA10', 'MT'):",
+            "    try:",
+            "        cf.next_round(refs, bad)",
+            "        print('allowed ' + bad)",
+            "    except cf.Refusal:",
+            "        print('refused ' + bad)",
+            "print(cf.next_round(refs, 'RS', True))");
+
+        assertEquals(said, String.join("\n", "RSA11", "VD12", "TDY2", "refused RS", "refused RSA10", "refused MT", "RS", ""),
+            "the next round after RSA, RSA2, RSA9 and RSA10 is RSA11 (not RSA10, which sorting the numbers as text"
+            + " gives), RSA is not RSAX, a prefix the store has never used is refused until it is declared new, and"
+            + " the digits of RSA10 are a round, not a prefix");
+    }
+
+    /**
+     * A prefix the store has never used is refused unless `--new` says it is one; `--new` on a used prefix is refused.
+     *
+     * @throws Exception on a failure to run the tool
+     */
+    @Test
+    public void testAPrefixTheStoreHasNeverUsedIsRefused() throws Exception
+    {
+        assertTrue(roundsInTheMirror("ZQJ").isEmpty(), "ZQJ is meant to be a prefix nothing has used");
+
+        Ran no = tool("--next", "ZQJ");
+
+        assertEquals(no.exit, 1, "--next of a prefix the store has never used must be refused");
+        assertEquals(no.out.trim(), "", "a refused prefix must print no round number: " + no.out);
+        assertTrue(no.err.contains("never used"), "the refusal should say the store has never used it: " + no.err);
+
+        Ran declared = tool("--next", "ZQJ", "--new");
+
+        assertEquals(declared.exit, 0, "--new declares the prefix: " + declared.err);
+        assertEquals(declared.out.trim(), "ZQJ", "a new prefix's first round is the bare prefix, as RSA-A1 is");
+
+        assertEquals(tool("--next", "RSA", "--new").exit, 1, "--new must not be accepted for a prefix in use");
+    }
+
+    /**
+     * `--check-unused` refuses a ref, or a whole round, the store already holds, and passes the next ones.
+     *
+     * @throws Exception on a failure to run the tool
+     */
+    @Test
+    public void testARefOrRoundAlreadyInTheStoreIsRefused() throws Exception
+    {
+        int highest = highestRound("RSA");
+
+        String taken = null;
+
+        for (java.util.Map.Entry<String, Integer> e : roundsInTheMirror("RSA").entrySet())
+        {
+            if (e.getValue() == highest) taken = e.getKey();
+        }
+
+        assertTrue(taken != null, "no RSA ref of round " + highest);
+
+        Ran ref = tool("--check-unused", taken);
+
+        assertEquals(ref.exit, 1, taken + " is in the store, so --check-unused must refuse it");
+        assertTrue(ref.err.contains(taken), "the refusal should name the ref: " + ref.err);
+
+        assertEquals(tool("--check-unused", "RSA" + highest).exit, 1,
+            "round RSA" + highest + " is in the store, so --check-unused must refuse the round");
+
+        assertEquals(tool("--check-unused", "RSA" + (highest + 1)).exit, 0,
+            "round RSA" + (highest + 1) + " is free");
+
+        assertEquals(tool("--check-unused", "RSA" + (highest + 1) + "-A1").exit, 0,
+            "RSA" + (highest + 1) + "-A1 is free");
+
+        assertEquals(script(
+            "refs = ['RSA-A1', 'RSA2-A1']",
+            "for ask in ('RSA', 'RSA-A1', 'RSA-A2', 'RSA2', 'RSA3', 'RSA2-A1'):",
+            "    try:",
+            "        cf.check_unused(refs, ask)",
+            "        print('free ' + ask)",
+            "    except cf.Refusal:",
+            "        print('taken ' + ask)"),
+            String.join("\n", "taken RSA", "taken RSA-A1", "free RSA-A2", "taken RSA2", "free RSA3", "taken RSA2-A1", ""),
+            "round 1 is the bare prefix, a ref is taken only when it is exactly in the store, and a round only when"
+            + " some ref carries its number");
+    }
+
+    /**
+     * The store's refs include the dead citations, and a store that disagrees with its mirror hands out nothing.
+     *
+     * @throws Exception on a failure to run python
+     */
+    @Test
+    public void testTheStoreAndItsMirrorMustAgreeBeforeANumberIsHandedOut() throws Exception
+    {
+        String said = script(
+            "d = tempfile.mkdtemp()",
+            "db = os.path.join(d, 't.db')",
+            "mirror = os.path.join(d, 'm.tsv')",
+            "conn = triagedb.connect(db)",
+            "conn.execute(\"INSERT INTO finding (ref, document) VALUES ('ZZ-A1', 'ZZ.md')\")",
+            "conn.execute(\"INSERT INTO dead_citation (ref) VALUES ('ZZ7-C1')\")",
+            "conn.commit()",
+            "conn.close()",
+            "tab = chr(9)",
+            "io.open(mirror, 'w').write('# header\\n' + 'ZZ-A1' + tab + 'ZZ.md\\n' + 'ZZ7-C1' + tab + '-\\n')",
+            "refs = cf.refs_in_the_store(db, mirror)",
+            "print(sorted(refs), cf.next_round(refs, 'ZZ'))",
+            "io.open(mirror, 'w').write('# header\\n' + 'ZZ-A1' + tab + 'ZZ.md\\n')",
+            "try:",
+            "    cf.refs_in_the_store(db, mirror)",
+            "    print('agreed')",
+            "except cf.Refusal as no:",
+            "    print('disagree' if 'disagree' in str(no) else str(no))");
+
+        assertEquals(said, "['ZZ-A1', 'ZZ7-C1'] ZZ8\ndisagree\n",
+            "a ref cited from the code and a finding in no document (the DEAD roll) is a used number too, and a"
+            + " store whose mirror lacks one of its refs must refuse to hand out a number");
+    }
+
+    // ---------------------------------------------------------------- no mode drops a deleted round's rows (FR-136)
+
+    /**
+     * The full rebuild refuses while the store holds a document the folder it re-reads does not, however many
+     * documents the folder holds.
+     *
+     * The folder is 25 stand-in documents, past the "enough documents" floor, so only the stored-documents check
+     * stands between this and replacing the table.  `--check` is used so that a failure here writes nothing.
+     *
+     * @throws Exception on a failure to run python
+     */
+    @Test
+    public void testTheFullRebuildRefusesWhileTheStoreHoldsADocumentTheFolderLacks() throws Exception
+    {
+        String said = script(
+            "d = tempfile.mkdtemp()",
+            "for i in range(25):",
+            "    io.open(os.path.join(d, 'ZQX%d.md' % i), 'w').write('### ZQX%d-A1 - a finding\\n' % (i + 1))",
+            "cf.REVIEWS = d",
+            "sys.argv = ['catalog-findings.py', '--check']",
+            "print('returned', cf.main())",
+            "print(cf.rebuild_would_drop({'a.md', 'b.md'}, {'a.md', 'c.md'}))",
+            "print(cf.rebuild_would_drop({'a.md'}, {'a.md', 'c.md'}))");
+
+        assertTrue(said.contains("REFUSING TO RUN"), "a full rebuild over a folder that lacks the store's documents must"
+            + " refuse.  It printed:\n" + said);
+
+        assertTrue(said.contains("returned 1"), "and return 1.  It printed:\n" + said);
+
+        assertTrue(said.contains("['b.md']\n[]\n"), "the documents a rebuild would drop are those the store has and"
+            + " the folder lacks.  It printed:\n" + said);
+
+        assertTrue(!said.contains("findings:   "), "it must refuse before it reports a catalogue it would build.  It"
+            + " printed:\n" + said);
+    }
+
+    /**
+     * Loading rows over the table refuses to drop a stored document the rows do not name, and merging a round
+     * leaves every other document's rows alone.
+     *
+     * @throws Exception on a failure to run python
+     */
+    @Test
+    public void testNoLoadOrMergeDropsADocumentsRowsThatIsNotBeingReplaced() throws Exception
+    {
+        String said = script(
+            "conn = triagedb.connect(':memory:')",
+            "def put(ref, document):",
+            "    conn.execute('INSERT INTO finding (ref, document) VALUES (?, ?)', (ref, document))",
+            "put('X-A1', 'A.md')",
+            "put('X-A2', 'A.md')",
+            "put('Y-A1', 'B.md')",
+            "conn.commit()",
+            "try:",
+            "    triagedb.load_findings(conn, [{'ref': 'X-A1', 'document': 'A.md'}, {'ref': 'X-A2', 'document': 'A.md'}])",
+            "    print('loaded')",
+            "except ValueError:",
+            "    print('load refused')",
+            "print(conn.execute('SELECT COUNT(*) FROM finding').fetchone()[0])",
+            "print(triagedb.prune_findings(conn, [{'ref': 'X-A1', 'document': 'A.md'}]))",
+            "print(conn.execute(\"SELECT COUNT(*) FROM finding WHERE document = 'B.md'\").fetchone()[0])",
+            "print(triagedb.add_findings(conn, [{'ref': 'Z-A1', 'document': 'C.md'}]))",
+            "print(conn.execute('SELECT COUNT(*) FROM finding').fetchone()[0])");
+
+        assertEquals(said, String.join("\n", "load refused", "3", "[('A.md', 'X-A2')]", "1", "(1, 0)", "3", ""),
+            "load_findings must refuse rows that do not name every stored document (B.md's row would go), pruning"
+            + " removes only a document's own rows the document no longer makes, and adding a new document keeps all"
+            + " the rest");
+    }
+
+    /**
+     * `--add` refuses a document that shares its name with a deleted round's and makes another round, because
+     * pruning is by document name; and `--add --check` writes nothing.
+     *
+     * The store is only read here: both runs are `--check`, and the claim holds the store's bytes.
+     *
+     * @throws Exception on a failure to run the tool
+     */
+    @Test
+    public void testAddRefusesADocumentThatWouldTakeAnotherRoundsRows() throws Exception
+    {
+        File folder = java.nio.file.Files.createTempDirectory("catalog-round").toFile();
+
+        try
+        {
+            byte[] before = Files.readAllBytes(new File("docs/manual-tests/triage.db").toPath());
+
+            // A deleted round's file name, holding a round it never made.
+            Files.write(new File(folder, "RSA75.md").toPath(),
+                "**Prefix:** RSA99\n\n### RSA99-A1 - a finding\n".getBytes(StandardCharsets.UTF_8));
+
+            Ran clash = tool("--add", folder.getPath(), "--check");
+
+            assertEquals(clash.exit, 1, "adding RSA75.md as round 99 would delete round 75's rows:\n" + clash.out);
+            assertTrue(clash.out.contains("REFUSING"), "it should say it refuses:\n" + clash.out);
+
+            assertTrue(new File(folder, "RSA75.md").delete(), "could not remove the stand-in");
+
+            Files.write(new File(folder, "RSA99.md").toPath(),
+                "**Prefix:** RSA99\n\n### RSA99-A1 - a finding\n".getBytes(StandardCharsets.UTF_8));
+
+            Ran fresh = tool("--add", folder.getPath(), "--check");
+
+            assertEquals(fresh.exit, 1, "a finding the store lacks leaves the folder not yet catalogued:\n" + fresh.out);
+            assertTrue(fresh.out.contains("1 not in the store"), "it should count the finding:\n" + fresh.out);
+            assertTrue(fresh.out.contains("NOTHING WRITTEN"), "and say it wrote nothing:\n" + fresh.out);
+
+            assertTrue(java.util.Arrays.equals(before, Files.readAllBytes(new File("docs/manual-tests/triage.db").toPath())),
+                "--add --check must not change the store");
+        }
+        finally
+        {
+            File[] left = folder.listFiles();
+
+            if (left != null) for (File f : left) f.delete();
+
+            folder.delete();
+        }
+    }
+
+    /**
+     * The two procedure documents tell a round to take its number from the store.
+     *
+     * @throws Exception on a failure to read
+     */
+    @Test
+    public void testTheProcedureDocumentsSendARoundToTheStoreForItsNumber() throws Exception
+    {
+        for (String path : new String[] {"docs/reviews/README.md", "docs/reviews/FANOUT.md"})
+        {
+            String said = flowed(path);
+
+            assertTrue(said.contains("catalog-findings.py --next"),
+                path + " should tell a round to take its number with `catalog-findings.py --next PREFIX`, which"
+                + " reads the finding store; the folder it once looked in is empty by design");
+        }
     }
 
     // ---------------------------------------------------------------- the counting

@@ -296,6 +296,17 @@ def load_findings(conn, rows, force=False):
             "database IS the record now - do not run the scanner against an empty folder. Pass "
             "force=True only to rebuild deliberately." % (len(rows), held))
 
+    # AND IT MUST NOT LOSE A DOCUMENT.  A wholesale replace drops the rows of every document the new rows do not
+    # name - a deleted round - even when the new rows are many.  Rounds are added with `add_findings`.
+    lost = sorted(set(r[0] for r in conn.execute("SELECT DISTINCT document FROM finding"))
+                  - set(r.get("document") for r in rows))
+
+    if lost and not force:
+        raise ValueError(
+            "refusing to load over %d documents the new rows do not make (%s ...): their rows would be dropped. "
+            "A round joins the store with add_findings. Pass force=True only to rebuild deliberately."
+            % (len(lost), ", ".join(lost[:3])))
+
     # Statuses are ours and the documents know nothing about them, so they are carried over rather than
     # rewritten. See the module docstring: the disposition column is what a document SAID.
     kept = {(r["ref"], r["document"]): (r["status"], r["status_note"])
