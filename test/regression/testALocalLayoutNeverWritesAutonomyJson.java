@@ -1,12 +1,10 @@
 package regression;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
@@ -118,22 +116,6 @@ public class testALocalLayoutNeverWritesAutonomyJson
 
         assertNull(ui.getActiveDiagramConfiguration(), "precondition: a configuration was loaded at start, so this is"
             + " not the session OB-254 is about");
-
-        // What the old window held on every start, where it still exists: autonomy.json, read in whether used or not.
-        try
-        {
-            Field field = TrainControlUI.class.getDeclaredField("autonomyJSON");
-
-            field.setAccessible(true);
-
-            final JTextArea text = (JTextArea) field.get(ui);
-
-            SwingUtilities.invokeAndWait(() -> text.setText("{\"points\": [], \"edges\": []}"));
-        }
-        catch (NoSuchFieldException gone)
-        {
-            // Deleted with the tab (OB-254): nothing is left to write.
-        }
 
         File folder = new File(Util.dataPath(Util.BACKUP_FOLDER));
 
