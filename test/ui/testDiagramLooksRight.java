@@ -2758,6 +2758,66 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The locomotive on a square is drawn ten per cent clear, so a caption under it still shows faintly (FR-130).
+     *
+     * FR-130. Adam: "the autonomy locomotive icon (steam engine, black) has no transparency.  Give it 10% transparency so
+     * that labels under it can be faintly seen still.  consider adding a glow around the black label text as needed."
+     *
+     * The black of the engine, over a white ground, comes out a dark grey a tenth of the way to white - never pure black.
+     * Nothing here adds a glow: every label that can lie under the engine already has a light surround (a pill's fill, or
+     * the white halo of `setHalo` and an address), which is what shows through.
+     *
+     * MUTATION: draw the engine opaque again and its darkest pixel is the icon's own black, and this fails.
+     */
+    @Test
+    public void testTheLocomotiveIsTenPerCentClear()
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+        {
+            throw new SkipException("rendering a diagram needs a display");
+        }
+
+        final int size = 120;
+
+        org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
+
+        grid.setLayout(null);
+        grid.setSize(size, size);
+        grid.setBackground(java.awt.Color.WHITE);
+
+        tile.setBounds(0, 0, size, size);
+        grid.add(tile);
+
+        // A train standing on the square, drawn as the locomotive
+        tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+            org.traincontrol.automationui.TileOverlay.State.IDLE, true, true, null));
+
+        BufferedImage shot = shotOf(grid, size);
+
+        int darkest = 255 * 3;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                int rgb = shot.getRGB(x, y);
+                int sum = ((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF);
+
+                darkest = Math.min(darkest, sum);
+            }
+        }
+
+        // THE CONTROL: the engine is there, and dark
+        assertTrue(darkest < 3 * 90, "no locomotive was drawn on the square, so its transparency cannot be asked");
+
+        // ten per cent of white is 25 in every channel
+        assertTrue(darkest >= 3 * 20, "the locomotive is drawn solid: its darkest pixel is " + darkest / 3
+            + " over a white ground, and a caption under it cannot be seen through it (FR-130)");
+    }
+
+    /**
      * Lays out a panel and paints it into an image, which is the only way to ask what a drawing does.
      *
      * @param panel the panel

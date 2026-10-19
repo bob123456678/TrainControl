@@ -179,6 +179,9 @@ public class TileOverlay
      */
     private static final double ICON_SCALE = 0.76;
 
+    /** How opaque the icon is drawn, halo and all (FR-130): ten per cent clear, so a caption under it still shows. */
+    private static final float ICON_ALPHA = 0.9f;
+
     /**
      * Whether the icon is only for trains that are moving or drawn standing (FR-027), the dot serving for the rest.  Since
      * OB-317 the run draws every train one or the other - a train standing still on its path is drawn standing - so the
@@ -987,8 +990,8 @@ public class TileOverlay
 
             if (picture != null)
             {
-                // Opaque, as asked.  The composite is reset because the outline above leaves a
-                // partial alpha on the Graphics, and an icon drawn through that is a grey smudge.
+                // The composite is reset because the outline above leaves a partial alpha on the Graphics, and an icon
+                // drawn through that is a grey smudge; the icon's own alpha is set below, once it is one picture.
                 g.setComposite(java.awt.AlphaComposite.SrcOver);
 
                 int side = iconSide(width, height);
@@ -1010,10 +1013,28 @@ public class TileOverlay
 
                     // The halo first, at the icon's own scale and reaching past it on every side
                     int out = haloOut(picture, side);
+                    int whole = side + 2 * out;
 
-                    g.drawImage(haloOf(picture), -side / 2 - out, -side / 2 - out, side + 2 * out, side + 2 * out, null);
+                    // HALO AND ICON AS ONE PICTURE, AT 90 PER CENT (FR-130; Adam: "Give it 10% transparency so that labels
+                    // under it can be faintly seen still").  Each drawn through the alpha on its own, the icon would lie
+                    // over the halo's white and let only a hundredth of the label through.
+                    java.awt.image.BufferedImage locomotive =
+                        new java.awt.image.BufferedImage(whole, whole, java.awt.image.BufferedImage.TYPE_INT_ARGB);
 
-                    g.drawImage(picture, -side / 2, -side / 2, side, side, null);
+                    java.awt.Graphics2D lg = locomotive.createGraphics();
+
+                    try
+                    {
+                        lg.drawImage(haloOf(picture), 0, 0, whole, whole, null);
+                        lg.drawImage(picture, out, out, side, side, null);
+                    }
+                    finally
+                    {
+                        lg.dispose();
+                    }
+
+                    g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, ICON_ALPHA));
+                    g.drawImage(locomotive, -side / 2 - out, -side / 2 - out, null);
                 }
                 finally
                 {
