@@ -69,12 +69,12 @@ public class testOnlyAStationHoldsAnotherBack
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration");
+            throw new AssertionError("no autonomy configuration");
         }
 
         final LayoutDiagram page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -138,7 +138,7 @@ public class testOnlyAStationHoldsAnotherBack
 
         if (station == null || otherStation == null || plain == null)
         {
-            throw new SkipException("the frozen railway has no two stations and a plain sensor");
+            throw new AssertionError("the frozen railway has no two stations and a plain sensor");
         }
 
         assertFalse(session.getStore().getBlockingPoints(station).contains(plain),

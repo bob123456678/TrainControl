@@ -78,7 +78,7 @@ public class testThePlaceDoorsKeepTheHeading
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         assertNotNull(railway(), "the frozen railway built no autonomy layout");
 
@@ -982,7 +982,7 @@ public class testThePlaceDoorsKeepTheHeading
             if (name.equals(session.getStore().getPointName(key))) return key;
         }
 
-        throw new SkipException("this railway has no " + name);
+        throw new AssertionError("this railway has no " + name);
     }
 
     private static String name(TileKey square)

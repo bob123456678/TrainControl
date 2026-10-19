@@ -92,7 +92,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration on the snapshot");
+            throw new AssertionError("no autonomy configuration on the snapshot");
         }
 
         if (ui.getActiveDiagramConfiguration() == null)
@@ -743,7 +743,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     {
         if (!session.getRoutes(PLATFORM).values().iterator().next().touches(Side.N))
         {
-            throw new SkipException("TunnelLeftPark does not run north to south on this snapshot");
+            throw new AssertionError("TunnelLeftPark does not run north to south on this snapshot");
         }
 
         liftIt();
@@ -980,7 +980,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         if (!session.getRoutes(PLATFORM).values().iterator().next().touches(Side.N)
             || session.getRoutes(PLATFORM).values().iterator().next().touches(Side.E))
         {
-            throw new SkipException("TunnelLeftPark does not run north to south on this snapshot");
+            throw new AssertionError("TunnelLeftPark does not run north to south on this snapshot");
         }
 
         // BOTH ARROWS AT 8,7 RED

@@ -498,7 +498,7 @@ public class testDiagramLooksRight
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no active autonomy configuration to derive a graph from");
+            throw new AssertionError("no active autonomy configuration to derive a graph from");
         }
 
         // The diagram's graph has to be PARSED before it is a railway. The window's session holds the
@@ -509,7 +509,7 @@ public class testDiagramLooksRight
 
         org.traincontrol.automation.Layout auto = model.getAutoLayout();
 
-        if (auto == null) throw new SkipException("no autonomy configuration on this layout");
+        if (auto == null) throw new AssertionError("no autonomy configuration on this layout");
 
         // The squares each edge covers, which is what turns a path between STATIONS into a line along
         // TRACK. Read from the builder the way DiagramMonitorDriver reads it, through the session, so
@@ -1319,7 +1319,7 @@ public class testDiagramLooksRight
     {
         org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup in the fixture layout");
+        if (session == null) throw new AssertionError("no autonomy setup in the fixture layout");
 
         final int[] rebuilds = {0};
 
@@ -2296,7 +2296,7 @@ public class testDiagramLooksRight
 
         if (session == null || session.getReducer() == null)
         {
-            throw new SkipException("the fixture layout has no autonomy setup loaded");
+            throw new AssertionError("the fixture layout has no autonomy setup loaded");
         }
 
         org.traincontrol.automationui.TileGraph.TileKey point = null;
@@ -4976,7 +4976,7 @@ public class testDiagramLooksRight
 
         if (shown == null && !model.getLocList().isEmpty()) shown = model.getLocByName(model.getLocList().get(0));
 
-        if (shown == null) throw new SkipException("the fixture has no locomotive to make active");
+        if (shown == null) throw new AssertionError("the fixture has no locomotive to make active");
 
         final org.traincontrol.base.Locomotive loc = shown;
 

@@ -72,12 +72,12 @@ public class testTheEditorNamesItsShortcuts
 
         if (session == null || session.getStore().getActiveConfiguration() == null)
         {
-            throw new SkipException("no autonomy configuration, so there is no editor menu to open");
+            throw new AssertionError("no autonomy configuration, so there is no editor menu to open");
         }
 
         page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 
@@ -202,7 +202,7 @@ public class testTheEditorNamesItsShortcuts
             if (!PAGE.equals(name) && session.getGraph() != null && session.getGraph().getPages().contains(name)) to = name;
         }
 
-        if (to == null) throw new SkipException("the frozen railway has no second page in autonomy");
+        if (to == null) throw new AssertionError("the frozen railway has no second page in autonomy");
 
         final String toPage = to;
 
@@ -1371,7 +1371,7 @@ public class testTheEditorNamesItsShortcuts
 
         for (String name : model.getLayoutList()) if (other == null && !PAGE.equals(name)) other = name;
 
-        if (other == null) throw new SkipException("the snapshot has one page only");
+        if (other == null) throw new AssertionError("the snapshot has one page only");
 
         final String to = other;
 
@@ -1541,7 +1541,7 @@ public class testTheEditorNamesItsShortcuts
             if (branching == null && PAGE.equals(tile.getPage()) && session.getRoutes(tile).size() > 1) branching = tile;
         }
 
-        if (branching == null) throw new SkipException("no square with more than one route on " + PAGE);
+        if (branching == null) throw new AssertionError("no square with more than one route on " + PAGE);
 
         final TileKey square = branching;
 
@@ -3651,7 +3651,7 @@ public class testTheEditorNamesItsShortcuts
 
         for (String name : model.getLayoutList()) if (other == null && !PAGE.equals(name)) other = name;
 
-        if (other == null) throw new SkipException("the snapshot has one page only");
+        if (other == null) throw new AssertionError("the snapshot has one page only");
 
         final String to = other;
 
@@ -3918,7 +3918,7 @@ public class testTheEditorNamesItsShortcuts
             }
         }
 
-        throw new SkipException("no station on " + PAGE);
+        throw new AssertionError("no station on " + PAGE);
     }
 
     private static void collect(javax.swing.MenuElement[] elements, List<javax.swing.JMenuItem> into)

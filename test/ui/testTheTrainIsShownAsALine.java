@@ -83,6 +83,15 @@ public class testTheTrainIsShownAsALine
     /** And in the other colour a preference may choose: the soft orange, solid. */
     private static BufferedImage asSoftOrange;
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -117,7 +126,11 @@ public class testTheTrainIsShownAsALine
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null)
+        {
+            unbuilt = "no autonomy setup on this railway";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
 
@@ -127,13 +140,21 @@ public class testTheTrainIsShownAsALine
 
         oneTrainThatCoversSomething();
 
-        if (train == null) throw new SkipException("no standing train covers any track here");
+        if (train == null)
+        {
+            unbuilt = "no standing train covers any track here";
+            return;
+        }
 
         refreshCoveredTrack();
 
         covered = firstCoveredSquareWithATile();
 
-        if (covered == null) throw new SkipException("no covered square has a tile to draw");
+        if (covered == null)
+        {
+            unbuilt = "no covered square has a tile to draw";
+            return;
+        }
 
         tile = drawnTileFor(covered);
 
@@ -202,6 +223,8 @@ public class testTheTrainIsShownAsALine
     @Test
     public void testACoveredSquareIsMarkedInOrange()
     {
+        assertBuilt();
+
         assertEquals(orangePixels(without), 0,
             "the square is drawn with orange on it while nothing is standing anywhere, so the "
             + "assertion below cannot tell the mark from the tile art");
@@ -236,6 +259,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheMarkIsALineAndNotAWash()
     {
+        assertBuilt();
+
         int changed = differingPixels(withTheTrain, without);
 
         int all = TILE * TILE;
@@ -260,6 +285,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheMarkIsALineAndNotAWash")
     public void testTheLineFollowsTheTrack()
     {
+        assertBuilt();
+
         int on = 0;
         int off = 0;
 
@@ -550,6 +577,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
     public void testTheTailShowsOverARunLine() throws Exception
     {
+        assertBuilt();
+
         // THE TRAIN BACK, lying across the square
         train.setTrainLength(4);
 
@@ -625,6 +654,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
     public void testARunningTrainIsTheOrangeOfAStandingOne() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(4);
 
         refreshCoveredTrack();
@@ -694,6 +725,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
     public void testAStandingTrainsOwnSquareIsOneOrange() throws Exception
     {
+        assertBuilt();
+
         train.setTrainLength(4);
 
         refreshCoveredTrack();
@@ -795,6 +828,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainIsDrawnAsWholeCoaches()
     {
+        assertBuilt();
+
         int atTheEdge = orangeAtTheEdge(asCoaches);
 
         assertEquals(atTheEdge, 0, atTheEdge + " orange pixels lie on the edge of " + covered + " - the train is drawn"
@@ -811,6 +846,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainIsDrawnAsALineByDefault()
     {
+        assertBuilt();
+
         assertTrue(orangeAtTheEdge(withTheTrain) > 0, "the train on " + covered + " stops short of the square's edge -"
             + " it is drawn as coaches, where Adam chose the line: \"revert back to the original occupied line shape\"");
     }
@@ -828,6 +865,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainIsSeeThrough()
     {
+        assertBuilt();
+
         int commonest = commonestOrange(withTheTrain);
 
         int brightest = Math.max((commonest >> 16) & 0xFF, Math.max((commonest >> 8) & 0xFF, commonest & 0xFF));
@@ -845,6 +884,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheSoftOrangeIsStillAChoice()
     {
+        assertBuilt();
+
         int commonest = commonestOrange(asSoftOrange);
 
         int r = (commonest >> 16) & 0xFF, g = (commonest >> 8) & 0xFF, b = commonest & 0xFF;
@@ -919,6 +960,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainEndsRounded() throws Exception
     {
+        assertBuilt();
+
         try
         {
             train.setTrainLength(4);
@@ -992,6 +1035,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheTrainsEndsCanBeSquareAgain() throws Exception
     {
+        assertBuilt();
+
         assertEquals(org.traincontrol.gui.LayoutLabel.tailEnds(), org.traincontrol.gui.LayoutLabel.TailEnds.ROUNDED,
             "a train's line does not end rounded by default");
 
@@ -1073,6 +1118,8 @@ public class testTheTrainIsShownAsALine
     @Test(dependsOnMethods = "testACoveredSquareIsMarkedInOrange")
     public void testTheSquareBesideAChangedLineIsRedrawn() throws Exception
     {
+        assertBuilt();
+
         try
         {
             java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> atThree = coveredAt(3);

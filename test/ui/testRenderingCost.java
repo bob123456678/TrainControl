@@ -48,7 +48,7 @@ public class testRenderingCost
 
         if (!folder.isDirectory())
         {
-            throw new SkipException("no sample layout to measure against");
+            throw new AssertionError("no sample layout to measure against");
         }
 
         // BEFORE THE MODEL (OB-111), and this one also stops a MODAL dialog reaching the operator.
@@ -409,7 +409,7 @@ public class testRenderingCost
 
         if (page == null || squares < 2)
         {
-            throw new org.testng.SkipException(
+            throw new AssertionError(
                 "no page in the sample layout draws one accessory on two squares");
         }
 

@@ -79,7 +79,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         model.parseAuto(session.buildConfiguration());
 
@@ -92,7 +92,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             if (SQUARE_NAME.equals(session.getStore().getPointName(key))) square = key;
         }
 
-        if (square == null) throw new SkipException("this railway has no " + SQUARE_NAME);
+        if (square == null) throw new AssertionError("this railway has no " + SQUARE_NAME);
 
         assertTrue(session.mayTurnTiles().contains(square), SQUARE_NAME + " is not a may-reverse square on this railway,"
             + " so no facing question is put there");
@@ -109,7 +109,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
             train = model.getLocByName(model.getLocList().get(0));
         }
 
-        if (train == null) throw new SkipException("this railway has no locomotives");
+        if (train == null) throw new AssertionError("this railway has no locomotives");
     }
 
     @AfterClass(alwaysRun = true)

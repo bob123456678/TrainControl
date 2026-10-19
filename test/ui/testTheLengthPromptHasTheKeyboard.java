@@ -79,7 +79,7 @@ public class testTheLengthPromptHasTheKeyboard
 
         if (session == null || session.getStore().getActiveConfiguration() == null || !model.hasAutoLayout())
         {
-            throw new SkipException("no autonomy configuration, so there is no walk to open");
+            throw new AssertionError("no autonomy configuration, so there is no walk to open");
         }
 
         // TWO TRAINS WITH NO LENGTH, the walk's subject - standing on the page on screen, so each is outlined and
@@ -97,7 +97,7 @@ public class testTheLengthPromptHasTheKeyboard
         running.removeIf(l -> l == null || !onThisPage.contains(l.getName()));
         running.sort((a, b) -> a.getName().compareTo(b.getName()));
 
-        if (running.size() < 2) throw new SkipException("the frozen railway places fewer than two trains on " + PAGE);
+        if (running.size() < 2) throw new AssertionError("the frozen railway places fewer than two trains on " + PAGE);
 
         for (Locomotive loc : running.subList(0, 2))
         {
@@ -108,7 +108,7 @@ public class testTheLengthPromptHasTheKeyboard
 
         final LayoutDiagram page = model.getLayout(PAGE);
 
-        if (page == null) throw new SkipException("no page " + PAGE);
+        if (page == null) throw new AssertionError("no page " + PAGE);
 
         final LayoutEditor[] built = new LayoutEditor[1];
 

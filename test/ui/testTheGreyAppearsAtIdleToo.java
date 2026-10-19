@@ -161,6 +161,15 @@ public class testTheGreyAppearsAtIdleToo
     private static String restrictionsWere;
     private static String allowedWere;
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -201,7 +210,11 @@ public class testTheGreyAppearsAtIdleToo
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null)
+        {
+            unbuilt = "no autonomy setup on this railway";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
 
@@ -217,7 +230,11 @@ public class testTheGreyAppearsAtIdleToo
         {
             String active = session.getStore().getActiveConfiguration();
 
-            if (active == null) throw new SkipException("the snapshot names no active configuration");
+            if (active == null)
+            {
+                unbuilt = "the snapshot names no active configuration";
+                return;
+            }
 
             Field field = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
 
@@ -233,13 +250,18 @@ public class testTheGreyAppearsAtIdleToo
 
         oneTrainThatCoversSomething();
 
-        if (train == null) throw new SkipException("no standing train covers any track here");
+        if (train == null)
+        {
+            unbuilt = "no standing train covers any track here";
+            return;
+        }
 
         if (!chooseTheThreeSquares())
         {
-            throw new SkipException(
+            unbuilt =
                 "no train on this railway blocks a square it is not drawn on, so the two marks "
-                + "cannot be told apart here");
+                + "cannot be told apart here";
+            return;
         }
 
         coveredTile = drawnTileFor(coveredSquare);
@@ -332,6 +354,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testBlockedTrackIsGreyAtIdle()
     {
+        assertBuilt();
+
         // THE SQUARE THE TRAIN IS ON, at idle, with nothing running.  Adam: *"yes, this greyout should
         // appear at idle"* - that is what this class was written for and it is unchanged.
         assertTrue(contrast(idleCovered) < contrast(bareCovered) - 2,
@@ -366,6 +390,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test(dependsOnMethods = "testBlockedTrackIsGreyAtIdle")
     public void testTheIdleMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
     {
+        assertBuilt();
+
         // ON THE COVERED SQUARE (OB-280), because there is no square that is grey and not covered - the grey
         // is where the train lies.  The orange line is drawn on this tile as well, so more pixels differ than
         // the fade alone accounts for; that makes the "a real fraction of the square changed" claim below
@@ -394,6 +420,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testASquareWithATrainOnItIsStillOrangeAtIdle()
     {
+        assertBuilt();
+
         assertTrue(orangePixels(idleCovered) > 0,
             "the train on " + coveredSquare + " cannot be seen at idle, so either it is not drawn at "
             + "all or the wash has been laid OVER the line rather than under it");
@@ -412,6 +440,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testFreeTrackIsNotTouchedAtIdle()
     {
+        assertBuilt();
+
         assertTrue(support.Rendered.same(idleFree, bareFree),
             "the square " + freeSquare + ", which no train covers or blocks, is drawn differently at "
             + "idle while a train stands elsewhere - the wash is being laid over track that is free");
@@ -427,6 +457,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testATrainLengthChangeRegeneratesTheGreyAtIdle()
     {
+        assertBuilt();
+
         assertFalse(windowBlockedAtIdle.isEmpty(),
             "the window holds nothing blocked at idle even with the train standing, so there is no "
             + "grey for a length change to regenerate and this test measures nothing");
@@ -449,6 +481,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testATileLengthChangeRegeneratesTheGreyAtIdle()
     {
+        assertBuilt();
+
         assertTrue(theRebuildHappened,
             "the setup rebuild left the running Layout in place, so the tile lengths never reached "
             + "the railway and this test measured nothing.  `rebuildRunningLayoutFromSetup` is a "
@@ -486,6 +520,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testRemovingATrainTakesTheGreyOffAtIdle()
     {
+        assertBuilt();
+
         assertFalse(windowBlockedAtIdle.isEmpty(),
             "the window holds nothing blocked at idle even with the train standing, so there is no "
             + "grey for a removal to take off and this test measures nothing");
@@ -557,7 +593,7 @@ public class testTheGreyAppearsAtIdleToo
         {
             windowBlockedAfterRemoval = new LinkedHashSet<>();
 
-            throw new SkipException("the standing train's square cannot be named, so the diagram's"
+            throw new AssertionError("the standing train's square cannot be named, so the diagram's"
                 + " own Delete door cannot be aimed at it");
         }
 
@@ -676,6 +712,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test
     public void testTheGreyIsWhatTheRailwayClaims()
     {
+        assertBuilt();
+
         // BOTH TAKEN AT IDLE WITH THE TRAIN STANDING, in `setUpClass`: by the time a claim runs the class has
         // taken the train's length off and the train away, so asking now would compare nothing.
         assertFalse(claimedAtIdle.isEmpty(), "no standing train claims any track, so this compares nothing");
@@ -1174,6 +1212,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test(priority = 1)
     public void testNoTrainsLineWithoutALoadedSetup() throws Exception
     {
+        assertBuilt();
+
         Field active = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
 
         active.setAccessible(true);
@@ -1231,6 +1271,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test(priority = 1)
     public void testASquaresMenuOpensOnlyWithASetupLoaded() throws Exception
     {
+        assertBuilt();
+
         Field active = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
 
         active.setAccessible(true);
@@ -1295,6 +1337,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test(priority = 2)
     public void testLoadingAndUnloadingRedrawTheLines() throws Exception
     {
+        assertBuilt();
+
         Field active = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
 
         active.setAccessible(true);
@@ -1441,6 +1485,8 @@ public class testTheGreyAppearsAtIdleToo
     @Test(priority = 1)
     public void testTheDiagramsMenuNamesNoEditorKeys() throws Exception
     {
+        assertBuilt();
+
         final Method showFor = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu").getDeclaredMethod(
             "showFor", TrainControlUI.class, TileKey.class, TileKey.class, java.awt.Component.class, int.class, int.class);
 

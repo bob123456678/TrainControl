@@ -89,7 +89,7 @@ public class testTheActiveTickPausesATrain
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
         assertNotNull(railway(), "the frozen railway built no autonomy layout");
 
@@ -554,7 +554,7 @@ public class testTheActiveTickPausesATrain
             if (name.equals(session.getStore().getPointName(key))) return key;
         }
 
-        throw new SkipException("this railway has no " + name);
+        throw new AssertionError("this railway has no " + name);
     }
 
     /** The railway as the model has it now: the editor's door rebuilds it. */

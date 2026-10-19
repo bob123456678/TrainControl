@@ -118,6 +118,15 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     private static String restrictionsWere;
     private static String allowedWere;
 
+    /** Why the set-up found no fixture, or null; each claim asks it, so it fails rather than skips. */
+    private static String unbuilt;
+
+    /** Fails the claim when the set-up found no fixture: a skip or an assert in `setUpClass` reads as skipped tests. */
+    private static void assertBuilt()
+    {
+        if (unbuilt != null) throw new AssertionError(unbuilt);
+    }
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -163,7 +172,11 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         session = ui.getAutonomySession();
 
-        if (session == null) throw new SkipException("no autonomy setup on this railway");
+        if (session == null)
+        {
+            unbuilt = "no autonomy setup on this railway";
+            return;
+        }
 
         SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
 
@@ -173,13 +186,18 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
 
         oneTrainThatCoversSomething();
 
-        if (train == null) throw new SkipException("no standing train covers any track here");
+        if (train == null)
+        {
+            unbuilt = "no standing train covers any track here";
+            return;
+        }
 
         if (!chooseTheThreeSquares())
         {
-            throw new SkipException(
+            unbuilt =
                 "no train on this railway blocks a square it is not drawn on, so the two marks "
-                + "cannot be told apart here");
+                + "cannot be told apart here";
+            return;
         }
 
         coveredTile = drawnTileFor(coveredSquare);
@@ -261,6 +279,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test
     public void testBlockedTrackIsGreyedWhileAutonomyRuns()
     {
+        assertBuilt();
+
         // THE ORANGE IS EXPECTED HERE NOW, and this used to assert its absence (MT-373).
         //
         // The square is the one the train is standing on, because since the wash was narrowed that is
@@ -283,6 +303,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test(dependsOnMethods = "testBlockedTrackIsGreyedWhileAutonomyRuns")
     public void testTheBlockedMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
     {
+        assertBuilt();
+
         int changed = differingPixels(runningBlocked, bareBlocked);
 
         int drawn = drawnPixels(bareBlocked);
@@ -326,6 +348,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test
     public void testAStoppedRailwayShowsTheSameGrey()
     {
+        assertBuilt();
+
         assertTrue(support.Rendered.same(stoppedBlocked, runningBlocked),
             "the square " + blockedSquare + " is drawn differently with autonomy stopped than with it "
             + "running, though the train has not moved and the railway refuses the same track either "
@@ -346,6 +370,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test
     public void testTheOrangeLineIsDrawnEitherWay()
     {
+        assertBuilt();
+
         int stopped = orangePixels(stoppedCovered);
         int running = orangePixels(runningCovered);
 
@@ -369,6 +395,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test(dependsOnMethods = "testTheOrangeLineIsDrawnEitherWay")
     public void testASquareWithATrainOnItIsStillOrange()
     {
+        assertBuilt();
+
         // AGAINST THE BARE PICTURE, and it used to be against the STOPPED one (W7B-B1).
         //
         // While the grey was fenced on a running railway, "stopped" was the same square with no wash
@@ -393,6 +421,8 @@ public class testBlockedTrackIsGreyWhileAutonomyRuns
     @Test
     public void testFreeTrackIsNotTouched()
     {
+        assertBuilt();
+
         assertTrue(support.Rendered.same(runningFree, bareFree),
             "the square " + freeSquare + ", which no train covers or blocks, is drawn differently "
             + "while a train stands elsewhere - the wash is being laid over track that is free");

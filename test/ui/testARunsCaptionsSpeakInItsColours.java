@@ -95,7 +95,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             AutonomySession session = ui.getAutonomySession();
 
-            if (session == null) throw new SkipException("no autonomy setup on this railway");
+            if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
             model.parseAuto(session.buildConfiguration());
 
@@ -321,7 +321,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             AutonomySession session = ui.getAutonomySession();
 
-            if (session == null) throw new SkipException("no autonomy setup on this railway");
+            if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
             model.parseAuto(session.buildConfiguration());
 
