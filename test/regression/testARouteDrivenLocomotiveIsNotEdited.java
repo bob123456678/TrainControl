@@ -15,6 +15,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
+import support.SourceOf;
 
 /**
  * A locomotive a running route drives is neither deleted nor renamed, and the refusal names the route (OB-287, CS3-B1).
@@ -290,8 +291,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
     @Test
     public void testTheNameProposalAsksItFirst() throws Exception
     {
-        String source = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
-            StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("private void checkForRenameMenuItemActionPerformed(");
 
         int current = source.indexOf("if (refuseWhileARouteDrivesIt(this, currentName)) continue;");
         int proposed = source.indexOf("if (refuseWhileARouteDrivesIt(this, newName)) continue;");
