@@ -20,6 +20,7 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.AutonomyEditorPanel;
+import support.SourceOf;
 
 /**
  * Mass Assign Lengths and the Unmeasured Track display: which squares they ask for, and how a piece's whole length is
@@ -2874,35 +2875,19 @@ public class testMassAssignLengths
     @Test
     public void testTheWalkAsksTheRefusalsListAndWritesThroughTheOneDoor() throws Exception
     {
-        String panel = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/AutonomyEditorPanel.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8).replace("\r", "");
-
-        int at = panel.indexOf("private TrainLengthDoor trainLengthDoor()");
-
-        assertTrue(at > 0, "the default door is not declared that way any more, so this checked nothing");
-
-        String door = panel.substring(at, panel.indexOf("\n    }\n", at));
+        String door = SourceOf.declaration("private TrainLengthDoor trainLengthDoor()");
 
         assertTrue(door.contains("window.trainsWithoutALength()"),
             "the walk no longer asks the list the Atomic Routes refusal names");
         assertTrue(door.contains("window.applyTrainLength("),
             "the walk no longer writes through applyTrainLength, so the findings and the grey are not told");
 
-        String ui = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8).replace("\r", "");
-
-        int list = ui.indexOf("public java.util.List<String> trainsWithoutALength()");
-
-        assertTrue(list > 0, "TrainControlUI.trainsWithoutALength is not declared that way any more");
-
-        assertTrue(ui.substring(list, ui.indexOf("\n    }\n", list)).contains("trainsWithNoLength()"),
+        // The window's own method, not the walk's door interface that names it: told apart by the body's brace
+        assertTrue(SourceOf.declaration("public java.util.List<String> trainsWithoutALength()\n    {")
+            .contains("trainsWithNoLength()"),
             "TrainControlUI.trainsWithoutALength no longer asks Layout.trainsWithNoLength, the refusal's own list");
 
-        int walk = panel.indexOf("private void massAssignTrainLengths()");
-
-        assertTrue(walk > 0, "the walk is not declared that way any more");
-
-        assertFalse(panel.substring(walk, panel.indexOf("\n    }\n", walk)).contains("setTrainLength("),
+        assertFalse(SourceOf.declaration("private void massAssignTrainLengths()").contains("setTrainLength("),
             "the walk sets a length itself, past applyTrainLength");
     }
 

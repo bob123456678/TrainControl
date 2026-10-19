@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * Lint for the message bundles.
@@ -832,14 +833,11 @@ public class testMessageBundles
         }
 
         // and something has to supply the {1} they now ask for
-        for (String source : new String[] {"src/org/traincontrol/gui/AutonomyViewerPanel.java",
-            "src/org/traincontrol/gui/AutonomyEditorPanel.java"})
+        for (String source : new String[] {"public class AutonomyViewerPanel extends JPanel",
+            "public class AutonomyEditorPanel extends JPanel"})
         {
-            File file = new File(source);
-
-            assertTrue(file.isFile(), source + " was not found - run this from the project root");
-
-            String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+            // Each panel's file, found by its class
+            String text = SourceOf.fileDeclaring(source);
 
             // The FIRST TWO arguments, and no claim about what follows them (OB-171).
             //
