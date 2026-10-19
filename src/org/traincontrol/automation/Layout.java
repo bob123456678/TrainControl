@@ -7251,7 +7251,8 @@ public class Layout
     }
 
     /**
-     * The same walk, also saying how far behind the head each claimed place begins (OB-294).
+     * One standing train's tail walk (`StandingTrains.walkOneTail`), also saying how far behind the head each claimed
+     * place begins (OB-294).
      *
      * Recorded as each place is claimed, which is before its length is spent - so the figure is the length of the body
      * between the head and the near end of that place, by the walk's own arithmetic rather than a second one.  Asked by
@@ -7385,6 +7386,9 @@ public class Layout
 
     /**
      * Whether a named locomotive's tail lies over any of the metal this edge runs on (OB-207).
+     *
+     * `isPathClear` asks it beside `anotherTailOn`, which refuses the same tails, so its refusals are pinned where
+     * nothing else asks: Return Home's start-time check, in `testReturnHomeKeepsClearOfTheTailsItLeaves`.
      *
      * @param edge the edge being asked about
      * @param who the locomotive standing somewhere on the layout

@@ -12,6 +12,11 @@ import org.traincontrol.util.I18n;
  * The railway keeps its fields, its monitor and every public and `synchronized` method; each method here is the body
  * of a one-line method there, or a private helper only these call.  Nothing here takes a lock: a caller holding the
  * railway's monitor still holds it, and a call back into the railway re-enters it.
+ *
+ * A call from one of these methods to another stays here.  `explainCannotStart(Locomotive, boolean)` ends in this
+ * class's own `explainCannotStart(Locomotive)`, where it was the railway's before the move.  That is on purpose: the
+ * literal `owner.explainCannotStart(loc)` would go out to the railway's delegator and come straight back here, and
+ * nothing overrides that delegator (Layout has no subclass).
  */
 final class LayoutExplanations
 {

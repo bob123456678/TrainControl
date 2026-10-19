@@ -689,7 +689,8 @@ final class StandingTrains
     }
 
     /**
-     * The body of `Layout.tailAlong`, whose javadoc says what it does.
+     * The tail a train would leave standing at the end of this road, walked with the road's last rail as its side
+     * (OB-228).
      */
     void tailAlong(Point standing, Locomotive loc, List<Edge> road, Map<Edge, Locomotive> covered,
         Map<String, Locomotive> places)
