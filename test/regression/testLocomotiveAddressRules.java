@@ -1,11 +1,11 @@
 package regression;
 
-import java.io.File;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.base.Locomotive.decoderType;
+import support.SourceOf;
 
 /**
  * What counts as a valid locomotive address, asked once and answered in one place.
@@ -114,15 +114,8 @@ public class testLocomotiveAddressRules
     @Test
     public void testTheDialogAsksTheRuleRatherThanRestatingIt() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(
-            new File("src/org/traincontrol/gui/AddLocomotive.java").toPath()),
-            java.nio.charset.StandardCharsets.UTF_8);
-
-        String body = withoutComments(bodyOf(source,
+        String body = SourceOf.withoutComments(SourceOf.declaration(
             "private void AddLocButtonActionPerformed(java.awt.event.ActionEvent evt)"));
-
-        assertFalse(body.isEmpty(),
-            "AddLocButtonActionPerformed has moved or been renamed - this scan is reading nothing");
 
         int validated = body.indexOf("validateNewAddress(");
 
@@ -145,64 +138,5 @@ public class testLocomotiveAddressRules
             "validateNewAddress is called AFTER a locomotive can already be created, which is no "
             + "refusal at all - a rejected address would be asked about only after the locomotive it "
             + "was supposed to stop already exists");
-    }
-
-    /**
-     * A line with any comment - `//` or block - removed, so a check does not pass on the strength of
-     * prose describing code that has gone. Copied rather than shared with the other tests that do
-     * this: a test helper reaching into another test class is a dependency between things that are
-     * supposed to fail independently.
-     */
-    private static String withoutComments(String body)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < body.length(); i++)
-        {
-            char c = body.charAt(i);
-            char next = i + 1 < body.length() ? body.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
-    }
-
-    /**
-     * The body of one method, braces included, or empty when the declaration cannot be found.
-     */
-    private static String bodyOf(String source, String declaration)
-    {
-        int at = source.indexOf(declaration);
-
-        if (at < 0) return "";
-
-        int open = source.indexOf('{', at + declaration.length());
-
-        if (open < 0) return "";
-
-        int depth = 0;
-
-        for (int i = open; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-
-            if (c == '{') depth++;
-            else if (c == '}' && --depth == 0) return source.substring(at, i + 1);
-        }
-
-        return "";
     }
 }

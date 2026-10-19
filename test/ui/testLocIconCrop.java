@@ -4,6 +4,7 @@ import java.io.File;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import support.SourceOf;
 
 /**
  * FR-032: a crop remembers the picture it was cut from, so it can be cropped again.
@@ -129,15 +130,11 @@ public class testLocIconCrop
                 //
                 // Read rather than run: these are private, on a frame, driven by a modal dialog. What this
                 // catches is the wiring being dropped, which is what a reader can break here.
-                String wiring = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                    "src/org/traincontrol/gui/TrainControlUI.java")),
-                    java.nio.charset.StandardCharsets.UTF_8);
-
-                assertTrue(bodyOf(wiring, "private String cropLocIcon(").contains("rememberCropSource("),
+                assertTrue(SourceOf.declaration("private String cropLocIcon(").contains("rememberCropSource("),
                     "a crop is saved without noting where it came from, so re-cropping it can never pan "
                     + "back out to anything the crop discarded");
 
-                String recrop = bodyOf(wiring, "public void recropLocIcon(");
+                String recrop = SourceOf.declaration("public void recropLocIcon(");
 
                 assertTrue(recrop.contains("cropSourceOf("),
                     "re-crop no longer looks for the original picture, so it always crops the crop");
@@ -185,35 +182,6 @@ public class testLocIconCrop
     }
 
     /**
-     * A method's text, from its declaration to the next member.
-     *
-     * Bounded by the next member rather than by a closing brace: looking for a line separator plus a
-     * brace assumes the file's line endings, and this one is written with LF while
-     * System.lineSeparator() is CRLF here.
-     *
-     * @param source the whole file
-     * @param declaration enough of the signature to find it
-     * @return the text of that method
-     */
-    private String bodyOf(String source, String declaration)
-    {
-        int at = source.indexOf(declaration);
-
-        assertTrue(at > 0, declaration + " is not in TrainControlUI - this test looks for nothing");
-
-        int next = source.length();
-
-        for (String start : new String[] {"    private ", "    public ", "    static "})
-        {
-            int found = source.indexOf(start, at + 10);
-
-            if (found > 0 && found < next) next = found;
-        }
-
-        return source.substring(at, next);
-    }
-
-    /**
      * Writes a small file, since none of these are ever decoded as pictures.
      */
     private void write(File where, String what) throws Exception
@@ -236,9 +204,7 @@ public class testLocIconCrop
     @Test
     public void testAnUnreadablePictureIsRefusedWithoutCropping() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String source = SourceOf.declaration("public void setLocIcon(Locomotive l, MouseEvent evt)");
 
         int asks = source.indexOf("pictureCanBeRead(f, source)");
         int ticked = source.indexOf("if (crop.isSelected())");
@@ -259,7 +225,7 @@ public class testLocIconCrop
             + "had is deleted, which is the whole defect one checkbox away from where it was fixed");
 
         // And the note that recorded the bug is not left standing over the fixed code.
-        assertFalse(source.contains("clear icon setting if load failed"),
+        assertFalse(SourceOf.all().contains("clear icon setting if load failed"),
             "the note describing this bug is still in setLocIcon - either it was never closed, or it "
             + "has been quoted back into a comment where the next reader will take it for an open one");
     }
@@ -561,21 +527,20 @@ public class testLocIconCrop
     @Test
     public void testTheViewOnlyTravelsWithItsOwnPicture() throws Exception
     {
-        String wiring = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")),
-            java.nio.charset.StandardCharsets.UTF_8);
+        String recrop = SourceOf.declaration("public void recropLocIcon(");
 
-        assertTrue(wiring.contains("fromOriginal ? cropViewOf(l.getLocalImageURL()) : null)"),
+        assertTrue(recrop.contains("fromOriginal ? cropViewOf(l.getLocalImageURL()) : null)"),
             "re-crop no longer asks for the stored view, or asks for it whatever it is cropping - "
             + "either the editor opens on the default again, or it opens the crop at coordinates "
             + "measured on the photograph behind it");
 
-        assertTrue(wiring.contains("rememberCropSource(fresh, remembered)"),
+        assertTrue(recrop.contains("rememberCropSource(fresh, remembered)"),
             "the fallback branch now stores a view against the note it rewrites - that note names "
             + "the photograph, and the view was measured over the crop, so the next re-crop of the "
             + "original would open somewhere arbitrary");
 
-        assertTrue(wiring.contains("rememberCropSource(target, chosen, view)"),
+        assertTrue(SourceOf.declaration("private String cropLocIcon(")
+            .contains("rememberCropSource(target, chosen, view)"),
             "the crop no longer records the view it was taken at, so nothing is ever stored and "
             + "re-editing always opens on the default");
     }
