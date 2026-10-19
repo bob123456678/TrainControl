@@ -416,6 +416,7 @@ Tab icons provided by Freepik.
         - When something has to wait for a route, the message now names the route that is running.
         - With the track power off, clicking a route opens it for editing instead of asking whether to run it.
         - A route condition can now ask whether an autonomy train is not at a sensor, as well as whether it is, and the condition's setting now says it is the sensor address.
+        - In the route editor, a red warning above the conditions now says they are only checked when Automatically Fire is on, whenever it is off.
     - Track Diagram
         - The tunnel icons are easier to see, and the link and signal icons are sharper and meet the track cleanly.
         - In the layout editor, a new piece of track placed from the palette now turns to join the track beside it: straights, sensors, signals, curves, bumpers, tunnels, links and the base of a switch.

@@ -27,9 +27,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-771](#mt-771) | 2026-10-18 | Route editor: the conditions warn they are only checked with Automatically Fire on | fixed unvalidated | Adam, 2026-10-18 (route conditions) |
 
-
-Everything else - 770 of 770 - needs nothing from you unless the area changes again:
+Everything else - 770 of 771 - needs nothing from you unless the area changes again:
 615 **fixed validated** and 155 **superseded**.
 
 ---
@@ -35996,5 +35996,32 @@ place's name (`Layout.placeNameOf`).  Claim `core.testAPausedTrainStaysPaused.te
 **Adam, 2026-10-18 (triage).** Works.
 
 *Run against commit 08b38bac, in English - build\classes, compiled 18 Oct 20:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-771"></a>
+### MT-771 - 2026-10-18 - Route editor: the conditions warn they are only checked with Automatically Fire on
+
+**Disposition:** fixed unvalidated
+**From:** Adam, 2026-10-18 (route conditions)
+
+**Written:** 2026-10-18
+
+**Steps**
+
+1. Open a route that has conditions, with Automatically Fire unticked.
+2. Tick Automatically Fire, then untick it again.
+3. Open a route with no conditions and Automatically Fire unticked.
+
+**Expected**
+
+- Step 1: above the conditions, where "Reads as" is shown, a red warning triangle and "These conditions are only
+  checked when Automatically Fire is on.", with the reading underneath.
+- Step 2: ticking it takes the warning away; unticking brings it back.
+- Step 3: no warning.
+
+*What this is:* Adam's ask of 2026-10-18 (`d7850a9b`): a route's conditions are asked only when its own sensor fires it, which needs
+Automatically Fire; run by hand, they are ignored.  Claim
+`ui.testRouteEditorValidation.testConditionsSayTheyAreUncheckedWithoutAutomaticFire`.
 
 ---
