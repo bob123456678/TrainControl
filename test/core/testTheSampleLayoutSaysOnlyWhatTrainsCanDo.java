@@ -41,7 +41,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  * should disqualify the notice."*
  *
  * The shipped `sample_layout.zip`, unpacked as Create New Layout unpacks it, in a sandbox.  Trains run from either
- * station east past Signal 3, up to PostDeparture, west along the top through MainLine and down to PreArrival.
+ * station east past their exit guard (Signal 3 when Adam wrote the above; the square at 9,5, renumbered since), up to
+ * PostDeparture, west along the top through MainLine and down to PreArrival.
  *
  * @author Adam
  */
@@ -88,7 +89,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * Its two stations build, with Signal 3 as the exit guard of both.
+     * Its two stations build, with one exit guard for both (the signal at 9,5).
      *
      * @throws Exception from the railway
      */
@@ -105,14 +106,14 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
             assertTrue(station.isDestination(), name + " is built as somewhere no train is sent");
 
-            assertEquals(station.getProtectingSignals(), Collections.singletonList("Signal 3"), "precondition: Signal 3 is"
-                + " not " + name + "'s exit guard");
+            assertEquals(station.getProtectingSignals(), Collections.singletonList(exitGuard(layout)), "precondition: "
+                + name + " has not the one exit guard both stations share");
         }
     }
 
     /**
-     * Signal 3 is not said to guard either station on the way in: trains pass it only leaving them, as each one's own
-     * exit guard.
+     * The stations' exit guard (Adam's Signal 3) is not said to guard either station on the way in: trains pass it only
+     * leaving them, as each one's own exit guard.
      *
      * MUTATION: count the way in from where it leaves the station before - past that station's exit guard - and this
      * fails.
@@ -122,8 +123,10 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     @Test
     public void testSignal3IsNotSaidToGuardAWayIn() throws Exception
     {
-        // THE CASE IS THERE: each station's way out commands Signal 3, and its way in starts with the other's way out
+        // THE CASE IS THERE: each station's way out commands the guard, and its way in starts with the other's way out
         Layout layout = built();
+
+        String guard = exitGuard(layout);
 
         for (String name : new String[] {"Station A", "Station B"})
         {
@@ -131,10 +134,11 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
 
             for (Edge edge : layout.getEdges())
             {
-                if (edge.getStart().getName().equals(name) && edge.getConfigCommands().containsKey("Signal 3")) commanded = true;
+                if (edge.getStart().getName().equals(name) && edge.getConfigCommands().containsKey(guard)) commanded = true;
             }
 
-            assertTrue(commanded, "precondition: no route out of " + name + " sets Signal 3, so nothing below is about it");
+            assertTrue(commanded, "precondition: no route out of " + name + " sets " + guard + ", so nothing below is about"
+                + " it");
         }
 
         List<String> said = new ArrayList<>();
@@ -144,7 +148,17 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
             if (AutonomyChecks.EXIT_GUARD_ON_THE_WAY_IN.equals(finding.getMessageKey())) said.add(finding.toString());
         }
 
-        assertTrue(said.isEmpty(), "Signal 3 is said to guard a way in, and trains pass it only going out: " + said);
+        assertTrue(said.isEmpty(), guard + " is said to guard a way in, and trains pass it only going out: " + said);
+    }
+
+    /** The one exit guard Station A has, which Station B shares: the signal at 9,5. */
+    private static String exitGuard(Layout layout)
+    {
+        List<String> guards = layout.getPoint("Station A").getProtectingSignals();
+
+        assertEquals(guards.size(), 1, "precondition: Station A has not one exit guard: " + guards);
+
+        return guards.get(0);
     }
 
     /**
@@ -233,16 +247,18 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * The run east of MainLine, stored one way on five squares and both ways on 10,3, is stored one way on all six as the
-     * sample is opened - its narrowest, what a train finds - and the log says so once (OB-361; Adam, on OB-321: *"Any
-     * disagreement should be corrected so that the viewer displays the source of truth"*).
+     * The run east of MainLine is stored one way on all its squares, 10,3 included, and opening the sample has nothing to
+     * bring into line (OB-361; Adam, on OB-321: *"Any disagreement should be corrected so that the viewer displays the
+     * source of truth"*).  The sample shipped with 10,3 both ways until Adam's update of 2026-10-18; the correction itself
+     * is claimed in `testAutonomyDiagramSession.testARunThatSaysTwoThingsIsBroughToWhatATrainFinds`.
      *
-     * MUTATION: leave the run as it was stored, or say it again on the next open, and this fails.
+     * MUTATION: ship the sample with 10,3 both ways again, or have the opening bring a consistent run into line, and this
+     * fails.
      *
      * @throws Exception from the session
      */
     @Test
-    public void testTheRunEastOfMainLineIsStoredOneWayAndSaidOnce() throws Exception
+    public void testTheRunEastOfMainLineIsStoredOneWay() throws Exception
     {
         File folder = unpackTheSample();
 
@@ -257,13 +273,12 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
                 + " stored one way");
         }
 
-        assertEquals(first.getSquaresBroughtToTheirArrows().keySet(), Collections.singleton(square(10, 3)), "opening the"
-            + " sample does not say once, under the run's first square, that the run was brought to one direction: "
-            + first.getSquaresBroughtToTheirArrows());
+        assertTrue(first.getSquaresBroughtToTheirArrows().isEmpty(), "opening the sample brought a run into line, so it"
+            + " ships disagreeing with itself: " + first.getSquaresBroughtToTheirArrows());
 
         AutonomySession again = openOn(folder);
 
-        assertTrue(again.getSquaresBroughtToTheirArrows().isEmpty(), "opening the saved sample again said it again: "
+        assertTrue(again.getSquaresBroughtToTheirArrows().isEmpty(), "opening the sample again brought a run into line: "
             + again.getSquaresBroughtToTheirArrows());
 
         assertEquals(again.getStore().getTileDirection(square(10, 3), new RouteId(0, 0)), Direction.TOWARD_A, "10,3 was"
@@ -463,16 +478,16 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
     }
 
     /**
-     * The sample's sensor address 1 is on Station A and on PostDeparture, both on Page 1, and the setup check says so
-     * once: a WARNING naming those two squares and no others (FR-139).  The squares that build into copies are counted
-     * in `testASquareThatBuildsIntoCopiesIsNotSharedWithItself`.
+     * Every sensor on the sample has an address of its own, and the setup check says nothing about a shared one (FR-139).
+     * Station A and PostDeparture shared address 1 until Adam's update of 2026-10-18; the warning itself is claimed in
+     * `testAutonomyDiagramSession.testASensorAddressOnTwoSquaresIsSaidOnce`.
      *
-     * MUTATION: leave either square out of the places, or count one that is listed twice, and this fails.
+     * MUTATION: ship the sample with two sensors on one address again, and this fails.
      *
      * @throws Exception from the railway
      */
     @Test
-    public void testASharedSensorAddressIsSaidOnceNamingBothSquares() throws Exception
+    public void testNoSensorAddressIsShared() throws Exception
     {
         List<AutonomyChecks.Finding> shared = new ArrayList<>();
 
@@ -481,21 +496,7 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
             if (AutonomyChecks.SENSOR_ADDRESS_SHARED.equals(finding.getMessageKey())) shared.add(finding);
         }
 
-        assertEquals(shared.size(), 1, "the sample's sensor address 1 is on two squares, and is not said once: " + shared);
-
-        AutonomyChecks.Finding finding = shared.get(0);
-
-        assertEquals(finding.getSeverity(), AutonomyChecks.Severity.WARNING, "a shared sensor address is not a WARNING: "
-            + finding);
-
-        assertEquals(finding.getDetail(), 1, "the finding does not name address 1: " + finding);
-
-        assertEquals(finding.getRelated().size(), 2, "the places are not the two squares, each counted once: "
-            + finding.getRelated());
-
-        assertEquals(new java.util.HashSet<>(finding.getRelated()),
-            new java.util.HashSet<>(java.util.Arrays.asList(square(7, 5), square(10, 4))),
-            "the finding does not name Station A and PostDeparture: " + finding.getRelated());
+        assertTrue(shared.isEmpty(), "the sample has two sensors on one address: " + shared);
     }
 
     /** A square of the sample's only page. */
