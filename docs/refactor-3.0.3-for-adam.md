@@ -19,6 +19,8 @@ made reversibly; they wait for him.  Newest last.  The plan is [refactor-3.0.3.m
 | 7 | 2 | Long javadoc contracts were left whole (Layout's `whyItWouldMeetItsOwnTail` is 45 lines, AutonomySession has 58 blocks over 15 lines). | The rule allows a block over 15 lines when it is a javadoc contract. | A later pass can shorten them. |
 | 8 | 1a | The laned battery stays opt-in (`TC_LANES=auto`); `battery.sh` alone still runs one class at a time.  My own batteries from here on run laned. | The proof matched claim for claim (3,246 each side, one clipboard skip that the desktop caused, not the lanes), but nothing is lost by leaving the default where you know it. | Set `LANES="${TC_LANES:-auto}"` in battery.sh to make lanes the default, or drop `TC_LANES` to go back to serial. |
 | 9 | 1a | Tests point the station sync of `init()` at an address that fails in 20 ms (`support.TestStationAddress.withNoStation()`), instead of 127.0.0.1, which Windows refuses only after 2 s. | It cost about 4 s per init, about 30 minutes across the battery; the program is unchanged. | Remove the wrapper calls in `af897da2`. |
+| 10 | 1c | `docs/manual-tests/README.md` step 4 used to add a new finding's tag to an entry's **From:** line; it now adds a comment naming the finding. | No command rewrites an entry's body, which keeps MT entries append-only.  If the From line itself must change, `triagedb.py` needs a command for it. | Add that command and restore the step. |
+| 11 | 1c | `findings.tsv` stays as the Java-readable mirror of the findings, beside the new dump's `findings.txt`. | The citation guards read it; replacing their reader was not needed for the cut-over. | Point the guards at `dump/findings.txt` and delete `findings.tsv`. |
 
 ## Skipped, waiting for Adam
 
