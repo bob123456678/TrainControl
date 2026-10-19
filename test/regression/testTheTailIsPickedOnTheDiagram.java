@@ -25,6 +25,7 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.SourceOf;
 
 /**
  * The tail question is put on the diagram: the sensors are lit, and a click on one answers it (FR-100).
@@ -345,17 +346,7 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testThePasteReadsItsLandingBeforeTheQuestionIsAsked() throws Exception
     {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
-
-        int start = source.indexOf("private void rememberPlacement(");
-
-        assertTrue(start > 0, "precondition: TrainControlUI has no rememberPlacement");
-
-        int end = source.indexOf("\n    /**", start);
-
-        String body = source.substring(start, end < 0 ? source.length() : end)
-            .replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\n]*", "");
+        String body = SourceOf.withoutComments(SourceOf.declaration(PASTE_DOOR));
 
         int asked = body.indexOf("askAfterPlacement(");
 
@@ -370,6 +361,16 @@ public class testTheTailIsPickedOnTheDiagram
                 + " paste made while the question waits overwrites (TDU-B2)");
         }
     }
+
+    /** The paste door: the window's method that remembers where a pasted train was put. */
+    private static final String PASTE_DOOR = "private void rememberPlacement(";
+
+    /**
+     * The three doors that put a train down and ask the tail question - the paste, the right-click Place and the
+     * locomotive dialog - each named by its declaration, found wherever the program keeps it.
+     */
+    private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing(",
+        "public static void commitAndRecord(GraphLocAssign edit)"};
 
     /**
      * Asked on the event thread, as every placement door asks it, the question waits in a secondary loop and a click
@@ -628,11 +629,9 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testEveryPlacementDoorAsksWhetherItStillStands() throws Exception
     {
-        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        for (String file : PLACEMENT_DOORS)
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
-                java.nio.charset.StandardCharsets.UTF_8);
+            String source = SourceOf.declaration(file);
 
             int asked = source.indexOf("askAfterPlacement(");
 
@@ -662,11 +661,9 @@ public class testTheTailIsPickedOnTheDiagram
     {
         final String newline = String.valueOf((char) 10);
 
-        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        for (String file : PLACEMENT_DOORS)
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
-                java.nio.charset.StandardCharsets.UTF_8).replace(String.valueOf((char) 13), "");
+            String source = SourceOf.declaration(file);
 
             int asked = source.indexOf("askAfterPlacement(");
 
@@ -674,7 +671,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             int saved = source.lastIndexOf("TailCrossedPrompt.saveBeforeAsking(", asked);
 
-            assertTrue(saved > 0 && !source.substring(saved, asked).contains(newline + "    }" + newline), file
+            assertTrue(saved >= 0 && !source.substring(saved, asked).contains(newline + "    }" + newline), file
                 + " asks the tail question without saving the placement first - a crash while it waits loses the"
                 + " train's place (OB-305)");
         }
@@ -1176,11 +1173,9 @@ public class testTheTailIsPickedOnTheDiagram
     @Test
     public void testEveryDoorAsksTheRailwayRunningAtTheAnswer() throws Exception
     {
-        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        for (String file : PLACEMENT_DOORS)
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
-                java.nio.charset.StandardCharsets.UTF_8);
+            String source = SourceOf.declaration(file);
 
             int asked = source.indexOf("whereTheAnswerGoes(");
 
@@ -1260,14 +1255,13 @@ public class testTheTailIsPickedOnTheDiagram
     public void testTheOtherDoorsKeepTheLateAnswerRules() throws Exception
     {
         String[][] doors = {
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "session.setFacing(station, facing)",
+            {PLACEMENT_DOORS[1], "session.setFacing(station, facing)",
                 "if (facing != null && session != null && setupStands)"},
-            {"src/org/traincontrol/gui/GraphLocAssign.java", "session.setFacing(tile,", "if (!setupStands) return;"}};
+            {PLACEMENT_DOORS[2], "session.setFacing(tile,", "if (!setupStands) return;"}};
 
         for (String[] door : doors)
         {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(door[0])),
-                java.nio.charset.StandardCharsets.UTF_8);
+            String source = SourceOf.declaration(door[0]);
 
             int asked = source.indexOf("askAfterPlacement(");
 
