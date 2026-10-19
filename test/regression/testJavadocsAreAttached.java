@@ -61,7 +61,10 @@ public class testJavadocsAreAttached
     // describing a member that had its own - deleted or moved onto the member they were written for, in the comment trim.
     // 68 -> 66 on 2026-10-19: FR-136 Phase 2, the comment trim of Layout.java.  Its two stacked javadocs - clearLocomotiveExcept's
     // (left above isSendableDestination) and fireCallback's (left above announceRunFinished) - moved onto the members they describe.
-    private static final int ALLOWED = 66;
+    // 66 -> 57 on 2026-10-19: FR-136 Phase 2, the comment trim of AutonomySession.java.  Its nine stacked javadocs moved onto the
+    // members they describe (importLegacy, barredArrivals, reversibleTiles, pointNamesFor, pointNameForTile, signalsThatAreGone,
+    // isTurnAround, mandatoryTurnTiles, setPointProperty).
+    private static final int ALLOWED = 57;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -77,8 +80,6 @@ public class testJavadocsAreAttached
             + "automationui" + File.separator + "AutonomyChecks.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyCompanionStore.java (3)",
-        "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomySession.java (9)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "GraphReducer.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
