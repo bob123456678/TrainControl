@@ -377,7 +377,7 @@ public class testATrainCoversTheTrackBehindIt
         // reduced run turns corners, so on a curve that is not the side the track comes in by - and
         // the operator doors were offering the other answer. Correcting the doors alone made the walk
         // match nothing and block no track at all, so the two now share `entrySideOf`.
-        assertTrue(SourceOf.allCode().replaceAll("\\s+", " ").contains("String cameInBy = entrySideOf(candidate, here);"),
+        assertTrue(SourceOf.allCode().replaceAll("\\s+", " ").contains("String cameInBy = owner.entrySideOf(candidate, here);"),
             "the tail walk works out the arrival side its own way again, so it can disagree with what"
             + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
 

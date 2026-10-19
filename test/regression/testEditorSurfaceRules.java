@@ -1530,7 +1530,7 @@ public class testEditorSurfaceRules
             "the arrival no longer writes the shared answer, so what it stores and what the walk looks"
             + " for can differ again");
 
-        assertTrue(layout.contains("String cameInBy = entrySideOf(candidate, here);"),
+        assertTrue(layout.contains("String cameInBy = owner.entrySideOf(candidate, here);"),
             "the tail walk no longer reads the shared answer, so a side written correctly by the"
             + " arrival matches nothing and the track behind the train stays open");
 
