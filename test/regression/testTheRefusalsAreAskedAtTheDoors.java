@@ -428,6 +428,27 @@ public class testTheRefusalsAreAskedAtTheDoors
                 + " dialog's one and the window's paste and put-back made five");
         }
 
+        // AND EACH OF THE FIVE STILL DOES, door by door (FR-136): a total holds when one door drops its guard and a
+        // guarded call is added somewhere else in the same change.
+        final String[][] doors =
+        {
+            {"private void placeFacing(String locName, String pointName,", "the diagram menu's Place"},
+            {"private void removeLocomotiveHere(Point current)", "the diagram menu's Remove"},
+            {"public boolean commitChanges()", "the assign dialog"},
+            {"private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)", "the window's paste"},
+            {"public static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,"
+                + "\n        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,"
+                + "\n        java.util.Set<String> placementsJustEdited)", "the rebuild's put-back"},
+        };
+
+        for (String[] door : doors)
+        {
+            if (countGuarded(code(door[0])) < 1)
+            {
+                wrong.add(door[1] + " (" + door[0] + ") no longer uses moveLocomotive's answer");
+            }
+        }
+
         assertEquals(wrong.toString(), "[]",
             "these doors write a placement the railway may have refused. moveLocomotive returns false "
             + "and logs rather than throwing, so a discarded answer is a placement saved for a move "
@@ -456,6 +477,25 @@ public class testTheRefusalsAreAskedAtTheDoors
             + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
         assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 7, "a door no longer asks which headings a train can"
             + " leave by (OB-284)");
+
+        // AND EACH PLACE STILL ASKS IT (FR-136): a total of seven holds when one door stops asking and another call
+        // is added somewhere else, so the places are named with the calls each makes - six, beside the declaration.
+        final Object[][] places =
+        {
+            {"private void placeLocomotive(TileKey tile)", 1},
+            {"public static void commitAndRecord(GraphLocAssign edit)", 2},
+            {"private LayoutRightclickAutonomyMenu(TrainControlUI ui,", 1},
+            {"static String copyToPlaceOn(", 1},
+            {"private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(", 1},
+        };
+
+        for (Object[] place : places)
+        {
+            int asks = occurrences(code((String) place[0]), "departableFacingsFor(");
+
+            assertTrue(asks >= (Integer) place[1], place[0] + " asks which headings a train can leave by " + asks
+                + " times, not " + place[1] + " (OB-284)");
+        }
     }
 
     /**
