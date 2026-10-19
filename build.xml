@@ -578,6 +578,7 @@
         <test-one-class class="testTheUpdateIsWiredEndToEnd"/>
         <test-one-class class="testTheArrowsTellTheWholeStory"/>
         <test-one-class class="testTheSampleLayoutSaysOnlyWhatTrainsCanDo"/>
+        <test-one-class class="testSourceOfFindsADeclarationAnywhere"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
