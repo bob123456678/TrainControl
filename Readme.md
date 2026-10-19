@@ -402,6 +402,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.0.3
 * v3.0.2 [10/18/2026]
     - Autonomy Features
         - Right-clicking Return Home now offers `Run Trains to Their Homes`, which does the same as the button, and `Place All Trains at Their Homes`, which puts each homed train on its home in the setup without moving anything, so you can then move the real trains by hand.

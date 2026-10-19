@@ -81,7 +81,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "3.0.2";
+    public static final String RAW_VERSION = "3.0.3";
 
     /**
      * Whether this is a build on the way to a release rather than a release.
@@ -98,7 +98,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * a constant somebody changes on purpose is the point, because a build that guesses whether it is a
      * release will guess wrong on the one day it matters.
      */
-    public static final boolean IS_PRE_RELEASE = false;
+    public static final boolean IS_PRE_RELEASE = true;
 
     /**
      * Which build this is, for a pre-release: when the code being run was built.
