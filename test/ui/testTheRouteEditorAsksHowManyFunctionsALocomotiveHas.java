@@ -85,7 +85,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
         // machine (OB-111).
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, true, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, true, false, true));
 
         model.setNetworkCommState(false);
 

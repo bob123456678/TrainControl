@@ -87,7 +87,8 @@ public class testDiagramLooksRight
         // window looked at the copy. The comment that used to stand here named only the window.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 

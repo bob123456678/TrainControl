@@ -48,7 +48,8 @@ public class testRouteCapture
     {
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
         model.stop();
     }
 

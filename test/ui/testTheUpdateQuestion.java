@@ -253,7 +253,8 @@ public class testTheUpdateQuestion
             // The sandbox first, before the model: init reads the layout preference.
             sandbox = support.LayoutSandbox.open();
 
-            model = init(null, true, false, false, true);
+            model = support.TestStationAddress.withNoStation(
+                () -> MarklinControlStation.init(null, true, false, false, true));
 
             assertNull(TrainControlUI.whyAnUpdateMustWait(model, false), "precondition: an update was refused with"
                 + " nothing running");

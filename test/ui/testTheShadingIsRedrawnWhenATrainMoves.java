@@ -89,7 +89,8 @@ public class testTheShadingIsRedrawnWhenATrainMoves
         // what it names before anything reads it.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
-        model = init(null, true, false, false, true);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, true));
 
         session = new AutonomySession(sandbox.getFolder());
 

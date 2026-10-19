@@ -65,7 +65,8 @@ public class testTheKeyboardDrag
         // class was reading Adam's real railway before any test method got the chance to redirect it.
         classSandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
         model.stop();
     }
 

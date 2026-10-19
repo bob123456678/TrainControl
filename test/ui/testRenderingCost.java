@@ -58,7 +58,8 @@ public class testRenderingCost
         // with a window sitting on Adam’s screen. He watched it happen during a battery.
         sandbox = support.LayoutSandbox.open();
 
-        model = init(null, true, false, false, false);
+        model = support.TestStationAddress.withNoStation(
+            () -> MarklinControlStation.init(null, true, false, false, false));
 
         String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
 

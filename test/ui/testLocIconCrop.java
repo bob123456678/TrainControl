@@ -693,7 +693,8 @@ public class testLocIconCrop
             // OPENED INSIDE THE TRY (TSX-B8, OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             ui = windowOver(model);
 
@@ -793,7 +794,8 @@ public class testLocIconCrop
             // OPENED INSIDE THE TRY (TSX-B8, OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             ui = windowOver(model);
 
@@ -1216,7 +1218,8 @@ public class testLocIconCrop
             // OPENED INSIDE THE TRY (TSX-B8, OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             ui = windowOver(model);
 
@@ -1294,7 +1297,8 @@ public class testLocIconCrop
             // OPENED INSIDE THE TRY (TSX-B8, OB-111)
             sandbox = support.LayoutSandbox.open();
 
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+            model = support.TestStationAddress.withNoStation(
+                () -> org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false));
 
             ui = windowOver(model);
 
