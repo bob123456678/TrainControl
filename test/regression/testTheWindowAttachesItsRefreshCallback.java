@@ -1,10 +1,8 @@
 package regression;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.SourceOf;
 
 /**
  * The window still attaches the callback that redraws the timetable and the locomotive status panel.
@@ -28,61 +26,11 @@ import org.testng.annotations.Test;
  */
 public class testTheWindowAttachesItsRefreshCallback
 {
-    /**
-     * Java source with its comments removed - `//` AND block, so a check reads the code and not the
-     * prose about it.
-     *
-     * The line-based version this replaced stripped only from the first `//` on each line, which is
-     * exactly the half this file's own class javadoc warns about: "an attachment that does not follow
-     * it" and "the first comment anybody writes mentioning attachAutonomyRefresh( reopens the hole"
-     * were both about the RAW-TEXT count staying accurate by luck, not by a check that could not be
-     * fooled by prose. A `/**` block above a deleted call, or a `/* *&#47;` aside beside one, passed
-     * straight through the old stripper into `attached`'s count and into `body.contains(...)` alike -
-     * TST-B23, self-declared by the comment this method used to sit under.
-     *
-     * MUTATION this catches: delete the second `attachAutonomyRefresh(` call site
-     * (`TrainControlUI.java:18941`) and add a block comment anywhere in the file that mentions
-     * `attachAutonomyRefresh(` once - a javadoc line is enough. The old stripper left the count at 3
-     * regardless (two real calls, one declaration) even after the deletion, because the mention in the
-     * comment "replaced" the one that was removed; this one strips the comment first, so the count
-     * drops to 2 and `attached >= 3` fails where it used to pass.
-     */
-    private static String withoutComments(String source)
-    {
-        StringBuilder out = new StringBuilder();
-
-        boolean inLine = false, inBlock = false;
-
-        for (int i = 0; i < source.length(); i++)
-        {
-            char c = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : ' ';
-
-            if (inLine)
-            {
-                if (c == '\n') { inLine = false; out.append(c); }
-            }
-            else if (inBlock)
-            {
-                if (c == '*' && next == '/') { inBlock = false; i++; }
-            }
-            else if (c == '/' && next == '/') inLine = true;
-            else if (c == '/' && next == '*') inBlock = true;
-            else out.append(c);
-        }
-
-        return out.toString();
-    }
-
     @Test
     public void testTrainControlUIAttachesTheRefreshCallback() throws Exception
     {
-        File ui = new File("src/org/traincontrol/gui/TrainControlUI.java");
-
-        assertTrue(ui.exists(), "cannot find " + ui.getAbsolutePath()
-            + " - this test reads the source, so it has to run from the project root");
-
-        String source = new String(Files.readAllBytes(ui.toPath()), StandardCharsets.UTF_8);
+        // The program's code, comments blanked, wherever the window keeps these calls.
+        String source = SourceOf.allCode();
 
         // IN THE CODE, NOT THE RAW SOURCE (W21-C7).
         //
@@ -94,7 +42,7 @@ public class testTheWindowAttachesItsRefreshCallback
         //
         // It passed by luck, and the luck was checked: the name appears once in that file, at the call.
         // The first comment anybody writes mentioning it would have reopened the hole.
-        assertTrue(withoutComments(source).contains("AutonomyRefreshCallback.attach"),
+        assertTrue(source.contains("AutonomyRefreshCallback.attach"),
             "TrainControlUI no longer attaches AutonomyRefreshCallback.  The timetable and the "
             + "locomotive status panel redraw ONLY when the layout announces a path start or end, so "
             + "without this they show whatever they last showed: entries are captured into a table "
@@ -114,7 +62,7 @@ public class testTheWindowAttachesItsRefreshCallback
         // guard today, because the three occurrences are the declaration and its two calls. The first
         // comment anybody writes mentioning attachAutonomyRefresh( reopens the hole this test's own
         // javadoc warns about: delete a call, keep the comment, stay green.
-        int attached = withoutComments(source).split("attachAutonomyRefresh\\(", -1).length - 1;
+        int attached = SourceOf.occurrences("attachAutonomyRefresh(");
 
         // A locomotive rename repairs the setup and must then say so (MT-153).
         //
@@ -124,15 +72,8 @@ public class testTheWindowAttachesItsRefreshCallback
         // calls them, so the window went on naming a locomotive that no longer exists. Adam: "I
         // renamed MY 1106 to MY Y1106. It vanished from autonomy, with MY 1106 still placed and at
         // location ???? in the UI."
-        int repair = source.indexOf("private void repairAutonomyLocomotive");
-
-        assertTrue(repair > 0, "repairAutonomyLocomotive is gone - if it was renamed, rename it here");
-
-        // To the end of that method, which is the next one declared after it.
-        int nextMethod = source.indexOf("\n    @Override", repair);
-
-        String body = withoutComments(nextMethod > repair ? source.substring(repair, nextMethod)
-            : source.substring(repair));
+        // The method itself, comments blanked.
+        String body = SourceOf.withoutComments(SourceOf.declaration("private void repairAutonomyLocomotive("));
 
         // The CALL, with its parentheses, and with the comments stripped first.
         //
@@ -149,16 +90,8 @@ public class testTheWindowAttachesItsRefreshCallback
         // HOW MANY LOADS, COUNTED rather than pinned.  There were two doors into parseAuto until the
         // old JSON tab's Validate button went with its tab (OB-254), and a pinned two then failed on a
         // window that was right; a pinned one would pass a window that later gains a door and no call.
-        int doors = 0;
-
-        for (File file : new File("src/org/traincontrol/gui").listFiles())
-        {
-            if (!file.getName().endsWith(".java")) continue;
-
-            String code = withoutComments(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
-
-            doors += code.split("parseAuto\\(", -1).length - 1;
-        }
+        // Every call of the model's parseAuto in the program (a call has a receiver; the declarations do not).
+        int doors = SourceOf.occurrences(".parseAuto(");
 
         assertTrue(doors >= 1, "no window code calls parseAuto - if it was renamed, rename it here, or this"
             + " counts nothing and asks nothing");
