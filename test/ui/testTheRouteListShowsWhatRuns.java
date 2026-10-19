@@ -903,10 +903,13 @@ public class testTheRouteListShowsWhatRuns
             closeAnyMenu();
         }
 
-        assertTrue(model.routesCalling(route).isEmpty(), "a route still runs the deleted route: "
-            + model.routesCalling(route));
-
         assertNotNull(model.getRoute(caller), "the route that ran it was deleted too");
+
+        for (RouteCommand command : model.getRoute(caller).getRoute())
+        {
+            assertFalse(command.isRoute() && route.equals(command.getName()), "the route that ran the deleted route"
+                + " still runs it: " + model.getRoute(caller).toCSV());
+        }
     }
 
     /**

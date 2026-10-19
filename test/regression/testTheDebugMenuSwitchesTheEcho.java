@@ -31,7 +31,8 @@ import support.SourceOf;
  * MUTATION: leave the checkbox out of the flag, or mount the menu whatever the mode, and a claim fails.
  *
  * And what a Central Station sends shows in that window (FR-136 Phase 6): the power cut at the station, a turnout thrown
- * there, a sensor made, each sent as the station sends it (`support.Packets`) and read off the window and the diagram.
+ * there, a sensor made, each sent as the station sends it (`support.Packets`) and read off the window and the diagram;
+ * and Sync Full Function State asks the station, or does not, as its question is answered.
  *
  * @author Adam
  */
@@ -251,6 +252,122 @@ public class testTheDebugMenuSwitchesTheEcho
             + " and its square on the diagram is drawn as before");
 
         model.receiveMessage(support.Packets.s88(sensor, false));
+    }
+
+    /**
+     * Sync Full Function State, answered Yes, turns every locomotive's functions off and asks the station for each
+     * locomotive's state.
+     *
+     * MUTATION: in `TrainControlUI.syncFullLocStateMenuItemActionPerformed`, take out `this.model.allFunctionsOff();`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testSyncFullFunctionStateAnsweredYesAsksTheStation() throws Exception
+    {
+        final org.traincontrol.marklin.MarklinLocomotive train = aTrainWithItsLightsOn("SYNC asked", 68);
+
+        final java.util.List<org.traincontrol.marklin.udp.CS2Message> sent =
+            java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        model.setSentMessageObserver(sent::add);
+
+        try (support.Answering answering = support.Answering.start(message -> message.equals(
+            I18n.t("loc.ui.confirmQueryCentralStationFunctions")) ? support.Answering.press(I18n.t("ui.yes"))
+                : support.Answering.pressAt(0)))
+        {
+            support.Components.press(syncFullFunctionState());
+
+            assertTrue(answering.awaitAsked(1, 10000), "Sync Full Function State asked nothing");
+
+            assertEquals(answering.asked().get(0), I18n.t("loc.ui.confirmQueryCentralStationFunctions"));
+
+            assertTrue(support.Components.waitFor(() -> askedForTheSpeedOf(sent, train), 30000), "Sync Full Function"
+                + " State answered Yes did not ask the station for the train's state");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+        }
+
+        assertFalse(train.getF(0), "Sync Full Function State answered Yes left the train's lights on");
+    }
+
+    /**
+     * The same question answered No changes nothing and asks the station nothing.
+     *
+     * MUTATION: in `TrainControlUI.syncFullLocStateMenuItemActionPerformed`,
+     * `if(dialogResult == JOptionPane.YES_OPTION)` to `if(true)`.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testSyncFullFunctionStateAnsweredNoChangesNothing() throws Exception
+    {
+        final org.traincontrol.marklin.MarklinLocomotive train = aTrainWithItsLightsOn("SYNC not asked", 69);
+
+        final java.util.List<org.traincontrol.marklin.udp.CS2Message> sent =
+            java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        model.setSentMessageObserver(sent::add);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.press(I18n.t("ui.no"))))
+        {
+            support.Components.press(syncFullFunctionState());
+
+            assertTrue(answering.awaitAsked(1, 10000), "Sync Full Function State asked nothing");
+
+            // Its queries run on a worker: given the time to, had they been sent
+            Thread.sleep(1000);
+
+            support.Components.settle();
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+        }
+
+        assertTrue(train.getF(0), "Sync Full Function State answered No turned the train's lights off");
+
+        assertFalse(askedForTheSpeedOf(sent, train), "Sync Full Function State answered No asked the station anyway");
+    }
+
+    private static javax.swing.AbstractButton syncFullFunctionState()
+    {
+        javax.swing.AbstractButton item = support.Components.withText(ui, I18n.t("ui.main.toolbar.syncFullFunctionState"));
+
+        assertNotNull(item, "the window has no Sync Full Function State");
+
+        return item;
+    }
+
+    /** A locomotive of this class's own, with F0 on. */
+    private static org.traincontrol.marklin.MarklinLocomotive aTrainWithItsLightsOn(String name, int address)
+    {
+        org.traincontrol.marklin.MarklinLocomotive train = model.getLocByName(name) != null ? model.getLocByName(name)
+            : model.newMM2Locomotive(name, address);
+
+        train.setF(0, true);
+
+        assertTrue(train.getF(0), "precondition: the train's lights are not on");
+
+        return train;
+    }
+
+    /** Whether a speed query - the velocity command with no speed in it - went to the railway for this train. */
+    private static boolean askedForTheSpeedOf(java.util.List<org.traincontrol.marklin.udp.CS2Message> sent,
+        org.traincontrol.marklin.MarklinLocomotive train)
+    {
+        synchronized (sent)
+        {
+            for (org.traincontrol.marklin.udp.CS2Message m : sent)
+            {
+                if (m.getCommand() == org.traincontrol.marklin.udp.CS2Message.CMD_LOCO_VELOCITY && m.getLength() == 4
+                    && m.extractUID() == train.getIntUID()) return true;
+            }
+        }
+
+        return false;
     }
 
     private static Object windowField(String name) throws Exception
