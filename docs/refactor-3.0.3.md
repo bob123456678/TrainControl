@@ -11,6 +11,53 @@ Measured on dev at b7eee1f9, 2026-10-18.  **Approved by Adam on 2026-10-18** (*"
 - **The comment rule in §4 is approved**, amending the 2026-09-07 ruling (recorded in `docs/reviews/README.md`).
 - Answers to the questions: see §7.
 
+## Second pass, before Phase 0 (Adam, 2026-10-18, after 3.0.2 shipped)
+
+**Measure, don't trust the figures below.**  3.0.2's last day moved the giants by up to 180 lines (TrainControlUI
+35,157, Layout 15,604, AutonomySession 14,703, AutonomyEditorPanel 12,504, LayoutEditor 8,173).  Line numbers in this
+plan are stale: workers find code by method name and the audit (§2), re-run at the start of every phase.
+
+**New code since the survey.**  OB-361 already moved run-finding into `TileGraph` (so §2's `SessionRuns` is smaller);
+`RouteRunningMarks` (FR-137) is a small package-private helper of the shape this plan wants, a model to copy;
+`AutonomyEditorPanel.copyNoticeToClipboard` and the route editor's conditions warning are new.
+
+**Dead code, ruled.**  Removed: `withNewFirst`, `routeNamed`, `showTextMenu` (`c1b9ca32`), `CustomActionEvent`
+(`b4458803`; it marked a validation the program started itself, unused since OB-254).  Kept by Adam:
+`nextLocMapping`, `prevLocMapping` (*"keep prevlocmapping and nextlocmapping"*).
+
+**Phase 0 also covers (lessons of the 3.0.2 run):**
+- Tests that COPY a rule of the program instead of asking it.  Two tooltip claims held their own 320-pixel copy of the
+  editor's one-line rule and went red, looking like a regression, when OB-358 changed the rule.  Find such copies (a
+  constant or formula restated in a test) and make the test ask the program; the audit lists private members a test
+  reaches by name (`fitsOnOneLine` is one now).
+- The intermittent claim: `regression.testAThrottleReversalIsFollowedFromItsEcho` failed once under a battery's load
+  (the facing E, not W) and passed five times alone.  Every phase is accepted on a battery, so it is made steady first.
+
+**One test runs at a time, across every worktree.**  The runner's lock is global and a battery holds it for 2-3
+hours, so "in parallel" below means editing in parallel; test runs queue.  Batteries are scheduled when no worker needs
+the lock.  Every worker queues each run as ONE background command with its own retry loop (never short polling), and
+never uses `git stash` (shared by every worktree, and holding Adam's own entries): `git diff > file` / `git apply`.
+
+**Freeze and Inbox.**  The TrainControlUI feature freeze starts now (FR-137, FR-140 and the route refusal's naming
+landed in 3.0.2).  3.0.3's Inbox: FR-136 (this plan), FR-138 (API examples, last, once the API classes have settled)
+and FR-130 (the yardstick below).  Archiving released MTs (Phase 1) keeps MT-771, which is still to be run.
+
+**Review indexes once the documents are deleted (Adam: "Agree on the indexes").**  The finding store is the index:
+every finding is a row of `triage.db` (and `findings.tsv`) with its ref and document.  A round's next number comes
+from the store - `python docs/tools/catalog-findings.py --next RSA` prints it and refuses a prefix or number already
+used - and never from the folder.  A round's record is written to a working folder, catalogued with `--add`, then
+deleted.  The tool's full rebuild, which re-reads whatever documents exist, refuses to run once the documents are gone,
+so the deleted rounds' rows cannot be lost.  Built in Phase 1, with the folder's deletion; `docs/reviews/README.md` says
+so.
+
+**The yardstick: FR-130, timed before and after (Adam: "add a trivial implementation task to the plan, and measure its
+time taken before 3.0.3 ... FR-130, ... which we would then release concurrently").**
+- Before (now): one Sonnet worker implements FR-130 from a fixed brief (`scratchpad/fr130_brief.md`, kept for the
+  repeat) on the code as it is.  Recorded: wall time, tool calls, tokens read, and the time spent waiting for the test
+  lock, separately (it depends on what else runs).  Its result merges and ships in 3.0.3.
+- After Phase 5 (or whichever phase ends the work): the same model and brief implement FR-130 again, on the refactored
+  code, in a throwaway branch that is never merged.  Same four figures; the difference is the plan's result.
+
 ## Summary
 
 Agents spend most of their cost reading four Java files: TrainControlUI (35,278 lines, 1.76 MB), Layout (15,597), AutonomySession (14,524) and AutonomyEditorPanel (12,455). Since 2026-09-01 each of them was touched by 11 to 18% of all 1,824 commits. A typical change is small (V302's Unload refusal added 3 source lines and 49 test lines), but to make it an agent has to read thousands of lines around it. About half of every giant is comment, and most of that comment is history: dated rulings, "it used to", and review-round narrative. Those notes already have a home in the finding store, which `testEveryCitationResolves` resolves against. The splits can be done, but the tests depend on the file layout in three ways. 78 test files read source files as text (42 of them read TrainControlUI). About 217 TrainControlUI members are named by string in 88 test files. Several bookkeeping guards are keyed by file name. So the plan starts by making the tests survive a split (Phase 0). Next come two near-zero-risk wins: deleting dead weight, and trimming comments in commits proven by bytecode comparison to change no code. Only after that does it extract method clusters by delegation, in releasable steps, lowest test exposure first. Each step gets its own battery. Layout's public API and every `synchronized` declaration stay in Layout.java.
@@ -187,8 +234,8 @@ Each phase can be released on its own and ends with a battery. Workers use separ
 
 | Phase | Work | Workers (parallel where files differ) | Effort |
 |---|---|---|---|
-| 0. Split-proof tests | `test/support/SourceOf` (finds a declaration anywhere in src/ and asserts it is unique; `SourceOf.all()` for negative assertions). Convert the 78 scanning tests. Commit the audit, javap-snapshot and comment-strip-compare scripts. | Sonnet ×3 (core/, regression/, ui/). Opus reviews the 36 negative-assertion conversions. | 3-4 sessions, 1 battery |
-| 1. Dead weight | Delete docs/reviews-2026-09-25 (and each later round's documents once catalogued); the high-confidence dead code (none of Adam's pre-2.7.0 code without his approval, no public API method); the legacy editor's leftover constants and keys; the dead test branch.  Fix README counts.  Archive released MTs out of tests.md (triagedb's render and testTheSuppliedManualTestFilesAreWhatTheySay change with it). | Haiku ×1, Sonnet ×1 for the MT archive, then an integrator | 1 session, 1 battery |
+| 0. Split-proof tests | `test/support/SourceOf` (finds a declaration anywhere in src/ and asserts it is unique; `SourceOf.all()` for negative assertions). Convert the scanning tests. Commit the audit, javap-snapshot and comment-strip-compare scripts.  Point tests that copy a rule of the program at the program; make the throttle claim steady. | Opus ×1 for the helper and scripts first; then Sonnet ×3 (core/, regression/, ui/); Opus reviews the negative-assertion conversions. | 3-4 sessions, 1 battery |
+| 1. Dead weight | Delete docs/reviews-2026-09-25 (and each later round's documents once catalogued), with `catalog-findings.py --next` and the full-rebuild guard first; the dead test branch.  (The dead methods and `CustomActionEvent` are already gone; the legacy editor's constants and keys went with OB-359.)  Fix README counts.  Archive released MTs out of tests.md (triagedb's render and testTheSuppliedManualTestFilesAreWhatTheySay change with it). | Haiku ×1, Sonnet ×1 for the MT archive, then an integrator | 1 session, 1 battery |
 | 2. Comment trim | Comment-only, bytecode-verified, one file per worker: TrainControlUI, Layout, AutonomySession, AutonomyEditorPanel, then the next six. Expect a 30-40% cut of comment lines in the giants. | Sonnet ×4 in parallel; Haiku integrator for ratchets and orphan counts | 4-5 sessions, 1 battery |
 | 3. Low-risk extractions | TrainControlUI Tier 1 (five clusters, one commit each, **one worker in sequence**); AutonomySession `SessionImport` and `SessionRuns`; the testAutonomyDiagramSession split | Sonnet ×3, one per file group | 4-5 sessions, 2 batteries |
 | 4. Medium | TrainControlUI Tier 2; AutonomyEditorPanel menus, prompts and mass-assign; LayoutEditor selection and undo; Layout explanations, standing trains and fit (Opus) | Sonnet ×3 and Opus ×1 | 6-8 sessions, 2 batteries |

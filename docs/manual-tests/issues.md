@@ -320,7 +320,7 @@ Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 
 **Claude, 2026-10-13:** RSA70 (C3) found the corner reaches further: the chain need not be in one edit (a name another station had in an earlier, saved edit of the session is read as that station's at Cancel), and one rename that gives a station a name another station has can point the railway's timetable leg at the wrong station at the in-editor fold itself, with no Cancel, so Save keeps it too (the fold order of 3.0.0).  The leg is kept as written and refused when its entry is run, not dropped.  One way to settle all three: carry the railway's timetable to the latest build's names before a gesture's derive moves the carry's memory, and key the kept legs by square rather than by name.
 
-### FR-130 - 2026-10-13 - for 3.1.0: locomotive icon transparency
+### FR-130 - 2026-10-13 - for 3.0.3: locomotive icon transparency
 
 **Kind:** feature request  
 **Raised from:** noticed while testing - not from a particular test  
@@ -328,6 +328,8 @@ Deferred to 3.1.0 on Adam's word of 2026-10-13: "keep that edge case for 3.1.0".
 **Build:** commit f91531c3
 
 the autonomy locomotive icon (steam engine, black) has no transparency.  Give it 10% transparency so that labels under it can be faintly seen still.  consider adding a glow around the black label text as needed.  3.0.2 or 3.1.0
+
+**Claude, 2026-10-18.** Moved to 3.0.3 on Adam's word: FR-136's yardstick, timed before the refactor and again after it on a throwaway branch (`docs/refactor-3.0.3.md`), and released with 3.0.3.
 
 ### OB-346 - 2026-10-13 - for 3.1.0: with the editor open, an editor gesture can overtake a card's pause before Cancel, and the editor's tick shows a card's change only after a rebuild
 
