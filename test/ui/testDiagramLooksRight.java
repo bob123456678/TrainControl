@@ -520,7 +520,7 @@ public class testDiagramLooksRight
 
         java.util.Map<String, org.traincontrol.automationui.TileGraph.TileKey> tiles = pointTiles();
 
-        if (tiles.isEmpty()) throw new SkipException("no derived graph to map Points onto tiles");
+        assertFalse(tiles.isEmpty(), "no derived graph to map Points onto tiles");
 
         // Every Point that sits on curved track - the destinations these tests are about
         java.util.Set<String> curved = new java.util.HashSet<>();
@@ -612,7 +612,7 @@ public class testDiagramLooksRight
             }
         }
 
-        throw new SkipException("no start can reach a curved station - " + auto.getPoints().size()
+        throw new AssertionError("no start can reach a curved station - " + auto.getPoints().size()
             + " points, " + busy + " occupied, " + unmapped + " not on a tile, " + curved.size()
             + " curved");
     }
@@ -4155,6 +4155,62 @@ public class testDiagramLooksRight
         grid.add(right);
         grid.add(middle);
 
+        // THE COUNT BELOW LOOKS FOR THE ARROWS' COLOURS AS THIS TEST SPELLS THEM, so they are the program's: a colour
+        // changed there would leave the counts looking for one nothing is painted in
+        assertEquals(programColour("ONE_WAY"), new java.awt.Color(70, 205, 90), "the one-way arrow is no longer the green"
+            + " this claim counts pixels of, so its count of zero says nothing about the arrows (RSA61-C2)");
+
+        assertEquals(programColour("CLOSED"), new java.awt.Color(200, 0, 0), "the closed arrow is no longer the red this"
+            + " claim counts pixels of, so its count of zero says nothing about the arrows (RSA61-C2)");
+
+        int[] covered = blueAndArrowsBeside(grid, size);
+
+        int blue = covered[0], arrows = covered[1];
+
+        assertEquals(blue, 0, "the curve's station spilled over the caption on the square beside it - " + blue + " pixels of"
+            + " its blue in front of the caption, where on its own square it is behind one (RSA61-C2)");
+
+        assertEquals(arrows, 0, "the arrows drawn again over the spill were drawn over the caption on their square - "
+            + arrows + " pixels of red and green in front of it (RSA61-C2)");
+
+        // THE CONTROL: the same square with the caption taken off shows both, so the zeros above counted colours the
+        // square is painted in and not colours nothing is painted in
+        grid.remove(caption);
+
+        int[] open = blueAndArrowsBeside(grid, size);
+
+        assertTrue(open[0] > 0, "precondition: none of the station's blue is seen on the square beside it with no caption"
+            + " over it, so the count of zero above says nothing about the caption");
+
+        assertTrue(open[1] > 0, "precondition: none of the arrows' red or green is seen on the square with no caption over"
+            + " it, so the count of zero above says nothing about the caption (the arrows are not the colours this looks for)");
+    }
+
+    /** A colour the annotation paints with, read from the program's own constant. */
+    private static java.awt.Color programColour(String constant)
+    {
+        try
+        {
+            java.lang.reflect.Field field = org.traincontrol.automationui.TileAnnotation.class.getDeclaredField(constant);
+
+            field.setAccessible(true);
+
+            return (java.awt.Color) field.get(null);
+        }
+        catch (ReflectiveOperationException none)
+        {
+            throw new AssertionError("TileAnnotation has no colour called " + constant, none);
+        }
+    }
+
+    /**
+     * The grid painted over white, and on the middle row's right-hand square the pixels that are the station's blue and
+     * the pixels that are the one-way arrows' red or green.
+     *
+     * @return the blue pixels, then the arrow pixels
+     */
+    private static int[] blueAndArrowsBeside(javax.swing.JPanel grid, int size)
+    {
         BufferedImage shot = new BufferedImage(size * 3, size * 3, BufferedImage.TYPE_INT_RGB);
 
         java.awt.Graphics2D g = shot.createGraphics();
@@ -4186,11 +4242,7 @@ public class testDiagramLooksRight
             }
         }
 
-        assertEquals(blue, 0, "the curve's station spilled over the caption on the square beside it - " + blue + " pixels of"
-            + " its blue in front of the caption, where on its own square it is behind one (RSA61-C2)");
-
-        assertEquals(arrows, 0, "the arrows drawn again over the spill were drawn over the caption on their square - "
-            + arrows + " pixels of red and green in front of it (RSA61-C2)");
+        return new int[] {blue, arrows};
     }
 
     /**
