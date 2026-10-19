@@ -335,8 +335,19 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testEveryLocomotiveHolderIsNamedInTheSweep() throws Exception
     {
-        // The file that declares the running layout is the point: its fields are the holders.
-        String text = SourceOf.fileDeclaring("public class Layout\n");
+        // The running layout's fields are the holders, read from its whole PACKAGE (FR-136): a cluster split out of
+        // Layout with a locomotive map of its own is still the running layout, and is still swept.
+        String text = SourceOf.codeUnder("src/org/traincontrol/automation/");
+
+        // Except Return Home's planner, whose maps are a copy of the layout's, taken when the button is pressed
+        // (`HomeStaging.snapshot`) and dropped with the plan - so the deletion sweep has nothing of its to let go of.
+        // That stays true only while nothing in the package keeps a planner in a field, which is asked here.
+        assertFalse(java.util.regex.Pattern.compile("\n    (?:\\w+ )*HomeStaging(?:\\.\\w+)? \\w+\\s*[;=]")
+                .matcher(text).find(),
+            "a field of the automation package now keeps Return Home's planner, so its locomotive maps outlive the"
+            + " press and are holders the deletion sweep has to name");
+
+        text = text.replace(SourceOf.withoutComments(SourceOf.fileDeclaring("public final class HomeStaging")), "");
 
         // The CODE of the sweep, not its prose. A guard about what a method DOES must not be
         // satisfiable by a comment mentioning the field - which is TD-3, one file over.
@@ -345,10 +356,10 @@ public class testLocomotiveIdentityPropagates
         List<String> holders = holdersIn(text);
 
         // A regex that stops matching - the nested-generics fix above already shows it has happened
-        // once - returns an empty list and this test passes having swept nothing. Seven holders exist
+        // once - returns an empty list and this test passes having swept nothing. Eleven holders exist
         // in Layout.java today; three is a floor well under that, not a pin on the count.
         assertTrue(holders.size() >= 3,
-            "only " + holders.size() + " locomotive-holding fields were found in Layout.java - the "
+            "only " + holders.size() + " locomotive-holding fields were found in the automation package - the "
             + "patterns holdersIn() looks for have gone stale, and this is now checking almost nothing");
 
         List<String> missing = new ArrayList<>();
@@ -394,9 +405,9 @@ public class testLocomotiveIdentityPropagates
         String[] lines = SourceOf.allCode().split("\n");
 
         // A scan that reads little, or a `src` gutted, gives an empty `suspect` list that looks identical to
-        // "nothing is wrong". The program has well over 100,000 lines today; 20,000 is a floor well under that,
+        // "nothing is wrong". The program has some 178,000 lines today; 100,000 is a floor well under that,
         // not a pin on the count.
-        assertTrue(lines.length >= 20000,
+        assertTrue(lines.length >= 100000,
             "only " + lines.length + " lines of code were found under src/ - this ran from the wrong working "
             + "directory, or the tree has shrunk enough that this scan is not checking much of "
             + "anything");
