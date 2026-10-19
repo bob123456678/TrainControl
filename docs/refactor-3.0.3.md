@@ -257,12 +257,66 @@ Each phase can be released on its own and ends with a battery. Workers use separ
 |---|---|---|---|
 | 0. Split-proof tests | `test/support/SourceOf` (finds a declaration anywhere in src/ and asserts it is unique; `SourceOf.all()` for negative assertions). Convert the scanning tests. Commit the audit, javap-snapshot and comment-strip-compare scripts.  Point tests that copy a rule of the program at the program; make the throttle claim steady. | Opus ×1 for the helper and scripts first; then Sonnet ×3 (core/, regression/, ui/); Opus reviews the negative-assertion conversions. | 3-4 sessions, 1 battery |
 | 1. Dead weight | Delete docs/reviews-2026-09-25 (and each later round's documents once catalogued), with `catalog-findings.py --next` and the full-rebuild guard first; the dead test branch.  (The dead methods and `CustomActionEvent` are already gone; the legacy editor's constants and keys went with OB-359.)  Fix README counts.  Archive released MTs out of tests.md (triagedb's render and testTheSuppliedManualTestFilesAreWhatTheySay change with it). | Haiku ×1, Sonnet ×1 for the MT archive, then an integrator | 1 session, 1 battery |
+| 1a. A faster battery | Adam (2026-10-19): "a phase of making the battery run faster".  See **1a** below the table. | Opus ×1 for the lanes; Sonnet ×2 for the slowest classes | 2-3 sessions, 2 batteries (before and after, compared claim by claim) |
+| 1b. Hollow tests | Adam (2026-10-19): "a sweep for tests that look like they are testing something but aren't".  See **1b** below the table. | Opus ×1 for the scan script; Sonnet ×3 (core/, regression/, ui/); Opus reviews every claim changed | 3-4 sessions, 1 battery |
 | 2. Comment trim | Comment-only, bytecode-verified, one file per worker: TrainControlUI, Layout, AutonomySession, AutonomyEditorPanel, then the next six. Expect a 30-40% cut of comment lines in the giants. | Sonnet ×4 in parallel; Haiku integrator for ratchets and orphan counts | 4-5 sessions, 1 battery |
 | 3. Low-risk extractions | TrainControlUI Tier 1 (five clusters, one commit each, **one worker in sequence**); AutonomySession `SessionImport` and `SessionRuns`; the testAutonomyDiagramSession split | Sonnet ×3, one per file group | 4-5 sessions, 2 batteries |
 | 4. Medium | TrainControlUI Tier 2; AutonomyEditorPanel menus, prompts and mass-assign; LayoutEditor selection and undo; Layout explanations, standing trains and fit (Opus) | Sonnet ×3 and Opus ×1 | 6-8 sessions, 2 batteries |
 | 5. Core (or 3.1.0) | TrainControlUI Tier 3; the `SettledQuestion` base class | Opus | 4-6 sessions, 2 batteries plus a fan-out round |
 
-That is about 20-28 worker sessions and 9 batteries. **Main risks:**
+That is about 25-35 worker sessions and 12 batteries.  Phases 1a and 1b come before the comment trim and the
+extractions on purpose: every later phase ends with one or two batteries, and every extraction leans on the tests
+being real.
+
+**1a. A faster battery.**  Battery 101 (2026-10-18, 339 classes) took 90 minutes from start to finish:
+- 74 minutes inside the tests, and about 16 starting a JVM for each class.
+- 145 classes take under 5 s, 158 take 5 to 30 s, and 36 take longer.  The ten slowest take 26 minutes, a third of
+  the test time: testNoSetupEditDuringARun (317 s), testTheImportDoorReadsAnOldFile (302 s), testTheActiveTickPausesATrain
+  (199 s), testAutonomySimulationSanity (155 s), testTheAutoTabWaitsForTheTrains (124 s), testReturnHomeOnRealLayout
+  (108 s), testNoSetupEditWhileARouteRuns (107 s), testACompulsoryTurnIsNotAQuestion (77 s), testATrainIsDispatchedOnce
+  (75 s) and testTrainsComeHomeToTheirPlatforms (69 s).
+- One class runs at a time, under one lock shared by every worktree, so a battery also stops every worker's runs.
+
+The work:
+- **Lanes.**  Run the classes in several JVMs at once, each with its own data folder (`traincontrol.dataDir`), its own
+  ports for the mock Central Station, and its own preferences node.  Classes that need the keyboard focus or a window
+  in front stay in one serial lane.  The lock becomes a count of lanes, so a worker's single run can still get in.
+- **The slowest classes.**  Find where their time goes.  Replace fixed sleeps with waits on the condition that ends
+  them; where a test waits out a program timer, it asks the timer (Phase 0 already points many at the program's
+  constants).  A test-only speed setting inside the program is a production change, so it goes to Adam first.
+- **The proof.**  The old battery and the new one run on the same commit.  Their results are compared claim by claim,
+  not class by class: the same claims ran, and the same ones passed.  A sample of mutations still turns red.  The goal is
+  measured, not promised.
+
+**1b. Hollow tests: claims that look like they test something but do not.**  Phase 0 found several, and the Phase 0
+review found more:
+- a needle that matched only in a method about 3,700 lines away;
+- a `matches(".*x.*")` that could never match across line breaks;
+- a claim skipped by an `if (!found.isEmpty())` guard after its method was deleted;
+- colour matchers asserting zero pixels of a colour, which a changed colour would satisfy;
+- a pixel check that asserted the test's own input back.
+
+The sweep looks for these shapes:
+- needles that never occur where they are looked for;
+- claims behind a guard that can skip them without failing;
+- loops over a list that can be empty, with no floor;
+- zero or absence claims with no positive control beside them;
+- asserts inside a `catch`, or a `catch` that swallows the assertion error;
+- the 43 `NoSuch*` catches the reflection audit listed;
+- waits that time out and then assert nothing, and Swing asserts queued with `invokeLater` after the method has
+  returned;
+- methods with no assert at all;
+- skips the battery counts as green (battery 101 had two classes that "tested nothing").
+
+A script under docs/tools flags candidates.  Workers then check each claim the way Phase 0 did:
+1. mutate the production code the claim is about;
+2. see the claim go red;
+3. revert.
+
+A claim that stays green is rewritten to ask the program (it says what it said before, and now it is true), or deleted
+if nothing in it can be made real.  Each one is listed for Adam.  Claims over the four giants come first, because the
+extractions lean on them.  An Opus reviewer checks every claim that changed, as in Phase 0.  The scan script stays,
+and a new hollow shape found later is added to it. **Main risks:**
 - feature work on TrainControlUI during Phases 3-5 would conflict: 3.0.3 is refactor-only and that work is paused (Adam's answer to question 6);
 - negative source assertions going vacuous (Phase 0 addresses this);
 - concurrency changes in Layout;
